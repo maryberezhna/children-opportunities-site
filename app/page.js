@@ -54,8 +54,8 @@ export default async function Home() {
         </div>
       </div>
 
+         <SupportPopup />
       <OpportunitiesList opportunities={opportunities} />
-      <SupportPopup />
     </div>
   );
 }
