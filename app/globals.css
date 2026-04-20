@@ -789,6 +789,186 @@ body {
 .empty-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.4; }
 .empty h3 { font-size: 20px; color: var(--ink); margin-bottom: 8px; font-weight: 600; }
 
+/* ============ АВТО-ПОП-АП ПІДПИСКИ ============ */
+
+.subscribe-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s;
+}
+
+.subscribe-popup {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 32px 28px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  animation: popupIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  border: 2px solid var(--accent-soft);
+}
+
+@keyframes popupIn {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.subscribe-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--bg);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.15s;
+}
+
+.subscribe-popup-close:hover {
+  background: var(--border);
+  color: var(--ink);
+  transform: scale(1.1);
+}
+
+.subscribe-popup-header {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.subscribe-popup-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  display: inline-block;
+  animation: iconBounce 2s ease-in-out infinite;
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.subscribe-popup-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.subscribe-popup-description {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.subscribe-popup-form {
+  background: transparent;
+  overflow: hidden;
+  margin: 0 -8px;
+}
+
+.subscribe-popup-form .hs-form-frame {
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  background: transparent !important;
+}
+
+.subscribe-popup-form iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 380px !important;
+  min-height: 380px !important;
+  border: none !important;
+  display: block;
+  background: transparent !important;
+}
+
+.subscribe-popup-skip {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 12px;
+  cursor: pointer;
+  transition: color 0.15s;
+  margin-top: 4px;
+}
+
+.subscribe-popup-skip:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* Мобільна адаптація поп-апу */
+@media (max-width: 640px) {
+  .subscribe-popup-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .subscribe-popup {
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    max-height: 90vh;
+    animation: popupSlideUp 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  @keyframes popupSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .subscribe-popup-title {
+    font-size: 19px;
+  }
+
+  .subscribe-popup-icon {
+    font-size: 40px;
+  }
+
+  .subscribe-popup-form iframe {
+    height: 420px !important;
+    min-height: 420px !important;
+  }
+}
+
 /* ============ МОДАЛКА ПІДТРИМКИ ============ */
 
 .modal-overlay {

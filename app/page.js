@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
+import SubscribePopup from './SubscribePopup';
 
 export const revalidate = 300;
 
@@ -148,6 +149,9 @@ export default async function Home() {
 
       {/* ============ STICKY BAR — ВИНЕСЕНО В КЛІЄНТСЬКИЙ КОМПОНЕНТ ============ */}
       <StickyBar />
+
+      {/* ============ АВТО-ПОП-АП ПІДПИСКИ (10 сек або 15 карток) ============ */}
+      <SubscribePopup />
     </>
   );
 }
