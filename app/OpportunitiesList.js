@@ -1,89 +1,52 @@
 'use client';
-import { useState, useMemo } from 'react';
-import SubscribeSection from './SubscribeSection';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 
 const TYPE_LABELS = {
-  course: 'Курс',
-  olympiad: 'Олімпіада',
-  competition: 'Конкурс',
-  club: 'Гурток',
-  exchange: 'Обмін',
-  camp: 'Табір',
-  study_abroad: 'Навчання за кордоном',
-  scholarship: 'Стипендія',
-  allowance: 'Виплата',
-  grant: 'Грант',
-  festival: 'Фестиваль',
-  sport_event: 'Спорт',
-  medical_aid: 'Мед. допомога',
-  psychology: 'Психологія',
-  rehabilitation: 'Реабілітація',
-  humanitarian: 'Гум. допомога',
-  internship: 'Стажування',
-  volunteer: 'Волонтерство',
+  course: 'Курс', olympiad: 'Олімпіада', competition: 'Конкурс', club: 'Гурток',
+  exchange: 'Обмін', camp: 'Табір', study_abroad: 'Навчання за кордоном',
+  scholarship: 'Стипендія', allowance: 'Виплата', grant: 'Грант', festival: 'Фестиваль',
+  sport_event: 'Спорт', medical_aid: 'Мед. допомога', psychology: 'Психологія',
+  rehabilitation: 'Реабілітація', humanitarian: 'Гум. допомога',
+  internship: 'Стажування', volunteer: 'Волонтерство',
 };
 
 const NEED_LABELS = {
-  gifted: 'обдаровані',
-  disability: 'інвалідність',
-  autism: 'РАС',
-  orphan: 'сироти',
-  idp: 'ВПО',
-  veteran_family: 'діти ветеранів',
-  de_occupied: 'з деокупованих',
-  frontline: 'з прифронтових',
-  oncology: 'онкохворі',
-  rare_disease: 'рідкісні хвороби',
-  low_income: 'малозабезпечені',
-  large_family: 'багатодітні',
-  rural: 'сільська місцевість',
+  gifted: 'обдаровані', disability: 'інвалідність', autism: 'РАС', orphan: 'сироти',
+  idp: 'ВПО', veteran_family: 'діти ветеранів', de_occupied: 'з деокупованих',
+  frontline: 'з прифронтових', oncology: 'онкохворі', rare_disease: 'рідкісні хвороби',
+  low_income: 'малозабезпечені', large_family: 'багатодітні', rural: 'сільська місцевість',
 };
 
 const AGE_GROUPS = [
-  { label: 'Усі', value: 'all' },
-  { label: '0-3', value: '0-3' },
-  { label: '4-6', value: '4-6' },
-  { label: '7-11', value: '7-11' },
-  { label: '12-14', value: '12-14' },
-  { label: '15-17', value: '15-17' },
+  { label: 'Усі', value: 'all' }, { label: '0-3', value: '0-3' },
+  { label: '4-6', value: '4-6' }, { label: '7-11', value: '7-11' },
+  { label: '12-14', value: '12-14' }, { label: '15-17', value: '15-17' },
 ];
 
 const TYPE_OPTIONS = [
-  { label: 'Усі', value: 'all' },
-  { label: 'Курси', value: 'course' },
-  { label: 'Конкурси', value: 'competition' },
-  { label: 'Олімпіади', value: 'olympiad' },
-  { label: 'Обміни', value: 'exchange' },
-  { label: 'Табори', value: 'camp' },
-  { label: 'Стипендії', value: 'scholarship' },
-  { label: 'Виплати', value: 'allowance' },
-  { label: 'Гранти', value: 'grant' },
-  { label: 'Мед. допомога', value: 'medical_aid' },
-  { label: 'Фестивалі', value: 'festival' },
-  { label: 'Гуртки', value: 'club' },
+  { label: 'Усі', value: 'all' }, { label: 'Курси', value: 'course' },
+  { label: 'Конкурси', value: 'competition' }, { label: 'Олімпіади', value: 'olympiad' },
+  { label: 'Обміни', value: 'exchange' }, { label: 'Табори', value: 'camp' },
+  { label: 'Стипендії', value: 'scholarship' }, { label: 'Виплати', value: 'allowance' },
+  { label: 'Гранти', value: 'grant' }, { label: 'Мед. допомога', value: 'medical_aid' },
+  { label: 'Фестивалі', value: 'festival' }, { label: 'Гуртки', value: 'club' },
 ];
 
 const NEED_OPTIONS = [
-  { label: 'Усі діти', value: 'all' },
-  { label: 'ВПО', value: 'idp' },
-  { label: 'Сироти', value: 'orphan' },
-  { label: 'Інвалідність', value: 'disability' },
-  { label: 'Обдаровані', value: 'gifted' },
-  { label: 'Онкохворі', value: 'oncology' },
+  { label: 'Усі діти', value: 'all' }, { label: 'ВПО', value: 'idp' },
+  { label: 'Сироти', value: 'orphan' }, { label: 'Інвалідність', value: 'disability' },
+  { label: 'Обдаровані', value: 'gifted' }, { label: 'Онкохворі', value: 'oncology' },
   { label: 'Діти ветеранів', value: 'veteran_family' },
 ];
 
 const COST_OPTIONS = [
-  { label: 'Будь-яка', value: 'all' },
-  { label: 'Безкоштовно', value: 'free' },
+  { label: 'Будь-яка', value: 'all' }, { label: 'Безкоштовно', value: 'free' },
   { label: 'З фінансуванням', value: 'partially_free' },
 ];
 
 const DEADLINE_OPTIONS = [
-  { label: 'Усі', value: 'all' },
-  { label: 'Цього тижня', value: 'week' },
-  { label: 'Цього місяця', value: 'month' },
-  { label: 'Найближчі 3 місяці', value: 'quarter' },
+  { label: 'Усі', value: 'all' }, { label: 'Цього тижня', value: 'week' },
+  { label: 'Цього місяця', value: 'month' }, { label: 'Найближчі 3 місяці', value: 'quarter' },
   { label: 'Без дедлайну (постійні)', value: 'none' },
 ];
 
@@ -94,21 +57,12 @@ const SORT_OPTIONS = [
   { label: 'Нещодавно додані', value: 'recent' },
 ];
 
-// Після скількох карток показати секцію підписки
-const SUBSCRIBE_AFTER = 20;
-
-// Форматування дати з ISO у читабельний формат
 function formatDeadline(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
-
-  const months = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-
-  return `${day} ${month} ${year}`;
+  const months = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function daysUntilDeadline(dateStr) {
@@ -117,8 +71,109 @@ function daysUntilDeadline(dateStr) {
   if (isNaN(date.getTime())) return null;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-  return diff;
+  return Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+}
+
+// ============ ВБУДОВАНА КАРТКА ПІДПИСКИ ============
+function SubscribeCard() {
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
+
+  useEffect(() => {
+    const existingScript = document.querySelector('script[src*="js-eu1.hsforms.net"]');
+    if (!existingScript) {
+      const script = document.createElement('script');
+      script.src = 'https://js-eu1.hsforms.net/forms/embed/26525145.js';
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isMobileModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileModalOpen]);
+
+  useEffect(() => {
+    if (!isMobileModalOpen) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') setIsMobileModalOpen(false); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isMobileModalOpen]);
+
+  const handleMobileClick = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'subscribe_modal_open', { event_category: 'engagement' });
+    }
+    setIsMobileModalOpen(true);
+  };
+
+  return (
+    <>
+      <div className="subscribe-card">
+        <div className="subscribe-card-header">
+          <div className="subscribe-card-icon">📬</div>
+          <div>
+            <h3 className="subscribe-card-title">Щомісячний дайджест можливостей</h3>
+            <p className="subscribe-card-desc">
+              Раз на місяць — добірка 5-7 найцікавіших програм. Без спаму.
+            </p>
+          </div>
+        </div>
+
+        <div className="subscribe-card-form subscribe-desktop-only">
+          <div
+            className="hs-form-frame"
+            data-region="eu1"
+            data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
+            data-portal-id="26525145"
+          />
+        </div>
+
+        <button
+          className="subscribe-card-btn subscribe-mobile-only"
+          onClick={handleMobileClick}
+        >
+          Підписатись на розсилку →
+        </button>
+      </div>
+
+      {isMobileModalOpen ? (
+        <div
+          className="subscribe-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsMobileModalOpen(false); }}
+        >
+          <div className="subscribe-modal">
+            <button
+              className="subscribe-modal-close"
+              onClick={() => setIsMobileModalOpen(false)}
+              aria-label="Закрити"
+            >
+              ✕
+            </button>
+            <div className="subscribe-modal-header">
+              <div className="subscribe-modal-icon">📬</div>
+              <h2 className="subscribe-modal-title">Щомісячний дайджест</h2>
+              <p className="subscribe-modal-description">
+                Раз на місяць — добірка найцікавіших можливостей для дітей.
+              </p>
+            </div>
+            <div className="subscribe-modal-form">
+              <div
+                className="hs-form-frame"
+                data-region="eu1"
+                data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
+                data-portal-id="26525145"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
+  );
 }
 
 export default function OpportunitiesList({ opportunities }) {
@@ -212,72 +267,13 @@ export default function OpportunitiesList({ opportunities }) {
     return null;
   };
 
-  // Чи показувати секцію підписки всередині списку
-  const showSubscribeInline = filtered.length > SUBSCRIBE_AFTER;
-
-  const renderCard = (item) => (
-    <article key={item.id} className="card">
-      <div className="chips">
-        <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
-        <span className="chip chip-age">{ageLabel(item)}</span>
-        {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
-        {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
-        {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
-        {deadlineChip(item)}
-        {(item.child_needs || []).slice(0, 2).map((n) => (
-          <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
-        ))}
-      </div>
-
-      <h3>{item.title}</h3>
-      <p className="card-summary">{item.summary}</p>
-
-      <div className="meta">
-        {item.format ? (
-          <div className="meta-row">
-            <span className="meta-label">Формат</span>
-            <span className="meta-val">{item.format}</span>
-          </div>
-        ) : null}
-        {item.deadline ? (
-          <div className="meta-row">
-            <span className="meta-label">Дедлайн</span>
-            <span className="meta-val">{formatDeadline(item.deadline)}</span>
-          </div>
-        ) : null}
-        {item.source ? (
-          <div className="meta-row">
-            <span className="meta-label">Джерело</span>
-            <span className="meta-val">{item.source}</span>
-          </div>
-        ) : null}
-      </div>
-
-      {item.source_url ? (
-        <a
-          href={item.source_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-btn"
-          onClick={() => handleLinkClick(item.title)}
-        >
-          Детальніше ↗
-        </a>
-      ) : null}
-    </article>
-  );
-
   return (
     <>
       <div className="filters">
         <div className="filter-row">
           <div className="filter-label">Вік дитини</div>
           {AGE_GROUPS.map((g) => (
-            <button
-              key={g.value}
-              className={`filter-btn ${age === g.value ? 'active' : ''}`}
-              onClick={() => setAge(g.value)}
-            >
+            <button key={g.value} className={`filter-btn ${age === g.value ? 'active' : ''}`} onClick={() => setAge(g.value)}>
               {g.label}
             </button>
           ))}
@@ -286,11 +282,7 @@ export default function OpportunitiesList({ opportunities }) {
         <div className="filter-row">
           <div className="filter-label">Тип можливості</div>
           {TYPE_OPTIONS.map((t) => (
-            <button
-              key={t.value}
-              className={`filter-btn ${type === t.value ? 'active' : ''}`}
-              onClick={() => setType(t.value)}
-            >
+            <button key={t.value} className={`filter-btn ${type === t.value ? 'active' : ''}`} onClick={() => setType(t.value)}>
               {t.label}
             </button>
           ))}
@@ -299,11 +291,7 @@ export default function OpportunitiesList({ opportunities }) {
         <div className="filter-row">
           <div className="filter-label">Дедлайн</div>
           {DEADLINE_OPTIONS.map((d) => (
-            <button
-              key={d.value}
-              className={`filter-btn ${deadline === d.value ? 'active' : ''}`}
-              onClick={() => setDeadline(d.value)}
-            >
+            <button key={d.value} className={`filter-btn ${deadline === d.value ? 'active' : ''}`} onClick={() => setDeadline(d.value)}>
               {d.label}
             </button>
           ))}
@@ -312,11 +300,7 @@ export default function OpportunitiesList({ opportunities }) {
         <div className="filter-row">
           <div className="filter-label">Особлива потреба</div>
           {NEED_OPTIONS.map((n) => (
-            <button
-              key={n.value}
-              className={`filter-btn ${need === n.value ? 'active' : ''}`}
-              onClick={() => setNeed(n.value)}
-            >
+            <button key={n.value} className={`filter-btn ${need === n.value ? 'active' : ''}`} onClick={() => setNeed(n.value)}>
               {n.label}
             </button>
           ))}
@@ -325,11 +309,7 @@ export default function OpportunitiesList({ opportunities }) {
         <div className="filter-row">
           <div className="filter-label">Вартість</div>
           {COST_OPTIONS.map((c) => (
-            <button
-              key={c.value}
-              className={`filter-btn ${cost === c.value ? 'active' : ''}`}
-              onClick={() => setCost(c.value)}
-            >
+            <button key={c.value} className={`filter-btn ${cost === c.value ? 'active' : ''}`} onClick={() => setCost(c.value)}>
               {c.label}
             </button>
           ))}
@@ -373,16 +353,64 @@ export default function OpportunitiesList({ opportunities }) {
         </div>
       ) : (
         <div className="grid">
-          {filtered.slice(0, showSubscribeInline ? SUBSCRIBE_AFTER : filtered.length).map(renderCard)}
-          {showSubscribeInline ? <SubscribeSection /> : null}
-          {showSubscribeInline ? filtered.slice(SUBSCRIBE_AFTER).map(renderCard) : null}
+          {filtered.map((item, idx) => (
+            <Fragment key={item.id}>
+              <article className="card">
+                <div className="chips">
+                  <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
+                  <span className="chip chip-age">{ageLabel(item)}</span>
+                  {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
+                  {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
+                  {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
+                  {deadlineChip(item)}
+                  {(item.child_needs || []).slice(0, 2).map((n) => (
+                    <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
+                  ))}
+                </div>
+
+                <h3>{item.title}</h3>
+                <p className="card-summary">{item.summary}</p>
+
+                <div className="meta">
+                  {item.format ? (
+                    <div className="meta-row">
+                      <span className="meta-label">Формат</span>
+                      <span className="meta-val">{item.format}</span>
+                    </div>
+                  ) : null}
+                  {item.deadline ? (
+                    <div className="meta-row">
+                      <span className="meta-label">Дедлайн</span>
+                      <span className="meta-val">{formatDeadline(item.deadline)}</span>
+                    </div>
+                  ) : null}
+                  {item.source ? (
+                    <div className="meta-row">
+                      <span className="meta-label">Джерело</span>
+                      <span className="meta-val">{item.source}</span>
+                    </div>
+                  ) : null}
+                </div>
+
+                {item.source_url ? (
+                  <a
+                    href={item.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="link-btn"
+                    onClick={() => handleLinkClick(item.title)}
+                  >
+                    Детальніше ↗
+                  </a>
+                ) : null}
+              </article>
+
+              {/* Картка підписки після 15-ї можливості */}
+              {idx === 14 ? <SubscribeCard /> : null}
+            </Fragment>
+          ))}
         </div>
       )}
-
-      {/* Якщо результатів менше 20 — все одно покажемо підписку в кінці списку */}
-      {filtered.length > 0 && filtered.length <= SUBSCRIBE_AFTER ? (
-        <SubscribeSection />
-      ) : null}
     </>
   );
 }

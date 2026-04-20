@@ -36,15 +36,26 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  padding-bottom: 72px;
 }
 
 .container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 20px 80px;
+  padding: 32px 20px 40px;
 }
 
 .hero { margin-bottom: 40px; position: relative; }
+
+/* ============ БЕЙДЖІ ЗВЕРХУ ============ */
+
+.hero-badges {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
 
 .hero-badge {
   display: inline-flex;
@@ -56,7 +67,7 @@ body {
   padding: 6px 14px;
   border-radius: 100px;
   font-weight: 500;
-  margin-bottom: 20px;
+  margin-bottom: 0;
 }
 
 .hero-badge::before {
@@ -71,6 +82,76 @@ body {
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
+}
+
+/* BETA бейдж окремим елементом — градієнтна пігулка */
+.beta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #e85d24 0%, #ff7a3a 50%, #f09433 100%);
+  padding: 5px 11px 5px 9px;
+  border-radius: 100px;
+  letter-spacing: 0.12em;
+  box-shadow: 0 3px 10px rgba(232, 93, 36, 0.35);
+  position: relative;
+  overflow: hidden;
+  cursor: help;
+  animation: beta-float 3s ease-in-out infinite;
+}
+
+.beta-badge::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: beta-shine 3s ease-in-out infinite;
+}
+
+@keyframes beta-shine {
+  0% { left: -100%; }
+  50%, 100% { left: 200%; }
+}
+
+@keyframes beta-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+.beta-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  animation: beta-dot-pulse 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes beta-dot-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+/* Футерний BETA — міні-версія */
+.footer-beta {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #e85d24 0%, #ff7a3a 100%);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.1em;
+  vertical-align: middle;
+  box-shadow: 0 2px 6px rgba(232, 93, 36, 0.25);
+  margin-left: 0;
 }
 
 .hero h1 {
@@ -143,20 +224,16 @@ body {
 }
 
 .support-bg-blob-1 {
-  width: 200px;
-  height: 200px;
+  width: 200px; height: 200px;
   background: var(--accent);
-  top: -80px;
-  right: -60px;
+  top: -80px; right: -60px;
   animation: blob-float-1 8s ease-in-out infinite;
 }
 
 .support-bg-blob-2 {
-  width: 180px;
-  height: 180px;
+  width: 180px; height: 180px;
   background: #fbd4e0;
-  bottom: -60px;
-  left: -40px;
+  bottom: -60px; left: -40px;
   animation: blob-float-2 10s ease-in-out infinite;
 }
 
@@ -180,8 +257,7 @@ body {
 
 .support-icon-wrap {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 80px; height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -261,43 +337,122 @@ body {
   box-shadow: 0 10px 28px rgba(232, 93, 36, 0.5);
 }
 
-.support-btn-mini {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  z-index: 100;
-  width: 56px;
-  height: 56px;
+.support-btn-mini { display: none !important; }
+
+/* ============ ВБУДОВАНА КАРТКА ПІДПИСКИ (inline у grid) ============ */
+
+.subscribe-card {
+  background: linear-gradient(135deg, #fff4ec 0%, #fef7e0 50%, #fde8c7 100%);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+  grid-column: 1 / -1;
+  animation: subscribe-glow 4s ease-in-out infinite;
+}
+
+@keyframes subscribe-glow {
+  0%, 100% { box-shadow: 0 4px 16px rgba(232, 93, 36, 0.1); }
+  50% { box-shadow: 0 6px 24px rgba(232, 93, 36, 0.2); }
+}
+
+.subscribe-card::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: var(--accent);
+  opacity: 0.08;
+  border-radius: 50%;
+  filter: blur(25px);
+  pointer-events: none;
+}
+
+.subscribe-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.subscribe-card-icon {
+  font-size: 36px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.subscribe-card-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.subscribe-card-desc {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.subscribe-card-form {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  overflow: hidden;
+  margin: 0 -8px;
+}
+
+.subscribe-card-form .hs-form-frame {
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  background: transparent !important;
+}
+
+.subscribe-card-form iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 340px !important;
+  min-height: 340px !important;
+  border: none !important;
+  display: block;
+  background: transparent !important;
+}
+
+.subscribe-card-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 14px 20px;
   background: var(--accent);
   color: white;
   border: none;
-  border-radius: 50%;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
   cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.4);
-  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(232, 93, 36, 0.3);
+  transition: all 0.15s;
+  position: relative;
+  z-index: 1;
 }
 
-.support-btn-mini:hover {
-  transform: scale(1.1);
-  box-shadow: 0 8px 28px rgba(232, 93, 36, 0.5);
+.subscribe-card-btn:active {
+  transform: scale(0.98);
 }
 
-.support-btn-mini .heart {
-  font-size: 26px;
-  animation: heartbeat 1.4s ease-in-out infinite;
-  display: inline-block;
-}
-
-@keyframes heartbeat {
-  0%, 100% { transform: scale(1); }
-  15%, 45% { transform: scale(1.2); }
-  30%, 60% { transform: scale(1); }
-}
-
-/* ============ СЕКЦІЯ ПІДПИСКИ (ДЕСКТОП - inline) ============ */
+/* ============ СЕКЦІЯ ПІДПИСКИ ============ */
 
 .subscribe-section {
   grid-column: 1 / -1;
@@ -315,10 +470,8 @@ body {
 .subscribe-section::before {
   content: '';
   position: absolute;
-  top: -30px;
-  right: -30px;
-  width: 120px;
-  height: 120px;
+  top: -30px; right: -30px;
+  width: 120px; height: 120px;
   background: var(--accent);
   opacity: 0.08;
   border-radius: 50%;
@@ -334,16 +487,8 @@ body {
   z-index: 1;
 }
 
-.subscribe-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.subscribe-text {
-  flex: 1;
-  min-width: 0;
-}
+.subscribe-icon { font-size: 32px; flex-shrink: 0; line-height: 1; }
+.subscribe-text { flex: 1; min-width: 0; }
 
 .subscribe-title {
   font-size: 17px;
@@ -388,15 +533,11 @@ body {
   background: transparent !important;
 }
 
-/* Кнопка для мобільного (прихована на десктопі) */
-.subscribe-mobile-btn {
-  display: none;
-}
-
+.subscribe-mobile-btn { display: none; }
 .subscribe-desktop-only { display: block; }
 .subscribe-mobile-only { display: none; }
 
-/* ============ МОДАЛКА ПІДПИСКИ (тільки для мобільного) ============ */
+/* ============ МОДАЛКА ПІДПИСКИ ============ */
 
 .subscribe-modal-overlay {
   position: fixed;
@@ -430,12 +571,10 @@ body {
 
 .subscribe-modal-close {
   position: absolute;
-  top: 14px;
-  right: 14px;
+  top: 14px; right: 14px;
   background: var(--bg);
   border: none;
-  width: 36px;
-  height: 36px;
+  width: 36px; height: 36px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 18px;
@@ -616,9 +755,7 @@ body {
 .card::before {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  top: 0; left: 0; right: 0;
   height: 3px;
   background: var(--accent);
   transform: scaleX(0);
@@ -789,12 +926,10 @@ body {
 
 .modal-close {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 16px; right: 16px;
   background: var(--bg);
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 32px; height: 32px;
   border-radius: 50%;
   cursor: pointer;
   font-size: 18px;
@@ -814,6 +949,12 @@ body {
   margin-bottom: 12px;
   display: inline-block;
   animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15%, 45% { transform: scale(1.2); }
+  30%, 60% { transform: scale(1); }
 }
 
 .modal h2 {
@@ -896,6 +1037,9 @@ body {
   font-weight: 700;
   color: var(--ink);
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .footer-brand-tag {
@@ -984,15 +1128,108 @@ body {
 
 .footer-copy { font-size: 13px; color: var(--ink-muted); }
 
-/* ============ STICKY ПАНЕЛЬ ДЛЯ МОБІЛЬНОГО ============ */
+/* ============ STICKY BAR ============ */
 
-.mobile-sticky-bar { display: none; }
+.sticky-bar {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.sticky-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.15s;
+  border: 1px solid var(--border);
+  min-width: 120px;
+  justify-content: center;
+}
+
+.sticky-btn:hover {
+  background: var(--surface);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.sticky-btn svg { stroke: var(--ink-soft); }
+
+.sticky-btn-insta {
+  background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
+  color: white;
+  border-color: transparent;
+}
+
+.sticky-btn-insta:hover {
+  color: white;
+  box-shadow: 0 6px 20px rgba(220, 39, 67, 0.35);
+}
+
+.sticky-btn-insta svg { stroke: white; }
+
+.sticky-btn-donate {
+  background: var(--accent);
+  color: white;
+  border-color: transparent;
+}
+
+.sticky-btn-donate:hover {
+  background: #d14c15;
+  color: white;
+  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.4);
+}
+
+.sticky-heart {
+  font-size: 18px;
+  line-height: 1;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
 
 /* ============ МОБІЛЬНА АДАПТИВНІСТЬ ============ */
 
 @media (max-width: 640px) {
-  .container { padding: 20px 16px 90px; }
+  body { padding-bottom: 80px; }
+  .container { padding: 20px 16px 30px; }
   .hero { margin-bottom: 28px; }
+
+  .hero-badges {
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .hero-badge {
+    font-size: 12px;
+    padding: 5px 12px;
+  }
+
+  .beta-badge {
+    font-size: 10px;
+    padding: 4px 10px 4px 8px;
+    gap: 5px;
+  }
+
+  .beta-dot {
+    width: 5px;
+    height: 5px;
+  }
 
   .hero h1 {
     font-size: 30px;
@@ -1001,7 +1238,6 @@ body {
     margin-bottom: 14px;
   }
 
-  /* Курсив на своєму розмірі + перенос рядка після нього */
   .hero h1 .accent {
     transform: rotate(-1.5deg);
     display: inline-block;
@@ -1015,12 +1251,6 @@ body {
   }
 
   .hero p { font-size: 15px; line-height: 1.5; }
-
-  .hero-badge {
-    font-size: 12px;
-    padding: 5px 12px;
-    margin-bottom: 16px;
-  }
 
   .stats { gap: 16px 28px; margin-top: 20px; }
   .stat-num { font-size: 22px; }
@@ -1045,14 +1275,7 @@ body {
     padding: 14px 20px;
   }
 
-  .support-btn-mini { display: none; }
-
-  /* МОБІЛЬНИЙ: секція підписки — компактна з кнопкою замість форми */
-  .subscribe-section {
-    padding: 20px 18px;
-    border-radius: 16px;
-    gap: 14px;
-  }
+  .subscribe-section { padding: 20px 18px; border-radius: 16px; gap: 14px; }
 
   .subscribe-content {
     flex-direction: row;
@@ -1065,11 +1288,13 @@ body {
   .subscribe-title { font-size: 16px; line-height: 1.25; margin-bottom: 4px; }
   .subscribe-description { font-size: 13px; line-height: 1.4; }
 
-  /* Ховаємо inline форму на мобільному */
   .subscribe-desktop-only { display: none !important; }
   .subscribe-mobile-only { display: block !important; }
 
-  /* Кнопка підписки для мобільного */
+  .subscribe-card-btn {
+    display: flex !important;
+  }
+
   .subscribe-mobile-btn {
     display: flex;
     align-items: center;
@@ -1106,7 +1331,6 @@ body {
     margin-top: 40px;
     padding: 28px 20px 20px;
     border-radius: 20px;
-    margin-bottom: 80px;
   }
 
   .footer-content {
@@ -1118,74 +1342,31 @@ body {
   .footer-about { max-width: 100%; }
   .footer-social-link { font-size: 13px; padding: 8px 16px; }
 
-  /* STICKY BAR для мобільного */
-  .mobile-sticky-bar {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border-top: 1px solid var(--border);
-    padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
+  .sticky-bar {
     gap: 6px;
-    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
   }
 
-  .mobile-sticky-btn {
+  .sticky-btn {
     flex: 1;
-    display: inline-flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     gap: 3px;
     padding: 8px 4px;
-    background: var(--bg);
-    color: var(--ink-soft);
-    text-decoration: none;
-    border-radius: 12px;
     font-size: 11px;
-    font-weight: 600;
-    transition: all 0.15s;
-    line-height: 1;
+    border-radius: 12px;
+    min-width: 0;
     min-height: 54px;
   }
 
-  .mobile-sticky-btn:active { transform: scale(0.96); }
-  .mobile-sticky-btn svg { stroke: var(--ink-soft); }
-
-  .mobile-sticky-btn-insta {
-    background: linear-gradient(135deg, #fde8ef 0%, #fef2eb 100%);
-    color: #bc1888;
-  }
-  .mobile-sticky-btn-insta svg { stroke: #bc1888; }
-
-  .mobile-sticky-btn-donate {
-    background: var(--accent);
-    color: white;
-  }
-  .mobile-sticky-btn-donate svg { stroke: white; }
-
-  .mobile-sticky-heart {
-    font-size: 22px;
-    line-height: 1;
-    animation: heartbeat 1.8s ease-in-out infinite;
-  }
+  .sticky-btn svg { width: 20px; height: 20px; }
+  .sticky-heart { font-size: 22px; }
 }
 
-/* Маленькі мобільні (iPhone SE, старі Android) */
+/* Маленькі мобільні */
 @media (max-width: 380px) {
-  .hero h1 {
-    font-size: 26px;
-    line-height: 1.2;
-  }
-
+  .hero h1 { font-size: 26px; line-height: 1.2; }
   .hero p { font-size: 14px; }
   .stats { gap: 12px 20px; }
   .stat-num { font-size: 20px; }
-
-  .mobile-sticky-btn { font-size: 10px; }
+  .sticky-btn { font-size: 10px; }
 }
