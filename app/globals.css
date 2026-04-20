@@ -107,6 +107,11 @@ body {
 
 .stat { display: flex; align-items: baseline; gap: 8px; }
 .stat-num { font-size: 28px; font-weight: 700; color: var(--ink); }
+.stat-contact {
+    margin-left: 0;
+    margin-top: 8px;
+    width: fit-content;
+  }
 .stat-label { font-size: 13px; color: var(--ink-muted); }
 .stat-contact {
   display: inline-flex;
