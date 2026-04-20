@@ -1,14 +1,177 @@
-import './globals.css';
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-export const metadata = {
-  title: 'Можливості для дитини',
-  description: 'Усі програми, курси, стипендії та підтримка для дітей 0-18 років в Україні',
-};
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #fafafa;
+  color: #1a1a1a;
+  line-height: 1.6;
+}
 
-export default function RootLayout({ children }) {
-  return (
-    <html lang="uk">
-      <body>{children}</body>
-    </html>
-  );
+.container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  font-size: 28px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.header p {
+  color: #666;
+  font-size: 15px;
+}
+
+.filters {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.filter-row {
+  margin-bottom: 16px;
+}
+
+.filter-row:last-child {
+  margin-bottom: 0;
+}
+
+.filter-label {
+  font-size: 13px;
+  color: #666;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.filter-btn {
+  display: inline-block;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: white;
+  border: 1px solid #ddd;
+  margin-right: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover {
+  background: #f5f5f5;
+}
+
+.filter-btn.active {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.count {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.card {
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-size: 17px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.card p {
+  font-size: 14px;
+  color: #555;
+  margin-bottom: 14px;
+}
+
+.chips {
+  margin-bottom: 12px;
+}
+
+.chip {
+  display: inline-block;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-right: 6px;
+  margin-bottom: 6px;
+}
+
+.chip-type { background: #eef2ff; color: #3730a3; }
+.chip-age { background: #ecfdf5; color: #065f46; }
+.chip-cost { background: #fef3c7; color: #78350f; }
+.chip-need { background: #fee2e2; color: #991b1b; }
+
+.meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.meta-box {
+  background: #fafafa;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.meta-label {
+  color: #888;
+  font-size: 11px;
+  margin-bottom: 2px;
+}
+
+.meta-val {
+  font-weight: 500;
+}
+
+.link-btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background: #1a1a1a;
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.link-btn:hover {
+  background: #333;
+}
+
+.empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #888;
 }
