@@ -629,6 +629,30 @@ body {
   margin-top: 16px;
 }
 
+.chip-deadline-urgent {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+  animation: deadline-pulse 2s ease-in-out infinite;
+}
+ 
+.chip-deadline-soon {
+  background: #fef3c7;
+  color: #78350f;
+  font-weight: 500;
+}
+ 
+.chip-deadline-past {
+  background: #f3f4f6;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+ 
+@keyframes deadline-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 /* ============ МОБІЛЬНА АДАПТИВНІСТЬ ============ */
 
 @media (max-width: 640px) {
