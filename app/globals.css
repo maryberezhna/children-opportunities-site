@@ -363,26 +363,29 @@ body {
 .subscribe-form-wrap {
   position: relative;
   z-index: 1;
-  background: white;
-  border-radius: 10px;
-  padding: 4px 12px;
-  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: 0;
+  padding: 0;
+  border: none;
   overflow: hidden;
+  margin: 0 -8px;
 }
 
 .subscribe-form-wrap .hs-form-frame {
   max-width: 100% !important;
   height: auto !important;
   min-height: auto !important;
+  background: transparent !important;
 }
 
 .subscribe-form-wrap iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 280px !important;
-  min-height: 280px !important;
+  height: 340px !important;
+  min-height: 340px !important;
   border: none !important;
   display: block;
+  background: transparent !important;
 }
 
 /* ============ ФІЛЬТРИ ============ */
@@ -976,11 +979,11 @@ body {
   .subscribe-title { font-size: 15px; }
   .subscribe-description { font-size: 12px; }
 
-  .subscribe-form-wrap { padding: 4px 8px; }
+  .subscribe-form-wrap { padding: 0; margin: 0 -4px; }
 
   .subscribe-form-wrap iframe {
-    height: 400px !important;
-    min-height: 400px !important;
+    height: 440px !important;
+    min-height: 440px !important;
   }
 
   .filters { padding: 16px; border-radius: 16px; }
