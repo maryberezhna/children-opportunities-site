@@ -56,6 +56,65 @@ export default async function Home() {
 
       <SupportPopup />
       <OpportunitiesList opportunities={opportunities} />
+
+      {/* ============ ФУТЕР ============ */}
+      <footer className="site-footer">
+        <div className="footer-content">
+          <div className="footer-section">
+            <div className="footer-brand">
+              <span className="footer-logo">🧡</span>
+              <div>
+                <div className="footer-brand-name">dityam.com.ua</div>
+                <div className="footer-brand-tag">Можливості для кожної дитини</div>
+              </div>
+            </div>
+            <p className="footer-about">
+              Каталог безкоштовних та доступних програм для дітей 0-18 років в Україні.
+              Сайт створений на ентузіазмі, без реклами.
+            </p>
+          </div>
+
+          <div className="footer-section">
+            <div className="footer-title">Контакти</div>
+            <a
+              href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua"
+              className="footer-link"
+            >
+              <span className="footer-link-icon">✉</span>
+              <span>Написати нам</span>
+            </a>
+            <a
+              href="mailto:maryberezhna@gmail.com?subject=Додати%20можливість%20на%20dityam.com.ua"
+              className="footer-link"
+            >
+              <span className="footer-link-icon">➕</span>
+              <span>Запропонувати можливість</span>
+            </a>
+          </div>
+
+          <div className="footer-section">
+            <div className="footer-title">Підтримати</div>
+            <a
+              href="https://send.monobank.ua/jar/F72fDrV2c"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-link"
+            >
+              <span className="footer-link-icon">🧡</span>
+              <span>Донат на monobank</span>
+            </a>
+            <p className="footer-note">
+              Ваша допомога — паливо для проєкту
+            </p>
+          </div>
+        </div>
+
+        <div className="footer-bottom">
+          <div className="footer-copy">
+            © 2026 dityam.com.ua · Зроблено з любов'ю в Україні 🇺🇦
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
