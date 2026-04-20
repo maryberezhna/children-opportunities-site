@@ -129,14 +129,14 @@ export default function OpportunitiesList({ opportunities }) {
     return `${item.age_from}-${item.age_to} років`;
   };
 
- const handleLinkClick = (title) => {
-  if (typeof window !== 'undefined' && window.gtag) {
-    window.gtag('event', 'opportunity_click', {
-      event_category: 'engagement',
-      event_label: title,
-    });
-  }
-};
+  const handleLinkClick = (title) => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'opportunity_click', {
+        event_category: 'engagement',
+        event_label: title,
+      });
+    }
+  };
 
   return (
     <>
@@ -196,12 +196,6 @@ export default function OpportunitiesList({ opportunities }) {
         <div className="filter-row">
           <div className="filter-label">Пошук</div>
           <div className="search-wrap">
-            <span className="search-icon">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-            </span>
             <input
               type="search"
               className="search-input"
@@ -242,9 +236,9 @@ export default function OpportunitiesList({ opportunities }) {
               <div className="chips">
                 <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
                 <span className="chip chip-age">{ageLabel(item)}</span>
-                {item.cost_type === 'free' && <span className="chip chip-free">безкоштовно</span>}
-                {item.cost_type === 'partially_free' && <span className="chip chip-paid">з фінансуванням</span>}
-                {item.cost_type === 'paid_affordable' && <span className="chip chip-paid">доступно</span>}
+                {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
+                {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
+                {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
                 {(item.child_needs || []).slice(0, 2).map((n) => (
                   <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
                 ))}
@@ -254,27 +248,27 @@ export default function OpportunitiesList({ opportunities }) {
               <p className="card-summary">{item.summary}</p>
 
               <div className="meta">
-                {item.format && (
+                {item.format ? (
                   <div className="meta-row">
                     <span className="meta-label">Формат</span>
                     <span className="meta-val">{item.format}</span>
                   </div>
-                )}
-                {item.deadline && (
+                ) : null}
+                {item.deadline ? (
                   <div className="meta-row">
                     <span className="meta-label">Дедлайн</span>
                     <span className="meta-val">{item.deadline}</span>
                   </div>
-                )}
-                {item.source && (
+                ) : null}
+                {item.source ? (
                   <div className="meta-row">
                     <span className="meta-label">Джерело</span>
                     <span className="meta-val">{item.source}</span>
                   </div>
-                )}
+                ) : null}
               </div>
 
-              {item.source_url && (
+              {item.source_url ? (
                 <a
                   href={item.source_url}
                   target="_blank"
@@ -282,12 +276,9 @@ export default function OpportunitiesList({ opportunities }) {
                   className="link-btn"
                   onClick={() => handleLinkClick(item.title)}
                 >
-                  Детальніше
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M7 17L17 7M17 7H8M17 7V16" />
-                  </svg>
+                  Детальніше ↗
                 </a>
-              )}
+              ) : null}
             </article>
           ))}
         </div>

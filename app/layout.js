@@ -1,6 +1,8 @@
 import { Analytics } from './Analytics';
+import './globals.css';
 
 export const metadata = {
+  metadataBase: new URL('https://dityam.com.ua'),
   title: {
     default: 'Можливості для дитини — каталог 80+ програм для дітей 0-18 років в Україні',
     template: '%s | Можливості для дитини',
@@ -17,8 +19,20 @@ export const metadata = {
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
+    url: 'https://dityam.com.ua',
     siteName: 'Можливості для дитини',
     title: 'Можливості для дитини 0-18 років',
     description: 'Каталог 80+ можливостей для дітей: освіта, обміни, стипендії, медична допомога.',
   },
 };
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="uk">
+      <body>
+        {children}
+        <Analytics />
+      </body>
+    </html>
+  );
+}
