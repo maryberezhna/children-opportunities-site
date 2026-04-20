@@ -84,7 +84,6 @@ body {
   50% { opacity: 0.4; }
 }
 
-/* BETA бейдж окремим елементом — градієнтна пігулка */
 .beta-badge {
   display: inline-flex;
   align-items: center;
@@ -139,7 +138,6 @@ body {
   50% { opacity: 0.5; transform: scale(0.85); }
 }
 
-/* Футерний BETA — міні-версія */
 .footer-beta {
   display: inline-block;
   font-size: 10px;
@@ -170,6 +168,9 @@ body {
   font-style: italic;
   display: inline-block;
   transform: rotate(-2deg);
+  font-size: clamp(44px, 7vw, 70px);
+  line-height: 1;
+  margin: 4px 0;
 }
 
 .hero p {
@@ -339,122 +340,8 @@ body {
 
 .support-btn-mini { display: none !important; }
 
-/* Обгортка для форми підписки в кінці списку можливостей */
 .subscribe-end-wrap {
   margin-top: 32px;
-}
-
-/* ============ ВБУДОВАНА КАРТКА ПІДПИСКИ (inline у grid) ============ */
-
-.subscribe-card {
-  background: linear-gradient(135deg, #fff4ec 0%, #fef7e0 50%, #fde8c7 100%);
-  border: 2px solid var(--accent);
-  border-radius: 16px;
-  padding: 22px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  position: relative;
-  overflow: hidden;
-  grid-column: 1 / -1;
-  animation: subscribe-glow 4s ease-in-out infinite;
-}
-
-@keyframes subscribe-glow {
-  0%, 100% { box-shadow: 0 4px 16px rgba(232, 93, 36, 0.1); }
-  50% { box-shadow: 0 6px 24px rgba(232, 93, 36, 0.2); }
-}
-
-.subscribe-card::before {
-  content: '';
-  position: absolute;
-  top: -30px;
-  right: -30px;
-  width: 120px;
-  height: 120px;
-  background: var(--accent);
-  opacity: 0.08;
-  border-radius: 50%;
-  filter: blur(25px);
-  pointer-events: none;
-}
-
-.subscribe-card-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-  position: relative;
-  z-index: 1;
-}
-
-.subscribe-card-icon {
-  font-size: 36px;
-  line-height: 1;
-  flex-shrink: 0;
-}
-
-.subscribe-card-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ink);
-  margin-bottom: 4px;
-  line-height: 1.3;
-}
-
-.subscribe-card-desc {
-  font-size: 14px;
-  color: var(--ink-soft);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.subscribe-card-form {
-  position: relative;
-  z-index: 1;
-  background: transparent;
-  overflow: hidden;
-  margin: 0 -8px;
-}
-
-.subscribe-card-form .hs-form-frame {
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: auto !important;
-  background: transparent !important;
-}
-
-.subscribe-card-form iframe {
-  max-width: 100% !important;
-  width: 100% !important;
-  height: 340px !important;
-  min-height: 340px !important;
-  border: none !important;
-  display: block;
-  background: transparent !important;
-}
-
-.subscribe-card-btn {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 14px 20px;
-  background: var(--accent);
-  color: white;
-  border: none;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(232, 93, 36, 0.3);
-  transition: all 0.15s;
-  position: relative;
-  z-index: 1;
-}
-
-.subscribe-card-btn:active {
-  transform: scale(0.98);
 }
 
 /* ============ СЕКЦІЯ ПІДПИСКИ ============ */
@@ -562,11 +449,20 @@ body {
   border-radius: 24px 24px 0 0;
   padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
   width: 100%;
+  max-width: 500px;
   max-height: 92vh;
   overflow-y: auto;
   position: relative;
   animation: slideUpMobile 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 641px) {
+  .subscribe-modal-overlay { align-items: center; }
+  .subscribe-modal {
+    border-radius: 24px;
+    padding: 28px 28px 28px;
+  }
 }
 
 @keyframes slideUpMobile {
@@ -1169,6 +1065,8 @@ body {
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
+  font-family: inherit;
+  cursor: pointer;
 }
 
 .sticky-btn:hover {
@@ -1189,7 +1087,40 @@ body {
   flex-shrink: 0;
 }
 
-/* Instagram кнопка — білий текст завжди, у всіх станах */
+/* ВАЖЛИВО: за замовчуванням мобільна кнопка прихована на десктопі */
+.sticky-mobile-only { display: none !important; }
+.sticky-desktop-only { display: inline-flex !important; }
+
+/* Subscribe кнопка — градієнтна, щоб вирізнялась */
+.sticky-btn-subscribe,
+.sticky-btn-subscribe:link,
+.sticky-btn-subscribe:visited,
+.sticky-btn-subscribe:hover,
+.sticky-btn-subscribe:focus,
+.sticky-btn-subscribe:active {
+  background: linear-gradient(135deg, #fff4ec 0%, #fde8c7 100%);
+  color: var(--accent) !important;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.sticky-btn-subscribe:hover {
+  background: var(--accent-soft) !important;
+  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.2);
+}
+
+.sticky-btn-subscribe svg,
+.sticky-btn-subscribe:hover svg,
+.sticky-btn-subscribe:focus svg,
+.sticky-btn-subscribe:active svg {
+  stroke: var(--accent) !important;
+}
+
+.sticky-btn-subscribe span {
+  color: var(--accent) !important;
+}
+
+/* Instagram кнопка */
 .sticky-btn-insta,
 .sticky-btn-insta:link,
 .sticky-btn-insta:visited,
@@ -1216,7 +1147,7 @@ body {
   color: #ffffff !important;
 }
 
-/* Донат кнопка — білий текст завжди */
+/* Донат кнопка */
 .sticky-btn-donate,
 .sticky-btn-donate:link,
 .sticky-btn-donate:visited,
@@ -1288,13 +1219,9 @@ body {
   .hero h1 .accent {
     transform: rotate(-1.5deg);
     display: inline-block;
-  }
-
-  .hero h1 .accent::after {
-    content: '';
-    display: block;
-    width: 100%;
-    height: 0;
+    font-size: 40px;
+    line-height: 1;
+    margin: 2px 0;
   }
 
   .hero p { font-size: 15px; line-height: 1.5; }
@@ -1337,10 +1264,6 @@ body {
 
   .subscribe-desktop-only { display: none !important; }
   .subscribe-mobile-only { display: block !important; }
-
-  .subscribe-card-btn {
-    display: flex !important;
-  }
 
   .subscribe-mobile-btn {
     display: flex;
@@ -1389,10 +1312,15 @@ body {
   .footer-about { max-width: 100%; }
   .footer-social-link { font-size: 13px; padding: 8px 16px; }
 
+  /* МОБІЛЬНИЙ STICKY BAR */
   .sticky-bar {
     gap: 6px;
     padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
   }
+
+  /* На мобільному показуємо sticky-mobile-only, ховаємо sticky-desktop-only */
+  .sticky-mobile-only { display: inline-flex !important; }
+  .sticky-desktop-only { display: none !important; }
 
   .sticky-btn {
     flex: 1;
