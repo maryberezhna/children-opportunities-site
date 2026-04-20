@@ -34,25 +34,24 @@ export default async function Home() {
           Курси, олімпіади, стипендії, табори, медична допомога та виплати для дітей 0-18 років в Україні.
           Всі перевірені програми зібрані в один каталог.
         </p>
-        <div className="stats">
-          <div className="stat">
-            <span className="stat-num">{total}</span>
-            <span className="stat-label">можливостей</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num">{freeCount}</span>
-            <span className="stat-label">безкоштовних</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num">{sourceCount}</span>
-            <span className="stat-label">джерел</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num">0-18</span>
-            <span className="stat-label">років</span>
-          </div>
-        </div>
-      </div>
+       <div className="stats">
+  <div className="stat">
+    <span className="stat-num">{total}</span>
+    <span className="stat-label">можливостей</span>
+  </div>
+  <div className="stat">
+    <span className="stat-num">{freeCount}</span>
+    <span className="stat-label">безкоштовних</span>
+  </div>
+  <div className="stat">
+    <span className="stat-num">{sourceCount}</span>
+    <span className="stat-label">джерел</span>
+  </div>
+  <div className="stat">
+    <span className="stat-num">0-18</span>
+    <span className="stat-label">років</span>
+  </div>
+</div>
 
       <SupportPopup />
       <OpportunitiesList opportunities={opportunities} />
