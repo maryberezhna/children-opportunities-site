@@ -59,15 +59,17 @@ const TYPE_OPTIONS = [
   { label: 'Гранти', value: 'grant' },
   { label: 'Мед. допомога', value: 'medical_aid' },
   { label: 'Фестивалі', value: 'festival' },
+  { label: 'Гуртки', value: 'club' },
 ];
 
 const NEED_OPTIONS = [
-  { label: 'Будь-яка', value: 'all' },
+  { label: 'Усі діти', value: 'all' },
   { label: 'ВПО', value: 'idp' },
   { label: 'Сироти', value: 'orphan' },
   { label: 'Інвалідність', value: 'disability' },
   { label: 'Обдаровані', value: 'gifted' },
   { label: 'Онкохворі', value: 'oncology' },
+  { label: 'Діти ветеранів', value: 'veteran_family' },
 ];
 
 const COST_OPTIONS = [
@@ -76,15 +78,22 @@ const COST_OPTIONS = [
   { label: 'З фінансуванням', value: 'partially_free' },
 ];
 
+const SORT_OPTIONS = [
+  { label: 'За віком дитини', value: 'age' },
+  { label: 'Назва А-Я', value: 'title' },
+  { label: 'Нещодавно додані', value: 'recent' },
+];
+
 export default function OpportunitiesList({ opportunities }) {
   const [age, setAge] = useState('all');
   const [type, setType] = useState('all');
   const [need, setNeed] = useState('all');
   const [cost, setCost] = useState('all');
   const [query, setQuery] = useState('');
+  const [sort, setSort] = useState('age');
 
   const filtered = useMemo(() => {
-    return opportunities.filter((item) => {
+    let result = opportunities.filter((item) => {
       if (age !== 'all') {
         const [f, t] = age.split('-').map(Number);
         if (!(item.age_from <= t && item.age_to >= f)) return false;
@@ -102,7 +111,29 @@ export default function OpportunitiesList({ opportunities }) {
       }
       return true;
     });
-  }, [opportunities, age, type, need, cost, query]);
+
+    if (sort === 'age') {
+      result.sort((a, b) => a.age_from - b.age_from);
+    } else if (sort === 'title') {
+      result.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'uk'));
+    } else if (sort === 'recent') {
+      result.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    }
+
+    return result;
+  }, [opportunities, age, type, need, cost, query, sort]);
+
+  const ageLabel = (item) => {
+    if (item.age_from === item.age_to) return `${item.age_from} років`;
+    if (item.age_from === 0 && item.age_to >= 17) return '0-18 років';
+    return `${item.age_from}-${item.age_to} років`;
+  };
+
+  const handleLinkClick = (title) => {
+    if (typeof window !== 'undefined' && window.plausible) {
+      window.plausible('Opportunity Click', { props: { title } });
+    }
+  };
 
   return (
     <>
@@ -159,70 +190,104 @@ export default function OpportunitiesList({ opportunities }) {
           ))}
         </div>
 
-        <div className="filter-row" style={{ marginTop: 16 }}>
-          <input
-            type="search"
-            className="search-input"
-            placeholder="Пошук: напр. FLEX, програмування, Київ..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
+        <div className="filter-row">
+          <div className="filter-label">Пошук</div>
+          <div className="search-wrap">
+            <span className="search-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              type="search"
+              className="search-input"
+              placeholder="FLEX, програмування, допомога ВПО..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
         </div>
       </div>
 
-      <div className="count">Знайдено {filtered.length} можливостей</div>
+      <div className="toolbar">
+        <div className="count">
+          Знайдено <strong>{filtered.length}</strong> можлив{filtered.length === 1 ? 'ість' : filtered.length >= 2 && filtered.length <= 4 ? 'ості' : 'остей'}
+        </div>
+        <select
+          className="sort-select"
+          value={sort}
+          onChange={(e) => setSort(e.target.value)}
+          aria-label="Сортування"
+        >
+          {SORT_OPTIONS.map((s) => (
+            <option key={s.value} value={s.value}>Сортувати: {s.label}</option>
+          ))}
+        </select>
+      </div>
 
       {filtered.length === 0 ? (
         <div className="empty">
-          <p>Нічого не знайдено за вашими фільтрами.</p>
-          <p style={{ fontSize: 13, marginTop: 8 }}>Спробуйте послабити критерії.</p>
+          <div className="empty-icon">🔍</div>
+          <h3>Нічого не знайдено</h3>
+          <p>Спробуйте послабити критерії пошуку або скинути фільтри.</p>
         </div>
       ) : (
-        filtered.map((item) => (
-          <div key={item.id} className="card">
-            <div className="chips">
-              <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
-              <span className="chip chip-age">
-                {item.age_from === item.age_to ? `${item.age_from} років` : `${item.age_from}-${item.age_to} років`}
-              </span>
-              {item.cost_type === 'free' && <span className="chip chip-cost">безкоштовно</span>}
-              {item.cost_type === 'partially_free' && <span className="chip chip-cost">з фінансуванням</span>}
-              {(item.child_needs || []).map((n) => (
-                <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
-              ))}
-            </div>
+        <div className="grid">
+          {filtered.map((item) => (
+            <article key={item.id} className="card">
+              <div className="chips">
+                <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
+                <span className="chip chip-age">{ageLabel(item)}</span>
+                {item.cost_type === 'free' && <span className="chip chip-free">безкоштовно</span>}
+                {item.cost_type === 'partially_free' && <span className="chip chip-paid">з фінансуванням</span>}
+                {item.cost_type === 'paid_affordable' && <span className="chip chip-paid">доступно</span>}
+                {(item.child_needs || []).slice(0, 2).map((n) => (
+                  <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
+                ))}
+              </div>
 
-            <h3>{item.title}</h3>
-            <p>{item.summary}</p>
+              <h3>{item.title}</h3>
+              <p className="card-summary">{item.summary}</p>
 
-            <div className="meta">
-              {item.deadline && (
-                <div className="meta-box">
-                  <div className="meta-label">Дедлайн</div>
-                  <div className="meta-val">{item.deadline}</div>
-                </div>
-              )}
-              {item.format && (
-                <div className="meta-box">
-                  <div className="meta-label">Формат</div>
-                  <div className="meta-val">{item.format}</div>
-                </div>
-              )}
-              {item.source && (
-                <div className="meta-box">
-                  <div className="meta-label">Джерело</div>
-                  <div className="meta-val">{item.source}</div>
-                </div>
-              )}
-            </div>
+              <div className="meta">
+                {item.format && (
+                  <div className="meta-row">
+                    <span className="meta-label">Формат</span>
+                    <span className="meta-val">{item.format}</span>
+                  </div>
+                )}
+                {item.deadline && (
+                  <div className="meta-row">
+                    <span className="meta-label">Дедлайн</span>
+                    <span className="meta-val">{item.deadline}</span>
+                  </div>
+                )}
+                {item.source && (
+                  <div className="meta-row">
+                    <span className="meta-label">Джерело</span>
+                    <span className="meta-val">{item.source}</span>
+                  </div>
+                )}
+              </div>
 
-            {item.source_url && (
-              <a href={item.source_url} target="_blank" rel="noopener noreferrer" className="link-btn">
-                Детальніше ↗
-              </a>
-            )}
-          </div>
-        ))
+              {item.source_url && (
+                <a
+                  href={item.source_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="link-btn"
+                  onClick={() => handleLinkClick(item.title)}
+                >
+                  Детальніше
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M7 17L17 7M17 7H8M17 7V16" />
+                  </svg>
+                </a>
+              )}
+            </article>
+          ))}
+        </div>
       )}
     </>
   );
