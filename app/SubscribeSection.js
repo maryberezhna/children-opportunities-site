@@ -1,8 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function SubscribeSection() {
-  const formContainer = useRef(null);
+  const [isMobileModalOpen, setIsMobileModalOpen] = useState(false);
   const scriptLoaded = useRef(false);
 
   useEffect(() => {
@@ -21,33 +21,99 @@ export default function SubscribeSection() {
         event_category: 'engagement',
       });
     }
-
-    return () => {
-      // Не видаляємо скрипт — він потрібен для форми
-    };
   }, []);
 
-  return (
-    <section className="subscribe-section" aria-label="Підписка на розсилку">
-      <div className="subscribe-content">
-        <div className="subscribe-icon">📬</div>
-        <div className="subscribe-text">
-          <h2 className="subscribe-title">Щомісячний дайджест можливостей</h2>
-          <p className="subscribe-description">
-            Раз на місяць — добірка 5-7 найцікавіших програм для дітей. Без спаму, можна відписатись у будь-який момент.
-          </p>
-        </div>
-      </div>
+  // Блокуємо scroll коли попап відкритий
+  useEffect(() => {
+    if (isMobileModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [isMobileModalOpen]);
 
-      <div className="subscribe-form-wrap">
+  // Закриття попапу по Escape
+  useEffect(() => {
+    if (!isMobileModalOpen) return;
+    const handleEsc = (e) => { if (e.key === 'Escape') setIsMobileModalOpen(false); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isMobileModalOpen]);
+
+  const handleMobileSubscribeClick = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'subscribe_modal_open', {
+        event_category: 'engagement',
+      });
+    }
+    setIsMobileModalOpen(true);
+  };
+
+  return (
+    <>
+      <section className="subscribe-section" aria-label="Підписка на розсилку">
+        <div className="subscribe-content">
+          <div className="subscribe-icon">📬</div>
+          <div className="subscribe-text">
+            <h2 className="subscribe-title">Щомісячний дайджест можливостей</h2>
+            <p className="subscribe-description">
+              Раз на місяць — добірка 5-7 найцікавіших програм для дітей. Без спаму, можна відписатись у будь-який момент.
+            </p>
+          </div>
+        </div>
+
+        {/* ДЕСКТОП: форма одразу вбудована */}
+        <div className="subscribe-form-wrap subscribe-desktop-only">
+          <div
+            className="hs-form-frame"
+            data-region="eu1"
+            data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
+            data-portal-id="26525145"
+          />
+        </div>
+
+        {/* МОБІЛЬНИЙ: тільки кнопка, яка відкриває попап */}
+        <button
+          className="subscribe-mobile-btn subscribe-mobile-only"
+          onClick={handleMobileSubscribeClick}
+        >
+          Підписатись на розсилку →
+        </button>
+      </section>
+
+      {/* МОДАЛКА З ФОРМОЮ ДЛЯ МОБІЛЬНОГО */}
+      {isMobileModalOpen ? (
         <div
-          ref={formContainer}
-          className="hs-form-frame"
-          data-region="eu1"
-          data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
-          data-portal-id="26525145"
-        />
-      </div>
-    </section>
+          className="subscribe-modal-overlay"
+          onClick={(e) => { if (e.target === e.currentTarget) setIsMobileModalOpen(false); }}
+        >
+          <div className="subscribe-modal">
+            <button
+              className="subscribe-modal-close"
+              onClick={() => setIsMobileModalOpen(false)}
+              aria-label="Закрити"
+            >
+              ✕
+            </button>
+            <div className="subscribe-modal-header">
+              <div className="subscribe-modal-icon">📬</div>
+              <h2 className="subscribe-modal-title">Щомісячний дайджест</h2>
+              <p className="subscribe-modal-description">
+                Раз на місяць — добірка 5-7 найцікавіших можливостей для дітей.
+              </p>
+            </div>
+            <div className="subscribe-modal-form">
+              <div
+                className="hs-form-frame"
+                data-region="eu1"
+                data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
+                data-portal-id="26525145"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
