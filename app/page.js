@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
-
+ 
 export const revalidate = 300;
 
 async function getOpportunities() {
