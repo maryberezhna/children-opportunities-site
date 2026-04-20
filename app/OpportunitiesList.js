@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import SubscribeSection from './SubscribeSection';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -93,6 +94,9 @@ const SORT_OPTIONS = [
   { label: 'Нещодавно додані', value: 'recent' },
 ];
 
+// Після скількох карток показати секцію підписки
+const SUBSCRIBE_AFTER = 20;
+
 // Форматування дати з ISO у читабельний формат
 function formatDeadline(dateStr) {
   if (!dateStr) return null;
@@ -107,7 +111,6 @@ function formatDeadline(dateStr) {
   return `${day} ${month} ${year}`;
 }
 
-// Скільки днів лишилось до дедлайну (null = немає дедлайну або вже минув)
 function daysUntilDeadline(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -116,16 +119,6 @@ function daysUntilDeadline(dateStr) {
   now.setHours(0, 0, 0, 0);
   const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
   return diff;
-}
-
-// Статус дедлайну: urgent / soon / ok / past / none
-function deadlineStatus(dateStr) {
-  const days = daysUntilDeadline(dateStr);
-  if (days === null) return 'none';
-  if (days < 0) return 'past';
-  if (days <= 7) return 'urgent';
-  if (days <= 30) return 'soon';
-  return 'ok';
 }
 
 export default function OpportunitiesList({ opportunities }) {
@@ -138,9 +131,6 @@ export default function OpportunitiesList({ opportunities }) {
   const [sort, setSort] = useState('age');
 
   const filtered = useMemo(() => {
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
-
     let result = opportunities.filter((item) => {
       if (age !== 'all') {
         const [f, t] = age.split('-').map(Number);
@@ -153,7 +143,6 @@ export default function OpportunitiesList({ opportunities }) {
       }
       if (cost !== 'all' && item.cost_type !== cost) return false;
 
-      // Фільтр за дедлайном
       if (deadline !== 'all') {
         const days = daysUntilDeadline(item.deadline);
         if (deadline === 'none') {
@@ -178,19 +167,15 @@ export default function OpportunitiesList({ opportunities }) {
     if (sort === 'age') {
       result.sort((a, b) => a.age_from - b.age_from);
     } else if (sort === 'deadline') {
-      // Сортування: спочатку ті що скоро, потім далекі, потім без дедлайну, потім прострочені
       result.sort((a, b) => {
         const aDays = daysUntilDeadline(a.deadline);
         const bDays = daysUntilDeadline(b.deadline);
-        // null (без дедлайну) → в кінці
         if (aDays === null && bDays === null) return 0;
         if (aDays === null) return 1;
         if (bDays === null) return -1;
-        // прострочені → в самому кінці
         if (aDays < 0 && bDays < 0) return 0;
         if (aDays < 0) return 1;
         if (bDays < 0) return -1;
-        // актуальні → за зростанням
         return aDays - bDays;
       });
     } else if (sort === 'title') {
@@ -220,20 +205,67 @@ export default function OpportunitiesList({ opportunities }) {
   const deadlineChip = (item) => {
     const days = daysUntilDeadline(item.deadline);
     if (days === null) return null;
-    if (days < 0) {
-      return <span className="chip chip-deadline-past">прострочено</span>;
-    }
-    if (days === 0) {
-      return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
-    }
-    if (days <= 7) {
-      return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;
-    }
-    if (days <= 30) {
-      return <span className="chip chip-deadline-soon">⏳ {days} днів</span>;
-    }
+    if (days < 0) return <span className="chip chip-deadline-past">прострочено</span>;
+    if (days === 0) return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
+    if (days <= 7) return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;
+    if (days <= 30) return <span className="chip chip-deadline-soon">⏳ {days} днів</span>;
     return null;
   };
+
+  // Чи показувати секцію підписки всередині списку
+  const showSubscribeInline = filtered.length > SUBSCRIBE_AFTER;
+
+  const renderCard = (item) => (
+    <article key={item.id} className="card">
+      <div className="chips">
+        <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
+        <span className="chip chip-age">{ageLabel(item)}</span>
+        {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
+        {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
+        {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
+        {deadlineChip(item)}
+        {(item.child_needs || []).slice(0, 2).map((n) => (
+          <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
+        ))}
+      </div>
+
+      <h3>{item.title}</h3>
+      <p className="card-summary">{item.summary}</p>
+
+      <div className="meta">
+        {item.format ? (
+          <div className="meta-row">
+            <span className="meta-label">Формат</span>
+            <span className="meta-val">{item.format}</span>
+          </div>
+        ) : null}
+        {item.deadline ? (
+          <div className="meta-row">
+            <span className="meta-label">Дедлайн</span>
+            <span className="meta-val">{formatDeadline(item.deadline)}</span>
+          </div>
+        ) : null}
+        {item.source ? (
+          <div className="meta-row">
+            <span className="meta-label">Джерело</span>
+            <span className="meta-val">{item.source}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {item.source_url ? (
+        <a
+          href={item.source_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="link-btn"
+          onClick={() => handleLinkClick(item.title)}
+        >
+          Детальніше ↗
+        </a>
+      ) : null}
+    </article>
+  );
 
   return (
     <>
@@ -341,59 +373,16 @@ export default function OpportunitiesList({ opportunities }) {
         </div>
       ) : (
         <div className="grid">
-          {filtered.map((item) => (
-            <article key={item.id} className="card">
-              <div className="chips">
-                <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
-                <span className="chip chip-age">{ageLabel(item)}</span>
-                {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
-                {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
-                {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
-                {deadlineChip(item)}
-                {(item.child_needs || []).slice(0, 2).map((n) => (
-                  <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
-                ))}
-              </div>
-
-              <h3>{item.title}</h3>
-              <p className="card-summary">{item.summary}</p>
-
-              <div className="meta">
-                {item.format ? (
-                  <div className="meta-row">
-                    <span className="meta-label">Формат</span>
-                    <span className="meta-val">{item.format}</span>
-                  </div>
-                ) : null}
-                {item.deadline ? (
-                  <div className="meta-row">
-                    <span className="meta-label">Дедлайн</span>
-                    <span className="meta-val">{formatDeadline(item.deadline)}</span>
-                  </div>
-                ) : null}
-                {item.source ? (
-                  <div className="meta-row">
-                    <span className="meta-label">Джерело</span>
-                    <span className="meta-val">{item.source}</span>
-                  </div>
-                ) : null}
-              </div>
-
-              {item.source_url ? (
-                <a
-                  href={item.source_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="link-btn"
-                  onClick={() => handleLinkClick(item.title)}
-                >
-                  Детальніше ↗
-                </a>
-              ) : null}
-            </article>
-          ))}
+          {filtered.slice(0, showSubscribeInline ? SUBSCRIBE_AFTER : filtered.length).map(renderCard)}
+          {showSubscribeInline ? <SubscribeSection /> : null}
+          {showSubscribeInline ? filtered.slice(SUBSCRIBE_AFTER).map(renderCard) : null}
         </div>
       )}
+
+      {/* Якщо результатів менше 20 — все одно покажемо підписку в кінці списку */}
+      {filtered.length > 0 && filtered.length <= SUBSCRIBE_AFTER ? (
+        <SubscribeSection />
+      ) : null}
     </>
   );
 }
