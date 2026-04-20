@@ -107,12 +107,8 @@ body {
 
 .stat { display: flex; align-items: baseline; gap: 8px; }
 .stat-num { font-size: 28px; font-weight: 700; color: var(--ink); }
-.stat-contact {
-    margin-left: 0;
-    margin-top: 8px;
-    width: fit-content;
-  }
 .stat-label { font-size: 13px; color: var(--ink-muted); }
+
 .stat-contact {
   display: inline-flex;
   align-items: center;
@@ -325,6 +321,94 @@ body {
   30%, 60% { transform: scale(1); }
 }
 
+/* ============ КОМПАКТНА СЕКЦІЯ ПІДПИСКИ (в сітці карток) ============ */
+
+.subscribe-section {
+  grid-column: 1 / -1;
+  background: linear-gradient(135deg, #fff8f2 0%, #fefbf0 100%);
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  overflow: hidden;
+}
+
+.subscribe-section::before {
+  content: '';
+  position: absolute;
+  top: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: var(--accent);
+  opacity: 0.08;
+  border-radius: 50%;
+  filter: blur(25px);
+  pointer-events: none;
+}
+
+.subscribe-content {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  position: relative;
+  z-index: 1;
+}
+
+.subscribe-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.subscribe-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.subscribe-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 2px;
+  line-height: 1.3;
+}
+
+.subscribe-description {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.subscribe-form-wrap {
+  position: relative;
+  z-index: 1;
+  background: white;
+  border-radius: 10px;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.subscribe-form-wrap .hs-form-frame {
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+}
+
+.subscribe-form-wrap iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 340px !important;
+  min-height: 340px !important;
+  border: none !important;
+  display: block;
+}
+
 /* ============ ФІЛЬТРИ ============ */
 
 .filters {
@@ -480,6 +564,30 @@ body {
 .chip-free { background: var(--green-1); color: #2d5814; }
 .chip-paid { background: var(--warm-2); color: #8a5a0a; }
 .chip-need { background: var(--pink-2); color: #8a1a3a; }
+
+.chip-deadline-urgent {
+  background: #fee2e2;
+  color: #991b1b;
+  font-weight: 600;
+  animation: deadline-pulse 2s ease-in-out infinite;
+}
+
+.chip-deadline-soon {
+  background: #fef3c7;
+  color: #78350f;
+  font-weight: 500;
+}
+
+.chip-deadline-past {
+  background: #f3f4f6;
+  color: #6b7280;
+  text-decoration: line-through;
+}
+
+@keyframes deadline-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
 
 .card h3 {
   font-size: 18px;
@@ -657,30 +765,6 @@ body {
   margin-top: 16px;
 }
 
-.chip-deadline-urgent {
-  background: #fee2e2;
-  color: #991b1b;
-  font-weight: 600;
-  animation: deadline-pulse 2s ease-in-out infinite;
-}
- 
-.chip-deadline-soon {
-  background: #fef3c7;
-  color: #78350f;
-  font-weight: 500;
-}
- 
-.chip-deadline-past {
-  background: #f3f4f6;
-  color: #6b7280;
-  text-decoration: line-through;
-}
- 
-@keyframes deadline-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
 /* ============ МОБІЛЬНА АДАПТИВНІСТЬ ============ */
 
 @media (max-width: 640px) {
@@ -690,6 +774,12 @@ body {
   .hero p { font-size: 15px; }
   .stats { gap: 20px; }
   .stat-num { font-size: 22px; }
+
+  .stat-contact {
+    margin-left: 0;
+    margin-top: 8px;
+    width: fit-content;
+  }
 
   .support-section {
     padding: 24px 20px;
@@ -727,6 +817,39 @@ body {
 
   .support-btn-mini .heart { font-size: 22px; }
 
+  .subscribe-section {
+    padding: 14px;
+    border-radius: 14px;
+    gap: 8px;
+  }
+
+  .subscribe-content {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+  }
+
+  .subscribe-icon {
+    font-size: 30px;
+  }
+
+  .subscribe-title {
+    font-size: 15px;
+  }
+
+  .subscribe-description {
+    font-size: 12px;
+  }
+
+  .subscribe-form-wrap {
+    padding: 4px 8px;
+  }
+
+  .subscribe-form-wrap iframe {
+    height: 440px !important;
+    min-height: 440px !important;
+  }
+
   .filters { padding: 16px; border-radius: 16px; }
   .filter-btn { font-size: 13px; padding: 7px 13px; }
   .grid { grid-template-columns: 1fr; }
@@ -734,119 +857,3 @@ body {
 
   .modal { padding: 28px 22px; }
 }
-
-
-/* ============ ДОДАЙТЕ ЦЕЙ БЛОК В КІНЕЦЬ globals.css ============ */
-/* Перед або всередині @media (max-width: 640px) */
-
-/* Секція підписки в сітці карток */
-.subscribe-section {
-  grid-column: 1 / -1;  /* на всю ширину сітки */
-  background: linear-gradient(135deg, #fff8f2 0%, #fefbf0 100%);
-  border: 2px solid #e85d24;
-  border-radius: 20px;
-  padding: 28px 32px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  position: relative;
-  overflow: hidden;
-}
-
-.subscribe-section::before {
-  content: '';
-  position: absolute;
-  top: -40px;
-  right: -40px;
-  width: 150px;
-  height: 150px;
-  background: #e85d24;
-  opacity: 0.08;
-  border-radius: 50%;
-  filter: blur(30px);
-  pointer-events: none;
-}
-
-.subscribe-content {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  position: relative;
-  z-index: 1;
-}
-
-.subscribe-icon {
-  font-size: 48px;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.subscribe-text {
-  flex: 1;
-  min-width: 0;
-}
-
-.subscribe-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #1a1a1a;
-  margin-bottom: 6px;
-  line-height: 1.3;
-}
-
-.subscribe-description {
-  font-size: 14px;
-  color: #555;
-  line-height: 1.55;
-  margin: 0;
-}
-
-.subscribe-form-wrap {
-  position: relative;
-  z-index: 1;
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  border: 1px solid #e8e3d6;
-}
-
-/* Стилізація вбудованої форми HubSpot */
-.subscribe-form-wrap .hs-form-frame {
-  max-width: 100%;
-}
-
-.subscribe-form-wrap iframe {
-  max-width: 100% !important;
-  width: 100% !important;
-}
-
-/* Мобільна адаптація — додайте в існуючий @media (max-width: 640px) */
-@media (max-width: 640px) {
-  .subscribe-section {
-    padding: 20px;
-    border-radius: 16px;
-  }
-
-  .subscribe-content {
-    flex-direction: column;
-    text-align: center;
-    gap: 12px;
-  }
-
-  .subscribe-icon {
-    font-size: 40px;
-  }
-
-  .subscribe-title {
-    font-size: 18px;
-  }
-
-  .subscribe-description {
-    font-size: 13px;
-  }
-
-  .subscribe-form-wrap {
-    padding: 16px;
-  }
-}
-
