@@ -22,15 +22,57 @@ export default function SupportPopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen]);
 
+  const handleSupportClick = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'support_click', {
+        event_category: 'engagement',
+        event_label: 'monobank',
+      });
+    }
+    setIsOpen(true);
+  };
+
   return (
     <>
+      <section className="support-section" aria-label="Підтримати проект">
+        <div className="support-bg-blob support-bg-blob-1"></div>
+        <div className="support-bg-blob support-bg-blob-2"></div>
+
+        <div className="support-content">
+          <div className="support-icon-wrap">
+            <span className="support-big-heart">❤️</span>
+            <span className="support-sparkle support-sparkle-1">✨</span>
+            <span className="support-sparkle support-sparkle-2">✨</span>
+            <span className="support-sparkle support-sparkle-3">✨</span>
+          </div>
+
+          <div className="support-text">
+            <h2 className="support-title">Допоможіть нам робити це безкоштовним</h2>
+            <p className="support-description">
+              Ми щодня додаємо нові можливості для дітей. Сайт створений на ентузіазмі та не має реклами.
+              Ваша підтримка допомагає зростати і знаходити більше програм для українських родин.
+            </p>
+          </div>
+
+          <button
+            className="support-cta-btn"
+            onClick={handleSupportClick}
+          >
+            <span>Підтримати через monobank</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17L17 7M17 7H8M17 7V16" />
+            </svg>
+          </button>
+        </div>
+      </section>
+
       <button
-        className="support-btn"
-        onClick={() => setIsOpen(true)}
+        className="support-btn-mini"
+        onClick={handleSupportClick}
         aria-label="Підтримати проект"
+        title="Підтримати проект"
       >
         <span className="heart">❤️</span>
-        <span>Підтримати проект</span>
       </button>
 
       {isOpen && (
@@ -57,14 +99,16 @@ export default function SupportPopup() {
               покращувати сайт і залишатись незалежними.
             </p>
 
-            <a
+            
               href={MONOBANK_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="mono-btn"
               onClick={() => {
-                if (typeof window !== 'undefined' && window.plausible) {
-                  window.plausible('Support Click');
+                if (typeof window !== 'undefined' && window.gtag) {
+                  window.gtag('event', 'monobank_click', {
+                    event_category: 'engagement',
+                  });
                 }
               }}
             >
