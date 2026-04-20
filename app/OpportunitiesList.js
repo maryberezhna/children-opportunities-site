@@ -78,21 +78,69 @@ const COST_OPTIONS = [
   { label: 'З фінансуванням', value: 'partially_free' },
 ];
 
+const DEADLINE_OPTIONS = [
+  { label: 'Усі', value: 'all' },
+  { label: 'Цього тижня', value: 'week' },
+  { label: 'Цього місяця', value: 'month' },
+  { label: 'Найближчі 3 місяці', value: 'quarter' },
+  { label: 'Без дедлайну (постійні)', value: 'none' },
+];
+
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
+  { label: 'Найближчий дедлайн', value: 'deadline' },
   { label: 'Назва А-Я', value: 'title' },
   { label: 'Нещодавно додані', value: 'recent' },
 ];
+
+// Форматування дати з ISO у читабельний формат
+function formatDeadline(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+
+  const months = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+
+  return `${day} ${month} ${year}`;
+}
+
+// Скільки днів лишилось до дедлайну (null = немає дедлайну або вже минув)
+function daysUntilDeadline(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
+  return diff;
+}
+
+// Статус дедлайну: urgent / soon / ok / past / none
+function deadlineStatus(dateStr) {
+  const days = daysUntilDeadline(dateStr);
+  if (days === null) return 'none';
+  if (days < 0) return 'past';
+  if (days <= 7) return 'urgent';
+  if (days <= 30) return 'soon';
+  return 'ok';
+}
 
 export default function OpportunitiesList({ opportunities }) {
   const [age, setAge] = useState('all');
   const [type, setType] = useState('all');
   const [need, setNeed] = useState('all');
   const [cost, setCost] = useState('all');
+  const [deadline, setDeadline] = useState('all');
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
 
   const filtered = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
     let result = opportunities.filter((item) => {
       if (age !== 'all') {
         const [f, t] = age.split('-').map(Number);
@@ -104,6 +152,21 @@ export default function OpportunitiesList({ opportunities }) {
         if (!needs.includes(need)) return false;
       }
       if (cost !== 'all' && item.cost_type !== cost) return false;
+
+      // Фільтр за дедлайном
+      if (deadline !== 'all') {
+        const days = daysUntilDeadline(item.deadline);
+        if (deadline === 'none') {
+          if (days !== null) return false;
+        } else if (deadline === 'week') {
+          if (days === null || days < 0 || days > 7) return false;
+        } else if (deadline === 'month') {
+          if (days === null || days < 0 || days > 31) return false;
+        } else if (deadline === 'quarter') {
+          if (days === null || days < 0 || days > 92) return false;
+        }
+      }
+
       if (query) {
         const q = query.toLowerCase();
         const hay = `${item.title || ''} ${item.summary || ''} ${item.source || ''}`.toLowerCase();
@@ -114,6 +177,22 @@ export default function OpportunitiesList({ opportunities }) {
 
     if (sort === 'age') {
       result.sort((a, b) => a.age_from - b.age_from);
+    } else if (sort === 'deadline') {
+      // Сортування: спочатку ті що скоро, потім далекі, потім без дедлайну, потім прострочені
+      result.sort((a, b) => {
+        const aDays = daysUntilDeadline(a.deadline);
+        const bDays = daysUntilDeadline(b.deadline);
+        // null (без дедлайну) → в кінці
+        if (aDays === null && bDays === null) return 0;
+        if (aDays === null) return 1;
+        if (bDays === null) return -1;
+        // прострочені → в самому кінці
+        if (aDays < 0 && bDays < 0) return 0;
+        if (aDays < 0) return 1;
+        if (bDays < 0) return -1;
+        // актуальні → за зростанням
+        return aDays - bDays;
+      });
     } else if (sort === 'title') {
       result.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'uk'));
     } else if (sort === 'recent') {
@@ -121,7 +200,7 @@ export default function OpportunitiesList({ opportunities }) {
     }
 
     return result;
-  }, [opportunities, age, type, need, cost, query, sort]);
+  }, [opportunities, age, type, need, cost, deadline, query, sort]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -136,6 +215,24 @@ export default function OpportunitiesList({ opportunities }) {
         event_label: title,
       });
     }
+  };
+
+  const deadlineChip = (item) => {
+    const days = daysUntilDeadline(item.deadline);
+    if (days === null) return null;
+    if (days < 0) {
+      return <span className="chip chip-deadline-past">прострочено</span>;
+    }
+    if (days === 0) {
+      return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
+    }
+    if (days <= 7) {
+      return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;
+    }
+    if (days <= 30) {
+      return <span className="chip chip-deadline-soon">⏳ {days} днів</span>;
+    }
+    return null;
   };
 
   return (
@@ -163,6 +260,19 @@ export default function OpportunitiesList({ opportunities }) {
               onClick={() => setType(t.value)}
             >
               {t.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="filter-row">
+          <div className="filter-label">Дедлайн</div>
+          {DEADLINE_OPTIONS.map((d) => (
+            <button
+              key={d.value}
+              className={`filter-btn ${deadline === d.value ? 'active' : ''}`}
+              onClick={() => setDeadline(d.value)}
+            >
+              {d.label}
             </button>
           ))}
         </div>
@@ -239,6 +349,7 @@ export default function OpportunitiesList({ opportunities }) {
                 {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
                 {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
                 {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
+                {deadlineChip(item)}
                 {(item.child_needs || []).slice(0, 2).map((n) => (
                   <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
                 ))}
@@ -257,7 +368,7 @@ export default function OpportunitiesList({ opportunities }) {
                 {item.deadline ? (
                   <div className="meta-row">
                     <span className="meta-label">Дедлайн</span>
-                    <span className="meta-val">{item.deadline}</span>
+                    <span className="meta-val">{formatDeadline(item.deadline)}</span>
                   </div>
                 ) : null}
                 {item.source ? (
