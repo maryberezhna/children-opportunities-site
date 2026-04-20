@@ -32,6 +32,14 @@ export default function SupportPopup() {
     setIsOpen(true);
   };
 
+  const handleMonobankClick = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'monobank_click', {
+        event_category: 'engagement',
+      });
+    }
+  };
+
   return (
     <>
       <section className="support-section" aria-label="Підтримати проект">
@@ -54,10 +62,7 @@ export default function SupportPopup() {
             </p>
           </div>
 
-          <button
-            className="support-cta-btn"
-            onClick={handleSupportClick}
-          >
+          <button className="support-cta-btn" onClick={handleSupportClick}>
             <span>Підтримати через monobank</span>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M7 17L17 7M17 7H8M17 7V16" />
@@ -104,13 +109,7 @@ export default function SupportPopup() {
               target="_blank"
               rel="noopener noreferrer"
               className="mono-btn"
-              onClick={() => {
-                if (typeof window !== 'undefined' && window.gtag) {
-                  window.gtag('event', 'monobank_click', {
-                    event_category: 'engagement',
-                  });
-                }
-              }}
+              onClick={handleMonobankClick}
             >
               <span>🏦</span>
               <span>Підтримати через monobank</span>
