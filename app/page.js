@@ -60,7 +60,7 @@ export default async function Home() {
       {/* ============ ФУТЕР ============ */}
       <footer className="site-footer">
         <div className="footer-content">
-          <div className="footer-section">
+          <div className="footer-section footer-section-brand">
             <div className="footer-brand">
               <span className="footer-logo">🧡</span>
               <div>
@@ -72,6 +72,22 @@ export default async function Home() {
               Каталог безкоштовних та доступних програм для дітей 0-18 років в Україні.
               Сайт створений на ентузіазмі, без реклами.
             </p>
+            <div className="footer-social">
+              <a
+                href="https://www.instagram.com/dityam.com.ua"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-social-link"
+                aria-label="Instagram"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
+                </svg>
+                <span>Instagram</span>
+              </a>
+            </div>
           </div>
 
           <div className="footer-section">
@@ -111,7 +127,7 @@ export default async function Home() {
 
         <div className="footer-bottom">
           <div className="footer-copy">
-            © 2026 dityam.com.ua · Зроблено з любов'ю в Україні 🇺🇦
+            © 2026 dityam.com.ua · Зроблено з любов&apos;ю в Україні 🇺🇦
           </div>
         </div>
       </footer>
