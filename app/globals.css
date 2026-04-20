@@ -379,8 +379,8 @@ body {
 .subscribe-form-wrap iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 340px !important;
-  min-height: 340px !important;
+  height: 280px !important;
+  min-height: 280px !important;
   border: none !important;
   display: block;
 }
@@ -979,8 +979,8 @@ body {
   .subscribe-form-wrap { padding: 4px 8px; }
 
   .subscribe-form-wrap iframe {
-    height: 440px !important;
-    min-height: 440px !important;
+    height: 400px !important;
+    min-height: 400px !important;
   }
 
   .filters { padding: 16px; border-radius: 16px; }
@@ -990,7 +990,6 @@ body {
 
   .modal { padding: 28px 22px; }
 
-  /* Футер на мобільному */
   .site-footer {
     margin-top: 40px;
     padding: 28px 20px 20px;

@@ -44,7 +44,7 @@ export default function SupportPopup() {
             <span className="support-sparkle support-sparkle-3">✨</span>
           </div>
           <div className="support-text">
-            <h2 className="support-title">Допоможіть нам робити це безкоштовним</h2>
+            <h2 className="support-title">Допоможіть розвитку проєкту</h2>
             <p className="support-description">
               Ми щодня додаємо нові можливості для дітей. Сайт створений на ентузіазмі та не має реклами. Ваша підтримка допомагає зростати і знаходити більше програм для українських родин.
             </p>
