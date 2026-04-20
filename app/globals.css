@@ -339,6 +339,11 @@ body {
 
 .support-btn-mini { display: none !important; }
 
+/* Обгортка для форми підписки в кінці списку можливостей */
+.subscribe-end-wrap {
+  margin-top: 32px;
+}
+
 /* ============ ВБУДОВАНА КАРТКА ПІДПИСКИ (inline у grid) ============ */
 
 .subscribe-card {
