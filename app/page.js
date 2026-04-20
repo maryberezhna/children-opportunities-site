@@ -29,6 +29,7 @@ export default async function Home() {
         <div className="hero-badge">Безкоштовно і оновлюється щодня</div>
         <h1>
           Усі можливості <span className="accent">для вашої дитини</span> в одному місці
+          <span className="beta-badge">BETA</span>
         </h1>
         <p>
           Курси, олімпіади, стипендії, табори, медична допомога та виплати для дітей 0-18 років в Україні.
@@ -64,7 +65,10 @@ export default async function Home() {
             <div className="footer-brand">
               <span className="footer-logo">🧡</span>
               <div>
-                <div className="footer-brand-name">dityam.com.ua</div>
+                <div className="footer-brand-name">
+                  dityam.com.ua
+                  <span className="footer-beta">BETA</span>
+                </div>
                 <div className="footer-brand-tag">Можливості для кожної дитини</div>
               </div>
             </div>
@@ -132,14 +136,14 @@ export default async function Home() {
         </div>
       </footer>
 
-      {/* ============ STICKY ПАНЕЛЬ ДЛЯ МОБІЛЬНОГО ============ */}
-      <div className="mobile-sticky-bar">
+      {/* ============ STICKY BAR (мобільний + десктоп) ============ */}
+      <div className="sticky-bar">
         <a
           href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua"
-          className="mobile-sticky-btn"
+          className="sticky-btn"
           aria-label="Написати нам"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
             <polyline points="22,6 12,13 2,6"></polyline>
           </svg>
@@ -150,10 +154,10 @@ export default async function Home() {
           href="https://www.instagram.com/dityam.com.ua"
           target="_blank"
           rel="noopener noreferrer"
-          className="mobile-sticky-btn mobile-sticky-btn-insta"
+          className="sticky-btn sticky-btn-insta"
           aria-label="Instagram"
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
             <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
             <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
@@ -165,11 +169,11 @@ export default async function Home() {
           href="https://send.monobank.ua/jar/F72fDrV2c"
           target="_blank"
           rel="noopener noreferrer"
-          className="mobile-sticky-btn mobile-sticky-btn-donate"
+          className="sticky-btn sticky-btn-donate"
           aria-label="Підтримати"
         >
-          <span className="mobile-sticky-heart">🧡</span>
-          <span>Донат</span>
+          <span className="sticky-heart">🧡</span>
+          <span>Підтримати</span>
         </a>
       </div>
     </div>
