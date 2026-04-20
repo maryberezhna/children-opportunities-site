@@ -34,7 +34,7 @@ export default async function Home() {
           Курси, олімпіади, стипендії, табори, медична допомога та виплати для дітей 0-18 років в Україні.
           Всі перевірені програми зібрані в один каталог.
         </p>
-       <div className="stats">
+<div className="stats">
   <div className="stat">
     <span className="stat-num">{total}</span>
     <span className="stat-label">можливостей</span>
@@ -51,6 +51,10 @@ export default async function Home() {
     <span className="stat-num">0-18</span>
     <span className="stat-label">років</span>
   </div>
+  <a href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua" className="stat-contact">
+    <span className="stat-contact-icon">✉</span>
+    <span>Написати нам</span>
+  </a>
 </div>
 
       <SupportPopup />
