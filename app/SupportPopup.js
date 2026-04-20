@@ -7,11 +7,7 @@ export default function SupportPopup() {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = isOpen ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
@@ -22,29 +18,24 @@ export default function SupportPopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen]);
 
-  const handleSupportClick = () => {
+  const trackSupport = () => {
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'support_click', {
-        event_category: 'engagement',
-        event_label: 'monobank',
-      });
+      window.gtag('event', 'support_click');
     }
     setIsOpen(true);
   };
 
-  const handleMonobankClick = () => {
+  const trackMonobank = () => {
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'monobank_click', {
-        event_category: 'engagement',
-      });
+      window.gtag('event', 'monobank_click');
     }
   };
 
   return (
     <>
-      <section className="support-section" aria-label="Підтримати проект">
-        <div className="support-bg-blob support-bg-blob-1"></div>
-        <div className="support-bg-blob support-bg-blob-2"></div>
+      <section className="support-section">
+        <div className="support-bg-blob support-bg-blob-1" />
+        <div className="support-bg-blob support-bg-blob-2" />
 
         <div className="support-content">
           <div className="support-icon-wrap">
@@ -57,70 +48,40 @@ export default function SupportPopup() {
           <div className="support-text">
             <h2 className="support-title">Допоможіть нам робити це безкоштовним</h2>
             <p className="support-description">
-              Ми щодня додаємо нові можливості для дітей. Сайт створений на ентузіазмі та не має реклами.
-              Ваша підтримка допомагає зростати і знаходити більше програм для українських родин.
+              Ми щодня додаємо нові можливості для дітей. Сайт створений на ентузіазмі та не має реклами. Ваша підтримка допомагає зростати і знаходити більше програм для українських родин.
             </p>
           </div>
 
-          <button className="support-cta-btn" onClick={handleSupportClick}>
-            <span>Підтримати через monobank</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 17L17 7M17 7H8M17 7V16" />
-            </svg>
+          <button className="support-cta-btn" onClick={trackSupport}>
+            Підтримати через monobank
           </button>
         </div>
       </section>
 
       <button
         className="support-btn-mini"
-        onClick={handleSupportClick}
+        onClick={trackSupport}
         aria-label="Підтримати проект"
-        title="Підтримати проект"
       >
         <span className="heart">❤️</span>
       </button>
 
-      {isOpen && (
-        <div
-          className="modal-overlay"
-          onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}
-        >
-          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="support-title">
-            <button
-              className="modal-close"
-              onClick={() => setIsOpen(false)}
-              aria-label="Закрити"
-            >
-              ✕
-            </button>
-
+      {isOpen ? (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setIsOpen(false); }}>
+          <div className="modal">
+            <button className="modal-close" onClick={() => setIsOpen(false)}>✕</button>
             <div className="modal-icon">❤️</div>
-
             <h2 id="support-title">Дякую, що тут</h2>
-
             <p>
-              Ми робимо цей каталог безкоштовно, щоб кожна українська родина знайшла
-              можливості для своєї дитини. Ваша підтримка допомагає додавати нові програми,
-              покращувати сайт і залишатись незалежними.
+              Ми робимо цей каталог безкоштовно, щоб кожна українська родина знайшла можливості для своєї дитини. Ваша підтримка допомагає додавати нові програми, покращувати сайт і залишатись незалежними.
             </p>
-
-            
-              href={MONOBANK_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mono-btn"
-              onClick={handleMonobankClick}
-            >
-              <span>🏦</span>
-              <span>Підтримати через monobank</span>
+            <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="mono-btn" onClick={trackMonobank}>
+              🏦 Підтримати через monobank
             </a>
-
-            <p className="modal-footer">
-              Посилання відкриється на сайті send.monobank.ua
-            </p>
+            <p className="modal-footer">Посилання відкриється на сайті send.monobank.ua</p>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }
