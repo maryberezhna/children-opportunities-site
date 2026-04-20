@@ -1163,10 +1163,12 @@ body {
   border-radius: 100px;
   font-size: 14px;
   font-weight: 600;
-  transition: all 0.15s;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s, transform 0.15s;
   border: 1px solid var(--border);
   min-width: 120px;
   justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .sticky-btn:hover {
@@ -1175,31 +1177,71 @@ body {
   transform: translateY(-1px);
 }
 
-.sticky-btn svg { stroke: var(--ink-soft); }
+.sticky-btn,
+.sticky-btn:visited,
+.sticky-btn:focus,
+.sticky-btn:active {
+  outline: none;
+}
 
-.sticky-btn-insta {
+.sticky-btn svg {
+  stroke: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+/* Instagram кнопка — білий текст завжди, у всіх станах */
+.sticky-btn-insta,
+.sticky-btn-insta:link,
+.sticky-btn-insta:visited,
+.sticky-btn-insta:hover,
+.sticky-btn-insta:focus,
+.sticky-btn-insta:active {
   background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
-  color: white;
+  color: #ffffff !important;
   border-color: transparent;
 }
 
 .sticky-btn-insta:hover {
-  color: white;
   box-shadow: 0 6px 20px rgba(220, 39, 67, 0.35);
 }
 
-.sticky-btn-insta svg { stroke: white; }
+.sticky-btn-insta svg,
+.sticky-btn-insta:hover svg,
+.sticky-btn-insta:focus svg,
+.sticky-btn-insta:active svg {
+  stroke: #ffffff !important;
+}
 
-.sticky-btn-donate {
+.sticky-btn-insta span {
+  color: #ffffff !important;
+}
+
+/* Донат кнопка — білий текст завжди */
+.sticky-btn-donate,
+.sticky-btn-donate:link,
+.sticky-btn-donate:visited,
+.sticky-btn-donate:focus,
+.sticky-btn-donate:active {
   background: var(--accent);
-  color: white;
+  color: #ffffff !important;
   border-color: transparent;
 }
 
 .sticky-btn-donate:hover {
   background: #d14c15;
-  color: white;
+  color: #ffffff !important;
   box-shadow: 0 6px 20px rgba(232, 93, 36, 0.4);
+}
+
+.sticky-btn-donate svg,
+.sticky-btn-donate:hover svg,
+.sticky-btn-donate:focus svg,
+.sticky-btn-donate:active svg {
+  stroke: #ffffff !important;
+}
+
+.sticky-btn-donate span {
+  color: #ffffff !important;
 }
 
 .sticky-heart {
