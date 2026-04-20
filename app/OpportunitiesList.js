@@ -129,11 +129,14 @@ export default function OpportunitiesList({ opportunities }) {
     return `${item.age_from}-${item.age_to} років`;
   };
 
-  const handleLinkClick = (title) => {
-    if (typeof window !== 'undefined' && window.plausible) {
-      window.plausible('Opportunity Click', { props: { title } });
-    }
-  };
+ const handleLinkClick = (title) => {
+  if (typeof window !== 'undefined' && window.gtag) {
+    window.gtag('event', 'opportunity_click', {
+      event_category: 'engagement',
+      event_label: title,
+    });
+  }
+};
 
   return (
     <>
