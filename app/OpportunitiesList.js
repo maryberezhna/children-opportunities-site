@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import SubscribeSection from './SubscribeSection';
 
 // Після якої картки вставляти форму підписки у списку
@@ -370,15 +370,14 @@ export default function OpportunitiesList({ opportunities }) {
         </div>
       ) : (
         <div className="grid">
-          {filtered.map((item, idx) => (
-            <React.Fragment key={item.id}>
-              {renderCard(item)}
-              {/* Форма підписки вставляється після 15-ї картки */}
-              {idx === SUBSCRIBE_AFTER - 1 && filtered.length > SUBSCRIBE_AFTER ? (
-                <SubscribeSection />
-              ) : null}
-            </React.Fragment>
-          ))}
+          {filtered.flatMap((item, idx) => {
+            const card = renderCard(item);
+            // Після 15-ї картки вставляємо форму підписки (якщо карток більше 15)
+            if (idx === SUBSCRIBE_AFTER - 1 && filtered.length > SUBSCRIBE_AFTER) {
+              return [card, <SubscribeSection key="subscribe-section" />];
+            }
+            return [card];
+          })}
         </div>
       )}
     </>
