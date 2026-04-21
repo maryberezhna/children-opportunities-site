@@ -1,35 +1,44 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
-// Ключі в localStorage
-const DISMISSED_KEY = 'dityam_subscribe_dismissed';
+// Подія для відкриття з інших компонентів (кнопки "Підписатись")
+export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
+
+// Ключ у localStorage (тільки ОДИН - хто підписався назавжди)
 const SUBSCRIBED_KEY = 'dityam_subscribed';
+
+// Ключ у sessionStorage - щоб не показувати 100 разів за один візит
+const SESSION_DISMISSED_KEY = 'dityam_popup_dismissed_session';
 
 // Налаштування тригерів
 const TIME_TRIGGER_MS = 8000;   // 8 секунд
 const CARDS_TRIGGER = 15;        // Після 15 переглянутих карток
 
-// Глобальна подія для відкриття попапу ззовні (з футера, sticky-bar тощо)
-export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
-
 export default function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const scriptLoaded = useRef(false);
-  const autoTriggered = useRef(false);
+  const triggered = useRef(false);
 
-  // Перевіряємо чи вже показували автоматично
-  const shouldShowAuto = () => {
+  // Показувати якщо: НЕ підписаний І не закривав у цій сесії
+  const shouldShow = () => {
     if (typeof window === 'undefined') return false;
     try {
-      const dismissed = localStorage.getItem(DISMISSED_KEY);
       const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
-      return !dismissed && !subscribed;
+      if (subscribed) return false; // підписався - не показувати більше ніколи
+
+      const sessionDismissed = sessionStorage.getItem(SESSION_DISMISSED_KEY);
+      if (sessionDismissed) return false; // закрив у цій сесії - не спамити
+
+      return true;
     } catch (e) {
       return true;
     }
   };
 
   const openPopup = (trigger) => {
+    if (triggered.current) return;
+    if (!shouldShow()) return;
+    triggered.current = true;
     setIsOpen(true);
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'subscribe_popup_shown', {
@@ -41,8 +50,10 @@ export default function SubscribePopup() {
 
   const closePopup = () => {
     setIsOpen(false);
+    // Запамʼятовуємо у sessionStorage - не показувати більше в цьому візиті
+    // При новому відкритті сайту покажемо знову (якщо не підписався)
     try {
-      localStorage.setItem(DISMISSED_KEY, Date.now().toString());
+      sessionStorage.setItem(SESSION_DISMISSED_KEY, Date.now().toString());
     } catch (e) {}
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'subscribe_popup_dismissed', {
@@ -51,23 +62,21 @@ export default function SubscribePopup() {
     }
   };
 
-  // ТРИГЕР 1: Таймер 8 секунд (тільки якщо не показували)
+  // ТРИГЕР 1: Таймер 8 секунд
   useEffect(() => {
-    if (!shouldShowAuto()) return;
+    if (!shouldShow()) return;
     const timer = setTimeout(() => {
-      if (autoTriggered.current) return;
-      autoTriggered.current = true;
       openPopup('timer_8s');
     }, TIME_TRIGGER_MS);
     return () => clearTimeout(timer);
   }, []);
 
-  // ТРИГЕР 2: Скрол через 15 карток (тільки якщо не показували)
+  // ТРИГЕР 2: Скрол через 15 карток
   useEffect(() => {
-    if (!shouldShowAuto()) return;
+    if (!shouldShow()) return;
 
     const checkScroll = () => {
-      if (autoTriggered.current) return;
+      if (triggered.current) return;
       const cards = document.querySelectorAll('.card');
       if (cards.length === 0) return;
 
@@ -83,7 +92,6 @@ export default function SubscribePopup() {
       });
 
       if (visibleCount >= CARDS_TRIGGER) {
-        autoTriggered.current = true;
         openPopup('scroll_15_cards');
       }
     };
@@ -104,11 +112,18 @@ export default function SubscribePopup() {
     };
   }, []);
 
-  // ТРИГЕР 3: Зовнішня подія (кнопка у футері, sticky-bar тощо)
+  // ТРИГЕР 3: Зовнішня подія (кнопки "Підписатись" у хедері/футері)
   useEffect(() => {
-    const handleOpen = (e) => {
-      const source = e.detail?.source || 'external';
-      openPopup(source);
+    const handleOpen = () => {
+      if (typeof window !== 'undefined') {
+        const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
+        if (subscribed) {
+          alert('Ви вже підписані на розсилку! Дякуємо 🧡');
+          return;
+        }
+      }
+      triggered.current = true;
+      setIsOpen(true);
     };
     window.addEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
     return () => window.removeEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
@@ -118,13 +133,14 @@ export default function SubscribePopup() {
   useEffect(() => {
     if (!isOpen || scriptLoaded.current) return;
     scriptLoaded.current = true;
+
     const script = document.createElement('script');
     script.src = 'https://js-eu1.hsforms.net/forms/embed/26525145.js';
     script.defer = true;
     document.body.appendChild(script);
   }, [isOpen]);
 
-  // Блокуємо scroll коли відкрите
+  // Блокуємо scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
