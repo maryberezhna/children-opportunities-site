@@ -6,7 +6,7 @@ const DISMISSED_KEY = 'dityam_subscribe_dismissed';
 const SUBSCRIBED_KEY = 'dityam_subscribed';
 
 // Налаштування тригерів
-const TIME_TRIGGER_MS = 10000;  // 10 секунд
+const TIME_TRIGGER_MS = 8000;   // 8 секунд
 const CARDS_TRIGGER = 15;        // Після 15 переглянутих карток
 
 export default function SubscribePopup() {

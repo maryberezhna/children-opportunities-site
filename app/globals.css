@@ -346,26 +346,50 @@ body {
 
 /* ============ СЕКЦІЯ ПІДПИСКИ ============ */
 
+/* Компактна красива секція в середині сітки карток */
 .subscribe-section {
   grid-column: 1 / -1;
-  background: linear-gradient(135deg, #fff8f2 0%, #fefbf0 100%);
+  background: linear-gradient(135deg, #fff4ec 0%, #fef7e0 50%, #fde8c7 100%);
   border: 2px solid var(--accent);
   border-radius: 16px;
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 24px 28px;
   position: relative;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 28px;
+  align-items: center;
+  animation: subscribe-pulse 4s ease-in-out infinite;
+}
+
+@keyframes subscribe-pulse {
+  0%, 100% { box-shadow: 0 4px 16px rgba(232, 93, 36, 0.1); }
+  50% { box-shadow: 0 8px 28px rgba(232, 93, 36, 0.2); }
 }
 
 .subscribe-section::before {
   content: '';
   position: absolute;
-  top: -30px; right: -30px;
-  width: 120px; height: 120px;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
   background: var(--accent);
   opacity: 0.08;
+  border-radius: 50%;
+  filter: blur(30px);
+  pointer-events: none;
+}
+
+.subscribe-section::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  left: -30px;
+  width: 120px;
+  height: 120px;
+  background: #fbd4e0;
+  opacity: 0.3;
   border-radius: 50%;
   filter: blur(25px);
   pointer-events: none;
@@ -373,39 +397,52 @@ body {
 
 .subscribe-content {
   display: flex;
-  align-items: center;
-  gap: 14px;
+  flex-direction: column;
+  gap: 6px;
   position: relative;
   z-index: 1;
 }
 
-.subscribe-icon { font-size: 32px; flex-shrink: 0; line-height: 1; }
+.subscribe-icon {
+  font-size: 40px;
+  line-height: 1;
+  margin-bottom: 4px;
+  display: inline-block;
+  animation: mail-bounce 2.5s ease-in-out infinite;
+}
+
+@keyframes mail-bounce {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-4px) rotate(-3deg); }
+}
+
 .subscribe-text { flex: 1; min-width: 0; }
 
 .subscribe-title {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: 20px;
+  font-weight: 800;
   color: var(--ink);
-  margin-bottom: 2px;
-  line-height: 1.3;
+  margin-bottom: 6px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
 }
 
 .subscribe-description {
-  font-size: 13px;
+  font-size: 14px;
   color: var(--ink-soft);
-  line-height: 1.4;
+  line-height: 1.5;
   margin: 0;
 }
 
 .subscribe-form-wrap {
   position: relative;
   z-index: 1;
-  background: transparent;
-  border-radius: 0;
-  padding: 0;
-  border: none;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 14px;
+  border: 1px solid rgba(232, 93, 36, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-  margin: 0 -8px;
 }
 
 .subscribe-form-wrap .hs-form-frame {
@@ -418,8 +455,8 @@ body {
 .subscribe-form-wrap iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 540px !important;
-  min-height: 540px !important;
+  height: 340px !important;
+  min-height: 340px !important;
   border: none !important;
   display: block;
   background: transparent !important;
@@ -1429,18 +1466,32 @@ body {
     padding: 14px 20px;
   }
 
-  .subscribe-section { padding: 20px 18px; border-radius: 16px; gap: 14px; }
+  .subscribe-section {
+    padding: 20px 18px;
+    border-radius: 16px;
+    gap: 16px;
+    grid-template-columns: 1fr;
+  }
 
   .subscribe-content {
-    flex-direction: row;
+    flex-direction: column;
     text-align: left;
-    gap: 12px;
+    gap: 8px;
     align-items: flex-start;
   }
 
-  .subscribe-icon { font-size: 36px; line-height: 1; }
-  .subscribe-title { font-size: 16px; line-height: 1.25; margin-bottom: 4px; }
-  .subscribe-description { font-size: 13px; line-height: 1.4; }
+  .subscribe-icon { font-size: 36px; line-height: 1; margin-bottom: 0; }
+  .subscribe-title { font-size: 17px; line-height: 1.25; margin-bottom: 4px; }
+  .subscribe-description { font-size: 13px; line-height: 1.45; }
+
+  .subscribe-form-wrap {
+    padding: 10px;
+  }
+
+  .subscribe-form-wrap iframe {
+    height: 420px !important;
+    min-height: 420px !important;
+  }
 
   .subscribe-desktop-only { display: none !important; }
   .subscribe-mobile-only { display: block !important; }

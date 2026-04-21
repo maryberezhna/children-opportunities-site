@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import SubscribeSection from './SubscribeSection';
 
 const TYPE_LABELS = {
@@ -93,9 +93,6 @@ const SORT_OPTIONS = [
   { label: 'Назва А-Я', value: 'title' },
   { label: 'Нещодавно додані', value: 'recent' },
 ];
-
-// Поріг для показу форми підписки inline (якщо карток більше — вставляємо після цієї позиції)
-const SUBSCRIBE_AFTER = 15;
 
 // Форматування дати з ISO у читабельний формат
 function formatDeadline(dateStr) {
@@ -369,17 +366,17 @@ export default function OpportunitiesList({ opportunities }) {
           <p>Спробуйте послабити критерії пошуку або скинути фільтри.</p>
         </div>
       ) : (
-        <>
-          <div className="grid">
-            {filtered.map(renderCard)}
-          </div>
-          {/* Форма підписки в кінці списку (тільки якщо карток ≥ 15) */}
-          {filtered.length >= SUBSCRIBE_AFTER ? (
-            <div className="subscribe-end-wrap">
-              <SubscribeSection />
-            </div>
-          ) : null}
-        </>
+        <div className="grid">
+          {filtered.map((item, idx) => (
+            <React.Fragment key={item.id}>
+              {renderCard(item)}
+              {/* Форма підписки вставляється після 15-ї картки */}
+              {idx === SUBSCRIBE_AFTER - 1 && filtered.length > SUBSCRIBE_AFTER ? (
+                <SubscribeSection />
+              ) : null}
+            </React.Fragment>
+          ))}
+        </div>
       )}
     </>
   );
