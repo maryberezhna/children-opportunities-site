@@ -418,8 +418,8 @@ body {
 .subscribe-form-wrap iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 340px !important;
-  min-height: 340px !important;
+  height: 540px !important;
+  min-height: 540px !important;
   border: none !important;
   display: block;
   background: transparent !important;
@@ -534,8 +534,8 @@ body {
 .subscribe-modal-form iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 460px !important;
-  min-height: 460px !important;
+  height: 620px !important;
+  min-height: 620px !important;
   border: none !important;
   display: block;
   background: transparent !important;
@@ -904,8 +904,8 @@ body {
 .subscribe-popup-form iframe {
   max-width: 100% !important;
   width: 100% !important;
-  height: 380px !important;
-  min-height: 380px !important;
+  height: 580px !important;
+  min-height: 580px !important;
   border: none !important;
   display: block;
   background: transparent !important;
@@ -964,8 +964,8 @@ body {
   }
 
   .subscribe-popup-form iframe {
-    height: 420px !important;
-    min-height: 420px !important;
+    height: 640px !important;
+    min-height: 640px !important;
   }
 }
 
