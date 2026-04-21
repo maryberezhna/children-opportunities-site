@@ -2,6 +2,9 @@
 import React, { useState, useMemo } from 'react';
 import SubscribeSection from './SubscribeSection';
 
+// Після якої картки вставляти форму підписки у списку
+const SUBSCRIBE_AFTER = 15;
+
 const TYPE_LABELS = {
   course: 'Курс',
   olympiad: 'Олімпіада',
