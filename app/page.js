@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
+import StickyHeader from './StickyHeader';
 import SubscribePopup from './SubscribePopup';
 import SubscribeButton from './SubscribeButton';
 
@@ -28,6 +29,8 @@ export default async function Home() {
 
   return (
     <>
+      <StickyHeader />
+
       <div className="container">
         <div className="hero">
           <div className="hero-badges">

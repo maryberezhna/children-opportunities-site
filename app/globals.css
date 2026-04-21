@@ -1084,6 +1084,179 @@ body {
   margin-top: 16px;
 }
 
+/* ============ STICKY HEADER (з'являється при скролі) ============ */
+
+.sticky-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9998;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  transform: translateY(-100%);
+  opacity: 0;
+  transition: transform 0.35s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s;
+  pointer-events: none;
+}
+
+.sticky-header-visible {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sticky-header-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.sticky-header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.sticky-header-logo {
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 6px rgba(232, 93, 36, 0.25));
+}
+
+.sticky-header-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+.sticky-header-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.sticky-header-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: 100px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  transition: all 0.2s;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sticky-header-btn svg {
+  stroke: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+.sticky-header-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* Написати */
+.sticky-header-btn-write {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sticky-header-btn-write:hover {
+  background: var(--bg);
+  border-color: var(--ink);
+}
+
+.sticky-header-btn-write svg {
+  stroke: var(--ink);
+}
+
+/* Підписатись */
+.sticky-header-btn-subscribe,
+.sticky-header-btn-subscribe:link,
+.sticky-header-btn-subscribe:visited {
+  background: linear-gradient(135deg, #fff4ec 0%, #fde8c7 100%);
+  color: var(--accent) !important;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+
+.sticky-header-btn-subscribe:hover {
+  background: var(--accent-soft) !important;
+  box-shadow: 0 4px 14px rgba(232, 93, 36, 0.25);
+}
+
+.sticky-header-btn-subscribe svg,
+.sticky-header-btn-subscribe:hover svg {
+  stroke: var(--accent) !important;
+}
+
+/* Instagram */
+.sticky-header-btn-insta,
+.sticky-header-btn-insta:link,
+.sticky-header-btn-insta:visited,
+.sticky-header-btn-insta:hover {
+  background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-header-btn-insta:hover {
+  box-shadow: 0 4px 14px rgba(220, 39, 67, 0.35);
+}
+
+.sticky-header-btn-insta svg,
+.sticky-header-btn-insta:hover svg {
+  stroke: #ffffff !important;
+}
+
+/* Підтримати */
+.sticky-header-btn-donate,
+.sticky-header-btn-donate:link,
+.sticky-header-btn-donate:visited,
+.sticky-header-btn-donate:hover {
+  background: var(--accent);
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-header-btn-donate:hover {
+  background: #d14c15;
+  box-shadow: 0 4px 14px rgba(232, 93, 36, 0.4);
+}
+
+.sticky-header-heart {
+  font-size: 14px;
+  line-height: 1;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+/* На мобільному sticky-header приховуємо — там sticky-bar знизу */
+@media (max-width: 900px) {
+  .sticky-header {
+    display: none !important;
+  }
+}
+
 /* ============ ФУТЕР САЙТУ ============ */
 
 .site-footer {
