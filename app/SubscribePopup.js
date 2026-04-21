@@ -9,13 +9,16 @@ const SUBSCRIBED_KEY = 'dityam_subscribed';
 const TIME_TRIGGER_MS = 8000;   // 8 секунд
 const CARDS_TRIGGER = 15;        // Після 15 переглянутих карток
 
+// Глобальна подія для відкриття попапу ззовні (з футера, sticky-bar тощо)
+export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
+
 export default function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const scriptLoaded = useRef(false);
-  const triggered = useRef(false);
+  const autoTriggered = useRef(false);
 
-  // Перевіряємо чи вже показували поп-ап цьому користувачу
-  const shouldShow = () => {
+  // Перевіряємо чи вже показували автоматично
+  const shouldShowAuto = () => {
     if (typeof window === 'undefined') return false;
     try {
       const dismissed = localStorage.getItem(DISMISSED_KEY);
@@ -27,11 +30,7 @@ export default function SubscribePopup() {
   };
 
   const openPopup = (trigger) => {
-    if (triggered.current) return;
-    if (!shouldShow()) return;
-    triggered.current = true;
     setIsOpen(true);
-    // Трекінг
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'subscribe_popup_shown', {
         event_category: 'engagement',
@@ -42,7 +41,6 @@ export default function SubscribePopup() {
 
   const closePopup = () => {
     setIsOpen(false);
-    // Запам'ятовуємо що закрили — не показувати знову
     try {
       localStorage.setItem(DISMISSED_KEY, Date.now().toString());
     } catch (e) {}
@@ -53,22 +51,23 @@ export default function SubscribePopup() {
     }
   };
 
-  // ТРИГЕР 1: Таймер 10 секунд
+  // ТРИГЕР 1: Таймер 8 секунд (тільки якщо не показували)
   useEffect(() => {
-    if (!shouldShow()) return;
+    if (!shouldShowAuto()) return;
     const timer = setTimeout(() => {
-      openPopup('timer_10s');
+      if (autoTriggered.current) return;
+      autoTriggered.current = true;
+      openPopup('timer_8s');
     }, TIME_TRIGGER_MS);
     return () => clearTimeout(timer);
   }, []);
 
-  // ТРИГЕР 2: Скрол через 15 карток
+  // ТРИГЕР 2: Скрол через 15 карток (тільки якщо не показували)
   useEffect(() => {
-    if (!shouldShow()) return;
+    if (!shouldShowAuto()) return;
 
     const checkScroll = () => {
-      if (triggered.current) return;
-      // Рахуємо скільки карток видно в поточній view
+      if (autoTriggered.current) return;
       const cards = document.querySelectorAll('.card');
       if (cards.length === 0) return;
 
@@ -78,18 +77,17 @@ export default function SubscribePopup() {
       cards.forEach((card) => {
         const rect = card.getBoundingClientRect();
         const cardTop = rect.top + window.scrollY;
-        // Картка "переглянута" якщо ми проскролили нижче її верху
         if (cardTop < viewportBottom - rect.height / 2) {
           visibleCount++;
         }
       });
 
       if (visibleCount >= CARDS_TRIGGER) {
+        autoTriggered.current = true;
         openPopup('scroll_15_cards');
       }
     };
 
-    // Throttled scroll handler
     let timeout;
     const onScroll = () => {
       if (timeout) return;
@@ -106,18 +104,27 @@ export default function SubscribePopup() {
     };
   }, []);
 
+  // ТРИГЕР 3: Зовнішня подія (кнопка у футері, sticky-bar тощо)
+  useEffect(() => {
+    const handleOpen = (e) => {
+      const source = e.detail?.source || 'external';
+      openPopup(source);
+    };
+    window.addEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
+    return () => window.removeEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
+  }, []);
+
   // Завантаження HubSpot форми коли поп-ап відкривається
   useEffect(() => {
     if (!isOpen || scriptLoaded.current) return;
     scriptLoaded.current = true;
-
     const script = document.createElement('script');
     script.src = 'https://js-eu1.hsforms.net/forms/embed/26525145.js';
     script.defer = true;
     document.body.appendChild(script);
   }, [isOpen]);
 
-  // Блокуємо scroll
+  // Блокуємо scroll коли відкрите
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -135,7 +142,7 @@ export default function SubscribePopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen]);
 
-  // Детектимо коли форма відправлена (HubSpot постить message)
+  // Детектимо коли форма відправлена
   useEffect(() => {
     const onMessage = (e) => {
       if (e.data?.type === 'hsFormCallback' && e.data?.eventName === 'onFormSubmitted') {
@@ -148,7 +155,6 @@ export default function SubscribePopup() {
             event_label: 'popup',
           });
         }
-        // Автозакриття через 3 сек після успішної підписки
         setTimeout(() => setIsOpen(false), 3000);
       }
     };

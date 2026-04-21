@@ -3,6 +3,7 @@ import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
 import SubscribePopup from './SubscribePopup';
+import SubscribeButton from './SubscribeButton';
 
 export const revalidate = 300;
 
@@ -84,21 +85,16 @@ export default async function Home() {
               <span>Написати</span>
             </a>
 
-            <a
-              href="#subscribe-form"
+            <SubscribeButton
               className="footer-action-btn footer-action-subscribe"
-              aria-label="Підписатись на розсилку"
-              onClick={(e) => {
-                e.preventDefault();
-                const el = document.querySelector('.subscribe-section');
-                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }}
+              ariaLabel="Підписатись на розсилку"
+              source="footer"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
               <span>Підписатись</span>
-            </a>
+            </SubscribeButton>
 
             <a
               href="https://www.instagram.com/dityam.com.ua"

@@ -1,9 +1,5 @@
 'use client';
 import { useState, useMemo } from 'react';
-import SubscribeSection from './SubscribeSection';
-
-// Після якої картки вставляти форму підписки у списку
-const SUBSCRIBE_AFTER = 15;
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -97,17 +93,14 @@ const SORT_OPTIONS = [
   { label: 'Нещодавно додані', value: 'recent' },
 ];
 
-// Форматування дати з ISO у читабельний формат
 function formatDeadline(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
-
   const months = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
   const day = date.getDate();
   const month = months[date.getMonth()];
   const year = date.getFullYear();
-
   return `${day} ${month} ${year}`;
 }
 
@@ -370,14 +363,7 @@ export default function OpportunitiesList({ opportunities }) {
         </div>
       ) : (
         <div className="grid">
-          {filtered.flatMap((item, idx) => {
-            const card = renderCard(item);
-            // Після 15-ї картки вставляємо форму підписки (якщо карток більше 15)
-            if (idx === SUBSCRIBE_AFTER - 1 && filtered.length > SUBSCRIBE_AFTER) {
-              return [card, <SubscribeSection key="subscribe-section" />];
-            }
-            return [card];
-          })}
+          {filtered.map((item) => renderCard(item))}
         </div>
       )}
     </>
