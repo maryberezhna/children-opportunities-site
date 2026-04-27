@@ -26,7 +26,6 @@ const NEED_LABELS = {
   gifted: 'обдаровані',
   disability: 'інвалідність',
   autism: 'РАС',
-  orphan: 'сироти',
   idp: 'ВПО',
   veteran_family: 'діти ветеранів',
   de_occupied: 'з деокупованих',
@@ -65,7 +64,6 @@ const TYPE_OPTIONS = [
 const NEED_OPTIONS = [
   { label: 'Усі діти', value: 'all' },
   { label: 'ВПО', value: 'idp' },
-  { label: 'Сироти', value: 'orphan' },
   { label: 'Інвалідність', value: 'disability' },
   { label: 'Обдаровані', value: 'gifted' },
   { label: 'Онкохворі', value: 'oncology' },
@@ -214,8 +212,8 @@ export default function OpportunitiesList({ opportunities }) {
         {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
         {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">доступно</span> : null}
         {deadlineChip(item)}
-        {(item.child_needs || []).slice(0, 2).map((n) => (
-          <span key={n} className="chip chip-need">{NEED_LABELS[n] || n}</span>
+        {(item.child_needs || []).filter((n) => NEED_LABELS[n]).slice(0, 2).map((n) => (
+          <span key={n} className="chip chip-need">{NEED_LABELS[n]}</span>
         ))}
       </div>
 
