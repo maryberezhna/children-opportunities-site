@@ -58,10 +58,10 @@ export default function SupportPopup() {
           </div>
           <div className="support-cta-group">
             <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn support-cta-btn-dark" onClick={trackMonobank}>
-              🏦 monobank (банка)
+              🏦 Банка
             </a>
             <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn" onClick={trackMonobankWidget}>
-              💳 QR / картка
+              💳 Підписка на Base
             </a>
           </div>
         </div>
@@ -81,10 +81,10 @@ export default function SupportPopup() {
               Я роблю цей каталог сама, щоб кожна українська родина знайшла можливості для своєї дитини. Ваша підтримка допомагає додавати нові програми, покращувати сайт і залишатись незалежними — без реклами та монетизації.
             </p>
             <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="mono-btn" onClick={trackMonobank}>
-              🏦 Підтримати через monobank (банка)
+              🏦 Банка
             </a>
             <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="mono-btn mono-btn-secondary" onClick={trackMonobankWidget}>
-              💳 Підтримати через monobank (QR / картка)
+              💳 Підписка на Base
             </a>
             <p className="modal-footer">Посилання відкриваються на сайті monobank.ua</p>
           </div>
