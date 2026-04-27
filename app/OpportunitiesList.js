@@ -84,6 +84,17 @@ const DEADLINE_OPTIONS = [
   { label: 'Без дедлайну (постійні)', value: 'none' },
 ];
 
+const ANNUAL_TYPES = new Set([
+  'olympiad',
+  'competition',
+  'exchange',
+  'scholarship',
+  'festival',
+  'camp',
+  'grant',
+  'study_abroad',
+]);
+
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
   { label: 'Найближчий дедлайн', value: 'deadline' },
@@ -123,6 +134,9 @@ export default function OpportunitiesList({ opportunities }) {
 
   const filtered = useMemo(() => {
     let result = opportunities.filter((item) => {
+      const days = daysUntilDeadline(item.deadline);
+      if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
+
       if (age !== 'all') {
         const [f, t] = age.split('-').map(Number);
         if (!(item.age_from <= t && item.age_to >= f)) return false;
@@ -196,7 +210,12 @@ export default function OpportunitiesList({ opportunities }) {
   const deadlineChip = (item) => {
     const days = daysUntilDeadline(item.deadline);
     if (days === null) return null;
-    if (days < 0) return <span className="chip chip-deadline-past">прострочено</span>;
+    if (days < 0) {
+      if (ANNUAL_TYPES.has(item.opportunity_type)) {
+        return <span className="chip chip-deadline-soon">🔄 щорічно</span>;
+      }
+      return null;
+    }
     if (days === 0) return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
     if (days <= 7) return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;
     if (days <= 30) return <span className="chip chip-deadline-soon">⏳ {days} днів</span>;
