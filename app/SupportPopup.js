@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
+const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/widget.html?type=qr&shortName=5QKZeVxPVjZEx7&creatorPageTab=donate';
 
 export default function SupportPopup() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,6 +29,12 @@ export default function SupportPopup() {
   const trackMonobank = () => {
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'monobank_click');
+    }
+  };
+
+  const trackMonobankWidget = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'monobank_widget_click');
     }
   };
 
@@ -69,9 +76,12 @@ export default function SupportPopup() {
               Я роблю цей каталог сама, щоб кожна українська родина знайшла можливості для своєї дитини. Ваша підтримка допомагає додавати нові програми, покращувати сайт і залишатись незалежними — без реклами та монетизації.
             </p>
             <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="mono-btn" onClick={trackMonobank}>
-              🏦 Підтримати через monobank
+              🏦 Підтримати через monobank (банка)
             </a>
-            <p className="modal-footer">Посилання відкриється на сайті send.monobank.ua</p>
+            <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="mono-btn mono-btn-secondary" onClick={trackMonobankWidget}>
+              💳 Підтримати через monobank (QR / картка)
+            </a>
+            <p className="modal-footer">Посилання відкриваються на сайті monobank.ua</p>
           </div>
         </div>
       ) : null}

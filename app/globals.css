@@ -1078,6 +1078,18 @@ body {
   box-shadow: 0 8px 20px rgba(0,0,0,0.15);
 }
 
+.mono-btn + .mono-btn {
+  margin-top: 10px;
+}
+
+.mono-btn-secondary {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+}
+
+.mono-btn-secondary:hover {
+  box-shadow: 0 8px 20px rgba(247, 147, 30, 0.25);
+}
+
 .modal-footer {
   font-size: 13px;
   color: var(--ink-muted);
