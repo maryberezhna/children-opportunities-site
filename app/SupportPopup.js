@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
-const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/widget.html?type=qr&shortName=5QKZeVxPVjZEx7&creatorPageTab=donate';
+const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 
 export default function SupportPopup() {
   const [isOpen, setIsOpen] = useState(false);
