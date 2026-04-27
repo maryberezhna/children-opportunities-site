@@ -56,9 +56,14 @@ export default function SupportPopup() {
               Привіт, я Маша. Вірю, що кожна дитина в Україні має знати про свої можливості — від безкоштовного гуртка у своєму місті до стипендії за кордон. Якщо маєте змогу підтримати — це допоможе проекту розвиватися і додавати більше можливостей для дітей🧡
             </p>
           </div>
-          <button className="support-cta-btn" onClick={trackSupport}>
-            Підтримати через monobank
-          </button>
+          <div className="support-cta-group">
+            <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn support-cta-btn-dark" onClick={trackMonobank}>
+              🏦 monobank (банка)
+            </a>
+            <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn" onClick={trackMonobankWidget}>
+              💳 QR / картка
+            </a>
+          </div>
         </div>
       </section>
 
