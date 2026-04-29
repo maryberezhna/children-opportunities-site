@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
-import StickyHeader from './StickyHeader';
 import SubscribePopup from './SubscribePopup';
 import SubscribeButton from './SubscribeButton';
 
@@ -29,8 +28,6 @@ export default async function Home() {
 
   return (
     <>
-      <StickyHeader />
-
       <div className="container">
         <div className="hero">
           <div className="hero-badges">
@@ -199,6 +196,17 @@ export default async function Home() {
             <div className="footer-copy">
               © 2026 dityam.com.ua · Зроблено з любов&apos;ю в Україні 🇺🇦
             </div>
+            <a
+              href="https://dot-hub.club/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="footer-partner"
+              aria-label=".HUB — HubSpot partner"
+            >
+              <span className="footer-partner-prefix">за підтримки</span>
+              <span className="footer-partner-name">.HUB</span>
+              <span className="footer-partner-tag">HubSpot Partner</span>
+            </a>
           </div>
         </footer>
       </div>

@@ -1534,20 +1534,61 @@ body {
 .footer-bottom {
   padding: 20px 32px 24px;
   border-top: 1px solid var(--border);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .footer-copy { font-size: 13px; color: var(--ink-muted); }
 
-/* ============ STICKY BAR ============ */
-
-/* На десктопі приховуємо sticky-bar — залишаємо тільки в футері */
-.sticky-bar {
-  display: none !important;
+.footer-partner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12px;
+  text-decoration: none;
+  transition: all 0.2s;
 }
 
-/* На мобільному показуємо через media query нижче */
-.sticky-bar.sticky-bar-mobile {
+.footer-partner:hover {
+  border-color: var(--accent);
+  color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(232, 93, 36, 0.12);
+}
+
+.footer-partner-prefix {
+  color: var(--ink-muted);
+}
+
+.footer-partner-name {
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.footer-partner-tag {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--accent-soft);
+}
+
+/* ============ STICKY BAR ============ */
+
+/* Sticky footer bar — закріплений знизу на десктопі і мобільному */
+.sticky-bar {
   position: fixed !important;
   bottom: 0 !important;
   left: 0 !important;
@@ -1863,6 +1904,9 @@ body {
 
   .footer-bottom {
     padding: 16px 20px 20px;
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
   }
 
   .footer-about { max-width: 100%; }
