@@ -105,6 +105,19 @@ export default function StickyHeader() {
             <span>Підтримати</span>
           </a>
         </div>
+
+        <a
+          href="https://dot-hub.club/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="sticky-header-partner"
+          aria-label=".HUB — HubSpot partner"
+          onClick={track('dot_hub_partner')}
+        >
+          <span className="sticky-header-partner-prefix">за підтримки</span>
+          <span className="sticky-header-partner-name">.HUB</span>
+          <span className="sticky-header-partner-tag">HubSpot Partner</span>
+        </a>
       </div>
     </div>
   );
