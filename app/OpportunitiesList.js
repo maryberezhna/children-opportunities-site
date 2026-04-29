@@ -169,9 +169,13 @@ export default function OpportunitiesList({ opportunities }) {
       return true;
     });
 
-    if (sort === 'age') {
-      result.sort((a, b) => a.age_from - b.age_from);
-    } else if (sort === 'deadline') {
+    const deadlineRank = (item) => {
+      const days = daysUntilDeadline(item.deadline);
+      if (days !== null && days >= 0) return 0;
+      return 1;
+    };
+
+    if (sort === 'deadline') {
       result.sort((a, b) => {
         const aDays = daysUntilDeadline(a.deadline);
         const bDays = daysUntilDeadline(b.deadline);
@@ -183,10 +187,18 @@ export default function OpportunitiesList({ opportunities }) {
         if (bDays < 0) return -1;
         return aDays - bDays;
       });
-    } else if (sort === 'title') {
-      result.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'uk'));
-    } else if (sort === 'recent') {
-      result.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+    } else {
+      let secondary;
+      if (sort === 'age') secondary = (a, b) => a.age_from - b.age_from;
+      else if (sort === 'title') secondary = (a, b) => (a.title || '').localeCompare(b.title || '', 'uk');
+      else if (sort === 'recent') secondary = (a, b) => (b.created_at || '').localeCompare(a.created_at || '');
+      else secondary = () => 0;
+
+      result.sort((a, b) => {
+        const rank = deadlineRank(a) - deadlineRank(b);
+        if (rank !== 0) return rank;
+        return secondary(a, b);
+      });
     }
 
     return result;
