@@ -16,13 +16,12 @@ export default async function sitemap() {
     priority: 0.7,
   }));
 
-  return [
-    {
-      url: SITE_URL,
-      lastModified: new Date(),
-      changeFrequency: 'daily',
-      priority: 1.0,
-    },
-    ...opportunityEntries,
-  ];
+  const staticPages = [
+    { url: SITE_URL, changeFrequency: 'daily', priority: 1.0 },
+    { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
+    { url: `${SITE_URL}/contacts`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
+  ].map((entry) => ({ ...entry, lastModified: new Date() }));
+
+  return [...staticPages, ...opportunityEntries];
 }

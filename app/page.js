@@ -199,6 +199,22 @@ export default async function Home() {
                 <span className="footer-link-icon">➕</span>
                 <span>Запропонувати можливість</span>
               </a>
+              <a href="/contacts" className="footer-link">
+                <span className="footer-link-icon">📍</span>
+                <span>Усі контакти</span>
+              </a>
+            </div>
+
+            <div className="footer-section">
+              <div className="footer-title">Сайт</div>
+              <a href="/about" className="footer-link">
+                <span className="footer-link-icon">ℹ️</span>
+                <span>Про проєкт</span>
+              </a>
+              <a href="/privacy" className="footer-link">
+                <span className="footer-link-icon">🔒</span>
+                <span>Політика конфіденційності</span>
+              </a>
             </div>
 
             <div className="footer-section">
