@@ -9,6 +9,10 @@ import SubscribeButton from './SubscribeButton';
 export const revalidate = 300;
 
 async function getOpportunities() {
+  if (!supabase) {
+    console.warn('Supabase not configured — returning empty opportunities list');
+    return [];
+  }
   const { data, error } = await supabase
     .from('opportunities')
     .select('*')
