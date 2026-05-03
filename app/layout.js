@@ -1,19 +1,30 @@
-import { Manrope, Kalam } from 'next/font/google';
+import { DM_Sans, Caveat, Manrope } from 'next/font/google';
 import { Analytics } from './Analytics';
 import './globals.css';
 
-const manrope = Manrope({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '500', '600', '700', '800'],
+// DM Sans does not include Cyrillic in next/font's bundled subsets.
+// We load it for Latin glyphs and let Manrope (a near-identical
+// geometric sans designed for Cyrillic) cover Ukrainian via per-glyph
+// browser fallback in font-family.
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
   display: 'swap',
-  variable: '--font-manrope',
+  variable: '--font-dm-sans',
 });
 
-const kalam = Kalam({
-  subsets: ['latin'],
-  weight: ['700'],
+const manrope = Manrope({
+  subsets: ['cyrillic'],
+  weight: ['400', '500', '700'],
   display: 'swap',
-  variable: '--font-kalam',
+  variable: '--font-cyrillic',
+});
+
+const caveat = Caveat({
+  subsets: ['latin', 'cyrillic'],
+  weight: ['400', '700'],
+  display: 'swap',
+  variable: '--font-caveat',
 });
 
 export const metadata = {
@@ -74,7 +85,7 @@ const JSON_LD = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="uk" className={`${manrope.variable} ${kalam.variable}`}>
+    <html lang="uk" className={`${dmSans.variable} ${manrope.variable} ${caveat.variable}`}>
       <body>
         <script
           type="application/ld+json"
