@@ -123,43 +123,65 @@ function daysUntilDeadline(dateStr) {
   return diff;
 }
 
+function deadlineMatches(item, value) {
+  const days = daysUntilDeadline(item.deadline);
+  if (value === 'none') return days === null;
+  if (value === 'week') return days !== null && days >= 0 && days <= 7;
+  if (value === 'month') return days !== null && days >= 0 && days <= 31;
+  if (value === 'quarter') return days !== null && days >= 0 && days <= 92;
+  return false;
+}
+
+function ageMatches(item, value) {
+  const [f, t] = value.split('-').map(Number);
+  return item.age_from <= t && item.age_to >= f;
+}
+
 export default function OpportunitiesList({ opportunities }) {
-  const [age, setAge] = useState('all');
-  const [type, setType] = useState('all');
-  const [need, setNeed] = useState('all');
-  const [cost, setCost] = useState('all');
-  const [deadline, setDeadline] = useState('all');
+  const [ages, setAges] = useState(() => new Set());
+  const [types, setTypes] = useState(() => new Set());
+  const [needs, setNeeds] = useState(() => new Set());
+  const [costs, setCosts] = useState(() => new Set());
+  const [deadlines, setDeadlines] = useState(() => new Set());
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
+
+  const toggle = (setter) => (value) => {
+    if (value === 'all') {
+      setter(new Set());
+      return;
+    }
+    setter((prev) => {
+      const next = new Set(prev);
+      if (next.has(value)) next.delete(value);
+      else next.add(value);
+      return next;
+    });
+  };
+
+  const handlers = {
+    age: toggle(setAges),
+    type: toggle(setTypes),
+    need: toggle(setNeeds),
+    cost: toggle(setCosts),
+    deadline: toggle(setDeadlines),
+  };
+
+  const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
 
   const filtered = useMemo(() => {
     let result = opportunities.filter((item) => {
       const days = daysUntilDeadline(item.deadline);
       if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
 
-      if (age !== 'all') {
-        const [f, t] = age.split('-').map(Number);
-        if (!(item.age_from <= t && item.age_to >= f)) return false;
+      if (ages.size > 0 && ![...ages].some((v) => ageMatches(item, v))) return false;
+      if (types.size > 0 && !types.has(item.opportunity_type)) return false;
+      if (needs.size > 0) {
+        const itemNeeds = item.child_needs || [];
+        if (!itemNeeds.some((n) => needs.has(n))) return false;
       }
-      if (type !== 'all' && item.opportunity_type !== type) return false;
-      if (need !== 'all') {
-        const needs = item.child_needs || [];
-        if (!needs.includes(need)) return false;
-      }
-      if (cost !== 'all' && item.cost_type !== cost) return false;
-
-      if (deadline !== 'all') {
-        const days = daysUntilDeadline(item.deadline);
-        if (deadline === 'none') {
-          if (days !== null) return false;
-        } else if (deadline === 'week') {
-          if (days === null || days < 0 || days > 7) return false;
-        } else if (deadline === 'month') {
-          if (days === null || days < 0 || days > 31) return false;
-        } else if (deadline === 'quarter') {
-          if (days === null || days < 0 || days > 92) return false;
-        }
-      }
+      if (costs.size > 0 && !costs.has(item.cost_type)) return false;
+      if (deadlines.size > 0 && ![...deadlines].some((v) => deadlineMatches(item, v))) return false;
 
       if (query) {
         const q = query.toLowerCase();
@@ -202,7 +224,7 @@ export default function OpportunitiesList({ opportunities }) {
     }
 
     return result;
-  }, [opportunities, age, type, need, cost, deadline, query, sort]);
+  }, [opportunities, ages, types, needs, costs, deadlines, query, sort]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -294,8 +316,8 @@ export default function OpportunitiesList({ opportunities }) {
           {AGE_GROUPS.map((g) => (
             <button
               key={g.value}
-              className={`filter-btn ${age === g.value ? 'active' : ''}`}
-              onClick={() => setAge(g.value)}
+              className={`filter-btn ${isActive(ages, g.value) ? 'active' : ''}`}
+              onClick={() => handlers.age(g.value)}
             >
               {g.label}
             </button>
@@ -307,8 +329,8 @@ export default function OpportunitiesList({ opportunities }) {
           {TYPE_OPTIONS.map((t) => (
             <button
               key={t.value}
-              className={`filter-btn ${type === t.value ? 'active' : ''}`}
-              onClick={() => setType(t.value)}
+              className={`filter-btn ${isActive(types, t.value) ? 'active' : ''}`}
+              onClick={() => handlers.type(t.value)}
             >
               {t.label}
             </button>
@@ -320,8 +342,8 @@ export default function OpportunitiesList({ opportunities }) {
           {DEADLINE_OPTIONS.map((d) => (
             <button
               key={d.value}
-              className={`filter-btn ${deadline === d.value ? 'active' : ''}`}
-              onClick={() => setDeadline(d.value)}
+              className={`filter-btn ${isActive(deadlines, d.value) ? 'active' : ''}`}
+              onClick={() => handlers.deadline(d.value)}
             >
               {d.label}
             </button>
@@ -333,8 +355,8 @@ export default function OpportunitiesList({ opportunities }) {
           {NEED_OPTIONS.map((n) => (
             <button
               key={n.value}
-              className={`filter-btn ${need === n.value ? 'active' : ''}`}
-              onClick={() => setNeed(n.value)}
+              className={`filter-btn ${isActive(needs, n.value) ? 'active' : ''}`}
+              onClick={() => handlers.need(n.value)}
             >
               {n.label}
             </button>
@@ -346,8 +368,8 @@ export default function OpportunitiesList({ opportunities }) {
           {COST_OPTIONS.map((c) => (
             <button
               key={c.value}
-              className={`filter-btn ${cost === c.value ? 'active' : ''}`}
-              onClick={() => setCost(c.value)}
+              className={`filter-btn ${isActive(costs, c.value) ? 'active' : ''}`}
+              onClick={() => handlers.cost(c.value)}
             >
               {c.label}
             </button>
