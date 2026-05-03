@@ -62,7 +62,9 @@ export default async function Home() {
             </div>
           </div>
           <h1>
-            Усі можливості <span className="accent">для вашої дитини</span>
+            Усі можливості
+            <br />
+            <span className="accent">для вашої дитини</span>
             <br />
             в одному місці
           </h1>
