@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -191,10 +192,15 @@ export default function OpportunitiesList({ opportunities }) {
       return true;
     });
 
+    // Lower rank = higher priority. Urgent deadlines bubble to the very top.
     const deadlineRank = (item) => {
       const days = daysUntilDeadline(item.deadline);
-      if (days !== null && days >= 0) return 0;
-      return 1;
+      if (days === null) return 4;
+      if (days < 0) return 4;
+      if (days <= 7) return 0;
+      if (days <= 30) return 1;
+      if (days <= 92) return 2;
+      return 3;
     };
 
     if (sort === 'deadline') {
@@ -270,7 +276,11 @@ export default function OpportunitiesList({ opportunities }) {
         ))}
       </div>
 
-      <h3>{item.title}</h3>
+      <h3>
+        <Link href={`/o/${item.slug}`} className="card-title-link">
+          {item.title}
+        </Link>
+      </h3>
       <p className="card-summary">{item.summary}</p>
 
       <div className="meta">

@@ -31,8 +31,25 @@ export default async function Home() {
   const freeCount = opportunities.filter(o => o.cost_type === 'free').length;
   const sourceCount = new Set(opportunities.map(o => o.source)).size;
 
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Можливості для дітей в Україні',
+    numberOfItems: opportunities.length,
+    itemListElement: opportunities.slice(0, 100).map((o, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      url: `https://dityam.com.ua/o/${o.slug}`,
+      name: o.title,
+    })),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
+      />
       <StickyHeader />
 
       <div className="container">

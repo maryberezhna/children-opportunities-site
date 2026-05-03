@@ -10,7 +10,7 @@ export default async function sitemap() {
     : { data: [] };
 
   const opportunityEntries = (data || []).map((row) => ({
-    url: `${SITE_URL}/?o=${row.slug}`,
+    url: `${SITE_URL}/o/${row.slug}`,
     lastModified: row.updated_at ? new Date(row.updated_at) : undefined,
     changeFrequency: 'weekly',
     priority: 0.7,
