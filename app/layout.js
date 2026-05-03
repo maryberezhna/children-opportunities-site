@@ -32,6 +32,9 @@ export const metadata = {
   authors: [{ name: 'Мері Бережна' }],
   alternates: { canonical: 'https://dityam.com.ua' },
   robots: { index: true, follow: true },
+  verification: {
+    google: 'RvvznKHFJZWAqvC-wcGyakBzZo11cazkLQ6WfGuzRFk',
+  },
   openGraph: {
     type: 'website',
     locale: 'uk_UA',
