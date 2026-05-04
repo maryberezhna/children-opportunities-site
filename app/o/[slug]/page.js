@@ -92,6 +92,20 @@ export async function generateMetadata({ params }) {
       description,
       siteName: 'Можливості для дитини',
       locale: 'uk_UA',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: 'dityam.com.ua',
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description,
+      images: ['/og-image.png'],
     },
   };
 }
