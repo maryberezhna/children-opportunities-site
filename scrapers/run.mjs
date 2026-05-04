@@ -2,6 +2,7 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildRow, validate } from './lib/normalize.mjs';
+import { applyRules } from './lib/rules.mjs';
 import { toCsv } from './lib/csv.mjs';
 
 import * as acmodasi from './sources/acmodasi-castings.mjs';
@@ -18,9 +19,9 @@ const OUT_DIR = join(__dirname, 'output');
 
 async function main() {
   const all = [];
-  const seen = new Set();
+  const ctx = { seenHashes: new Set(), seenUrls: new Set() };
+  const rejectLog = [];
   let totalRaw = 0;
-  let totalInvalid = 0;
 
   for (const source of SOURCES) {
     process.stdout.write(`→ ${source.name} ... `);
@@ -36,14 +37,26 @@ async function main() {
     let kept = 0;
     for (const p of partials) {
       const row = buildRow(p);
-      const errors = validate(row);
-      if (errors.length) {
-        totalInvalid++;
-        console.warn(`  skip "${row.title?.slice(0, 40)}": ${errors.join(', ')}`);
+
+      // Schema-level validation (types, required fields)
+      const schemaErrors = validate(row);
+      if (schemaErrors.length) {
+        rejectLog.push({ source: source.name, title: row.title, reasons: schemaErrors });
         continue;
       }
-      if (seen.has(row.content_hash)) continue;
-      seen.add(row.content_hash);
+
+      // Insertion rules (dedup, format normalization, hard blocks, quality)
+      const rules = applyRules(row, ctx);
+      if (!rules.ok) {
+        rejectLog.push({ source: source.name, title: row.title, reasons: rules.reasons });
+        continue;
+      }
+      if (rules.warnings.length) {
+        console.warn(`\n  ⚠️  "${row.title?.slice(0, 50)}": ${rules.warnings.join('; ')}`);
+      }
+
+      ctx.seenHashes.add(row.content_hash);
+      ctx.seenUrls.add(row.source_url);
       all.push(row);
       kept++;
     }
@@ -56,8 +69,17 @@ async function main() {
   await writeFile(csvPath, toCsv(all), 'utf8');
 
   console.log('');
-  console.log(`Scraped: ${totalRaw}, kept: ${all.length}, invalid: ${totalInvalid}, deduped: ${totalRaw - all.length - totalInvalid}`);
+  console.log(`Scraped: ${totalRaw}, kept: ${all.length}, rejected: ${rejectLog.length}`);
   console.log(`CSV → ${csvPath}`);
+
+  if (rejectLog.length > 0) {
+    const rejectPath = join(OUT_DIR, `rejects-${date}.txt`);
+    const lines = rejectLog.map((r) =>
+      `[${r.source}] "${(r.title || '').slice(0, 60)}"\n  → ${r.reasons.join('; ')}`
+    );
+    await writeFile(rejectPath, lines.join('\n\n'), 'utf8');
+    console.log(`Rejects → ${rejectPath}`);
+  }
 }
 
 main().catch((err) => {
