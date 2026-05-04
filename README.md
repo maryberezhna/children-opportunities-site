@@ -38,20 +38,29 @@
 ## 🏗️ Архітектура
 
 ```
-┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
-│ 🕷️  GitHub Actions   │───▶│ 🗄️  Supabase         │───▶│ 🌐  Next.js 14       │
-│ • scrape.yml         │    │ Postgres 17          │    │ App Router + RSC     │
-│ • deadline-check.yml │    │ opportunities table  │    │ ISR every 5 min      │
-│ Node.js + cheerio    │    │ 261 rows             │    │ Hosted on Vercel     │
-└──────────────────────┘    └──────────────────────┘    └──────────────────────┘
-         │                                                         │
-         ▼                                                         ▼
-   📡 Sources                                              👥 Users
-   ACMODASI castings,                                      Батьки та діти
-   Constellation, FEST-PORTAL,                             з усієї України
-   regional camps, Society for                             — щодня сотні
-   Science, Alliance Française                              унікальних візитів
+┌──────────────────────────┐         ┌─────────────────────┐         ┌──────────────────────┐
+│ 🐍 Python scrapers       │ ──CSV──▶│ 🗄️  Supabase        │ ──REST─▶│ 🌐  Next.js 14       │
+│ children-opportunities-  │         │ Postgres 17         │         │ App Router + RSC     │
+│ scraper (окремий репо)   │         │ opportunities table │         │ ISR every 5 min      │
+└──────────────────────────┘         │ 261 rows            │         │ Hosted on Vercel     │
+                                     └─────────────────────┘         └──────────────────────┘
+┌──────────────────────────┐                  ▲                                ▲
+│ 🟨 Node.js scrapers      │ ──CSV──┐         │                                │
+│ scrapers/ (цей репо)     │        │         │                                │
+│ • complement до Python   │        └─────────┘                                │
+└──────────────────────────┘                                                   │
+                                                                               │
+                                                              ┌────────────────┴───────┐
+                                                              │ 👥 Users               │
+                                                              │ Батьки та діти         │
+                                                              │ з усієї України        │
+                                                              └────────────────────────┘
 ```
+
+Дві системи скраперів — паралельні:
+
+- **🐍 Python** ([`children-opportunities-scraper`](https://github.com/maryberezhna/children-opportunities-scraper)) — основна система: BeautifulSoup, нормалізація через LLM, прямий апсерт у Supabase. Найбільша частина 261 запису саме звідти.
+- **🟨 Node.js** ([`scrapers/`](scrapers/) у цьому репо) — додатковий шар для нових нішевих джерел (кастинги ACMODASI, фестивалі fest-portal, мовні школи Alliance Française, міжнародні олімпіади Society for Science). Емітить CSV для ручного імпорту в Studio.
 
 ---
 
@@ -64,8 +73,9 @@
 - **`@supabase/supabase-js`** — server-side data fetching
 
 ### Backend / Data
-- **Supabase Postgres** — таблиця `opportunities` з content_hash UNIQUE constraint
-- **Node.js scrapers** (`scrapers/`) — `cheerio` + native fetch, валідація + дедуплікація через `lib/rules.mjs`
+- **Supabase Postgres** — таблиця `opportunities` з `content_hash UNIQUE` для дедупу
+- **Python scrapers** ([`children-opportunities-scraper`](https://github.com/maryberezhna/children-opportunities-scraper)) — основне джерело даних, прямий апсерт у БД
+- **Node.js scrapers** ([`scrapers/`](scrapers/)) — додатковий шар, валідація + дедуплікація через [`lib/rules.mjs`](scrapers/lib/rules.mjs), вихід у CSV
 
 ### SEO
 - `app/sitemap.js` — auto-generated sitemap.xml з 280+ URL (homepage + per-opportunity)
@@ -81,8 +91,9 @@
 ### Infra
 - **Vercel** — hosting + CDN + automatic preview deploys
 - **GitHub Actions** —
-  - `scrape.yml` — щопонеділка 05:00 UTC, генерує CSV артефакт
-  - `deadline-check.yml` — щопонеділка 06:00 UTC, аудит прострочених програм
+  - `scrape.yml` (цей репо) — щопонеділка 05:00 UTC, запускає Node.js скрапери, генерує CSV артефакт
+  - `deadline-check.yml` (цей репо) — щопонеділка 06:00 UTC, аудит прострочених програм
+  - Основний пайплайн скрапінгу — у репо [`children-opportunities-scraper`](https://github.com/maryberezhna/children-opportunities-scraper)
 
 ---
 
@@ -131,13 +142,19 @@ npm run dev
 
 > Без env-змінних сайт зібрається теж — Supabase client коректно повертає пустий список замість падіння (див. `lib/supabase.js`).
 
-### Скрапери (Node.js)
+### Скрапери
+
+Дві системи запускаються незалежно:
+
+**🐍 Python** (основна): дивіться інструкції у репо [`children-opportunities-scraper`](https://github.com/maryberezhna/children-opportunities-scraper).
+
+**🟨 Node.js** (додаткова — нові нішеві джерела):
 
 ```bash
 npm run scrape
 ```
 
-Виводить CSV у `scrapers/output/opportunities-YYYY-MM-DD.csv` + `rejects-YYYY-MM-DD.txt` з причинами відхилення кожного рядка. Імпорт у Supabase — Table editor → Import data from CSV.
+Виводить `scrapers/output/opportunities-YYYY-MM-DD.csv` + `rejects-YYYY-MM-DD.txt` з причинами відхилення кожного рядка. Імпорт у Supabase — Table editor → Import data from CSV.
 
 Деталі (як додати нове джерело, які правила insertion-валідації) — у [`scrapers/README.md`](scrapers/README.md).
 
