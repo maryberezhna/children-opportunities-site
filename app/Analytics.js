@@ -2,7 +2,7 @@
 import Script from 'next/script';
 
 const GA_ID = 'G-KPLE8LGH91';
-const HOTJAR_ID = process.env.NEXT_PUBLIC_HOTJAR_ID;
+const HOTJAR_ID = 2314106;
 
 export function Analytics() {
   return (
