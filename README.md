@@ -1,97 +1,112 @@
 <div align="center">
 
-# 🌻 Children Opportunities Site
+# 🌻 dityam.com.ua
 
-### Сайт-агрегатор можливостей для дітей 0–18 років в Україні
+### Каталог можливостей для дітей 0–18 років в Україні
 
 **Кожна дитина заслуговує знати про свої можливості.** <br/>
-Один сайт збирає конкурси, гранти, стипендії, табори, медичну допомогу, кастинги, обміни та програми підтримки — все в одному місці, із зручними фільтрами та пошуком.
+Один сайт збирає курси, олімпіади, табори, стипендії, медичну допомогу, виплати ВПО, кастинги та програми обмінів — все в одному місці, із зручними фільтрами та пошуком.
 
 🔗 **[dityam.com.ua](https://dityam.com.ua)**
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-000?style=for-the-badge&logo=next.js)
 ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 ![Vercel](https://img.shields.io/badge/Vercel-000?style=for-the-badge&logo=vercel)
-![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
-[Живий сайт](https://dityam.com.ua) · [Підтримати проєкт](https://dityam.com.ua#support) · [Повідомити про помилку](https://github.com/maryberezhna/children-opportunities-site/issues)
+[Живий сайт](https://dityam.com.ua) · [Про проєкт](https://dityam.com.ua/about) · [Підтримати](https://send.monobank.ua/jar/F72fDrV2c) · [Issues](https://github.com/maryberezhna/children-opportunities-site/issues)
 
 </div>
 
 ---
 
-## ✨ Що вміє сайт
+## ✨ Функції
 
 | | |
 |---|---|
-| 🔍 | **Розумний пошук** по назві, опису та джерелу |
-| 🎂 | **Фільтр за віком** — 0–3, 4–6, 7–11, 12–14, 15–17 років |
-| 🎯 | **18 типів можливостей** — курси, обміни, табори, стипендії, медична допомога, конкурси, кастинги, олімпіади та інше |
-| 💡 | **Фільтр за потребою дитини** — ВПО, інвалідність, обдаровані |
-| 💰 | **Фільтр за вартістю** — безкоштовно, з частковим фінансуванням, доступне, преміум |
-| 📱 | **Адаптивний дизайн** — працює на телефоні, планшеті, ПК |
-| 🤖 | **Автоматичне оновлення** — щоденні скрапери AI-агентами додають нові можливості |
+| 🔍 | **Пошук** по назві, опису, джерелу |
+| 🎂 | **Multi-фільтр за віком** — 0-3, 4-6, 7-11, 12-14, 15-17 (одразу декілька діапазонів) |
+| 🎯 | **18 типів можливостей** — курси, олімпіади, обміни, табори, стипендії, медична допомога, конкурси, кастинги, гранти, виплати тощо |
+| 💡 | **Multi-фільтр за потребою** — ВПО, інвалідність, обдаровані, онкохворі, діти ветеранів |
+| 💰 | **Multi-фільтр за вартістю** — безкоштовно / з фінансуванням |
+| ⏰ | **Сортування за терміновістю** — найурgentніші дедлайни завжди перші, незалежно від вибраного сорту |
+| 📄 | **Окремі сторінки `/o/[slug]`** для кожної можливості з JSON-LD (Course/Event), canonical, OG image |
+| 📱 | **Адаптивний дизайн** — mobile-first, картки клікабельні всю площу на тач-екранах |
+| 🤖 | **Автоматичні скрапери** — щотижня шукають нові можливості з 6+ джерел |
 
 ---
 
 ## 🏗️ Архітектура
 
 ```
-┌─────────────────────────┐     ┌─────────────────────────┐     ┌────────────────────────┐
-│  🕷️  GitHub Actions     │────▶│  🗄️  Supabase (Postgres)│────▶│  🌐  Next.js + Vercel  │
-│  Python-скрапери з AI   │     │  Таблиця opportunities  │     │  dityam.com.ua         │
-│  Запуск щодня о 09:00   │     │  REST API + RLS         │     │  SSR + ISR              │
-└─────────────────────────┘     └─────────────────────────┘     └────────────────────────┘
-          ▲                                                                ▲
-          │                                                                │
-   📡 Джерела даних                                               👥 Батьки та діти
-   МАН, МОН, Prometheus,                                           з усієї України
-   EdEra, Дія.Освіта,
-   фонди, UNICEF, і т.д.
+┌──────────────────────┐    ┌──────────────────────┐    ┌──────────────────────┐
+│ 🕷️  GitHub Actions   │───▶│ 🗄️  Supabase         │───▶│ 🌐  Next.js 14       │
+│ • scrape.yml         │    │ Postgres 17          │    │ App Router + RSC     │
+│ • deadline-check.yml │    │ opportunities table  │    │ ISR every 5 min      │
+│ Node.js + cheerio    │    │ 261 rows             │    │ Hosted on Vercel     │
+└──────────────────────┘    └──────────────────────┘    └──────────────────────┘
+         │                                                         │
+         ▼                                                         ▼
+   📡 Sources                                              👥 Users
+   ACMODASI castings,                                      Батьки та діти
+   Constellation, FEST-PORTAL,                             з усієї України
+   regional camps, Society for                             — щодня сотні
+   Science, Alliance Française                              унікальних візитів
 ```
 
 ---
 
-## 🛠️ Технічний стек
+## 🛠️ Стек
 
 ### Frontend
-- **[Next.js 14](https://nextjs.org/)** — App Router, React Server Components
-- **[Tailwind CSS](https://tailwindcss.com/)** — утилітарні стилі
-- **[Supabase JS Client](https://supabase.com/docs/reference/javascript)** — запити до БД
+- **Next.js 14** — App Router, async server components, ISR
+- **Plain CSS** (no framework) — design tokens у `:root`, mobile-first media queries
+- **next/font/google** — DM Sans (Latin) + Manrope (Cyrillic fallback) + Caveat (accent), self-hosted
+- **`@supabase/supabase-js`** — server-side data fetching
 
 ### Backend / Data
-- **[Supabase](https://supabase.com/)** — Postgres, REST API, авторизація
-- **[Python 3.11](https://www.python.org/)** — скрапери
-- **BeautifulSoup + requests** — парсинг HTML
-- **Anthropic Claude API** — AI-категоризація та збагачення даних
+- **Supabase Postgres** — таблиця `opportunities` з content_hash UNIQUE constraint
+- **Node.js scrapers** (`scrapers/`) — `cheerio` + native fetch, валідація + дедуплікація через `lib/rules.mjs`
+
+### SEO
+- `app/sitemap.js` — auto-generated sitemap.xml з 280+ URL (homepage + per-opportunity)
+- `app/robots.js` — robots.txt
+- JSON-LD: `WebSite` + `Organization` + `SearchAction` (root) + `Course`/`Event` + `BreadcrumbList` (per-opportunity)
+- Open Graph + Twitter Card з 1200×630 brand image
+- Verified в Google Search Console
+
+### Аналітика
+- **Google Analytics 4** (`G-KPLE8LGH91`)
+- **Hotjar** (`6704189`)
 
 ### Infra
-- **[Vercel](https://vercel.com/)** — хостинг Next.js + CDN
-- **[GitHub Actions](https://github.com/features/actions)** — cron для скраперів
-- **Власний домен** — [dityam.com.ua](https://dityam.com.ua)
+- **Vercel** — hosting + CDN + automatic preview deploys
+- **GitHub Actions** —
+  - `scrape.yml` — щопонеділка 05:00 UTC, генерує CSV артефакт
+  - `deadline-check.yml` — щопонеділка 06:00 UTC, аудит прострочених програм
 
 ---
 
-## 🗄️ Структура бази даних
+## 🗄️ Структура БД
 
 Таблиця `opportunities` у Supabase:
 
 | Поле | Тип | Опис |
 |---|---|---|
-| `id` | `uuid` | Первинний ключ |
+| `id` | `uuid` | Primary key |
 | `title` | `text` | Назва можливості |
-| `slug` | `text` | URL-дружній ідентифікатор |
-| `summary` | `text` | Короткий опис |
-| `age_from` / `age_to` | `int` | Віковий діапазон |
-| `opportunity_type` | `text` | Тип (18 категорій) |
-| `categories` | `text[]` | Тематичні теги (arts, STEM, sports…) |
-| `child_needs` | `text[]` | Потреби (idp, orphan, disability, gifted) |
-| `format` | `text` | Офлайн / онлайн / гібрид |
-| `cost_type` | `text` | Безкоштовно / частково / платно |
-| `deadline` | `date` | Кінцева дата подачі заявки |
-| `source_url` | `text` | Посилання на першоджерело |
-| `source` | `text` | Назва організації |
-| `content_hash` | `text` | Хеш для дедуплікації (`UNIQUE`) |
+| `slug` | `text` | URL-друнній ідентифікатор (kebab + 6-char hash) |
+| `summary` | `text` | Короткий опис (показується в картці) |
+| `age_from` / `age_to` | `int` | Віковий діапазон (0-17) |
+| `opportunity_type` | `text` | Один з 18 типів (course, olympiad, camp, scholarship, ...) |
+| `categories` | `text[]` | Тематичні теги (arts, STEM, languages, sports, ...) |
+| `child_needs` | `text[]` | Потреби (idp, disability, gifted, oncology, veteran_family, ...) |
+| `format` | `text` | "Онлайн" / "Офлайн" / "Гібрид" / "Офлайн, Київ" |
+| `cost_type` | `text` | `free` / `partially_free` / `paid_affordable` / `paid_premium` / `closed` |
+| `deadline` | `date` | Кінцевий термін подачі (NULL = постійна програма) |
+| `source_url` | `text` | Посилання на офіційну сторінку |
+| `source` | `text` | Назва організації-джерела |
+| `content_hash` | `text` | SHA-256 fingerprint (UNIQUE — захист від дублів) |
+| `created_at` / `updated_at` | `timestamptz` | Audit timestamps |
 
 ---
 
@@ -104,57 +119,68 @@ git clone https://github.com/maryberezhna/children-opportunities-site.git
 cd children-opportunities-site
 
 npm install
-cp .env.local.example .env.local
-# Додайте ваші NEXT_PUBLIC_SUPABASE_URL та NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+# Опційно — для розробки з реальною БД:
+echo "NEXT_PUBLIC_SUPABASE_URL=..." >> .env.local
+echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=..." >> .env.local
 
 npm run dev
 ```
 
 Відкрийте [http://localhost:3000](http://localhost:3000) 🎉
 
-### Скрапери
+> Без env-змінних сайт зібрається теж — Supabase client коректно повертає пустий список замість падіння (див. `lib/supabase.js`).
+
+### Скрапери (Node.js)
 
 ```bash
-cd scrapers
-pip install -r requirements.txt
-cp .env.example .env
-# Додайте SUPABASE_URL та SUPABASE_KEY (service_role!)
-
-python run_all.py
+npm run scrape
 ```
+
+Виводить CSV у `scrapers/output/opportunities-YYYY-MM-DD.csv` + `rejects-YYYY-MM-DD.txt` з причинами відхилення кожного рядка. Імпорт у Supabase — Table editor → Import data from CSV.
+
+Деталі (як додати нове джерело, які правила insertion-валідації) — у [`scrapers/README.md`](scrapers/README.md).
+
+### Deadline check
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
+  node scripts/check-deadlines.mjs
+```
+
+Виводить три блоки: 🔴 прострочені непостійні (потребують delete), 🟡 прострочені щорічні (UI вже ховає чіп — оновити дату), 🟢 ті, що ось-ось закриваються.
 
 ---
 
 ## 📊 Статистика
 
-- **265+ можливостей** в актуальній базі
-- **18 типів** — від стипендій до медичної допомоги
-- **40+ джерел** даних, що оновлюються автоматично
+- **261 можливість** після останньої вичитки (травень 2026)
+- **18 типів** — від виплат ВПО до стипендій IB Diploma
+- **40+ джерел** — МАН, МОН, EdEra, Prometheus, UNICEF, фонди, міжнародні олімпіади
 - **0–18 років** — повне покриття дитячого віку
 
 ---
 
 ## 🤝 Як допомогти
 
-Проєкт з відкритим кодом і живе завдяки допомозі спільноти:
-
-- 🐛 **Знайшли помилку?** — [відкрийте issue](https://github.com/maryberezhna/children-opportunities-site/issues)
-- 💡 **Знаєте можливість, якої немає на сайті?** — напишіть нам через [форму на сайті](https://dityam.com.ua)
-- 💝 **Хочете підтримати фінансово?** — [кнопка "Підтримати" на сайті](https://dityam.com.ua) (monobank)
-- ⭐ **Поставте зірочку** цьому репозиторію — це мотивує
+- 🐛 **Знайшли помилку?** — [issue](https://github.com/maryberezhna/children-opportunities-site/issues) або [написати на email](mailto:maryberezhna@gmail.com)
+- 💡 **Знаєте можливість, якої немає?** — [форма пропозиції](mailto:maryberezhna@gmail.com?subject=Запропонувати%20можливість%20на%20dityam.com.ua)
+- 💝 **Підтримати фінансово** — [monobank-банка](https://send.monobank.ua/jar/F72fDrV2c) або [Підписка Base](https://base.monobank.ua/5QKZeVxPVjZEx7)
+- ⭐ **Поставте зірочку** репозиторію — мотивує
+- 🌍 **Робите форк для іншої країни/регіону?** — напишіть, обмінятись досвідом
 
 ---
 
 ## 📄 Ліцензія
 
-MIT — використовуйте, форкайте, покращуйте. Єдине прохання: якщо робите форк для своєї країни чи регіону — повідомте, щоб ми могли разом обмінюватися досвідом 🌍
+MIT — використовуйте, форкайте, покращуйте.
 
 ---
 
 <div align="center">
 
-**Зроблено з 💛💙 в Україні**
+**Зроблено з 💛💙 в Україні** · за технологічної підтримки [.HUB](https://dot-hub.club/)
 
-*для того, щоб кожна дитина знала про свої можливості*
+*щоб кожна дитина знала про свої можливості*
 
 </div>
