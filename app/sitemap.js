@@ -20,6 +20,7 @@ export default async function sitemap() {
     { url: SITE_URL, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/contacts`, changeFrequency: 'monthly', priority: 0.4 },
+    { url: `${SITE_URL}/support`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
   ].map((entry) => ({ ...entry, lastModified: new Date() }));
 

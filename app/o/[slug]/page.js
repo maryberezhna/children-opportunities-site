@@ -61,6 +61,28 @@ async function getOpportunity(slug) {
   return data;
 }
 
+async function getRelated(item, limit = 8) {
+  if (!supabase || !item) return [];
+  const { data } = await supabase
+    .from('opportunities')
+    .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .neq('slug', item.slug)
+    .eq('opportunity_type', item.opportunity_type)
+    .lte('age_from', item.age_to)
+    .gte('age_to', item.age_from)
+    .limit(limit);
+  if (data && data.length >= 4) return data;
+
+  const { data: fallback } = await supabase
+    .from('opportunities')
+    .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .neq('slug', item.slug)
+    .lte('age_from', item.age_to)
+    .gte('age_to', item.age_from)
+    .limit(limit);
+  return fallback || [];
+}
+
 export async function generateStaticParams() {
   if (!supabase) return [];
   const { data } = await supabase.from('opportunities').select('slug');
@@ -202,6 +224,7 @@ export default async function OpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
 
+  const related = await getRelated(item);
   const jsonLd = buildJsonLd(item);
   const breadcrumbs = {
     '@context': 'https://schema.org',
@@ -292,6 +315,31 @@ export default async function OpportunityPage({ params }) {
             </a>
           )}
         </article>
+
+        {related.length > 0 && (
+          <section className="opportunity-related" aria-labelledby="related-heading">
+            <h2 id="related-heading" className="opportunity-related-title">
+              Схожі можливості для дітей {ageRangeLabel(item)}
+            </h2>
+            <ul className="opportunity-related-list">
+              {related.map((r) => (
+                <li key={r.slug} className="opportunity-related-item">
+                  <Link href={`/o/${r.slug}`} className="opportunity-related-link">
+                    <span className="opportunity-related-chip">
+                      {TYPE_LABELS[r.opportunity_type] || r.opportunity_type}
+                    </span>
+                    <span className="opportunity-related-name">{r.title}</span>
+                    {r.summary && (
+                      <span className="opportunity-related-summary">
+                        {r.summary.length > 140 ? `${r.summary.slice(0, 140)}…` : r.summary}
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </div>
     </>
   );
