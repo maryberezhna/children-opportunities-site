@@ -219,6 +219,10 @@ export default async function Home() {
 
             <div className="footer-section">
               <div className="footer-title">Підтримати</div>
+              <a href="/support" className="footer-link">
+                <span className="footer-link-icon">🌍</span>
+                <span>PayPal & all options</span>
+              </a>
               <a
                 href="https://send.monobank.ua/jar/F72fDrV2c"
                 target="_blank"
