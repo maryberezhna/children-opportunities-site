@@ -64,13 +64,19 @@ async function main() {
     console.log(`${kept} rows`);
   }
 
+  console.log('');
+  console.log(`Scraped: ${totalRaw}, kept (pre-URL-check): ${all.length}, rejected: ${rejectLog.length}`);
+
+  const { live, dead } = await filterByUrlReachability(all);
+  for (const d of dead) {
+    rejectLog.push({ source: d.row.source || '', title: d.row.title, reasons: [d.reason] });
+  }
+  console.log(`URL check: ${live.length} live, ${dead.length} dead`);
+
   await mkdir(OUT_DIR, { recursive: true });
   const date = new Date().toISOString().slice(0, 10);
   const csvPath = join(OUT_DIR, `opportunities-${date}.csv`);
-  await writeFile(csvPath, toCsv(all), 'utf8');
-
-  console.log('');
-  console.log(`Scraped: ${totalRaw}, kept: ${all.length}, rejected: ${rejectLog.length}`);
+  await writeFile(csvPath, toCsv(live), 'utf8');
   console.log(`CSV → ${csvPath}`);
 
   if (rejectLog.length > 0) {
@@ -82,7 +88,68 @@ async function main() {
     console.log(`Rejects → ${rejectPath}`);
   }
 
-  await upsertToSupabase(all);
+  await upsertToSupabase(live);
+}
+
+async function filterByUrlReachability(rows) {
+  const CONCURRENCY = 12;
+  const TIMEOUT_MS = 10000;
+  const UA = 'Mozilla/5.0 (compatible; dityam-scraper/1.0; +https://dityam.com.ua)';
+
+  const live = [];
+  const dead = [];
+  let done = 0;
+
+  async function check(row) {
+    const url = row.source_url;
+    if (!url) {
+      dead.push({ row, reason: 'no source_url' });
+      return;
+    }
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+    try {
+      // HEAD first; some servers reject HEAD, fallback to GET.
+      let res;
+      try {
+        res = await fetch(url, { method: 'HEAD', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': UA } });
+        if (res.status === 405 || res.status === 501) {
+          res = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': UA } });
+        }
+      } catch {
+        // some hosts reject HEAD outright — try GET
+        res = await fetch(url, { method: 'GET', redirect: 'follow', signal: ctrl.signal, headers: { 'User-Agent': UA } });
+      }
+      clearTimeout(timer);
+      const status = res.status;
+      // 403 is usually bot-blocking, not real death — keep
+      if (status === 403 || (status >= 200 && status < 400)) {
+        live.push(row);
+      } else {
+        dead.push({ row, reason: `URL returned HTTP ${status}` });
+      }
+    } catch (err) {
+      clearTimeout(timer);
+      const reason = err.name === 'AbortError'
+        ? 'URL request timed out'
+        : `URL unreachable: ${(err.message || String(err)).slice(0, 100)}`;
+      dead.push({ row, reason });
+    } finally {
+      done += 1;
+      if (done % 30 === 0) console.log(`  URL check: ${done}/${rows.length}...`);
+    }
+  }
+
+  const queue = [...rows];
+  await Promise.all(Array.from({ length: CONCURRENCY }, async () => {
+    while (queue.length) {
+      const item = queue.shift();
+      if (!item) break;
+      await check(item);
+    }
+  }));
+
+  return { live, dead };
 }
 
 async function upsertToSupabase(rows) {
