@@ -1,6 +1,7 @@
 import { writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createClient } from '@supabase/supabase-js';
 import { buildRow, validate } from './lib/normalize.mjs';
 import { applyRules } from './lib/rules.mjs';
 import { toCsv } from './lib/csv.mjs';
@@ -80,6 +81,51 @@ async function main() {
     await writeFile(rejectPath, lines.join('\n\n'), 'utf8');
     console.log(`Rejects → ${rejectPath}`);
   }
+
+  await upsertToSupabase(all);
+}
+
+async function upsertToSupabase(rows) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !key) {
+    console.log('');
+    console.log('Skipping Supabase upsert (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set).');
+    return;
+  }
+  if (rows.length === 0) {
+    console.log('');
+    console.log('No rows to upsert.');
+    return;
+  }
+
+  const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+  console.log('');
+  console.log(`Upserting ${rows.length} rows to Supabase (onConflict=content_hash, ignoreDuplicates)...`);
+
+  const BATCH_SIZE = 100;
+  let inserted = 0;
+  let failed = 0;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { data, error } = await supabase
+      .from('opportunities')
+      .upsert(batch, { onConflict: 'content_hash', ignoreDuplicates: true })
+      .select('id');
+
+    if (error) {
+      console.error(`✗ batch ${i}-${i + batch.length}: ${error.message}`);
+      failed += batch.length;
+    } else {
+      inserted += data?.length || 0;
+    }
+  }
+
+  const skipped = rows.length - inserted - failed;
+  console.log(`Upsert done: ${inserted} new, ${skipped} duplicates skipped, ${failed} failed.`);
 }
 
 main().catch((err) => {
