@@ -112,7 +112,9 @@ async function sendTelegramMessage(text) {
       chat_id: TELEGRAM_CHAT_ID,
       text,
       parse_mode: 'HTML',
-      disable_web_page_preview: false,
+      // suppress preview — every dityam.com.ua page shares the same og-image,
+      // so the auto-fetched card is identical for every post and adds no info.
+      disable_web_page_preview: true,
     }),
   });
   const json = await res.json();
