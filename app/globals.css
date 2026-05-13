@@ -2362,3 +2362,75 @@ body {
     animation: none;
   }
 }
+
+/* ============ SCROLL NAVIGATION (↑ / ↓) ============ */
+.scroll-nav {
+  position: fixed;
+  right: 24px;
+  /* Sits directly above the Telegram FAB (60px + 24px bottom + 12px gap). */
+  bottom: 96px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 9998;
+}
+
+.scroll-nav-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06),
+              0 1px 3px rgba(0, 0, 0, 0.04);
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+              background 0.15s ease, color 0.15s ease;
+  animation: scroll-nav-fade-in 0.2s ease-out;
+}
+
+.scroll-nav-btn:hover {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.scroll-nav-btn:active {
+  transform: scale(0.96);
+}
+
+@keyframes scroll-nav-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Mobile: smaller buttons, sit above the FAB which is already lifted
+   above the bottom sticky-bar. FAB on mobile: 54px tall, bottom 76px
+   + safe-area, so scroll-nav goes ~142px + safe-area. */
+@media (max-width: 900px) {
+  .scroll-nav {
+    right: 16px;
+    bottom: calc(142px + env(safe-area-inset-bottom, 0px));
+    gap: 6px;
+  }
+  .scroll-nav-btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-nav-btn {
+    animation: none;
+  }
+}
