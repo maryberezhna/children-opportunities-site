@@ -297,11 +297,11 @@ function formatLine(r) {
   const meta = [];
   const age = ageLabel(r);
   if (age) meta.push(age);
-  if (r.cost_type === 'free') meta.push('✅ безкоштовно');
+  if (r.cost_type === 'free') meta.push('безкоштовно');
   else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
   if (r.daysLeft != null && r.daysLeft >= 0) {
     const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    meta.push(`⏰ <b>${tag}</b>`);
+    meta.push(`<b>${tag}</b>`);
   }
 
   const lines = [`• <a href="${url}">${escapeHtml(r.title)}</a>`];
