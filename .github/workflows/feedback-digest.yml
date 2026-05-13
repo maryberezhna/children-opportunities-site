@@ -1,0 +1,41 @@
+name: Feedback digest — weekly summary to admin
+
+on:
+  schedule:
+    # Mondays at 09:00 Kyiv summer time (06:00 UTC)
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print message without sending'
+        required: false
+        default: 'false'
+      period_days:
+        description: 'Days to include (default 7)'
+        required: false
+        default: '7'
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Send weekly feedback digest
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SITE_URL: 'https://dityam.com.ua'
+          PERIOD_DAYS: ${{ github.event.inputs.period_days || '7' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/feedback-digest.mjs

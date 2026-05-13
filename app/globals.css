@@ -914,27 +914,32 @@ body {
   margin: 0;
 }
 
-.subscribe-popup-form {
-  background: transparent;
-  overflow: hidden;
-  margin: 0 -8px;
+.subscribe-popup-tg-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  background: #229ED9;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 8px;
 }
 
-.subscribe-popup-form .hs-form-frame {
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: auto !important;
-  background: transparent !important;
+.subscribe-popup-tg-cta:hover {
+  background: #1b85b5;
 }
 
-.subscribe-popup-form iframe {
-  max-width: 100% !important;
-  width: 100% !important;
-  height: 580px !important;
-  min-height: 580px !important;
-  border: none !important;
-  display: block;
-  background: transparent !important;
+.subscribe-popup-tg-cta:active {
+  transform: scale(0.98);
 }
 
 .subscribe-popup-skip {
@@ -987,11 +992,6 @@ body {
 
   .subscribe-popup-icon {
     font-size: 40px;
-  }
-
-  .subscribe-popup-form iframe {
-    height: 640px !important;
-    min-height: 640px !important;
   }
 }
 

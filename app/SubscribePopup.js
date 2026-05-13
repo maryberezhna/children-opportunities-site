@@ -1,34 +1,28 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 
-// Подія для відкриття з інших компонентів (кнопки "Підписатись")
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 
-// Ключ у localStorage (тільки ОДИН - хто підписався назавжди)
-const SUBSCRIBED_KEY = 'dityam_subscribed';
+const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 
-// Ключ у sessionStorage - щоб не показувати 100 разів за один візит
+// localStorage: користувач долучився до каналу — не показуємо більше.
+const JOINED_KEY = 'dityam_subscribed';
+
+// sessionStorage: закрив у поточному візиті — не спамимо до перезавантаження.
 const SESSION_DISMISSED_KEY = 'dityam_popup_dismissed_session';
 
-// Налаштування тригерів
-const TIME_TRIGGER_MS = 8000;   // 8 секунд
-const CARDS_TRIGGER = 15;        // Після 15 переглянутих карток
+const TIME_TRIGGER_MS = 8000;
+const CARDS_TRIGGER = 15;
 
 export default function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false);
-  const scriptLoaded = useRef(false);
   const triggered = useRef(false);
 
-  // Показувати якщо: НЕ підписаний І не закривав у цій сесії
   const shouldShow = () => {
     if (typeof window === 'undefined') return false;
     try {
-      const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
-      if (subscribed) return false; // підписався - не показувати більше ніколи
-
-      const sessionDismissed = sessionStorage.getItem(SESSION_DISMISSED_KEY);
-      if (sessionDismissed) return false; // закрив у цій сесії - не спамити
-
+      if (localStorage.getItem(JOINED_KEY)) return false;
+      if (sessionStorage.getItem(SESSION_DISMISSED_KEY)) return false;
       return true;
     } catch (e) {
       return true;
@@ -41,7 +35,7 @@ export default function SubscribePopup() {
     triggered.current = true;
     setIsOpen(true);
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'subscribe_popup_shown', {
+      window.gtag('event', 'telegram_popup_shown', {
         event_category: 'engagement',
         event_label: trigger,
       });
@@ -50,28 +44,38 @@ export default function SubscribePopup() {
 
   const closePopup = () => {
     setIsOpen(false);
-    // Запамʼятовуємо у sessionStorage - не показувати більше в цьому візиті
-    // При новому відкритті сайту покажемо знову (якщо не підписався)
     try {
       sessionStorage.setItem(SESSION_DISMISSED_KEY, Date.now().toString());
     } catch (e) {}
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'subscribe_popup_dismissed', {
+      window.gtag('event', 'telegram_popup_dismissed', {
         event_category: 'engagement',
       });
     }
   };
 
-  // ТРИГЕР 1: Таймер 8 секунд
+  const handleJoinClick = () => {
+    try {
+      localStorage.setItem(JOINED_KEY, Date.now().toString());
+    } catch (e) {}
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'telegram_join_click', {
+        event_category: 'conversion',
+        event_label: 'popup',
+      });
+    }
+    // Закриваємо одразу — Telegram відкриється у новій вкладці через target="_blank".
+    setIsOpen(false);
+  };
+
+  // ТРИГЕР 1: 8 секунд
   useEffect(() => {
     if (!shouldShow()) return;
-    const timer = setTimeout(() => {
-      openPopup('timer_8s');
-    }, TIME_TRIGGER_MS);
+    const timer = setTimeout(() => openPopup('timer_8s'), TIME_TRIGGER_MS);
     return () => clearTimeout(timer);
   }, []);
 
-  // ТРИГЕР 2: Скрол через 15 карток
+  // ТРИГЕР 2: 15 переглянутих карток
   useEffect(() => {
     if (!shouldShow()) return;
 
@@ -116,9 +120,9 @@ export default function SubscribePopup() {
   useEffect(() => {
     const handleOpen = () => {
       if (typeof window !== 'undefined') {
-        const subscribed = localStorage.getItem(SUBSCRIBED_KEY);
-        if (subscribed) {
-          alert('Ви вже підписані на розсилку! Дякуємо 🧡');
+        const joined = localStorage.getItem(JOINED_KEY);
+        if (joined) {
+          alert('Ви вже долучилися до Telegram-каналу 🧡');
           return;
         }
       }
@@ -129,18 +133,6 @@ export default function SubscribePopup() {
     return () => window.removeEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
   }, []);
 
-  // Завантаження HubSpot форми коли поп-ап відкривається
-  useEffect(() => {
-    if (!isOpen || scriptLoaded.current) return;
-    scriptLoaded.current = true;
-
-    const script = document.createElement('script');
-    script.src = 'https://js-eu1.hsforms.net/forms/embed/26525145.js';
-    script.defer = true;
-    document.body.appendChild(script);
-  }, [isOpen]);
-
-  // Блокуємо scroll
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden';
@@ -150,33 +142,12 @@ export default function SubscribePopup() {
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Закриття по Escape
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e) => { if (e.key === 'Escape') closePopup(); };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen]);
-
-  // Детектимо коли форма відправлена
-  useEffect(() => {
-    const onMessage = (e) => {
-      if (e.data?.type === 'hsFormCallback' && e.data?.eventName === 'onFormSubmitted') {
-        try {
-          localStorage.setItem(SUBSCRIBED_KEY, Date.now().toString());
-        } catch (err) {}
-        if (typeof window !== 'undefined' && window.gtag) {
-          window.gtag('event', 'subscribe_form_submitted', {
-            event_category: 'conversion',
-            event_label: 'popup',
-          });
-        }
-        setTimeout(() => setIsOpen(false), 3000);
-      }
-    };
-    window.addEventListener('message', onMessage);
-    return () => window.removeEventListener('message', onMessage);
-  }, []);
 
   if (!isOpen) return null;
 
@@ -195,23 +166,31 @@ export default function SubscribePopup() {
         </button>
 
         <div className="subscribe-popup-header">
-          <div className="subscribe-popup-icon">📬</div>
-          <h2 className="subscribe-popup-title">Не пропустіть нові можливості</h2>
+          <div className="subscribe-popup-icon" aria-hidden="true">
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="#229ED9">
+              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+            </svg>
+          </div>
+          <h2 className="subscribe-popup-title">Долучайтеся до нашого Telegram-каналу</h2>
           <p className="subscribe-popup-description">
-            Раз на місяць — 5-7 найкращих програм для дітей на email.
+            Нові можливості для дітей — щодня в Telegram.
             <br />
             Без спаму. Відписатись можна одним кліком.
           </p>
         </div>
 
-        <div className="subscribe-popup-form">
-          <div
-            className="hs-form-frame"
-            data-region="eu1"
-            data-form-id="7d2d6246-71fc-4650-a9e8-547523cec5c7"
-            data-portal-id="26525145"
-          />
-        </div>
+        <a
+          href={TELEGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="subscribe-popup-tg-cta"
+          onClick={handleJoinClick}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
+          </svg>
+          Долучитися до Telegram
+        </a>
 
         <button className="subscribe-popup-skip" onClick={closePopup}>
           Пізніше, дякую
