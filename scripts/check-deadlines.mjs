@@ -238,13 +238,19 @@ async function sendDailyDigest() {
   if (urgent.length > 0) {
     lines.push(`⏰ <b>Терміново — дедлайн на днях (${urgent.length})</b>`);
     lines.push('');
-    for (const r of urgent) lines.push(formatLine(r));
+    urgent.forEach((r, i) => {
+      lines.push(formatLine(r));
+      if (i < urgent.length - 1) lines.push('');
+    });
     lines.push('');
   }
   if (themed.length > 0) {
     lines.push(`<b>${theme.heading}</b>`);
     lines.push('');
-    for (const r of themed) lines.push(formatLine(r));
+    themed.forEach((r, i) => {
+      lines.push(formatLine(r));
+      if (i < themed.length - 1) lines.push('');
+    });
     lines.push('');
   }
   lines.push('🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>');
@@ -278,7 +284,7 @@ function ageLabel(r) {
   return `${r.age_from}–${r.age_to} років`;
 }
 
-function shortSummary(text, max = 110) {
+function shortSummary(text, max = 80) {
   if (!text) return '';
   const t = text.replace(/\s+/g, ' ').trim();
   if (t.length <= max) return t;
@@ -290,20 +296,19 @@ function formatLine(r) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const meta = [];
   const age = ageLabel(r);
-  if (age) meta.push(`для ${age}`);
+  if (age) meta.push(age);
   if (r.cost_type === 'free') meta.push('✅ безкоштовно');
   else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
-
-  let line = `• <a href="${url}">${escapeHtml(r.title)}</a>`;
-  if (meta.length) line += ` — ${meta.join(' · ')}`;
-
   if (r.daysLeft != null && r.daysLeft >= 0) {
     const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    line += ` · ⏰ <b>${tag}</b>`;
+    meta.push(`⏰ <b>${tag}</b>`);
   }
+
+  const lines = [`• <a href="${url}">${escapeHtml(r.title)}</a>`];
+  if (meta.length) lines.push(`   ${meta.join(' · ')}`);
   const sum = shortSummary(r.summary);
-  if (sum) line += `\n  <i>${escapeHtml(sum)}</i>`;
-  return line;
+  if (sum) lines.push(`   <i>${escapeHtml(sum)}</i>`);
+  return lines.join('\n');
 }
 
 function shuffle(arr) {
