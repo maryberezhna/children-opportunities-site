@@ -201,10 +201,10 @@ if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
 }
 
 async function sendDailyDigest() {
-  // Section A: truly urgent — deadline 0..3 days. Top 5.
+  // Section A: truly urgent — deadline 0..3 days. Top 3.
   const urgent = dueSoon
     .filter((r) => r.daysLeft >= 0 && r.daysLeft <= 3)
-    .slice(0, 5);
+    .slice(0, 3);
 
   // Section B: themed pool — fetch all active opportunities (not closed),
   // either with no deadline or with deadline in the future.
@@ -227,7 +227,7 @@ async function sendDailyDigest() {
   } else {
     themed = shuffle(themed);
   }
-  themed = themed.slice(0, 5);
+  themed = themed.slice(0, 3);
 
   if (urgent.length === 0 && themed.length === 0) {
     console.log('Nothing to post — both sections empty.');
@@ -239,7 +239,7 @@ async function sendDailyDigest() {
     lines.push(`⏰ <b>Терміново — дедлайн на днях (${urgent.length})</b>`);
     lines.push('');
     urgent.forEach((r, i) => {
-      lines.push(formatLine(r));
+      lines.push(formatLine(r, i));
       if (i < urgent.length - 1) lines.push('');
     });
     lines.push('');
@@ -248,7 +248,7 @@ async function sendDailyDigest() {
     lines.push(`<b>${theme.heading}</b>`);
     lines.push('');
     themed.forEach((r, i) => {
-      lines.push(formatLine(r));
+      lines.push(formatLine(r, i));
       if (i < themed.length - 1) lines.push('');
     });
     lines.push('');
@@ -292,7 +292,7 @@ function shortSummary(text, max = 80) {
   return t.slice(0, max).replace(/[.,;:\s]+\S*$/, '') + '…';
 }
 
-function formatLine(r) {
+function formatLine(r, index) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const meta = [];
   const age = ageLabel(r);
@@ -304,7 +304,8 @@ function formatLine(r) {
     meta.push(`<b>${tag}</b>`);
   }
 
-  const lines = [`• <a href="${url}">${escapeHtml(r.title)}</a>`];
+  const prefix = `${(index ?? 0) + 1}.`;
+  const lines = [`${prefix} <a href="${url}">${escapeHtml(r.title)}</a>`];
   if (meta.length) lines.push(`   ${meta.join(' · ')}`);
   const sum = shortSummary(r.summary);
   if (sum) lines.push(`   <i>${escapeHtml(sum)}</i>`);
