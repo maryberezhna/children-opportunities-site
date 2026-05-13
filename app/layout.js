@@ -1,5 +1,6 @@
 import { DM_Sans, Caveat, Manrope } from 'next/font/google';
 import { Analytics } from './Analytics';
+import TelegramFAB from './TelegramFAB';
 import './globals.css';
 
 // DM Sans does not include Cyrillic in next/font's bundled subsets.
@@ -106,6 +107,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         {children}
+        <TelegramFAB />
         <Analytics />
       </body>
     </html>
