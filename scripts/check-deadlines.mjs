@@ -159,6 +159,42 @@ const reportLines = [
 ];
 await writeFile(join(outDir, `deadline-report-${stamp}.txt`), reportLines.join('\n'), 'utf8');
 
+// Sun=0, Mon=1, ..., Sat=6 — index matches Date#getDay().
+// Declared before sendDailyDigest's invocation so the const is initialized
+// (TDZ would throw otherwise — JS hoists `const` declarations but keeps them
+// uninitialized until execution reaches the declaration line).
+const THEMES = [
+  { // Sunday
+    heading: '🧸 Сьогодні — для малюків (0-6 років)',
+    filter: (r) => r.age_from <= 6 && r.age_to <= 8,
+  },
+  { // Monday
+    heading: '📚 Сьогодні — для школярів (7-11 років)',
+    filter: (r) => r.age_from <= 11 && r.age_to >= 7,
+  },
+  { // Tuesday
+    heading: '🎒 Сьогодні — для підлітків (12-17 років)',
+    filter: (r) => r.age_to >= 12 && r.age_from <= 17,
+  },
+  { // Wednesday
+    heading: '🎁 Сьогодні — безкоштовні можливості',
+    filter: (r) => r.cost_type === 'free',
+  },
+  { // Thursday
+    heading: '🌍 Сьогодні — можливості за кордоном',
+    filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
+  },
+  { // Friday
+    heading: '🎨 Сьогодні — творчість, STEM та конкурси',
+    filter: (r) => ['course', 'competition', 'club', 'olympiad'].includes(r.opportunity_type),
+  },
+  { // Saturday
+    heading: '⭐ Сьогодні — нові на сайті',
+    filter: () => true,
+    sortBy: 'created_at_desc',
+  },
+];
+
 // --- Optional: notify Telegram with daily digest ---
 if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
   await sendDailyDigest();
@@ -235,39 +271,6 @@ async function sendDailyDigest() {
   }
 }
 
-// Sun=0, Mon=1, ..., Sat=6 — index matches Date#getDay().
-const THEMES = [
-  { // Sunday
-    heading: '🧸 Сьогодні — для малюків (0-6 років)',
-    filter: (r) => r.age_from <= 6 && r.age_to <= 8,
-  },
-  { // Monday
-    heading: '📚 Сьогодні — для школярів (7-11 років)',
-    filter: (r) => r.age_from <= 11 && r.age_to >= 7,
-  },
-  { // Tuesday
-    heading: '🎒 Сьогодні — для підлітків (12-17 років)',
-    filter: (r) => r.age_to >= 12 && r.age_from <= 17,
-  },
-  { // Wednesday
-    heading: '💸 Сьогодні — безкоштовні можливості',
-    filter: (r) => r.cost_type === 'free',
-  },
-  { // Thursday
-    heading: '🌍 Сьогодні — можливості за кордоном',
-    filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
-  },
-  { // Friday
-    heading: '🎨 Сьогодні — творчість, STEM та конкурси',
-    filter: (r) => ['course', 'competition', 'club', 'olympiad'].includes(r.opportunity_type),
-  },
-  { // Saturday
-    heading: '⭐ Сьогодні — нові на сайті',
-    filter: () => true,
-    sortBy: 'created_at_desc',
-  },
-];
-
 function ageLabel(r) {
   if (r.age_from == null || r.age_to == null) return null;
   if (r.age_from === 0 && r.age_to >= 17) return '0–18 років';
@@ -288,8 +291,8 @@ function formatLine(r) {
   const meta = [];
   const age = ageLabel(r);
   if (age) meta.push(`для ${age}`);
-  if (r.cost_type === 'free') meta.push('💸 безкоштовно');
-  else if (r.cost_type === 'partially_free') meta.push('💸 з фінансуванням');
+  if (r.cost_type === 'free') meta.push('✅ безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
 
   let line = `• <a href="${url}">${escapeHtml(r.title)}</a>`;
   if (meta.length) line += ` — ${meta.join(' · ')}`;
