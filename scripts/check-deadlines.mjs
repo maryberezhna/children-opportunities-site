@@ -177,7 +177,7 @@ const THEMES = [
     filter: (r) => r.age_to >= 12 && r.age_from <= 17,
   },
   { // Wednesday
-    heading: '💸 Сьогодні — безкоштовні можливості',
+    heading: '🎁 Сьогодні — безкоштовні можливості',
     filter: (r) => r.cost_type === 'free',
   },
   { // Thursday
@@ -291,8 +291,8 @@ function formatLine(r) {
   const meta = [];
   const age = ageLabel(r);
   if (age) meta.push(`для ${age}`);
-  if (r.cost_type === 'free') meta.push('💸 безкоштовно');
-  else if (r.cost_type === 'partially_free') meta.push('💸 з фінансуванням');
+  if (r.cost_type === 'free') meta.push('✅ безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
 
   let line = `• <a href="${url}">${escapeHtml(r.title)}</a>`;
   if (meta.length) line += ` — ${meta.join(' · ')}`;

@@ -83,7 +83,7 @@ function buildMessage(item) {
   lines.push('');
 
   const meta = [`📚 ${typeLabel}`, `👶 ${ageLabel(item)}`];
-  if (cost) meta.push(item.cost_type === 'free' ? `✅ ${cost}` : `💸 ${cost}`);
+  if (cost) meta.push(item.cost_type === 'free' ? `✅ ${cost}` : cost);
   lines.push(meta.join(' · '));
 
   if (deadline) lines.push(`⏰ Дедлайн: <b>${deadline}</b>`);
