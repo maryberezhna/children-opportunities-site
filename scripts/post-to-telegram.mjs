@@ -103,7 +103,16 @@ function buildMessage(item) {
   return lines.join('\n');
 }
 
-async function sendTelegramMessage(text) {
+function buildFeedbackKeyboard(opportunityId) {
+  return {
+    inline_keyboard: [[
+      { text: '👍 Цікаво', callback_data: `fb:yes:${opportunityId}` },
+      { text: '👎 Не цікаво', callback_data: `fb:no:${opportunityId}` },
+    ]],
+  };
+}
+
+async function sendTelegramMessage(text, replyMarkup) {
   const apiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
   const res = await fetch(apiUrl, {
     method: 'POST',
@@ -115,6 +124,7 @@ async function sendTelegramMessage(text) {
       // suppress preview — every dityam.com.ua page shares the same og-image,
       // so the auto-fetched card is identical for every post and adds no info.
       disable_web_page_preview: true,
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     }),
   });
   const json = await res.json();
@@ -160,7 +170,7 @@ for (const item of items) {
   }
 
   try {
-    await sendTelegramMessage(message);
+    await sendTelegramMessage(message, buildFeedbackKeyboard(item.id));
     const { error: updateError } = await supabase
       .from('opportunities')
       .update({ telegram_posted_at: new Date().toISOString() })

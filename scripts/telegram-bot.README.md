@@ -73,6 +73,118 @@ Repo → Actions → "Telegram bot — post new opportunities" → Run workflow 
 
 Якщо все ок — запустити з `dry_run = false`. Перші пости з'являться в каналі.
 
+## Реакція "цікаво / не цікаво"
+
+Під кожним постом — дві інлайн-кнопки `👍 Цікаво` / `👎 Не цікаво`.
+Лічильники юзерам **не показуємо** (щоб думка одного не впливала на думку іншого).
+Тап → Telegram дзвонить у вебхук на сайті → запис у `opportunity_feedback`
++ івент `opportunity_feedback` у Google Analytics 4.
+
+### Одноразове налаштування
+
+1. **Міграція БД** — виконати `supabase/migrations/20260509_telegram_feedback.sql`
+   у Supabase SQL Editor (створює таблицю `opportunity_feedback`).
+
+2. **Згенерувати webhook secret** (32+ випадкових символи):
+   ```sh
+   openssl rand -hex 32
+   ```
+
+3. **Створити GA4 API secret для Measurement Protocol**:
+   GA4 → Admin → Data Streams → вибрати веб-стрім (`G-KPLE8LGH91`) →
+   Measurement Protocol API secrets → Create → скопіювати `secret_value`.
+
+4. **Додати env-змінні у Vercel** (Production + Preview):
+   - `TELEGRAM_BOT_TOKEN` — той самий, що в GitHub Secrets
+   - `TELEGRAM_WEBHOOK_SECRET` — секрет із кроку 2
+   - `SUPABASE_SERVICE_ROLE_KEY` — той самий, що в GitHub Secrets
+   - `GA4_API_SECRET` — секрет із кроку 3
+   - `GA4_MEASUREMENT_ID` — `G-KPLE8LGH91` (опційно, є default)
+
+   Передеплоїти, щоб env-змінні підхопились.
+
+5. **Зареєструвати вебхук у Telegram**:
+   ```sh
+   TELEGRAM_BOT_TOKEN=... \
+   TELEGRAM_WEBHOOK_SECRET=... \
+   WEBHOOK_URL=https://dityam.com.ua/api/telegram/webhook \
+     node scripts/set-telegram-webhook.mjs
+   ```
+   Перевірка стану: `ACTION=info node scripts/set-telegram-webhook.mjs`.
+
+### Як читати голоси в Google Analytics
+
+GA4 → Reports → Engagement → Events → шукати `opportunity_feedback`.
+Параметри івента (треба зареєструвати як **Custom dimensions** один раз
+у GA4 → Admin → Custom definitions, інакше в репорті будуть приховані):
+
+- `value` — `yes` або `no`
+- `action` — `add` (новий голос) / `switch` (перемкнув) / `remove` (зняв)
+- `opportunity_id`, `opportunity_slug`, `opportunity_title`
+- `source` — завжди `telegram`
+
+Корисні Explore-репорти:
+- розподіл `value` по всіх постах → загальний CTR "цікаво" vs "не цікаво";
+- breakdown по `opportunity_title` → які типи постів резонують найкраще.
+
+### Як читати голоси у Supabase (резерв)
+
+```sql
+SELECT
+  o.title,
+  COUNT(*) FILTER (WHERE f.value = 'yes') AS yes,
+  COUNT(*) FILTER (WHERE f.value = 'no')  AS no
+FROM opportunities o
+LEFT JOIN opportunity_feedback f ON f.opportunity_id = o.id
+WHERE o.telegram_posted_at IS NOT NULL
+GROUP BY o.id, o.title
+ORDER BY (COUNT(*) FILTER (WHERE f.value = 'yes')
+        + COUNT(*) FILTER (WHERE f.value = 'no')) DESC
+LIMIT 50;
+```
+
+### Поведінка
+
+- Один Telegram-юзер = один голос на одну можливість.
+- Повторний тап тієї ж кнопки → голос знімається (toast "Голос знято").
+- Тап протилежної кнопки → перемикається (action=`switch`).
+- Кнопки додаються тільки до **нових** постів. Старі залишаються без реакції.
+- Лічильників на кнопках немає — щоб не створювати ефект bandwagon.
+
+## Тижнева зведенка адміну
+
+`scripts/feedback-digest.mjs` (workflow `.github/workflows/feedback-digest.yml`)
+раз на тиждень (понеділок 09:00 Kyiv) шле в особистий чат адміна
+повідомлення з топ-постами за `👍` та `👎` за останні 7 днів.
+
+### Налаштування
+
+1. **Дізнатись свій admin chat_id**:
+   написати щось боту `@DityamComUABot` у DM, потім:
+   ```sh
+   curl "https://api.telegram.org/bot<TOKEN>/getUpdates" | jq '.result[].message.chat.id'
+   ```
+   Взяти число (типу `123456789` — без мінуса, особистий чат).
+   Або створити приватну групу з ботом — тоді chat_id буде з мінусом.
+
+2. **Додати GitHub Secret** `TELEGRAM_ADMIN_CHAT_ID` із цим числом.
+
+3. **Тестовий запуск**: Actions → "Feedback digest — weekly summary to admin"
+   → Run workflow → `dry_run = true` → подивитись лог.
+
+### Що в зведенці
+
+- Юзерів / голосів / постів за період.
+- Топ-5 за `👍 цікаво` (з посиланнями на сайт).
+- Топ-5 за `👎 не цікаво`.
+- Якщо за тиждень ніхто не голосував — повідомлення "Голосів немає 🤷".
+
+### Tuning
+
+- Період: змінити cron у workflow (`'0 6 * * 1'` = понеділок) або
+  ручний запуск з input `period_days=14`.
+- Розмір топу: `TOP_N` env (default 5).
+
 ## Tuning
 
 - Частота: змінити `cron` у workflow (`'0 */4 * * *'` = кожні 4 години).

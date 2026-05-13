@@ -57,7 +57,7 @@ lookahead.setDate(today.getDate() + 30);
 
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, opportunity_type, deadline, cost_type, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, cost_type, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -159,34 +159,157 @@ const reportLines = [
 ];
 await writeFile(join(outDir, `deadline-report-${stamp}.txt`), reportLines.join('\n'), 'utf8');
 
-// --- Optional: notify Telegram if there are items due within 7 days ---
+// --- Optional: notify Telegram with daily digest ---
 if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
-  const urgent = dueSoon.filter((r) => r.daysLeft <= 7);
-  if (urgent.length > 0) {
-    const lines = [`⏰ <b>Дедлайни на цьому тижні (${urgent.length})</b>`, ''];
-    for (const r of urgent) {
-      const url = `https://dityam.com.ua/o/${r.slug}`;
-      const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-      lines.push(`• <a href="${url}">${escapeHtml(r.title)}</a> — <b>${tag}</b>`);
-    }
-    try {
-      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: lines.join('\n'),
-          parse_mode: 'HTML',
-          disable_web_page_preview: true,
-        }),
-      });
-      const json = await res.json();
-      if (json.ok) console.log(`📨 Telegram digest sent (${urgent.length} urgent items).`);
-      else console.error(`Telegram error: ${json.description}`);
-    } catch (e) {
-      console.error(`Telegram send failed: ${e.message}`);
-    }
+  await sendDailyDigest();
+}
+
+async function sendDailyDigest() {
+  // Section A: truly urgent — deadline 0..3 days. Top 5.
+  const urgent = dueSoon
+    .filter((r) => r.daysLeft >= 0 && r.daysLeft <= 3)
+    .slice(0, 5);
+
+  // Section B: themed pool — fetch all active opportunities (not closed),
+  // either with no deadline or with deadline in the future.
+  const todayIso = today.toISOString().slice(0, 10);
+  const { data: poolData, error: poolErr } = await supabase
+    .from('opportunities')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at')
+    .neq('cost_type', 'closed')
+    .or(`deadline.is.null,deadline.gte.${todayIso}`);
+  if (poolErr) {
+    console.error(`Pool fetch failed: ${poolErr.message}`);
+    return;
   }
+  const pool = (poolData || []).filter((r) => !urgent.some((u) => u.id === r.id));
+
+  const theme = THEMES[today.getDay()];
+  let themed = pool.filter(theme.filter);
+  if (theme.sortBy === 'created_at_desc') {
+    themed.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+  } else {
+    themed = shuffle(themed);
+  }
+  themed = themed.slice(0, 5);
+
+  if (urgent.length === 0 && themed.length === 0) {
+    console.log('Nothing to post — both sections empty.');
+    return;
+  }
+
+  const lines = [];
+  if (urgent.length > 0) {
+    lines.push(`⏰ <b>Терміново — дедлайн на днях (${urgent.length})</b>`);
+    lines.push('');
+    for (const r of urgent) lines.push(formatLine(r));
+    lines.push('');
+  }
+  if (themed.length > 0) {
+    lines.push(`<b>${theme.heading}</b>`);
+    lines.push('');
+    for (const r of themed) lines.push(formatLine(r));
+    lines.push('');
+  }
+  lines.push('🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>');
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        text: lines.join('\n'),
+        parse_mode: 'HTML',
+        disable_web_page_preview: true,
+      }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      console.log(`📨 Daily digest sent — urgent=${urgent.length}, themed=${themed.length} (${theme.heading}).`);
+    } else {
+      console.error(`Telegram error: ${json.description}`);
+    }
+  } catch (e) {
+    console.error(`Telegram send failed: ${e.message}`);
+  }
+}
+
+// Sun=0, Mon=1, ..., Sat=6 — index matches Date#getDay().
+const THEMES = [
+  { // Sunday
+    heading: '🧸 Сьогодні — для малюків (0-6 років)',
+    filter: (r) => r.age_from <= 6 && r.age_to <= 8,
+  },
+  { // Monday
+    heading: '📚 Сьогодні — для школярів (7-11 років)',
+    filter: (r) => r.age_from <= 11 && r.age_to >= 7,
+  },
+  { // Tuesday
+    heading: '🎒 Сьогодні — для підлітків (12-17 років)',
+    filter: (r) => r.age_to >= 12 && r.age_from <= 17,
+  },
+  { // Wednesday
+    heading: '💸 Сьогодні — безкоштовні можливості',
+    filter: (r) => r.cost_type === 'free',
+  },
+  { // Thursday
+    heading: '🌍 Сьогодні — можливості за кордоном',
+    filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
+  },
+  { // Friday
+    heading: '🎨 Сьогодні — творчість, STEM та конкурси',
+    filter: (r) => ['course', 'competition', 'club', 'olympiad'].includes(r.opportunity_type),
+  },
+  { // Saturday
+    heading: '⭐ Сьогодні — нові на сайті',
+    filter: () => true,
+    sortBy: 'created_at_desc',
+  },
+];
+
+function ageLabel(r) {
+  if (r.age_from == null || r.age_to == null) return null;
+  if (r.age_from === 0 && r.age_to >= 17) return '0–18 років';
+  if (r.age_from === r.age_to) return `${r.age_from} років`;
+  return `${r.age_from}–${r.age_to} років`;
+}
+
+function shortSummary(text, max = 110) {
+  if (!text) return '';
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  // Cut on a word boundary, drop trailing punctuation.
+  return t.slice(0, max).replace(/[.,;:\s]+\S*$/, '') + '…';
+}
+
+function formatLine(r) {
+  const url = `https://dityam.com.ua/o/${r.slug}`;
+  const meta = [];
+  const age = ageLabel(r);
+  if (age) meta.push(`для ${age}`);
+  if (r.cost_type === 'free') meta.push('💸 безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('💸 з фінансуванням');
+
+  let line = `• <a href="${url}">${escapeHtml(r.title)}</a>`;
+  if (meta.length) line += ` — ${meta.join(' · ')}`;
+
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    line += ` · ⏰ <b>${tag}</b>`;
+  }
+  const sum = shortSummary(r.summary);
+  if (sum) line += `\n  <i>${escapeHtml(sum)}</i>`;
+  return line;
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
 }
 
 function escapeHtml(s) {
