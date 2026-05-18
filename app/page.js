@@ -16,6 +16,7 @@ async function getOpportunities() {
   const { data, error } = await supabase
     .from('opportunities')
     .select('*')
+    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (error) {

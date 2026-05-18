@@ -13,8 +13,17 @@ import * as camps from './sources/regional-camps.mjs';
 import * as international from './sources/international-competitions.mjs';
 import * as langSchools from './sources/regional-language-schools.mjs';
 import * as manContests from './sources/man-contests.mjs';
+import * as monOlympiads from './sources/mon-subject-olympiads.mjs';
+import * as diiaOsvita from './sources/diia-osvita.mjs';
+import * as ucfGrants from './sources/ucf-grants.mjs';
+import * as easyGov from './sources/easy-gov.mjs';
+import * as eurodesk from './sources/eurodesk.mjs';
+import * as egapStem from './sources/egap-stem.mjs';
 
-const SOURCES = [acmodasi, constellation, festPortal, camps, international, langSchools, manContests];
+const SOURCES = [
+  acmodasi, constellation, festPortal, camps, international, langSchools, manContests,
+  monOlympiads, diiaOsvita, ucfGrants, easyGov, eurodesk, egapStem,
+];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(__dirname, 'output');

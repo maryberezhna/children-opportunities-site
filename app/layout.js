@@ -2,6 +2,7 @@ import { DM_Sans, Caveat, Manrope } from 'next/font/google';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
+import AccessibilityPanel from './AccessibilityPanel';
 import './globals.css';
 
 // DM Sans does not include Cyrillic in next/font's bundled subsets.
@@ -110,6 +111,7 @@ export default function RootLayout({ children }) {
         {children}
         <ScrollNav />
         <TelegramFAB />
+        <AccessibilityPanel />
         <Analytics />
       </body>
     </html>

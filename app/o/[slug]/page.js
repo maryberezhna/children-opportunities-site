@@ -66,6 +66,7 @@ async function getRelated(item, limit = 8) {
   const { data } = await supabase
     .from('opportunities')
     .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .eq('status', 'active')
     .neq('slug', item.slug)
     .eq('opportunity_type', item.opportunity_type)
     .lte('age_from', item.age_to)
@@ -76,6 +77,7 @@ async function getRelated(item, limit = 8) {
   const { data: fallback } = await supabase
     .from('opportunities')
     .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .eq('status', 'active')
     .neq('slug', item.slug)
     .lte('age_from', item.age_to)
     .gte('age_to', item.age_from)
@@ -85,13 +87,20 @@ async function getRelated(item, limit = 8) {
 
 export async function generateStaticParams() {
   if (!supabase) return [];
-  const { data } = await supabase.from('opportunities').select('slug');
+  const { data } = await supabase.from('opportunities').select('slug').eq('status', 'active');
   return (data || []).map((row) => ({ slug: row.slug }));
 }
 
 export async function generateMetadata({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) return { title: 'Можливість не знайдена' };
+
+  if (item.status && item.status !== 'active') {
+    return {
+      title: item.title,
+      robots: { index: false, follow: false },
+    };
+  }
 
   const typeLabel = TYPE_LABELS[item.opportunity_type] || '';
   const ageRange =
@@ -100,8 +109,19 @@ export async function generateMetadata({ params }) {
       : `${item.age_from}-${item.age_to} років`;
 
   const title = `${item.title} — ${typeLabel} для дітей ${ageRange}`;
-  const description = (item.summary || '').slice(0, 160);
   const url = `https://dityam.com.ua/o/${item.slug}`;
+
+  const rawSummary = (item.summary || '').trim();
+  const COST_DESC = {
+    free: 'безкоштовно',
+    partially_free: 'з фінансуванням',
+    paid_affordable: 'доступна вартість',
+    paid_premium: 'платно',
+  };
+  const costHint = COST_DESC[item.cost_type] || '';
+  const description = rawSummary.length >= 40
+    ? rawSummary.slice(0, 160)
+    : `${typeLabel} для дітей ${ageRange}${costHint ? `, ${costHint}` : ''}. ${rawSummary}`.trim().slice(0, 160);
 
   return {
     title,
@@ -114,6 +134,8 @@ export async function generateMetadata({ params }) {
       description,
       siteName: 'Можливості для дитини',
       locale: 'uk_UA',
+      ...(item.created_at && { publishedTime: item.created_at }),
+      ...(item.updated_at && { modifiedTime: item.updated_at }),
       images: [
         {
           url: '/og-image.png',
