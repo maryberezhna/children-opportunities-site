@@ -104,10 +104,19 @@ export async function scrape() {
   try {
     const res = await fetch(API, {
       headers: {
-        'user-agent': 'Mozilla/5.0 (compatible; dityam-scraper/1.0; +https://dityam.com.ua)',
+        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
         'referer': 'https://programmes.eurodesk.eu/programmes',
-        'accept': 'application/json, */*',
+        'origin': 'https://programmes.eurodesk.eu',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9,uk;q=0.8',
+        'accept-encoding': 'gzip, deflate, br',
         'x-requested-with': 'XMLHttpRequest',
+        'sec-fetch-site': 'same-origin',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-dest': 'empty',
+        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"macOS"',
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
