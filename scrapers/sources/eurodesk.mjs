@@ -7,7 +7,8 @@
 
 export const name = 'Eurodesk — EU програми для молоді';
 
-const API = 'https://programmes.eurodesk.eu/search';
+// RSS is public and not Cloudflare-protected; /search returns 403 on CI.
+const RSS = 'https://programmes.eurodesk.eu/rss';
 const BASE = 'https://programmes.eurodesk.eu';
 
 // Ключові слова, що вказують на молодь / школярів
@@ -77,78 +78,57 @@ function isYouthRelevant(title, desc) {
   return YOUTH_TITLE_KEYWORDS.some(k => text.includes(k));
 }
 
-function parseCards(html) {
-  const parts = html.split('<div data-role="card"');
-  const cards = [];
-
-  for (let i = 1; i < parts.length; i++) {
-    const part = parts[i];
-
-    const title = /data-role="title"[^>]*>\s*([\s\S]*?)\s*<\/div>/.exec(part)?.[1]
-      ?.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#039;/g, "'").trim() || '';
-    const desc = /group-hover:block[^>]*>\s*([\s\S]*?)\s*<\/div>/.exec(part)?.[1]
-      ?.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&#039;/g, "'").trim() || '';
-    const deadlineRaw = /font-bold uppercase">([\d\/]+|ongoing)<\/span>/.exec(part)?.[1] || null;
-    const id = /value="(\d+)-[a-z]/.exec(part)?.[1];
-    const colorMatch = /data-color="([^"]+)"/.exec(part);
-    const color = colorMatch?.[1] || 'blue';
-
-    if (!id || !title) continue;
-    cards.push({ id, title, desc, deadlineRaw, color });
+function parseRss(xml) {
+  const items = [];
+  const itemRe = /<item>([\s\S]*?)<\/item>/g;
+  let m;
+  while ((m = itemRe.exec(xml)) !== null) {
+    const inner = m[1];
+    const title = /<title><!\[CDATA\[(.*?)\]\]><\/title>/.exec(inner)?.[1]?.trim() || '';
+    const desc = /<description><!\[CDATA\[(.*?)\]\]><\/description>/.exec(inner)?.[1]?.trim() || '';
+    const guid = /<guid>(https?:\/\/programmes\.eurodesk\.eu\/(\d+))<\/guid>/.exec(inner);
+    const id = guid?.[2];
+    const url = guid?.[1];
+    if (id && title) items.push({ id, url, title, desc });
   }
-  return cards;
+  return items;
 }
 
 export async function scrape() {
-  let html = '';
+  let xml = '';
   try {
-    const res = await fetch(API, {
+    const res = await fetch(RSS, {
       headers: {
-        'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        'referer': 'https://programmes.eurodesk.eu/programmes',
-        'origin': 'https://programmes.eurodesk.eu',
-        'accept': 'application/json, text/plain, */*',
-        'accept-language': 'en-US,en;q=0.9,uk;q=0.8',
-        'accept-encoding': 'gzip, deflate, br',
-        'x-requested-with': 'XMLHttpRequest',
-        'sec-fetch-site': 'same-origin',
-        'sec-fetch-mode': 'cors',
-        'sec-fetch-dest': 'empty',
-        'sec-ch-ua': '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
-        'sec-ch-ua-mobile': '?0',
-        'sec-ch-ua-platform': '"macOS"',
+        'user-agent': 'Mozilla/5.0 (compatible; dityam-scraper/1.0; +https://dityam.com.ua)',
+        'accept': 'application/rss+xml, application/xml, text/xml, */*',
       },
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const json = await res.json();
-    html = (json.open || '') + (json.upcoming || '');
+    xml = await res.text();
   } catch (err) {
-    console.warn(`  ${name}: fetch failed (${err.message})`);
+    console.warn(`  ${name}: RSS fetch failed (${err.message})`);
     return [];
   }
 
-  const cards = parseCards(html);
+  const items = parseRss(xml);
   const rows = [];
 
-  for (const { id, title, desc, deadlineRaw, color } of cards) {
+  for (const { id, url, title, desc } of items) {
     if (!isYouthRelevant(title, desc)) continue;
 
-    const deadline = parseDeadline(deadlineRaw);
-
-    // Age from description if available; otherwise derive from keywords
+    // Age from description text
     const age = parseAge(desc);
     let age_from, age_to;
     if (age && age.min <= 17) {
       age_from = age.min;
       age_to = Math.min(17, age.max);
     } else if (age && age.min > 17) {
-      continue; // 18+ тільки — пропускаємо
+      continue;
     } else {
-      // Дефолт по контексту
       const t = `${title} ${desc}`.toLowerCase();
-      if (/high.?school|secondary|школяр|high school|17|16/.test(t)) {
+      if (/high.?school|secondary|16|17/.test(t)) {
         age_from = 15; age_to = 17;
-      } else if (/13|14|15/.test(t) || /junior|young person/.test(t)) {
+      } else if (/13|14|15|junior|young person/.test(t)) {
         age_from = 13; age_to = 17;
       } else {
         age_from = 14; age_to = 17;
@@ -160,13 +140,13 @@ export async function scrape() {
       summary: desc.slice(0, 500),
       age_from,
       age_to,
-      opportunity_type: COLOR_TYPE[color] || 'exchange',
+      opportunity_type: 'exchange',
       categories: ['eu', 'international'],
       child_needs: [],
       format: 'Онлайн / офлайн',
       cost_type: 'free',
-      deadline,
-      source_url: `${BASE}/${id}`,
+      deadline: null,
+      source_url: url || `${BASE}/${id}`,
       source: 'Eurodesk',
     });
   }
