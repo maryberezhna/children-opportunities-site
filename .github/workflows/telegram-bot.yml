@@ -2,9 +2,10 @@ name: Telegram bot — post new opportunities
 
 on:
   schedule:
-    # twice daily — 09:00 and 18:00 Kyiv summer time (06:00 / 15:00 UTC)
-    # combined with MAX_PER_RUN=1 → 2 posts per day total
-    - cron: '0 6,15 * * *'
+    # Once daily — 15:00 Kyiv summer time (12:00 UTC)
+    # deadline-check digest runs at 06:00 UTC → 6h gap between messages
+    # max 1 new opportunity post per day → total ≤ 2 Telegram messages/day
+    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

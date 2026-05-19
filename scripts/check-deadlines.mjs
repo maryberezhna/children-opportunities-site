@@ -321,33 +321,47 @@ function ageLabel(r) {
   return `${r.age_from}–${r.age_to} років`;
 }
 
-function shortSummary(text, max = 130) {
-  if (!text) return '';
-  const t = text.replace(/\s+/g, ' ').trim();
-  if (t.length <= max) return t;
-  // Cut on a word boundary, drop trailing punctuation.
-  return t.slice(0, max).replace(/[.,;:\s]+\S*$/, '') + '…';
+function formatDeadlineDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function formatLine(r, index) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
-  const meta = [];
   const typeLabel = TYPE_LABELS[r.opportunity_type];
-  if (typeLabel) meta.push(typeLabel);
   const age = ageLabel(r);
-  if (age) meta.push(age);
-  if (r.cost_type === 'free') meta.push('безкоштовно');
-  else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
-  if (r.daysLeft != null && r.daysLeft >= 0) {
-    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    meta.push(`<b>${tag}</b>`);
-  }
+
+  // Meta line — same emoji format as individual posts
+  const meta = [];
+  if (typeLabel) meta.push(`📚 ${typeLabel}`);
+  if (age) meta.push(`👶 ${age}`);
+  if (r.cost_type === 'free') meta.push('✅ Безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('З фінансуванням');
 
   const prefix = `${(index ?? 0) + 1}.`;
-  const lines = [`${prefix} <a href="${url}">${escapeHtml(r.title)}</a>`];
+  const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
   if (meta.length) lines.push(`   ${meta.join(' · ')}`);
-  const sum = shortSummary(r.summary);
-  if (sum) lines.push(`   <i>${escapeHtml(sum)}</i>`);
+
+  // Deadline line
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    lines.push(`   ⏰ Дедлайн: <b>${tag}</b>`);
+  } else if (r.deadline) {
+    const dl = formatDeadlineDate(r.deadline);
+    if (dl) lines.push(`   ⏰ Дедлайн: <b>${dl}</b>`);
+  }
+
+  // Full description (up to 500 chars, same as individual post)
+  if (r.summary) {
+    const s = r.summary.replace(/\s+/g, ' ').trim();
+    const sum = s.length > 500 ? `${s.slice(0, 500)}…` : s;
+    lines.push(`   <i>${escapeHtml(sum)}</i>`);
+  }
+
   return lines.join('\n');
 }
 
