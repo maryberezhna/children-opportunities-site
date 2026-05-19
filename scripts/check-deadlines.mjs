@@ -31,6 +31,27 @@ const ANNUAL_TYPES = new Set([
   'festival', 'camp', 'grant', 'study_abroad',
 ]);
 
+const TYPE_LABELS = {
+  course: 'Курс',
+  olympiad: 'Олімпіада',
+  competition: 'Конкурс',
+  club: 'Гурток',
+  exchange: 'Обмін',
+  camp: 'Табір',
+  study_abroad: 'Навчання за кордоном',
+  scholarship: 'Стипендія',
+  allowance: 'Виплата',
+  grant: 'Грант',
+  festival: 'Фестиваль',
+  sport_event: 'Спорт',
+  medical_aid: 'Мед. допомога',
+  psychology: 'Психологія',
+  rehabilitation: 'Реабілітація',
+  humanitarian: 'Гум. допомога',
+  internship: 'Стажування',
+  volunteer: 'Волонтерство',
+};
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -292,27 +313,6 @@ async function sendDailyDigest() {
     console.error(`Telegram send failed: ${e.message}`);
   }
 }
-
-const TYPE_LABELS = {
-  course: 'Курс',
-  olympiad: 'Олімпіада',
-  competition: 'Конкурс',
-  club: 'Гурток',
-  exchange: 'Обмін',
-  camp: 'Табір',
-  study_abroad: 'Навчання за кордоном',
-  scholarship: 'Стипендія',
-  allowance: 'Виплата',
-  grant: 'Грант',
-  festival: 'Фестиваль',
-  sport_event: 'Спорт',
-  medical_aid: 'Мед. допомога',
-  psychology: 'Психологія',
-  rehabilitation: 'Реабілітація',
-  humanitarian: 'Гум. допомога',
-  internship: 'Стажування',
-  volunteer: 'Волонтерство',
-};
 
 function ageLabel(r) {
   if (r.age_from == null || r.age_to == null) return null;
