@@ -105,8 +105,10 @@ const rules = [
   },
 
   function ageWithinChildhood(row) {
-    if (row.age_from < 0 || row.age_to > 17) {
-      return { ok: false, reason: `age range ${row.age_from}-${row.age_to} outside 0-17` };
+    // age_to=18 is the sentinel for "youth program with real max > 17"
+    // DB CHECK constraint allows 0-18, so 18 is valid.
+    if (row.age_from < 0 || row.age_to > 18) {
+      return { ok: false, reason: `age range ${row.age_from}-${row.age_to} outside 0-18` };
     }
     return { ok: true };
   },
