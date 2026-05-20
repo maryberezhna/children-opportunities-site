@@ -323,6 +323,7 @@ function ageLabel(r) {
   return `${r.age_from}–${r.age_to} років`;
 }
 
+<<<<<<< HEAD
 function formatDeadlineDate(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -330,12 +331,21 @@ function formatDeadlineDate(dateStr) {
   const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
     'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+=======
+function shortSummary(text, max = 80) {
+  if (!text) return '';
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  // Cut on a word boundary, drop trailing punctuation.
+  return t.slice(0, max).replace(/[.,;:\s]+\S*$/, '') + '…';
+>>>>>>> origin/main
 }
 
 function formatLine(r, index) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const typeLabel = TYPE_LABELS[r.opportunity_type];
   const age = ageLabel(r);
+<<<<<<< HEAD
 
   // Meta line — same emoji format as individual posts
   const meta = [];
@@ -364,6 +374,21 @@ function formatLine(r, index) {
     lines.push(`   <i>${escapeHtml(sum)}</i>`);
   }
 
+=======
+  if (age) meta.push(age);
+  if (r.cost_type === 'free') meta.push('безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    meta.push(`<b>${tag}</b>`);
+  }
+
+  const prefix = `${(index ?? 0) + 1}.`;
+  const lines = [`${prefix} <a href="${url}">${escapeHtml(r.title)}</a>`];
+  if (meta.length) lines.push(`   ${meta.join(' · ')}`);
+  const sum = shortSummary(r.summary);
+  if (sum) lines.push(`   <i>${escapeHtml(sum)}</i>`);
+>>>>>>> origin/main
   return lines.join('\n');
 }
 
