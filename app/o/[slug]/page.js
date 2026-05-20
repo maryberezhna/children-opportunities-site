@@ -61,11 +61,13 @@ async function getOpportunity(slug) {
   return data;
 }
 
+const RELATED_FIELDS = 'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs';
+
 async function getRelated(item, limit = 8) {
   if (!supabase || !item) return [];
   const { data } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .select(RELATED_FIELDS)
     .eq('status', 'active')
     .neq('slug', item.slug)
     .eq('opportunity_type', item.opportunity_type)
@@ -76,7 +78,7 @@ async function getRelated(item, limit = 8) {
 
   const { data: fallback } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, opportunity_type, age_from, age_to, cost_type')
+    .select(RELATED_FIELDS)
     .eq('status', 'active')
     .neq('slug', item.slug)
     .lte('age_from', item.age_to)
@@ -344,21 +346,40 @@ export default async function OpportunityPage({ params }) {
               Схожі можливості для дітей {ageRangeLabel(item)}
             </h2>
             <ul className="opportunity-related-list">
-              {related.map((r) => (
-                <li key={r.slug} className="opportunity-related-item">
-                  <Link href={`/o/${r.slug}`} className="opportunity-related-link">
-                    <span className="opportunity-related-chip">
-                      {TYPE_LABELS[r.opportunity_type] || r.opportunity_type}
-                    </span>
-                    <span className="opportunity-related-name">{r.title}</span>
-                    {r.summary && (
-                      <span className="opportunity-related-summary">
-                        {r.summary.length > 140 ? `${r.summary.slice(0, 140)}…` : r.summary}
-                      </span>
-                    )}
-                  </Link>
-                </li>
-              ))}
+              {related.map((r) => {
+                const days = r.deadline ? Math.ceil((new Date(r.deadline) - new Date().setHours(0,0,0,0)) / 86400000) : null;
+                const needs = (r.child_needs || []).filter((n) => NEED_LABELS[n]);
+                return (
+                  <li key={r.slug}>
+                    <Link href={`/o/${r.slug}`} className="card" style={{ textDecoration: 'none' }}>
+                      <div className="chips">
+                        <span className="chip chip-type">{TYPE_LABELS[r.opportunity_type] || r.opportunity_type}</span>
+                        <span className="chip chip-age">{ageRangeLabel(r)}</span>
+                        {r.cost_type === 'free' && <span className="chip chip-free">безкоштовно</span>}
+                        {r.cost_type === 'partially_free' && <span className="chip chip-paid">з фінансуванням</span>}
+                        {r.cost_type === 'paid_affordable' && <span className="chip chip-paid">доступно</span>}
+                        {days !== null && days >= 0 && days <= 7 && (
+                          <span className="chip chip-deadline-urgent">⏰ {days === 0 ? 'сьогодні' : `${days} днів`}</span>
+                        )}
+                        {days !== null && days > 7 && days <= 30 && (
+                          <span className="chip chip-deadline-soon">⏳ {days} днів</span>
+                        )}
+                        {needs.slice(0, 2).map((n) => (
+                          <span key={n} className="chip chip-need">{NEED_LABELS[n]}</span>
+                        ))}
+                      </div>
+                      <h3 className="card-title-link" style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.35, color: 'var(--ink)' }}>
+                        {r.title}
+                      </h3>
+                      {r.summary && (
+                        <p className="card-summary">
+                          {r.summary.length > 140 ? `${r.summary.slice(0, 140)}…` : r.summary}
+                        </p>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
             </ul>
           </section>
         )}
