@@ -131,9 +131,11 @@ export async function scrape() {
     const youthRanges = ranges.filter(r => typeof r.minAge === 'number' && r.minAge <= 17);
     if (youthRanges.length === 0) continue;
 
-    // Беремо найменший minAge та кепуємо maxAge на 17
     const age_from = Math.min(...youthRanges.map(r => r.minAge));
-    const age_to = Math.min(17, Math.max(...youthRanges.map(r => r.maxAge ?? 17)));
+    const realMax = Math.max(...youthRanges.map(r => r.maxAge ?? 17));
+    // age_to=18 = "молодіжна програма, реальний ліміт > 17" (відображається як "від X р.")
+    // age_to<18 = програма суто для дітей/підлітків (відображається як "X–Y р.")
+    const age_to = realMax > 17 ? 18 : realMax;
 
     const url = item.descriptionLink || item.applicationFormLink || `https://easy.gov.ua/#${item.id}`;
     if (!url || url === `https://easy.gov.ua/#${item.id}`) continue; // немає реального посилання

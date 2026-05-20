@@ -52,6 +52,7 @@ const COST_LABELS = {
 
 function ageLabel(item) {
   if (item.age_from === 0 && item.age_to >= 17) return '0–18 років';
+  if (item.age_to >= 18 && item.age_from > 0) return `від ${item.age_from} р.`;
   if (item.age_from === item.age_to) return `${item.age_from} років`;
   return `${item.age_from}–${item.age_to} років`;
 }

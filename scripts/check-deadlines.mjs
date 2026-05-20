@@ -317,6 +317,8 @@ async function sendDailyDigest() {
 function ageLabel(r) {
   if (r.age_from == null || r.age_to == null) return null;
   if (r.age_from === 0 && r.age_to >= 17) return '0–18 років';
+  // age_to=18 = молодіжна програма без реального ліміту до 17 → "від X р."
+  if (r.age_to >= 18 && r.age_from > 0) return `від ${r.age_from} р.`;
   if (r.age_from === r.age_to) return `${r.age_from} років`;
   return `${r.age_from}–${r.age_to} років`;
 }
