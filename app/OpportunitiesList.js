@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 
 const TYPE_LABELS = {
@@ -146,6 +146,18 @@ export default function OpportunitiesList({ opportunities }) {
   const [deadlines, setDeadlines] = useState(() => new Set());
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
+
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const age = p.get('age');
+    if (age) setAges(new Set(age.split(',').filter(Boolean)));
+    const type = p.get('type');
+    if (type) setTypes(new Set(type.split(',').filter(Boolean)));
+    const cost = p.get('cost');
+    if (cost) setCosts(new Set(cost.split(',').filter(Boolean)));
+    const sortVal = p.get('sort');
+    if (sortVal && SORT_OPTIONS.some((o) => o.value === sortVal)) setSort(sortVal);
+  }, []);
 
   const toggle = (setter) => (value) => {
     if (value === 'all') {

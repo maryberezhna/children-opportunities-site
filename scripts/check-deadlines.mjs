@@ -31,6 +31,27 @@ const ANNUAL_TYPES = new Set([
   'festival', 'camp', 'grant', 'study_abroad',
 ]);
 
+const TYPE_LABELS = {
+  course: 'Курс',
+  olympiad: 'Олімпіада',
+  competition: 'Конкурс',
+  club: 'Гурток',
+  exchange: 'Обмін',
+  camp: 'Табір',
+  study_abroad: 'Навчання за кордоном',
+  scholarship: 'Стипендія',
+  allowance: 'Виплата',
+  grant: 'Грант',
+  festival: 'Фестиваль',
+  sport_event: 'Спорт',
+  medical_aid: 'Мед. допомога',
+  psychology: 'Психологія',
+  rehabilitation: 'Реабілітація',
+  humanitarian: 'Гум. допомога',
+  internship: 'Стажування',
+  volunteer: 'Волонтерство',
+};
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -166,32 +187,46 @@ await writeFile(join(outDir, `deadline-report-${stamp}.txt`), reportLines.join('
 const THEMES = [
   { // Sunday
     heading: '🧸 Сьогодні — для малюків (0-6 років)',
+    description: 'Розвивальні заняття, гуртки, медична та соціальна допомога для найменших.',
     filter: (r) => r.age_from <= 6 && r.age_to <= 8,
+    link: 'https://dityam.com.ua/?age=0-3,4-6',
   },
   { // Monday
     heading: '📚 Сьогодні — для школярів (7-11 років)',
+    description: 'Курси, гуртки, олімпіади та конкурси для дітей молодшої школи.',
     filter: (r) => r.age_from <= 11 && r.age_to >= 7,
+    link: 'https://dityam.com.ua/?age=7-11',
   },
   { // Tuesday
     heading: '🎒 Сьогодні — для підлітків (12-17 років)',
+    description: 'Стажування, обміни, гранти, конкурси та літні програми для старшокласників.',
     filter: (r) => r.age_to >= 12 && r.age_from <= 17,
+    link: 'https://dityam.com.ua/?age=12-14,15-17',
   },
   { // Wednesday
     heading: '🎁 Сьогодні — безкоштовні можливості',
+    description: 'Програми без жодних витрат — для всіх дітей від 0 до 18 років.',
     filter: (r) => r.cost_type === 'free',
+    link: 'https://dityam.com.ua/?cost=free',
   },
   { // Thursday
     heading: '🌍 Сьогодні — можливості за кордоном',
+    description: 'Міжнародні обміни, навчання за кордоном та стипендії для українських дітей.',
     filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
+    link: 'https://dityam.com.ua/?type=exchange,study_abroad,scholarship',
   },
   { // Friday
     heading: '🎨 Сьогодні — творчість, STEM та конкурси',
+    description: 'Курси, гуртки, олімпіади та конкурси для тих, хто любить творити й досліджувати.',
     filter: (r) => ['course', 'competition', 'club', 'olympiad'].includes(r.opportunity_type),
+    link: 'https://dityam.com.ua/?type=course,competition,club,olympiad',
   },
   { // Saturday
     heading: '⭐ Сьогодні — нові на сайті',
+    description: 'Свіжі надходження — програми, щойно додані до каталогу.',
     filter: () => true,
     sortBy: 'created_at_desc',
+    link: 'https://dityam.com.ua/?sort=recent',
   },
 ];
 
@@ -212,7 +247,7 @@ async function sendDailyDigest() {
   const { data: poolData, error: poolErr } = await supabase
     .from('opportunities')
     .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at')
-    .neq('cost_type', 'closed')
+    .eq('status', 'active')
     .or(`deadline.is.null,deadline.gte.${todayIso}`);
   if (poolErr) {
     console.error(`Pool fetch failed: ${poolErr.message}`);
@@ -246,6 +281,7 @@ async function sendDailyDigest() {
   }
   if (themed.length > 0) {
     lines.push(`<b>${theme.heading}</b>`);
+    if (theme.description) lines.push(`<i>${theme.description}</i>`);
     lines.push('');
     themed.forEach((r, i) => {
       lines.push(formatLine(r, i));
@@ -253,7 +289,8 @@ async function sendDailyDigest() {
     });
     lines.push('');
   }
-  lines.push('🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>');
+  const moreUrl = theme.link || 'https://dityam.com.ua';
+  lines.push(`🔗 Більше — на <a href="${moreUrl}">dityam.com.ua</a>`);
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -280,22 +317,64 @@ async function sendDailyDigest() {
 function ageLabel(r) {
   if (r.age_from == null || r.age_to == null) return null;
   if (r.age_from === 0 && r.age_to >= 17) return '0–18 років';
+  // age_to=18 = молодіжна програма без реального ліміту до 17 → "від X р."
+  if (r.age_to >= 18 && r.age_from > 0) return `від ${r.age_from} р.`;
   if (r.age_from === r.age_to) return `${r.age_from} років`;
   return `${r.age_from}–${r.age_to} років`;
 }
 
+<<<<<<< HEAD
+function formatDeadlineDate(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+=======
 function shortSummary(text, max = 80) {
   if (!text) return '';
   const t = text.replace(/\s+/g, ' ').trim();
   if (t.length <= max) return t;
   // Cut on a word boundary, drop trailing punctuation.
   return t.slice(0, max).replace(/[.,;:\s]+\S*$/, '') + '…';
+>>>>>>> origin/main
 }
 
 function formatLine(r, index) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
-  const meta = [];
+  const typeLabel = TYPE_LABELS[r.opportunity_type];
   const age = ageLabel(r);
+<<<<<<< HEAD
+
+  // Meta line — same emoji format as individual posts
+  const meta = [];
+  if (typeLabel) meta.push(`📚 ${typeLabel}`);
+  if (age) meta.push(`👶 ${age}`);
+  if (r.cost_type === 'free') meta.push('✅ Безкоштовно');
+  else if (r.cost_type === 'partially_free') meta.push('З фінансуванням');
+
+  const prefix = `${(index ?? 0) + 1}.`;
+  const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
+  if (meta.length) lines.push(`   ${meta.join(' · ')}`);
+
+  // Deadline line
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    lines.push(`   ⏰ Дедлайн: <b>${tag}</b>`);
+  } else if (r.deadline) {
+    const dl = formatDeadlineDate(r.deadline);
+    if (dl) lines.push(`   ⏰ Дедлайн: <b>${dl}</b>`);
+  }
+
+  // Full description (up to 500 chars, same as individual post)
+  if (r.summary) {
+    const s = r.summary.replace(/\s+/g, ' ').trim();
+    const sum = s.length > 500 ? `${s.slice(0, 500)}…` : s;
+    lines.push(`   <i>${escapeHtml(sum)}</i>`);
+  }
+
+=======
   if (age) meta.push(age);
   if (r.cost_type === 'free') meta.push('безкоштовно');
   else if (r.cost_type === 'partially_free') meta.push('з фінансуванням');
@@ -309,6 +388,7 @@ function formatLine(r, index) {
   if (meta.length) lines.push(`   ${meta.join(' · ')}`);
   const sum = shortSummary(r.summary);
   if (sum) lines.push(`   <i>${escapeHtml(sum)}</i>`);
+>>>>>>> origin/main
   return lines.join('\n');
 }
 
