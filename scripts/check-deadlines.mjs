@@ -271,7 +271,7 @@ async function sendDailyDigest() {
 
   const lines = [];
   if (urgent.length > 0) {
-    lines.push(`⏰ <b>Терміново — дедлайн на днях (${urgent.length})</b>`);
+    lines.push(`⏰ <b>Дедлайн наближається (${urgent.length})</b>`);
     lines.push('');
     urgent.forEach((r, i) => {
       lines.push(formatLine(r, i));
