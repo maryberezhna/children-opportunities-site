@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 import anthropic
 from slugify import slugify
+from cities import normalize_cities
 
 logger = logging.getLogger(__name__)
 
@@ -118,6 +119,7 @@ URL: {source_url}
             data["content_hash"] = self._make_hash(title, source_url)
             data["source"] = source
             data["source_url"] = source_url
+            data["cities"] = normalize_cities(data.get("cities") or [])
             data.pop("confidence", None)
 
             return data
