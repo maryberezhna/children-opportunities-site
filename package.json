@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "scrape": "node scrapers/run.mjs"
+    "scrape": "node scrapers/run.mjs",
+    "populate-cities": "node scripts/populate-cities.mjs",
+    "populate-cities:dry": "DRY_RUN=true node scripts/populate-cities.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",

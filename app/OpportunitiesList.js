@@ -144,6 +144,7 @@ export default function OpportunitiesList({ opportunities }) {
   const [needs, setNeeds] = useState(() => new Set());
   const [costs, setCosts] = useState(() => new Set());
   const [deadlines, setDeadlines] = useState(() => new Set());
+  const [selectedCities, setSelectedCities] = useState(() => new Set());
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
 
@@ -155,9 +156,25 @@ export default function OpportunitiesList({ opportunities }) {
     if (type) setTypes(new Set(type.split(',').filter(Boolean)));
     const cost = p.get('cost');
     if (cost) setCosts(new Set(cost.split(',').filter(Boolean)));
+    const city = p.get('city');
+    if (city) setSelectedCities(new Set(city.split(',').filter(Boolean)));
     const sortVal = p.get('sort');
     if (sortVal && SORT_OPTIONS.some((o) => o.value === sortVal)) setSort(sortVal);
   }, []);
+
+  const availableCities = useMemo(() => {
+    const citySet = new Set();
+    opportunities.forEach((opp) => {
+      (opp.cities || []).forEach((c) => citySet.add(c));
+    });
+    return [...citySet].sort((a, b) => {
+      if (a === 'Онлайн') return -1;
+      if (b === 'Онлайн') return 1;
+      if (a === 'Міжнародні') return 1;
+      if (b === 'Міжнародні') return -1;
+      return a.localeCompare(b, 'uk');
+    });
+  }, [opportunities]);
 
   const toggle = (setter) => (value) => {
     if (value === 'all') {
@@ -178,6 +195,7 @@ export default function OpportunitiesList({ opportunities }) {
     need: toggle(setNeeds),
     cost: toggle(setCosts),
     deadline: toggle(setDeadlines),
+    city: toggle(setSelectedCities),
   };
 
   const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
@@ -195,6 +213,11 @@ export default function OpportunitiesList({ opportunities }) {
       }
       if (costs.size > 0 && !costs.has(item.cost_type)) return false;
       if (deadlines.size > 0 && ![...deadlines].some((v) => deadlineMatches(item, v))) return false;
+
+      if (selectedCities.size > 0) {
+        const itemCities = item.cities || [];
+        if (!itemCities.some((c) => selectedCities.has(c))) return false;
+      }
 
       if (query) {
         const q = query.toLowerCase();
@@ -242,7 +265,7 @@ export default function OpportunitiesList({ opportunities }) {
     }
 
     return result;
-  }, [opportunities, ages, types, needs, costs, deadlines, query, sort]);
+  }, [opportunities, ages, types, needs, costs, deadlines, selectedCities, query, sort]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -397,6 +420,27 @@ export default function OpportunitiesList({ opportunities }) {
             </button>
           ))}
         </div>
+
+        {availableCities.length > 0 && (
+          <div className="filter-row">
+            <div className="filter-label">Місто</div>
+            <button
+              className={`filter-btn ${selectedCities.size === 0 ? 'active' : ''}`}
+              onClick={() => handlers.city('all')}
+            >
+              Усі
+            </button>
+            {availableCities.map((city) => (
+              <button
+                key={city}
+                className={`filter-btn ${selectedCities.has(city) ? 'active' : ''}`}
+                onClick={() => handlers.city(city)}
+              >
+                {city}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="filter-row">
           <div className="filter-label">Пошук</div>
