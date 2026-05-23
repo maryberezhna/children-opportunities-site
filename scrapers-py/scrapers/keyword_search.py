@@ -10,9 +10,10 @@
 """
 import asyncio
 import logging
+from typing import Optional
 import httpx
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,7 @@ async def search_ddg(client: httpx.AsyncClient, query: str) -> list[dict]:
 
 async def fetch_detail(
     client: httpx.AsyncClient, item: dict
-) -> dict | None:
+) -> Optional[dict]:
     """Завантажує повний текст сторінки для нормалізації."""
     try:
         resp = await client.get(item["url"])

@@ -6,6 +6,7 @@
 """
 import asyncio
 import logging
+from typing import Optional
 import httpx
 from bs4 import BeautifulSoup
 
@@ -71,7 +72,7 @@ async def fetch_event_links(client: httpx.AsyncClient) -> list[str]:
     return list(set(links))
 
 
-async def fetch_event_detail(client: httpx.AsyncClient, url: str) -> dict | None:
+async def fetch_event_detail(client: httpx.AsyncClient, url: str) -> Optional[dict]:
     try:
         resp = await client.get(url)
         resp.raise_for_status()
