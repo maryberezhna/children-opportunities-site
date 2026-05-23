@@ -29,8 +29,8 @@ def archive_expired(client: Client) -> int:
     from datetime import date
     today = date.today().isoformat()
     result = client.table("opportunities") \
-        .update({"cost_type": "closed"}) \
+        .update({"status": "closed"}) \
         .lt("deadline", today) \
-        .neq("cost_type", "closed") \
+        .eq("status", "active") \
         .execute()
     return len(result.data) if result.data else 0

@@ -19,6 +19,8 @@ from scrapers import (
     british_council,
     erasmus,
     house_of_europe,
+    it_kharkiv,
+    keyword_search,
     man_contests,
     prometheus,
     save_the_children,
@@ -28,6 +30,8 @@ from scrapers import (
 SCRAPERS = [
     ("MAN", man_contests, "ukrainian"),
     ("Prometheus", prometheus, "ukrainian"),
+    ("IT Kharkiv", it_kharkiv, "ukrainian"),
+    ("Keyword Search", keyword_search, "ukrainian"),
     ("Erasmus+ UA", erasmus, "ukrainian"),
     ("House of Europe", house_of_europe, "ukrainian"),
     ("UNICEF", unicef, "thematic"),

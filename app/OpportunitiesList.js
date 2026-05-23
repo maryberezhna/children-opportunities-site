@@ -165,13 +165,13 @@ export default function OpportunitiesList({ opportunities }) {
   const availableCities = useMemo(() => {
     const citySet = new Set();
     opportunities.forEach((opp) => {
-      (opp.cities || []).forEach((c) => {
-        if (c !== 'Вся Україна') citySet.add(c);
-      });
+      (opp.cities || []).forEach((c) => citySet.add(c));
     });
     return [...citySet].sort((a, b) => {
       if (a === 'Онлайн') return -1;
       if (b === 'Онлайн') return 1;
+      if (a === 'Вся Україна') return -1;
+      if (b === 'Вся Україна') return 1;
       if (a === 'Міжнародні') return 1;
       if (b === 'Міжнародні') return -1;
       return a.localeCompare(b, 'uk');
@@ -218,9 +218,18 @@ export default function OpportunitiesList({ opportunities }) {
 
       if (selectedCities.size > 0) {
         const itemCities = item.cities || [];
-        // "Вся Україна" завжди проходить фільтр по місту — ці програми доступні звідусіль
         const isNationwide = itemCities.includes('Вся Україна');
-        if (!isNationwide && !itemCities.some((c) => selectedCities.has(c))) return false;
+        if (itemCities.some((c) => selectedCities.has(c))) {
+          // direct match
+        } else if (isNationwide) {
+          // nationwide bleeds through specific Ukrainian city filters (Київ, Харків…)
+          // but NOT through Онлайн / Міжнародні / Вся Україна selections
+          const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна']);
+          const hasRealCityFilter = [...selectedCities].some((c) => !VIRTUAL.has(c));
+          if (!hasRealCityFilter) return false;
+        } else {
+          return false;
+        }
       }
 
       if (query) {
