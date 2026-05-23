@@ -165,7 +165,9 @@ export default function OpportunitiesList({ opportunities }) {
   const availableCities = useMemo(() => {
     const citySet = new Set();
     opportunities.forEach((opp) => {
-      (opp.cities || []).forEach((c) => citySet.add(c));
+      (opp.cities || []).forEach((c) => {
+        if (c !== 'Вся Україна') citySet.add(c);
+      });
     });
     return [...citySet].sort((a, b) => {
       if (a === 'Онлайн') return -1;
@@ -216,7 +218,9 @@ export default function OpportunitiesList({ opportunities }) {
 
       if (selectedCities.size > 0) {
         const itemCities = item.cities || [];
-        if (!itemCities.some((c) => selectedCities.has(c))) return false;
+        // "Вся Україна" завжди проходить фільтр по місту — ці програми доступні звідусіль
+        const isNationwide = itemCities.includes('Вся Україна');
+        if (!isNationwide && !itemCities.some((c) => selectedCities.has(c))) return false;
       }
 
       if (query) {
