@@ -1828,7 +1828,7 @@ body {
     margin: 2px 0;
   }
 
-  .hero p { font-size: 15px; line-height: 1.5; }
+  .hero p { font-size: 16px; line-height: 1.5; }
 
   .stats { gap: 16px 28px; margin-top: 20px; }
   .stat-num { font-size: 22px; }
@@ -1872,7 +1872,7 @@ body {
 
   .subscribe-icon { font-size: 32px; line-height: 1; }
   .subscribe-title { font-size: 16px; line-height: 1.25; margin-bottom: 4px; }
-  .subscribe-description { font-size: 13px; line-height: 1.4; }
+  .subscribe-description { font-size: 14px; line-height: 1.4; }
 
   .subscribe-form-wrap iframe {
     height: 440px !important;
@@ -1908,9 +1908,18 @@ body {
   }
 
   .filters { padding: 16px; border-radius: 16px; }
-  .filter-btn { font-size: 13px; padding: 7px 13px; }
+  .filter-btn { font-size: 14px; padding: 9px 15px; }
+  .chip { font-size: 13px; padding: 5px 12px; }
   .grid { grid-template-columns: 1fr; }
   .card { padding: 18px; }
+  .card h3 { font-size: 18px; }
+  .card-summary { font-size: 15px; }
+  .meta { font-size: 14px; }
+  .meta-label { font-size: 13px; }
+  .meta-val { font-size: 14px; }
+  .link-btn { font-size: 15px; padding: 13px 18px; }
+  .count { font-size: 15px; }
+  .sort-select { font-size: 14px; padding: 10px 14px; }
 
   .modal { padding: 28px 22px; }
 
@@ -1966,10 +1975,10 @@ body {
     flex-direction: column;
     gap: 3px;
     padding: 8px 4px;
-    font-size: 11px;
+    font-size: 12px;
     border-radius: 12px;
     min-width: 0;
-    min-height: 54px;
+    min-height: 56px;
   }
 
   .sticky-btn svg { width: 20px; height: 20px; }
@@ -1979,10 +1988,12 @@ body {
 /* Маленькі мобільні */
 @media (max-width: 380px) {
   .hero h1 { font-size: 26px; line-height: 1.2; }
-  .hero p { font-size: 14px; }
+  .hero p { font-size: 15px; }
   .stats { gap: 12px 20px; }
   .stat-num { font-size: 20px; }
-  .sticky-btn { font-size: 10px; }
+  .sticky-btn { font-size: 11px; }
+  .filter-btn { font-size: 13px; padding: 8px 13px; }
+  .card-summary { font-size: 14px; }
 }
 
 /* ============ ДЕТАЛЬНА СТОРІНКА ============ */
