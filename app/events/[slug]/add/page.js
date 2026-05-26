@@ -1,9 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { headers } from 'next/headers';
 import { supabase } from '@/lib/supabase';
-import { detectProvider } from '@/lib/platform';
-import { googleCalendarUrl, appleCalendarUrl } from '@/lib/calendar-links';
+import { googleCalendarUrl } from '@/lib/calendar-links';
 import AddToCalendarFlow from './AddToCalendarFlow';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
@@ -35,17 +33,15 @@ export default async function AddToCalendarPage({ params }) {
 
   if (!item || !item.deadline) notFound();
 
-  const ua = headers().get('user-agent') || '';
-  const defaultProvider = detectProvider(ua);
-
   const googleUrl = googleCalendarUrl({
     title: item.title,
     description: item.summary,
     date: item.deadline,
     url: `${SITE_URL}/o/${item.slug}`,
   });
-  const icsUrl = appleCalendarUrl(item.slug);
-  const pageUrl = `${SITE_URL}/o/${item.slug}`;
+
+  const icsApiUrl = `${SITE_URL}/api/events/${item.slug}/ics`;
+  const webcalUrl = icsApiUrl.replace(/^https?:\/\//, 'webcal://');
 
   const deadlineFormatted = new Date(item.deadline).toLocaleDateString('uk-UA', {
     day: 'numeric',
@@ -66,9 +62,7 @@ export default async function AddToCalendarPage({ params }) {
 
         <AddToCalendarFlow
           googleUrl={googleUrl}
-          icsUrl={icsUrl}
-          defaultProvider={defaultProvider}
-          slug={item.slug}
+          webcalUrl={webcalUrl}
         />
 
         <p className="cal-add-note">
