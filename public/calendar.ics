@@ -1,0 +1,940 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//dityam.com.ua//Holiday Calendar 3.0//UK
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALDESC:Українські державні свята + міжна
+ родні дні\, дотичні до дітей.
+X-WR-CALNAME:dityam.com.ua — Свята та дитячі дні
+X-WR-TIMEZONE:Europe/Kyiv
+BEGIN:VEVENT
+SUMMARY:🇺🇦 Новий рік
+DTSTART;VALUE=DATE:20260101
+DTEND;VALUE=DATE:20260102
+UID:novyy-rik-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Початок календарного року за григ
+ оріанським календарем. Універсальне род
+ инне свято: підбиття підсумків\, побажан
+ ня\, святковий стіл. Для багатьох українс
+ ьких родин — ключовий момент зимових ка
+ нікул\, час подарунків і ялинки.\n\nКатего
+ рія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕯️ День Соборності України
+DTSTART;VALUE=DATE:20260122
+DTEND;VALUE=DATE:20260123
+UID:den-sobornosti-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Річниця Акта Злуки 22 січня 1919 року
+ \, коли УНР і ЗУНР проголосили об'єднання 
+ в єдину державу. Символ єдності українсь
+ ких земель — особливо потужний у контек
+ сті російсько-української війни. Привід 
+ говорити з дітьми про історію формуванн
+ я сучасної України.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕯️ Міжнародний день памʼяті жертв 
+ Голокосту
+DTSTART;VALUE=DATE:20260127
+DTEND;VALUE=DATE:20260128
+UID:mizhnarodnyy-den-pamyati-zhertv-holokostu-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Встановлений ООН резолюцією 60/7 (200
+ 5) — у річницю визволення концтабору Ауш
+ віц-Біркенау 27 січня 1945 року. Память про 6
+  мільйонів убитих євреїв. Привід говорит
+ и з дітьми про толерантність\, права люди
+ ни та небезпеку ненависті.\n\nКатегорія: У
+ країна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕯️ День памʼяті Героїв Крут
+DTSTART;VALUE=DATE:20260129
+DTEND;VALUE=DATE:20260130
+UID:den-pamyati-heroyiv-krut-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:29 січня 1918 року під залізничною ст
+ анцією Крути близько 300 студентів і юнке
+ рів стримували наступ більшовицьких вій
+ ськ на Київ. Символ молодечої жертовност
+ і за незалежність України. Указ Президен
+ та №531/2003.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:💐 Міжнародний жіночий день
+DTSTART;VALUE=DATE:20260308
+DTEND;VALUE=DATE:20260309
+UID:mizhnarodnyy-zhinochyy-den-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Засноване у 1910 році на пропозицію 
+ Клари Цеткін як день боротьби за політич
+ ні та соціальні права жінок. Сьогодні в У
+ країні — родинне свято з квітами і подяк
+ ами жінкам: матерям\, дочкам\, бабусям\, ко
+ легам.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:☢️ День памʼяті Чорнобильської тра
+ гедії
+DTSTART;VALUE=DATE:20260426
+DTEND;VALUE=DATE:20260427
+UID:den-pamyati-chornobylskoyi-trahediyi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:26 квітня 1986 року о 1:23 ночі сталася 
+ аварія на 4-му енергоблоці ЧАЕС — найбіл
+ ьша техногенна катастрофа в історії. Ука
+ з Президента №945/2006. Привід говорити з ді
+ тьми про екологію\, ядерну безпеку та под
+ виг ліквідаторів.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👷 День праці
+DTSTART;VALUE=DATE:20260501
+DTEND;VALUE=DATE:20260502
+UID:den-pratsi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Встановлений ІІ Інтернаціоналом 
+ у 1889 році на вшанування страйку робітник
+ ів Чикаго 1 травня 1886 року. Сьогодні в Укр
+ аїні — родинне свято початку весни\, сад
+ івництва\, перших пікніків і прогулянок 
+ на природі.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌷 День памʼяті та перемоги над наци
+ змом
+DTSTART;VALUE=DATE:20260508
+DTEND;VALUE=DATE:20260509
+UID:den-pamyati-ta-peremohy-nad-natsyzmom-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Україна перенесла свято з 9 на 8 тр
+ авня у 2023 році — як у більшості європейс
+ ьких країн. Вшанування жертв війни 1939–194
+ 5 років і ветеранів. Привід поговорити з 
+ дітьми про ціну миру та підступність буд
+ ь-якого тоталітаризму.\n\nКатегорія: Укра
+ їна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👩 День матері
+DTSTART;VALUE=DATE:20260510
+DTEND;VALUE=DATE:20260511
+UID:den-materi-nthdow@dityam.com.ua
+RRULE:FREQ=YEARLY;BYDAY=2SU;BYMONTH=5
+CATEGORIES:Україна
+DESCRIPTION:Друга неділя травня. Свято встано
+ влене Указом Президента №489/99 (1999) на іні
+ ціативу Союзу українок і Спілки жінок Ук
+ раїни. Подяка матерям — родинне свято\, д
+ о якого діти традиційно готують листівк
+ и\, подарунки і вірші.\n\nКатегорія: Україн
+ а
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📜 День Конституції України
+DTSTART;VALUE=DATE:20260628
+DTEND;VALUE=DATE:20260629
+UID:den-konstytutsiyi-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:28 червня 1996 року Верховна Рада при
+ йняла Основний Закон — фундамент україн
+ ської держави. Привід пояснити дітям\, що
+  таке права і обовʼязки громадянина\, як 
+ влаштована держава та чому Конституція 
+ — найважливіший документ країни.\n\nКате
+ горія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👨 День батька
+DTSTART;VALUE=DATE:20260621
+DTEND;VALUE=DATE:20260622
+UID:den-batka-nthdow@dityam.com.ua
+RRULE:FREQ=YEARLY;BYDAY=3SU;BYMONTH=6
+CATEGORIES:Україна
+DESCRIPTION:Третя неділя червня. Свято встано
+ влене Указом Президента №1865/2019. Подяка б
+ атькам за їхню роль у вихованні дітей — 
+ родинне свято з подарунками\, сімейними 
+ активностями і часом разом.\n\nКатегорія: 
+ Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🏛️ День Української Державності
+DTSTART;VALUE=DATE:20260715
+DTEND;VALUE=DATE:20260716
+UID:den-ukrayinskoyi-derzhavnosti-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Свято встановлене Указом Президе
+ нта №266/2021 на честь хрещення князя Волод
+ имира і тяглості української державниць
+ кої традиції. З 2024 року — у переліку неро
+ бочих днів. Дата нагадує про тисячолітню
+  історію української державності.\n\nКате
+ горія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:✝️ День Хрещення Київської Русі-Ук
+ раїни
+DTSTART;VALUE=DATE:20260728
+DTEND;VALUE=DATE:20260729
+UID:den-khreshchennya-kyyivskoyi-rusi-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:У 988 році князь Володимир Великий 
+ охрестив Русь у Дніпрі. Свято встановлен
+ е Указом Президента у 2008 році як знак тяг
+ лості тисячолітньої християнської трад
+ иції на українських землях.\n\nКатегорія: 
+ Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🇺🇦 День Незалежності України
+DTSTART;VALUE=DATE:20260824
+DTEND;VALUE=DATE:20260825
+UID:den-nezalezhnosti-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:24 серпня 1991 року Верховна Рада ухв
+ алила Акт проголошення незалежності Укр
+ аїни\, який підтвердив всеукраїнський ре
+ ферендум 1 грудня 1991 року. Головне держав
+ не свято країни. Для дітей — момент горд
+ ості\, прапорів і знайомства з історією д
+ ержави.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📚 День знань
+DTSTART;VALUE=DATE:20260901
+DTEND;VALUE=DATE:20260902
+UID:den-znan-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Початок нового навчального року в
+  Україні. Урочисті лінійки\, перший дзвон
+ ик\, перший день у школі для першокласник
+ ів — один з найважливіших днів року для 
+ родин з дітьми шкільного віку.\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👶 Всеукраїнський день усиновлення
+DTSTART;VALUE=DATE:20260930
+DTEND;VALUE=DATE:20261001
+UID:vseukrayinskyy-den-usynovlennya-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Свято встановлене Указом Президе
+ нта №1088/2008. Привід говорити про важливіс
+ ть сімейних форм виховання для дітей-сир
+ іт і дітей\, позбавлених батьківського п
+ іклування. Підтримка прийомних родин і о
+ пікунів.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🎖️ День захисників і захисниць Укр
+ аїни
+DTSTART;VALUE=DATE:20261001
+DTEND;VALUE=DATE:20261002
+UID:den-zakhysnykiv-i-zakhysnyts-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:У 2023 році Указом Президента №621/2023
+  свято перенесене з 14 жовтня на 1 жовтня. 
+ Вшанування військовослужбовців ЗСУ та в
+ сіх\, хто захищає Україну. Особливе значе
+ ння в умовах повномасштабної війни.\n\nКа
+ тегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:⚔️ Покрова. День Українського коза
+ цтва
+DTSTART;VALUE=DATE:20261014
+DTEND;VALUE=DATE:20261015
+UID:pokrova-den-ukrayinskoho-kozatstva-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Історично — день\, коли козаки оби
+ рали кошового отамана. Покрова вважалас
+ я захисницею козацького війська і всієї 
+ України. Свято поєднує козацьку традиці
+ ю з релігійною — образ Богородиці-захис
+ ниці.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌅 День Гідності та Свободи
+DTSTART;VALUE=DATE:20261121
+DTEND;VALUE=DATE:20261122
+UID:den-hidnosti-ta-svobody-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:Встановлений Указом Президента №
+ 872/2014 на честь початку двох революцій: По
+ маранчевої (2004) і Революції Гідності (2013).
+  Привід говорити з дітьми про громадянсь
+ ку позицію\, європейський вибір України 
+ та цінність свободи.\n\nКатегорія: Україн
+ а
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕯️ День памʼяті жертв Голодоморів
+DTSTART;VALUE=DATE:20261128
+DTEND;VALUE=DATE:20261129
+UID:den-pamyati-zhertv-holodomoriv-nthdow@dityam.com.ua
+RRULE:FREQ=YEARLY;BYDAY=4SA;BYMONTH=11
+CATEGORIES:Україна
+DESCRIPTION:Четверта субота листопада. Вшанув
+ ання жертв штучного голоду 1932–1933 років\,
+  який забрав мільйони українських житті
+ в. О 16:00 — національна хвилина мовчання і
+  запалення свічки у вікні. Указ Президен
+ та №1310/98.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🛡️ День Збройних Сил України
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261207
+UID:den-zbroynykh-syl-ukrayiny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:У 1991 році Верховна Рада ухвалила п
+ останову про підпорядкування військ на 
+ території України новій державі. Постан
+ ова ВРУ №3528-XII. Особливо важливе свято в 
+ умовах повномасштабної війни.\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🎁 День Святого Миколая
+DTSTART;VALUE=DATE:20261206
+DTEND;VALUE=DATE:20261207
+UID:den-svyatoho-mykolaya-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:У 2023 році Україна\, перейшовши на н
+ овоюліанський календар\, перенесла свят
+ о з 19 на 6 грудня. Діти готують листи Мико
+ лаю і отримують подарунки під подушкою 
+ — один з найочікуваніших днів року для у
+ країнських дітей.\n\nКатегорія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:⭐ Різдво Христове
+DTSTART;VALUE=DATE:20261225
+DTEND;VALUE=DATE:20261226
+UID:rizdvo-khrystove-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Україна
+DESCRIPTION:З 2023 року в Україні Різдво святкує
+ ться 25 грудня — після переходу ПЦУ на но
+ воюліанський календар. Родинне свято з в
+ ертепами\, колядками\, кутею\, дідухом і 12 
+ пісними стравами на Святий Вечір.\n\nКате
+ горія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20260412
+DTEND;VALUE=DATE:20260413
+UID:velykden-paskha-2026@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20270502
+DTEND;VALUE=DATE:20270503
+UID:velykden-paskha-2027@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20280416
+DTEND;VALUE=DATE:20280417
+UID:velykden-paskha-2028@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20290408
+DTEND;VALUE=DATE:20290409
+UID:velykden-paskha-2029@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20300428
+DTEND;VALUE=DATE:20300429
+UID:velykden-paskha-2030@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Великдень (Пасха)
+DTSTART;VALUE=DATE:20310413
+DTEND;VALUE=DATE:20310414
+UID:velykden-paskha-2031@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Найбільше християнське свято — В
+ оскресіння Христове. Дата щороку різна (
+ за пасхалією). Освячення пасок і крашано
+ к\, родинні гостини\, традиційне 'Христос 
+ воскрес!' — 'Воістину воскрес!'\n\nКатегор
+ ія: Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20260531
+DTEND;VALUE=DATE:20260601
+UID:triytsya-pyatydesyatnytsya-2026@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20270620
+DTEND;VALUE=DATE:20270621
+UID:triytsya-pyatydesyatnytsya-2027@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20280604
+DTEND;VALUE=DATE:20280605
+UID:triytsya-pyatydesyatnytsya-2028@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20290527
+DTEND;VALUE=DATE:20290528
+UID:triytsya-pyatydesyatnytsya-2029@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20300616
+DTEND;VALUE=DATE:20300617
+UID:triytsya-pyatydesyatnytsya-2030@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ Трійця (Пʼятидесятниця)
+DTSTART;VALUE=DATE:20310601
+DTEND;VALUE=DATE:20310602
+UID:triytsya-pyatydesyatnytsya-2031@dityam.com.ua
+CATEGORIES:Україна
+DESCRIPTION:Пʼятдесятий день після Пасхи. Зел
+ еними гілочками татарського зілля\, мʼят
+ и\, любистку прикрашають домівки і церкв
+ и. Свято завершення весни і початку літа 
+ — символ оновлення природи.\n\nКатегорія:
+  Україна
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📖 Міжнародний день освіти
+DTSTART;VALUE=DATE:20260124
+DTEND;VALUE=DATE:20260125
+UID:mizhnarodnyy-den-osvity-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Встановлений ООН резолюцією A/RES/73/
+ 25 (2018). Освіта як ключове право людини і д
+ вигун сталого розвитку. Можливість пого
+ ворити з дітьми про роль навчання і нері
+ вність доступу до освіти у світі.\n\nКатег
+ орія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🔬 День жінок і дівчат у науці
+DTSTART;VALUE=DATE:20260211
+DTEND;VALUE=DATE:20260212
+UID:den-zhinok-i-divchat-u-nautsi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день жінок і дівчат у 
+ науці (ООН\, A/RES/70/212). Привід надихнути дів
+ чат на STEM-карʼєру і показати приклади ви
+ датних жінок-науковиць — від Марії Кюрі 
+ до сучасних українських дослідниць.\n\nКа
+ тегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📚 Всесвітній день читання вголос
+DTSTART;VALUE=DATE:20260204
+DTEND;VALUE=DATE:20260205
+UID:vsesvitniy-den-chytannya-vholos-nthdow@dityam.com.ua
+RRULE:FREQ=YEARLY;BYDAY=1WE;BYMONTH=2
+CATEGORIES:Міжнародні
+DESCRIPTION:Ініціатива LitWorld — закликає батьк
+ ів\, вчителів і дітей читати вголос разом
+ . Чудовий привід запровадити родинний ри
+ туал вечірнього читання.\n\nКатегорія: Мі
+ жнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🛡️ День безпечнішого інтернету
+DTSTART;VALUE=DATE:20260210
+DTEND;VALUE=DATE:20260211
+UID:den-bezpechnishoho-internetu-nthdow@dityam.com.ua
+RRULE:FREQ=YEARLY;BYDAY=2TU;BYMONTH=2
+CATEGORIES:Міжнародні
+DESCRIPTION:Ініціатива ЄС/Insafe з 2004 року\, други
+ й вівторок лютого. Привід поговорити з д
+ ітьми про кібербулінг\, паролі\, фішинг і 
+ критичне мислення в мережі.\n\nКатегорія: 
+ Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🗣️ Міжнародний день рідної мови
+DTSTART;VALUE=DATE:20260221
+DTEND;VALUE=DATE:20260222
+UID:mizhnarodnyy-den-ridnoyi-movy-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Встановлений ЮНЕСКО у 1999 році. Вша
+ нування мовного розмаїття і права кожно
+ ї дитини здобувати освіту рідною мовою. 
+ В Україні — особлива нагода говорити пр
+ о збереження української мови.\n\nКатегор
+ ія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:💛 День людей із синдромом Дауна
+DTSTART;VALUE=DATE:20260321
+DTEND;VALUE=DATE:20260322
+UID:den-lyudey-iz-syndromom-dauna-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Всесвітній день людей із синдромо
+ м Дауна (ООН\, A/RES/66/149). Дата символічна: тр
+ исомія 21-ї пари хромосом — звідси 21.03. Пр
+ ивід говорити про інклюзію і прийняття о
+ собливих дітей.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌈 День поширення інформації про ау
+ тизм
+DTSTART;VALUE=DATE:20260402
+DTEND;VALUE=DATE:20260403
+UID:den-poshyrennya-informatsiyi-pro-autyzm-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Всесвітній день поширення інформ
+ ації про аутизм (ООН\, A/RES/62/139). Розуміння 
+ розладів спектру аутизму та підтримка т
+ аких дітей і їхніх родин. Інклюзія та руй
+ нування стереотипів.\n\nКатегорія: Міжнар
+ одні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📕 Міжнародний день дитячої книги
+DTSTART;VALUE=DATE:20260402
+DTEND;VALUE=DATE:20260403
+UID:mizhnarodnyy-den-dytyachoyi-knyhy-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Заснований IBBY у 1967 році. Дата збіг
+ ається з днем народження Ганса Крістіан
+ а Андерсена (1805). Заохочення дитячого чит
+ ання у всьому світі.\n\nКатегорія: Міжнаро
+ дні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👧 День дітей вулиці
+DTSTART;VALUE=DATE:20260412
+DTEND;VALUE=DATE:20260413
+UID:den-ditey-vulytsi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Заснований Consortium for Street Children. Прив
+ ертає увагу до прав дітей\, які живуть аб
+ о працюють на вулиці без батьківської оп
+ іки.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📕 Всесвітній день книги
+DTSTART;VALUE=DATE:20260423
+DTEND;VALUE=DATE:20260424
+UID:vsesvitniy-den-knyhy-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Всесвітній день книги і авторсько
+ го права (ЮНЕСКО). Дата на честь дня смерт
+ і Шекспіра і Сервантеса (1616). Глобальне с
+ вято читання\, авторів і видавців.\n\nКате
+ горія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👨‍👩‍👧 Міжнародний день родин
+DTSTART;VALUE=DATE:20260515
+DTEND;VALUE=DATE:20260516
+UID:mizhnarodnyy-den-rodyn-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день родин (ООН\, A/RES/47/
+ 237). Звертає увагу на роль сімʼї як осеред
+ ку суспільства. Тема 2026 року — 'Сімʼї\, не
+ рівність і добробут дитини'.\n\nКатегорія:
+  Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🎈 Міжнародний день захисту дітей
+DTSTART;VALUE=DATE:20260601
+DTEND;VALUE=DATE:20260602
+UID:mizhnarodnyy-den-zakhystu-ditey-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Встановлений у 1949 році Жіночою мі
+ жнародною демократичною федерацією у Мо
+ скві. У 50+ країнах — масові гуляння\, дитя
+ чі фестивалі\, безкоштовний вхід до парк
+ ів і музеїв. В Україні — початок літніх к
+ анікул.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:💔 День безневинних дітей-жертв агр
+ есії
+DTSTART;VALUE=DATE:20260604
+DTEND;VALUE=DATE:20260605
+UID:den-beznevynnykh-ditey-zhertv-ahresiyi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день безневинних діт
+ ей-жертв агресії (ООН\, з 1982). Вшанування д
+ ітей\, що страждають від воєн і насильств
+ а. Особливо актуальна дата для України —
+  нагода розповісти про долі українських 
+ дітей у війні.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:⛔ Всесвітній день проти дитячої пра
+ ці
+DTSTART;VALUE=DATE:20260612
+DTEND;VALUE=DATE:20260613
+UID:vsesvitniy-den-proty-dytyachoyi-pratsi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Всесвітній день проти дитячої пра
+ ці (МОП/ILO\, з 2002). Боротьба з експлуатаціє
+ ю дітей у роботі. За даними ILO\, у світі по
+ над 160 млн дітей задіяні в дитячій праці.\
+ n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌍 День африканської дитини
+DTSTART;VALUE=DATE:20260616
+DTEND;VALUE=DATE:20260617
+UID:den-afrykanskoyi-dytyny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Встановлений ОАЄ у 1991 році на чест
+ ь повстання студентів Соуето 16 червня 1976
+  року\, які протестували проти расистськ
+ ої освітньої політики апартеїду в ПАР.\n\n
+ Категорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🛠️ Всесвітній день навичок молоді
+DTSTART;VALUE=DATE:20260715
+DTEND;VALUE=DATE:20260716
+UID:vsesvitniy-den-navychok-molodi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Всесвітній день навичок молоді (О
+ ОН\, A/RES/69/145). Підкреслює важливість профе
+ сійних і технічних навичок для працевла
+ штування\, гідної роботи та підприємницт
+ ва молоді.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🤝 Міжнародний день дружби
+DTSTART;VALUE=DATE:20260730
+DTEND;VALUE=DATE:20260731
+UID:mizhnarodnyy-den-druzhby-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день дружби (ООН\, A/RES/6
+ 5/275). Дружба — між людьми\, культурами і к
+ раїнами — як основа миру\, культурного д
+ іалогу і соціальної згуртованості.\n\nКат
+ егорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🧒 Міжнародний день молоді
+DTSTART;VALUE=DATE:20260812
+DTEND;VALUE=DATE:20260813
+UID:mizhnarodnyy-den-molodi-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день молоді (ООН\, A/RES/5
+ 4/120). Привертає увагу до проблем і потенц
+ іалу молоді віком 15–24 роки. Молодь стано
+ вить близько 1/6 населення планети.\n\nКате
+ горія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:📖 Міжнародний день грамотності
+DTSTART;VALUE=DATE:20260908
+DTEND;VALUE=DATE:20260909
+UID:mizhnarodnyy-den-hramotnosti-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Проголошений ЮНЕСКО у 1966 році. У с
+ віті досі близько 750 млн дорослих не вмію
+ ть читати — 2/3 з них жінки. Базовий показ
+ ник людського розвитку.\n\nКатегорія: Між
+ народні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:☮️ Міжнародний день миру
+DTSTART;VALUE=DATE:20260921
+DTEND;VALUE=DATE:20260922
+UID:mizhnarodnyy-den-myru-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день миру (ООН\, A/RES/36/67
+ ). Доба ненасильства і припинення вогню в
+  усіх країнах. Особливо болюча тема для у
+ країнських дітей під час війни.\n\nКатего
+ рія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🤟 Міжнародний день жестових мов
+DTSTART;VALUE=DATE:20260923
+DTEND;VALUE=DATE:20260924
+UID:mizhnarodnyy-den-zhestovykh-mov-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день жестових мов (ОО
+ Н\, A/RES/72/161). Жестові мови — повноцінні мо
+ ви з власною граматикою. Привід поговори
+ ти про права глухих дітей на освіту рідн
+ ою мовою.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👩‍🏫 Всесвітній день вчителів
+DTSTART;VALUE=DATE:20261005
+DTEND;VALUE=DATE:20261006
+UID:vsesvitniy-den-vchyteliv-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Встановлений ЮНЕСКО у 1994 році на ч
+ есть Рекомендації ЮНЕСКО/МОП щодо стату
+ су вчителів (1966). Подяка освітянам — проф
+ есії\, що формує майбутнє.\n\nКатегорія: Мі
+ жнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:👧 Міжнародний день дівчинки
+DTSTART;VALUE=DATE:20261011
+DTEND;VALUE=DATE:20261012
+UID:mizhnarodnyy-den-divchynky-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день дівчинки (ООН\, A/R
+ ES/66/170\, з 2012). Боротьба з ранніми шлюбами\, 
+ гендерним насильством і нерівним доступ
+ ом до освіти. Підтримка дівчат у досягне
+ нні мрій.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌐 Міжнародний день толерантності
+DTSTART;VALUE=DATE:20261116
+DTEND;VALUE=DATE:20261117
+UID:mizhnarodnyy-den-tolerantnosti-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день толерантності (О
+ ОН/ЮНЕСКО\, A/RES/51/95). Прийняття розмаїття к
+ ультур\, релігій\, поглядів. Базова цінні
+ сть для виховання критичного мислення в 
+ дітей.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🎉 Всесвітній день дитини
+DTSTART;VALUE=DATE:20261120
+DTEND;VALUE=DATE:20261121
+UID:vsesvitniy-den-dytyny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:У 1989 році саме цього дня ООН ухвал
+ ила Конвенцію про права дитини — найбіл
+ ьш ратифікований договір з прав людини в
+  історії. Україна — учасник з 1991 року.\n\nК
+ атегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:♿ День людей з інвалідністю
+DTSTART;VALUE=DATE:20261203
+DTEND;VALUE=DATE:20261204
+UID:den-lyudey-z-invalidnistyu-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:Міжнародний день людей з інвалідн
+ істю (ООН\, A/RES/47/3). Інклюзія\, доступність\
+ , права і участь у суспільному житті — ос
+ обливо актуально для родин з дітьми з ос
+ обливими потребами.\n\nКатегорія: Міжнаро
+ дні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🕊️ День прав людини
+DTSTART;VALUE=DATE:20261210
+DTEND;VALUE=DATE:20261211
+UID:den-prav-lyudyny-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:10 грудня 1948 року Генасамблея ООН п
+ рийняла Загальну декларацію прав людини
+  — фундаментальний документ людства. Пр
+ ивід познайомити дітей з основами прав л
+ юдини.\n\nКатегорія: Міжнародні
+TRANSP:TRANSPARENT
+END:VEVENT
+BEGIN:VEVENT
+SUMMARY:🌟 День UNICEF
+DTSTART;VALUE=DATE:20261211
+DTEND;VALUE=DATE:20261212
+UID:den-unicef-fixed@dityam.com.ua
+RRULE:FREQ=YEARLY
+CATEGORIES:Міжнародні
+DESCRIPTION:День заснування UNICEF — Дитячого фо
+ нду ООН (11 грудня 1946). Організація працює 
+ у 190+ країнах\, підтримуючи дітей у найскл
+ адніших обставинах. В Україні UNICEF активн
+ о допомагає з 2014 року.\n\nКатегорія: Міжна
+ родні
+TRANSP:TRANSPARENT
+END:VEVENT
+END:VCALENDAR
