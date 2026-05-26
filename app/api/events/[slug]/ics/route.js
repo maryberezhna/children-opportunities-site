@@ -58,7 +58,7 @@ export async function GET(request, { params }) {
     'PRODID:-//dityam.com.ua//Add to Calendar//UK',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    'X-WR-CALNAME:dityam.com.ua',
+    'X-WR-CALNAME:Можливості для дитини',
     'X-WR-TIMEZONE:Europe/Kyiv',
     'BEGIN:VTIMEZONE',
     'TZID:Europe/Kyiv',

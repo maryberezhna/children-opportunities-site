@@ -14,7 +14,7 @@ export const metadata = {
     title: 'Календар свят для родин з дітьми',
     description: 'Українські свята + міжнародні дні, дотичні до дітей. Один публічний календар.',
     url: `${SITE_URL}/sviata`,
-    siteName: 'dityam.com.ua',
+    siteName: 'Можливості для дитини',
     locale: 'uk_UA',
     type: 'website',
   },
