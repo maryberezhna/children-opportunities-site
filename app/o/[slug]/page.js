@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import { addToCalendarPageUrl } from '@/lib/calendar-links';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -328,16 +329,23 @@ export default async function OpportunityPage({ params }) {
             )}
           </dl>
 
-          {item.source_url && (
-            <a
-              href={item.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="opportunity-cta"
-            >
-              Перейти до офіційного сайту ↗
-            </a>
-          )}
+          <div className="opportunity-actions">
+            {item.source_url && (
+              <a
+                href={item.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="opportunity-cta"
+              >
+                Перейти до офіційного сайту ↗
+              </a>
+            )}
+            {item.deadline && (
+              <Link href={addToCalendarPageUrl(item.slug).replace('https://dityam.com.ua', '')} className="cal-btn">
+                📅 Додати в календар
+              </Link>
+            )}
+          </div>
         </article>
 
         {related.length > 0 && (

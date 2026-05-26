@@ -104,13 +104,16 @@ function buildMessage(item) {
   return lines.join('\n');
 }
 
-function buildFeedbackKeyboard(opportunityId) {
-  return {
-    inline_keyboard: [[
-      { text: '👍 Цікаво', callback_data: `fb:yes:${opportunityId}` },
-      { text: '👎 Не цікаво', callback_data: `fb:no:${opportunityId}` },
-    ]],
-  };
+function buildKeyboard(opportunityId, slug, deadline) {
+  const rows = [];
+  if (deadline) {
+    rows.push([{ text: '📅 Додати в календар', url: `${SITE_URL}/events/${slug}/add` }]);
+  }
+  rows.push([
+    { text: '👍 Цікаво', callback_data: `fb:yes:${opportunityId}` },
+    { text: '👎 Не цікаво', callback_data: `fb:no:${opportunityId}` },
+  ]);
+  return { inline_keyboard: rows };
 }
 
 async function sendTelegramMessage(text, replyMarkup) {
@@ -171,7 +174,7 @@ for (const item of items) {
   }
 
   try {
-    await sendTelegramMessage(message, buildFeedbackKeyboard(item.id));
+    await sendTelegramMessage(message, buildKeyboard(item.id, item.slug, item.deadline));
     const { error: updateError } = await supabase
       .from('opportunities')
       .update({ telegram_posted_at: new Date().toISOString() })

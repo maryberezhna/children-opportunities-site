@@ -2884,3 +2884,94 @@ html.a11y-underline-links a {
   .sviata-event-title { font-size: 15px; }
   .sviata-event-desc { font-size: 13px; }
 }
+
+/* ── Add to Calendar ─────────────────────────────── */
+.opportunity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+  align-items: center;
+}
+
+.cal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  text-decoration: none;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  min-height: 44px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.cal-btn:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+
+/* Add-to-Calendar landing page */
+.cal-add-wrap {
+  max-width: 480px;
+  margin: 48px auto;
+  text-align: center;
+}
+.cal-add-event-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1.35;
+}
+.cal-add-deadline {
+  font-size: 15px;
+  color: var(--ink-soft);
+  margin-bottom: 28px;
+}
+.cal-add-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.cal-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  min-height: 52px;
+  transition: opacity 0.15s;
+  text-decoration: none;
+}
+.cal-add-btn:hover { opacity: 0.85; }
+.cal-add-btn-primary {
+  background: var(--ink);
+  color: var(--bg);
+}
+.cal-add-btn:not(.cal-add-btn-primary) {
+  background: var(--surface);
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+.cal-add-note {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .opportunity-actions { flex-direction: column; align-items: stretch; }
+  .cal-btn { justify-content: center; font-size: 15px; }
+  .cal-add-wrap { margin: 32px auto; padding: 0 4px; }
+  .cal-add-event-name { font-size: 18px; }
+  .cal-add-btn { font-size: 15px; padding: 13px 20px; }
+}
