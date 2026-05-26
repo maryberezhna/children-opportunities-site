@@ -121,13 +121,19 @@ export default function SviataPage({ searchParams }) {
   });
 
   const grouped = groupByMonth(filtered);
-  const months = Object.keys(grouped).map(Number).sort((a, b) => a - b);
+  // Показуємо тільки поточний місяць і далі до кінця року (не минулі місяці)
+  const currentMonth = today.getMonth() + 1; // 1-12
+  const months = Object.keys(grouped)
+    .map(Number)
+    .filter((m) => m >= currentMonth)
+    .sort((a, b) => a - b);
 
   const ukrCount = allEvents.filter((e) => e.category === 'Україна').length;
   const intCount = allEvents.filter((e) => e.category === 'Міжнародні').length;
 
   return (
     <div className="container">
+      <div className="sviata-wrap">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(buildJsonLd(filtered)) }}
@@ -209,6 +215,7 @@ export default function SviataPage({ searchParams }) {
           {' '}· вікно {eventsData.years[0]}–{eventsData.years[eventsData.years.length - 1]}
         </p>
       </footer>
+      </div>
     </div>
   );
 }
