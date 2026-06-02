@@ -17,6 +17,18 @@ API_URL = "https://api.easy.gov.ua/api/opportunities"
 _SKIP_DIRECTIONS = {"Ветерани", "Житло", "УНГІ"}
 _SKIP_TYPES = {"Консультація"}
 
+# Ключові слова в назві/описі, що вказують на програми для дорослих
+_ADULT_KEYWORDS = [
+    "учасник бойових", "ветеран", "безробіт", "ваучер на навчан",
+    "підприємниц", "підприємець", "стартап",
+    "кооперація в науці", "дослідник", "інноватор",
+    "для жінок", "for women",
+    "молодіжна робота",   # програми для молодіжних працівників (не для дітей)
+    "активні парки",      # спортивні клуби для всіх вікових категорій
+    "скандинавська ходьба", "бігові клуби",
+    "адаптивний спорт",   # для осіб з інвалідністю (без вікового обмеження)
+]
+
 _TYPE_MAP = {
     "Грант": "grant",
     "Грант (бізнес)": "grant",
@@ -98,11 +110,28 @@ async def fetch_all() -> list[dict]:
         if direction in _SKIP_DIRECTIONS or type_name in _SKIP_TYPES:
             continue
 
-        # Only youth-eligible age ranges
+        # Filter out adult-focused content by keywords in title + description
+        title_check = (item.get("name") or "").lower()
+        desc_check = (item.get("shortDescription") or "").lower()
+        combined_check = title_check + " " + desc_check
+        if any(kw in combined_check for kw in _ADULT_KEYWORDS):
+            continue
+
+        # Only youth-eligible age ranges — require at least one range where maxAge <= 21
+        # (prevents "youth 14-35" programs that are really for adults)
+        all_ranges = item.get("ageRanges") or []
         youth_ranges = [
-            r for r in (item.get("ageRanges") or [])
-            if isinstance(r.get("minAge"), (int, float)) and r["minAge"] <= 17
+            r for r in all_ranges
+            if isinstance(r.get("minAge"), (int, float))
+            and r["minAge"] <= 17
+            and (r.get("maxAge") is None or r["maxAge"] <= 21)
         ]
+        # Fallback: accept if minAge <= 14 even with wider range (school-age start)
+        if not youth_ranges:
+            youth_ranges = [
+                r for r in all_ranges
+                if isinstance(r.get("minAge"), (int, float)) and r["minAge"] <= 14
+            ]
         if not youth_ranges:
             continue
 
