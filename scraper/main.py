@@ -18,19 +18,27 @@ from db import archive_expired, get_client, get_health_stats, get_new_today, ups
 from normalizer import Normalizer
 from scrapers import (
     british_council,
+    diia_osvita,
+    easy_gov,
     erasmus,
     house_of_europe,
     man_contests,
+    mon_olympiads,
     prometheus,
     save_the_children,
     unicef,
 )
 
 SCRAPERS = [
+    # Українські джерела
     ("MAN", man_contests, "ukrainian"),
     ("Prometheus", prometheus, "ukrainian"),
+    ("МОН олімпіади", mon_olympiads, "ukrainian"),
+    ("Дія.Освіта", diia_osvita, "ukrainian"),
+    ("easy.gov.ua", easy_gov, "ukrainian"),
     ("Erasmus+ UA", erasmus, "ukrainian"),
     ("House of Europe", house_of_europe, "ukrainian"),
+    # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
     ("British Council", british_council, "thematic"),
