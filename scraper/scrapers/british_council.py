@@ -1,4 +1,4 @@
-"""Скрапер UNICEF Ukraine — програми допомоги та розвитку дітей."""
+"""Скрапер British Council Ukraine — мови, обміни, навчання у UK."""
 import asyncio
 import logging
 import httpx
@@ -6,26 +6,42 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-SOURCE_NAME = "UNICEF Ukraine"
-BASE_URL = "https://www.unicef.org/ukraine"
+SOURCE_NAME = "British Council Ukraine"
+BASE_URL = "https://www.britishcouncil.org.ua"
 
 PROGRAM_PATHS = [
-    "/en/what-we-do",
-    "/en/spilno-social-support",
-    "/en/upshift-ukraine",
-    "/en/child-protection",
-    "/en/education",
-    "/en/mental-health-and-psychosocial-support",
+    "/en/programmes",
+    "/en/english",
+    "/en/english/children",
+    "/en/exams-for-children",
+    "/en/study-uk",
 ]
+
+_BROWSER_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "uk-UA,uk;q=0.9,en-US;q=0.8,en;q=0.7",
+    "Accept-Encoding": "gzip, deflate",
+    "Connection": "keep-alive",
+    "Upgrade-Insecure-Requests": "1",
+    "Sec-Fetch-Dest": "document",
+    "Sec-Fetch-Mode": "navigate",
+    "Sec-Fetch-Site": "none",
+    "Cache-Control": "max-age=0",
+}
 
 
 async def fetch_all() -> list[dict]:
     async with httpx.AsyncClient(
-        headers={"User-Agent": "Mozilla/5.0 ChildrenOppBot/1.0"},
-        timeout=30.0,
+        headers=_BROWSER_HEADERS,
+        timeout=60.0,
         follow_redirects=True,
     ) as client:
-        semaphore = asyncio.Semaphore(3)
+        semaphore = asyncio.Semaphore(2)
 
         async def fetch_detail(path: str):
             async with semaphore:
@@ -41,13 +57,13 @@ async def fetch_all() -> list[dict]:
                         "source": SOURCE_NAME,
                         "source_url": url,
                         "raw_title": title_tag.get_text(strip=True) if title_tag else None,
-                        "raw_text": f"UNICEF програма для дітей в Україні.\n\n{text}",
+                        "raw_text": f"British Council програма в Україні.\n\n{text}",
                     }
                 except Exception as e:
                     logger.warning(f"Failed {url}: {e}")
                     return None
 
-        logger.info(f"Fetching {len(PROGRAM_PATHS)} UNICEF program pages")
+        logger.info(f"Fetching {len(PROGRAM_PATHS)} British Council pages")
         tasks = [fetch_detail(p) for p in PROGRAM_PATHS]
         results = await asyncio.gather(*tasks)
         return [r for r in results if r]
