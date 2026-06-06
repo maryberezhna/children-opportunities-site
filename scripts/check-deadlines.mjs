@@ -78,7 +78,7 @@ lookahead.setDate(today.getDate() + 30);
 
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, cost_type, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, cost_type, status, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -98,7 +98,7 @@ for (const row of data || []) {
 
   if (daysLeft < 0) {
     if (ANNUAL_TYPES.has(row.opportunity_type)) expiredAnnual.push({ ...row, daysLeft });
-    else if (row.cost_type !== 'closed') expiredOneShot.push({ ...row, daysLeft });
+    else if (row.status !== 'closed') expiredOneShot.push({ ...row, daysLeft });
     // already-closed one-shots: skip silently
   } else {
     dueSoon.push({ ...row, daysLeft });
@@ -123,7 +123,7 @@ if (expiredOneShot.length > 0) {
     if (!DRY_RUN) {
       const { error: e } = await supabase
         .from('opportunities')
-        .update({ cost_type: 'closed', updated_at: new Date().toISOString() })
+        .update({ status: 'closed', updated_at: new Date().toISOString() })
         .eq('id', r.id);
       if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
       else archived += 1;
