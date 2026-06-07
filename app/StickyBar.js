@@ -3,6 +3,7 @@ import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const INSTAGRAM_URL = 'https://www.instagram.com/dityam.com.ua';
+const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
 export default function StickyBar() {
@@ -23,6 +24,12 @@ export default function StickyBar() {
   const trackInstagram = () => {
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'instagram_click', { event_label: 'sticky_bar' });
+    }
+  };
+
+  const trackTelegram = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'telegram_click', { event_label: 'sticky_bar' });
     }
   };
 
@@ -82,6 +89,20 @@ export default function StickyBar() {
           <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
         </svg>
         <span>Instagram</span>
+      </a>
+
+      <a
+        href={TELEGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="sticky-btn sticky-btn-tg"
+        aria-label="Telegram-канал"
+        onClick={trackTelegram}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 14.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z"/>
+        </svg>
+        <span>Telegram</span>
       </a>
 
       <a

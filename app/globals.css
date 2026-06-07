@@ -57,6 +57,34 @@ body {
   margin-bottom: 20px;
 }
 
+.city-back-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+}
+.city-back-link:hover { text-decoration: underline; }
+
+.city-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 32px;
+}
+.city-nav-link {
+  font-size: 13px;
+  padding: 5px 14px;
+  border-radius: 100px;
+  border: 1.5px solid var(--border);
+  color: var(--text-2);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+.city-nav-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .hero-badge {
   display: inline-flex;
   align-items: center;
@@ -738,6 +766,12 @@ body {
   background: #f3f4f6;
   color: #6b7280;
   text-decoration: line-through;
+}
+
+.chip-annual {
+  background: #dbeafe;
+  color: #1e40af;
+  font-weight: 500;
 }
 
 @keyframes deadline-pulse {
@@ -1726,6 +1760,32 @@ body {
 }
 
 .sticky-btn-insta span {
+  color: #ffffff !important;
+}
+
+/* Telegram кнопка */
+.sticky-btn-tg,
+.sticky-btn-tg:link,
+.sticky-btn-tg:visited,
+.sticky-btn-tg:hover,
+.sticky-btn-tg:focus,
+.sticky-btn-tg:active {
+  background: #29B6F6;
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-btn-tg:hover {
+  background: #0288D1;
+  box-shadow: 0 6px 20px rgba(41, 182, 246, 0.35);
+}
+
+.sticky-btn-tg svg {
+  fill: #ffffff !important;
+  stroke: none !important;
+}
+
+.sticky-btn-tg span {
   color: #ffffff !important;
 }
 

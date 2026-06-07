@@ -21,11 +21,14 @@ from scrapers import (
     diia_osvita,
     easy_gov,
     erasmus,
+    facebook_pages,
     house_of_europe,
+    instagram_monitor,
     man_contests,
     mon_olympiads,
     prometheus,
     save_the_children,
+    telegram_channels,
     unicef,
 )
 
@@ -42,6 +45,10 @@ SCRAPERS = [
     ("UNICEF", unicef, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
     ("British Council", british_council, "thematic"),
+    # Соціальні мережі
+    ("Telegram канали", telegram_channels, "social"),
+    ("Instagram", instagram_monitor, "social"),
+    ("Facebook", facebook_pages, "social"),
 ]
 
 
@@ -110,6 +117,8 @@ def parse_args():
     p.add_argument("--skip", help="Через кому, які пропустити")
     p.add_argument("--ukrainian", action="store_true")
     p.add_argument("--thematic", action="store_true")
+    p.add_argument("--social", action="store_true",
+                   help="Тільки соцмережі (Telegram, Instagram, Facebook)")
     return p.parse_args()
 
 
@@ -130,6 +139,8 @@ def filter_scrapers(scrapers, args):
         out = [s for s in out if s[2] == "ukrainian"]
     elif args.thematic:
         out = [s for s in out if s[2] == "thematic"]
+    elif args.social:
+        out = [s for s in out if s[2] == "social"]
     return out
 
 

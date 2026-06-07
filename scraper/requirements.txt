@@ -6,3 +6,6 @@ supabase==2.9.1
 pydantic==2.9.2
 python-slugify==8.0.4
 tenacity==9.0.0
+# Social media
+telethon==1.36.0
+instaloader==4.13.1

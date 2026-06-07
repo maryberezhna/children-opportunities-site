@@ -138,13 +138,15 @@ function ageMatches(item, value) {
   return item.age_from <= t && item.age_to >= f;
 }
 
-export default function OpportunitiesList({ opportunities }) {
+export default function OpportunitiesList({ opportunities, presetCity }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
   const [needs, setNeeds] = useState(() => new Set());
   const [costs, setCosts] = useState(() => new Set());
   const [deadlines, setDeadlines] = useState(() => new Set());
-  const [selectedCities, setSelectedCities] = useState(() => new Set());
+  const [selectedCities, setSelectedCities] = useState(() =>
+    presetCity ? new Set([presetCity]) : new Set()
+  );
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
 
@@ -297,12 +299,12 @@ export default function OpportunitiesList({ opportunities }) {
 
   const deadlineChip = (item) => {
     const days = daysUntilDeadline(item.deadline);
-    if (days === null) return null;
+    const annual = ANNUAL_TYPES.has(item.opportunity_type);
+    if (days === null) {
+      return annual ? <span className="chip chip-annual">🔄 щорічно</span> : null;
+    }
     if (days < 0) {
-      if (ANNUAL_TYPES.has(item.opportunity_type)) {
-        return <span className="chip chip-deadline-soon">🔄 щорічно</span>;
-      }
-      return null;
+      return annual ? <span className="chip chip-annual">🔄 відкривається щороку</span> : null;
     }
     if (days === 0) return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
     if (days <= 7) return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;

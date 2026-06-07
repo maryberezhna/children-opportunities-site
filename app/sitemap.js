@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { CITY_META } from '@/lib/cities';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -24,5 +25,12 @@ export default async function sitemap() {
     { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
   ].map((entry) => ({ ...entry, lastModified: new Date() }));
 
-  return [...staticPages, ...opportunityEntries];
+  const cityPages = Object.keys(CITY_META).map((slug) => ({
+    url: `${SITE_URL}/${slug}`,
+    changeFrequency: 'daily',
+    priority: 0.7,
+    lastModified: new Date(),
+  }));
+
+  return [...staticPages, ...cityPages, ...opportunityEntries];
 }
