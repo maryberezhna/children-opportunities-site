@@ -38,7 +38,7 @@ _BROWSER_HEADERS = {
 async def fetch_all() -> list[dict]:
     async with httpx.AsyncClient(
         headers=_BROWSER_HEADERS,
-        timeout=60.0,
+        timeout=20.0,
         follow_redirects=True,
     ) as client:
         semaphore = asyncio.Semaphore(2)

@@ -11,7 +11,6 @@ import logging
 import re
 import httpx
 from bs4 import BeautifulSoup
-
 logger = logging.getLogger(__name__)
 
 SOURCE_NAME = "Мала академія наук України"
@@ -52,11 +51,15 @@ async def _resolve_canonical_url(client: httpx.AsyncClient, slug: str) -> str | 
 async def fetch_all() -> list[dict]:
     async with httpx.AsyncClient(
         headers={"User-Agent": "Mozilla/5.0 ChildrenOppBot/1.0"},
-        timeout=30.0,
+        timeout=60.0,
         follow_redirects=True,
     ) as client:
-        resp = await client.get(LIST_URL)
-        resp.raise_for_status()
+        try:
+            resp = await client.get(LIST_URL)
+            resp.raise_for_status()
+        except Exception as e:
+            logger.warning(f"MAN: не вдалося завантажити список ({type(e).__name__}) — пропускаємо")
+            return []
 
         # Extract all (slug, title) pairs from embedded JSON data.
         entries: dict[str, str] = {}
