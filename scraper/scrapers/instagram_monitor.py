@@ -44,6 +44,16 @@ async def fetch_all() -> list[dict]:
         logger.warning("instaloader не встановлено — пропускаємо Instagram")
         return []
 
+    # Skip entirely without credentials: anonymous Instaloader from shared CI
+    # IPs is almost always 429-rate-limited, and on 429 it BLOCKS for ~30 min
+    # waiting to retry — which hangs the whole pipeline past the job timeout and
+    # stops the daily email from ever sending. Not worth it.
+    username = os.environ.get("INSTAGRAM_USERNAME", "")
+    password = os.environ.get("INSTAGRAM_PASSWORD", "")
+    if not (username and password):
+        logger.info("Instagram: креденшели не задано — пропускаємо")
+        return []
+
     L = instaloader.Instaloader(
         download_pictures=False,
         download_videos=False,
@@ -53,18 +63,15 @@ async def fetch_all() -> list[dict]:
         save_metadata=False,
         quiet=True,
         request_timeout=20,
+        max_connection_attempts=1,  # fail fast, never sleep-retry on 429
     )
 
-    username = os.environ.get("INSTAGRAM_USERNAME", "")
-    password = os.environ.get("INSTAGRAM_PASSWORD", "")
-    if username and password:
-        try:
-            L.login(username, password)
-            logger.info("Instagram: login OK")
-        except Exception as e:
-            logger.warning(f"Instagram login failed: {e} — продовжуємо без авторизації")
-    else:
-        logger.info("Instagram: credentials не задано, спроба без авторизації")
+    try:
+        L.login(username, password)
+        logger.info("Instagram: login OK")
+    except Exception as e:
+        logger.warning(f"Instagram login failed: {e} — пропускаємо")
+        return []
 
     results: list[dict] = []
     for account in ACCOUNTS:

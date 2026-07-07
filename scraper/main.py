@@ -54,11 +54,21 @@ SCRAPERS = [
 ]
 
 
+# No single async scraper may hang the pipeline (protects the end-of-run email).
+# NB: only interrupts at await points — sync-blocking scrapers must fail fast
+# on their own (see instagram_monitor's max_connection_attempts=1).
+SCRAPER_TIMEOUT = 300  # seconds
+
+
 async def run_scraper(name, module, normalizer, sb_client):
     print(f"\n{'=' * 70}\n▶️  {name}\n{'=' * 70}")
     start = time.time()
     try:
-        raw_items = await module.fetch_all()
+        raw_items = await asyncio.wait_for(module.fetch_all(), timeout=SCRAPER_TIMEOUT)
+    except asyncio.TimeoutError:
+        return {"name": name, "status": "error",
+                "error": f"timeout >{SCRAPER_TIMEOUT}s", "count": 0,
+                "duration": time.time() - start}
     except Exception as e:
         return {"name": name, "status": "error",
                 "error": f"{type(e).__name__}: {e}"[:200],
