@@ -69,6 +69,7 @@ def _build_html(today, new_opps, health, results, archived):
     total_active = health.get("total_active", 0)
     total_archived = health.get("total_archived", 0)
     no_deadline = health.get("no_deadline", 0)
+    deadline_bearing = health.get("deadline_bearing", 0)
     n_new = len(new_opps)
     errors = [r for r in results if r["status"] == "error"]
 
@@ -142,8 +143,8 @@ def _build_html(today, new_opps, health, results, archived):
 
     # ── health warnings ───────────────────────────────────────────────────────
     warnings = []
-    if no_deadline > total_active * 0.8:
-        warnings.append(f"⚠️ {no_deadline} з {total_active} активних записів не мають дедлайну")
+    if deadline_bearing and no_deadline > deadline_bearing * 0.6:
+        warnings.append(f"⚠️ {no_deadline} з {deadline_bearing} можливостей із дедлайн-типів ще без дати")
     if warnings:
         warning_html = "<br>".join(warnings)
         health_warn = f"""
@@ -209,7 +210,7 @@ def _build_html(today, new_opps, health, results, archived):
     <table style="width:100%;border-collapse:collapse;">
       <tr><td style="padding:6px 0;color:#555;font-size:14px;">Активних записів</td><td style="padding:6px 0;font-weight:600;">{total_active}</td></tr>
       <tr><td style="padding:6px 0;color:#555;font-size:14px;">Архівованих записів</td><td style="padding:6px 0;font-weight:600;">{total_archived}</td></tr>
-      <tr><td style="padding:6px 0;color:#555;font-size:14px;">Без дедлайну (активні)</td><td style="padding:6px 0;font-weight:600;">{no_deadline}</td></tr>
+      <tr><td style="padding:6px 0;color:#555;font-size:14px;">Без дедлайну (де очікується)</td><td style="padding:6px 0;font-weight:600;">{no_deadline} з {deadline_bearing}</td></tr>
     </table>
     {health_warn}
 
@@ -259,7 +260,7 @@ def _build_text(today, new_opps, health, results, archived):
         "БАЗА:",
         f"  Активних: {health.get('total_active', 0)}",
         f"  Архів:    {health.get('total_archived', 0)}",
-        f"  Без дедлайну: {health.get('no_deadline', 0)}",
+        f"  Без дедлайну (де очікується): {health.get('no_deadline', 0)} з {health.get('deadline_bearing', 0)}",
     ]
     return "\n".join(lines)
 

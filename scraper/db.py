@@ -52,26 +52,54 @@ def get_new_today(client: Client) -> list[dict]:
         return []
 
 
+# A missing deadline is only a real gap for one-off, time-bound opportunities.
+# Two groups legitimately lack one and are excluded from the health metric:
+#   • ongoing/rolling — courses, clubs, state payments (no deadline ever)
+#   • annual/recurring — olympiads, competitions, camps… shown as «щорічно»
+#     on the site; the next cycle's date missing isn't a data defect.
+ONGOING_TYPES = [
+    "course", "club", "allowance", "humanitarian", "medical_aid", "volunteer",
+    "psychology", "rehabilitation", "mentorship", "shelter", "educational_material",
+    "olympiad", "competition", "exchange", "scholarship", "festival", "camp",
+    "grant", "study_abroad",
+]
+
+
 def get_health_stats(client: Client) -> dict:
-    """Return aggregate health statistics for the opportunities table."""
+    """Return aggregate health statistics for the opportunities table.
+
+    `no_deadline` counts only deadline-bearing types (competitions, olympiads,
+    grants, camps…) missing a deadline. Ongoing types (courses, clubs, state
+    payments) are excluded — they legitimately have no deadline, so counting
+    them just inflated the number and cried wolf.
+    """
     try:
         active = client.table("opportunities").select("id", count="exact").eq("status", "active").execute()
         archived = client.table("opportunities").select("id", count="exact").eq("status", "archived").execute()
+        deadline_bearing = (
+            client.table("opportunities")
+            .select("id", count="exact")
+            .eq("status", "active")
+            .not_.in_("opportunity_type", ONGOING_TYPES)
+            .execute()
+        )
         no_dl = (
             client.table("opportunities")
             .select("id", count="exact")
             .eq("status", "active")
             .is_("deadline", "null")
+            .not_.in_("opportunity_type", ONGOING_TYPES)
             .execute()
         )
         return {
             "total_active": active.count or 0,
             "total_archived": archived.count or 0,
             "no_deadline": no_dl.count or 0,
+            "deadline_bearing": deadline_bearing.count or 0,
         }
     except Exception as e:
         logger.error(f"get_health_stats failed: {e}")
-        return {"total_active": 0, "total_archived": 0, "no_deadline": 0}
+        return {"total_active": 0, "total_archived": 0, "no_deadline": 0, "deadline_bearing": 0}
 
 
 def archive_expired(client: Client) -> int:
