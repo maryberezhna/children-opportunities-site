@@ -29,12 +29,13 @@ const NEED_LABELS = {
   disability: 'інвалідність',
   autism: 'РАС',
   idp: 'ВПО',
-  veteran_family: 'діти ветеранів',
+  veteran_family: 'діти ветеранів і загиблих',
   de_occupied: 'з деокупованих',
   frontline: 'з прифронтових',
   oncology: 'онкохворі',
   rare_disease: 'рідкісні хвороби',
   low_income: 'малозабезпечені',
+  orphan: 'сироти',
   large_family: 'багатодітні',
   rural: 'сільська місцевість',
 };
@@ -45,6 +46,14 @@ const COST_LABELS = {
   paid_affordable: 'Доступно',
   paid_premium: 'Преміум',
   closed: 'Закрита подача',
+};
+
+const AID_TYPE_LABELS = {
+  cash: 'держвиплата',
+  scholarship: 'соц. стипендія',
+  recreation: 'оздоровлення',
+  free_activities: 'безкоштовна секція',
+  vocational: 'проф. навчання',
 };
 
 const COURSE_TYPES = new Set(['course', 'olympiad', 'club', 'exchange', 'study_abroad', 'scholarship', 'internship']);
@@ -291,6 +300,7 @@ export default async function OpportunityPage({ params }) {
         <article className="opportunity-page">
           <div className="opportunity-chips">
             <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
+            {item.aid_type ? <span className="chip chip-aid">🏛 {AID_TYPE_LABELS[item.aid_type] || 'держдопомога'}</span> : null}
             <span className="chip chip-age">{ageRangeLabel(item)}</span>
             {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
             {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}

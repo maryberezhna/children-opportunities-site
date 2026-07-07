@@ -28,12 +28,13 @@ const NEED_LABELS = {
   disability: 'інвалідність',
   autism: 'РАС',
   idp: 'ВПО',
-  veteran_family: 'діти ветеранів',
+  veteran_family: 'діти ветеранів і загиблих',
   de_occupied: 'з деокупованих',
   frontline: 'з прифронтових',
   oncology: 'онкохворі',
   rare_disease: 'рідкісні хвороби',
   low_income: 'малозабезпечені',
+  orphan: 'сироти',
   large_family: 'багатодітні',
   rural: 'сільська місцевість',
 };
@@ -55,12 +56,30 @@ const TYPE_OPTIONS = [
   { label: 'Обміни', value: 'exchange' },
   { label: 'Табори', value: 'camp' },
   { label: 'Стипендії', value: 'scholarship' },
-  { label: 'Виплати', value: 'allowance' },
+  { label: 'Держдопомога', value: 'gov_aid' },
   { label: 'Гранти', value: 'grant' },
   { label: 'Мед. допомога', value: 'medical_aid' },
   { label: 'Фестивалі', value: 'festival' },
   { label: 'Гуртки', value: 'club' },
 ];
+
+// Subcategories of state aid (держдопомога). Rendered as a nested sub-filter
+// only when the "Держдопомога" type is active. Values match opportunities.aid_type.
+const AID_TYPE_OPTIONS = [
+  { label: 'Грошові виплати', value: 'cash' },
+  { label: 'Соц. стипендії', value: 'scholarship' },
+  { label: 'Оздоровлення', value: 'recreation' },
+  { label: 'Безкоштовні секції', value: 'free_activities' },
+  { label: 'Проф. навчання', value: 'vocational' },
+];
+
+const AID_TYPE_LABELS = {
+  cash: 'держвиплата',
+  scholarship: 'соц. стипендія',
+  recreation: 'оздоровлення',
+  free_activities: 'безкоштовна секція',
+  vocational: 'проф. навчання',
+};
 
 const NEED_OPTIONS = [
   { label: 'Усі діти', value: 'all' },
@@ -68,7 +87,9 @@ const NEED_OPTIONS = [
   { label: 'Інвалідність', value: 'disability' },
   { label: 'Обдаровані', value: 'gifted' },
   { label: 'Онкохворі', value: 'oncology' },
-  { label: 'Діти ветеранів', value: 'veteran_family' },
+  { label: 'Діти ветеранів і загиблих захисників', value: 'veteran_family' },
+  { label: 'Малозабезпечені', value: 'low_income' },
+  { label: 'Сироти', value: 'orphan' },
 ];
 
 const COST_OPTIONS = [
@@ -141,6 +162,7 @@ function ageMatches(item, value) {
 export default function OpportunitiesList({ opportunities, presetCity }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
+  const [aidTypes, setAidTypes] = useState(() => new Set());
   const [needs, setNeeds] = useState(() => new Set());
   const [costs, setCosts] = useState(() => new Set());
   const [deadlines, setDeadlines] = useState(() => new Set());
@@ -195,7 +217,13 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
   const handlers = {
     age: toggle(setAges),
-    type: toggle(setTypes),
+    // Deselecting the "Держдопомога" umbrella (or resetting to "Усі") also
+    // clears any state-aid subcategory selection so it can't linger hidden.
+    type: (value) => {
+      toggle(setTypes)(value);
+      if (value === 'gov_aid' || value === 'all') setAidTypes(new Set());
+    },
+    aid: toggle(setAidTypes),
     need: toggle(setNeeds),
     cost: toggle(setCosts),
     deadline: toggle(setDeadlines),
@@ -210,7 +238,15 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
       if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
 
       if (ages.size > 0 && ![...ages].some((v) => ageMatches(item, v))) return false;
-      if (types.size > 0 && !types.has(item.opportunity_type)) return false;
+      if (types.size > 0) {
+        // "gov_aid" is an umbrella: it matches any opportunity tagged with an
+        // aid_type, regardless of its opportunity_type (allowance, camp, club…).
+        const matchesType =
+          types.has(item.opportunity_type) ||
+          (types.has('gov_aid') && Boolean(item.aid_type));
+        if (!matchesType) return false;
+      }
+      if (aidTypes.size > 0 && !aidTypes.has(item.aid_type)) return false;
       if (needs.size > 0) {
         const itemNeeds = item.child_needs || [];
         if (!itemNeeds.some((n) => needs.has(n))) return false;
@@ -280,7 +316,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     }
 
     return result;
-  }, [opportunities, ages, types, needs, costs, deadlines, selectedCities, query, sort]);
+  }, [opportunities, ages, types, aidTypes, needs, costs, deadlines, selectedCities, query, sort]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -316,6 +352,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     <article key={item.id} className="card">
       <div className="chips">
         <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
+        {item.aid_type ? <span className="chip chip-aid">🏛 {AID_TYPE_LABELS[item.aid_type] || 'держдопомога'}</span> : null}
         <span className="chip chip-age">{ageLabel(item)}</span>
         {item.cost_type === 'free' ? <span className="chip chip-free">безкоштовно</span> : null}
         {item.cost_type === 'partially_free' ? <span className="chip chip-paid">з фінансуванням</span> : null}
@@ -396,6 +433,21 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
             </button>
           ))}
         </div>
+
+        {types.has('gov_aid') && (
+          <div className="filter-row filter-subrow">
+            <div className="filter-label">Вид держдопомоги</div>
+            {AID_TYPE_OPTIONS.map((a) => (
+              <button
+                key={a.value}
+                className={`filter-btn ${aidTypes.has(a.value) ? 'active' : ''}`}
+                onClick={() => handlers.aid(a.value)}
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="filter-row">
           <div className="filter-label">Дедлайн</div>
