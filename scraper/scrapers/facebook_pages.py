@@ -38,17 +38,10 @@ PAGES: list[dict] = [
     {"name": "Освіторія",               "slug": "osvitoria"},
 ]
 
-_KEYWORDS = {
-    "дітей", "діти", "дитина", "школярів", "учнів", "підлітків",
-    "конкурс", "олімпіада", "стипендія", "табір", "грант",
-    "програма", "обмін", "навчання", "курс",
-    "до 18", "до 17", "від 14", "flex", "upshift", "erasmus",
-}
+# Relevance uses the shared 12-category keyword taxonomy (scraper/keywords.py).
+from keywords import is_relevant as _is_relevant
+
 MIN_TEXT_LEN = 100
-
-
-def _is_relevant(text: str) -> bool:
-    return any(kw in text.lower() for kw in _KEYWORDS)
 
 
 async def _fetch_page(

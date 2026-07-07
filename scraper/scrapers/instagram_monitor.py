@@ -31,20 +31,10 @@ ACCOUNTS: list[str] = [
     "upshift.ukraine",
 ]
 
-_KEYWORDS = {
-    "дітей", "діти", "дитина", "школярів", "учнів", "підлітків",
-    "конкурс", "олімпіада", "стипендія", "табір", "грант",
-    "програма", "обмін", "навчання", "курс",
-    "до 18", "до 17", "від 14", "7-18", "0-18",
-    "flex", "upshift", "erasmus",
-}
+# Relevance uses the shared 12-category keyword taxonomy (scraper/keywords.py).
+from keywords import is_relevant as _is_relevant
 
 MIN_TEXT_LEN = 100
-
-
-def _is_relevant(text: str) -> bool:
-    low = text.lower()
-    return any(kw in low for kw in _KEYWORDS)
 
 
 async def fetch_all() -> list[dict]:

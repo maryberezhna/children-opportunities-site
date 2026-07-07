@@ -45,18 +45,8 @@ CHANNELS: list[str] = [
     "kids_opp_ua",           # агрегатор для дітей
 ]
 
-_KEYWORDS = {
-    "дітей", "діти", "дитина", "школярів", "учнів", "підлітків",
-    "можливість", "можливості", "конкурс", "олімпіада", "стипендія",
-    "табір", "грант", "програма", "обмін", "навчання", "курс",
-    "вік", "до 18", "до 17", "від 14", "7-18", "0-18", "10-17",
-    "flex", "upshift", "irex", "unicef", "erasmus",
-}
-
-
-def _is_relevant(text: str) -> bool:
-    low = text.lower()
-    return any(kw in low for kw in _KEYWORDS)
+# Relevance uses the shared 12-category keyword taxonomy (scraper/keywords.py).
+from keywords import is_relevant as _is_relevant
 
 
 async def fetch_all() -> list[dict]:
