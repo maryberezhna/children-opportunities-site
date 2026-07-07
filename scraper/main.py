@@ -27,6 +27,7 @@ from scrapers import (
     man_contests,
     mon_olympiads,
     prometheus,
+    rss_feeds,
     save_the_children,
     telegram_channels,
     telegram_web,
@@ -42,6 +43,7 @@ SCRAPERS = [
     ("easy.gov.ua", easy_gov, "ukrainian"),
     ("Erasmus+ UA", erasmus, "ukrainian"),
     ("House of Europe", house_of_europe, "ukrainian"),
+    ("RSS-стрічки", rss_feeds, "ukrainian"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
     ("Save the Children", save_the_children, "thematic"),

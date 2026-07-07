@@ -41,6 +41,7 @@ CHANNELS: list[tuple[str, str]] = [
     ("naurok", "На Урок"),
     ("houseofeurope", "House of Europe"),
     ("unicef_ukraine", "UNICEF Ukraine"),
+    ("mozhlyvosti_ua", "Можливості UA"),
 ]
 
 _BROWSER = {
