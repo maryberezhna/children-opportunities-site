@@ -146,10 +146,14 @@ export default function AdminList({ drafts, actives }) {
 
   const activeFiltered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return actives;
-    return actives.filter((o) =>
-      (o.title || '').toLowerCase().includes(q) || (o.source || '').toLowerCase().includes(q));
+    const base = q
+      ? actives.filter((o) => (o.title || '').toLowerCase().includes(q) || (o.source || '').toLowerCase().includes(q))
+      : actives;
+    // Possible duplicates first, so they're easy to review.
+    return [...base].sort((a, b) => (b.dup_of ? 1 : 0) - (a.dup_of ? 1 : 0));
   }, [actives, search]);
+
+  const flaggedCount = useMemo(() => actives.filter((o) => o.dup_of).length, [actives]);
 
   const tabBtn = (id, label) => (
     <button onClick={() => setTab(id)}
@@ -186,7 +190,8 @@ export default function AdminList({ drafts, actives }) {
               borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
           />
           <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
-            Показано {activeFiltered.length} із {actives.length}. Неперевірені — вгорі.
+            Показано {activeFiltered.length} із {actives.length}.
+            {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
             {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} />)}

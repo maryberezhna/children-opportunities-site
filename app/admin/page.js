@@ -14,7 +14,7 @@ export const metadata = {
 const DRAFT_FIELDS =
   'id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, dup_of, dup_score, admin_comment, created_at';
 const ACTIVE_FIELDS =
-  'id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, verified_at, admin_comment, created_at';
+  'id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, verified_at, admin_comment, dup_of, dup_score, created_at';
 
 export default async function AdminPage() {
   const token = process.env.ADMIN_TOKEN;
