@@ -12,17 +12,22 @@ import * as festPortal from './sources/fest-portal.mjs';
 import * as camps from './sources/regional-camps.mjs';
 import * as international from './sources/international-competitions.mjs';
 import * as langSchools from './sources/regional-language-schools.mjs';
-import * as manContests from './sources/man-contests.mjs';
-import * as monOlympiads from './sources/mon-subject-olympiads.mjs';
-import * as diiaOsvita from './sources/diia-osvita.mjs';
 import * as ucfGrants from './sources/ucf-grants.mjs';
-import * as easyGov from './sources/easy-gov.mjs';
 import * as eurodesk from './sources/eurodesk.mjs';
 import * as egapStem from './sources/egap-stem.mjs';
+// МАН, МОН-олімпіади, Дія.Освіта та easy.gov веде тепер ЛИШЕ Python-скрапер
+// (scraper/scrapers/), через AI-нормалізатор. Раніше обидва пайплайни скрапили
+// їх із різним content_hash → дублікати в базі. Не повертати сюди.
+// import * as manContests from './sources/man-contests.mjs';
+// import * as monOlympiads from './sources/mon-subject-olympiads.mjs';
+// import * as diiaOsvita from './sources/diia-osvita.mjs';
+// import * as easyGov from './sources/easy-gov.mjs';
 
+// Only mjs-unique sources — the four overlapping with the Python scraper
+// (МАН, МОН, Дія.Освіта, easy.gov) were removed to stop cross-pipeline dupes.
 const SOURCES = [
-  acmodasi, constellation, festPortal, camps, international, langSchools, manContests,
-  monOlympiads, diiaOsvita, ucfGrants, easyGov, eurodesk, egapStem,
+  acmodasi, constellation, festPortal, camps, international, langSchools,
+  ucfGrants, eurodesk, egapStem,
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
