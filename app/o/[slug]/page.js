@@ -78,10 +78,13 @@ export const revalidate = 3600;
 
 async function getOpportunity(slug) {
   if (!supabase) return null;
+  // status='active' only — never render drafts (pending agent candidates),
+  // skipped (closed) or archived rows, even by direct slug URL.
   const { data } = await supabase
     .from('opportunities')
     .select('*')
     .eq('slug', slug)
+    .eq('status', 'active')
     .maybeSingle();
   return data;
 }

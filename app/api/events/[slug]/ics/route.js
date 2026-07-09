@@ -34,6 +34,7 @@ export async function GET(request, { params }) {
     .from('opportunities')
     .select('slug, title, summary, deadline, source_url, opportunity_type')
     .eq('slug', slug)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (!item) {

@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { safeEqual } from '@/lib/adminAuth';
 import AdminList from './AdminList';
 import LoginForm from './LoginForm';
 
@@ -12,7 +13,8 @@ export const metadata = {
 
 export default async function AdminPage() {
   const token = process.env.ADMIN_TOKEN;
-  const authed = Boolean(token) && cookies().get('dityam_admin')?.value === token;
+  const cookie = cookies().get('dityam_admin')?.value;
+  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
 
   if (!authed) {
     return (

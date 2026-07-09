@@ -32,7 +32,10 @@ from normalizer import _sanitize
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
-MODEL = os.environ.get("DISCOVER_MODEL") or "claude-haiku-4-5-20251001"
+# Web search is not supported on every model — haiku 4.5 returns HTTP 400.
+# Default to sonnet-5 (supports web search, cheaper than opus); override with
+# DISCOVER_MODEL=claude-opus-4-8 if needed.
+MODEL = os.environ.get("DISCOVER_MODEL") or "claude-sonnet-5"
 MAX_CANDIDATES = int(os.environ.get("DISCOVER_MAX", "5"))
 DRY_RUN = os.environ.get("DRY_RUN") == "true"
 
@@ -64,6 +67,25 @@ def _prompt(kw: str) -> str:
         '"cost_type":"free|partially_free|paid_affordable"}]\n'
         "Якщо нічого певного не знайдено — поверни []."
     )
+
+
+def _extract_json_array(text: str):
+    """Parse the first balanced JSON array in the text, ignoring any trailing
+    prose (e.g. a citation/source list the model may append). Tries each '['
+    position with raw_decode so a greedy '[.*]' span can't swallow non-JSON."""
+    decoder = json.JSONDecoder()
+    start = 0
+    while True:
+        i = text.find("[", start)
+        if i == -1:
+            return None
+        try:
+            value, _ = decoder.raw_decode(text, i)
+            if isinstance(value, list):
+                return value
+        except json.JSONDecodeError:
+            pass
+        start = i + 1
 
 
 def search_candidates(kw: str) -> list[dict]:
@@ -106,16 +128,16 @@ def search_candidates(kw: str) -> list[dict]:
     searches = data.get("usage", {}).get("server_tool_use", {}).get("web_search_requests")
     logger.info("  web searches used: %s", searches)
 
-    m = re.search(r"\[.*\]", text, re.DOTALL)
-    if not m:
-        logger.info("  Модель не повернула JSON-масив.")
+    stop = data.get("stop_reason")
+    if stop in ("max_tokens", "pause_turn"):
+        logger.warning("  stop_reason=%s — відповідь могла обірватись, кандидати можуть бути неповні.", stop)
+
+    parsed = _extract_json_array(text)
+    if parsed is None:
+        logger.info("  JSON-масив не виділено. Голова тексту: %s",
+                    text[:200].replace("\n", " "))
         return []
-    try:
-        parsed = json.loads(m.group(0))
-        return parsed if isinstance(parsed, list) else []
-    except json.JSONDecodeError:
-        logger.info("  Не вдалося розпарсити JSON.")
-        return []
+    return [c for c in parsed if isinstance(c, dict)]
 
 
 def _clamp_age(v, default):

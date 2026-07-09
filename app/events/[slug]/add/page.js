@@ -13,6 +13,7 @@ export async function generateMetadata({ params }) {
     .from('opportunities')
     .select('title, slug')
     .eq('slug', params.slug)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (!item) return { title: 'Не знайдено' };
@@ -29,6 +30,7 @@ export default async function AddToCalendarPage({ params }) {
     .from('opportunities')
     .select('slug, title, summary, deadline')
     .eq('slug', params.slug)
+    .eq('status', 'active')
     .maybeSingle();
 
   if (!item || !item.deadline) notFound();

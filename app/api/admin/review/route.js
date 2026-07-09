@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { safeEqual } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export async function POST(request) {
   const token = process.env.ADMIN_TOKEN;
   const cookie = cookies().get('dityam_admin')?.value;
-  if (!token || cookie !== token) {
+  if (!token || !cookie || !safeEqual(cookie, token)) {
     return Response.json({ ok: false }, { status: 403 });
   }
 
