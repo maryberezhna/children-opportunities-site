@@ -6,6 +6,11 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 const MAX_PER_RUN = Number(process.env.MAX_PER_RUN || 8);
+// Diversity controls: cap how many of the SAME type go out in one batch, and
+// how large a candidate pool to diversify from. Prevents the channel from being
+// flooded with near-identical posts (e.g. dozens of «Всеукраїнська олімпіада з …»).
+const MAX_PER_TYPE = Number(process.env.MAX_PER_TYPE || 2);
+const POOL_SIZE = Number(process.env.POOL_SIZE || 80);
 const DRY_RUN = process.env.DRY_RUN === 'true';
 
 const required = {
@@ -138,28 +143,63 @@ async function sendTelegramMessage(text, replyMarkup) {
   return json.result;
 }
 
+// Pick a diverse batch: round-robin across opportunity types (oldest first
+// within each type), capped at maxPerType per type, up to `max` total. This
+// interleaves types so no single type (e.g. olympiads) floods one run.
+function selectDiverse(pool, max, maxPerType) {
+  const groups = new Map();
+  for (const it of pool) {
+    const key = it.opportunity_type || 'other';
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(it);
+  }
+  const counts = new Map();
+  const selected = [];
+  let progressed = true;
+  while (selected.length < max && progressed) {
+    progressed = false;
+    for (const [type, arr] of groups) {
+      if (selected.length >= max) break;
+      if ((counts.get(type) || 0) >= maxPerType) continue;
+      const item = arr.shift();
+      if (!item) continue;
+      selected.push(item);
+      counts.set(type, (counts.get(type) || 0) + 1);
+      progressed = true;
+    }
+  }
+  return selected;
+}
+
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
-const { data: items, error } = await supabase
+const { data: pool, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline')
   .is('telegram_posted_at', null)
   .order('created_at', { ascending: true })
-  .limit(MAX_PER_RUN);
+  .limit(POOL_SIZE);
 
 if (error) {
   console.error('Supabase select error:', error);
   process.exit(1);
 }
 
-if (!items || items.length === 0) {
+// Diversify the batch so the channel doesn't get flooded with same-type posts.
+const items = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE);
+
+if (items.length === 0) {
   console.log('No new opportunities to post.');
   process.exit(0);
 }
 
-console.log(`Posting ${items.length} new opportunit${items.length === 1 ? 'y' : 'ies'} to Telegram${DRY_RUN ? ' (DRY RUN)' : ''}...`);
+const typeSummary = items.reduce((acc, it) => {
+  acc[it.opportunity_type] = (acc[it.opportunity_type] || 0) + 1;
+  return acc;
+}, {});
+console.log(`Posting ${items.length} of ${(pool || []).length} unposted — diverse mix ${JSON.stringify(typeSummary)}${DRY_RUN ? ' (DRY RUN)' : ''}...`);
 
 let posted = 0;
 let failed = 0;
