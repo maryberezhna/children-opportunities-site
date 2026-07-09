@@ -3,11 +3,48 @@ import os
 import hashlib
 import re
 import logging
+from datetime import datetime
 from typing import Optional
 import anthropic
 from slugify import slugify
 
 logger = logging.getLogger(__name__)
+
+# Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
+# The AI occasionally returns something off-list (e.g. deadline "квітень",
+# cost_type "unknown") — those rows used to fail the whole upsert and get lost.
+# We sanitise here so the opportunity still saves, just without the bad field.
+VALID_COST_TYPES = {
+    "free", "partially_free", "paid_affordable", "paid_premium", "subsidized",
+}
+VALID_OPP_TYPES = {
+    "course", "workshop", "summer_school", "mentorship", "club", "camp",
+    "study_program", "olympiad", "competition", "hackathon", "sport_tournament",
+    "festival", "award", "exchange", "excursion", "residency", "scholarship",
+    "grant", "allowance", "support_payment", "internship", "volunteer",
+    "conference", "medical_aid", "psychology", "rehabilitation", "humanitarian",
+    "legal_aid", "shelter", "educational_material",
+}
+
+
+def _sanitize(data: dict) -> dict:
+    """Coerce AI output to values the DB accepts, so a bad field never sinks
+    the whole record."""
+    dl = data.get("deadline")
+    if dl:
+        try:
+            # Accepts "2026-4-5" too, normalises to "2026-04-05"; rejects word
+            # dates like "квітень" / "abril 2024".
+            data["deadline"] = datetime.strptime(str(dl).strip(), "%Y-%m-%d").date().isoformat()
+        except ValueError:
+            data["deadline"] = None
+    # cost_type & deadline are nullable — drop unknown values to null.
+    if data.get("cost_type") not in VALID_COST_TYPES:
+        data["cost_type"] = None
+    # opportunity_type is NOT NULL — fall back to the most generic valid type.
+    if data.get("opportunity_type") not in VALID_OPP_TYPES:
+        data["opportunity_type"] = "course"
+    return data
 
 
 SYSTEM_PROMPT = """Ти аналізуєш тексти про можливості для ДІТЕЙ 0-18 років в Україні.
@@ -141,6 +178,7 @@ URL: {source_url}
                 logger.info(f"Low confidence, skipping: {source_url}")
                 return None
 
+            data = _sanitize(dict(data))
             title = data["title"]
             data["slug"] = self._make_slug(title, source)
             data["content_hash"] = self._make_hash(title, source_url)
