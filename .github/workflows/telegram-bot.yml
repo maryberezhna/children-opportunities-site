@@ -38,5 +38,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           SITE_URL: 'https://dityam.com.ua'
           MAX_PER_RUN: '1'
+          MAX_PER_TYPE: '1'
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: node scripts/post-to-telegram.mjs

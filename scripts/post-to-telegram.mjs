@@ -143,25 +143,35 @@ async function sendTelegramMessage(text, replyMarkup) {
   return json.result;
 }
 
-// Pick a diverse batch: round-robin across opportunity types (oldest first
-// within each type), capped at maxPerType per type, up to `max` total. This
-// interleaves types so no single type (e.g. olympiads) floods one run.
-function selectDiverse(pool, max, maxPerType) {
+// Pick a diverse batch. Types are visited least-recently-posted first (so the
+// feed rotates across types day to day instead of always leading with the
+// biggest group — e.g. olympiads), then round-robin, oldest-first within each
+// type, capped at maxPerType per run. `lastPosted` maps type → ISO timestamp of
+// its most recent post (missing = never posted → highest priority).
+function selectDiverse(pool, max, maxPerType, lastPosted = new Map()) {
   const groups = new Map();
   for (const it of pool) {
     const key = it.opportunity_type || 'other';
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(it);
   }
+  const orderedTypes = [...groups.keys()].sort((a, b) => {
+    const ta = lastPosted.get(a);
+    const tb = lastPosted.get(b);
+    if (!ta && !tb) return 0;
+    if (!ta) return -1;              // never posted → go first
+    if (!tb) return 1;
+    return new Date(ta) - new Date(tb); // older last-post → higher priority
+  });
   const counts = new Map();
   const selected = [];
   let progressed = true;
   while (selected.length < max && progressed) {
     progressed = false;
-    for (const [type, arr] of groups) {
+    for (const type of orderedTypes) {
       if (selected.length >= max) break;
       if ((counts.get(type) || 0) >= maxPerType) continue;
-      const item = arr.shift();
+      const item = groups.get(type).shift();
       if (!item) continue;
       selected.push(item);
       counts.set(type, (counts.get(type) || 0) + 1);
@@ -187,8 +197,23 @@ if (error) {
   process.exit(1);
 }
 
+// When was each type last posted? Lets us rotate to under-featured types so the
+// single daily post isn't an olympiad every single day.
+const { data: postedRows } = await supabase
+  .from('opportunities')
+  .select('opportunity_type, telegram_posted_at')
+  .not('telegram_posted_at', 'is', null)
+  .order('telegram_posted_at', { ascending: false })
+  .limit(300);
+const lastPosted = new Map();
+for (const r of postedRows || []) {
+  if (r.opportunity_type && !lastPosted.has(r.opportunity_type)) {
+    lastPosted.set(r.opportunity_type, r.telegram_posted_at);
+  }
+}
+
 // Diversify the batch so the channel doesn't get flooded with same-type posts.
-const items = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE);
+const items = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE, lastPosted);
 
 if (items.length === 0) {
   console.log('No new opportunities to post.');
