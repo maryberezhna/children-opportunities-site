@@ -18,6 +18,7 @@ Env:
 import os
 import re
 import json
+import difflib
 import hashlib
 import logging
 from datetime import date, datetime, timezone
@@ -38,6 +39,10 @@ logger = logging.getLogger(__name__)
 MODEL = os.environ.get("DISCOVER_MODEL") or "claude-sonnet-5"
 MAX_CANDIDATES = int(os.environ.get("DISCOVER_MAX", "5"))
 DRY_RUN = os.environ.get("DRY_RUN") == "true"
+# Duplicate control: ≥ DUP_SKIP title match → drop the candidate entirely;
+# DUP_TAG..DUP_SKIP → keep but flag as a possible duplicate of the match.
+DUP_SKIP = float(os.environ.get("DUP_SKIP", "0.80"))
+DUP_TAG = float(os.environ.get("DUP_TAG", "0.60"))
 
 # Specific, meaningful search terms (the 12 themes, flattened). Generic signal
 # words from keywords.ALL_KEYWORDS are intentionally excluded — they make poor
@@ -179,6 +184,28 @@ def to_record(c: dict, kw: str) -> dict | None:
     return rec
 
 
+def _norm_title(t: str) -> str:
+    t = (t or "").lower()
+    t = re.sub(r"[^\w\s]", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def _best_match(title: str, existing: list) -> tuple:
+    """existing: list of (slug, normalized_title). Returns (slug, score) of the
+    closest existing opportunity by title similarity."""
+    nt = _norm_title(title)
+    if not nt:
+        return None, 0.0
+    best_slug, best = None, 0.0
+    for slug, ntitle in existing:
+        if not ntitle:
+            continue
+        score = difflib.SequenceMatcher(None, nt, ntitle).ratio()
+        if score > best:
+            best, best_slug = score, slug
+    return best_slug, best
+
+
 def main() -> int:
     kw = keyword_of_day()
     logger.info("🔎 Розвідник — слово дня: «%s» (модель %s)%s",
@@ -190,38 +217,63 @@ def main() -> int:
         return 0
 
     client = get_client()
-    added, skipped = 0, 0
+
+    # Existing titles (active + draft) for duplicate analysis — every candidate
+    # is compared against these BEFORE it can enter the moderation queue.
+    try:
+        rows = (client.table("opportunities").select("title, slug")
+                .in_("status", ["active", "draft"]).execute().data or [])
+    except Exception as e:
+        logger.warning("  Не вдалося завантажити наявні для дедупу: %s", e)
+        rows = []
+    existing = [(r["slug"], _norm_title(r.get("title"))) for r in rows if r.get("slug")]
+
+    added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     for c in candidates:
         rec = to_record(c, kw)
         if not rec:
             skipped += 1
             continue
 
+        # Duplicate analysis (also catches near-dupes within this batch).
+        best_slug, score = _best_match(rec["title"], existing)
+        if score >= DUP_SKIP:
+            dup_skipped += 1
+            logger.info("  ⏭ дублікат %.0f%% (з %s) — не пропоную: %s",
+                        score * 100, best_slug, rec["title"][:55])
+            continue
+        if score >= DUP_TAG:
+            rec["dup_of"] = best_slug
+            rec["dup_score"] = round(score, 3)
+            flagged += 1
+
         if DRY_RUN:
-            logger.info("  [DRY] %s → %s", rec["title"][:70], rec["source_url"])
+            tag = f"  ⚠ схоже на {best_slug} ({score:.0%})" if rec.get("dup_of") else ""
+            logger.info("  [DRY] %s → %s%s", rec["title"][:60], rec["source_url"], tag)
             added += 1
+            existing.append((rec["slug"], _norm_title(rec["title"])))
             continue
 
-        # Skip if we already have this (any status), so we don't re-surface it.
         try:
-            existing = (client.table("opportunities")
-                        .select("id")
-                        .eq("content_hash", rec["content_hash"])
-                        .execute())
-            if existing.data:
+            if (client.table("opportunities").select("id")
+                    .eq("content_hash", rec["content_hash"]).execute().data):
                 skipped += 1
                 continue
             client.table("opportunities").insert(
                 {**rec, "updated_at": datetime.now(timezone.utc).isoformat()}
             ).execute()
             added += 1
-            logger.info("  ✅ draft: %s", rec["title"][:70])
+            existing.append((rec["slug"], _norm_title(rec["title"])))
+            logger.info("  ✅ draft%s: %s",
+                        f" ⚠дубль~{int(score*100)}%" if rec.get("dup_of") else "",
+                        rec["title"][:65])
         except Exception as e:
             logger.error("  ✗ insert failed for '%s': %s", rec["title"][:50], e)
             skipped += 1
 
-    logger.info("\nГотово: %d нових драфтів, %d пропущено. Модерація — на /admin.",
-                added, skipped)
+    logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "
+                "%d інших пропущено. Модерація — на /admin.",
+                added, flagged, dup_skipped, skipped)
     return 0
 
 
