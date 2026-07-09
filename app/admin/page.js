@@ -36,6 +36,7 @@ export default async function AdminPage() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   let drafts = [];
   let actives = [];
+  let matches = {};
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const [d, a] = await Promise.all([
@@ -50,6 +51,16 @@ export default async function AdminPage() {
     ]);
     drafts = d.data || [];
     actives = a.data || [];
+
+    // Fetch the matched opportunities so the UI can show both side by side.
+    const dupSlugs = [...new Set([...drafts, ...actives].map((o) => o.dup_of).filter(Boolean))];
+    if (dupSlugs.length) {
+      const { data: m } = await supabase
+        .from('opportunities')
+        .select('slug, title, source, source_url, deadline, opportunity_type, age_from, age_to, cost_type')
+        .in('slug', dupSlugs);
+      matches = Object.fromEntries((m || []).map((x) => [x.slug, x]));
+    }
   }
 
   return (
@@ -58,7 +69,7 @@ export default async function AdminPage() {
       <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
         Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
       </p>
-      <AdminList drafts={drafts} actives={actives} />
+      <AdminList drafts={drafts} actives={actives} matches={matches} />
     </main>
   );
 }

@@ -27,7 +27,27 @@ const C = {
   typeBg: '#f0e9fd', typeInk: '#4c3d8c', warnBg: '#fef1e2', warnInk: '#b4530a',
 };
 
-function Card({ o, mode, onAction }) {
+function MiniCol({ label, item, accent }) {
+  const meta = [
+    ageLabel(item),
+    item.cost_type === 'free' ? 'безкоштовно' : null,
+    item.deadline ? `⏰ ${item.deadline}` : null,
+  ].filter(Boolean).join(' · ');
+  return (
+    <div style={{ background: '#fff', border: `1px solid ${accent || C.border2}`, borderRadius: 8, padding: '8px 10px' }}>
+      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: accent || C.ink3, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3, marginBottom: 4 }}>{item.title}</div>
+      <div style={{ fontSize: 12, color: C.ink2, marginBottom: meta ? 5 : 0 }}>
+        {item.source || '—'}{meta ? ` · ${meta}` : ''}
+      </div>
+      {item.source_url
+        ? <a href={item.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: C.link, fontWeight: 600 }}>🔗 відкрити ↗</a>
+        : null}
+    </div>
+  );
+}
+
+function Card({ o, mode, onAction, match }) {
   const [comment, setComment] = useState(o.admin_comment || '');
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null); // 'approved'|'skipped'|'verified'|'removed'|'commented'
@@ -63,11 +83,18 @@ function Card({ o, mode, onAction }) {
       </div>
 
       {o.dup_of ? (
-        <div style={{ background: C.warnBg, color: C.warnInk, borderRadius: 8, padding: '5px 10px', fontSize: 13, marginBottom: 8 }}>
-          ⚠ можливий дублікат{o.dup_score ? ` (~${Math.round(o.dup_score * 100)}%)` : ''} —{' '}
-          <a href={`/o/${o.dup_of}`} target="_blank" rel="noreferrer" style={{ color: C.warnInk, fontWeight: 600 }}>
-            переглянути схожу ↗
-          </a>
+        <div style={{ background: C.warnBg, borderRadius: 10, padding: '9px 11px', marginBottom: 10, border: '1px solid #f3d3ad' }}>
+          <div style={{ color: C.warnInk, fontSize: 13, fontWeight: 600, marginBottom: 7 }}>
+            ⚠ Можливий дублікат{o.dup_score ? ` (~${Math.round(o.dup_score * 100)}%)` : ''} — порівняй обидва:
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
+            <MiniCol label="Ця" item={o} accent="#e0a763" />
+            {match
+              ? <MiniCol label="Схожа (вже в базі)" item={match} />
+              : <div style={{ fontSize: 12.5, color: C.ink2, alignSelf: 'center', padding: '0 4px' }}>
+                  <a href={`/o/${o.dup_of}`} target="_blank" rel="noreferrer" style={{ color: C.warnInk, fontWeight: 600 }}>переглянути схожу ↗</a>
+                </div>}
+          </div>
         </div>
       ) : null}
 
@@ -130,7 +157,7 @@ function Btn({ children, onClick, busy, bg, fg, border }) {
   );
 }
 
-export default function AdminList({ drafts, actives }) {
+export default function AdminList({ drafts, actives, matches = {} }) {
   const [tab, setTab] = useState('drafts');
   const [search, setSearch] = useState('');
 
@@ -178,7 +205,7 @@ export default function AdminList({ drafts, actives }) {
           <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} />)}
+            {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} match={matches[o.dup_of]} />)}
           </div>
         )
       ) : (
@@ -194,7 +221,7 @@ export default function AdminList({ drafts, actives }) {
             {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} />)}
+            {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} />)}
           </div>
           {activeFiltered.length > 150
             ? <p style={{ color: C.ink3, fontSize: 13, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
