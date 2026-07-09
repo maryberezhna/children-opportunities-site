@@ -1,6 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -163,6 +164,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
   const [aidTypes, setAidTypes] = useState(() => new Set());
+  const [themes, setThemes] = useState(() => new Set());
   const [needs, setNeeds] = useState(() => new Set());
   const [costs, setCosts] = useState(() => new Set());
   const [deadlines, setDeadlines] = useState(() => new Set());
@@ -184,7 +186,25 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     if (city) setSelectedCities(new Set(city.split(',').filter(Boolean)));
     const sortVal = p.get('sort');
     if (sortVal && SORT_OPTIONS.some((o) => o.value === sortVal)) setSort(sortVal);
+    const theme = p.get('theme');
+    if (theme) setThemes(new Set(theme.split(',').filter(Boolean)));
   }, []);
+
+  // Theme tags per opportunity, derived from title+summary keywords (lib/themes).
+  const themeMap = useMemo(() => {
+    const m = new Map();
+    opportunities.forEach((o) => {
+      m.set(o.id, new Set(matchThemes(`${o.title || ''} ${o.summary || ''}`)));
+    });
+    return m;
+  }, [opportunities]);
+
+  // Only offer theme chips that actually match ≥1 opportunity (no dead filters).
+  const availableThemes = useMemo(() => {
+    const present = new Set();
+    themeMap.forEach((set) => set.forEach((t) => present.add(t)));
+    return THEME_OPTIONS.filter((o) => o.value === 'all' || present.has(o.value));
+  }, [themeMap]);
 
   const availableCities = useMemo(() => {
     const citySet = new Set();
@@ -224,6 +244,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
       if (value === 'gov_aid' || value === 'all') setAidTypes(new Set());
     },
     aid: toggle(setAidTypes),
+    theme: toggle(setThemes),
     need: toggle(setNeeds),
     cost: toggle(setCosts),
     deadline: toggle(setDeadlines),
@@ -247,6 +268,10 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
         if (!matchesType) return false;
       }
       if (aidTypes.size > 0 && !aidTypes.has(item.aid_type)) return false;
+      if (themes.size > 0) {
+        const itemThemes = themeMap.get(item.id);
+        if (!itemThemes || ![...themes].some((t) => itemThemes.has(t))) return false;
+      }
       if (needs.size > 0) {
         const itemNeeds = item.child_needs || [];
         if (!itemNeeds.some((n) => needs.has(n))) return false;
@@ -316,7 +341,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     }
 
     return result;
-  }, [opportunities, ages, types, aidTypes, needs, costs, deadlines, selectedCities, query, sort]);
+  }, [opportunities, ages, types, aidTypes, themes, themeMap, needs, costs, deadlines, selectedCities, query, sort]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -444,6 +469,21 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
                 onClick={() => handlers.aid(a.value)}
               >
                 {a.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {availableThemes.length > 1 && (
+          <div className="filter-row">
+            <div className="filter-label">Тема</div>
+            {availableThemes.map((t) => (
+              <button
+                key={t.value}
+                className={`filter-btn ${isActive(themes, t.value) ? 'active' : ''}`}
+                onClick={() => handlers.theme(t.value)}
+              >
+                {t.label}
               </button>
             ))}
           </div>
