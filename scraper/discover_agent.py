@@ -1,4 +1,4 @@
-"""discover_agent.py — щоденний агент-розвідник із веб-пошуком Claude.
+"""discover_agent.py — щоденний агент веб-пошуку можливостей (Claude).
 
 Бере 1 ключове слово (детермінована ротація по днях через словник), просить
 Claude пошукати в інтернеті СВІЖІ конкретні можливості для дітей 0–18 в Україні
@@ -208,7 +208,7 @@ def _best_match(title: str, existing: list) -> tuple:
 
 def main() -> int:
     kw = keyword_of_day()
-    logger.info("🔎 Розвідник — слово дня: «%s» (модель %s)%s",
+    logger.info("🔎 Агент — слово дня: «%s» (модель %s)%s",
                 kw, MODEL, " [DRY RUN]" if DRY_RUN else "")
 
     candidates = search_candidates(kw)
