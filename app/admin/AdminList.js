@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 
 const TYPE_LABELS = {
   course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
@@ -21,91 +21,181 @@ function ageLabel(o) {
   return `${o.age_from}–${o.age_to} р.`;
 }
 
-export default function AdminList({ initial }) {
-  const [items, setItems] = useState(initial);
-  const [busy, setBusy] = useState(null);
-  const [done, setDone] = useState({}); // id -> 'approved' | 'skipped'
+const C = {
+  border: '#e2e8f2', border2: '#d3dbe9', ink: '#131b28', ink2: '#54617a', ink3: '#8a95a9',
+  green: '#15803d', greenBg: '#e7f6ec', greyBg: '#f3f4f6', link: '#1e4fd6',
+  typeBg: '#f0e9fd', typeInk: '#4c3d8c', warnBg: '#fef1e2', warnInk: '#b4530a',
+};
 
-  async function act(id, action) {
-    setBusy(id);
-    try {
-      const res = await fetch('/api/admin/review', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, action }),
-      });
-      if (res.ok) {
-        setDone((d) => ({ ...d, [id]: action === 'approve' ? 'approved' : 'skipped' }));
-        setTimeout(() => setItems((list) => list.filter((x) => x.id !== id)), 550);
-      } else {
-        alert('Не вдалося. Спробуй ще раз або перезайди.');
-      }
-    } catch {
-      alert('Помилка мережі.');
-    } finally {
-      setBusy(null);
-    }
+function Card({ o, mode, onAction }) {
+  const [comment, setComment] = useState(o.admin_comment || '');
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(null); // 'approved'|'skipped'|'verified'|'removed'|'commented'
+
+  async function act(action) {
+    setBusy(true);
+    const ok = await onAction(o.id, action, comment);
+    setBusy(false);
+    if (!ok) { alert('Не вдалося. Спробуй ще раз або перезайди.'); return; }
+    setDone(action === 'approve' ? 'approved' : action === 'skip' ? 'skipped'
+      : action === 'verify' ? 'verified' : action === 'remove' ? 'removed' : 'commented');
   }
 
-  if (items.length === 0) {
-    return <p style={{ color: '#54617a', marginTop: 24 }}>Немає кандидатів на модерацію. Агент додасть нові після наступного щоденного прогону.</p>;
-  }
+  const gone = done === 'approved' || done === 'skipped' || done === 'removed';
+  const bg = done === 'approved' || done === 'verified' ? C.greenBg
+    : done === 'skipped' || done === 'removed' ? C.greyBg : '#fff';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 20 }}>
-      {items.map((o) => {
-        const state = done[o.id];
-        return (
-          <article
-            key={o.id}
-            style={{
-              border: '1px solid #e2e8f2', borderRadius: 14, padding: '16px 18px',
-              background: state === 'approved' ? '#e7f6ec' : state === 'skipped' ? '#f3f4f6' : '#fff',
-              transition: 'background .2s, opacity .3s', opacity: state ? 0.7 : 1,
-            }}
-          >
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13, color: '#54617a', marginBottom: 6 }}>
-              <span style={{ background: '#f0e9fd', color: '#4c3d8c', padding: '2px 9px', borderRadius: 20 }}>
-                {TYPE_LABELS[o.opportunity_type] || o.opportunity_type}
-              </span>
-              {ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
-              {o.cost_type === 'free' ? <span style={{ color: '#15803d' }}>безкоштовно</span> : null}
-              {o.deadline ? <span>⏰ {o.deadline}</span> : null}
-            </div>
+    <article style={{
+      border: `1px solid ${C.border}`, borderRadius: 14, padding: '15px 17px', background: bg,
+      boxShadow: '0 1px 2px rgba(20,30,60,.05)', transition: 'background .2s, opacity .3s',
+      opacity: gone ? 0.6 : 1,
+    }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13, color: C.ink2, marginBottom: 6, alignItems: 'center' }}>
+        <span style={{ background: C.typeBg, color: C.typeInk, padding: '2px 10px', borderRadius: 20 }}>
+          {TYPE_LABELS[o.opportunity_type] || o.opportunity_type}
+        </span>
+        {ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
+        {o.cost_type === 'free' ? <span style={{ color: C.green }}>безкоштовно</span> : null}
+        {o.deadline ? <span>⏰ {o.deadline}</span> : null}
+        {mode === 'active' && o.verified_at
+          ? <span style={{ color: C.green, fontWeight: 600 }}>✓ перевірено</span> : null}
+      </div>
 
-            <h3 style={{ margin: '0 0 6px', fontSize: 17 }}>{o.title}</h3>
-            {o.summary ? <p style={{ margin: '0 0 10px', fontSize: 14, color: '#3a4557', lineHeight: 1.5 }}>{o.summary}</p> : null}
+      {o.dup_of ? (
+        <div style={{ background: C.warnBg, color: C.warnInk, borderRadius: 8, padding: '5px 10px', fontSize: 13, marginBottom: 8 }}>
+          ⚠ можливий дублікат{o.dup_score ? ` (~${Math.round(o.dup_score * 100)}%)` : ''} —{' '}
+          <a href={`/o/${o.dup_of}`} target="_blank" rel="noreferrer" style={{ color: C.warnInk, fontWeight: 600 }}>
+            переглянути схожу ↗
+          </a>
+        </div>
+      ) : null}
 
-            <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 13, color: '#54617a', marginBottom: 12, flexWrap: 'wrap' }}>
-              {o.source ? <span>{o.source}</span> : null}
-              {o.source_url ? <a href={o.source_url} target="_blank" rel="noreferrer" style={{ color: '#1e4fd6' }}>джерело ↗</a> : null}
-            </div>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, lineHeight: 1.3 }}>{o.title}</h3>
+      {o.summary ? <p style={{ margin: '0 0 9px', fontSize: 14, color: C.ink2, lineHeight: 1.5 }}>{o.summary}</p> : null}
 
-            {state ? (
-              <div style={{ fontWeight: 600, color: state === 'approved' ? '#15803d' : '#6b7280' }}>
-                {state === 'approved' ? '✅ Додано на сайт' : '❌ Пропущено'}
-              </div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 13, color: C.ink2, marginBottom: 11, flexWrap: 'wrap' }}>
+        {o.source ? <span>{o.source}</span> : null}
+        {o.source_url
+          ? <a href={o.source_url} target="_blank" rel="noreferrer" style={{ color: C.link, fontWeight: 600 }}>🔗 відкрити джерело ↗</a>
+          : <span style={{ color: C.warnInk }}>⚠ немає посилання</span>}
+      </div>
+
+      {done ? (
+        <div style={{ fontWeight: 600, color: gone || done === 'skipped' ? C.ink3 : C.green }}>
+          {{ approved: '✅ Додано на сайт', skipped: '❌ Пропущено', verified: '✓ Перевірено',
+             removed: '🗑 Прибрано', commented: '💬 Коментар збережено' }[done]}
+        </div>
+      ) : (
+        <>
+          <textarea
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
+            placeholder="Коментар (збережеться в базі + Notion)…"
+            rows={2}
+            style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 13.5,
+              padding: '8px 11px', borderRadius: 9, border: `1px solid ${C.border2}`, resize: 'vertical', marginBottom: 9 }}
+          />
+          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+            {mode === 'drafts' ? (
+              <>
+                <Btn onClick={() => act('approve')} busy={busy} bg={C.green} fg="#fff">✅ Додати на сайт</Btn>
+                <Btn onClick={() => act('skip')} busy={busy} border>❌ Пропустити</Btn>
+              </>
             ) : (
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button
-                  onClick={() => act(o.id, 'approve')}
-                  disabled={busy === o.id}
-                  style={{ padding: '9px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: 'none', background: '#15803d', color: '#fff', cursor: 'pointer', opacity: busy === o.id ? 0.6 : 1 }}
-                >
-                  ✅ Додати на сайт
-                </button>
-                <button
-                  onClick={() => act(o.id, 'skip')}
-                  disabled={busy === o.id}
-                  style={{ padding: '9px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer', opacity: busy === o.id ? 0.6 : 1 }}
-                >
-                  ❌ Пропустити
-                </button>
-              </div>
+              <>
+                <Btn onClick={() => act('verify')} busy={busy} bg={C.green} fg="#fff">🔗 Посилання робоче</Btn>
+                <Btn onClick={() => act('remove')} busy={busy} bg="#d92c2c" fg="#fff">🗑 Прибрати</Btn>
+              </>
             )}
-          </article>
-        );
-      })}
+            <Btn onClick={() => act('comment')} busy={busy || !comment.trim()} border>💬 Лише коментар</Btn>
+          </div>
+        </>
+      )}
+    </article>
+  );
+}
+
+function Btn({ children, onClick, busy, bg, fg, border }) {
+  return (
+    <button onClick={onClick} disabled={busy}
+      style={{
+        padding: '8px 15px', fontSize: 13.5, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
+        fontFamily: 'inherit', opacity: busy ? 0.55 : 1,
+        background: border ? '#fff' : bg, color: border ? C.ink2 : fg,
+        border: border ? `1px solid ${C.border2}` : 'none',
+      }}>
+      {children}
+    </button>
+  );
+}
+
+export default function AdminList({ drafts, actives }) {
+  const [tab, setTab] = useState('drafts');
+  const [search, setSearch] = useState('');
+
+  async function onAction(id, action, comment) {
+    try {
+      const res = await fetch('/api/admin/review', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, action, comment }),
+      });
+      return res.ok;
+    } catch { return false; }
+  }
+
+  const activeFiltered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return actives;
+    return actives.filter((o) =>
+      (o.title || '').toLowerCase().includes(q) || (o.source || '').toLowerCase().includes(q));
+  }, [actives, search]);
+
+  const tabBtn = (id, label) => (
+    <button onClick={() => setTab(id)}
+      style={{
+        padding: '9px 16px', fontSize: 14.5, fontWeight: 600, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+        border: `1px solid ${tab === id ? C.ink : C.border2}`,
+        background: tab === id ? C.ink : '#fff', color: tab === id ? '#fff' : C.ink2,
+      }}>
+      {label}
+    </button>
+  );
+
+  return (
+    <div style={{ marginTop: 22 }}>
+      <div style={{ display: 'flex', gap: 9, marginBottom: 18 }}>
+        {tabBtn('drafts', `🆕 Кандидати (${drafts.length})`)}
+        {tabBtn('active', `✅ Активні (${actives.length})`)}
+      </div>
+
+      {tab === 'drafts' ? (
+        drafts.length === 0 ? (
+          <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} />)}
+          </div>
+        )
+      ) : (
+        <>
+          <input
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Пошук за назвою або джерелом…"
+            style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 14px',
+              borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
+          />
+          <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
+            Показано {activeFiltered.length} із {actives.length}. Неперевірені — вгорі.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+            {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} />)}
+          </div>
+          {activeFiltered.length > 150
+            ? <p style={{ color: C.ink3, fontSize: 13, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
+            : null}
+        </>
+      )}
     </div>
   );
 }
