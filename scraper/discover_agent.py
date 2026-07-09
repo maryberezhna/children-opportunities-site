@@ -92,9 +92,10 @@ def search_candidates(kw: str) -> list[dict]:
     body = {
         "model": MODEL,
         "max_tokens": 3000,
-        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6,
-                   "user_location": {"type": "approximate", "country": "UA",
-                                     "city": "Kyiv", "timezone": "Europe/Kyiv"}}],
+        # No user_location — the web_search tool rejects country code "UA"
+        # ("Country code UA is not supported"). Ukraine focus comes from the
+        # prompt text instead.
+        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}],
         "messages": [{"role": "user", "content": _prompt(kw)}],
     }
     try:
