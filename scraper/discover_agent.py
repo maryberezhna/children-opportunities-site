@@ -96,7 +96,7 @@ def _extract_json_array(text: str):
 def search_candidates(kw: str) -> list[dict]:
     body = {
         "model": MODEL,
-        "max_tokens": 3000,
+        "max_tokens": 5000,
         # No user_location — the web_search tool rejects country code "UA"
         # ("Country code UA is not supported"). Ukraine focus comes from the
         # prompt text instead.
@@ -118,13 +118,15 @@ def search_candidates(kw: str) -> list[dict]:
         logger.error("Request failed: %s", e)
         return []
 
-    if r.status_code == 400:
-        logger.error("HTTP 400 — можливо, web search вимкнено в організації або "
-                     "модель '%s' його не підтримує. Спробуйте DISCOVER_MODEL="
-                     "claude-opus-4-8. Деталі: %s", MODEL, r.text[:300])
-        return []
     if r.status_code != 200:
-        logger.error("HTTP %s: %s", r.status_code, r.text[:300])
+        # Surface the real API message (e.g. low credit balance, web search
+        # disabled, unsupported model) rather than guessing.
+        detail = r.text[:400]
+        try:
+            detail = r.json().get("error", {}).get("message", detail)
+        except Exception:
+            pass
+        logger.error("Anthropic API HTTP %s: %s", r.status_code, detail)
         return []
 
     data = r.json()
