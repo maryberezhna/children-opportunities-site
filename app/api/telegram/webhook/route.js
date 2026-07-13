@@ -29,6 +29,64 @@ async function editMessage(chatId, messageId, text) {
   }).catch(() => {});
 }
 
+const MOD_TYPE_LABELS = {
+  course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
+  study_program: 'Навчальна програма', club: 'Гурток', camp: 'Табір',
+  olympiad: 'Олімпіада', competition: 'Конкурс', hackathon: 'Хакатон',
+  festival: 'Фестиваль', exchange: 'Обмін', scholarship: 'Стипендія',
+  grant: 'Грант', allowance: 'Виплата', internship: 'Стажування',
+  volunteer: 'Волонтерство', mentorship: 'Менторство',
+};
+
+async function sendMessage(chatId, text, replyMarkup) {
+  await fetch(`${TG}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId, text, parse_mode: 'HTML', disable_web_page_preview: true,
+      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+    }),
+  }).catch(() => {});
+}
+
+function candidateText(o, remaining) {
+  const meta = [`📚 ${MOD_TYPE_LABELS[o.opportunity_type] || o.opportunity_type}`];
+  if (o.age_from != null && o.age_to != null) meta.push(`👶 ${o.age_from}–${o.age_to} р.`);
+  if (o.cost_type === 'free') meta.push('✅ безкоштовно');
+  const head = `🆕 <b>Кандидат на апрув</b>${remaining ? ` · ще ${remaining} у черзі` : ''}`;
+  const lines = [head, '', `🎓 <b>${escapeHtml(o.title)}</b>`, meta.join(' · ')];
+  if (o.deadline) lines.push(`⏰ Дедлайн: ${o.deadline}`);
+  if (o.dup_of) lines.push(`⚠ можливий дублікат (~${Math.round((o.dup_score || 0) * 100)}%)`);
+  if (o.summary) lines.push('', escapeHtml(String(o.summary).slice(0, 400)));
+  if (o.source_url) lines.push('', `🔗 <a href="${escapeHtml(o.source_url)}">Джерело</a>`);
+  return lines.join('\n');
+}
+
+async function sendCandidate(chatId, o, remaining) {
+  await sendMessage(chatId, candidateText(o, remaining), {
+    inline_keyboard: [[
+      { text: '✅ Додати на сайт', callback_data: `mod:add:${o.id}` },
+      { text: '❌ Пропустити', callback_data: `mod:skip:${o.id}` },
+    ]],
+  });
+}
+
+// Send the next pending draft (oldest first) — one candidate at a time.
+async function sendNextCandidate(chatId) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return;
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { count } = await supabase.from('opportunities')
+    .select('id', { count: 'exact', head: true }).eq('status', 'draft');
+  const { data } = await supabase.from('opportunities')
+    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, dup_of, dup_score')
+    .eq('status', 'draft').order('created_at', { ascending: true }).limit(1);
+  if (!data || !data.length) {
+    await sendMessage(chatId, '✅ Черга порожня — усі кандидати опрацьовані.');
+    return;
+  }
+  await sendCandidate(chatId, data[0], Math.max(0, (count || 1) - 1));
+}
+
 // Admin taps ✅/❌ on an agent candidate → publish (active) or hide (closed).
 async function handleModeration(action, id, cbq) {
   const fromId = String(cbq.from?.id || '');
@@ -69,6 +127,8 @@ async function handleModeration(action, id, cbq) {
     url: data.source_url,
     source: data.source,
   });
+  // Auto-advance: show the next candidate in the queue.
+  if (cbq.message) await sendNextCandidate(cbq.message.chat.id);
   return new Response('ok');
 }
 
@@ -107,8 +167,28 @@ export async function POST(request) {
   }
 
   const update = await request.json().catch(() => null);
+  // Bot command → start / continue the one-by-one moderation queue.
+  const msg = update?.message;
+  if (msg?.text && /^\/(start|next|moderate|черга|модерац|далі)/i.test(msg.text.trim())) {
+    if (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID)) {
+      await sendNextCandidate(msg.chat.id);
+    }
+    return new Response('ok');
+  }
+
   const cbq = update?.callback_query;
   if (!cbq) {
+    return new Response('ok');
+  }
+
+  // ▶️ "Переглянути" on the "N new candidates" ping → start the one-by-one queue.
+  if (cbq.data === 'mod:next') {
+    if (!ADMIN_CHAT_ID || String(cbq.from?.id) === String(ADMIN_CHAT_ID)) {
+      await answerCallback(cbq.id);
+      if (cbq.message) await sendNextCandidate(cbq.message.chat.id);
+    } else {
+      await answerCallback(cbq.id, 'Лише адміністратор');
+    }
     return new Response('ok');
   }
 

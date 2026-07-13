@@ -208,54 +208,25 @@ def _best_match(title: str, existing: list) -> tuple:
     return best_slug, best
 
 
-_TYPE_LABELS = {
-    "course": "Курс", "workshop": "Майстер-клас", "summer_school": "Літня школа",
-    "study_program": "Навчальна програма", "club": "Гурток", "camp": "Табір",
-    "olympiad": "Олімпіада", "competition": "Конкурс", "hackathon": "Хакатон",
-    "festival": "Фестиваль", "exchange": "Обмін", "scholarship": "Стипендія",
-    "grant": "Грант", "allowance": "Виплата", "internship": "Стажування",
-    "volunteer": "Волонтерство", "mentorship": "Менторство",
-}
-
-
 def _esc(s):
     return str(s or "").replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
 
-def notify_admin(rec: dict, opp_id: str, kw: str) -> None:
-    """Send a candidate to the admin Telegram chat with ✅ / ❌ buttons.
+def notify_new(added: int, kw: str) -> None:
+    """Ping the admin chat that N new candidates are queued, with a ▶️ button
+    that starts the one-by-one review (the bot then delivers them one at a time).
     No-op unless TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_CHAT_ID are set."""
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat = os.environ.get("TELEGRAM_ADMIN_CHAT_ID")
-    if not token or not chat:
+    if not token or not chat or added <= 0:
         return
-
-    meta = [f"📚 {_TYPE_LABELS.get(rec.get('opportunity_type'), rec.get('opportunity_type'))}"]
-    a, b = rec.get("age_from"), rec.get("age_to")
-    if a is not None and b is not None:
-        meta.append(f"👶 {a}–{b} р.")
-    if rec.get("cost_type") == "free":
-        meta.append("✅ безкоштовно")
-
-    lines = [f"🆕 <b>Кандидат на апрув</b> · слово «{_esc(kw)}»", "",
-             f"🎓 <b>{_esc(rec['title'])}</b>", " · ".join(meta)]
-    if rec.get("deadline"):
-        lines.append(f"⏰ Дедлайн: {rec['deadline']}")
-    if rec.get("dup_of"):
-        lines.append(f"⚠ можливий дублікат (~{int((rec.get('dup_score') or 0) * 100)}%)")
-    if rec.get("summary"):
-        lines += ["", _esc(rec["summary"][:400])]
-    if rec.get("source_url"):
-        lines += ["", f'🔗 <a href="{_esc(rec["source_url"])}">Джерело</a>']
-
     payload = {
         "chat_id": chat,
-        "text": "\n".join(lines),
+        "text": (f"🆕 <b>{added} нових кандидатів</b> на апрув (слово «{_esc(kw)}»).\n"
+                 "Переглянути по одному:"),
         "parse_mode": "HTML",
-        "disable_web_page_preview": True,
         "reply_markup": {"inline_keyboard": [[
-            {"text": "✅ Додати на сайт", "callback_data": f"mod:add:{opp_id}"},
-            {"text": "❌ Пропустити", "callback_data": f"mod:skip:{opp_id}"},
+            {"text": "▶️ Переглянути", "callback_data": "mod:next"},
         ]]},
     }
     try:
@@ -317,23 +288,21 @@ def main() -> int:
                     .eq("content_hash", rec["content_hash"]).execute().data):
                 skipped += 1
                 continue
-            ins = client.table("opportunities").insert(
+            client.table("opportunities").insert(
                 {**rec, "updated_at": datetime.now(timezone.utc).isoformat()}
             ).execute()
-            opp_id = (ins.data or [{}])[0].get("id")
             added += 1
             existing.append((rec["slug"], _norm_title(rec["title"])))
             logger.info("  ✅ draft%s: %s",
                         f" ⚠дубль~{int(score*100)}%" if rec.get("dup_of") else "",
                         rec["title"][:65])
-            if opp_id:
-                notify_admin(rec, opp_id, kw)  # → бот з кнопками ✅/❌
         except Exception as e:
             logger.error("  ✗ insert failed for '%s': %s", rec["title"][:50], e)
             skipped += 1
 
+    notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "
-                "%d інших пропущено. Модерація — на /admin.",
+                "%d інших пропущено. Модерація — на /admin або в боті.",
                 added, flagged, dup_skipped, skipped)
     return 0
 
