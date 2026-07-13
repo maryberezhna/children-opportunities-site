@@ -51,9 +51,9 @@ if (!SECRET) {
 const res = await call('setWebhook', {
   url: URL,
   secret_token: SECRET,
-  // We only need callback_query for the feedback buttons; skip everything else
-  // so the bot doesn't get spammed with messages from the channel.
-  allowed_updates: ['callback_query'],
+  // callback_query for the buttons + message for the /next moderation command
+  // (the webhook ignores any other message, so no channel spam).
+  allowed_updates: ['callback_query', 'message'],
   drop_pending_updates: true,
 });
 
