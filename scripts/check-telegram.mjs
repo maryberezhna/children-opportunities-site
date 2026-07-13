@@ -5,6 +5,31 @@ if (!TELEGRAM_BOT_TOKEN) {
   console.error('Missing TELEGRAM_BOT_TOKEN');
   process.exit(1);
 }
+
+// --- getWebhookInfo: is the bot webhook actually registered + delivering? ---
+console.log('--- getWebhookInfo (button/callback delivery) ---');
+try {
+  const whRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getWebhookInfo`);
+  const whJson = await whRes.json();
+  if (whJson.ok) {
+    const w = whJson.result;
+    console.log(`url: ${w.url || '(EMPTY — webhook NOT registered, buttons will do nothing)'}`);
+    console.log(`pending_update_count: ${w.pending_update_count}`);
+    console.log(`has_custom_certificate: ${w.has_custom_certificate}`);
+    console.log(`allowed_updates: ${JSON.stringify(w.allowed_updates || '(all)')}`);
+    if (w.last_error_date) {
+      console.log(`⚠️  last_error: ${new Date(w.last_error_date * 1000).toISOString()} — ${w.last_error_message}`);
+    } else {
+      console.log('last_error: (none)');
+    }
+  } else {
+    console.log(`✗ getWebhookInfo failed: ${whJson.error_code} ${whJson.description}`);
+  }
+} catch (err) {
+  console.log(`✗ getWebhookInfo network error: ${err.message}`);
+}
+console.log('');
+
 if (!TELEGRAM_CHAT_ID) {
   console.error('Missing TELEGRAM_CHAT_ID');
   process.exit(1);
