@@ -13,6 +13,7 @@ const GA4_API_SECRET = process.env.GA4_API_SECRET;
 
 const TG = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -64,10 +65,16 @@ function candidateText(o, remaining) {
 
 async function sendCandidate(chatId, o, remaining) {
   await sendMessage(chatId, candidateText(o, remaining), {
-    inline_keyboard: [[
-      { text: '✅ Додати на сайт', callback_data: `mod:add:${o.id}` },
-      { text: '❌ Пропустити', callback_data: `mod:skip:${o.id}` },
-    ]],
+    inline_keyboard: [
+      [
+        { text: '✅ Додати на сайт', callback_data: `mod:add:${o.id}` },
+        { text: '❌ Пропустити', callback_data: `mod:skip:${o.id}` },
+      ],
+      [
+        { text: '⏭ Відкласти', callback_data: `mod:later:${o.id}` },
+        { text: '✏️ Редагувати', url: `${SITE_URL}/admin/edit/${o.id}` },
+      ],
+    ],
   });
 }
 
@@ -79,7 +86,8 @@ async function sendNextCandidate(chatId) {
     .select('id', { count: 'exact', head: true }).eq('status', 'draft');
   const { data } = await supabase.from('opportunities')
     .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, dup_of, dup_score')
-    .eq('status', 'draft').order('created_at', { ascending: true }).limit(1);
+    // updated_at ASC so postponed candidates (touched now) drop to the back.
+    .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {
     await sendMessage(chatId, '✅ Черга порожня — усі кандидати опрацьовані.');
     return;
@@ -99,8 +107,11 @@ async function handleModeration(action, id, cbq) {
     return new Response('ok');
   }
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-  const patch = { status: action === 'add' ? 'active' : 'closed', updated_at: new Date().toISOString() };
-  if (action === 'add') patch.verified_at = new Date().toISOString();
+  const now = new Date().toISOString();
+  const patch = { updated_at: now };
+  if (action === 'add') { patch.status = 'active'; patch.verified_at = now; }
+  else if (action === 'skip') { patch.status = 'closed'; }
+  // 'later' → touch updated_at only; stays a draft, drops to the back of the queue.
 
   const { data, error } = await supabase
     .from('opportunities')
@@ -114,19 +125,22 @@ async function handleModeration(action, id, cbq) {
     return new Response('ok');
   }
 
-  const label = action === 'add' ? '✅ Додано на сайт' : '❌ Пропущено';
-  await answerCallback(cbq.id, action === 'add' ? 'Додано на сайт ✅' : 'Пропущено');
+  const label = action === 'add' ? '✅ Додано на сайт' : action === 'skip' ? '❌ Пропущено' : '⏭ Відкладено';
+  const toast = action === 'add' ? 'Додано на сайт ✅' : action === 'skip' ? 'Пропущено' : 'Відкладено ⏭';
+  await answerCallback(cbq.id, toast);
   if (cbq.message) {
     const orig = cbq.message.text || cbq.message.caption || data.title || '';
     await editMessage(cbq.message.chat.id, cbq.message.message_id, `<b>${label}</b>\n\n${escapeHtml(orig)}`);
   }
-  await pushModeration({
-    title: data.title,
-    decision: action === 'add' ? 'Додано на сайт' : 'Пропущено',
-    type: data.opportunity_type,
-    url: data.source_url,
-    source: data.source,
-  });
+  if (action !== 'later') {
+    await pushModeration({
+      title: data.title,
+      decision: action === 'add' ? 'Додано на сайт' : 'Пропущено',
+      type: data.opportunity_type,
+      url: data.source_url,
+      source: data.source,
+    });
+  }
   // Auto-advance: show the next candidate in the queue.
   if (cbq.message) await sendNextCandidate(cbq.message.chat.id);
   return new Response('ok');
@@ -193,7 +207,7 @@ export async function POST(request) {
   }
 
   // Moderation buttons on agent candidates (admin only).
-  const mod = (cbq.data || '').match(/^mod:(add|skip):(.+)$/);
+  const mod = (cbq.data || '').match(/^mod:(add|skip|later):(.+)$/);
   if (mod) {
     return handleModeration(mod[1], mod[2], cbq);
   }
