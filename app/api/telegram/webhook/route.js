@@ -98,8 +98,9 @@ async function sendNextCandidate(chatId) {
 // Admin taps ✅/❌ on an agent candidate → publish (active) or hide (closed).
 async function handleModeration(action, id, cbq) {
   const fromId = String(cbq.from?.id || '');
-  if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID)) {
-    await answerCallback(cbq.id, 'Лише адміністратор може модерувати');
+  const chatId = String(cbq.message?.chat?.id || '');
+  if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID) && chatId !== String(ADMIN_CHAT_ID)) {
+    await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
     return new Response('ok');
   }
   if (!SUPABASE_URL || !SERVICE_ROLE) {
@@ -197,11 +198,18 @@ export async function POST(request) {
 
   // ▶️ "Переглянути" on the "N new candidates" ping → start the one-by-one queue.
   if (cbq.data === 'mod:next') {
-    if (!ADMIN_CHAT_ID || String(cbq.from?.id) === String(ADMIN_CHAT_ID)) {
-      await answerCallback(cbq.id);
+    const fromId = String(cbq.from?.id || '');
+    const chatId = String(cbq.message?.chat?.id || '');
+    // Authorize if ADMIN_CHAT_ID is unset, or it matches either the tapper or
+    // the chat the ping landed in (they're identical in a private chat).
+    const ok = !ADMIN_CHAT_ID || fromId === String(ADMIN_CHAT_ID) || chatId === String(ADMIN_CHAT_ID);
+    if (ok) {
+      // Visible toast first so the tap never looks like a no-op, then the card.
+      await answerCallback(cbq.id, 'Показую наступного…');
       if (cbq.message) await sendNextCandidate(cbq.message.chat.id);
     } else {
-      await answerCallback(cbq.id, 'Лише адміністратор');
+      // Surface the id so the admin can set TELEGRAM_ADMIN_CHAT_ID correctly.
+      await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
     }
     return new Response('ok');
   }
