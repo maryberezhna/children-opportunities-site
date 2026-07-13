@@ -1,0 +1,32 @@
+name: Telegram bot — register webhook
+
+# Manually register (or refresh) the Telegram webhook → /api/telegram/webhook.
+# Run this once after setting TELEGRAM_WEBHOOK_SECRET in both GitHub secrets
+# and Vercel env (they must match, or Telegram callbacks get 403'd).
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'set | info | delete'
+        required: false
+        default: 'set'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  register:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Register Telegram webhook
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          WEBHOOK_URL: https://dityam.com.ua/api/telegram/webhook
+          ACTION: ${{ inputs.action }}
+        run: node scripts/set-telegram-webhook.mjs
