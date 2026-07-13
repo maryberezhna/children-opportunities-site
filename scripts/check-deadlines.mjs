@@ -230,6 +230,14 @@ const THEMES = [
   },
 ];
 
+// Shown once every ~3 weeks (21-day cycle) instead of the weekday theme.
+const PAID_THEME = {
+  heading: '💳 Сьогодні — платні можливості',
+  description: 'Курси, гуртки, табори та програми з оплатою — обрані найцікавіші для дітей 0–18.',
+  filter: (r) => r.cost_type && !['free', 'closed'].includes(r.cost_type),
+  link: 'https://dityam.com.ua/?cost=partially_free',
+};
+
 // --- Optional: notify Telegram with daily digest ---
 if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
   await sendDailyDigest();
@@ -255,7 +263,12 @@ async function sendDailyDigest() {
   }
   const pool = (poolData || []).filter((r) => !urgent.some((u) => u.id === r.id));
 
-  const theme = THEMES[today.getDay()];
+  // Once every ~3 weeks (a 21-day cycle) swap the weekday theme for a paid
+  // collection, so the channel isn't only free opportunities.
+  const dayOfYear = Math.floor(
+    (Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+      - Date.UTC(today.getUTCFullYear(), 0, 1)) / 86400000);
+  const theme = dayOfYear % 21 === 0 ? PAID_THEME : THEMES[today.getDay()];
   let themed = pool.filter(theme.filter);
   if (theme.sortBy === 'created_at_desc') {
     themed.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
@@ -342,7 +355,10 @@ function formatLine(r, index) {
   if (typeLabel) meta.push(`📚 ${typeLabel}`);
   if (age) meta.push(`👶 ${age}`);
   if (r.cost_type === 'free') meta.push('✅ Безкоштовно');
-  else if (r.cost_type === 'partially_free') meta.push('З фінансуванням');
+  else if (r.cost_type === 'partially_free') meta.push('💳 З фінансуванням');
+  else if (r.cost_type === 'paid_affordable') meta.push('💳 Доступно');
+  else if (r.cost_type === 'paid_premium') meta.push('💳 Преміум');
+  else if (r.cost_type === 'subsidized') meta.push('💳 Субсидовано');
 
   const prefix = `${(index ?? 0) + 1}.`;
   const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
