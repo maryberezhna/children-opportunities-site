@@ -36,6 +36,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Send each candidate to the admin chat with ✅/❌ approve buttons.
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           # Optional: override the model if web search isn't supported on the default.
           DISCOVER_MODEL: ${{ vars.DISCOVER_MODEL }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}

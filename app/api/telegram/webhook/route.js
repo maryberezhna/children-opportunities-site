@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { pushModeration } from '@/lib/notion';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -11,6 +12,65 @@ const GA4_MEASUREMENT_ID = process.env.GA4_MEASUREMENT_ID || 'G-KPLE8LGH91';
 const GA4_API_SECRET = process.env.GA4_API_SECRET;
 
 const TG = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function editMessage(chatId, messageId, text) {
+  await fetch(`${TG}/editMessageText`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId, message_id: messageId, text,
+      parse_mode: 'HTML', disable_web_page_preview: true,
+    }),
+  }).catch(() => {});
+}
+
+// Admin taps ✅/❌ on an agent candidate → publish (active) or hide (closed).
+async function handleModeration(action, id, cbq) {
+  const fromId = String(cbq.from?.id || '');
+  if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID)) {
+    await answerCallback(cbq.id, 'Лише адміністратор може модерувати');
+    return new Response('ok');
+  }
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    await answerCallback(cbq.id, 'Сервер не налаштований');
+    return new Response('ok');
+  }
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const patch = { status: action === 'add' ? 'active' : 'closed', updated_at: new Date().toISOString() };
+  if (action === 'add') patch.verified_at = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('opportunities')
+    .update(patch)
+    .eq('id', id)
+    .select('title, source, source_url, opportunity_type')
+    .maybeSingle();
+
+  if (error || !data) {
+    await answerCallback(cbq.id, 'Не вдалося зберегти, спробуйте ще раз');
+    return new Response('ok');
+  }
+
+  const label = action === 'add' ? '✅ Додано на сайт' : '❌ Пропущено';
+  await answerCallback(cbq.id, action === 'add' ? 'Додано на сайт ✅' : 'Пропущено');
+  if (cbq.message) {
+    const orig = cbq.message.text || cbq.message.caption || data.title || '';
+    await editMessage(cbq.message.chat.id, cbq.message.message_id, `<b>${label}</b>\n\n${escapeHtml(orig)}`);
+  }
+  await pushModeration({
+    title: data.title,
+    decision: action === 'add' ? 'Додано на сайт' : 'Пропущено',
+    type: data.opportunity_type,
+    url: data.source_url,
+    source: data.source,
+  });
+  return new Response('ok');
+}
 
 async function answerCallback(id, text) {
   await fetch(`${TG}/answerCallbackQuery`, {
@@ -50,6 +110,12 @@ export async function POST(request) {
   const cbq = update?.callback_query;
   if (!cbq) {
     return new Response('ok');
+  }
+
+  // Moderation buttons on agent candidates (admin only).
+  const mod = (cbq.data || '').match(/^mod:(add|skip):(.+)$/);
+  if (mod) {
+    return handleModeration(mod[1], mod[2], cbq);
   }
 
   const m = (cbq.data || '').match(/^fb:(yes|no):(.+)$/);
