@@ -103,7 +103,17 @@ Repo → Actions → "Telegram bot — post new opportunities" → Run workflow 
 
    Передеплоїти, щоб env-змінні підхопились.
 
-5. **Зареєструвати вебхук у Telegram**:
+5. **Зареєструвати вебхук у Telegram** (без цього кроку ЖОДНА кнопка не працює —
+   Telegram просто нема куди слати натискання).
+
+   Найпростіше — через GitHub Actions (токен і секрет беруться з GitHub Secrets):
+
+   > Actions → **"Telegram bot — register webhook"**
+   > (`.github/workflows/telegram-set-webhook.yml`) → Run workflow →
+   > `action = set`. Успіх у логах: `"description": "Webhook was set"`.
+   > `action = info` показує поточний стан, `action = delete` знімає вебхук.
+
+   Або локально (якщо є токен під рукою):
    ```sh
    TELEGRAM_BOT_TOKEN=... \
    TELEGRAM_WEBHOOK_SECRET=... \
@@ -111,6 +121,27 @@ Repo → Actions → "Telegram bot — post new opportunities" → Run workflow 
      node scripts/set-telegram-webhook.mjs
    ```
    Перевірка стану: `ACTION=info node scripts/set-telegram-webhook.mjs`.
+
+   Діагностика однією кнопкою: Actions → **"Telegram bot — diagnostics"**
+   (`telegram-check.yml`) друкує `getWebhookInfo` (URL, `pending_update_count`,
+   `last_error_message`), особу бота й права в каналі.
+
+> ⚠️ **Секрет мусить збігатися з обох боків.** `secret_token`, з яким
+> реєструється вебхук (GitHub Secret `TELEGRAM_WEBHOOK_SECRET`), має бути
+> **точно таким самим**, як env `TELEGRAM_WEBHOOK_SECRET` на Vercel — інакше
+> роут `app/api/telegram/webhook/route.js` відповідає **403 forbidden** і кнопки
+> мовчать. Швидка перевірка збігу (без доступу до Vercel):
+>
+> ```sh
+> curl -s -o /dev/null -w "%{http_code}\n" -X POST \
+>   -H "x-telegram-bot-api-secret-token: <секрет>" \
+>   --data '{"update_id":0}' https://dityam.com.ua/api/telegram/webhook
+> ```
+>
+> `200` → секрети збігаються; `403` → різні (онови значення на Vercel і
+> **Redeploy**); `500` → секрет на Vercel не заданий. Після зміни env на
+> Vercel обовʼязково **Redeploy** — інакше нове значення не підхопиться
+> (докочується до домену ~1–2 хв).
 
 ### Як читати голоси в Google Analytics
 
@@ -184,6 +215,41 @@ LIMIT 50;
 - Період: змінити cron у workflow (`'0 6 * * 1'` = понеділок) або
   ручний запуск з input `period_days=14`.
 - Розмір топу: `TOP_N` env (default 5).
+
+## Черга модерації кандидатів (агент → апрув у боті)
+
+Агент-розвідник (`scraper/discover_agent.py`) складає нові знахідки в
+`opportunities` зі `status='draft'`. Модерація відбувається **в особистому чаті
+з ботом**, по одному кандидату за раз.
+
+**Потік:**
+1. `scripts/moderation-kickoff.mjs` (workflow `moderation-kickoff.yml`) раз на
+   день шле в `TELEGRAM_ADMIN_CHAT_ID` пінг «🗂 Кандидати на апрув» з кнопкою
+   **▶️ Переглянути** (`callback_data = mod:next`).
+2. Тап ▶️ → вебхук викликає `sendNextCandidate()` → надсилає найстаріший драфт
+   (за `updated_at ASC`) з кнопками:
+   - **✅ Додати на сайт** (`mod:add`) → `status='active'`, `verified_at=now()`
+   - **❌ Пропустити** (`mod:skip`) → `status='closed'`
+   - **⏭ Відкласти** (`mod:later`) → лишається `draft`, лише `updated_at=now()`
+     (падає в кінець черги)
+   - **✏️ Редагувати** → URL-кнопка на `/admin/edit/<id>` (форма правки)
+3. Після ✅/❌/⏭ картка редагується на статус-підпис і **автоматично** приходить
+   наступний кандидат. Коли черга порожня — «✅ Черга порожня».
+4. Рішення ✅/❌ дзеркаляться в Notion через `pushModeration()` (env-gated
+   `NOTION_TOKEN` + `NOTION_MODERATION_DB`; якщо не задані — просто пропускається).
+
+**Команди в чаті** (потрібні `allowed_updates: ['callback_query','message']`
+при реєстрації — вже так у `set-telegram-webhook.mjs`): `/start`, `/next`,
+`/moderate` — усі стартують чергу з наступного драфта.
+
+**Хто може модерувати:** якщо `TELEGRAM_ADMIN_CHAT_ID` заданий на Vercel — лише
+тапи з цього `from.id` **або** з цього `chat.id` (у приватному чаті вони рівні).
+Якщо не заданий — дозволено будь-кому. При відмові тост показує `Твій id: …`,
+щоб було легко вписати правильне значення.
+
+**Env на Vercel для модерації:** `TELEGRAM_ADMIN_CHAT_ID` (хто модерує),
+`ADMIN_TOKEN` (доступ до `/admin` і `/admin/edit`), `SITE_URL` (для URL-кнопки
+✏️, default `https://dityam.com.ua`).
 
 ## Tuning
 
