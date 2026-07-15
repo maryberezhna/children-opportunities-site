@@ -95,6 +95,32 @@ async function sendNextCandidate(chatId) {
   await sendCandidate(chatId, data[0], Math.max(0, (count || 1) - 1));
 }
 
+// Батько відкрив t.me/DityamComUABot?start=<token> → привʼязуємо його chat_id
+// до підписки на персональну підбірку (Dityam+).
+async function handleDigestConnect(token, msg) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { data } = await supabase.from('digest_subscribers')
+    .update({ telegram_chat_id: String(msg.chat.id), updated_at: new Date().toISOString() })
+    .eq('unsub_token', token).eq('channel', 'telegram').select('id').maybeSingle();
+  await sendMessage(msg.chat.id, data
+    ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо персональну підбірку сюди раз на 2 тижні.\n\nВідписатись будь-коли — /stop'
+    : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/pidbirka 🧡');
+  return new Response('ok');
+}
+
+async function handleDigestStop(msg) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { data } = await supabase.from('digest_subscribers')
+    .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
+    .eq('telegram_chat_id', String(msg.chat.id)).select('id');
+  await sendMessage(msg.chat.id, data && data.length
+    ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/pidbirka'
+    : 'Активної підписки не знайдено.');
+  return new Response('ok');
+}
+
 // Admin taps ✅/❌ on an agent candidate → publish (active) or hide (closed).
 async function handleModeration(action, id, cbq) {
   const fromId = String(cbq.from?.id || '');
@@ -184,9 +210,18 @@ export async function POST(request) {
   const update = await request.json().catch(() => null);
   // Bot command → start / continue the one-by-one moderation queue.
   const msg = update?.message;
-  if (msg?.text && /^\/(start|next|moderate|черга|модерац|далі)/i.test(msg.text.trim())) {
-    if (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID)) {
-      await sendNextCandidate(msg.chat.id);
+  if (msg?.text) {
+    const text = msg.text.trim();
+    // Dityam+ digest: /start <token> прив'язує канал, /stop відписує.
+    const startArg = text.match(/^\/start\s+(\S+)/i);
+    if (startArg) return handleDigestConnect(startArg[1], msg);
+    if (/^\/stop\b/i.test(text)) return handleDigestStop(msg);
+    // Адмінська черга модерації.
+    if (/^\/(start|next|moderate|черга|модерац|далі)/i.test(text)) {
+      if (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID)) {
+        await sendNextCandidate(msg.chat.id);
+      }
+      return new Response('ok');
     }
     return new Response('ok');
   }

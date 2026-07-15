@@ -54,7 +54,8 @@ export async function POST(request) {
     }
   }
 
-  const { error } = await supabase.from('digest_subscribers').insert(row);
+  const { data, error } = await supabase.from('digest_subscribers').insert(row).select('unsub_token').single();
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
-  return Response.json({ ok: true });
+  // Telegram-каналу віддаємо токен привʼязки для deep-link у бота.
+  return Response.json({ ok: true, connect: channel === 'telegram' ? data.unsub_token : undefined });
 }

@@ -57,7 +57,7 @@ export default function SubscribeForm() {
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
-        setDone({ ok: true, channel });
+        setDone({ ok: true, channel, connect: j.connect });
       } else {
         setDone({ ok: false, msg: j.error === 'duplicate' ? 'Ти вже підписаний(а) на цю пошту.' : 'Щось пішло не так. Спробуй ще раз.' });
       }
@@ -72,7 +72,7 @@ export default function SubscribeForm() {
         <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>🎉 Готово!</div>
         <p style={{ margin: '10px 0 0', fontSize: 15, color: C.ink, lineHeight: 1.6 }}>
           {done.channel === 'telegram'
-            ? <>Останній крок — відкрий <a href="https://t.me/DityamComUABot?start=digest" target="_blank" rel="noreferrer" style={{ color: C.blue, fontWeight: 600 }}>@DityamComUABot</a> і натисни <b>Почати</b>, щоб ми могли надсилати підбірку саме тобі.</>
+            ? <>Останній крок — відкрий <a href={`https://t.me/DityamComUABot?start=${done.connect || 'digest'}`} target="_blank" rel="noreferrer" style={{ color: C.blue, fontWeight: 600 }}>@DityamComUABot</a> і натисни <b>Почати</b>, щоб ми могли надсилати підбірку саме тобі.</>
             : <>Ми надішлемо першу персональну підбірку на <b>{email}</b> найближчим часом. Перевір теку «Промоакції», якщо не бачиш листа.</>}
         </p>
       </div>
