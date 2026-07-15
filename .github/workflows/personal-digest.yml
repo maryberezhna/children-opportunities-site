@@ -1,0 +1,46 @@
+name: Dityam+ — personal digest (biweekly)
+
+# Раз на 2 тижні (1 та 15 числа, 08:00 UTC) шле активним підписникам
+# персональну підбірку в Telegram або email. Ручний запуск — з dry_run для тесту.
+on:
+  schedule:
+    - cron: '0 8 1,15 * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = нічого не слати, лише лог'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Send personal digests
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: mashaberezhna0209@gmail.com
+          SITE_URL: https://dityam.com.ua
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python personal_digest.py --dry-run
+          else
+            python personal_digest.py
+          fi

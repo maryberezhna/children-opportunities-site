@@ -112,6 +112,10 @@ export default function Footer() {
 
         <div className="footer-section">
           <div className="footer-title">Сайт</div>
+          <a href="/pidbirka" className="footer-link">
+            <span className="footer-link-icon">🎯</span>
+            <span>Персональна підбірка · Dityam+</span>
+          </a>
           <a href="/about" className="footer-link">
             <span className="footer-link-icon">ℹ️</span>
             <span>Про проєкт</span>
