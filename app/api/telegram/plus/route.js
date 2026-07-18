@@ -30,6 +30,7 @@ async function sendPayOffer(bot, sub, chatId) {
     + '🎁 <b>Подарунки від партнерів</b> — розіграші лише для підписників\n'
     + '⏳ <b>Економія часу</b> — більше не треба щодня шукати гуртки й конкурси вручну\n\n'
     + '🔒 Без точних даних дитини · ❌ Скасувати будь-коли\n\n'
+    + '💡 Найшвидше — <b>Apple Pay / Google Pay</b> на сторінці оплати: у 2 дотики, без картки й email.\n\n'
     + 'Обери план 👇 — і одразу налаштуємо профіль дитини.';
   if (wayforpayConfigured && sub) {
     const [m, y] = await Promise.all([createInvoice(sub, 'monthly'), createInvoice(sub, 'yearly')]);
