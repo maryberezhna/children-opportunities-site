@@ -17,7 +17,8 @@ const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function GET() {
-  return new Response('dityam plus bot', { status: 200 });
+  // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
+  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, wayforpay: wayforpayConfigured });
 }
 
 async function sendPayOffer(bot, sub, chatId) {
