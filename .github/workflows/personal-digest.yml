@@ -1,10 +1,11 @@
-name: Dityam+ — personal digest (biweekly)
+name: Dityam+ — personal alerts (daily)
 
-# Раз на 2 тижні (1 та 15 числа, 08:00 UTC) шле активним підписникам
-# персональну підбірку в Telegram або email. Ручний запуск — з dry_run для тесту.
+# Щодня (08:30 UTC, після нічного скрапу) шле активним підписникам НОВІ
+# можливості під профіль дитини. Якщо нового нема — нічого не надсилає.
+# Ручний запуск — з dry_run для тесту.
 on:
   schedule:
-    - cron: '0 8 1,15 * *'
+    - cron: '30 8 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

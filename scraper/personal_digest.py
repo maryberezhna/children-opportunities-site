@@ -32,8 +32,7 @@ SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 GMAIL_FROM = os.environ.get("GMAIL_FROM", "mashaberezhna0209@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
-DIGEST_DAYS = 13          # мін. інтервал між відправками
-MAX_ITEMS = 6             # скільки можливостей у підбірці
+MAX_ITEMS = 8             # максимум можливостей в одному сповіщенні
 
 # --- 12 канонічних тем (у синхроні з lib/themes.js / keywords.py) ---
 THEME_CATEGORIES = {
@@ -69,12 +68,27 @@ def age_overlaps(a_from, a_to, bands) -> bool:
     return False
 
 
-def pick_for(sub: dict, opps: list) -> list:
+def parse_ts(s):
+    if not s:
+        return None
+    s = str(s).strip().replace(" ", "T")
+    if s.endswith("+00"):
+        s = s[:-3] + "+00:00"
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def pick_for(sub: dict, opps: list, since=None) -> list:
+    """Можливості під профіль. since (datetime) — брати лише новіші за цей момент."""
     interests = set(sub.get("interests") or [])
     bands = sub.get("age_bands") or []
     free_only = sub.get("cost_pref") == "free_only"
     out = []
     for o in opps:
+        if since and (o["_created"] is None or o["_created"] <= since):
+            continue
         if free_only and o.get("cost_type") != "free":
             continue
         if not age_overlaps(o["age_from"], o["age_to"], bands):
@@ -95,7 +109,7 @@ def _meta(o) -> str:
 
 
 def build_telegram(sub, items) -> str:
-    lines = ["🧡 <b>Твоя персональна підбірка Dityam+</b>", ""]
+    lines = ["🧡 <b>Нові можливості для твоєї дитини</b>", ""]
     for o in items:
         url = f"{SITE_URL}/o/{o['slug']}"
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
@@ -119,8 +133,8 @@ def build_email(sub, items) -> str:
     return (
         f'<div style="max-width:560px;margin:0 auto;font-family:system-ui,Arial,sans-serif;color:#131b28">'
         f'<div style="font-size:12px;color:#db5a1e;font-weight:700;letter-spacing:.04em">DITYAM+</div>'
-        f'<h1 style="font-size:22px;margin:6px 0 4px">Твоя персональна підбірка</h1>'
-        f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини. Раз на 2 тижні.</p>'
+        f'<h1 style="font-size:22px;margin:6px 0 4px">Нові можливості для вашої дитини</h1>'
+        f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
         f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
         f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Усі можливості завжди безкоштовні на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
         f'<a href="{html.escape(unsub)}" style="color:#8a94a6">Відписатись</a>.</p></div>'
@@ -145,7 +159,7 @@ def send_email(to_addr, html_body) -> bool:
         logger.warning("GMAIL_APP_PASSWORD not set")
         return False
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🧡 Твоя персональна підбірка — Dityam+"
+    msg["Subject"] = "🧡 Нові можливості для вашої дитини — Dityam+"
     msg["From"] = f"Dityam.com.ua <{GMAIL_FROM}>"
     msg["To"] = to_addr
     msg.attach(MIMEText("Відкрий лист у HTML, щоб побачити підбірку. dityam.com.ua", "plain", "utf-8"))
@@ -158,19 +172,6 @@ def send_email(to_addr, html_body) -> bool:
     except Exception as e:
         logger.warning("Email send failed for %s: %s", to_addr, e)
         return False
-
-
-def due(sub, force) -> bool:
-    if force:
-        return True
-    last = sub.get("last_sent_at")
-    if not last:
-        return True
-    try:
-        dt = datetime.fromisoformat(str(last).replace("Z", "+00:00"))
-        return datetime.now(timezone.utc) - dt >= timedelta(days=DIGEST_DAYS)
-    except ValueError:
-        return True
 
 
 def main():
@@ -188,6 +189,7 @@ def main():
     ).eq("status", "active").execute().data or []
     for o in opps:
         o["_themes"] = match_themes(f"{o['title']} {o.get('summary') or ''}")
+        o["_created"] = parse_ts(o.get("created_at"))
     logger.info("Loaded %d active opportunities", len(opps))
 
     if args.demo:
@@ -203,11 +205,12 @@ def main():
 
     sent = 0
     for sub in subs:
-        if not due(sub, args.force):
-            continue
-        items = pick_for(sub, opps)
+        # Шлемо лише можливості, що зʼявились після останнього сповіщення.
+        # --force / --demo ігнорують новизну (для тесту).
+        since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
+        items = pick_for(sub, opps, since)
         if not items:
-            logger.info("sub %s — no matching opportunities, skip", sub["id"])
+            logger.info("sub %s — no new matching opportunities, skip", sub["id"])
             continue
 
         if args.dry_run or args.demo:

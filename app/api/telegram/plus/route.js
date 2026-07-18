@@ -3,7 +3,7 @@
 // оплату (WayForPay); після успішної оплати відкривається діалогова форма профілю.
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, handleFlowCallback } from '@/lib/digestFlow';
-import { createInvoice, wayforpayConfigured, PRICE } from '@/lib/wayforpay';
+import { createInvoice, wayforpayConfigured, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,22 +12,26 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOKEN = process.env.TELEGRAM_PLUS_BOT_TOKEN;
 const SECRET = process.env.TELEGRAM_PLUS_WEBHOOK_SECRET;
+const MAIN_TOKEN = process.env.TELEGRAM_BOT_TOKEN;         // для сповіщень адміну
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export function GET() {
   return new Response('dityam plus bot', { status: 200 });
 }
 
 async function sendPayOffer(bot, sub, chatId) {
-  const text = '🧡 <b>Dityam+ — персональна підбірка</b>\n\n'
-    + '• 📬 раз на 2 тижні — можливості саме під вік та інтереси твоєї дитини\n'
-    + '• 🎁 участь у розіграшах подарунків від партнерів\n\n'
-    + 'Оформи підписку — і одразу налаштуємо профіль дитини.';
+  const text = '🧡 <b>Dityam+ — персональні можливості для дитини</b>\n\n'
+    + '• ⚡ сповіщення <b>щойно зʼявляється</b> можливість під вік та інтереси дитини\n'
+    + '• 📝 підтримка у поданні заявок\n'
+    + '• 🎁 подарунки від партнерів\n\n'
+    + 'Обери план — і одразу налаштуємо профіль дитини.';
   if (wayforpayConfigured && sub) {
-    const inv = await createInvoice(sub);
-    if (inv.url) {
-      await bot.sendMessage(chatId, text, { inline_keyboard: [[{ text: `💳 Оформити — ${PRICE} грн/міс`, url: inv.url }]] });
-      return;
-    }
+    const [m, y] = await Promise.all([createInvoice(sub, 'monthly'), createInvoice(sub, 'yearly')]);
+    const rows = [];
+    if (m.url) rows.push([{ text: `💳 Місяць — ${PRICE} грн`, url: m.url }]);
+    if (y.url) rows.push([{ text: `⭐ Рік — ${PRICE_YEAR} грн (вигідніше)`, url: y.url }]);
+    if (rows.length) { await bot.sendMessage(chatId, text, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
 }
@@ -67,6 +71,17 @@ export async function POST(request) {
         await sendPayOffer(bot, sub, chatId);                 // ще ні → оплата
       }
       return new Response('ok');
+    }
+
+    // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
+    if (!text.startsWith('/')) {
+      const { data: sub } = await supabase.from('digest_subscribers').select('status, telegram_handle').eq('telegram_chat_id', chatId).maybeSingle();
+      if (sub?.status === 'active') {
+        if (MAIN_TOKEN && ADMIN_CHAT_ID) {
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}`);
+        }
+        await bot.sendMessage(chatId, '📝 Отримали! Ми на звʼязку — відповімо тут найближчим часом. 🧡');
+      }
     }
     return new Response('ok');
   }
