@@ -73,6 +73,18 @@ export async function POST(request) {
       return new Response('ok');
     }
 
+    if (/^\/(support|help|menu)\b/i.test(text)) {
+      const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
+      if (/^\/support\b/i.test(text)) {
+        await bot.sendMessage(chatId, sub?.status === 'active'
+          ? '📝 <b>Підтримка у поданні</b>\nНапиши своє питання прямо сюди — і ми допоможемо з заявкою.'
+          : 'Підтримка у поданні доступна підписникам Dityam+. Оформити — /start 🧡');
+      } else {
+        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити або змінити профіль дитини\n/support — підтримка у поданні заявки\n/stop — відписатися');
+      }
+      return new Response('ok');
+    }
+
     // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
     if (!text.startsWith('/')) {
       const { data: sub } = await supabase.from('digest_subscribers').select('status, telegram_handle').eq('telegram_chat_id', chatId).maybeSingle();
