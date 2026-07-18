@@ -121,130 +121,6 @@ async function handleDigestStop(msg) {
   return new Response('ok');
 }
 
-// ————————————————————————————————————————————————————————————————
-// Діалогова форма в боті: бот питає по кроку, стан у digest_subscribers.flow_step
-// ————————————————————————————————————————————————————————————————
-const FLOW_AGE = [['0-3', '0–3 р.'], ['4-6', '4–6 р.'], ['7-10', '7–10 р.'], ['11-14', '11–14 р.'], ['15-18', '15–18 р.']];
-const FLOW_INT = [
-  ['format', 'Гуртки/курси'], ['stem', 'STEM/IT'], ['arts', 'Творчість'], ['sport', 'Спорт'],
-  ['languages', 'Мови'], ['contests', 'Конкурси'], ['camps', 'Табори'], ['soft_skills', 'Soft skills'],
-  ['career', "Кар'єра"], ['international', 'Міжнародні'], ['online', 'Онлайн'], ['nonformal', 'Позашкілля'],
-];
-const FLOW_GENDER = [['any', 'Будь-хто'], ['boy', 'Хлопчик'], ['girl', 'Дівчинка']];
-const FLOW_COST = [['any', 'Будь-які'], ['free_only', 'Лише безкоштовні']];
-const Q_AGE = '👶 <b>Скільки років дитині?</b>\nОбери один або кілька діапазонів, тоді «Далі».';
-const Q_INT = '🎯 <b>Що цікавить дитину?</b>\nОбери кілька тем, тоді «Далі».';
-
-function labelOf(options, v) { const o = options.find((x) => x[0] === v); return o ? o[1] : v; }
-
-function multiKb(prefix, options, selected, rowSize = 2) {
-  const sel = new Set(selected || []);
-  const rows = []; let row = [];
-  for (const [v, l] of options) {
-    row.push({ text: (sel.has(v) ? '✅ ' : '') + l, callback_data: `flow:${prefix}:${v}` });
-    if (row.length === rowSize) { rows.push(row); row = []; }
-  }
-  if (row.length) rows.push(row);
-  rows.push([{ text: 'Далі ➡️', callback_data: `flow:${prefix}:__done` }]);
-  return { inline_keyboard: rows };
-}
-function singleKb(prefix, options, rowSize = 3) {
-  const rows = []; let row = [];
-  for (const [v, l] of options) {
-    row.push({ text: l, callback_data: `flow:${prefix}:${v}` });
-    if (row.length === rowSize) { rows.push(row); row = []; }
-  }
-  if (row.length) rows.push(row);
-  return { inline_keyboard: rows };
-}
-async function editMessageFull(chatId, messageId, text, replyMarkup) {
-  await fetch(`${TG}/editMessageText`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: chatId, message_id: messageId, text, parse_mode: 'HTML',
-      disable_web_page_preview: true, ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
-    }),
-  }).catch(() => {});
-}
-function flowClient() { return createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } }); }
-
-async function beginFlow(msg) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
-  const chatId = String(msg.chat.id);
-  const handle = msg.from?.username ? `@${msg.from.username}` : null;
-  await flowClient().from('digest_subscribers').upsert({
-    telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle,
-    status: 'pending', flow_step: 'age', age_bands: [], interests: [],
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'telegram_chat_id' });
-  await sendMessage(chatId, '🧡 <b>Персональна підбірка Dityam+</b>\n\nВідповідай на кілька питань — і надсилатимемо можливості саме для твоєї дитини. Ми не збираємо жодних точних даних дитини, лише вік та інтереси.');
-  await sendMessage(chatId, Q_AGE, multiKb('age', FLOW_AGE, []));
-  return new Response('ok');
-}
-
-async function finishFlow(chatId) {
-  await sendMessage(chatId,
-    '🎉 <b>Профіль готово!</b>\n\nЩо далі:\n• 📬 раз на 2 тижні — підбірка можливостей саме під твою дитину\n• 🎁 участь у розіграшах подарунків від партнерів\n\nПідписка активується після оплати — надішлемо деталі найближчим часом.\n\nЗмінити відповіді — /start · Відписатись — /stop');
-  return new Response('ok');
-}
-
-async function handleFlowCallback(cbq) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
-  const supabase = flowClient();
-  const chatId = String(cbq.message.chat.id);
-  const mid = cbq.message.message_id;
-  const [, step, val] = (cbq.data || '').split(':');
-  const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
-  if (!sub) { await answerCallback(cbq.id, 'Почни з /start'); return new Response('ok'); }
-  const save = (patch) => supabase.from('digest_subscribers').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', sub.id);
-
-  if (step === 'age' || step === 'int') {
-    const col = step === 'age' ? 'age_bands' : 'interests';
-    const opts = step === 'age' ? FLOW_AGE : FLOW_INT;
-    if (val === '__done') {
-      if (!(sub[col] || []).length) { await answerCallback(cbq.id, step === 'age' ? 'Обери хоча б один вік' : 'Обери хоча б один інтерес'); return new Response('ok'); }
-      await answerCallback(cbq.id);
-      if (step === 'age') {
-        await save({ flow_step: 'interests' });
-        await editMessageFull(chatId, mid, `👶 Вік: <b>${(sub.age_bands || []).map((v) => labelOf(FLOW_AGE, v)).join(', ')}</b> ✅`);
-        await sendMessage(chatId, Q_INT, multiKb('int', FLOW_INT, sub.interests || []));
-      } else {
-        await save({ flow_step: 'gender' });
-        await editMessageFull(chatId, mid, `🎯 Інтереси: <b>${(sub.interests || []).map((v) => labelOf(FLOW_INT, v)).join(', ')}</b> ✅`);
-        await sendMessage(chatId, '👧 <b>Стать дитини?</b>\nВпливає мінімально — можна «Будь-хто».', singleKb('gender', FLOW_GENDER));
-      }
-      return new Response('ok');
-    }
-    const cur = new Set(sub[col] || []);
-    cur.has(val) ? cur.delete(val) : cur.add(val);
-    const arr = [...cur];
-    await save({ [col]: arr });
-    await answerCallback(cbq.id);
-    await editMessageFull(chatId, mid, step === 'age' ? Q_AGE : Q_INT, multiKb(step, opts, arr));
-    return new Response('ok');
-  }
-
-  if (step === 'gender') {
-    const g = ['any', 'boy', 'girl'].includes(val) ? val : 'any';
-    await save({ gender: g, flow_step: 'cost' });
-    await answerCallback(cbq.id);
-    await editMessageFull(chatId, mid, `👧 Стать: <b>${labelOf(FLOW_GENDER, g)}</b> ✅`);
-    await sendMessage(chatId, '💳 <b>Показувати платні можливості чи лише безкоштовні?</b>', singleKb('cost', FLOW_COST, 2));
-    return new Response('ok');
-  }
-
-  if (step === 'cost') {
-    const c = val === 'free_only' ? 'free_only' : 'any';
-    await save({ cost_pref: c, flow_step: null, consent_at: new Date().toISOString() });
-    await answerCallback(cbq.id, 'Готово!');
-    await editMessageFull(chatId, mid, `💳 <b>${labelOf(FLOW_COST, c)}</b> ✅`);
-    await finishFlow(chatId);
-    return new Response('ok');
-  }
-
-  await answerCallback(cbq.id);
-  return new Response('ok');
-}
 
 // Admin taps ✅/❌ on an agent candidate → publish (active) or hide (closed).
 async function handleModeration(action, id, cbq) {
@@ -341,9 +217,8 @@ export async function POST(request) {
     const startArg = text.match(/^\/start\s+(\S+)/i);
     if (startArg) return handleDigestConnect(startArg[1], msg);          // /start <token> — привʼязка з вебформи
     if (/^\/stop\b/i.test(text)) return handleDigestStop(msg);
-    if (/^\/start\b/i.test(text)) return beginFlow(msg);                 // /start — діалогова форма
-    // Адмінська черга модерації (запуск командою, не /start).
-    if (/^\/(next|moderate|черга|модерац|далі)/i.test(text)) {
+    // Адмінська черга модерації.
+    if (/^\/(start|next|moderate|черга|модерац|далі)/i.test(text)) {
       if (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID)) {
         await sendNextCandidate(msg.chat.id);
       }
@@ -355,11 +230,6 @@ export async function POST(request) {
   const cbq = update?.callback_query;
   if (!cbq) {
     return new Response('ok');
-  }
-
-  // Діалогова форма в боті (кнопки покрокових питань).
-  if ((cbq.data || '').startsWith('flow:')) {
-    return handleFlowCallback(cbq);
   }
 
   // ▶️ "Переглянути" on the "N new candidates" ping → start the one-by-one queue.

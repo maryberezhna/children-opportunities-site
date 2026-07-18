@@ -10,6 +10,10 @@ on:
         description: 'set | info | delete'
         required: false
         default: 'set'
+      bot:
+        description: 'main | plus'
+        required: false
+        default: 'main'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -25,8 +29,20 @@ jobs:
           node-version: '24'
       - name: Register Telegram webhook
         env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
-          WEBHOOK_URL: https://dityam.com.ua/api/telegram/webhook
+          MAIN_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          MAIN_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          PLUS_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
+          PLUS_SECRET: ${{ secrets.TELEGRAM_PLUS_WEBHOOK_SECRET }}
           ACTION: ${{ inputs.action }}
-        run: node scripts/set-telegram-webhook.mjs
+          BOT: ${{ inputs.bot }}
+        run: |
+          if [ "$BOT" = "plus" ]; then
+            export TELEGRAM_BOT_TOKEN="$PLUS_TOKEN"
+            export TELEGRAM_WEBHOOK_SECRET="$PLUS_SECRET"
+            export WEBHOOK_URL="https://dityam.com.ua/api/telegram/plus"
+          else
+            export TELEGRAM_BOT_TOKEN="$MAIN_TOKEN"
+            export TELEGRAM_WEBHOOK_SECRET="$MAIN_SECRET"
+            export WEBHOOK_URL="https://dityam.com.ua/api/telegram/webhook"
+          fi
+          node scripts/set-telegram-webhook.mjs
