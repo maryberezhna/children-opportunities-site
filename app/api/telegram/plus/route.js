@@ -46,6 +46,20 @@ export async function POST(request) {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
 
   const msg = update?.message;
+
+  // Користувач поділився номером (кнопка request_contact) → зберігаємо й пропонуємо оплату.
+  if (msg?.contact) {
+    const chatId = String(msg.chat.id);
+    const phone = String(msg.contact.phone_number || '').replace(/[^\d+]/g, '');
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    if (sub && sub.status !== 'active') {
+      await supabase.from('digest_subscribers').update({ phone, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
+      await bot.sendMessage(chatId, '✅ Дякую!', { remove_keyboard: true });
+      await sendPayOffer(bot, { ...sub, phone }, chatId);
+    }
+    return new Response('ok');
+  }
+
   if (msg?.text) {
     const chatId = String(msg.chat.id);
     const handle = msg.from?.username ? `@${msg.from.username}` : null;
@@ -67,8 +81,14 @@ export async function POST(request) {
       }
       if (sub?.status === 'active') {
         await beginFlow(bot, supabase, chatId, handle);       // вже оплачено → форма
+      } else if (!sub?.phone) {
+        await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
+        await bot.sendMessage(chatId, '📱 Спершу поділись номером телефону — на нього надійде підтвердження оплати. Тисни кнопку нижче 👇', {
+          keyboard: [[{ text: '📱 Поділитися номером', request_contact: true }]],
+          resize_keyboard: true, one_time_keyboard: true,
+        });
       } else {
-        await sendPayOffer(bot, sub, chatId);                 // ще ні → оплата
+        await sendPayOffer(bot, sub, chatId);                 // телефон є → оплата
       }
       return new Response('ok');
     }
