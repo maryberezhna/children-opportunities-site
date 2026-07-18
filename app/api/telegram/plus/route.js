@@ -50,7 +50,8 @@ export async function POST(request) {
   // Користувач поділився номером (кнопка request_contact) → зберігаємо й пропонуємо оплату.
   if (msg?.contact) {
     const chatId = String(msg.chat.id);
-    const phone = String(msg.contact.phone_number || '').replace(/[^\d+]/g, '');
+    let phone = String(msg.contact.phone_number || '').replace(/[^\d+]/g, '');
+    if (phone && !phone.startsWith('+')) phone = `+${phone}`;   // WayForPay любить міжнародний формат
     const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
     if (sub && sub.status !== 'active') {
       await supabase.from('digest_subscribers').update({ phone, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
