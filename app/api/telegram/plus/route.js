@@ -4,6 +4,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, handleFlowCallback } from '@/lib/digestFlow';
 import { createInvoice, wayforpayConfigured, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import { matchThemes } from '@/lib/themes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,9 @@ const SECRET = process.env.TELEGRAM_PLUS_WEBHOOK_SECRET;
 const MAIN_TOKEN = process.env.TELEGRAM_BOT_TOKEN;         // для сповіщень адміну
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
+const AGE_RANGES = { '0-3': [0, 3], '4-6': [4, 6], '7-10': [7, 10], '11-14': [11, 14], '15-18': [15, 18] };
+const ageOverlap = (from, to, bands) => !bands?.length || bands.some((b) => AGE_RANGES[b] && from <= AGE_RANGES[b][1] && to >= AGE_RANGES[b][0]);
 
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
@@ -40,6 +44,49 @@ async function sendPayOffer(bot, sub, chatId) {
     if (rows.length) { await bot.sendMessage(chatId, text, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
+}
+
+// Головне меню для активного підписника.
+async function sendMainMenu(bot, chatId) {
+  await bot.sendMessage(chatId, 'Вітаю! 🧡 Ти підписник <b>Dityam+</b>.\nЩо бажаєш зробити?', {
+    inline_keyboard: [
+      [{ text: '🔎 Останні можливості для дитини', callback_data: 'menu:latest' }],
+      [{ text: '✏️ Оновити форму (що цікаво)', callback_data: 'menu:form' }],
+      [{ text: '⭐ Деталі підписки', callback_data: 'menu:sub' }],
+      [{ text: '📝 Питання в підтримку', callback_data: 'menu:support' }],
+    ],
+  });
+}
+
+// Останні можливості під профіль дитини (on-demand, топ-5).
+async function sendLatest(bot, supabase, sub, chatId) {
+  const { data: opps } = await supabase.from('opportunities')
+    .select('title, slug, age_from, age_to, cost_type, summary, created_at')
+    .eq('status', 'active').order('created_at', { ascending: false }).limit(200);
+  const interests = new Set(sub.interests || []);
+  const freeOnly = sub.cost_pref === 'free_only';
+  const matched = (opps || []).filter((o) => {
+    if (freeOnly && o.cost_type !== 'free') return false;
+    if (!ageOverlap(o.age_from, o.age_to, sub.age_bands)) return false;
+    if (interests.size) {
+      const t = matchThemes(`${o.title} ${o.summary || ''}`);
+      if (!t.some((x) => interests.has(x))) return false;
+    }
+    return true;
+  }).slice(0, 5);
+  if (!matched.length) {
+    await bot.sendMessage(chatId, 'Поки немає можливостей під профіль — щойно зʼявиться, одразу напишемо. Можеш оновити інтереси через «✏️ Оновити форму».');
+    return;
+  }
+  const lines = ['🔎 <b>Останні можливості під твою дитину</b>', ''];
+  for (const o of matched) lines.push(`🔸 <a href="${SITE_URL}/o/${o.slug}">${esc(o.title)}</a>`);
+  await bot.sendMessage(chatId, lines.join('\n'));
+}
+
+function subDetails(sub) {
+  const ages = (sub.age_bands || []).length ? sub.age_bands.join(', ') : '—';
+  const int = (sub.interests || []).length ? sub.interests.join(', ') : '—';
+  return `⭐ <b>Твоя підписка Dityam+</b>\nСтатус: активна ✅\nВік дитини: ${esc(ages)}\nІнтереси: ${esc(int)}\n\nЗмінити профіль — «✏️ Оновити форму». Скасувати підписку — /stop.`;
 }
 
 export async function POST(request) {
@@ -87,7 +134,8 @@ export async function POST(request) {
         sub = ins;
       }
       if (sub?.status === 'active') {
-        await beginFlow(bot, supabase, chatId, handle);       // вже оплачено → форма
+        if (!(sub.age_bands || []).length) await beginFlow(bot, supabase, chatId, handle); // ще без профілю → форма
+        else await sendMainMenu(bot, chatId);                                              // є профіль → меню
       } else if (!sub?.phone) {
         await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
         await bot.sendMessage(chatId, '📱 Спершу поділись номером телефону — на нього надійде підтвердження оплати. Тисни кнопку нижче 👇', {
@@ -133,6 +181,20 @@ export async function POST(request) {
     const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
     if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Спершу оформи підписку — /start'); return new Response('ok'); }
     await handleFlowCallback(bot, supabase, cbq);
+    return new Response('ok');
+  }
+
+  // Головне меню підписника.
+  if ((cbq.data || '').startsWith('menu:')) {
+    const chatId = String(cbq.message.chat.id);
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Оформи підписку — /start'); return new Response('ok'); }
+    await bot.answerCallback(cbq.id);
+    const action = (cbq.data || '').split(':')[1];
+    if (action === 'form') await beginFlow(bot, supabase, chatId, null);
+    else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
+    else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub));
+    else if (action === 'support') await bot.sendMessage(chatId, '📝 Напиши своє питання прямо сюди — і ми допоможемо із заявкою.');
     return new Response('ok');
   }
 
