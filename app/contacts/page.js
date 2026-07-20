@@ -78,7 +78,7 @@ export default function ContactsPage() {
         <ul>
           <li>ФОП Шутяк Марія Олександрівна</li>
           <li>ІПН (РНОКПП): 3530900201</li>
-          <li>Адреса: Україна, [ПОТРІБНО ВКАЗАТИ АДРЕСУ]</li>
+          <li>Адреса: 02130, Україна, м. Київ, вул. Воскресенська, 16Б, кв. 20</li>
           <li>Телефон: <a href="tel:+380634763998">+380 63 476 3998</a></li>
           <li>Email: <a href="mailto:mashaberezhna0209@gmail.com">mashaberezhna0209@gmail.com</a></li>
           <li>Сайт: dityam.com.ua</li>
