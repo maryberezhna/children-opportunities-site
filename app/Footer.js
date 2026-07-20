@@ -124,6 +124,14 @@ export default function Footer() {
             <span className="footer-link-icon">🔒</span>
             <span>Політика конфіденційності</span>
           </a>
+          <a href="/terms" className="footer-link">
+            <span className="footer-link-icon">📄</span>
+            <span>Оферта та умови</span>
+          </a>
+          <a href="/refund" className="footer-link">
+            <span className="footer-link-icon">↩️</span>
+            <span>Повернення коштів</span>
+          </a>
         </div>
 
         <div className="footer-section">

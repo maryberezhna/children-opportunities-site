@@ -72,6 +72,21 @@ export default function ContactsPage() {
           або{' '}
           <a href="https://base.monobank.ua/5QKZeVxPVjZEx7" target="_blank" rel="noopener noreferrer">Підписка Base</a>.
         </p>
+
+        <h2>Реквізити</h2>
+        <p>Продавець послуги «Dityam+»:</p>
+        <ul>
+          <li>ФОП Шутяк Марія Олександрівна</li>
+          <li>ІПН (РНОКПП): 3530900201</li>
+          <li>Адреса: Україна, [ПОТРІБНО ВКАЗАТИ АДРЕСУ]</li>
+          <li>Телефон: <a href="tel:+380634763998">+380 63 476 3998</a></li>
+          <li>Email: <a href="mailto:mashaberezhna0209@gmail.com">mashaberezhna0209@gmail.com</a></li>
+          <li>Сайт: dityam.com.ua</li>
+        </ul>
+        <p style={{ fontSize: 14, color: '#54617a' }}>
+          Умови надання послуги — <Link href="/terms">Публічна оферта</Link> ·
+          Повернення коштів — <Link href="/refund">тут</Link>.
+        </p>
       </article>
     </div>
   );
