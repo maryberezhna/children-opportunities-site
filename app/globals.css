@@ -2229,7 +2229,7 @@ body {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 40px;
-  margin-bottom: 40px;
+  margin: 0 auto 40px;
   line-height: 1.65;
   color: var(--ink-soft);
 }
