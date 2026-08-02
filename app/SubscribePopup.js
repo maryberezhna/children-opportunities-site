@@ -133,14 +133,8 @@ export default function SubscribePopup() {
     return () => window.removeEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
   }, []);
 
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => { document.body.style.overflow = ''; };
-  }, [isOpen]);
+  // Скрол більше не блокуємо: смуга внизу нічого не перекриває,
+  // тож зупиняти читання каталогу немає причин.
 
   useEffect(() => {
     if (!isOpen) return;
@@ -152,51 +146,30 @@ export default function SubscribePopup() {
   if (!isOpen) return null;
 
   return (
-    <div
-      className="subscribe-popup-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) closePopup(); }}
-    >
-      <div className="subscribe-popup">
-        <button
-          className="subscribe-popup-close"
-          onClick={closePopup}
-          aria-label="Закрити"
-        >
-          ✕
-        </button>
+    <div className="subscribe-bar" role="complementary" aria-label="Долучитись до Telegram-каналу">
+      <svg className="subscribe-bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="12" fill="#29B6F6" />
+        <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" fill="white" />
+      </svg>
 
-        <div className="subscribe-popup-header">
-          <div className="subscribe-popup-icon" aria-hidden="true">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="12" cy="12" r="12" fill="#29B6F6"/>
-              <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" fill="white"/>
-            </svg>
-          </div>
-          <h2 className="subscribe-popup-title">Долучайтеся до нашого Telegram-каналу</h2>
-          <p className="subscribe-popup-description">
-            Нові можливості для дітей — щодня в Telegram.
-            <br />
-            Без спаму. Відписатись можна одним кліком.
-          </p>
-        </div>
+      <p className="subscribe-bar-text">
+        <strong>Нові можливості — щодня в Telegram.</strong>
+        <span className="subscribe-bar-sub"> Без спаму, відписатись одним кліком.</span>
+      </p>
 
-        <a
-          href={TELEGRAM_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="subscribe-popup-tg-cta"
-          onClick={handleJoinClick}
-        >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" />
-          </svg>
-          Долучитися до Telegram
-        </a>
+      <a
+        href={TELEGRAM_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="subscribe-bar-cta"
+        onClick={handleJoinClick}
+      >
+        Долучитися
+      </a>
 
-        <button className="subscribe-popup-skip" onClick={closePopup}>
-          Пізніше, дякую
-        </button>
-      </div>
+      <button className="subscribe-bar-close" onClick={closePopup} aria-label="Закрити">
+        ✕
+      </button>
     </div>
   );
 }

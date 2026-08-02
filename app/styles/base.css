@@ -1,0 +1,50 @@
+/* Змінні теми, reset, body, .container, .hero */
+:root {
+  --bg: #fefcf7;
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #555;
+  --ink-muted: #8a8a8a;
+  --border: #e8e3d6;
+  --border-hover: #d4cfc1;
+  --accent: #e85d24;
+  --accent-soft: #fef2eb;
+  --warm-1: #fef7e0;
+  --warm-2: #fde8c7;
+  --cool-1: #e8f4f2;
+  --cool-2: #d4ebe6;
+  --pink-1: #fde8ef;
+  --pink-2: #fbd4e0;
+  --purple-1: #ede8f8;
+  --purple-2: #d9cff2;
+  --green-1: #e4f2d6;
+  --red-1: #fde3e3;
+  --amber-1: #fef2d4;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-dm-sans), var(--font-cyrillic), -apple-system, sans-serif;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+  background: radial-gradient(ellipse at top left, #fef2eb 0%, transparent 50%),
+              radial-gradient(ellipse at top right, #e8f4f2 0%, transparent 50%),
+              var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  padding-bottom: 72px;
+}
+
+.container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 20px 40px;
+}
+
+.hero { margin-bottom: 40px; position: relative; }
+

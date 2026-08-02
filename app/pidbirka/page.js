@@ -2,7 +2,7 @@ import SubscribeForm from './SubscribeForm';
 
 export const metadata = {
   title: 'Персональна підбірка — Dityam+',
-  description: 'Раз на 2 тижні — підібрані під вашу дитину можливості в Telegram або на email. Без точних даних дитини.',
+  description: 'Раз на 2 тижні — підібрані під вашу дитину можливості в Telegram або на email. Ми не запитуємо дитячих даних.',
 };
 
 const box = { maxWidth: 640, margin: '48px auto 90px', padding: '0 20px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#131b28' };
@@ -24,7 +24,7 @@ export default function PidbirkaPage() {
 
       <ul style={{ listStyle: 'none', padding: 0, margin: '24px 0 8px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {feature('🎯', 'Підбірка під вік та інтереси — без зайвого шуму.')}
-        {feature('🔒', 'Безпечно: жодних точних даних дитини. Лише вік-діапазон та інтереси.')}
+        {feature('🔒', 'Безпечно: ми не запитуємо дитячих даних. Лише вік-діапазон та інтереси.')}
         {feature('✈️', 'Ваш канал на вибір — Telegram або email.')}
         {feature('🧡', 'Базовий пошук на сайті лишається безкоштовним для всіх — це доповнення, а не платний вхід.')}
       </ul>

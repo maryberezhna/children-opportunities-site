@@ -1,0 +1,101 @@
+/* Фільтри */
+/* ============ ФІЛЬТРИ ============ */
+
+.filters {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+}
+
+.filter-row { margin-bottom: 20px; }
+.filter-row:last-child { margin-bottom: 0; }
+
+/* Nested sub-filter (e.g. state-aid subcategories under «Держдопомога») */
+.filter-subrow {
+  margin-top: -6px;
+  padding: 12px 0 2px 14px;
+  border-left: 2px solid var(--border);
+}
+.filter-subrow .filter-label { color: var(--ink); }
+
+.filter-label {
+  font-size: 12px;
+  color: var(--ink-muted);
+  margin-bottom: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.filter-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 14px;
+  padding: 8px 16px;
+  border-radius: 100px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  margin-right: 6px;
+  margin-bottom: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.filter-btn:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+}
+
+.filter-btn.active {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.search-wrap { position: relative; }
+
+.search-input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--bg);
+  transition: all 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.count { font-size: 15px; color: var(--ink-soft); font-weight: 500; }
+.count strong { color: var(--ink); font-weight: 500; }
+
+.sort-select {
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
