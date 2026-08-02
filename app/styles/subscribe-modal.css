@@ -1,0 +1,113 @@
+/* Модалка підписки */
+/* ============ МОДАЛКА ПІДПИСКИ ============ */
+
+.subscribe-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 2000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.25s;
+}
+
+.subscribe-modal {
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: 500px;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  animation: slideUpMobile 0.35s cubic-bezier(0.2, 0.9, 0.3, 1);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.15);
+}
+
+@media (min-width: 641px) {
+  .subscribe-modal-overlay { align-items: center; }
+  .subscribe-modal {
+    border-radius: 24px;
+    padding: 28px 28px 28px;
+  }
+}
+
+@keyframes slideUpMobile {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.subscribe-modal-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: var(--bg);
+  border: none;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+.subscribe-modal-close:active {
+  background: var(--border);
+  color: var(--ink);
+}
+
+.subscribe-modal-header {
+  text-align: center;
+  padding: 8px 16px 20px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 12px;
+}
+
+.subscribe-modal-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+
+.subscribe-modal-title {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 6px;
+  line-height: 1.3;
+}
+
+.subscribe-modal-description {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.subscribe-modal-form {
+  background: transparent;
+  overflow: hidden;
+}
+
+.subscribe-modal-form .hs-form-frame {
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  background: transparent !important;
+}
+
+.subscribe-modal-form iframe {
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 620px !important;
+  min-height: 620px !important;
+  border: none !important;
+  display: block;
+  background: transparent !important;
+}
+

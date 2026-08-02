@@ -44,7 +44,7 @@ const sinceIso = sinceDate.toISOString();
 
 const { data: rows, error } = await supabase
   .from('opportunity_feedback')
-  .select('value, telegram_user_id, opportunity_id, updated_at, opportunities(title, slug)')
+  .select('value, variant, telegram_user_id, opportunity_id, updated_at, opportunities(title, slug)')
   .gte('updated_at', sinceIso);
 
 if (error) {
@@ -56,9 +56,15 @@ const byOpp = new Map();
 const userSet = new Set();
 let totalYes = 0;
 let totalNo = 0;
+// A/B тексту посту: голоси за варіантом 'a' (розгорнутий) і 'b' (стислий).
+// Голоси без варіанта — з постів до запуску експерименту — не рахуються тут.
+const byVariant = { a: { yes: 0, no: 0 }, b: { yes: 0, no: 0 } };
 
 for (const r of rows || []) {
   userSet.add(r.telegram_user_id);
+  if (byVariant[r.variant] && (r.value === 'yes' || r.value === 'no')) {
+    byVariant[r.variant][r.value] += 1;
+  }
   const key = r.opportunity_id;
   if (!byOpp.has(key)) {
     byOpp.set(key, {
@@ -103,6 +109,20 @@ lines.push('');
 lines.push(`👥 Юзерів: <b>${userSet.size}</b> · 🗳 Голосів: <b>${totalVotes}</b> (👍 ${totalYes} / 👎 ${totalNo})`);
 lines.push(`📦 Постів із реакціями: <b>${totalPosts}</b>`);
 lines.push('');
+
+// A/B: показуємо лише коли обидва варіанти встигли зібрати голоси, інакше
+// «100% проти 0%» на двох голосах читається як висновок, хоча це шум.
+const abTotal = (v) => v.yes + v.no;
+if (abTotal(byVariant.a) > 0 && abTotal(byVariant.b) > 0) {
+  const share = (v) => Math.round((v.yes / abTotal(v)) * 100);
+  lines.push('<b>🔬 A/B тексту постів</b>');
+  lines.push(`A (розгорнутий): 👍 ${byVariant.a.yes} / 👎 ${byVariant.a.no} — ${share(byVariant.a)}% «цікаво»`);
+  lines.push(`B (стислий): 👍 ${byVariant.b.yes} / 👎 ${byVariant.b.no} — ${share(byVariant.b)}% «цікаво»`);
+  if (abTotal(byVariant.a) + abTotal(byVariant.b) < 30) {
+    lines.push('<i>Голосів ще мало — на висновок не тягне.</i>');
+  }
+  lines.push('');
+}
 
 const renderRow = (r, kind) => {
   const link = r.slug

@@ -256,13 +256,16 @@ export async function POST(request) {
     return handleModeration(mod[1], mod[2], cbq);
   }
 
-  const m = (cbq.data || '').match(/^fb:(yes|no):(.+)$/);
+  // Суфікс :a|:b — варіант тексту посту (A/B). Необовʼязковий: пости,
+  // відправлені до запуску експерименту, приходять без нього.
+  const m = (cbq.data || '').match(/^fb:(yes|no):([^:]+)(?::([ab]))?$/);
   if (!m) {
     await answerCallback(cbq.id);
     return new Response('ok');
   }
   const value = m[1];
   const opportunityId = m[2];
+  const variant = m[3] || null;
   const userId = cbq.from?.id;
 
   if (!userId) {
@@ -300,6 +303,7 @@ export async function POST(request) {
             opportunity_id: opportunityId,
             telegram_user_id: userId,
             value,
+            ...(variant ? { variant } : {}),
             updated_at: new Date().toISOString(),
           },
           { onConflict: 'opportunity_id,telegram_user_id' },
@@ -328,6 +332,7 @@ export async function POST(request) {
   await sendGa4Event(userId, 'opportunity_feedback', {
     value,
     action,
+    copy_variant: variant || 'legacy',
     opportunity_id: opportunityId,
     opportunity_slug: slug,
     opportunity_title: title,

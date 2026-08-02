@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, CARD_FIELDS } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import OpportunitiesList from '../OpportunitiesList';
 import StickyHeader from '../StickyHeader';
@@ -38,7 +38,7 @@ async function getCityOpportunities(cityName) {
   if (!supabase) return [];
   const { data, error } = await supabase
     .from('opportunities')
-    .select('*')
+    .select(CARD_FIELDS)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
   if (error || !data) return [];

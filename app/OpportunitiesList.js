@@ -2,42 +2,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
-
-const TYPE_LABELS = {
-  course: 'Курс',
-  workshop: 'Майстер-клас',
-  summer_school: 'Літня школа',
-  study_program: 'Навчальна програма',
-  mentorship: 'Менторство',
-  club: 'Гурток',
-  camp: 'Табір',
-  olympiad: 'Олімпіада',
-  competition: 'Конкурс',
-  hackathon: 'Хакатон',
-  sport_tournament: 'Спорт. турнір',
-  festival: 'Фестиваль',
-  award: 'Премія',
-  exchange: 'Обмін',
-  excursion: 'Екскурсія',
-  residency: 'Резиденція',
-  scholarship: 'Стипендія',
-  grant: 'Грант',
-  allowance: 'Виплата',
-  support_payment: 'Соц. виплата',
-  internship: 'Стажування',
-  volunteer: 'Волонтерство',
-  conference: 'Конференція',
-  medical_aid: 'Мед. допомога',
-  psychology: 'Психологія',
-  rehabilitation: 'Реабілітація',
-  humanitarian: 'Гум. допомога',
-  legal_aid: 'Правова допомога',
-  shelter: 'Прихисток',
-  educational_material: 'Навч. матеріали',
-  // legacy aliases
-  study_abroad: 'Навчання за кордоном',
-  sport_event: 'Спорт',
-};
+import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -89,13 +54,6 @@ const AID_TYPE_OPTIONS = [
   { label: 'Проф. навчання', value: 'vocational' },
 ];
 
-const AID_TYPE_LABELS = {
-  cash: 'держвиплата',
-  scholarship: 'соц. стипендія',
-  recreation: 'оздоровлення',
-  free_activities: 'безкоштовна секція',
-  vocational: 'проф. навчання',
-};
 
 const NEED_OPTIONS = [
   { label: 'Усі діти', value: 'all' },
@@ -122,16 +80,9 @@ const DEADLINE_OPTIONS = [
   { label: 'Без дедлайну (постійні)', value: 'none' },
 ];
 
-const ANNUAL_TYPES = new Set([
-  'olympiad',
-  'competition',
-  'exchange',
-  'scholarship',
-  'festival',
-  'camp',
-  'grant',
-  'study_abroad',
-]);
+// Cards rendered per batch. Filtering stays client-side (the chips, the city list
+// and the result count all need the full set), so this caps the DOM, not the fetch.
+const PAGE_SIZE = 24;
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -188,22 +139,69 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   );
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('age');
+  // Guards the URL-writing effect below: until the initial read has run, writing
+  // would wipe the very query string we're about to parse.
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const age = p.get('age');
-    if (age) setAges(new Set(age.split(',').filter(Boolean)));
-    const type = p.get('type');
-    if (type) setTypes(new Set(type.split(',').filter(Boolean)));
-    const cost = p.get('cost');
-    if (cost) setCosts(new Set(cost.split(',').filter(Boolean)));
-    const city = p.get('city');
-    if (city) setSelectedCities(new Set(city.split(',').filter(Boolean)));
+    const readSet = (key, setter) => {
+      const raw = p.get(key);
+      if (raw) setter(new Set(raw.split(',').filter(Boolean)));
+    };
+    readSet('age', setAges);
+    readSet('type', setTypes);
+    readSet('aid', setAidTypes);
+    readSet('theme', setThemes);
+    readSet('need', setNeeds);
+    readSet('cost', setCosts);
+    readSet('deadline', setDeadlines);
+    readSet('city', setSelectedCities);
+    const q = p.get('q');
+    if (q) setQuery(q);
     const sortVal = p.get('sort');
     if (sortVal && SORT_OPTIONS.some((o) => o.value === sortVal)) setSort(sortVal);
-    const theme = p.get('theme');
-    if (theme) setThemes(new Set(theme.split(',').filter(Boolean)));
+    setHydrated(true);
   }, []);
+
+  // Mirror filter state back into the URL so a filtered view can be bookmarked,
+  // shared and restored. replaceState — not push — because every chip tap would
+  // otherwise pile up in the back stack and make ← unusable.
+  useEffect(() => {
+    if (!hydrated) return;
+    // Debounced so typing in the search box doesn't rewrite the URL per keystroke.
+    const timer = setTimeout(() => {
+      const p = new URLSearchParams();
+      const writeSet = (key, set) => {
+        if (set.size > 0) p.set(key, [...set].join(','));
+      };
+      writeSet('age', ages);
+      writeSet('type', types);
+      writeSet('aid', aidTypes);
+      writeSet('theme', themes);
+      writeSet('need', needs);
+      writeSet('cost', costs);
+      writeSet('deadline', deadlines);
+      // On a city landing page (/kyiv) the preset is already in the path —
+      // repeating it as ?city= would be noise. Any wider selection still gets written.
+      const presetOnly =
+        presetCity && selectedCities.size === 1 && selectedCities.has(presetCity);
+      if (!presetOnly) writeSet('city', selectedCities);
+      if (query.trim()) p.set('q', query.trim());
+      if (sort !== 'age') p.set('sort', sort);
+
+      const qs = p.toString();
+      window.history.replaceState(
+        null,
+        '',
+        qs ? `${window.location.pathname}?${qs}` : window.location.pathname
+      );
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [
+    hydrated, ages, types, aidTypes, themes, needs, costs, deadlines,
+    selectedCities, query, sort, presetCity,
+  ]);
 
   // Theme tags per opportunity, derived from title+summary keywords (lib/themes).
   const themeMap = useMemo(() => {
@@ -357,6 +355,13 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
     return result;
   }, [opportunities, ages, types, aidTypes, themes, themeMap, needs, costs, deadlines, selectedCities, query, sort]);
+
+  // Any change to the filtered set puts the user back at the top of a fresh batch —
+  // keeping a large `visible` across filter changes would dump hundreds of cards at once.
+  const [visible, setVisible] = useState(PAGE_SIZE);
+  useEffect(() => {
+    setVisible(PAGE_SIZE);
+  }, [filtered]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -601,9 +606,24 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
           <p>Спробуйте послабити критерії пошуку або скинути фільтри.</p>
         </div>
       ) : (
-        <div className="grid">
-          {filtered.map((item) => renderCard(item))}
-        </div>
+        <>
+          <div className="grid">
+            {filtered.slice(0, visible).map((item) => renderCard(item))}
+          </div>
+          {visible < filtered.length && (
+            <div className="load-more-wrap">
+              <button
+                className="load-more"
+                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+              >
+                Показати ще {Math.min(PAGE_SIZE, filtered.length - visible)}
+              </button>
+              <div className="load-more-hint">
+                Показано {visible} з {filtered.length}
+              </div>
+            </div>
+          )}
+        </>
       )}
     </>
   );

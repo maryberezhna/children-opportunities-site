@@ -1,0 +1,123 @@
+/* Модалка підтримки */
+/* ============ МОДАЛКА ПІДТРИМКИ ============ */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26,26,26,0.5);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 36px 32px;
+  max-width: 440px;
+  width: 100%;
+  position: relative;
+  animation: slideUp 0.3s;
+  text-align: center;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  background: var(--bg);
+  border: none;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-close:hover {
+  background: var(--border);
+  color: var(--ink);
+}
+
+.modal-icon {
+  font-size: 56px;
+  margin-bottom: 12px;
+  display: inline-block;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15%, 45% { transform: scale(1.2); }
+  30%, 60% { transform: scale(1); }
+}
+
+.modal h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--ink);
+}
+
+.modal p {
+  color: var(--ink-soft);
+  font-size: 15px;
+  margin-bottom: 24px;
+  line-height: 1.55;
+}
+
+.mono-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 14px 24px;
+  background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.mono-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+}
+
+.mono-btn + .mono-btn {
+  margin-top: 10px;
+}
+
+.mono-btn-secondary {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+}
+
+.mono-btn-secondary:hover {
+  box-shadow: 0 8px 20px rgba(247, 147, 30, 0.25);
+}
+
+.modal-footer {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 16px;
+}
+

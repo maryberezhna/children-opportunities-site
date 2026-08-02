@@ -92,7 +92,19 @@ function escapeHtml(text) {
     .replace(/>/g, '&gt;');
 }
 
-function buildMessage(item) {
+// A/B тексту посту. Варіант виводиться з id можливості, а не з випадкового числа:
+// перезапуск воркфлоу на тому самому записі має дати той самий текст, інакше
+// голоси 👍/👎 неможливо чесно віднести до варіанта.
+// DIGEST_AB=off — вимкнути експеримент і завжди слати 'a'.
+function pickVariant(opportunityId) {
+  if (process.env.DIGEST_AB === 'off') return 'a';
+  const hex = String(opportunityId).replace(/[^0-9a-f]/gi, '').slice(-1);
+  const n = parseInt(hex, 16);
+  return Number.isNaN(n) || n % 2 === 0 ? 'a' : 'b';
+}
+
+// A — розгорнутий: повний опис, «🆕» лідер. Це історичний формат.
+function buildMessageA(item) {
   const typeLabel = TYPE_LABELS[item.opportunity_type] || item.opportunity_type;
   const cost = COST_LABELS[item.cost_type];
   const deadline = formatDeadline(item.deadline);
@@ -123,14 +135,50 @@ function buildMessage(item) {
   return lines.join('\n');
 }
 
-function buildKeyboard(opportunityId, slug, deadline) {
+// B — стислий: опис до 180 символів, «✨» лідер, дедлайн у тому ж рядку меты.
+// Гіпотеза: у стрічці каналу коротший пост читають до кінця частіше.
+function buildMessageB(item) {
+  const typeLabel = TYPE_LABELS[item.opportunity_type] || item.opportunity_type;
+  const cost = COST_LABELS[item.cost_type];
+  const deadline = formatDeadline(item.deadline);
+  const url = `${SITE_URL}/o/${item.slug}`;
+
+  const lines = [];
+  lines.push(`✨ <b>${escapeHtml(item.title)}</b>`);
+
+  const meta = [typeLabel, ageLabel(item)];
+  if (cost) meta.push(cost);
+  if (deadline) meta.push(`до ${deadline}`);
+  lines.push(meta.join(' · '));
+
+  if (item.summary) {
+    const short = item.summary.length > 180
+      ? `${item.summary.slice(0, 180).trimEnd()}…`
+      : item.summary;
+    lines.push('');
+    lines.push(escapeHtml(short));
+  }
+
+  lines.push('');
+  lines.push(`<a href="${url}">Деталі →</a>`);
+
+  return lines.join('\n');
+}
+
+function buildMessage(item, variant) {
+  return variant === 'b' ? buildMessageB(item) : buildMessageA(item);
+}
+
+function buildKeyboard(opportunityId, slug, deadline, variant) {
   const rows = [];
   if (deadline) {
     rows.push([{ text: '📅 Додати в календар', url: `${SITE_URL}/events/${slug}/add` }]);
   }
+  // Варіант їде в callback_data, щоб вебхук зберіг його разом з голосом.
+  // UUID не містить ':', тож старі кнопки без суфікса теж лишаються валідними.
   rows.push([
-    { text: '👍 Цікаво', callback_data: `fb:yes:${opportunityId}` },
-    { text: '👎 Не цікаво', callback_data: `fb:no:${opportunityId}` },
+    { text: '👍 Цікаво', callback_data: `fb:yes:${opportunityId}:${variant}` },
+    { text: '👎 Не цікаво', callback_data: `fb:no:${opportunityId}:${variant}` },
   ]);
   return { inline_keyboard: rows };
 }
@@ -144,9 +192,10 @@ async function sendTelegramMessage(text, replyMarkup) {
       chat_id: TELEGRAM_CHAT_ID,
       text,
       parse_mode: 'HTML',
-      // suppress preview — every dityam.com.ua page shares the same og-image,
-      // so the auto-fetched card is identical for every post and adds no info.
-      disable_web_page_preview: true,
+      // Preview is ON again: /o/[slug] now renders its own OG image (title, age,
+      // cost, deadline), so the card carries real information per post rather
+      // than repeating one shared picture. Set TELEGRAM_LINK_PREVIEW=off to revert.
+      disable_web_page_preview: process.env.TELEGRAM_LINK_PREVIEW === 'off',
       ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
     }),
   });
@@ -244,16 +293,18 @@ let posted = 0;
 let failed = 0;
 
 for (const item of items) {
-  const message = buildMessage(item);
+  const variant = pickVariant(item.id);
+  const message = buildMessage(item, variant);
   if (DRY_RUN) {
     console.log('---');
+    console.log(`[variant ${variant}]`);
     console.log(message);
     posted += 1;
     continue;
   }
 
   try {
-    await sendTelegramMessage(message, buildKeyboard(item.id, item.slug, item.deadline));
+    await sendTelegramMessage(message, buildKeyboard(item.id, item.slug, item.deadline, variant));
     const { error: updateError } = await supabase
       .from('opportunities')
       .update({ telegram_posted_at: new Date().toISOString() })
@@ -263,7 +314,7 @@ for (const item of items) {
       failed += 1;
     } else {
       posted += 1;
-      console.log(`✓ ${item.slug}`);
+      console.log(`✓ ${item.slug} [variant ${variant}]`);
     }
   } catch (err) {
     console.error(`✗ ${item.slug}: ${err.message}`);

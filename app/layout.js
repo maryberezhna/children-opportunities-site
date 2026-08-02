@@ -3,6 +3,7 @@ import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
 import AccessibilityPanel from './AccessibilityPanel';
+import ServiceWorker from './ServiceWorker';
 import { supabase } from '@/lib/supabase';
 import './globals.css';
 
@@ -134,6 +135,7 @@ export default function RootLayout({ children }) {
         <TelegramFAB />
         <AccessibilityPanel />
         <Analytics />
+        <ServiceWorker />
       </body>
     </html>
   );

@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 
-export default function SupportPopup() {
+export default function SupportPopup({ total, price }) {
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -24,6 +25,15 @@ export default function SupportPopup() {
       window.gtag('event', 'support_click');
     }
     setIsOpen(true);
+  };
+
+  const trackPlus = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'plus_cta_click', {
+        event_category: 'engagement',
+        event_label: 'home_support_section',
+      });
+    }
   };
 
   const trackMonobank = () => {
@@ -51,17 +61,34 @@ export default function SupportPopup() {
             <span className="support-sparkle support-sparkle-3">✨</span>
           </div>
           <div className="support-text">
-            <h2 className="support-title">Допоможіть розвитку проєкту</h2>
+            <span className="support-badge">Dityam+</span>
+            <h2 className="support-title">Ваша дитина не пропустить свій шанс</h2>
             <p className="support-description">
-              Привіт, я Маша. Вірю, що кожна дитина в Україні має знати про свої можливості — від безкоштовного гуртка у своєму місті до стипендії за кордон. Якщо маєте змогу підтримати будь-якою сумою — це допоможе проєкту розвиватися і додавати більше можливостей для дітей🧡
+              {total ? `У каталозі вже ${total} можливостей` : 'У каталозі сотні можливостей'} — але саме вашій дитині підходять одиниці,
+              і в кожної свій дедлайн. Замість того щоб перевіряти сайт щотижня, отримуйте
+              готову добірку: ми стежимо за новими програмами замість вас.
             </p>
+            <ul className="support-benefits">
+              <li><span aria-hidden="true">🎯</span> Тільки ваше — за віком та інтересами дитини, без гортання сотень карток</li>
+              <li><span aria-hidden="true">⚡</span> Вчасно — нові можливості приходять, поки подача ще відкрита</li>
+              <li><span aria-hidden="true">🔒</span> Безпечно — ми не запитуємо дитячих даних, лише вік-діапазон та інтереси</li>
+              <li><span aria-hidden="true">✋</span> Без пасток — скасувати можна будь-коли, одним повідомленням</li>
+            </ul>
           </div>
           <div className="support-cta-group">
-            <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn support-cta-btn-dark" onClick={trackMonobank}>
+            <Link href="/pidbirka" className="support-cta-btn support-cta-btn-dark" onClick={trackPlus}>
+              ✨ Спробувати за {price} грн/міс
+            </Link>
+            <span className="support-cta-note">Базовий каталог лишається безкоштовним для всіх🧡</span>
+          </div>
+          {/* Донати лишаються, але другорядними — головна дія тепер підписка. */}
+          <div className="support-donate-row">
+            <span className="support-donate-label">Або просто підтримати проєкт:</span>
+            <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobank}>
               🏦 Банка
             </a>
-            <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-cta-btn" onClick={trackMonobankWidget}>
-              💳 Підписка на Base
+            <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobankWidget}>
+              💳 Base
             </a>
           </div>
         </div>

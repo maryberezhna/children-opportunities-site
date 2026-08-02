@@ -2,42 +2,9 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
+import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
+import OutcomeForm from './OutcomeForm';
 
-const TYPE_LABELS = {
-  course: 'Курс',
-  workshop: 'Майстер-клас',
-  summer_school: 'Літня школа',
-  study_program: 'Навчальна програма',
-  mentorship: 'Менторство',
-  club: 'Гурток',
-  camp: 'Табір',
-  olympiad: 'Олімпіада',
-  competition: 'Конкурс',
-  hackathon: 'Хакатон',
-  sport_tournament: 'Спорт. турнір',
-  festival: 'Фестиваль',
-  award: 'Премія',
-  exchange: 'Обмін',
-  excursion: 'Екскурсія',
-  residency: 'Резиденція',
-  scholarship: 'Стипендія',
-  grant: 'Грант',
-  allowance: 'Виплата',
-  support_payment: 'Соц. виплата',
-  internship: 'Стажування',
-  volunteer: 'Волонтерство',
-  conference: 'Конференція',
-  medical_aid: 'Мед. допомога',
-  psychology: 'Психологія',
-  rehabilitation: 'Реабілітація',
-  humanitarian: 'Гум. допомога',
-  legal_aid: 'Правова допомога',
-  shelter: 'Прихисток',
-  educational_material: 'Навч. матеріали',
-  // legacy aliases
-  study_abroad: 'Навчання за кордоном',
-  sport_event: 'Спорт',
-};
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -63,29 +30,26 @@ const COST_LABELS = {
   closed: 'Закрита подача',
 };
 
-const AID_TYPE_LABELS = {
-  cash: 'держвиплата',
-  scholarship: 'соц. стипендія',
-  recreation: 'оздоровлення',
-  free_activities: 'безкоштовна секція',
-  vocational: 'проф. навчання',
-};
 
 const COURSE_TYPES = new Set(['course', 'olympiad', 'club', 'exchange', 'study_abroad', 'scholarship', 'internship']);
 const EVENT_TYPES = new Set(['camp', 'festival', 'sport_event', 'competition']);
 
 export const revalidate = 3600;
 
+// Показуємо 'active' і 'closed'. Архівні — з плашкою «вже завершилась», бо
+// посилання на них живуть вічно в постах каналу, діджестах і видачі Google:
+// раніше кожна заархівована можливість перетворювала свій URL на 404.
+// Чернетки з черги модерації ('draft'/'pending') не показуємо ніколи.
+const PUBLIC_STATUSES = new Set(['active', 'closed']);
+
 async function getOpportunity(slug) {
   if (!supabase) return null;
-  // status='active' only — never render drafts (pending agent candidates),
-  // skipped (closed) or archived rows, even by direct slug URL.
   const { data } = await supabase
     .from('opportunities')
     .select('*')
     .eq('slug', slug)
-    .eq('status', 'active')
     .maybeSingle();
+  if (!data || !PUBLIC_STATUSES.has(data.status)) return null;
   return data;
 }
 
@@ -166,20 +130,14 @@ export async function generateMetadata({ params }) {
       locale: 'uk_UA',
       ...(item.created_at && { publishedTime: item.created_at }),
       ...(item.updated_at && { modifiedTime: item.updated_at }),
-      images: [
-        {
-          url: '/og-image.png',
-          width: 1200,
-          height: 630,
-          alt: 'dityam.com.ua',
-        },
-      ],
+      // images навмисне не задаємо: сусідній opengraph-image.js генерує
+      // унікальну картинку на кожну можливість, і Next підставляє її сам.
+      // Явний images: [...] тут перебив би файлову конвенцію.
     },
     twitter: {
       card: 'summary_large_image',
       title,
       description,
-      images: ['/og-image.png'],
     },
   };
 }
@@ -277,7 +235,10 @@ export default async function OpportunityPage({ params }) {
   if (!item) notFound();
 
   const related = await getRelated(item);
-  const jsonLd = buildJsonLd(item);
+  const isClosed = item.status === 'closed';
+  // Для закритої можливості structured data не віддаємо: Google не має
+  // показувати її як активний курс чи подію в rich results.
+  const jsonLd = isClosed ? null : buildJsonLd(item);
   const breadcrumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -307,7 +268,9 @@ export default async function OpportunityPage({ params }) {
 
   return (
     <>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      {jsonLd ? (
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      ) : null}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
 
       <div className="container">
@@ -315,7 +278,20 @@ export default async function OpportunityPage({ params }) {
           <Link href="/">← Усі можливості</Link>
         </nav>
 
-        <article className="opportunity-page">
+        {isClosed ? (
+          <div className="closed-banner" role="status">
+            <span className="closed-banner-icon" aria-hidden="true">🔒</span>
+            <div>
+              <strong>Ця можливість уже завершилась.</strong>{' '}
+              {ANNUAL_TYPES.has(item.opportunity_type)
+                ? 'Такі програми зазвичай відкриваються щороку — стежте за оновленнями, ми повідомимо, коли почнеться новий набір.'
+                : 'Подача заявок закрита, сторінку лишили для довідки.'}{' '}
+              <Link href="/">Подивитись актуальні можливості →</Link>
+            </div>
+          </div>
+        ) : null}
+
+        <article className={`opportunity-page${isClosed ? ' opportunity-page-closed' : ''}`}>
           <div className="opportunity-chips">
             <span className="chip chip-type">{TYPE_LABELS[item.opportunity_type] || item.opportunity_type}</span>
             {item.aid_type ? <span className="chip chip-aid">🏛 {AID_TYPE_LABELS[item.aid_type] || 'держдопомога'}</span> : null}
@@ -375,6 +351,8 @@ export default async function OpportunityPage({ params }) {
             )}
           </div>
         </article>
+
+        <OutcomeForm opportunityId={item.id} title={item.title} />
 
         {related.length > 0 && (
           <section className="opportunity-related" aria-labelledby="related-heading">

@@ -1,0 +1,290 @@
+/* Авто-поп-ап підписки */
+/* ============ АВТО-ПОП-АП ПІДПИСКИ ============ */
+
+.subscribe-popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 26, 26, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.3s;
+}
+
+.subscribe-popup {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 32px 28px;
+  max-width: 460px;
+  width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  position: relative;
+  animation: popupIn 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  border: 2px solid var(--accent-soft);
+}
+
+@keyframes popupIn {
+  from {
+    transform: scale(0.9) translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+.subscribe-popup-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: var(--bg);
+  border: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: all 0.15s;
+}
+
+.subscribe-popup-close:hover {
+  background: var(--border);
+  color: var(--ink);
+  transform: scale(1.1);
+}
+
+.subscribe-popup-header {
+  text-align: center;
+  margin-bottom: 16px;
+  padding: 0 8px;
+}
+
+.subscribe-popup-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  display: inline-block;
+  animation: iconBounce 2s ease-in-out infinite;
+  line-height: 0;
+}
+
+.subscribe-popup-logo {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .subscribe-popup-logo {
+    width: 80px;
+    height: 80px;
+  }
+}
+
+@keyframes iconBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.subscribe-popup-title {
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 8px;
+  line-height: 1.25;
+}
+
+.subscribe-popup-description {
+  font-size: 14px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.subscribe-popup-tg-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 16px 20px;
+  background: #229ED9;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 8px;
+}
+
+.subscribe-popup-tg-cta:hover {
+  background: #1b85b5;
+}
+
+.subscribe-popup-tg-cta:active {
+  transform: scale(0.98);
+}
+
+.subscribe-popup-skip {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--ink-muted);
+  font-size: 13px;
+  font-family: inherit;
+  padding: 12px;
+  cursor: pointer;
+  transition: color 0.15s;
+  margin-top: 4px;
+}
+
+.subscribe-popup-skip:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* Мобільна адаптація поп-апу */
+@media (max-width: 640px) {
+  .subscribe-popup-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .subscribe-popup {
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    max-height: 90vh;
+    animation: popupSlideUp 0.4s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  @keyframes popupSlideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .subscribe-popup-title {
+    font-size: 19px;
+  }
+
+  .subscribe-popup-icon {
+    font-size: 40px;
+  }
+}
+
+
+/* ============ ВУЗЬКА СМУГА ЗАМІСТЬ МОДАЛЬНОГО ПОПАПА ============ */
+/* Модалка на весь екран перекривала каталог і вимагала закриття, щоб читати
+   далі. Смуга внизу нічого не блокує: скрол лишається, дія — опційна. */
+.subscribe-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: 16px;
+  z-index: 9998; /* під sticky-bar (9999), щоб на мобільному не накривати його */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(640px, calc(100vw - 24px));
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  animation: subscribe-bar-in 0.28s ease-out;
+}
+
+@keyframes subscribe-bar-in {
+  from { opacity: 0; transform: translate(-50%, 12px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .subscribe-bar { animation: none; }
+}
+
+.subscribe-bar-icon { flex-shrink: 0; }
+
+.subscribe-bar-text {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.subscribe-bar-text strong { color: var(--ink); font-weight: 500; }
+.subscribe-bar-sub { color: var(--ink-muted); }
+
+.subscribe-bar-cta {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: #29b6f6;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.subscribe-bar-cta:hover { background: #1ba5e5; }
+
+.subscribe-bar-close {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.subscribe-bar-close:hover { background: var(--bg); color: var(--ink); }
+
+.subscribe-bar-cta:focus-visible,
+.subscribe-bar-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* На мобільному sticky-bar займає низ екрана — піднімаємо смугу над ним */
+@media (max-width: 640px) {
+  .subscribe-bar {
+    bottom: calc(70px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 12px;
+    gap: 9px;
+  }
+  .subscribe-bar-text { font-size: 13px; }
+  /* На вузькому екрані лишаємо тільки головну обіцянку */
+  .subscribe-bar-sub { display: none; }
+  .subscribe-bar-cta { padding: 8px 14px; font-size: 13px; }
+}

@@ -1,4 +1,7 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, CARD_FIELDS } from '@/lib/supabase';
+// Ціну читає серверний компонент: lib/wayforpay тягне crypto й секретний ключ,
+// тож у клієнтський бандл він потрапити не має.
+import { PRICE } from '@/lib/wayforpay';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
@@ -15,7 +18,7 @@ async function getOpportunities() {
   }
   const { data, error } = await supabase
     .from('opportunities')
-    .select('*')
+    .select(CARD_FIELDS)
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
@@ -93,7 +96,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <SupportPopup />
+        <SupportPopup total={total} price={PRICE} />
         <OpportunitiesList opportunities={opportunities} />
 
         <Footer />

@@ -1,0 +1,207 @@
+/* Sticky bar */
+/* ============ STICKY BAR ============ */
+
+/* На десктопі приховуємо sticky-bar — залишаємо тільки в футері */
+.sticky-bar {
+  display: none !important;
+}
+
+/* На мобільному показуємо через media query нижче */
+.sticky-bar.sticky-bar-mobile {
+  position: fixed !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  justify-content: center;
+  gap: 12px;
+  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
+}
+
+.sticky-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg);
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s, transform 0.15s;
+  border: 1px solid var(--border);
+  min-width: 120px;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.sticky-btn:hover {
+  background: var(--surface);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.sticky-btn,
+.sticky-btn:visited,
+.sticky-btn:focus,
+.sticky-btn:active {
+  outline: none;
+}
+
+.sticky-btn svg {
+  stroke: var(--ink-soft);
+  flex-shrink: 0;
+}
+
+/* ВАЖЛИВО: за замовчуванням мобільна кнопка прихована на десктопі */
+.sticky-mobile-only { display: none !important; }
+.sticky-desktop-only { display: inline-flex !important; }
+
+/* Subscribe кнопка — градієнтна, щоб вирізнялась */
+.sticky-btn-subscribe,
+.sticky-btn-subscribe:link,
+.sticky-btn-subscribe:visited,
+.sticky-btn-subscribe:hover,
+.sticky-btn-subscribe:focus,
+.sticky-btn-subscribe:active {
+  background: linear-gradient(135deg, #fff4ec 0%, #fde8c7 100%);
+  color: var(--accent) !important;
+  border-color: var(--accent);
+  font-weight: 500;
+}
+
+.sticky-btn-subscribe:hover {
+  background: var(--accent-soft) !important;
+  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.2);
+}
+
+.sticky-btn-subscribe svg,
+.sticky-btn-subscribe:hover svg,
+.sticky-btn-subscribe:focus svg,
+.sticky-btn-subscribe:active svg {
+  stroke: var(--accent) !important;
+}
+
+.sticky-btn-subscribe span {
+  color: var(--accent) !important;
+}
+
+/* Instagram кнопка */
+.sticky-btn-insta,
+.sticky-btn-insta:link,
+.sticky-btn-insta:visited,
+.sticky-btn-insta:hover,
+.sticky-btn-insta:focus,
+.sticky-btn-insta:active {
+  background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-btn-insta:hover {
+  box-shadow: 0 6px 20px rgba(220, 39, 67, 0.35);
+}
+
+.sticky-btn-insta svg,
+.sticky-btn-insta:hover svg,
+.sticky-btn-insta:focus svg,
+.sticky-btn-insta:active svg {
+  stroke: #ffffff !important;
+}
+
+.sticky-btn-insta span {
+  color: #ffffff !important;
+}
+
+/* Telegram кнопка */
+.sticky-btn-tg,
+.sticky-btn-tg:link,
+.sticky-btn-tg:visited,
+.sticky-btn-tg:hover,
+.sticky-btn-tg:focus,
+.sticky-btn-tg:active {
+  background: #29B6F6;
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-btn-tg:hover {
+  background: #0288D1;
+  box-shadow: 0 6px 20px rgba(41, 182, 246, 0.35);
+}
+
+.sticky-btn-tg svg {
+  fill: #ffffff !important;
+  stroke: none !important;
+}
+
+.sticky-btn-tg span {
+  color: #ffffff !important;
+}
+
+/* Донат кнопка */
+.sticky-btn-donate,
+.sticky-btn-donate:link,
+.sticky-btn-donate:visited,
+.sticky-btn-donate:focus,
+.sticky-btn-donate:active {
+  background: var(--accent);
+  color: #ffffff !important;
+  border-color: transparent;
+}
+
+.sticky-btn-donate:hover {
+  background: #d14c15;
+  color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.4);
+}
+
+.sticky-btn-donate svg,
+.sticky-btn-donate:hover svg,
+.sticky-btn-donate:focus svg,
+.sticky-btn-donate:active svg {
+  stroke: #ffffff !important;
+}
+
+.sticky-btn-donate span {
+  color: #ffffff !important;
+}
+
+.sticky-heart {
+  font-size: 18px;
+  line-height: 1;
+  animation: heartbeat 1.8s ease-in-out infinite;
+}
+
+/* Планшет — 4 кнопки футера в 2 ряди */
+@media (max-width: 900px) and (min-width: 641px) {
+  .footer-actions {
+    gap: 10px;
+    padding: 22px 24px;
+  }
+
+  .footer-action-btn {
+    padding: 10px 18px;
+    font-size: 13px;
+    flex: 1;
+    min-width: 140px;
+    justify-content: center;
+  }
+
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    padding: 28px 28px 0;
+  }
+}
+
