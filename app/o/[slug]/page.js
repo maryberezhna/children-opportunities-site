@@ -85,6 +85,51 @@ export async function generateStaticParams() {
   return (data || []).map((row) => ({ slug: row.slug }));
 }
 
+// Google обрізає сніпет приблизно на 160 символах — усе довше не побачать.
+const DESC_MAX = 158;
+
+const COST_DESC = {
+  free: 'безкоштовно',
+  partially_free: 'з фінансуванням',
+  paid_affordable: 'доступна вартість',
+  paid_premium: 'платна участь',
+};
+
+// Сніпет має відповідати на запит, а не переказувати початок опису.
+//
+// Search Console показує, що люди шукають конкретику — «соколята табір ЦІНА»,
+// «олімпіада з математики 2026» — і сторінка з 1029 показів набирає 0.9% CTR,
+// бо в сніпеті нічого з цього немає. Тому спершу ставимо факти, за якими
+// шукають (вік · вартість · місце · дедлайн), і лише потім — опис, скільки
+// влізе в залишок.
+function buildDescription(item, typeLabel, ageRange) {
+  const facts = [`${typeLabel} для дітей ${ageRange}`];
+
+  if (COST_DESC[item.cost_type]) facts.push(COST_DESC[item.cost_type]);
+
+  // «Вся Україна» нічого не додає до сніпета — беремо конкретне місто,
+  // інакше формат (онлайн / офлайн).
+  const place =
+    (item.cities || []).find((c) => c && c !== 'Вся Україна') || item.format;
+  if (place) facts.push(String(place).trim());
+
+  const deadline = formatDate(item.deadline);
+  if (deadline) facts.push(`заявки до ${deadline}`);
+
+  const head = facts.join(' · ');
+  const summary = (item.summary || '').trim();
+  if (!summary) return head.slice(0, DESC_MAX);
+
+  // Дописуємо опис лише якщо лишається місце на осмислений шматок.
+  const room = DESC_MAX - head.length - 2;
+  if (room < 40) return head.slice(0, DESC_MAX);
+
+  const tail = summary.length > room
+    ? `${summary.slice(0, room - 1).replace(/[\s,;–—-]+$/, '')}…`
+    : summary;
+  return `${head}. ${tail}`;
+}
+
 export async function generateMetadata({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) return { title: 'Можливість не знайдена' };
@@ -105,17 +150,7 @@ export async function generateMetadata({ params }) {
   const title = `${item.title} — ${typeLabel} для дітей ${ageRange}`;
   const url = `https://dityam.com.ua/o/${item.slug}`;
 
-  const rawSummary = (item.summary || '').trim();
-  const COST_DESC = {
-    free: 'безкоштовно',
-    partially_free: 'з фінансуванням',
-    paid_affordable: 'доступна вартість',
-    paid_premium: 'платно',
-  };
-  const costHint = COST_DESC[item.cost_type] || '';
-  const description = rawSummary.length >= 40
-    ? rawSummary.slice(0, 160)
-    : `${typeLabel} для дітей ${ageRange}${costHint ? `, ${costHint}` : ''}. ${rawSummary}`.trim().slice(0, 160);
+  const description = buildDescription(item, typeLabel, ageRange);
 
   return {
     title,
