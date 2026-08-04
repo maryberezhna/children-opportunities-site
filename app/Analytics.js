@@ -1,10 +1,19 @@
 'use client';
 import Script from 'next/script';
+import { usePathname } from 'next/navigation';
 
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
 
+// Внутрішні маршрути, які не мають потрапляти в статистику. Модерація давала
+// ~16 переглядів на місяць — це власна робота, а не аудиторія, і вона псувала
+// і кількість сторінок, і показники залученості.
+const EXCLUDED = ['/admin'];
+
 export function Analytics() {
+  const pathname = usePathname();
+  if (pathname && EXCLUDED.some((p) => pathname.startsWith(p))) return null;
+
   return (
     <>
       <Script
