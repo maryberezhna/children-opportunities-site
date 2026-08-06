@@ -3,7 +3,7 @@
 // оплату (WayForPay); після успішної оплати відкривається діалогова форма профілю.
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, handleFlowCallback } from '@/lib/digestFlow';
-import { createInvoice, wayforpayConfigured, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import { createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
 
 export const runtime = 'nodejs';
@@ -23,6 +23,15 @@ const ageOverlap = (from, to, bands) => !bands?.length || bands.some((b) => AGE_
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
   return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, wayforpay: wayforpayConfigured });
+}
+
+// Скасування підписки у WayForPay. hadOrder=false — платежу не було
+// (людина так і не оплатила), тоді скасовувати нічого й це не помилка.
+async function cancelSubscription(sub) {
+  const ref = sub?.wfp_order_reference;
+  if (!ref) return { ok: true, hadOrder: false };
+  const r = await removeRecurring(ref);
+  return { ...r, hadOrder: true };
 }
 
 async function sendPayOffer(bot, sub, chatId) {
@@ -120,13 +129,44 @@ export async function POST(request) {
     const text = msg.text.trim();
 
     if (/^\/stop\b/i.test(text)) {
-      await supabase.from('digest_subscribers').update({ status: 'unsubscribed', updated_at: new Date().toISOString() }).eq('telegram_chat_id', chatId);
-      await bot.sendMessage(chatId, 'Відписано ✅ Повернутись — /start');
+      const { data: sub } = await supabase.from('digest_subscribers')
+        .select('id, wfp_order_reference').eq('telegram_chat_id', chatId).maybeSingle();
+      // Спершу зупиняємо списання, і лише потім статус: якщо WayForPay
+      // недоступний, людина лишається активною і напише нам, а не виявить
+      // за місяць, що гроші йдуть за послугу, якої вже немає.
+      const cancelled = await cancelSubscription(sub);
+      if (!cancelled.ok && cancelled.hadOrder) {
+        await bot.sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напиши сюди — ми скасуємо вручну сьогодні ж, гроші не спишуться.');
+        if (MAIN_TOKEN && ADMIN_CHAT_ID) {
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+            `🚨 <b>WayForPay REMOVE не пройшов</b>\nchat <code>${chatId}</code>, order <code>${esc(sub?.wfp_order_reference || '—')}</code>\n${esc(cancelled.reason || cancelled.error || '')}`);
+        }
+        return new Response('ok');
+      }
+      await supabase.from('digest_subscribers')
+        .update({ status: 'unsubscribed', plan: 'free', updated_at: new Date().toISOString() })
+        .eq('telegram_chat_id', chatId);
+      await bot.sendMessage(chatId, cancelled.hadOrder
+        ? 'Відписано ✅ Списання скасовано — більше нічого не знімемо.\n\nПовернутись — /start'
+        : 'Відписано ✅ Повернутись — /start');
       return new Response('ok');
     }
 
     if (/^\/start\b/i.test(text)) {
       let { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+
+      // Deep-link із форми на сайті: /start <unsub_token>. Привʼязуємо чат до
+      // вже створеного рядка, інакше нижче створився б дубль, а зібраний на
+      // сайті профіль (вік, інтереси) загубився б.
+      const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
+      if (!sub && startArg) {
+        const { data: linked } = await supabase.from('digest_subscribers')
+          .update({ telegram_chat_id: chatId, telegram_handle: handle, updated_at: new Date().toISOString() })
+          .eq('unsub_token', startArg).is('telegram_chat_id', null)
+          .select('*').maybeSingle();
+        if (linked) sub = linked;
+      }
+
       if (!sub) {
         const { data: ins } = await supabase.from('digest_subscribers')
           .insert({ telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle, status: 'pending' })

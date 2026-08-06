@@ -80,6 +80,38 @@ def parse_ts(s):
         return None
 
 
+EMPTY_NOTICE_DAYS = 30    # як рідко нагадувати, що під профіль нічого немає
+
+
+def _needs_empty_notice(sub: dict) -> bool:
+    last = parse_ts(sub.get("last_empty_notice_at"))
+    if last is None:
+        return True
+    return (datetime.now(timezone.utc) - last).days >= EMPTY_NOTICE_DAYS
+
+
+def notify_empty_profile(client, sub: dict) -> None:
+    """Під профіль немає жодної можливості — кажемо про це прямо."""
+    text = (
+        "🧡 <b>Поки нічого не знайшли під профіль вашої дитини</b>\n\n"
+        "Можливостей саме за обраними віком та інтересами зараз немає — "
+        "але щойно зʼявиться, надішлемо першими.\n\n"
+        "Хочете отримувати більше — розширте інтереси або віковий діапазон: "
+        "надішліть /start і оновіть форму."
+    )
+    ok = False
+    if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
+        ok = send_telegram(sub["telegram_chat_id"], text)
+    elif sub["channel"] == "email" and sub.get("email"):
+        # send_email віддає тіло як HTML — переноси рядків там не працюють.
+        ok = send_email(sub["email"], text.replace("\n", "<br>"))
+    if ok:
+        client.table("digest_subscribers").update(
+            {"last_empty_notice_at": datetime.now(timezone.utc).isoformat()}
+        ).eq("id", sub["id"]).execute()
+        logger.info("sub %s — надіслано нагадування про порожній профіль", sub["id"])
+
+
 def pick_for(sub: dict, opps: list, since=None) -> list:
     """Можливості під профіль. since (datetime) — брати лише новіші за цей момент."""
     interests = set(sub.get("interests") or [])
@@ -211,6 +243,13 @@ def main():
         items = pick_for(sub, opps, since)
         if not items:
             logger.info("sub %s — no new matching opportunities, skip", sub["id"])
+            # Тиша — нормальна, коли просто нема НОВИХ збігів. Але якщо під
+            # профіль немає нічого взагалі (напр. вік 0-3, де контенту обмаль),
+            # людина платить і місяцями не отримує нічого. Раз на 30 днів
+            # пропонуємо розширити профіль замість того, щоб мовчати далі.
+            if not args.dry_run and not args.demo and not pick_for(sub, opps, None):
+                if _needs_empty_notice(sub):
+                    notify_empty_profile(client, sub)
             continue
 
         if args.dry_run or args.demo:

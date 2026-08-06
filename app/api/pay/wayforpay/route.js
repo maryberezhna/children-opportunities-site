@@ -2,7 +2,7 @@
 // Approved → active + запуск форми в боті; Declined/Expired/... → paused.
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow } from '@/lib/digestFlow';
-import { verifyCallback, acceptResponse, tokenFromOrderRef } from '@/lib/wayforpay';
+import { verifyCallback, acceptResponse, tokenFromOrderRef, PRICE_YEAR } from '@/lib/wayforpay';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,16 +33,34 @@ export async function POST(request) {
     const now = new Date().toISOString();
 
     if (b.transactionStatus === 'Approved') {
+      // orderReference зберігаємо обовʼязково — без нього неможливо скасувати
+      // рекурентне списання, коли людина відпишеться.
+      const patch = {
+        status: 'active',
+        plan: 'premium',
+        wfp_order_reference: b.orderReference,
+        billing_period: Number(b.amount) >= PRICE_YEAR ? 'yearly' : 'monthly',
+        updated_at: now,
+      };
+      // Оплата = прийняття оферти. У бот-потоці згода інакше ніде не фіксується:
+      // рядок створює /start, а він її не питає.
+      const { data: existing } = await supabase.from('digest_subscribers')
+        .select('consent_at').eq('unsub_token', token).maybeSingle();
+      if (!existing?.consent_at) patch.consent_at = now;
+
       const { data: sub } = await supabase.from('digest_subscribers')
-        .update({ status: 'active', plan: 'premium', updated_at: now })
-        .eq('unsub_token', token).select('*').maybeSingle();
+        .update(patch).eq('unsub_token', token).select('*').maybeSingle();
       if (sub?.telegram_chat_id && PLUS_TOKEN) {
         const bot = makeBot(PLUS_TOKEN);
         await bot.sendMessage(sub.telegram_chat_id, '✅ Оплата пройшла — дякуємо! 🧡 Тепер налаштуймо профіль дитини:');
         await beginFlow(bot, supabase, sub.telegram_chat_id, null);
       }
     } else if (FAILED.includes(b.transactionStatus)) {
-      await supabase.from('digest_subscribers').update({ status: 'paused', updated_at: now }).eq('unsub_token', token);
+      // План знижуємо разом зі статусом, інакше в базі лишається paused+premium
+      // і статистика рахує таку людину як платну.
+      await supabase.from('digest_subscribers')
+        .update({ status: 'paused', plan: 'free', updated_at: now })
+        .eq('unsub_token', token);
     }
   }
 
