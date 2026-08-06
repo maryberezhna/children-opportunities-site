@@ -8,6 +8,7 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const PRICE = Number(process.env.WAYFORPAY_AMOUNT || 79);
+const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 799);
 const DRY = process.argv.includes('--dry-run');
 
 if (!SUPABASE_URL || !KEY) { console.error('Missing Supabase env'); process.exit(1); }
@@ -32,7 +33,12 @@ const unsub = cnt((r) => r.status === 'unsubscribed');
 const filled = cnt((r) => (r.age_bands || []).length > 0);
 const new7 = cnt((r) => now - new Date(r.created_at).getTime() <= 7 * DAY);
 const newActive7 = cnt((r) => r.status === 'active' && now - new Date(r.created_at).getTime() <= 7 * DAY);
-const mrr = active * PRICE;
+// Річні підписники платять PRICE_YEAR раз на рік — рахувати їх по місячній
+// ціні означає завищувати MRR. Приводимо до місячного еквівалента.
+const activeRows = rows.filter((r) => r.status === 'active');
+const yearly = activeRows.filter((r) => r.billing_period === 'yearly').length;
+const monthly = activeRows.length - yearly;
+const mrr = Math.round(monthly * PRICE + yearly * (PRICE_YEAR / 12));
 
 const msg = [
   '📊 <b>Dityam+ — статистика за тиждень</b>',
@@ -46,7 +52,7 @@ const msg = [
   `🆕 За 7 днів: <b>${new7}</b> нових (з них оплатили: <b>${newActive7}</b>)`,
   `📋 Заповнили профіль дитини: <b>${filled}</b>`,
   '',
-  `💰 Орієнтовний дохід/міс: <b>~${mrr} грн</b> <i>(${active} × ${PRICE})</i>`,
+  `💰 Орієнтовний дохід/міс: <b>~${mrr} грн</b> <i>(${monthly} міс × ${PRICE} + ${yearly} річних)</i>`,
 ].join('\n');
 
 if (DRY || !TOKEN || !ADMIN) {

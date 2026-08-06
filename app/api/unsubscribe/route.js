@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { removeRecurring } from '@/lib/wayforpay';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,29 @@ export async function GET(request) {
   if (!url || !key) return page('Помилка', 'Сервіс тимчасово недоступний.');
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
+  const { data: sub } = await supabase.from('digest_subscribers')
+    .select('id, wfp_order_reference').eq('unsub_token', token).maybeSingle();
+  if (!sub) return page('Не знайдено', 'Можливо, ви вже відписались.');
+
+  // Спершу зупиняємо гроші, потім розсилку. Якщо WayForPay не відповів —
+  // не кажемо «відписано», інакше людина піде спокійною, а списання триватиме.
+  if (sub.wfp_order_reference) {
+    const r = await removeRecurring(sub.wfp_order_reference);
+    if (!r.ok) {
+      console.error('WayForPay REMOVE failed', sub.wfp_order_reference, r);
+      return page(
+        'Не вдалося скасувати списання',
+        'Розсилку зупинимо, але автоматично скасувати платіж не вийшло. Напишіть на maryberezhna@gmail.com — скасуємо вручну сьогодні ж, гроші не спишуться.',
+      );
+    }
+  }
+
   const { data, error } = await supabase.from('digest_subscribers')
-    .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
+    .update({ status: 'unsubscribed', plan: 'free', updated_at: new Date().toISOString() })
     .eq('unsub_token', token).select('id').maybeSingle();
 
   if (error || !data) return page('Не знайдено', 'Можливо, ви вже відписались.');
-  return page('Відписано ✅', 'Ви більше не отримуватимете персональну підбірку. Повернутись можна будь-коли на сайті.');
+  return page('Відписано ✅', sub.wfp_order_reference
+    ? 'Ви більше не отримуватимете персональну підбірку, а списання скасовано — більше нічого не знімемо.'
+    : 'Ви більше не отримуватимете персональну підбірку. Повернутись можна будь-коли на сайті.');
 }

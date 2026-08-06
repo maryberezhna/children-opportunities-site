@@ -2,6 +2,10 @@
 import { useState } from 'react';
 import { THEME_OPTIONS } from '@/lib/themes';
 
+// Платний бот Dityam+ — саме в ньому живе оплата. Змінюється через
+// NEXT_PUBLIC_PLUS_BOT, якщо колись переїде на інший акаунт.
+const PLUS_BOT = process.env.NEXT_PUBLIC_PLUS_BOT || 'DityamPlusBot';
+
 const AGE_BANDS = [
   ['0-3', '0–3 роки'], ['4-6', '4–6 років'], ['7-10', '7–10 років'],
   ['11-14', '11–14 років'], ['15-18', '15–18 років'],
@@ -71,8 +75,12 @@ export default function SubscribeForm() {
       <div style={{ marginTop: 26, padding: '22px 20px', borderRadius: 14, background: '#f0f9f2', border: `1px solid #bfe6cd` }}>
         <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>🎉 Готово!</div>
         <p style={{ margin: '10px 0 0', fontSize: 15, color: C.ink, lineHeight: 1.6 }}>
+          {/* Веде саме в платний бот: оплата живе тільки в ньому. Раніше
+              посилання йшло на @DityamComUABot — там людині обіцяли «щойно
+              оплата пройде», але оплату ніхто не пропонував, і вона назавжди
+              лишалась у статусі pending. */}
           {done.channel === 'telegram'
-            ? <>Останній крок — відкрий <a href={`https://t.me/DityamComUABot?start=${done.connect || 'digest'}`} target="_blank" rel="noreferrer" style={{ color: C.blue, fontWeight: 600 }}>@DityamComUABot</a> і натисни <b>Почати</b>, щоб ми могли надсилати підбірку саме тобі.</>
+            ? <>Останній крок — відкрий <a href={`https://t.me/${PLUS_BOT}?start=${done.connect || 'digest'}`} target="_blank" rel="noreferrer" style={{ color: C.blue, fontWeight: 600 }}>@{PLUS_BOT}</a> і натисни <b>Почати</b> — там оформимо підписку й надсилатимемо підбірку саме тобі.</>
             : <>Ми надішлемо першу персональну підбірку на <b>{email}</b> найближчим часом. Перевір теку «Промоакції», якщо не бачиш листа.</>}
         </p>
       </div>
