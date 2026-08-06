@@ -38,7 +38,7 @@ export default async function Home() {
   const itemListLd = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Можливості для дітей в Україні',
+    name: 'Можливості для українських дітей',
     numberOfItems: opportunities.length,
     itemListElement: opportunities.slice(0, 100).map((o, i) => ({
       '@type': 'ListItem',
@@ -73,8 +73,8 @@ export default async function Home() {
             в одному місці
           </h1>
           <p>
-            Курси, олімпіади, стипендії, табори, медична допомога та виплати для дітей 0-18 років в Україні.
-            Всі перевірені програми зібрані в один каталог.
+            Курси, олімпіади, стипендії, табори, медична допомога та виплати для українських дітей 0-18 років —
+            в Україні та за кордоном. Кожна програма перевірена вручну.
           </p>
           <div className="stats">
             <div className="stat">

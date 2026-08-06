@@ -1,8 +1,13 @@
 """discover_agent.py — щоденний агент веб-пошуку можливостей (Claude).
 
-Бере 1 ключове слово (детермінована ротація по днях через словник), просить
-Claude пошукати в інтернеті СВІЖІ конкретні можливості для дітей 0–18 в Україні
-за цим словом, і зберігає знайдених кандидатів зі статусом ``draft``. На сайті
+Бере пару «тема дня × регіон дня» (дві незалежні детерміновані ротації), просить
+Claude пошукати в інтернеті СВІЖІ конкретні можливості для дітей 0–18 і зберігає
+знайдених кандидатів зі статусом ``draft``.
+
+Регіон — Україна або країна з великою українською громадою (Польща, Німеччина,
+Чехія та ін., див. keywords.REGION_ROTATION). Україна чергується з кожною
+країною, тож лишається половиною запусків. Для закордонних регіонів у джерелі
+(``source``) дописується назва країни — видно на /admin. На сайті
 драфти не показуються (сайт фільтрує status='active') — їх схвалюють вручну на
 /admin.
 
@@ -27,7 +32,7 @@ import httpx
 from slugify import slugify
 
 from db import get_client
-from keywords import KEYWORD_CATEGORIES
+from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
 from normalizer import _sanitize
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -57,14 +62,32 @@ def keyword_of_day() -> str:
     return KEYWORDS[doy % len(KEYWORDS)]
 
 
-def _prompt(kw: str) -> str:
+def region_of_day() -> dict:
+    """Регіон дня — окрема ротація від теми. Довжини 151 і 20 взаємно прості,
+    тож пари (тема, регіон) не повторюються роками."""
+    doy = date.today().timetuple().tm_yday
+    return REGION_ROTATION[doy % len(REGION_ROTATION)]
+
+
+def _prompt(kw: str, region: dict) -> str:
+    is_home = region["name"] == "Україна"
     return (
         f"Знайди в інтернеті до {MAX_CANDIDATES} КОНКРЕТНИХ, актуальних можливостей "
-        f"для ДІТЕЙ 0–18 років в Україні за темою «{kw}». Використай веб-пошук.\n\n"
+        f"{region['audience']} за темою «{kw}». Використай веб-пошук.\n"
+        f"Мова пошуку: {region['hint']}.\n\n"
         "Кожна має бути:\n"
         "- для дітей/підлітків 0–18 (НЕ для дорослих чи студентів ВНЗ),\n"
         "- конкретна, з реальним організатором і сторінкою (НЕ агрегатор/каталог),\n"
-        "- бажано з активним дедлайном або набором, що триває.\n\n"
+        "- бажано з активним дедлайном або набором, що триває.\n"
+        + ("" if is_home else
+           f"- доступна для української дитини в цій країні: або прямо для дітей "
+           f"з України/біженців, або відкрита для всіх без вимоги громадянства. "
+           f"Мовний бар'єр — не привід відкидати, але познач у summary, якою "
+           f"мовою проходить.\n"
+           f"\nТему «{kw}» сприймай як загальний напрям, а не буквальний запит: "
+           f"шукай місцевий відповідник. Українських реалій (ДЮСШ, МАН, НУШ, "
+           f"позашкілля) в цій країні немає — там свої формати.\n")
+        + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
         '"deadline":"YYYY-MM-DD або null","age_from":7,"age_to":17,'
@@ -93,7 +116,7 @@ def _extract_json_array(text: str):
         start = i + 1
 
 
-def search_candidates(kw: str) -> list[dict]:
+def search_candidates(kw: str, region: dict) -> list[dict]:
     body = {
         "model": MODEL,
         "max_tokens": 5000,
@@ -101,7 +124,7 @@ def search_candidates(kw: str) -> list[dict]:
         # ("Country code UA is not supported"). Ukraine focus comes from the
         # prompt text instead.
         "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}],
-        "messages": [{"role": "user", "content": _prompt(kw)}],
+        "messages": [{"role": "user", "content": _prompt(kw, region)}],
     }
     try:
         r = httpx.post(
@@ -156,7 +179,7 @@ def _clamp_age(v, default):
     return max(0, min(18, n))
 
 
-def to_record(c: dict, kw: str) -> dict | None:
+def to_record(c: dict, kw: str, region: dict) -> dict | None:
     title = (c.get("title") or "").strip()
     url = (c.get("url") or "").strip()
     if not title or not url.startswith("http"):
@@ -170,7 +193,9 @@ def to_record(c: dict, kw: str) -> dict | None:
         "opportunity_type": c.get("opportunity_type"),
         "cost_type": c.get("cost_type"),
         "deadline": c.get("deadline"),
-        "source": f"🔎 Агент: {kw}",
+        # Країна в source — щоб на /admin одразу було видно, звідки кандидат
+        "source": f"🔎 Агент: {kw}" if region["name"] == "Україна"
+                  else f"🔎 Агент: {kw} · {region['name']}",
         "source_url": url,
         "status": "draft",
     }
@@ -237,10 +262,11 @@ def notify_new(added: int, kw: str) -> None:
 
 def main() -> int:
     kw = keyword_of_day()
-    logger.info("🔎 Агент — слово дня: «%s» (модель %s)%s",
-                kw, MODEL, " [DRY RUN]" if DRY_RUN else "")
+    region = region_of_day()
+    logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
+                kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
 
-    candidates = search_candidates(kw)
+    candidates = search_candidates(kw, region)
     logger.info("  Знайдено кандидатів: %d", len(candidates))
     if not candidates:
         return 0
@@ -259,7 +285,7 @@ def main() -> int:
 
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     for c in candidates:
-        rec = to_record(c, kw)
+        rec = to_record(c, kw, region)
         if not rec:
             skipped += 1
             continue

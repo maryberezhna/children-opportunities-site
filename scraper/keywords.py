@@ -93,6 +93,91 @@ KEYWORD_CATEGORIES: dict[str, list[str]] = {
     ],
 }
 
+# ── Регіони пошуку ────────────────────────────────────────────────────────────
+# Українські родини після 2022 розсіяні по Європі, і можливості для їхніх дітей
+# публікуються місцевими мовами. Регіон — ОКРЕМИЙ вимір від теми: агент щодня
+# бере пару (тема дня × регіон дня). Завдяки цьому додавання країн не розріджує
+# тематичну ротацію, яка й так триває 151 день.
+#
+# `hint` — підказка моделі, якими мовами й формулюваннями шукати. Без неї
+# пошук іде українською й на місцевих сайтах нічого не знаходить.
+
+HOME_REGION: dict[str, str] = {
+    "name": "Україна",
+    "audience": "для дітей 0–18 років, які живуть в Україні",
+    "hint": "шукай українською",
+}
+
+DIASPORA_REGIONS: list[dict[str, str]] = [
+    {
+        "name": "Польща",
+        "audience": "для українських дітей 0–18, які живуть у Польщі",
+        "hint": "шукай польською та українською: «dla dzieci z Ukrainy», "
+                "«bezpłatne zajęcia», «półkolonie», «stypendia dla uczniów»",
+    },
+    {
+        "name": "Німеччина",
+        "audience": "для українських дітей 0–18, які живуть у Німеччині",
+        "hint": "шукай німецькою: «für ukrainische Kinder», «kostenlos», "
+                "«Ferienfreizeit», «Stipendium», «Willkommensklasse»",
+    },
+    {
+        "name": "Чехія",
+        "audience": "для українських дітей 0–18, які живуть у Чехії",
+        "hint": "шукай чеською: «pro ukrajinské děti», «zdarma», «tábor», "
+                "«stipendium», «kroužky»",
+    },
+    {
+        "name": "Велика Британія",
+        "audience": "для українських дітей 0–18, які живуть у Великій Британії",
+        "hint": "шукай англійською: «for Ukrainian children», «free», "
+                "«holiday club», «bursary», «youth programme»",
+    },
+    {
+        "name": "Іспанія",
+        "audience": "для українських дітей 0–18, які живуть в Іспанії",
+        "hint": "шукай іспанською: «para niños ucranianos», «gratuito», "
+                "«campamento de verano», «beca»",
+    },
+    {
+        "name": "Італія",
+        "audience": "для українських дітей 0–18, які живуть в Італії",
+        "hint": "шукай італійською: «per bambini ucraini», «gratuito», "
+                "«centro estivo», «borsa di studio»",
+    },
+    {
+        "name": "Нідерланди",
+        "audience": "для українських дітей 0–18, які живуть у Нідерландах",
+        "hint": "шукай нідерландською: «voor Oekraïense kinderen», «gratis», "
+                "«vakantiekamp», «beurs»",
+    },
+    {
+        "name": "Румунія",
+        "audience": "для українських дітей 0–18, які живуть у Румунії",
+        "hint": "шукай румунською: «pentru copii ucraineni», «gratuit», "
+                "«tabără», «bursă»",
+    },
+    {
+        "name": "Словаччина",
+        "audience": "для українських дітей 0–18, які живуть у Словаччині",
+        "hint": "шукай словацькою: «pre ukrajinské deti», «zadarmo», «tábor», "
+                "«štipendium», «krúžky»",
+    },
+    {
+        "name": "Ірландія",
+        "audience": "для українських дітей 0–18, які живуть в Ірландії",
+        "hint": "шукай англійською: «for Ukrainian children Ireland», «free», "
+                "«summer camp», «scholarship», «youth club»",
+    },
+]
+
+# Україна чергується з кожною країною, тож лишається половиною всіх запусків —
+# це основний продукт, а діаспора поки що перевірка гіпотези. Повний цикл —
+# 20 днів: Україна через день, кожна країна раз на 20 днів.
+REGION_ROTATION: list[dict[str, str]] = [
+    r for country in DIASPORA_REGIONS for r in (HOME_REGION, country)
+]
+
 # Маркери аудиторії — «це про дитину 0–18». Допомагають match_categories/фільтрам
 # відсіювати суто дорослий контент за потреби.
 AUDIENCE_MARKERS: set[str] = {
