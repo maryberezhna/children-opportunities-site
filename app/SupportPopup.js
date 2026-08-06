@@ -54,12 +54,6 @@ export default function SupportPopup({ total, price }) {
         <div className="support-bg-blob support-bg-blob-1" />
         <div className="support-bg-blob support-bg-blob-2" />
         <div className="support-content">
-          <div className="support-icon-wrap">
-            <span className="support-big-heart">❤️</span>
-            <span className="support-sparkle support-sparkle-1">✨</span>
-            <span className="support-sparkle support-sparkle-2">✨</span>
-            <span className="support-sparkle support-sparkle-3">✨</span>
-          </div>
           <div className="support-text">
             <span className="support-badge">Dityam+</span>
             <h2 className="support-title">Ваша дитина не пропустить свій шанс</h2>
@@ -75,21 +69,31 @@ export default function SupportPopup({ total, price }) {
               <li><span aria-hidden="true">✋</span> Без пасток — скасувати можна будь-коли, одним повідомленням</li>
             </ul>
           </div>
-          <div className="support-cta-group">
+          <div className="support-cta-card">
+            <div className="support-icon-wrap">
+              <span className="support-big-heart">❤️</span>
+              <span className="support-sparkle support-sparkle-1">✨</span>
+              <span className="support-sparkle support-sparkle-2">✨</span>
+              <span className="support-sparkle support-sparkle-3">✨</span>
+            </div>
+            <div className="support-price">
+              <span className="support-price-num">{price}</span>
+              <span className="support-price-per">грн / міс</span>
+            </div>
             <Link href="/pidbirka" className="support-cta-btn support-cta-btn-dark" onClick={trackPlus}>
-              ✨ Спробувати за {price} грн/міс
+              ✨ Спробувати Dityam+
             </Link>
             <span className="support-cta-note">Базовий каталог лишається безкоштовним для всіх🧡</span>
-          </div>
-          {/* Донати лишаються, але другорядними — головна дія тепер підписка. */}
-          <div className="support-donate-row">
-            <span className="support-donate-label">Або просто підтримати проєкт:</span>
-            <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobank}>
-              🏦 Банка
-            </a>
-            <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobankWidget}>
-              💳 Base
-            </a>
+            {/* Донати лишаються, але другорядними — головна дія тепер підписка. */}
+            <div className="support-donate-row">
+              <span className="support-donate-label">Або просто підтримати проєкт:</span>
+              <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobank}>
+                🏦 Банка
+              </a>
+              <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobankWidget}>
+                💳 Base
+              </a>
+            </div>
           </div>
         </div>
       </section>

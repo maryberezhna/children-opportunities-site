@@ -48,28 +48,17 @@
   .stat-num { font-size: 22px; }
   .stat-label { font-size: 12px; }
 
-  .support-section { padding: 24px 20px; border-radius: 20px; }
+  .support-section { padding: 24px 18px; border-radius: 20px; }
 
-  .support-content {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    text-align: center;
-  }
+  .support-content { gap: 20px; }
 
-  .support-icon-wrap { margin: 0 auto; width: 70px; height: 70px; }
-  .support-big-heart { font-size: 52px; }
-  .support-title { font-size: 19px; }
+  .support-title { font-size: 20px; }
   .support-description { font-size: 14px; }
+  .support-benefits li { font-size: 14px; }
 
-  .support-cta-group {
-    width: 100%;
-  }
-
-  .support-cta-btn {
-    width: 100%;
-    justify-content: center;
-    padding: 14px 20px;
-  }
+  .support-cta-card { padding: 20px 18px 14px; }
+  .support-price-num { font-size: 36px; }
+  .support-cta-btn { padding: 14px 20px; }
 
   .subscribe-section {
     padding: 18px 18px 20px;
