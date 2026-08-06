@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
+import { CITY_META } from '@/lib/cities';
 
 export default function Footer() {
   return (
@@ -154,6 +156,18 @@ export default function Footer() {
           </p>
         </div>
       </div>
+
+      {/* Міські сторінки досі були сиротами: існували лише в sitemap, і жодне
+          посилання на сайті на них не вело. За три місяці — нуль показів у
+          пошуку. Це перелінковка, щоб перевірити, чи справа була саме в ній. */}
+      <nav className="footer-cities" aria-label="Можливості за містами">
+        <span className="footer-cities-label">Можливості за містами:</span>
+        {Object.entries(CITY_META).map(([slug, meta]) => (
+          <Link key={slug} href={`/${slug}`} className="footer-city-link">
+            {meta.ua}
+          </Link>
+        ))}
+      </nav>
 
       <div className="footer-bottom">
         <div className="footer-copy">
