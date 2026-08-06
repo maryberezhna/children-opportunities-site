@@ -7,7 +7,7 @@ const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 export const metadata = {
   title: 'Підтримати проєкт — dityam.com.ua',
   description:
-    'Підтримайте безкоштовний каталог можливостей для дітей 0–18 років в Україні. Донат через PayPal або monobank — допомагає додавати нові програми та розвивати сайт.',
+    'Підтримайте безкоштовну платформу можливостей для українських дітей 0–18 років. Донат через PayPal або monobank — допомагає додавати нові програми та розвивати сайт.',
   alternates: { canonical: 'https://dityam.com.ua/support' },
   openGraph: {
     type: 'website',

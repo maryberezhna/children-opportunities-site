@@ -22,7 +22,7 @@ export default function PrivacyPage() {
         <h2>1. Хто ми</h2>
         <p>
           Сайт dityam.com.ua (далі — «Сайт») є некомерційним каталогом
-          можливостей для дітей в Україні. Власник і адміністратор —
+          можливостей для українських дітей. Власник і адміністратор —
           Марія Бережна, контакт:{' '}
           <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
         </p>
