@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 import OutcomeForm from './OutcomeForm';
+import Details from './Details';
 
 
 const NEED_LABELS = {
@@ -105,7 +106,10 @@ const COST_DESC = {
 function buildDescription(item, typeLabel, ageRange) {
   const facts = [`${typeLabel} для дітей ${ageRange}`];
 
-  if (COST_DESC[item.cost_type]) facts.push(COST_DESC[item.cost_type]);
+  // Жива ціна б'є категорію: за запитами «… ціна» ми показувались і не
+  // отримували кліків, бо «з фінансуванням» на питання про суму не відповідає.
+  if (item.price_note) facts.push(String(item.price_note).trim());
+  else if (COST_DESC[item.cost_type]) facts.push(COST_DESC[item.cost_type]);
 
   // «Вся Україна» нічого не додає до сніпета — беремо конкретне місто,
   // інакше формат (онлайн / офлайн).
@@ -354,6 +358,12 @@ export default async function OpportunityPage({ params }) {
                 <dd>{formatDate(item.deadline)}</dd>
               </>
             )}
+            {item.price_note && (
+              <>
+                <dt>Вартість</dt>
+                <dd>{item.price_note}</dd>
+              </>
+            )}
             {item.cost_type && (
               <>
                 <dt>Вартість</dt>
@@ -386,6 +396,8 @@ export default async function OpportunityPage({ params }) {
             )}
           </div>
         </article>
+
+        <Details text={item.details} />
 
         <OutcomeForm opportunityId={item.id} title={item.title} />
 
