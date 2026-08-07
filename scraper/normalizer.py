@@ -10,6 +10,24 @@ from slugify import slugify
 
 logger = logging.getLogger(__name__)
 
+# Сторінки, де на ОДНІЙ адресі живе багато різних можливостей. Для них
+# дедуплікація за URL зламала б дані: 24 всеукраїнські олімпіади з різних
+# предметів посилаються на один перелік МОН. Тільки тут ключем лишається
+# title+url — у решті випадків URL сам по собі ідентифікує можливість.
+HUB_URLS = (
+    "https://mon.gov.ua/osvita-2/zagalna-serednya-osvita/olimpiadi-ta-konkursi",
+    "https://diia.gov.ua/services",
+    "https://mms.gov.ua/",
+    "https://mincult.gov.ua/",
+    "https://constellation.org.ua/",
+    "https://fest-portal.com/meropriyatiya",
+    "https://klitschkofoundation.org/projects",
+    "https://artarsenal.in.ua/",
+    "https://ukraine.uwc.org/apply",
+    "https://man.gov.ua/contests/olympiad",
+    "https://osvita.diia.gov.ua/courses",
+)
+
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
 # The AI occasionally returns something off-list (e.g. deadline "квітень",
 # cost_type "unknown") — those rows used to fail the whole upsert and get lost.
@@ -219,6 +237,28 @@ URL: {source_url}
 
     @staticmethod
     def _make_hash(title: str, url: str) -> str:
-        normalized = re.sub(r"[^\w\s]", "", title.lower())
-        normalized = re.sub(r"\s+", " ", normalized).strip()
-        return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
+        """Ключ дедуплікації (upsert on_conflict=content_hash).
+
+        Раніше ключ був title+url — і не працював: назву генерує LLM, тож для
+        того самого джерела вона щоразу інша («uBoost Career», «uBoost Career —
+        державна програма профорієнтації та навичок для молоді», «uBoost Career
+        — державна програма для молоді»). Кожен варіант давав новий хеш і новий
+        рядок. У базі назбиралось 8 копій uBoost і 7 українсько-польських
+        обмінів.
+
+        Поріг за схожістю назв тут не рятує — виміряно на реальних даних:
+            справжні дублі   0.32 – 0.87
+            різні можливості 0.42 – 0.94
+        «олімпіада з біології» vs «з екології» дає 0.94 і це РІЗНЕ, а
+        «uBoost Career» vs його ж довга назва — 0.32 і це ОДНЕ. Діапазони
+        перекриваються, отже жоден поріг не розділить.
+
+        Тому ключ — сам URL: він стабільний. Виняток — сторінки-хаби, де на
+        одній адресі справді живе багато різних можливостей (перелік олімпіад
+        МОН, каталог послуг Дії). Для них лишаємо title+url.
+        """
+        if any(url.rstrip("/").startswith(h.rstrip("/")) for h in HUB_URLS):
+            normalized = re.sub(r"[^\w\s]", "", title.lower())
+            normalized = re.sub(r"\s+", " ", normalized).strip()
+            return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
+        return hashlib.sha256(url.encode()).hexdigest()[:16]
