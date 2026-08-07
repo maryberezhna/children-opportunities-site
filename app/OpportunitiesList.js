@@ -212,28 +212,15 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     return m;
   }, [opportunities]);
 
-  // Only offer theme chips that actually match ≥1 opportunity (no dead filters).
-  const availableThemes = useMemo(() => {
-    const present = new Set();
-    themeMap.forEach((set) => set.forEach((t) => present.add(t)));
-    return THEME_OPTIONS.filter((o) => o.value === 'all' || present.has(o.value));
-  }, [themeMap]);
-
-  const availableCities = useMemo(() => {
-    const citySet = new Set();
-    opportunities.forEach((opp) => {
-      (opp.cities || []).forEach((c) => citySet.add(c));
-    });
-    return [...citySet].sort((a, b) => {
-      if (a === 'Онлайн') return -1;
-      if (b === 'Онлайн') return 1;
-      if (a === 'Вся Україна') return -1;
-      if (b === 'Вся Україна') return 1;
-      if (a === 'Міжнародні') return 1;
-      if (b === 'Міжнародні') return -1;
-      return a.localeCompare(b, 'uk');
-    });
-  }, [opportunities]);
+  const sortCities = (list) => [...list].sort((a, b) => {
+    if (a === 'Онлайн') return -1;
+    if (b === 'Онлайн') return 1;
+    if (a === 'Вся Україна') return -1;
+    if (b === 'Вся Україна') return 1;
+    if (a === 'Міжнародні') return 1;
+    if (b === 'Міжнародні') return -1;
+    return a.localeCompare(b, 'uk');
+  });
 
   const toggle = (setter) => (value) => {
     if (value === 'all') {
@@ -266,55 +253,56 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
   const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
 
+  // Прострочені разові можливості не показуємо ніде — ні в списку, ні при
+  // підрахунку доступних опцій фільтрів.
+  const liveItems = useMemo(() => opportunities.filter((item) => {
+    const days = daysUntilDeadline(item.deadline);
+    return !(days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type));
+  }), [opportunities]);
+
+  // Один предикат на секцію фільтрів. Це єдине джерело правди: за ними і
+  // фільтрується список, і рахується, які опції взагалі мають сенс показувати.
+  // Тримати дві копії цієї логіки означало б, що вони рано чи пізно розійдуться.
+  const predicates = useMemo(() => ({
+    age: (item) => ages.size === 0 || [...ages].some((v) => ageMatches(item, v)),
+    // "gov_aid" — парасолька: підходить будь-яка можливість із aid_type,
+    // незалежно від її opportunity_type (виплата, табір, гурток…).
+    type: (item) => types.size === 0
+      || types.has(item.opportunity_type)
+      || (types.has('gov_aid') && Boolean(item.aid_type)),
+    aid: (item) => aidTypes.size === 0 || aidTypes.has(item.aid_type),
+    theme: (item) => {
+      if (themes.size === 0) return true;
+      const itemThemes = themeMap.get(item.id);
+      return Boolean(itemThemes) && [...themes].some((t) => itemThemes.has(t));
+    },
+    need: (item) => needs.size === 0
+      || (item.child_needs || []).some((n) => needs.has(n)),
+    cost: (item) => costs.size === 0 || costs.has(item.cost_type),
+    deadline: (item) => deadlines.size === 0
+      || [...deadlines].some((v) => deadlineMatches(item, v)),
+    city: (item) => {
+      if (selectedCities.size === 0) return true;
+      const itemCities = item.cities || [];
+      if (itemCities.some((c) => selectedCities.has(c))) return true;
+      // «Вся Україна» просвічує крізь фільтр за конкретним містом (Київ,
+      // Харків…), але НЕ крізь Онлайн / Міжнародні / Вся Україна.
+      if (!itemCities.includes('Вся Україна')) return false;
+      const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна']);
+      return [...selectedCities].some((c) => !VIRTUAL.has(c));
+    },
+    query: (item) => {
+      if (!query) return true;
+      const q = query.toLowerCase();
+      return `${item.title || ''} ${item.summary || ''} ${item.source || ''}`
+        .toLowerCase().includes(q);
+    },
+  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap]);
+
+  const FACETS = ['age', 'type', 'aid', 'theme', 'need', 'cost', 'deadline', 'city', 'query'];
+
   const filtered = useMemo(() => {
-    let result = opportunities.filter((item) => {
-      const days = daysUntilDeadline(item.deadline);
-      if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
-
-      if (ages.size > 0 && ![...ages].some((v) => ageMatches(item, v))) return false;
-      if (types.size > 0) {
-        // "gov_aid" is an umbrella: it matches any opportunity tagged with an
-        // aid_type, regardless of its opportunity_type (allowance, camp, club…).
-        const matchesType =
-          types.has(item.opportunity_type) ||
-          (types.has('gov_aid') && Boolean(item.aid_type));
-        if (!matchesType) return false;
-      }
-      if (aidTypes.size > 0 && !aidTypes.has(item.aid_type)) return false;
-      if (themes.size > 0) {
-        const itemThemes = themeMap.get(item.id);
-        if (!itemThemes || ![...themes].some((t) => itemThemes.has(t))) return false;
-      }
-      if (needs.size > 0) {
-        const itemNeeds = item.child_needs || [];
-        if (!itemNeeds.some((n) => needs.has(n))) return false;
-      }
-      if (costs.size > 0 && !costs.has(item.cost_type)) return false;
-      if (deadlines.size > 0 && ![...deadlines].some((v) => deadlineMatches(item, v))) return false;
-
-      if (selectedCities.size > 0) {
-        const itemCities = item.cities || [];
-        const isNationwide = itemCities.includes('Вся Україна');
-        if (itemCities.some((c) => selectedCities.has(c))) {
-          // direct match
-        } else if (isNationwide) {
-          // nationwide bleeds through specific Ukrainian city filters (Київ, Харків…)
-          // but NOT through Онлайн / Міжнародні / Вся Україна selections
-          const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна']);
-          const hasRealCityFilter = [...selectedCities].some((c) => !VIRTUAL.has(c));
-          if (!hasRealCityFilter) return false;
-        } else {
-          return false;
-        }
-      }
-
-      if (query) {
-        const q = query.toLowerCase();
-        const hay = `${item.title || ''} ${item.summary || ''} ${item.source || ''}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-      return true;
-    });
+    let result = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
 
     // Lower rank = higher priority. Urgent deadlines bubble to the very top.
     const deadlineRank = (item) => {
@@ -354,7 +342,53 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     }
 
     return result;
-  }, [opportunities, ages, types, aidTypes, themes, themeMap, needs, costs, deadlines, selectedCities, query, sort]);
+  }, [liveItems, predicates, sort]);
+
+  // Доступні опції кожної секції: рахуємо на тому, що проходить УСІ ІНШІ
+  // фільтри. Саму секцію виключаємо — інакше вибір у ній схлопнув би її власний
+  // список до однієї обраної опції.
+  //
+  // Навіщо: у 3 роки стипендій не буває, і показувати «Стипендії» дитині цього
+  // віку — обіцяти порожній екран. Мертвий фільтр гірший за відсутній.
+  const available = useMemo(() => {
+    const candidates = (skip) =>
+      liveItems.filter((item) => FACETS.every((k) => k === skip || predicates[k](item)));
+
+    const set = (skip, extract) => {
+      const out = new Set();
+      candidates(skip).forEach((item) => extract(item, out));
+      return out;
+    };
+
+    return {
+      age: (() => {
+        const items = candidates('age');
+        return new Set(AGE_GROUPS
+          .filter((g) => g.value !== 'all' && items.some((i) => ageMatches(i, g.value)))
+          .map((g) => g.value));
+      })(),
+      type: set('type', (i, out) => {
+        out.add(i.opportunity_type);
+        if (i.aid_type) out.add('gov_aid');
+      }),
+      aid: set('aid', (i, out) => { if (i.aid_type) out.add(i.aid_type); }),
+      theme: set('theme', (i, out) => (themeMap.get(i.id) || []).forEach((t) => out.add(t))),
+      need: set('need', (i, out) => (i.child_needs || []).forEach((n) => out.add(n))),
+      cost: set('cost', (i, out) => { if (i.cost_type) out.add(i.cost_type); }),
+      deadline: (() => {
+        const items = candidates('deadline');
+        return new Set(DEADLINE_OPTIONS
+          .filter((d) => d.value !== 'all' && items.some((i) => deadlineMatches(i, d.value)))
+          .map((d) => d.value));
+      })(),
+      city: set('city', (i, out) => (i.cities || []).forEach((c) => out.add(c))),
+    };
+  }, [liveItems, predicates, themeMap]);
+
+  // Обрану опцію показуємо завжди, навіть якщо вона стала порожньою — інакше
+  // її не було б чим зняти, і людина застрягла б у нульовій видачі.
+  const isOfferable = (facet, value, selected) =>
+    value === 'all' || selected.has(value) || available[facet].has(value);
 
   // Any change to the filtered set puts the user back at the top of a fresh batch —
   // keeping a large `visible` across filter changes would dump hundreds of cards at once.
@@ -455,7 +489,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
       <div className="filters">
         <div className="filter-row">
           <div className="filter-label">Вік дитини</div>
-          {AGE_GROUPS.map((g) => (
+          {AGE_GROUPS.filter((g) => isOfferable('age', g.value, ages)).map((g) => (
             <button
               key={g.value}
               className={`filter-btn ${isActive(ages, g.value) ? 'active' : ''}`}
@@ -468,7 +502,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
         <div className="filter-row">
           <div className="filter-label">Тип можливості</div>
-          {TYPE_OPTIONS.map((t) => (
+          {TYPE_OPTIONS.filter((t) => isOfferable('type', t.value, types)).map((t) => (
             <button
               key={t.value}
               className={`filter-btn ${isActive(types, t.value) ? 'active' : ''}`}
@@ -482,7 +516,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
         {types.has('gov_aid') && (
           <div className="filter-row filter-subrow">
             <div className="filter-label">Вид держдопомоги</div>
-            {AID_TYPE_OPTIONS.map((a) => (
+            {AID_TYPE_OPTIONS.filter((a) => isOfferable('aid', a.value, aidTypes)).map((a) => (
               <button
                 key={a.value}
                 className={`filter-btn ${aidTypes.has(a.value) ? 'active' : ''}`}
@@ -494,10 +528,10 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
           </div>
         )}
 
-        {availableThemes.length > 1 && (
+        {available.theme.size > 0 && (
           <div className="filter-row">
             <div className="filter-label">Тема</div>
-            {availableThemes.map((t) => (
+            {THEME_OPTIONS.filter((t) => isOfferable('theme', t.value, themes)).map((t) => (
               <button
                 key={t.value}
                 className={`filter-btn ${isActive(themes, t.value) ? 'active' : ''}`}
@@ -511,7 +545,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
         <div className="filter-row">
           <div className="filter-label">Дедлайн</div>
-          {DEADLINE_OPTIONS.map((d) => (
+          {DEADLINE_OPTIONS.filter((d) => isOfferable('deadline', d.value, deadlines)).map((d) => (
             <button
               key={d.value}
               className={`filter-btn ${isActive(deadlines, d.value) ? 'active' : ''}`}
@@ -524,7 +558,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
         <div className="filter-row">
           <div className="filter-label">Особлива потреба</div>
-          {NEED_OPTIONS.map((n) => (
+          {NEED_OPTIONS.filter((n) => isOfferable('need', n.value, needs)).map((n) => (
             <button
               key={n.value}
               className={`filter-btn ${isActive(needs, n.value) ? 'active' : ''}`}
@@ -537,7 +571,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
         <div className="filter-row">
           <div className="filter-label">Вартість</div>
-          {COST_OPTIONS.map((c) => (
+          {COST_OPTIONS.filter((c) => isOfferable('cost', c.value, costs)).map((c) => (
             <button
               key={c.value}
               className={`filter-btn ${isActive(costs, c.value) ? 'active' : ''}`}
@@ -548,7 +582,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
           ))}
         </div>
 
-        {availableCities.length > 0 && (
+        {available.city.size > 0 && (
           <div className="filter-row">
             <div className="filter-label">Місто</div>
             <button
@@ -557,7 +591,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
             >
               Усі
             </button>
-            {availableCities.map((city) => (
+            {sortCities([...available.city, ...selectedCities]).map((city) => (
               <button
                 key={city}
                 className={`filter-btn ${selectedCities.has(city) ? 'active' : ''}`}
