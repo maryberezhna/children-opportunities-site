@@ -58,15 +58,14 @@ export default function SupportPopup({ total, price }) {
             <span className="support-badge">Dityam+</span>
             <h2 className="support-title">Ваша дитина не пропустить свій шанс</h2>
             <p className="support-description">
-              {total ? `У каталозі вже ${total} можливостей` : 'У каталозі сотні можливостей'} — але саме вашій дитині підходять одиниці,
-              і в кожної свій дедлайн. Замість того щоб перевіряти сайт щотижня, отримуйте
-              готову добірку: ми стежимо за новими програмами замість вас.
+              {total ? `У каталозі вже ${total} можливостей` : 'У каталозі сотні можливостей'} — але вашій дитині підходять одиниці.
+              Отримуйте готову добірку замість того, щоб гортати сайт щотижня.
             </p>
             <ul className="support-benefits">
-              <li><span aria-hidden="true">🎯</span> Тільки ваше — за віком та інтересами дитини, без гортання сотень карток</li>
-              <li><span aria-hidden="true">⚡</span> Вчасно — нові можливості приходять, поки подача ще відкрита</li>
-              <li><span aria-hidden="true">🔒</span> Безпечно — ми не запитуємо дитячих даних, лише вік-діапазон та інтереси</li>
-              <li><span aria-hidden="true">✋</span> Без пасток — скасувати можна будь-коли, одним повідомленням</li>
+              <li><span aria-hidden="true">🎯</span> За віком та інтересами дитини</li>
+              <li><span aria-hidden="true">⚡</span> Поки подача ще відкрита</li>
+              <li><span aria-hidden="true">🔒</span> Без збору дитячих даних</li>
+              <li><span aria-hidden="true">✋</span> Скасувати — одним повідомленням</li>
             </ul>
           </div>
           <div className="support-cta-card">
@@ -83,10 +82,10 @@ export default function SupportPopup({ total, price }) {
             <Link href="/pidbirka" className="support-cta-btn support-cta-btn-dark" onClick={trackPlus}>
               ✨ Спробувати Dityam+
             </Link>
-            <span className="support-cta-note">Базовий каталог лишається безкоштовним для всіх🧡</span>
+            <span className="support-cta-note">Базовий каталог — безкоштовний для всіх🧡</span>
             {/* Донати лишаються, але другорядними — головна дія тепер підписка. */}
             <div className="support-donate-row">
-              <span className="support-donate-label">Або просто підтримати проєкт:</span>
+              <span className="support-donate-label">Або підтримати проєкт:</span>
               <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" className="support-donate-link" onClick={trackMonobank}>
                 🏦 Банка
               </a>
