@@ -1,4 +1,4 @@
-import { notFound, permanentRedirect } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
@@ -138,7 +138,18 @@ export async function generateMetadata({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) return { title: 'Можливість не знайдена' };
 
-  if ((item.status && item.status !== 'active') || item.canonical_slug) {
+  // Дубль: canonical на основну сторінку. Саме canonical, а НЕ noindex —
+  // noindex каже Google викинути сторінку, canonical каже склеїти сигнали
+  // з основною. Разом вони суперечливі, і склейки не відбувається.
+  if (item.canonical_slug && item.canonical_slug !== item.slug) {
+    return {
+      title: item.title,
+      description: item.summary || undefined,
+      alternates: { canonical: `https://dityam.com.ua/o/${item.canonical_slug}` },
+    };
+  }
+
+  if (item.status && item.status !== 'active') {
     return {
       title: item.title,
       robots: { index: false, follow: false },
@@ -272,11 +283,6 @@ function buildJsonLd(item) {
 export default async function OpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
-  // Дубль — 301 на канонічну сторінку, щоб сигнали посилань склеїлись, а не
-  // ділились між кількома адресами тієї самої можливості.
-  if (item.canonical_slug && item.canonical_slug !== item.slug) {
-    permanentRedirect(`/o/${item.canonical_slug}`);
-  }
 
   const related = await getRelated(item);
   const isClosed = item.status === 'closed';
