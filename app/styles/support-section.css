@@ -284,3 +284,225 @@
     margin: 0 auto;
   }
 }
+
+/* ============ DITYAM+ — блок цінності на головній ============ */
+/* Замість «опис + серце + ціна» тепер обіцянка ліворуч і живий приклад
+   підбірки праворуч: людина бачить сам продукт, а не розповідь про нього. */
+.plus-section {
+  position: relative;
+  overflow: hidden;
+  margin: 32px 0;
+  padding: 34px 30px 26px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fffdf8 0%, var(--warm-1) 55%, var(--accent-soft) 100%);
+}
+
+/* Тепле світло з-за правого краю — тримає погляд на прикладі підбірки */
+.plus-glow {
+  position: absolute;
+  top: -140px; right: -120px;
+  width: 420px; height: 420px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(232, 93, 36, 0.16), transparent 68%);
+  pointer-events: none;
+}
+
+.plus-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+  gap: 34px;
+  align-items: center;
+}
+
+.plus-copy { min-width: 0; }
+
+.plus-badge {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.plus-title {
+  margin: 13px 0 9px;
+  font-size: 30px;
+  line-height: 1.14;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.plus-lead {
+  margin: 0 0 16px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+  max-width: 46ch;
+}
+
+.plus-points { list-style: none; margin: 0 0 22px; padding: 0; }
+
+.plus-points li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 9px;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+
+/* Галочка малюється з бордерів — не тягне ні шрифт емодзі, ні svg */
+.plus-points li::before {
+  content: '';
+  position: absolute;
+  left: 4px; top: 5px;
+  width: 6px; height: 10px;
+  border: solid var(--accent);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.plus-points b { color: var(--ink); font-weight: 600; }
+
+.plus-buy { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+.plus-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 26px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.18);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plus-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 9px 24px rgba(26, 26, 26, 0.24);
+}
+
+.plus-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.plus-price { font-size: 15px; color: var(--ink-muted); }
+.plus-price b { font-size: 26px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.plus-price span { font-size: 14px; }
+
+.plus-fine { margin: 13px 0 0; font-size: 13px; color: var(--ink-muted); }
+
+/* ---- Приклад підбірки ---- */
+.plus-preview {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgba(60, 45, 30, 0.10);
+  overflow: hidden;
+}
+
+.plus-preview-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 15px;
+  border-bottom: 1px solid var(--border);
+  background: #fbf9f4;
+}
+
+.plus-preview-avatar {
+  width: 26px; height: 26px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  font-size: 14px;
+}
+
+.plus-preview-name { font-size: 14px; font-weight: 600; color: var(--ink); }
+.plus-preview-meta { margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
+
+.plus-preview-body { padding: 15px; }
+
+.plus-preview-hello {
+  margin: 0 0 12px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+.plus-preview-hello b { color: var(--ink); }
+
+.plus-card {
+  display: block;
+  padding: 11px 13px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: #fffdf9;
+}
+
+.plus-card-title {
+  display: block;
+  font-size: 14.5px;
+  line-height: 1.35;
+  color: var(--ink);
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.plus-card-meta { display: block; font-size: 12.5px; color: var(--ink-muted); }
+.plus-card-meta b { color: #2e7d4f; font-weight: 600; }
+
+.plus-preview-foot {
+  margin: 12px 0 0;
+  font-size: 12px;
+  color: var(--ink-muted);
+  text-align: center;
+}
+
+/* ---- Донати: третій рівень, під основним блоком ---- */
+.plus-donate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
+.plus-donate a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--border-hover);
+}
+.plus-donate a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+
+@media (max-width: 860px) {
+  .plus-section { padding: 26px 18px 20px; }
+  .plus-inner { grid-template-columns: 1fr; gap: 24px; }
+  .plus-title { font-size: 25px; }
+  .plus-lead { max-width: none; }
+  /* Приклад підбірки — головний аргумент, лишається видимим і на мобільному */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plus-cta { transition: none; }
+  .plus-cta:hover { transform: none; }
+}
+
+/* Немає можливостей із відкритою подачею — приклад підбірки не показуємо
+   (порожня карта виглядала б зламаною), текст займає всю ширину. */
+.plus-inner-solo { grid-template-columns: 1fr; }
+.plus-inner-solo .plus-lead { max-width: 62ch; }
