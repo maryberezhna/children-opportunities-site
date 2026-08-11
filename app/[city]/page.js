@@ -40,6 +40,8 @@ async function getCityOpportunities(cityName) {
     .from('opportunities')
     .select(CARD_FIELDS)
     .eq('status', 'active')
+    // Дублі (canonical_slug заповнений) віддають 301 і в каталозі не потрібні.
+    .is('canonical_slug', null)
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.filter((o) => {
