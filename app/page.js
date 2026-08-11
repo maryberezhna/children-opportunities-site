@@ -2,6 +2,7 @@ import { supabase, CARD_FIELDS } from '@/lib/supabase';
 // Ціну читає серверний компонент: lib/wayforpay тягне crypto й секретний ключ,
 // тож у клієнтський бандл він потрапити не має.
 import { PRICE } from '@/lib/wayforpay';
+import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import StickyBar from './StickyBar';
@@ -29,6 +30,38 @@ async function getOpportunities() {
     return [];
   }
   return data || [];
+}
+
+// Приклад підбірки для блоку Dityam+ — три СПРАВЖНІ можливості з каталогу.
+// Вигаданий муляж обіцяв би те, чого в базі немає; крім того, реальні дані
+// оновлюються самі й ніколи не застаріють.
+// Беремо найсвіжіші з відкритою подачею — саме такі й приходять у розсилці.
+const MONTHS_SHORT = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв',
+  'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
+
+function digestSample(opportunities) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const ageLabel = (o) =>
+    o.age_from === 0 && o.age_to >= 17 ? '0-18 років' : `${o.age_from}-${o.age_to} років`;
+
+  return (opportunities || [])
+    .filter((o) => {
+      if (!o.deadline) return false;                 // без дедлайну не показує терміновості
+      const d = new Date(o.deadline);
+      return !isNaN(d) && d >= today;                // подача ще відкрита
+    })
+    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+    .slice(0, 3)
+    .map((o) => {
+      const d = new Date(o.deadline);
+      return {
+        slug: o.slug,
+        title: o.title,
+        age: ageLabel(o),
+        cost: o.cost_type === 'free' ? 'безкоштовно' : null,
+        deadline: `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}`,
+      };
+    });
 }
 
 export default async function Home() {
@@ -81,15 +114,15 @@ export default async function Home() {
           <div className="stats">
             <div className="stat">
               <span className="stat-num">{total}</span>
-              <span className="stat-label">можливостей</span>
+              <span className="stat-label">{opportunitiesWord(total)}</span>
             </div>
             <div className="stat">
               <span className="stat-num">{freeCount}</span>
-              <span className="stat-label">безкоштовних</span>
+              <span className="stat-label">{freeWord(freeCount)}</span>
             </div>
             <div className="stat">
               <span className="stat-num">{sourceCount}</span>
-              <span className="stat-label">джерел</span>
+              <span className="stat-label">{sourcesWord(sourceCount)}</span>
             </div>
             <div className="stat">
               <span className="stat-num">0-18</span>
@@ -98,7 +131,7 @@ export default async function Home() {
           </div>
         </div>
 
-        <SupportPopup total={total} price={PRICE} />
+        <SupportPopup total={total} price={PRICE} sample={digestSample(opportunities)} />
         <OpportunitiesList opportunities={opportunities} />
 
         <Footer />
