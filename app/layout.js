@@ -1,4 +1,4 @@
-import { DM_Sans, Caveat, Manrope } from 'next/font/google';
+import localFont from 'next/font/local';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
@@ -7,27 +7,46 @@ import ServiceWorker from './ServiceWorker';
 import { supabase } from '@/lib/supabase';
 import './globals.css';
 
-// DM Sans does not include Cyrillic in next/font's bundled subsets.
-// We load it for Latin glyphs and let Manrope (a near-identical
-// geometric sans designed for Cyrillic) cover Ukrainian via per-glyph
-// browser fallback in font-family.
-const dmSans = DM_Sans({
-  subsets: ['latin'],
-  weight: ['400', '500', '700'],
+// Шрифти вендорнуті локально, а не через next/font/google.
+//
+// Чому: next/font/google качає їх із fonts.gstatic.com ПІД ЧАС ЗБІРКИ, і
+// збірка на Vercel впала саме на цьому — «TypeError: Cannot read properties
+// of null» у @next/font/google/loader. Локально те саме проходило, бо шрифти
+// лежали в кеші. Мережевий запит у білді — це відмова, яку неможливо
+// відтворити й від якої нічого не залежить у нашому коді.
+//
+// Файли — ті самі підмножини, що віддає Google: латиниця для DM Sans,
+// кирилиця для Manrope, обидві для Caveat. Разом ~257 КБ.
+
+// DM Sans не має кирилиці в підмножинах Google. Тримаємо його для латиниці,
+// а українські гліфи бере Manrope через fallback у font-family.
+const dmSans = localFont({
+  src: [
+    { path: './fonts/DMSans-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/DMSans-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/DMSans-700.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
   variable: '--font-dm-sans',
 });
 
-const manrope = Manrope({
-  subsets: ['cyrillic'],
-  weight: ['400', '500', '700'],
+const manrope = localFont({
+  src: [
+    { path: './fonts/Manrope-cyr-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/Manrope-cyr-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/Manrope-cyr-700.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
   variable: '--font-cyrillic',
 });
 
-const caveat = Caveat({
-  subsets: ['latin', 'cyrillic'],
-  weight: ['400', '700'],
+const caveat = localFont({
+  src: [
+    { path: './fonts/Caveat-lat-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/Caveat-cyr-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/Caveat-lat-700.woff2', weight: '700', style: 'normal' },
+    { path: './fonts/Caveat-cyr-700.woff2', weight: '700', style: 'normal' },
+  ],
   display: 'swap',
   variable: '--font-caveat',
 });
