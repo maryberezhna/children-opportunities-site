@@ -7,7 +7,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABAS
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
-const PRICE = Number(process.env.WAYFORPAY_AMOUNT || 79);
+const PRICE = Number(process.env.WAYFORPAY_AMOUNT || 179);
 const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 799);
 const DRY = process.argv.includes('--dry-run');
 
