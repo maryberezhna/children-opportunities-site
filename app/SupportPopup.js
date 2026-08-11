@@ -69,7 +69,6 @@ export default function SupportPopup({ total, price, sample = [] }) {
 
             <ul className="plus-points">
               <li><b>Під вік та інтереси</b> — без гортання сотень карток</li>
-              <li><b>Поки подача відкрита</b> — не після дедлайну</li>
               <li><b>Без дитячих даних</b> — лише вік-діапазон і теми</li>
             </ul>
 
