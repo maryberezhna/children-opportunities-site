@@ -4,9 +4,9 @@
 можливості під його профіль (вік-діапазон × інтереси × вартість) і шле підбірку в
 його канал — Telegram або email.
 
-Модель: у безкоштовному каталозі — те, що доступно завжди (держдопомога, виплати,
-постійні курси). У Dityam+ — відібрані можливості з дедлайном, яких у загальному
-каталозі немає. Підписник купує не персоналізацію, а доступ.
+Модель: каталог відкритий для всіх і нічого не ховає. Dityam+ — це послуга:
+відбір під профіль дитини, нагадування про дедлайни, допомога із заявкою.
+Підписник платить за зняту з нього роботу, а не за доступ.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
      GMAIL_FROM, GMAIL_APP_PASSWORD, SITE_URL (optional).
@@ -166,7 +166,7 @@ def build_telegram(sub, items, revival: bool = False) -> str:
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
         lines.append(html.escape(_meta(o)))
         lines.append("")
-    lines.append("<i>Відібрано для підписників Dityam+ — у загальному каталозі цього немає.</i>")
+    lines.append("<i>Відібрано під профіль вашої дитини. Каталог відкритий для всіх на dityam.com.ua</i>")
     lines.append("Відписатись — /stop")
     return "\n".join(lines)
 
@@ -187,7 +187,7 @@ def build_email(sub, items, revival: bool = False) -> str:
         f'<h1 style="font-size:22px;margin:6px 0 4px">{"Добірка під вашу дитину" if revival else "Нові можливості для вашої дитини"}</h1>'
         f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
         f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
-        f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Відібрано для підписників Dityam+. Держдопомога та постійні програми — безкоштовно на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
+        f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Повний каталог — відкритий для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
         f'<a href="{html.escape(unsub)}" style="color:#8a94a6">Відписатись</a>.</p></div>'
     )
 

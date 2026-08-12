@@ -245,10 +245,10 @@ if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
 }
 
 async function sendDailyDigest() {
-  // Секції «Терміново» більше немає: усе з відкритою подачею — це Dityam+,
-  // і показувати найгостріше безкоштовно означало б зняти єдину причину
-  // оформлювати підписку. Замість неї — рядок-тизер наприкінці діджесту.
-  const urgent = [];
+  // Section A: truly urgent — deadline 0..3 days. Top 3.
+  const urgent = dueSoon
+    .filter((r) => r.daysLeft >= 0 && r.daysLeft <= 3)
+    .slice(0, 3);
 
   // Section B: themed pool — fetch all active opportunities (not closed),
   // either with no deadline or with deadline in the future.
@@ -257,7 +257,6 @@ async function sendDailyDigest() {
     .from('opportunities')
     .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at')
     .eq('status', 'active')
-    .eq('plus_only', false)
     .or(`deadline.is.null,deadline.gte.${todayIso}`);
   if (poolErr) {
     console.error(`Pool fetch failed: ${poolErr.message}`);
@@ -307,22 +306,11 @@ async function sendDailyDigest() {
   const moreUrl = theme.link || 'https://dityam.com.ua';
   lines.push(`🔗 Більше — на <a href="${moreUrl}">dityam.com.ua</a>`);
 
-  // Тизер Dityam+: скільки можливостей із відкритою подачею пішло підписникам
-  // за тиждень. Без назв і посилань — інакше це вже не тизер, а роздача.
-  // Показуємо лише коли число справді є: «0 можливостей» рекламує порожнечу.
-  const weekAgo = new Date(today);
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const { count: plusCount } = await supabase
-    .from('opportunities')
-    .select('id', { count: 'exact', head: true })
-    .eq('status', 'active')
-    .eq('plus_only', true)
-    .gte('created_at', weekAgo.toISOString());
-
-  if (plusCount > 0) {
-    lines.push('');
-    lines.push(`⚡ Цього тижня підписники Dityam+ отримали <b>${plusCount} ${opportunitiesWord(plusCount)}</b> з відкритою подачею — конкурси, стипендії, табори. <a href="https://dityam.com.ua/pidbirka">Що це таке</a>`);
-  }
+  // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
+  // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
+  // з людини рутину. Усе з діджесту лишається відкритим для всіх.
+  lines.push('');
+  lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/pidbirka">Dityam+</a> відбере ваші й нагадає вчасно.');
 
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {

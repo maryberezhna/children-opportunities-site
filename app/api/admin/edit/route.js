@@ -38,7 +38,6 @@ export async function POST(request) {
   if (patch.age_from > patch.age_to) { patch.age_from = 0; patch.age_to = 18; }
   patch.cost_type = COST.includes(b.cost_type) ? b.cost_type : null;
   if (TYPES.includes(b.opportunity_type)) patch.opportunity_type = b.opportunity_type;
-  if (typeof b.plus_only === 'boolean') patch.plus_only = b.plus_only;
   if (typeof b.price_note === 'string') patch.price_note = b.price_note.trim().slice(0, 200) || null;
   if (typeof b.details === 'string') patch.details = b.details.trim().slice(0, 20000) || null;
   if (b.publish) { patch.status = 'active'; patch.verified_at = new Date().toISOString(); }
