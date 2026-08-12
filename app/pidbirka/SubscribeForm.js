@@ -1,10 +1,7 @@
 'use client';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { THEME_OPTIONS } from '@/lib/themes';
-
-// Платний бот Dityam+ — саме в ньому живе оплата. Змінюється через
-// NEXT_PUBLIC_PLUS_BOT, якщо колись переїде на інший акаунт.
-const PLUS_BOT = process.env.NEXT_PUBLIC_PLUS_BOT || 'DityamPlusBot';
 
 const AGE_BANDS = [
   ['0-3', '0–3 роки'], ['4-6', '4–6 років'], ['7-10', '7–10 років'],
@@ -32,6 +29,7 @@ function toggle(list, v) {
 }
 
 export default function SubscribeForm() {
+  const router = useRouter();
   const [ages, setAges] = useState([]);
   const [interests, setInterests] = useState([]);
   const [gender, setGender] = useState('any');
@@ -61,30 +59,22 @@ export default function SubscribeForm() {
       });
       const j = await res.json().catch(() => ({}));
       if (res.ok) {
-        setDone({ ok: true, channel, connect: j.connect });
+        // Ведемо на окремий URL: рекламні системи рахують конверсію за адресою
+        // сторінки, а блок «Готово!» всередині форми адреси не має.
+        // Токен — через sessionStorage: у URL він потрапив би в аналітику,
+        // логи й Referer, а це ключ до чужої відписки.
+        try {
+          if (j.connect) sessionStorage.setItem('dityam_connect_token', j.connect);
+          sessionStorage.setItem('dityam_channel', channel);
+        } catch { /* приватний режим */ }
+        router.push('/dyakuyu');
+        return;
       } else {
         setDone({ ok: false, msg: j.error === 'duplicate' ? 'Ти вже підписаний(а) на цю пошту.' : 'Щось пішло не так. Спробуй ще раз.' });
       }
     } catch {
       setDone({ ok: false, msg: 'Помилка мережі. Спробуй ще раз.' });
     } finally { setBusy(false); }
-  }
-
-  if (done?.ok) {
-    return (
-      <div style={{ marginTop: 26, padding: '22px 20px', borderRadius: 14, background: '#f0f9f2', border: `1px solid #bfe6cd` }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: C.green }}>🎉 Готово!</div>
-        <p style={{ margin: '10px 0 0', fontSize: 15, color: C.ink, lineHeight: 1.6 }}>
-          {/* Веде саме в платний бот: оплата живе тільки в ньому. Раніше
-              посилання йшло на @DityamComUABot — там людині обіцяли «щойно
-              оплата пройде», але оплату ніхто не пропонував, і вона назавжди
-              лишалась у статусі pending. */}
-          {done.channel === 'telegram'
-            ? <>Останній крок — відкрий <a href={`https://t.me/${PLUS_BOT}?start=${done.connect || 'digest'}`} target="_blank" rel="noreferrer" style={{ color: C.blue, fontWeight: 600 }}>@{PLUS_BOT}</a> і натисни <b>Почати</b> — там оформимо підписку й надсилатимемо підбірку саме тобі.</>
-            : <>Ми надішлемо першу персональну підбірку на <b>{email}</b> найближчим часом. Перевір теку «Промоакції», якщо не бачиш листа.</>}
-        </p>
-      </div>
-    );
   }
 
   return (
