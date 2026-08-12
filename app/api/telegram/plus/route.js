@@ -34,22 +34,41 @@ async function cancelSubscription(sub) {
   return { ...r, hadOrder: true };
 }
 
-// Живий доказ замість переліку обіцянок: дві найближчі можливості з бази.
-// Людина бачить, що каталог справді працює, ще до оплати.
+// Живий доказ замість переліку обіцянок. Спершу те, що горить, потім
+// добираємо вічнозеленими: у каталозі лише кілька десятків записів з
+// відкритою подачею, а решта — довідкові (курси Prometheus, послуги easy.gov).
+// Якби брали тільки дедлайнові, у пів року доказ був би порожній.
 async function payoffProof(supabase) {
   const today = new Date().toISOString().slice(0, 10);
-  const { data } = await supabase.from('opportunities')
+  const base = () => supabase.from('opportunities')
     .select('title, deadline')
-    .eq('status', 'active').is('canonical_slug', null)
+    .eq('status', 'active').is('canonical_slug', null);
+
+  const { data: urgent } = await base()
     .not('deadline', 'is', null).gte('deadline', today)
     .order('deadline', { ascending: true }).limit(2);
-  if (!data?.length) return '';
+
+  const picked = [...(urgent || [])];
+  if (picked.length < 2) {
+    const { data: evergreen } = await base()
+      .is('deadline', null)
+      .order('created_at', { ascending: false }).limit(2 - picked.length);
+    picked.push(...(evergreen || []));
+  }
+  if (!picked.length) return '';
+
   const M = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
-  const lines = data.map((o) => {
+  const lines = picked.map((o) => {
+    const t = esc(o.title.slice(0, 60));
+    if (!o.deadline) return `• ${t}`;
     const d = new Date(o.deadline);
-    return `• ${esc(o.title.slice(0, 60))} — до ${d.getDate()} ${M[d.getMonth()]}`;
+    return `• ${t} — до ${d.getDate()} ${M[d.getMonth()]}`;
   });
-  return `\n<b>Ось що зараз горить у каталозі:</b>\n${lines.join('\n')}\n`;
+  // Заголовок під фактичний склад: «горить» лише коли справді є дедлайни
+  const head = picked.some((o) => o.deadline)
+    ? 'Ось що зараз у каталозі:'
+    : 'Ось що є прямо зараз:';
+  return `\n<b>${head}</b>\n${lines.join('\n')}\n`;
 }
 
 async function sendPayOffer(bot, sub, chatId, supabase) {
