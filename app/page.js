@@ -23,6 +23,9 @@ async function getOpportunities() {
     .eq('status', 'active')
     // Дублі (canonical_slug заповнений) віддають 301 і в каталозі не потрібні.
     .is('canonical_slug', null)
+    // Можливості Dityam+ у публічному каталозі не показуються — це
+    // предмет підписки. Вони йдуть лише в персональну розсилку.
+    .eq('plus_only', false)
     .order('created_at', { ascending: false });
 
   if (error) {

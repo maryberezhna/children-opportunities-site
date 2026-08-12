@@ -82,7 +82,11 @@ async function getRelated(item, limit = 8) {
 
 export async function generateStaticParams() {
   if (!supabase) return [];
-  const { data } = await supabase.from('opportunities').select('slug').eq('status', 'active');
+  // Сторінки Dityam+ статично не генеруємо: вони не мають бути в жодному
+  // публічному переліку. Сама сторінка лишається доступною за прямим
+  // посиланням — інакше розсилці підписникам не було б куди вести.
+  const { data } = await supabase.from('opportunities')
+    .select('slug').eq('status', 'active').eq('plus_only', false);
   return (data || []).map((row) => ({ slug: row.slug }));
 }
 
@@ -149,7 +153,9 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  if (item.status && item.status !== 'active') {
+  // Dityam+ — не для індексу: інакше Google приведе на неї тих, хто не платив,
+  // і ексклюзив зникне сам собою.
+  if ((item.status && item.status !== 'active') || item.plus_only) {
     return {
       title: item.title,
       robots: { index: false, follow: false },

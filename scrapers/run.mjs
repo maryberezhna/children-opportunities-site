@@ -71,6 +71,13 @@ async function main() {
         console.warn(`\n  ⚠️  "${row.title?.slice(0, 50)}": ${rules.warnings.join('; ')}`);
       }
 
+      // Модель Dityam+: можливість із відкритою подачею — предмет підписки,
+      // у публічний каталог і канал не йде. Те саме правило стоїть у
+      // scraper/normalizer.py для Python-скраперів; тримати їх однаковими
+      // обовʼязково, інакше платний контент протече через один із шляхів.
+      const dl = row.deadline ? new Date(row.deadline) : null;
+      row.plus_only = Boolean(dl && !isNaN(dl) && dl >= new Date(new Date().toDateString()));
+
       ctx.seenHashes.add(row.content_hash);
       ctx.seenUrls.add(row.source_url);
       all.push(row);

@@ -7,7 +7,7 @@ export const revalidate = 3600;
 
 export default async function sitemap() {
   const { data } = supabase
-    ? await supabase.from('opportunities').select('slug, updated_at').eq('status', 'active').is('canonical_slug', null)
+    ? await supabase.from('opportunities').select('slug, updated_at').eq('status', 'active').is('canonical_slug', null).eq('plus_only', false)
     : { data: [] };
 
   const opportunityEntries = (data || []).map((row) => ({
