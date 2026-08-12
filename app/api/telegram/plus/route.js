@@ -67,10 +67,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '• Добірка під вік та інтереси — без шуму й зайвого\n'
     + '• Допомога із заявкою — напишіть сюди, підкажемо, що заповнювати\n'
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
-    + '• Telegram або email — куди вам зручніше\n\n'
-    + '🔒 Не запитуємо дитячих даних — лише вік і теми\n'
-    + '❌ Скасувати одним повідомленням, гроші більше не спишуться\n\n'
-    + '💡 Швидше за все — <b>Apple Pay або Google Pay</b>: два дотики, без картки.';
+    + '• Telegram або email — куди вам зручніше';
   if (wayforpayConfigured && sub) {
     const [m, y] = await Promise.all([createInvoice(sub, 'monthly'), createInvoice(sub, 'yearly')]);
     const rows = [];
