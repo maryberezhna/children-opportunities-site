@@ -64,17 +64,16 @@ export default function SupportPopup({ total, price, sample = [] }) {
               <h2 className="plus-title">Ми знайдемо — ви подастесь</h2>
             </div>
             <p className="plus-lead">
-              {total
-                ? <>Серед {total} {opportunitiesWord(total)} вашій дитині підходять одиниці.</>
-                : <>Серед сотень можливостей вашій дитині підходять одиниці.</>}
-              {' '}Надсилаємо тільки ваші — щойно зʼявляться.
+              У каталозі — те, що доступно завжди: держдопомога, виплати, постійні курси.
+              У Dityam+ — те, що треба встигнути: конкурси, стипендії, обміни, табори.
+              Відбираємо вручну й надсилаємо, поки подача відкрита.
             </p>
             {/* Чипи замість списку: та сама суть, чверть висоти */}
             <div className="plus-chips" aria-label="Переваги підписки">
+              <span>можливості з дедлайном</span>
+              <span>немає в каталозі</span>
               <span>під вік та інтереси</span>
               <span>допомога із заявкою</span>
-              <span>Telegram або email</span>
-              <span>без дитячих даних</span>
             </div>
           </div>
 
@@ -100,7 +99,7 @@ export default function SupportPopup({ total, price, sample = [] }) {
               </span>
             </div>
             <p className="plus-fine">
-              Каталог безкоштовний назавжди · скасувати одним повідомленням ·{' '}
+              Держдопомога й постійні програми — безкоштовно назавжди · скасувати будь-коли ·{' '}
               <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobank}>підтримати проєкт</a>
             </p>
           </div>
