@@ -34,22 +34,48 @@ async function cancelSubscription(sub) {
   return { ...r, hadOrder: true };
 }
 
-async function sendPayOffer(bot, sub, chatId) {
-  const text = '🧡 <b>Dityam+ — персональні можливості для дитини</b>\n\n'
-    + '<b>Що ти отримаєш:</b>\n'
-    + '⚡ <b>Не проґавиш важливе</b> — пишемо щойно зʼявляється можливість саме під вік та інтереси дитини\n'
-    + '🎯 <b>Тільки релевантне</b> — без шуму, все підібрано під твою дитину\n'
-    + '📝 <b>Підтримка у поданні</b> — допоможемо розібратись і заповнити заявку\n'
-    + '🎁 <b>Подарунки від партнерів</b> — розіграші лише для підписників\n'
-    + '⏳ <b>Економія часу</b> — більше не треба щодня шукати гуртки й конкурси вручну\n\n'
-    + '🔒 Не запитуємо дитячих даних · ❌ Скасувати будь-коли\n\n'
-    + '💡 Найшвидше — <b>Apple Pay / Google Pay</b> на сторінці оплати: у 2 дотики, без картки й email.\n\n'
-    + 'Обери план 👇 — і одразу налаштуємо профіль дитини.';
+// Живий доказ замість переліку обіцянок: дві найближчі можливості з бази.
+// Людина бачить, що каталог справді працює, ще до оплати.
+async function payoffProof(supabase) {
+  const today = new Date().toISOString().slice(0, 10);
+  const { data } = await supabase.from('opportunities')
+    .select('title, deadline')
+    .eq('status', 'active').is('canonical_slug', null)
+    .not('deadline', 'is', null).gte('deadline', today)
+    .order('deadline', { ascending: true }).limit(2);
+  if (!data?.length) return '';
+  const M = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
+  const lines = data.map((o) => {
+    const d = new Date(o.deadline);
+    return `• ${esc(o.title.slice(0, 60))} — до ${d.getDate()} ${M[d.getMonth()]}`;
+  });
+  return `\n<b>Ось що зараз горить у каталозі:</b>\n${lines.join('\n')}\n`;
+}
+
+async function sendPayOffer(bot, sub, chatId, supabase) {
+  // «Ви» — як на сайті. Раніше тут було «ти», і людина бачила два різні
+  // тони в одному продукті.
+  //
+  // Свідомо НЕ обіцяємо «подарунки від партнерів»: у коді такого немає,
+  // а обіцянка, яку нічим не закрити, коштує дорожче за зайвий рядок.
+  const proof = supabase ? await payoffProof(supabase) : '';
+  const text = '🧡 <b>Dityam+</b>\n\n'
+    + 'Ви більше не шукаєте. Ми стежимо за каталогом щодня і пишемо, '
+    + 'щойно зʼявляється щось саме для вашої дитини — поки подача ще відкрита.\n'
+    + proof
+    + '\n<b>Що входить:</b>\n'
+    + '• Добірка під вік та інтереси — без шуму й зайвого\n'
+    + '• Допомога із заявкою — напишіть сюди, підкажемо, що заповнювати\n'
+    + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
+    + '• Telegram або email — куди вам зручніше\n\n'
+    + '🔒 Не запитуємо дитячих даних — лише вік і теми\n'
+    + '❌ Скасувати одним повідомленням, гроші більше не спишуться\n\n'
+    + '💡 Швидше за все — <b>Apple Pay або Google Pay</b>: два дотики, без картки.';
   if (wayforpayConfigured && sub) {
     const [m, y] = await Promise.all([createInvoice(sub, 'monthly'), createInvoice(sub, 'yearly')]);
     const rows = [];
-    if (m.url) rows.push([{ text: `💳 Місяць — ${PRICE} грн`, url: m.url }]);
-    if (y.url) rows.push([{ text: `⭐ Рік — ${PRICE_YEAR} грн (вигідніше)`, url: y.url }]);
+    if (m.url) rows.push([{ text: `Оформити за ${PRICE} грн/міс`, url: m.url }]);
+    if (y.url) rows.push([{ text: `Рік за ${PRICE_YEAR} грн — вигідніше`, url: y.url }]);
     if (rows.length) { await bot.sendMessage(chatId, text, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
@@ -57,7 +83,7 @@ async function sendPayOffer(bot, sub, chatId) {
 
 // Головне меню для активного підписника.
 async function sendMainMenu(bot, chatId) {
-  await bot.sendMessage(chatId, 'Вітаю! 🧡 Ти підписник <b>Dityam+</b>.\nЩо бажаєш зробити?', {
+  await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
     inline_keyboard: [
       [{ text: '🔎 Останні можливості для дитини', callback_data: 'menu:latest' }],
       [{ text: '✏️ Оновити форму (що цікаво)', callback_data: 'menu:form' }],
@@ -84,10 +110,10 @@ async function sendLatest(bot, supabase, sub, chatId) {
     return true;
   }).slice(0, 5);
   if (!matched.length) {
-    await bot.sendMessage(chatId, 'Поки немає можливостей під профіль — щойно зʼявиться, одразу напишемо. Можеш оновити інтереси через «✏️ Оновити форму».');
+    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — щойно зʼявиться, напишемо першими. Можна розширити інтереси через «✏️ Оновити форму».');
     return;
   }
-  const lines = ['🔎 <b>Останні можливості під твою дитину</b>', ''];
+  const lines = ['🔎 <b>Останні можливості під вашу дитину</b>', ''];
   for (const o of matched) lines.push(`🔸 <a href="${SITE_URL}/o/${o.slug}">${esc(o.title)}</a>`);
   await bot.sendMessage(chatId, lines.join('\n'));
 }
@@ -95,7 +121,7 @@ async function sendLatest(bot, supabase, sub, chatId) {
 function subDetails(sub) {
   const ages = (sub.age_bands || []).length ? sub.age_bands.join(', ') : '—';
   const int = (sub.interests || []).length ? sub.interests.join(', ') : '—';
-  return `⭐ <b>Твоя підписка Dityam+</b>\nСтатус: активна ✅\nВік дитини: ${esc(ages)}\nІнтереси: ${esc(int)}\n\nЗмінити профіль — «✏️ Оновити форму». Скасувати підписку — /stop.`;
+  return `⭐ <b>Ваша підписка Dityam+</b>\nСтатус: активна ✅\nВік дитини: ${esc(ages)}\nІнтереси: ${esc(int)}\n\nЗмінити профіль — «✏️ Оновити форму». Скасувати підписку — /stop.`;
 }
 
 export async function POST(request) {
@@ -118,7 +144,7 @@ export async function POST(request) {
     if (sub && sub.status !== 'active') {
       await supabase.from('digest_subscribers').update({ phone, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
       await bot.sendMessage(chatId, '✅ Дякую!', { remove_keyboard: true });
-      await sendPayOffer(bot, { ...sub, phone }, chatId);
+      await sendPayOffer(bot, { ...sub, phone }, chatId, supabase);
     }
     return new Response('ok');
   }
@@ -183,7 +209,7 @@ export async function POST(request) {
           resize_keyboard: true, one_time_keyboard: true,
         });
       } else {
-        await sendPayOffer(bot, sub, chatId);                 // телефон є → оплата
+        await sendPayOffer(bot, sub, chatId, supabase);        // телефон є → оплата
       }
       return new Response('ok');
     }
@@ -192,10 +218,10 @@ export async function POST(request) {
       const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
       if (/^\/support\b/i.test(text)) {
         await bot.sendMessage(chatId, sub?.status === 'active'
-          ? '📝 <b>Підтримка у поданні</b>\nНапиши своє питання прямо сюди — і ми допоможемо з заявкою.'
-          : 'Підтримка у поданні доступна підписникам Dityam+. Оформити — /start 🧡');
+          ? '📝 <b>Допомога із заявкою</b>\nНапишіть питання прямо сюди — підкажемо, що і як заповнювати.'
+          : 'Допомога із заявкою доступна підписникам Dityam+. Оформити — /start 🧡');
       } else {
-        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити або змінити профіль дитини\n/support — підтримка у поданні заявки\n/stop — відписатися');
+        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити або змінити профіль дитини\n/support — допомога із заявкою\n/stop — відписатися');
       }
       return new Response('ok');
     }
@@ -207,7 +233,7 @@ export async function POST(request) {
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}`);
         }
-        await bot.sendMessage(chatId, '📝 Отримали! Ми на звʼязку — відповімо тут найближчим часом. 🧡');
+        await bot.sendMessage(chatId, '📝 Отримали. Відповімо тут найближчим часом 🧡');
       }
     }
     return new Response('ok');
@@ -234,7 +260,7 @@ export async function POST(request) {
     if (action === 'form') await beginFlow(bot, supabase, chatId, null);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
     else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub));
-    else if (action === 'support') await bot.sendMessage(chatId, '📝 Напиши своє питання прямо сюди — і ми допоможемо із заявкою.');
+    else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — підкажемо, що і як заповнювати.');
     return new Response('ok');
   }
 
