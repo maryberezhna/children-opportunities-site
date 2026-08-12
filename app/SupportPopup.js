@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { opportunitiesWord, plural } from '@/lib/plural';
+import { opportunitiesWord } from '@/lib/plural';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
@@ -51,35 +51,46 @@ export default function SupportPopup({ total, price, sample = [] }) {
 
   return (
     <>
-      {/* Ліворуч — обіцянка, праворуч — сам продукт. Попередній варіант описував
-          цінність словами й ставив поруч велике серце: це читалось як прохання
-          про пожертву, а не як платна послуга. Тепер видно, ЩО саме прийде. */}
+      {/* Компактна смуга: заголовок + чипи переваг + CTA, і одна найближча
+          можливість як приклад. Попередня версія (шість пунктів + картка на
+          три можливості) займала пів екрана й відсувала каталог — а каталог
+          і є причиною візиту. */}
       <section className="plus-section">
         <div className="plus-glow" aria-hidden="true" />
-        <div className={`plus-inner${sample.length ? '' : ' plus-inner-solo'}`}>
+        <div className="plus-inner">
           <div className="plus-copy">
-            <span className="plus-badge">Dityam+</span>
-            <h2 className="plus-title">Ми знайдемо — ви подастесь</h2>
+            <div className="plus-head">
+              <span className="plus-badge">Dityam+</span>
+              <h2 className="plus-title">Ми знайдемо — ви подастесь</h2>
+            </div>
             <p className="plus-lead">
               {total
-                ? <>У каталозі {total} {opportunitiesWord(total)}. Вашій дитині підходять одиниці — і в кожної свій дедлайн.</>
-                : <>Можливостей сотні. Вашій дитині підходять одиниці — і в кожної свій дедлайн.</>}
+                ? <>Серед {total} {opportunitiesWord(total)} вашій дитині підходять одиниці.</>
+                : <>Серед сотень можливостей вашій дитині підходять одиниці.</>}
               {' '}Надсилаємо тільки ваші — щойно зʼявляться.
             </p>
+            {/* Чипи замість списку: та сама суть, чверть висоти */}
+            <div className="plus-chips" aria-label="Переваги підписки">
+              <span>під вік та інтереси</span>
+              <span>допомога із заявкою</span>
+              <span>Telegram або email</span>
+              <span>без дитячих даних</span>
+            </div>
+          </div>
 
-            {/* Кожен пункт відповідає тому, що реально вміє бот:
-                sendLatest (меню «Останні можливості»), /support із пересиланням
-                питання адміну, вибір каналу telegram|email, beginFlow для зміни
-                профілю. Нічого авансом. */}
-            <ul className="plus-points">
-              <li><b>Під вік та інтереси</b> — без гортання сотень карток</li>
-              <li><b>Вчасно</b> — щойно зʼявиться щось ваше, поки подача відкрита</li>
-              <li><b>Допомога із заявкою</b> — напишіть у бот, підкажемо, що і як заповнити</li>
-              <li><b>Добірка на вимогу</b> — свіжі можливості будь-коли, одним дотиком</li>
-              <li><b>Telegram або email</b> — куди вам зручніше</li>
-              <li><b>Без дитячих даних</b> — лише вік-діапазон і теми</li>
-            </ul>
-
+          <div className="plus-side">
+            {/* Одна найближча можливість — доказ замість опису */}
+            {sample.length > 0 && (
+              <div className="plus-card">
+                <span className="plus-card-eyebrow">приклад із підбірки</span>
+                <span className="plus-card-title">{sample[0].title}</span>
+                <span className="plus-card-meta">
+                  {sample[0].age}
+                  {sample[0].cost ? <> · <b>{sample[0].cost}</b></> : null}
+                  {sample[0].deadline ? <> · до {sample[0].deadline}</> : null}
+                </span>
+              </div>
+            )}
             <div className="plus-buy">
               <Link href="/pidbirka" className="plus-cta" onClick={trackPlus}>
                 Спробувати Dityam+
@@ -89,46 +100,10 @@ export default function SupportPopup({ total, price, sample = [] }) {
               </span>
             </div>
             <p className="plus-fine">
-              Базовий каталог безкоштовний назавжди · скасувати одним повідомленням
+              Каталог безкоштовний назавжди · скасувати одним повідомленням ·{' '}
+              <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobank}>підтримати проєкт</a>
             </p>
           </div>
-
-          {/* Реальні можливості з каталогу, не вигадані: інакше це був би
-              муляж, який обіцяє те, чого в базі немає. */}
-          {sample.length > 0 && (
-          <div className="plus-preview">
-            <div className="plus-preview-bar">
-              <span className="plus-preview-avatar" aria-hidden="true">🧡</span>
-              <span className="plus-preview-name">Dityam+</span>
-              <span className="plus-preview-meta">приклад підбірки</span>
-            </div>
-            <div className="plus-preview-body">
-              <p className="plus-preview-hello">
-                Знайшли <b>{sample.length}</b>{' '}
-                {plural(sample.length, 'нову можливість', 'нові можливості', 'нових можливостей')}{' '}
-                під вашу дитину 👇
-              </p>
-              {sample.map((o) => (
-                <div key={o.slug} className="plus-card">
-                  <span className="plus-card-title">{o.title}</span>
-                  <span className="plus-card-meta">
-                    {o.age}
-                    {o.cost ? <> · <b>{o.cost}</b></> : null}
-                    {o.deadline ? <> · до {o.deadline}</> : null}
-                  </span>
-                </div>
-              ))}
-              <p className="plus-preview-foot">Наступна — щойно зʼявиться щось ваше</p>
-            </div>
-          </div>
-          )}
-        </div>
-
-        {/* Донати лишаються, але третьорядними — головна дія тепер підписка. */}
-        <div className="plus-donate">
-          <span>Не потрібна підписка, але хочете підтримати проєкт?</span>
-          <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobank}>Банка</a>
-          <a href={MONOBANK_WIDGET_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobankWidget}>Base</a>
         </div>
       </section>
 
