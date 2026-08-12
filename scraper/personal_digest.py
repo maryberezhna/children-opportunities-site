@@ -83,6 +83,18 @@ def parse_ts(s):
 EMPTY_NOTICE_DAYS = 30    # як рідко нагадувати, що під профіль нічого немає
 
 
+QUIET_DAYS = 14           # скільки мовчимо, перш ніж слати добірку з наявного
+
+
+def _quiet_too_long(sub: dict) -> bool:
+    """Чи давно нічого не надсилали. Новому підписнику (last_sent_at порожній)
+    добірку віддаємо одразу — інакше він заплатив і тиждень не бачить нічого."""
+    last = parse_ts(sub.get("last_sent_at"))
+    if last is None:
+        return True
+    return (datetime.now(timezone.utc) - last).days >= QUIET_DAYS
+
+
 def _needs_empty_notice(sub: dict) -> bool:
     last = parse_ts(sub.get("last_empty_notice_at"))
     if last is None:
@@ -140,8 +152,12 @@ def _meta(o) -> str:
     return " · ".join(b for b in bits if b)
 
 
-def build_telegram(sub, items) -> str:
-    lines = ["🧡 <b>Нові можливості для твоєї дитини</b>", ""]
+def build_telegram(sub, items, revival: bool = False) -> str:
+    # revival — це не нові записи, а добірка з того, що вже є в каталозі.
+    # Називати їх «новими» було б неправдою.
+    head = ("🧡 <b>Добірка під вашу дитину</b>" if revival
+            else "🧡 <b>Нові можливості для вашої дитини</b>")
+    lines = [head, ""]
     for o in items:
         url = f"{SITE_URL}/o/{o['slug']}"
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
@@ -152,7 +168,7 @@ def build_telegram(sub, items) -> str:
     return "\n".join(lines)
 
 
-def build_email(sub, items) -> str:
+def build_email(sub, items, revival: bool = False) -> str:
     rows = []
     for o in items:
         url = f"{SITE_URL}/o/{o['slug']}"
@@ -165,7 +181,7 @@ def build_email(sub, items) -> str:
     return (
         f'<div style="max-width:560px;margin:0 auto;font-family:system-ui,Arial,sans-serif;color:#131b28">'
         f'<div style="font-size:12px;color:#db5a1e;font-weight:700;letter-spacing:.04em">DITYAM+</div>'
-        f'<h1 style="font-size:22px;margin:6px 0 4px">Нові можливості для вашої дитини</h1>'
+        f'<h1 style="font-size:22px;margin:6px 0 4px">{"Добірка під вашу дитину" if revival else "Нові можливості для вашої дитини"}</h1>'
         f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
         f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
         f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Усі можливості завжди безкоштовні на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
@@ -241,15 +257,26 @@ def main():
         # --force / --demo ігнорують новизну (для тесту).
         since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
         items = pick_for(sub, opps, since)
-        if not items:
-            logger.info("sub %s — no new matching opportunities, skip", sub["id"])
-            # Тиша — нормальна, коли просто нема НОВИХ збігів. Але якщо під
-            # профіль немає нічого взагалі (напр. вік 0-3, де контенту обмаль),
-            # людина платить і місяцями не отримує нічого. Раз на 30 днів
-            # пропонуємо розширити профіль замість того, щоб мовчати далі.
-            if not args.dry_run and not args.demo and not pick_for(sub, opps, None):
+
+        # Немає НОВИХ збігів — ще не привід мовчати місяцями. У каталозі лише
+        # кілька десятків записів з відкритою подачею, решта — довідкові
+        # (курси, держпослуги), і вони не «нові» вже давно. Підписник платить,
+        # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
+        revival = False
+        if not items and not (args.dry_run or args.demo):
+            all_matches = pick_for(sub, opps, None)
+            if not all_matches:
+                # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
+                # обмаль) — тут доречна не добірка, а пропозиція розширити фільтри.
                 if _needs_empty_notice(sub):
                     notify_empty_profile(client, sub)
+                continue
+            if _quiet_too_long(sub):
+                items = all_matches
+                revival = True
+
+        if not items:
+            logger.info("sub %s — no new matching opportunities, skip", sub["id"])
             continue
 
         if args.dry_run or args.demo:
@@ -259,9 +286,9 @@ def main():
 
         ok = False
         if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
-            ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items))
+            ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival))
         elif sub["channel"] == "email" and sub.get("email"):
-            ok = send_email(sub["email"], build_email(sub, items))
+            ok = send_email(sub["email"], build_email(sub, items, revival))
         else:
             logger.info("sub %s — channel not connected yet, skip", sub["id"])
             continue
