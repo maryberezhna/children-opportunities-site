@@ -490,11 +490,19 @@
 .plus-donate a:hover { color: var(--accent); text-decoration-color: var(--accent); }
 
 @media (max-width: 860px) {
-  .plus-section { padding: 26px 18px 20px; }
-  .plus-inner { grid-template-columns: 1fr; gap: 24px; }
-  .plus-title { font-size: 25px; }
-  .plus-lead { max-width: none; }
-  /* Приклад підбірки — головний аргумент, лишається видимим і на мобільному */
+  .plus-section { padding: 24px 18px 18px; }
+  .plus-inner { grid-template-columns: 1fr; gap: 0; }
+  .plus-title { font-size: 24px; }
+  .plus-lead { max-width: none; margin-bottom: 14px; }
+
+  /* На вузькому екрані приклад підбірки ставав другим екраном заввишки і
+     відсував каталог. На десктопі він лишається — там місце є. */
+  .plus-preview { display: none; }
+
+  .plus-points { margin-bottom: 18px; }
+  .plus-points li { margin-bottom: 7px; font-size: 14.5px; }
+  .plus-buy { gap: 12px; }
+  .plus-donate { margin-top: 18px; padding-top: 13px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
