@@ -21,6 +21,7 @@ export default function EditForm({ opp }) {
     age_from: opp.age_from ?? 0, age_to: opp.age_to ?? 18,
     cost_type: opp.cost_type || 'free', opportunity_type: opp.opportunity_type || 'course',
     price_note: opp.price_note || '', details: opp.details || '',
+    plus_only: Boolean(opp.plus_only),
   });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState('');
@@ -56,6 +57,15 @@ export default function EditForm({ opp }) {
       </div>
       {/* Іде просто в сніпет Google — за запитами «… ціна» ми показувались і не
           отримували жодного кліку, бо категорії вартості на них не відповідають. */}
+      {/* Головний перемикач моделі: чи ця можливість — предмет підписки */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '22px 0 0', cursor: 'pointer', padding: '12px 14px', borderRadius: 10, background: f.plus_only ? '#fdf0e6' : '#f6f7fb', border: `1px solid ${f.plus_only ? '#f0c9a8' : '#e3e7ef'}` }}>
+        <input type="checkbox" checked={f.plus_only} onChange={(e) => setF((s) => ({ ...s, plus_only: e.target.checked }))} style={{ width: 18, height: 18, marginTop: 1 }} />
+        <span style={{ fontSize: 14, lineHeight: 1.45 }}>
+          <b>Тільки для Dityam+</b><br />
+          <span style={{ color: '#8a94a6', fontSize: 13 }}>Не показувати в каталозі, на міських сторінках, у sitemap і загальному каналі. Піде лише в персональну розсилку підписникам.</span>
+        </span>
+      </label>
+
       <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
       <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>

@@ -62,6 +62,13 @@ def _sanitize(data: dict) -> dict:
     # opportunity_type is NOT NULL — fall back to the most generic valid type.
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         data["opportunity_type"] = "course"
+
+    # Модель Dityam+: усе з відкритою подачею — предмет підписки, решта
+    # (курси, держпослуги, постійні програми) лишається публічною.
+    # Ставимо ТУТ, бо це єдина точка, через яку проходять і соціальні
+    # скрапери, і агент відкриттів. Перевизначити можна вручну в /admin.
+    dl = data.get("deadline")
+    data["plus_only"] = bool(dl) and str(dl) >= datetime.now().date().isoformat()
     return data
 
 
