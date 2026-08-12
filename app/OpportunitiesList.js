@@ -591,7 +591,9 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
             >
               Усі
             </button>
-            {sortCities([...available.city, ...selectedCities]).map((city) => (
+            {/* Set обовʼязковий: обране місто майже завжди є і серед доступних,
+                і без дедуплікації його чип малювався двічі */}
+            {sortCities([...new Set([...available.city, ...selectedCities])]).map((city) => (
               <button
                 key={city}
                 className={`filter-btn ${selectedCities.has(city) ? 'active' : ''}`}
