@@ -1,0 +1,56 @@
+name: Dityam+ — deadline reminders (daily)
+
+# Щодня о 07:00 UTC (10:00 Київ) нагадує підписникам про можливості, до подачі
+# яких лишилось 7 або 2 дні. Це та частина обіцянки «ми нагадаємо», за яку
+# люди платять: втрачають не через незнання, а через «потім».
+#
+# Йде ПІСЛЯ deadline-check (06:00), який архівує прострочені — щоб не
+# нагадувати про те, що вже закрилось.
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = нічого не слати, лише лог'
+        required: false
+        default: 'false'
+      days:
+        description: 'вікна через кому (деф. 7,2)'
+        required: false
+        default: '7,2'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Send deadline reminders
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: mashaberezhna0209@gmail.com
+          SITE_URL: https://dityam.com.ua
+        run: |
+          DAYS="${{ github.event.inputs.days }}"
+          [ -z "$DAYS" ] && DAYS="7,2"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            python deadline_reminders.py --dry-run --days "$DAYS"
+          else
+            python deadline_reminders.py --days "$DAYS"
+          fi
