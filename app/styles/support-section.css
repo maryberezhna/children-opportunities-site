@@ -285,232 +285,157 @@
   }
 }
 
-/* ============ DITYAM+ — блок цінності на головній ============ */
-/* Замість «опис + серце + ціна» тепер обіцянка ліворуч і живий приклад
-   підбірки праворуч: людина бачить сам продукт, а не розповідь про нього. */
+/* ============ DITYAM+ — компактна смуга на головній ============ */
+/* Заголовок + чипи переваг ліворуч, приклад можливості + CTA праворуч.
+   Попередня версія (шість пунктів + картка на три можливості) займала
+   пів екрана й відсувала каталог — а каталог і є причиною візиту. */
 .plus-section {
   position: relative;
   overflow: hidden;
-  margin: 32px 0;
-  padding: 34px 30px 26px;
+  margin: 24px 0;
+  padding: 20px 24px;
   border: 1px solid var(--border);
-  border-radius: 20px;
-  background: linear-gradient(135deg, #fffdf8 0%, var(--warm-1) 55%, var(--accent-soft) 100%);
+  border-radius: 16px;
+  background: linear-gradient(120deg, #fffdf8 0%, var(--warm-1) 60%, var(--accent-soft) 100%);
 }
 
-/* Тепле світло з-за правого краю — тримає погляд на прикладі підбірки */
 .plus-glow {
   position: absolute;
-  top: -140px; right: -120px;
-  width: 420px; height: 420px;
+  top: -120px; right: -100px;
+  width: 320px; height: 320px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 93, 36, 0.16), transparent 68%);
+  background: radial-gradient(circle, rgba(232, 93, 36, 0.13), transparent 68%);
   pointer-events: none;
 }
 
 .plus-inner {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
-  gap: 34px;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 24px;
   align-items: center;
 }
 
 .plus-copy { min-width: 0; }
 
+.plus-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
 .plus-badge {
   display: inline-block;
-  padding: 4px 11px;
+  padding: 3px 9px;
   border-radius: 6px;
   background: var(--accent);
   color: #fff;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .plus-title {
-  margin: 13px 0 9px;
-  font-size: 30px;
-  line-height: 1.14;
-  letter-spacing: -0.02em;
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
   color: var(--ink);
 }
 
 .plus-lead {
-  margin: 0 0 16px;
-  font-size: 16px;
-  line-height: 1.55;
-  color: var(--ink-soft);
-  max-width: 46ch;
-}
-
-.plus-points { list-style: none; margin: 0 0 22px; padding: 0; }
-
-.plus-points li {
-  position: relative;
-  padding-left: 24px;
-  margin-bottom: 9px;
-  font-size: 15px;
-  line-height: 1.45;
+  margin: 8px 0 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
   color: var(--ink-soft);
 }
 
-/* Галочка малюється з бордерів — не тягне ні шрифт емодзі, ні svg */
-.plus-points li::before {
-  content: '';
-  position: absolute;
-  left: 4px; top: 5px;
-  width: 6px; height: 10px;
-  border: solid var(--accent);
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+.plus-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.plus-chips span {
+  padding: 4px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
 }
 
-.plus-points b { color: var(--ink); font-weight: 600; }
+/* ---- Права колонка: приклад + купівля ---- */
+.plus-side { min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 
-.plus-buy { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.plus-card {
+  display: block;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 4px 14px rgba(60, 45, 30, 0.07);
+}
+
+.plus-card-eyebrow {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+  margin-bottom: 4px;
+}
+
+.plus-card-title {
+  display: block;
+  font-size: 14px;
+  line-height: 1.35;
+  color: var(--ink);
+  font-weight: 500;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.plus-card-meta { display: block; font-size: 12px; color: var(--ink-muted); }
+.plus-card-meta b { color: #2e7d4f; font-weight: 600; }
+
+.plus-buy { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 
 .plus-cta {
   display: inline-flex;
   align-items: center;
-  padding: 13px 26px;
+  padding: 11px 22px;
   border-radius: 999px;
   background: var(--ink);
   color: #fff;
-  font-size: 15.5px;
+  font-size: 14.5px;
   font-weight: 600;
   text-decoration: none;
-  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.18);
+  box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .plus-cta:hover {
   transform: translateY(-1px);
-  box-shadow: 0 9px 24px rgba(26, 26, 26, 0.24);
+  box-shadow: 0 8px 20px rgba(26, 26, 26, 0.22);
 }
 
 .plus-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.plus-price { font-size: 15px; color: var(--ink-muted); }
-.plus-price b { font-size: 26px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
-.plus-price span { font-size: 14px; }
+.plus-price { font-size: 14px; color: var(--ink-muted); }
+.plus-price b { font-size: 21px; font-weight: 700; color: var(--ink); }
+.plus-price span { font-size: 13px; }
 
-.plus-fine { margin: 13px 0 0; font-size: 13px; color: var(--ink-muted); }
-
-/* ---- Приклад підбірки ---- */
-.plus-preview {
-  min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--surface);
-  box-shadow: 0 12px 32px rgba(60, 45, 30, 0.10);
-  overflow: hidden;
-}
-
-.plus-preview-bar {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 11px 15px;
-  border-bottom: 1px solid var(--border);
-  background: #fbf9f4;
-}
-
-.plus-preview-avatar {
-  width: 26px; height: 26px;
-  display: grid; place-items: center;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  font-size: 14px;
-}
-
-.plus-preview-name { font-size: 14px; font-weight: 600; color: var(--ink); }
-.plus-preview-meta { margin-left: auto; font-size: 11.5px; color: var(--ink-muted); }
-
-.plus-preview-body { padding: 15px; }
-
-.plus-preview-hello {
-  margin: 0 0 12px;
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ink-soft);
-}
-.plus-preview-hello b { color: var(--ink); }
-
-.plus-card {
-  display: block;
-  padding: 11px 13px;
-  margin-bottom: 8px;
-  border: 1px solid var(--border);
-  border-radius: 11px;
-  background: #fffdf9;
-}
-
-.plus-card-title {
-  display: block;
-  font-size: 14.5px;
-  line-height: 1.35;
-  color: var(--ink);
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.plus-card-meta { display: block; font-size: 12.5px; color: var(--ink-muted); }
-.plus-card-meta b { color: #2e7d4f; font-weight: 600; }
-
-.plus-preview-foot {
-  margin: 12px 0 0;
-  font-size: 12px;
-  color: var(--ink-muted);
-  text-align: center;
-}
-
-/* ---- Донати: третій рівень, під основним блоком ---- */
-.plus-donate {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-
-.plus-donate a {
-  color: var(--ink-soft);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--border-hover);
-}
-.plus-donate a:hover { color: var(--accent); text-decoration-color: var(--accent); }
+.plus-fine { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-muted); }
+.plus-fine a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
+.plus-fine a:hover { color: var(--accent); }
 
 @media (max-width: 860px) {
-  .plus-section { padding: 24px 18px 18px; }
-  .plus-inner { grid-template-columns: 1fr; gap: 0; }
-  .plus-title { font-size: 24px; }
-  .plus-lead { max-width: none; margin-bottom: 14px; }
-
-  /* На вузькому екрані приклад підбірки ставав другим екраном заввишки і
-     відсував каталог. На десктопі він лишається — там місце є. */
-  .plus-preview { display: none; }
-
-  .plus-points { margin-bottom: 18px; }
-  .plus-points li { margin-bottom: 7px; font-size: 14.5px; }
-  .plus-buy { gap: 12px; }
-  .plus-donate { margin-top: 18px; padding-top: 13px; }
+  .plus-section { padding: 18px 16px; }
+  .plus-inner { grid-template-columns: 1fr; gap: 14px; }
+  .plus-title { font-size: 18px; }
+  /* Чипи на телефоні дублюють суть ліда і зʼїдають два рядки */
+  .plus-chips { display: none; }
+  .plus-lead { margin-bottom: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .plus-cta { transition: none; }
   .plus-cta:hover { transform: none; }
 }
-
-/* Немає можливостей із відкритою подачею — приклад підбірки не показуємо
-   (порожня карта виглядала б зламаною), текст займає всю ширину. */
-.plus-inner-solo { grid-template-columns: 1fr; }
-.plus-inner-solo .plus-lead { max-width: 62ch; }
