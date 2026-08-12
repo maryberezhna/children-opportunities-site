@@ -61,19 +61,18 @@ export default function SupportPopup({ total, price, sample = [] }) {
           <div className="plus-copy">
             <div className="plus-head">
               <span className="plus-badge">Dityam+</span>
-              <h2 className="plus-title">Ми знайдемо — ви подастесь</h2>
+              <h2 className="plus-title">Ми знайдемо і нагадаємо. Ви просто подастесь.</h2>
             </div>
             <p className="plus-lead">
-              У каталозі — те, що доступно завжди: держдопомога, виплати, постійні курси.
-              У Dityam+ — те, що треба встигнути: конкурси, стипендії, обміни, табори.
-              Відбираємо вручну й надсилаємо, поки подача відкрита.
+              Каталог показує, що існує — і він відкритий для всіх.
+              Але якщо немає часу перебирати {total ? `${total} ${opportunitiesWord(total)}` : 'сотні карток'} і
+              стежити за дедлайнами, Dityam+ бере це на себе.
             </p>
             {/* Чипи замість списку: та сама суть, чверть висоти */}
             <div className="plus-chips" aria-label="Переваги підписки">
-              <span>можливості з дедлайном</span>
-              <span>немає в каталозі</span>
-              <span>під вік та інтереси</span>
-              <span>допомога із заявкою</span>
+              <span>відбирає ваші</span>
+              <span>нагадує вчасно</span>
+              <span>допомагає подати</span>
             </div>
           </div>
 
@@ -99,7 +98,7 @@ export default function SupportPopup({ total, price, sample = [] }) {
               </span>
             </div>
             <p className="plus-fine">
-              Держдопомога й постійні програми — безкоштовно назавжди · скасувати будь-коли ·{' '}
+              Каталог лишається безкоштовним для всіх · скасувати будь-коли ·{' '}
               <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobank}>підтримати проєкт</a>
             </p>
           </div>

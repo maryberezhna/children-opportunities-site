@@ -35,7 +35,7 @@ export default async function EditPage({ params }) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data } = await supabase
       .from('opportunities')
-      .select('id, title, summary, deadline, age_from, age_to, cost_type, opportunity_type, source, source_url, status, price_note, details, plus_only')
+      .select('id, title, summary, deadline, age_from, age_to, cost_type, opportunity_type, source, source_url, status, price_note, details')
       .eq('id', params.id)
       .maybeSingle();
     opp = data;
