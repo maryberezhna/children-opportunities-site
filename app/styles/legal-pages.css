@@ -1,0 +1,49 @@
+
+/* ============ /dyakuyu — сторінка після реєстрації / оплати ============ */
+.thanks {
+  max-width: 480px;
+  margin: 64px auto 80px;
+  text-align: center;
+}
+
+.thanks-mark {
+  width: 64px; height: 64px;
+  margin: 0 auto 22px;
+  display: grid; place-items: center;
+  border-radius: 50%;
+  background: var(--green-1);
+  color: #2e7d4f;
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.thanks h1 { font-size: 27px; letter-spacing: -0.01em; margin: 0 0 12px; }
+
+.thanks-lead {
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--ink-soft);
+  margin: 0 0 24px;
+}
+
+.thanks-cta {
+  display: inline-flex;
+  align-items: center;
+  padding: 14px 30px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 15.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.thanks-warn {
+  margin: 18px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.thanks-back { margin-top: 34px; font-size: 14px; }
+.thanks-back a { color: var(--ink-muted); text-decoration: none; }
+.thanks-back a:hover { color: var(--accent); }
