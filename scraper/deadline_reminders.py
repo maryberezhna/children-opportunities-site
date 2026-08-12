@@ -24,6 +24,8 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
 Прапорці:
   --dry-run   лише друкує, кому що пішло б; нічого не шле й не пише в журнал
   --days 7,2  які вікна перевіряти (для тесту)
+  --demo      синтетичні профілі замість реальних підписників: дає перевірити
+              матчинг на живому каталозі, поки платних підписників ще немає
 """
 import argparse
 import html
@@ -114,15 +116,31 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--days", default=",".join(map(str, DEFAULT_WINDOWS)),
                     help="вікна нагадувань через кому, напр. 7,2")
+    ap.add_argument("--demo", action="store_true",
+                    help="синтетичні профілі — перевірка матчингу без підписників")
     args = ap.parse_args()
     windows = [int(x) for x in str(args.days).split(",") if x.strip().isdigit()]
 
     from db import get_client
     client = get_client()
 
-    subs = (client.table("digest_subscribers").select("*")
-            .eq("status", "active").execute().data or [])
-    logger.info("Активних підписників: %d", len(subs))
+    if args.demo:
+        # Три типові профілі — щоб побачити, що кому дісталось би.
+        args.dry_run = True
+        subs = [
+            {"id": "demo-teen", "channel": "telegram", "telegram_chat_id": None,
+             "age_bands": ["15-18"], "interests": ["international", "contests"],
+             "cost_pref": "any"},
+            {"id": "demo-junior", "channel": "telegram", "telegram_chat_id": None,
+             "age_bands": ["7-10"], "interests": ["arts", "stem"], "cost_pref": "any"},
+            {"id": "demo-any", "channel": "telegram", "telegram_chat_id": None,
+             "age_bands": [], "interests": [], "cost_pref": "any"},
+        ]
+        logger.info("DEMO: %d синтетичних профілів", len(subs))
+    else:
+        subs = (client.table("digest_subscribers").select("*")
+                .eq("status", "active").execute().data or [])
+        logger.info("Активних підписників: %d", len(subs))
     if not subs:
         return 0
 
@@ -164,8 +182,9 @@ def main() -> int:
             assigned.update(o["id"] for o in batch)
 
             if args.dry_run:
-                titles = " | ".join(o["title"][:44] for o in batch)
-                logger.info("[dry] sub=%s -%dд → %d: %s", sub["id"], days, len(batch), titles)
+                logger.info("[dry] sub=%s вікно=%dд → %d шт", sub["id"], days, len(batch))
+                for line in build_text(batch, days).split("\n"):
+                    logger.info("      %s", line)
                 continue
 
             # Пишемо в журнал ПЕРЕД відправкою: якщо крон запуститься двічі,

@@ -15,6 +15,10 @@ on:
         description: 'true = нічого не слати, лише лог'
         required: false
         default: 'false'
+      demo:
+        description: 'true = синтетичні профілі (перевірка без підписників)'
+        required: false
+        default: 'false'
       days:
         description: 'вікна через кому (деф. 7,2)'
         required: false
@@ -49,7 +53,9 @@ jobs:
         run: |
           DAYS="${{ github.event.inputs.days }}"
           [ -z "$DAYS" ] && DAYS="7,2"
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ "${{ github.event.inputs.demo }}" = "true" ]; then
+            python deadline_reminders.py --demo --days "$DAYS"
+          elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python deadline_reminders.py --dry-run --days "$DAYS"
           else
             python deadline_reminders.py --days "$DAYS"
