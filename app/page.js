@@ -32,49 +32,6 @@ async function getOpportunities() {
   return data || [];
 }
 
-// Приклад підбірки для блоку Dityam+ — СПРАВЖНІ можливості з каталогу.
-// Вигаданий муляж обіцяв би те, чого в базі немає, а реальні дані ще й
-// оновлюються самі.
-//
-// Спершу беремо ті, де подача відкрита — вони показують терміновість. Якщо
-// таких мало (у каталозі лише кілька десятків із дедлайном, решта —
-// довідкові курси й держпослуги), добираємо вічнозеленими. Інакше блок
-// пустував би більшу частину року.
-const MONTHS_SHORT = ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв',
-  'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
-
-function digestSample(opportunities, want = 3) {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const ageLabel = (o) =>
-    o.age_from === 0 && o.age_to >= 17 ? '0-18 років' : `${o.age_from}-${o.age_to} років`;
-
-  const list = opportunities || [];
-  const openDeadline = (o) => {
-    if (!o.deadline) return null;
-    const d = new Date(o.deadline);
-    return !isNaN(d) && d >= today ? d : null;
-  };
-
-  const urgent = list
-    .filter((o) => openDeadline(o))
-    .sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
-  const evergreen = list
-    .filter((o) => !o.deadline)
-    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
-
-  return [...urgent, ...evergreen].slice(0, want).map((o) => {
-    const d = openDeadline(o);
-    return {
-      slug: o.slug,
-      title: o.title,
-      age: ageLabel(o),
-      cost: o.cost_type === 'free' ? 'безкоштовно' : null,
-      deadline: d ? `${d.getDate()} ${MONTHS_SHORT[d.getMonth()]}` : null,
-    };
-  });
-}
-
 export default async function Home() {
   const opportunities = await getOpportunities();
   const total = opportunities.length;
@@ -169,7 +126,7 @@ export default async function Home() {
             функцію-фабрику в клієнтський компонент віддати не можна. */}
         <OpportunitiesList
           opportunities={opportunities}
-          promoProps={{ total, price: PRICE, sample: digestSample(opportunities) }}
+          promoProps={{ total, price: PRICE }}
         />
 
         <Footer />
