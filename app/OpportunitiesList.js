@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { Fragment, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
@@ -84,6 +84,10 @@ const DEADLINE_OPTIONS = [
 // Cards rendered per batch. Filtering stays client-side (the chips, the city list
 // and the result count all need the full set), so this caps the DOM, not the fetch.
 const PAGE_SIZE = 24;
+
+// Після скількох карток вставляти блок Dityam+: достатньо, щоб побачити,
+// що каталог живий, і замало, щоб пропозиція загубилась.
+const PROMO_AFTER = 6;
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -175,7 +179,7 @@ function FilterPanel({ menu }) {
   );
 }
 
-export default function OpportunitiesList({ opportunities, presetCity }) {
+export default function OpportunitiesList({ opportunities, presetCity, promo = null }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
   const [aidTypes, setAidTypes] = useState(() => new Set());
@@ -702,10 +706,23 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
           <h3>Нічого не знайдено</h3>
           <p>Спробуйте послабити критерії пошуку або скинути фільтри.</p>
         </div>
-      ) : (
+      ) : null}
+
+      {/* Коли видача порожня, карток немає — і промо-блок разом із ними зник
+          би зі сторінки. Тут він саме доречний: людина шукала й не знайшла. */}
+      {filtered.length === 0 && promo ? <div className="grid-promo">{promo}</div> : null}
+
+      {filtered.length === 0 ? null : (
         <>
           <div className="grid">
-            {filtered.slice(0, visible).map((item) => renderCard(item))}
+            {filtered.slice(0, visible).map((item, i) => (
+              <Fragment key={item.id}>
+                {renderCard(item)}
+                {promo && i === Math.min(PROMO_AFTER, filtered.length) - 1 && (
+                  <div className="grid-promo">{promo}</div>
+                )}
+              </Fragment>
+            ))}
           </div>
           {visible < filtered.length && (
             <div className="load-more-wrap">

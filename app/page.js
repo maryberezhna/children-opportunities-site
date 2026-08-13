@@ -162,8 +162,13 @@ export default async function Home() {
           </div>
         </div>
 
-        <SupportPopup total={total} price={PRICE} sample={digestSample(opportunities)} />
-        <OpportunitiesList opportunities={opportunities} />
+        {/* Dityam+ їде всередину каталогу — після перших карток. Перед ними
+            він відсував першу можливість за згин: людина бачила пропозицію
+            заплатити раніше, ніж те, за що платить. */}
+        <OpportunitiesList
+          opportunities={opportunities}
+          promo={<SupportPopup total={total} price={PRICE} sample={digestSample(opportunities)} />}
+        />
 
         <Footer />
       </div>
