@@ -106,12 +106,20 @@
   color: var(--ink);
 }
 
+/* Опис обрізаємо на пʼятому рядку. У сітці всі картки ряду тягнуться до
+   найвищої: один опис на пятнадцять рядків роздував увесь ряд, і поруч
+   зяяли порожні картки на пів екрана. Повний текст — на сторінці
+   можливості, картка має лише допомогти вирішити, чи відкривати її. */
 .card-summary {
   font-size: 14px;
   color: var(--ink-soft);
   margin-bottom: 16px;
   line-height: 1.55;
   flex-grow: 1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  overflow: hidden;
 }
 
 .meta {
