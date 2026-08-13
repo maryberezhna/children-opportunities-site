@@ -33,6 +33,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: mashaberezhna0209@gmail.com
+          # Google Alerts — RSS-стрічки з особистим токеном, тому в секретах.
+          # Формат: назва|url, кілька через кому.
+          GOOGLE_ALERTS_FEEDS: ${{ secrets.GOOGLE_ALERTS_FEEDS }}
           # Telegram channel monitor (опціонально — якщо secrets задано)
           TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
           TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}

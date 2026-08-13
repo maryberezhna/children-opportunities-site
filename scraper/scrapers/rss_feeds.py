@@ -7,7 +7,9 @@ Feeds that 403/404 or return nothing are skipped, never fatal.
 """
 import asyncio
 import logging
+import os
 from datetime import datetime, timedelta, timezone
+from urllib.parse import parse_qs, urlparse
 from email.utils import parsedate_to_datetime
 
 import httpx
@@ -29,6 +31,17 @@ FEEDS: list[tuple[str, str]] = [
     ("Освіта.ua", "https://osvita.ua/rss/"),
     ("Освіторія", "https://osvitoria.media/feed/"),
 ]
+
+# Стрічки Google Alerts — через змінну оточення, а не в коді: їхні адреси
+# містять особистий токен акаунта, і в публічному репозиторії йому не місце.
+#
+# Формат GOOGLE_ALERTS_FEEDS: назва|url, кілька — через кому. Напр.:
+#   Alerts: Польща|https://www.google.com/alerts/feeds/123/456,Alerts: DE|https://...
+_alerts_raw = os.environ.get("GOOGLE_ALERTS_FEEDS", "").strip()
+for _entry in filter(None, (e.strip() for e in _alerts_raw.split(","))):
+    _name, _, _url = _entry.partition("|")
+    if _url.startswith("http"):
+        FEEDS.append((_name.strip() or "Google Alerts", _url.strip()))
 
 _BROWSER = {
     "User-Agent": (
@@ -63,17 +76,35 @@ def _parse_date(item) -> "datetime | None":
     return None
 
 
+def _unwrap_google(url: str) -> str:
+    """Google Alerts віддає посилання загорнутим у власний редирект:
+
+        https://www.google.com/url?rct=j&sa=t&url=СПРАВЖНЯ&ct=ga&usg=...
+
+    Якщо лишити його як є, у source_url і content_hash потрапить гуглова
+    адреса, а людина з каталогу поїде на редирект замість сторінки
+    організатора. Розгортаємо параметр url.
+    """
+    if "google.com/url?" not in url:
+        return url
+    try:
+        real = parse_qs(urlparse(url).query).get("url", [""])[0]
+        return real or url
+    except Exception:
+        return url
+
+
 def _link(item) -> str:
     link = item.find("link")
     if link:
         href = link.get("href")           # Atom: <link href="...">
         if href:
-            return href
+            return _unwrap_google(href)
         txt = link.get_text(strip=True)   # RSS: <link>...</link>
         if txt:
-            return txt
+            return _unwrap_google(txt)
     guid = item.find("guid")
-    return guid.get_text(strip=True) if guid else ""
+    return _unwrap_google(guid.get_text(strip=True)) if guid else ""
 
 
 def _parse_feed(xml: str, name: str, since: datetime) -> list[dict]:
