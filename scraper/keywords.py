@@ -194,10 +194,45 @@ _EXTRA_SIGNALS: set[str] = {
     "набір", "реєстрація", "вступ", "заявк", "безкоштовно", "unicef",
 }
 
+# Сигнали іноземними мовами — для діаспорних джерел (Google Alerts, місцеві
+# сайти й групи в Польщі, Німеччині, Чехії тощо).
+#
+# Навіщо окремо, а не в KEYWORD_CATEGORIES: звідти discover_agent бере ТЕМИ
+# ДНЯ для веб-пошуку, і пара «Німеччина × bezpłatne zajęcia» була б безглуздою.
+# Тут ці слова потрібні лише для is_relevant() — щоб іншомовний допис узагалі
+# дійшов до AI-нормалізатора, а не був відкинутий українським словником на вході.
+#
+# Фрази навмисне багатослівні: одиничне «free» чи «gratis» чіплялося б до
+# будь-якого тексту, а підрядковий матчинг цього не розрізняє.
+_DIASPORA_SIGNALS: set[str] = {
+    # польська
+    "dla dzieci", "dla uczniów", "dla młodzieży", "bezpłatne zajęcia",
+    "bezpłatne warsztaty", "półkolonie", "kolonie letnie", "stypendium",
+    "stypendia", "nabór", "zapisy trwają", "rekrutacja",
+    # німецька
+    "für kinder", "für schüler", "für jugendliche", "kostenlose angebote",
+    "ferienfreizeit", "ferienprogramm", "anmeldung läuft",
+    # чеська і словацька
+    "pro děti", "pro žáky", "zdarma pro", "letní tábor", "kroužky pro",
+    "pre deti", "zadarmo pre", "letný tábor", "krúžky pre", "štipendium",
+    # англійська
+    "for children", "for pupils", "for teenagers", "free activities",
+    "free courses", "summer camp", "holiday club", "youth programme",
+    "applications open", "scholarship for",
+    # іспанська та італійська
+    "para niños", "campamento de verano", "beca para", "talleres gratuitos",
+    "per bambini", "centro estivo", "borsa di studio", "laboratori gratuiti",
+    # румунська
+    "pentru copii", "tabără de vară", "bursă pentru", "ateliere gratuite",
+    # спільне — саме те, що шукатиме Alerts
+    "ukrainian children", "dzieci z ukrainy", "ukrainische kinder",
+    "ukrajinské děti", "copii ucraineni", "niños ucranianos",
+}
+
 # Плаский набір усіх слів для швидкого matching у is_relevant().
 ALL_KEYWORDS: frozenset[str] = frozenset(
     kw for kws in KEYWORD_CATEGORIES.values() for kw in kws
-) | _EXTRA_SIGNALS
+) | _EXTRA_SIGNALS | _DIASPORA_SIGNALS
 
 
 def _norm(text: str) -> str:
