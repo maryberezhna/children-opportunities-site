@@ -65,8 +65,12 @@ export default function PlusSection({ total, price, index = 0 }) {
 
         <div className="plus-side">
           <div className="plus-buy">
+            {/* Ціна всередині кнопки, а не поруч: окремим рядком вона
+                читалась як підпис до чогось іншого, а в кнопці одразу
+                відповідає на питання «скільки це коштує». */}
             <Link href="/pidbirka" className="plus-cta" onClick={trackPlus}>
               Спробувати Dityam+
+              <span className="plus-cta-price">{price} грн/міс</span>
             </Link>
             {/* Веде на ту саму сторінку, але окремою подією: «Спробувати»
                 тиснуть готові, «Дізнатися більше» — ті, кому ще треба
@@ -74,9 +78,6 @@ export default function PlusSection({ total, price, index = 0 }) {
             <Link href="/pidbirka" className="plus-more" onClick={trackMore}>
               Дізнатися більше
             </Link>
-            <span className="plus-price">
-              <b>{price}</b> грн<span>/міс</span>
-            </span>
           </div>
           <p className="plus-fine">
             Каталог лишається безкоштовним для всіх · скасувати будь-коли ·{' '}

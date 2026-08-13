@@ -440,9 +440,16 @@
 .plus-more:hover { border-color: var(--ink); }
 .plus-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.plus-price { font-size: 14px; color: var(--ink-muted); }
-.plus-price b { font-size: 21px; font-weight: 700; color: var(--ink); }
-.plus-price span { font-size: 13px; }
+/* Ціна всередині кнопки — за роздільником, легшим накресленням: головне
+   лишається дією, ціна відповідає на питання, не перебиваючи заклик. */
+.plus-cta-price {
+  margin-left: 10px;
+  padding-left: 10px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+  font-weight: 500;
+  opacity: 0.85;
+  white-space: nowrap;
+}
 
 .plus-fine { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-muted); }
 .plus-fine a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
