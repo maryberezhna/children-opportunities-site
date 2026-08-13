@@ -7,6 +7,10 @@
   gap: 16px;
 }
 
+/* Блок Dityam+ живе всередині сітки карток — тягнемо його на всі колонки,
+   інакше він став би на місце однієї картки. */
+.grid-promo { grid-column: 1 / -1; margin: 8px 0; }
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
