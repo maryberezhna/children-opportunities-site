@@ -16,7 +16,7 @@
   /* На телефоні фото на всю ширину — овал там читався б як помилка друку,
      тож лишаємо скруглений прямокутник. */
   .hero-photo img { aspect-ratio: 16 / 10; border-radius: 24px; }
-  .hero-photo::before { border-radius: 28px; inset: -6px; }
+  .hero-photo::before { border-radius: 28px; inset: -10px -4px 0 -10px; }
 
   .hero-badges {
     gap: 8px;
