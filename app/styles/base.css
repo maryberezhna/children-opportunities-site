@@ -9,6 +9,9 @@
   --border-hover: #d4cfc1;
   --accent: #e85d24;
   --accent-soft: #fef2eb;
+  /* Насиченіший за --accent-soft: та зникає на світлому тлі, а рамка має
+     бути видною. */
+  --frame: #f0e0d8;
   --warm-1: #fef7e0;
   --warm-2: #fde8c7;
   --cool-1: #e8f4f2;
