@@ -6,6 +6,16 @@
   .container { padding: 20px 16px 30px; }
   .hero { margin-bottom: 28px; }
 
+  /* На телефоні фото йде під текст і стає нижчою смугою: повний круг
+     відсунув би каталог за другий екран. */
+  .hero {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+
+  .hero-photo img { aspect-ratio: 16 / 10; border-radius: 24px; }
+  .hero-photo::before { border-radius: 28px; inset: -6px; }
+
   .hero-badges {
     gap: 8px;
     margin-bottom: 16px;
@@ -47,6 +57,8 @@
   .stats { gap: 16px 28px; margin-top: 20px; }
   .stat-num { font-size: 22px; }
   .stat-label { font-size: 12px; }
+
+  .filters-hint { font-size: 13px; }
 
   .support-section { padding: 24px 18px; border-radius: 20px; }
 

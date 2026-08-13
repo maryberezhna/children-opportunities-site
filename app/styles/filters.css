@@ -13,6 +13,23 @@
 
 /* Дев'ять рядків чипів згорнулись у рядок випадайок: та сама функціональність,
    уп'ятеро менше висоти. Чипи нікуди не зникли — вони всередині панелей. */
+.filters-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  color: var(--ink-soft);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.filters-hint-icon {
+  flex: none;
+  width: 18px; height: 18px;
+  fill: none;
+  stroke: var(--accent);
+}
+
 .filters-bar {
   display: flex;
   flex-wrap: wrap;

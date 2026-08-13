@@ -619,6 +619,16 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   return (
     <>
       <div className="filters">
+        {/* Компактний рядок легко проґавити, а фільтри — головний спосіб
+            звузити 400 карток до своїх. Підпис пояснює, навіщо їх чіпати. */}
+        <div className="filters-hint">
+          <svg className="filters-hint-icon" viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M3 6h9M15 6h2M3 14h2M8 14h9" strokeWidth="1.8" strokeLinecap="round" />
+            <circle cx="13.5" cy="6" r="2.2" strokeWidth="1.8" />
+            <circle cx="6.5" cy="14" r="2.2" strokeWidth="1.8" />
+          </svg>
+          Оберіть вік, тему й місто — покажемо лише те, що підходить вашій дитині
+        </div>
         <div className="filters-bar">
           {menus.map((m) => (
             <FilterButton
