@@ -13,10 +13,19 @@ const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
  * `index` іде в аналітику, щоб було видно, який саме повтор дає кліки —
  * без цього не зрозуміти, чи варті нижні блоки місця.
  */
-export default function PlusSection({ total, price, sample = [], index = 0 }) {
+export default function PlusSection({ total, price, index = 0 }) {
   const trackPlus = () => {
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'plus_cta_click', {
+        event_category: 'engagement',
+        event_label: `catalog_slot_${index}`,
+      });
+    }
+  };
+
+  const trackMore = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'plus_more_click', {
         event_category: 'engagement',
         event_label: `catalog_slot_${index}`,
       });
@@ -30,10 +39,9 @@ export default function PlusSection({ total, price, sample = [], index = 0 }) {
   };
 
   return (
-    /* Компактна смуга: заголовок + чипи переваг + CTA, і одна найближча
-       можливість як приклад. Попередня версія (шість пунктів + картка на
-       три можливості) займала пів екрана й відсувала каталог — а каталог
-       і є причиною візиту. */
+    /* Компактна смуга: заголовок, чипи переваг і дві кнопки. Все зайве
+       звідси вже прибрано — блок стоїть усередині каталогу й повторюється,
+       тож кожен зайвий рядок множиться на кількість повторів. */
     <section className="plus-section">
       <div className="plus-glow" aria-hidden="true" />
       <div className="plus-inner">
@@ -56,21 +64,15 @@ export default function PlusSection({ total, price, sample = [], index = 0 }) {
         </div>
 
         <div className="plus-side">
-          {/* Одна найближча можливість — доказ замість опису */}
-          {sample.length > 0 && (
-            <div className="plus-card">
-              <span className="plus-card-eyebrow">приклад із підбірки</span>
-              <span className="plus-card-title">{sample[0].title}</span>
-              <span className="plus-card-meta">
-                {sample[0].age}
-                {sample[0].cost ? <> · <b>{sample[0].cost}</b></> : null}
-                {sample[0].deadline ? <> · до {sample[0].deadline}</> : null}
-              </span>
-            </div>
-          )}
           <div className="plus-buy">
             <Link href="/pidbirka" className="plus-cta" onClick={trackPlus}>
               Спробувати Dityam+
+            </Link>
+            {/* Веде на ту саму сторінку, але окремою подією: «Спробувати»
+                тиснуть готові, «Дізнатися більше» — ті, кому ще треба
+                почитати. Розрізняти їх у GA важливіше, ніж економити лінк. */}
+            <Link href="/pidbirka" className="plus-more" onClick={trackMore}>
+              Дізнатися більше
             </Link>
             <span className="plus-price">
               <b>{price}</b> грн<span>/міс</span>

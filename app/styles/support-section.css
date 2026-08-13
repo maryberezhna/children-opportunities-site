@@ -420,6 +420,26 @@
 
 .plus-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+/* Другорядна кнопка: та сама висота, що й головна, але контурна — щоб
+   читалась як «спершу почитати», а не як другий однаковий заклик. */
+.plus-more {
+  display: inline-flex;
+  align-items: center;
+  padding: 13px 22px;
+  border: 1px solid var(--border-hover);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.plus-more:hover { border-color: var(--ink); }
+.plus-more:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .plus-price { font-size: 14px; color: var(--ink-muted); }
 .plus-price b { font-size: 21px; font-weight: 700; color: var(--ink); }
 .plus-price span { font-size: 13px; }
