@@ -14,9 +14,14 @@ const SESSION_DISMISSED_KEY = 'dityam_popup_dismissed_session';
 const TIME_TRIGGER_MS = 8000;
 const CARDS_TRIGGER = 15;
 
+// Скільки висить, перш ніж сховатись. Смуга внизу губилась серед карток —
+// підказка біля кнопки помітна, але саме тому не має стояти вічно.
+const AUTO_HIDE_MS = 10000;
+
 export default function SubscribePopup() {
   const [isOpen, setIsOpen] = useState(false);
   const triggered = useRef(false);
+  const hideTimer = useRef(null);
 
   const shouldShow = () => {
     if (typeof window === 'undefined') return false;
@@ -136,6 +141,23 @@ export default function SubscribePopup() {
   // Скрол більше не блокуємо: смуга внизу нічого не перекриває,
   // тож зупиняти читання каталогу немає причин.
 
+  // Ховаємо самі через 10 секунд — але не поки на підказці курсор: інакше
+  // вона зникала б просто тоді, коли людина тягнеться до кнопки.
+  const startHideTimer = () => {
+    clearTimeout(hideTimer.current);
+    hideTimer.current = setTimeout(() => {
+      setIsOpen(false);
+      // Позначаємо сеанс: підказка своє показала, друга поява — уже спам.
+      try { sessionStorage.setItem(SESSION_DISMISSED_KEY, Date.now().toString()); } catch (e) {}
+    }, AUTO_HIDE_MS);
+  };
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    startHideTimer();
+    return () => clearTimeout(hideTimer.current);
+  }, [isOpen]);
+
   useEffect(() => {
     if (!isOpen) return;
     const handleEsc = (e) => { if (e.key === 'Escape') closePopup(); };
@@ -146,28 +168,31 @@ export default function SubscribePopup() {
   if (!isOpen) return null;
 
   return (
-    <div className="subscribe-bar" role="complementary" aria-label="Долучитись до Telegram-каналу">
-      <svg className="subscribe-bar-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <circle cx="12" cy="12" r="12" fill="#29B6F6" />
-        <path d="M9.78 18.65l.28-4.23 7.68-6.92c.34-.31-.07-.46-.52-.19L7.74 13.3 3.64 12c-.88-.25-.89-.86.2-1.3l15.97-6.16c.73-.33 1.43.18 1.15 1.3l-2.72 12.81c-.19.91-.74 1.13-1.5.71L12.6 16.3l-1.99 1.93c-.23.23-.42.42-.83.42z" fill="white" />
-      </svg>
-
-      <p className="subscribe-bar-text">
-        <strong>Нові можливості — щодня в Telegram.</strong>
-        <span className="subscribe-bar-sub"> Без спаму, відписатись одним кліком.</span>
+    <div
+      className="tg-callout"
+      role="complementary"
+      aria-label="Долучитись до Telegram-каналу"
+      onMouseEnter={() => clearTimeout(hideTimer.current)}
+      onMouseLeave={startHideTimer}
+    >
+      {/* Іконки тут немає навмисно: підказка визирає з-під самої кнопки
+          Telegram, і другий літачок за сантиметр від першого — шум. */}
+      <p className="tg-callout-text">
+        <strong>Залишайтесь на зв&apos;язку</strong>
+        <span>Нові можливості — щодня в Telegram</span>
       </p>
 
       <a
         href={TELEGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="subscribe-bar-cta"
+        className="tg-callout-cta"
         onClick={handleJoinClick}
       >
         Долучитися
       </a>
 
-      <button className="subscribe-bar-close" onClick={closePopup} aria-label="Закрити">
+      <button className="tg-callout-close" onClick={closePopup} aria-label="Закрити">
         ✕
       </button>
     </div>
