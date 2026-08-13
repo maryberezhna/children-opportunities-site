@@ -164,14 +164,20 @@ export default async function Home() {
 
         {/* Dityam+ їде всередину каталогу — після перших карток. Перед ними
             він відсував першу можливість за згин: людина бачила пропозицію
-            заплатити раніше, ніж те, за що платить. */}
+            заплатити раніше, ніж те, за що платить.
+            Передаємо пропси, а не готовий елемент: сторінка серверна, а
+            функцію-фабрику в клієнтський компонент віддати не можна. */}
         <OpportunitiesList
           opportunities={opportunities}
-          promo={<SupportPopup total={total} price={PRICE} sample={digestSample(opportunities)} />}
+          promoProps={{ total, price: PRICE, sample: digestSample(opportunities) }}
         />
 
         <Footer />
       </div>
+
+      {/* Плаваюче сердечко з модалкою підтримки — рівно одне на сторінку,
+          на відміну від смуги Dityam+, що повторюється в каталозі. */}
+      <SupportPopup />
 
       {/* ============ STICKY BAR — ВИНЕСЕНО В КЛІЄНТСЬКИЙ КОМПОНЕНТ ============ */}
       <StickyBar />
