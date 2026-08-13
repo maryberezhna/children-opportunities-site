@@ -127,6 +127,54 @@ function ageMatches(item, value) {
   return item.age_from <= t && item.age_to >= f;
 }
 
+
+// Одна випадайка фільтра. Панель — той самий набір чипів, що був раніше:
+// множинний вибір, «Усі» для скидання секції, приховані порожні опції.
+// Змінюється лише подача — дев'ять рядків згорнулись у рядок кнопок.
+function FilterButton({ id, label, options, selected, openId, setOpenId }) {
+  if (!options.length) return null;
+  const isOpen = openId === id;
+  const count = selected.size;
+  return (
+    <button
+      type="button"
+      id={`fm-btn-${id}`}
+      className={`fm-btn ${count ? 'has' : ''} ${isOpen ? 'open' : ''}`}
+      aria-expanded={isOpen}
+      aria-controls="fm-panel"
+      onClick={() => setOpenId(isOpen ? null : id)}
+    >
+      {label}
+      {count > 0 && <span className="fm-count">{count}</span>}
+      <span className="fm-caret" aria-hidden="true" />
+    </button>
+  );
+}
+
+// Розкривається під рядком кнопок, а не з-під кожної окремо: панель на всю
+// ширину не вилазить за край екрана на телефоні й не перекриває картки.
+function FilterPanel({ menu }) {
+  if (!menu) return null;
+  const { label, options, selected, onToggle } = menu;
+  return (
+    <div className="fm-panel" id="fm-panel" role="group" aria-label={label}>
+      {options.map((o) => {
+        const on = o.value === 'all' ? selected.size === 0 : selected.has(o.value);
+        return (
+          <button
+            key={o.value}
+            type="button"
+            className={`filter-btn ${on ? 'active' : ''}`}
+            onClick={() => onToggle(o.value)}
+          >
+            {o.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function OpportunitiesList({ opportunities, presetCity }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
@@ -139,6 +187,8 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
     presetCity ? new Set([presetCity]) : new Set()
   );
   const [query, setQuery] = useState('');
+  // Одночасно відкрита лише одна випадайка — інакше вони перекривають одна одну.
+  const [openId, setOpenId] = useState(null);
   const [sort, setSort] = useState('age');
   // Guards the URL-writing effect below: until the initial read has run, writing
   // would wipe the very query string we're about to parse.
@@ -253,6 +303,24 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   };
 
   const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
+
+  // Клік поза панеллю і Escape закривають випадайку — без цього вона лишалась
+  // би відкритою, поки не клікнеш саме по кнопці.
+  useEffect(() => {
+    if (openId === null) return;
+    // Кліки по самій панелі не закривають її: вибір фільтрів множинний,
+    // і закриття після кожної позначки зробило б добір неможливим.
+    const onDown = (e) => {
+      if (!e.target.closest('.fm-btn, .fm-panel')) setOpenId(null);
+    };
+    const onKey = (e) => { if (e.key === 'Escape') setOpenId(null); };
+    document.addEventListener('pointerdown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openId]);
 
   const activeCount =
     ages.size + types.size + aidTypes.size + themes.size + needs.size +
@@ -409,6 +477,51 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   const isOfferable = (facet, value, selected) =>
     value === 'all' || selected.has(value) || available[facet].has(value);
 
+  // Один опис на фільтр — з нього будуються і кнопки рядка, і вміст розкривної
+  // панелі, і чипи обраного. Раніше кожен фільтр був окремим блоком розмітки,
+  // і будь-яка зміна доводилось повторювати тричі.
+  const menus = useMemo(() => {
+    const list = [
+      { id: 'age', label: 'Вік', all: AGE_GROUPS, selected: ages, onToggle: handlers.age },
+      { id: 'type', label: 'Тип', all: TYPE_OPTIONS, selected: types, onToggle: handlers.type },
+      // Підтипи держдопомоги мають сенс лише всередині «Держдопомоги».
+      ...(types.has('gov_aid')
+        ? [{ id: 'aid', label: 'Вид допомоги', all: AID_TYPE_OPTIONS, selected: aidTypes, onToggle: handlers.aid }]
+        : []),
+      { id: 'theme', label: 'Тема', all: THEME_OPTIONS, selected: themes, onToggle: handlers.theme },
+      { id: 'deadline', label: 'Дедлайн', all: DEADLINE_OPTIONS, selected: deadlines, onToggle: handlers.deadline },
+      { id: 'need', label: 'Особлива потреба', all: NEED_OPTIONS, selected: needs, onToggle: handlers.need },
+      { id: 'cost', label: 'Вартість', all: COST_OPTIONS, selected: costs, onToggle: handlers.cost },
+      {
+        id: 'city',
+        label: 'Місто',
+        all: sortCities([...new Set([...available.city, ...selectedCities])])
+          .map((c) => ({ label: c, value: c })),
+        selected: selectedCities,
+        onToggle: handlers.city,
+      },
+    ];
+    return list.map((m) => ({
+      ...m,
+      options: m.all.filter((o) => isOfferable(m.id, o.value, m.selected)),
+    }));
+  }, [ages, types, aidTypes, themes, deadlines, needs, costs, selectedCities, available]);
+
+  const openMenu = menus.find((m) => m.id === openId && m.options.length) || null;
+
+  // Обране лишається на видноті зі згорнутими випадайками — і знімається
+  // одним кліком по чипу.
+  const activeChips = useMemo(() => menus.flatMap((m) => [...m.selected]
+    .map((value) => {
+      const opt = m.all.find((o) => o.value === value);
+      return {
+        facet: m.id,
+        value,
+        label: opt ? opt.label : value,
+        onRemove: () => m.onToggle(value),
+      };
+    })), [menus]);
+
   // Any change to the filtered set puts the user back at the top of a fresh batch —
   // keeping a large `visible` across filter changes would dump hundreds of cards at once.
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -506,135 +619,17 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   return (
     <>
       <div className="filters">
-        {/* Показуємо лише коли є що скидати: порожня кнопка «Скинути» на
-            чистому каталозі лише додає шуму. На міській сторінці місто —
-            частина адреси, тож повертаємо його, а не знімаємо. */}
-        {activeCount > 0 && (
-          <button type="button" className="filters-reset" onClick={resetAll}>
-            Скинути фільтри
-            <span className="filters-reset-count">{activeCount}</span>
-          </button>
-        )}
-        <div className="filter-row">
-          <div className="filter-label">Вік дитини</div>
-          {AGE_GROUPS.filter((g) => isOfferable('age', g.value, ages)).map((g) => (
-            <button
-              key={g.value}
-              className={`filter-btn ${isActive(ages, g.value) ? 'active' : ''}`}
-              onClick={() => handlers.age(g.value)}
-            >
-              {g.label}
-            </button>
+        <div className="filters-bar">
+          {menus.map((m) => (
+            <FilterButton
+              key={m.id} id={m.id} label={m.label}
+              options={m.options} selected={m.selected}
+              openId={openId} setOpenId={setOpenId}
+            />
           ))}
-        </div>
 
-        <div className="filter-row">
-          <div className="filter-label">Тип можливості</div>
-          {TYPE_OPTIONS.filter((t) => isOfferable('type', t.value, types)).map((t) => (
-            <button
-              key={t.value}
-              className={`filter-btn ${isActive(types, t.value) ? 'active' : ''}`}
-              onClick={() => handlers.type(t.value)}
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {types.has('gov_aid') && (
-          <div className="filter-row filter-subrow">
-            <div className="filter-label">Вид держдопомоги</div>
-            {AID_TYPE_OPTIONS.filter((a) => isOfferable('aid', a.value, aidTypes)).map((a) => (
-              <button
-                key={a.value}
-                className={`filter-btn ${aidTypes.has(a.value) ? 'active' : ''}`}
-                onClick={() => handlers.aid(a.value)}
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {available.theme.size > 0 && (
-          <div className="filter-row">
-            <div className="filter-label">Тема</div>
-            {THEME_OPTIONS.filter((t) => isOfferable('theme', t.value, themes)).map((t) => (
-              <button
-                key={t.value}
-                className={`filter-btn ${isActive(themes, t.value) ? 'active' : ''}`}
-                onClick={() => handlers.theme(t.value)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="filter-row">
-          <div className="filter-label">Дедлайн</div>
-          {DEADLINE_OPTIONS.filter((d) => isOfferable('deadline', d.value, deadlines)).map((d) => (
-            <button
-              key={d.value}
-              className={`filter-btn ${isActive(deadlines, d.value) ? 'active' : ''}`}
-              onClick={() => handlers.deadline(d.value)}
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="filter-row">
-          <div className="filter-label">Особлива потреба</div>
-          {NEED_OPTIONS.filter((n) => isOfferable('need', n.value, needs)).map((n) => (
-            <button
-              key={n.value}
-              className={`filter-btn ${isActive(needs, n.value) ? 'active' : ''}`}
-              onClick={() => handlers.need(n.value)}
-            >
-              {n.label}
-            </button>
-          ))}
-        </div>
-
-        <div className="filter-row">
-          <div className="filter-label">Вартість</div>
-          {COST_OPTIONS.filter((c) => isOfferable('cost', c.value, costs)).map((c) => (
-            <button
-              key={c.value}
-              className={`filter-btn ${isActive(costs, c.value) ? 'active' : ''}`}
-              onClick={() => handlers.cost(c.value)}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-
-        {available.city.size > 0 && (
-          <div className="filter-row">
-            <div className="filter-label">Місто</div>
-            <button
-              className={`filter-btn ${selectedCities.size === 0 ? 'active' : ''}`}
-              onClick={() => handlers.city('all')}
-            >
-              Усі
-            </button>
-            {/* Set обовʼязковий: обране місто майже завжди є і серед доступних,
-                і без дедуплікації його чип малювався двічі */}
-            {sortCities([...new Set([...available.city, ...selectedCities])]).map((city) => (
-              <button
-                key={city}
-                className={`filter-btn ${selectedCities.has(city) ? 'active' : ''}`}
-                onClick={() => handlers.city(city)}
-              >
-                {city}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="filter-row">
-          <div className="filter-label">Пошук</div>
+          {/* Пошук лишається на видноті: це найчастіша дія, ховати її у
+              випадайку означало б зробити гірше, а не компактніше. */}
           <div className="search-wrap">
             <input
               type="search"
@@ -644,7 +639,35 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
               onChange={(e) => setQuery(e.target.value)}
             />
           </div>
+
+          {activeCount > 0 && (
+            <button type="button" className="filters-reset" onClick={resetAll}>
+              Скинути
+              <span className="filters-reset-count">{activeCount}</span>
+            </button>
+          )}
         </div>
+
+        <FilterPanel menu={openMenu} />
+
+        {/* Обране видно й зі згорнутими випадайками — інакше після скролу
+            неможливо згадати, що саме звузило видачу. */}
+        {activeChips.length > 0 && (
+          <div className="filters-active">
+            {activeChips.map((c) => (
+              <button
+                key={`${c.facet}:${c.value}`}
+                type="button"
+                className="chip-active"
+                onClick={c.onRemove}
+                aria-label={`Прибрати фільтр «${c.label}»`}
+              >
+                {c.label}
+                <span className="chip-x" aria-hidden="true">×</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="toolbar">
