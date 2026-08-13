@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
+import { opportunitiesWord } from '@/lib/plural';
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -253,6 +254,24 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
   const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
 
+  const activeCount =
+    ages.size + types.size + aidTypes.size + themes.size + needs.size +
+    costs.size + deadlines.size + selectedCities.size + (query.trim() ? 1 : 0);
+
+  // Сортування свідомо НЕ чіпаємо: це не фільтр, і скидати спосіб перегляду
+  // разом із вибором — несподіванка для людини.
+  const resetAll = () => {
+    setAges(new Set());
+    setTypes(new Set());
+    setAidTypes(new Set());
+    setThemes(new Set());
+    setNeeds(new Set());
+    setCosts(new Set());
+    setDeadlines(new Set());
+    setSelectedCities(presetCity ? new Set([presetCity]) : new Set());
+    setQuery('');
+  };
+
   // Прострочені разові можливості не показуємо ніде — ні в списку, ні при
   // підрахунку доступних опцій фільтрів.
   const liveItems = useMemo(() => opportunities.filter((item) => {
@@ -487,6 +506,15 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
   return (
     <>
       <div className="filters">
+        {/* Показуємо лише коли є що скидати: порожня кнопка «Скинути» на
+            чистому каталозі лише додає шуму. На міській сторінці місто —
+            частина адреси, тож повертаємо його, а не знімаємо. */}
+        {activeCount > 0 && (
+          <button type="button" className="filters-reset" onClick={resetAll}>
+            Скинути фільтри
+            <span className="filters-reset-count">{activeCount}</span>
+          </button>
+        )}
         <div className="filter-row">
           <div className="filter-label">Вік дитини</div>
           {AGE_GROUPS.filter((g) => isOfferable('age', g.value, ages)).map((g) => (
@@ -621,7 +649,7 @@ export default function OpportunitiesList({ opportunities, presetCity }) {
 
       <div className="toolbar">
         <div className="count">
-          Знайдено <strong>{filtered.length}</strong> можлив{filtered.length === 1 ? 'ість' : filtered.length >= 2 && filtered.length <= 4 ? 'ості' : 'остей'}
+          Знайдено <strong>{filtered.length}</strong> {opportunitiesWord(filtered.length)}
         </div>
         <select
           className="sort-select"
