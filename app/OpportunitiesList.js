@@ -1,6 +1,7 @@
 'use client';
 import { Fragment, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
+import PlusSection from './PlusSection';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
@@ -85,9 +86,23 @@ const DEADLINE_OPTIONS = [
 // and the result count all need the full set), so this caps the DOM, not the fetch.
 const PAGE_SIZE = 24;
 
-// Після скількох карток вставляти блок Dityam+: достатньо, щоб побачити,
-// що каталог живий, і замало, щоб пропозиція загубилась.
-const PROMO_AFTER = 6;
+// Перший блок Dityam+ — після шостої картки: достатньо, щоб побачити, що
+// каталог живий, і замало, щоб пропозиція загубилась. Далі кожні дев'ять,
+// бо далі людина вже гортає списком і повз один блок легко проскочити.
+const PROMO_FIRST = 6;
+const PROMO_EVERY = 9;
+
+// Чи ставити блок після картки з таким індексом (0-based).
+function promoSlot(i, totalShown) {
+  const after = i + 1;                       // скільки карток уже пройшло
+  if (after === PROMO_FIRST) return 0;
+  if (after > PROMO_FIRST && (after - PROMO_FIRST) % PROMO_EVERY === 0) {
+    return (after - PROMO_FIRST) / PROMO_EVERY;
+  }
+  // Коротка видача (менше шести карток) інакше лишилась би зовсім без блоку.
+  if (totalShown < PROMO_FIRST && after === totalShown) return 0;
+  return null;
+}
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -179,7 +194,7 @@ function FilterPanel({ menu }) {
   );
 }
 
-export default function OpportunitiesList({ opportunities, presetCity, promo = null }) {
+export default function OpportunitiesList({ opportunities, presetCity, promoProps = null }) {
   const [ages, setAges] = useState(() => new Set());
   const [types, setTypes] = useState(() => new Set());
   const [aidTypes, setAidTypes] = useState(() => new Set());
@@ -710,19 +725,26 @@ export default function OpportunitiesList({ opportunities, presetCity, promo = n
 
       {/* Коли видача порожня, карток немає — і промо-блок разом із ними зник
           би зі сторінки. Тут він саме доречний: людина шукала й не знайшла. */}
-      {filtered.length === 0 && promo ? <div className="grid-promo">{promo}</div> : null}
+      {filtered.length === 0 && promoProps ? (
+        <div className="grid-promo"><PlusSection {...promoProps} index={0} /></div>
+      ) : null}
 
       {filtered.length === 0 ? null : (
         <>
           <div className="grid">
-            {filtered.slice(0, visible).map((item, i) => (
-              <Fragment key={item.id}>
-                {renderCard(item)}
-                {promo && i === Math.min(PROMO_AFTER, filtered.length) - 1 && (
-                  <div className="grid-promo">{promo}</div>
-                )}
-              </Fragment>
-            ))}
+            {filtered.slice(0, visible).map((item, i, shown) => {
+              const slot = promoProps ? promoSlot(i, shown.length) : null;
+              return (
+                <Fragment key={item.id}>
+                  {renderCard(item)}
+                  {slot !== null && (
+                    <div className="grid-promo">
+                      <PlusSection {...promoProps} index={slot} />
+                    </div>
+                  )}
+                </Fragment>
+              );
+            })}
           </div>
           {visible < filtered.length && (
             <div className="load-more-wrap">

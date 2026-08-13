@@ -13,8 +13,8 @@
     gap: 20px;
   }
 
-  .hero-photo img { aspect-ratio: 16 / 10; border-radius: 24px; }
-  .hero-photo::before { border-radius: 28px; inset: -6px; }
+  .hero-photo img { aspect-ratio: 16 / 10; border-radius: 20px; }
+  .hero-photo::before { border-radius: 26px; inset: 8px -8px -8px 8px; }
 
   .hero-badges {
     gap: 8px;
