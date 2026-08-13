@@ -104,6 +104,7 @@ export default async function Home() {
 
       <div className="container">
         <div className="hero">
+          <div className="hero-copy">
           <div className="hero-badges">
             <div className="hero-badge">Безкоштовно і оновлюється щодня</div>
             <div className="beta-badge" title="Цей сайт у бета-тестуванні">
@@ -139,6 +140,23 @@ export default async function Home() {
               <span className="stat-num">0-18</span>
               <span className="stat-label">років</span>
             </div>
+          </div>
+          </div>
+
+          {/* Праворуч від тексту — жива фотографія замість порожнечі.
+              webp із jpg-запасним варіантом; розміри задані, щоб верстка
+              не стрибала, поки картинка вантажиться. */}
+          <div className="hero-photo">
+            <picture>
+              <source srcSet="/hero-kids.webp" type="image/webp" />
+              <img
+                src="/hero-kids.jpg"
+                width={880}
+                height={543}
+                alt="Усміхнені діти на дитячому майданчику"
+                fetchPriority="high"
+              />
+            </picture>
           </div>
         </div>
 
