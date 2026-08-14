@@ -118,8 +118,13 @@ function buildDescription(item, typeLabel, ageRange) {
     (item.cities || []).find((c) => c && c !== 'Вся Україна') || item.format;
   if (place) facts.push(String(place).trim());
 
-  const deadline = formatDate(item.deadline);
-  if (deadline) facts.push(`заявки до ${deadline}`);
+  // Для закритої — чесний факт замість простроченого «заявки до …».
+  if (item.status === 'closed') {
+    facts.push('набір закрито, стежимо за наступним');
+  } else {
+    const deadline = formatDate(item.deadline);
+    if (deadline) facts.push(`заявки до ${deadline}`);
+  }
 
   const head = facts.join(' · ');
   const summary = (item.summary || '').trim();
@@ -150,13 +155,10 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  if (item.status && item.status !== 'active') {
-    return {
-      title: item.title,
-      robots: { index: false, follow: false },
-    };
-  }
-
+  // Закриті сторінки НЕ ховаємо від Google. Серед них щорічні програми
+  // (табори, конкурси), що накопичили позиції за рік — noindex викидав би
+  // цей капітал перед кожним новим набором. Плашка «завершилась» на сторінці
+  // чесно каже людині, що подача закрита.
   const typeLabel = TYPE_LABELS[item.opportunity_type] || '';
   const ageRange =
     item.age_from === 0 && item.age_to >= 17
@@ -240,7 +242,11 @@ function buildJsonLd(item) {
     };
   }
 
-  if (EVENT_TYPES.has(item.opportunity_type)) {
+  // Event — лише коли відома дата: Google вимагає startDate, і 27 сторінок
+  // без неї висіли в Search Console помилкою. Без дати чесніше віддати
+  // WebPage, ніж вигадувати дату чи ловити помилки валідації.
+  if (EVENT_TYPES.has(item.opportunity_type) && item.deadline) {
+    const isOnline = /онлайн|online/i.test(item.format || '');
     return {
       '@context': 'https://schema.org',
       '@type': 'Event',
@@ -248,13 +254,18 @@ function buildJsonLd(item) {
       description: item.summary,
       url,
       inLanguage: 'uk',
-      ...(item.deadline && { startDate: item.deadline }),
-      eventAttendanceMode: 'https://schema.org/MixedEventAttendanceMode',
+      startDate: item.deadline,
+      eventAttendanceMode: isOnline
+        ? 'https://schema.org/OnlineEventAttendanceMode'
+        : 'https://schema.org/OfflineEventAttendanceMode',
       eventStatus: 'https://schema.org/EventScheduled',
-      location: {
-        '@type': 'Place',
-        name: item.format || 'Україна',
-      },
+      location: isOnline
+        ? { '@type': 'VirtualLocation', url: item.source_url || url }
+        : {
+            '@type': 'Place',
+            name: (item.cities || []).find((c) => c && c !== 'Вся Україна') || 'Україна',
+            address: { '@type': 'PostalAddress', addressCountry: 'UA' },
+          },
       organizer: {
         '@type': 'Organization',
         name: item.source || 'dityam.com.ua',
@@ -266,6 +277,7 @@ function buildJsonLd(item) {
           price: '0',
           priceCurrency: 'UAH',
           url,
+          availability: 'https://schema.org/InStock',
         },
       }),
     };
