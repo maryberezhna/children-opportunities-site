@@ -7,15 +7,19 @@ const SITE_URL = 'https://dityam.com.ua';
 export const revalidate = 3600;
 
 export default async function sitemap() {
+  // Закриті — теж у sitemap, із нижчим пріоритетом: сторінки живі (плашка
+  // «завершилась»), індексовані, і Google має переобійти їх швидше — 114
+  // з них досі висять у Search Console як 404 із часів, коли так і було.
   const { data } = supabase
-    ? await supabase.from('opportunities').select('slug, updated_at').eq('status', 'active').is('canonical_slug', null)
+    ? await supabase.from('opportunities').select('slug, updated_at, status')
+        .in('status', ['active', 'closed']).is('canonical_slug', null)
     : { data: [] };
 
   const opportunityEntries = (data || []).map((row) => ({
     url: `${SITE_URL}/o/${row.slug}`,
     lastModified: row.updated_at ? new Date(row.updated_at) : undefined,
-    changeFrequency: 'daily',
-    priority: 0.8,
+    changeFrequency: row.status === 'active' ? 'daily' : 'monthly',
+    priority: row.status === 'active' ? 0.8 : 0.3,
   }));
 
   const staticPages = [
