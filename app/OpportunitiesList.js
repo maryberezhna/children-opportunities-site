@@ -785,11 +785,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
                       <PlusSection {...promoProps} index={slot} />
                     </div>
                   )}
-                  {suggestAt(i) && (
-                    <div className="grid-promo">
-                      <SuggestBlock />
-                    </div>
-                  )}
+                  {suggestAt(i) && <SuggestBlock />}
                 </Fragment>
               );
             })}

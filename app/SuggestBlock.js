@@ -69,11 +69,12 @@ export default function SuggestBlock() {
 
   return (
     <>
-      <section className="suggest-strip">
-        <div className="suggest-copy">
-          <h2>Маєте можливість для дітей?</h2>
-          <p>Напишіть нам — перевіримо й опублікуємо в каталозі безкоштовно.</p>
-        </div>
+      {/* Стоїть у сітці як звичайна картка, але інвертована: чорне тло й
+          помаранчева рамка виділяють її, не ламаючи ритму колонок. */}
+      <section className="suggest-card">
+        <span className="suggest-kicker">Для організаторів</span>
+        <h2>Маєте можливість для дітей?</h2>
+        <p>Напишіть нам — перевіримо й опублікуємо в каталозі безкоштовно.</p>
         <button type="button" className="suggest-cta" onClick={openForm}>
           Запропонувати
         </button>

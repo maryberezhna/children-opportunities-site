@@ -470,49 +470,61 @@
 }
 
 /* ============ «МАЄТЕ МОЖЛИВІСТЬ?» ============ */
-/* Смуга в сітці каталогу (кожні ~30 карток). Навмисно спокійніша за блок
-   Dityam+: вона звертається до організаторів, а не до батьків, і не має
-   конкурувати з продажем підписки. */
-.suggest-strip {
+/* Одна клітинка сітки, як звичайна картка — але інвертована: чорне тло,
+   помаранчева рамка. Виділяється повністю, не ламаючи ритму колонок. */
+.suggest-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 14px 24px;
-  padding: 20px 24px;
-  background: var(--surface);
-  border: 1px dashed var(--border-hover);
+  flex-direction: column;
+  padding: 24px 22px;
+  background: var(--ink);
+  border: 2px solid var(--accent);
   border-radius: 16px;
+  color: #fff;
 }
 
-.suggest-strip h2 {
-  font-size: 17px;
+.suggest-kicker {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 12px;
+}
+
+.suggest-card h2 {
+  font-size: 21px;
   font-weight: 600;
-  margin: 0 0 3px;
+  line-height: 1.25;
+  margin: 0 0 10px;
+  color: #fff;
 }
 
-.suggest-strip p {
-  margin: 0;
-  font-size: 14px;
-  color: var(--ink-soft);
+.suggest-card p {
+  margin: 0 0 20px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .suggest-cta {
-  flex-shrink: 0;
   font: inherit;
-  font-size: 14.5px;
-  font-weight: 500;
-  padding: 11px 22px;
-  border: 1px solid var(--ink);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ink);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 13px 22px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, transform 0.1s;
 }
 
-.suggest-cta:hover { background: var(--ink); color: var(--surface); }
-.suggest-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.suggest-cta:hover { background: #d14e15; }
+.suggest-cta:active { transform: scale(0.98); }
+.suggest-cta:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* Кнопка притиснута до низу картки — як «Детальніше» в сусідніх */
+.suggest-card .suggest-cta { margin-top: auto; width: 100%; }
 
 /* Форма в модалці */
 .suggest-modal { text-align: left; max-width: 480px; }
@@ -570,6 +582,5 @@
 .suggest-done .suggest-cta { width: auto; }
 
 @media (max-width: 640px) {
-  .suggest-strip { padding: 16px 18px; }
-  .suggest-cta { width: 100%; text-align: center; }
+  .suggest-card { padding: 20px 18px; }
 }
