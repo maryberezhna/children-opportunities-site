@@ -468,3 +468,108 @@
   .plus-cta { transition: none; }
   .plus-cta:hover { transform: none; }
 }
+
+/* ============ «МАЄТЕ МОЖЛИВІСТЬ?» ============ */
+/* Смуга в сітці каталогу (кожні ~30 карток). Навмисно спокійніша за блок
+   Dityam+: вона звертається до організаторів, а не до батьків, і не має
+   конкурувати з продажем підписки. */
+.suggest-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 24px;
+  padding: 20px 24px;
+  background: var(--surface);
+  border: 1px dashed var(--border-hover);
+  border-radius: 16px;
+}
+
+.suggest-strip h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+
+.suggest-strip p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-soft);
+}
+
+.suggest-cta {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 500;
+  padding: 11px 22px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.suggest-cta:hover { background: var(--ink); color: var(--surface); }
+.suggest-cta:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* Форма в модалці */
+.suggest-modal { text-align: left; max-width: 480px; }
+.suggest-modal h2 { font-size: 21px; margin: 0 0 6px; }
+.suggest-sub { font-size: 14px; color: var(--ink-soft); margin: 0 0 18px; }
+
+.suggest-label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.suggest-opt { color: var(--ink-muted); font-weight: 400; }
+
+.suggest-label input,
+.suggest-label textarea {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  font: inherit;
+  font-size: 14.5px;
+  resize: vertical;
+}
+
+.suggest-label input:focus,
+.suggest-label textarea:focus {
+  outline: none;
+  border-color: var(--ink);
+  background: var(--surface);
+}
+
+/* Honeypot — поза екраном, але доступний для автозаповнення ботами */
+.suggest-hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px; height: 1px;
+  opacity: 0;
+}
+
+.suggest-error {
+  font-size: 13.5px;
+  color: #b3402a;
+  margin: 0 0 12px;
+}
+
+.suggest-submit { width: 100%; margin-top: 4px; }
+
+.suggest-done { text-align: center; padding: 8px 0; }
+.suggest-done p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 18px; }
+.suggest-done .suggest-cta { width: auto; }
+
+@media (max-width: 640px) {
+  .suggest-strip { padding: 16px 18px; }
+  .suggest-cta { width: 100%; text-align: center; }
+}

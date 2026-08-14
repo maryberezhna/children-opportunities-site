@@ -2,6 +2,7 @@
 import { Fragment, useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PlusSection from './PlusSection';
+import SuggestBlock from './SuggestBlock';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
@@ -96,6 +97,20 @@ const AUTO_BATCHES = 3;
 
 const PROMO_FIRST = 6;
 const PROMO_EVERY = 9;
+
+const dityamAt = (n) =>
+  n === PROMO_FIRST || (n > PROMO_FIRST && (n - PROMO_FIRST) % PROMO_EVERY === 0);
+
+// «Маєте можливість? Напишіть нам» — кожні 30 карток. Якщо місце зайняте
+// блоком Dityam+ (перетин на 60-й картці), зсуваємось на одну далі, щоб два
+// банери не стояли стосом.
+const SUGGEST_EVERY = 30;
+function suggestAt(i) {
+  const after = i + 1;
+  if (after % SUGGEST_EVERY === 0 && !dityamAt(after)) return true;
+  if (after > 1 && (after - 1) % SUGGEST_EVERY === 0 && dityamAt(after - 1)) return true;
+  return false;
+}
 
 // Чи ставити блок після картки з таким індексом (0-based).
 function promoSlot(i, totalShown) {
@@ -768,6 +783,11 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
                   {slot !== null && (
                     <div className="grid-promo">
                       <PlusSection {...promoProps} index={slot} />
+                    </div>
+                  )}
+                  {suggestAt(i) && (
+                    <div className="grid-promo">
+                      <SuggestBlock />
                     </div>
                   )}
                 </Fragment>
