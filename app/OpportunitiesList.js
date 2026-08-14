@@ -87,29 +87,28 @@ const DEADLINE_OPTIONS = [
 // and the result count all need the full set), so this caps the DOM, not the fetch.
 const PAGE_SIZE = 24;
 
-// Перший блок Dityam+ — після шостої картки: достатньо, щоб побачити, що
-// каталог живий, і замало, щоб пропозиція загубилась. Далі кожні дев'ять,
-// бо далі людина вже гортає списком і повз один блок легко проскочити.
 // Скільки партій дозвантажуються самі, поки людина гортає. Не безкінечно:
 // після трьох (96 карток) повертається кнопка, інакше до підвалу з посиланнями
 // на міста й теми доскролити стало б неможливо.
 const AUTO_BATCHES = 3;
 
-const PROMO_FIRST = 6;
-const PROMO_EVERY = 9;
-
-// Позиції блоку Dityam+ рахуються в КЛІТИНКАХ сітки, а не в картках: блок
-// розтягнутий на всю ширину, і якщо він падає не на межі рядка (кратність
-// трьом на десктопі), сітка лишає перед ним порожні клітинки. Картка «Маєте
-// можливість» займає одну клітинку і зсуває все після себе — рахунок за
-// картками тут уже брехав би.
-const dityamAtCell = (cells) =>
-  cells === PROMO_FIRST ||
-  (cells > PROMO_FIRST && (cells - PROMO_FIRST) % PROMO_EVERY === 0);
-
-// «Маєте можливість? Напишіть нам» — після кожної 30-ї картки.
+// Обидва вставні блоки позиціонуються в КЛІТИНКАХ сітки, а не в картках:
+// повноширинний блок Dityam+ має падати рівно на межу рядка (кратність трьом
+// на десктопі), інакше сітка лишає перед ним порожні клітинки, а картка
+// «Маєте можливість» сама займає клітинку і зсуває все після себе.
+//
+// Розклад: клітинка 6 — «Маєте можливість» (шоста, як просила Мария),
+// після клітинок 9, 18, 27… — Dityam+ (межі рядків, кожні три ряди),
+// далі «Маєте можливість» повторюється кожні 30 клітинок (36, 66, 96) —
+// там, де вона збігається з кроком Dityam+, той раунд Dityam+ пропускаємо.
+const SUGGEST_FIRST = 6;
 const SUGGEST_EVERY = 30;
-const suggestAtCard = (card) => card > 0 && card % SUGGEST_EVERY === 0;
+const suggestTakesCell = (n) =>
+  n === SUGGEST_FIRST ||
+  (n > SUGGEST_FIRST && (n - SUGGEST_FIRST) % SUGGEST_EVERY === 0);
+
+const PROMO_EVERY_CELLS = 9;
+const dityamAtCell = (cells) => cells > 0 && cells % PROMO_EVERY_CELLS === 0;
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -770,12 +769,17 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
               shown.forEach((item, i) => {
                 nodes.push(<Fragment key={item.id}>{renderCard(item)}</Fragment>);
                 cells += 1;
-                if (suggestAtCard(i + 1)) {
+                let justSuggested = false;
+                if (suggestTakesCell(cells + 1)) {
                   nodes.push(<SuggestBlock key={`sug-${i}`} />);
                   cells += 1;
+                  justSuggested = true;
                 }
-                const lastShort = shown.length < PROMO_FIRST && i === shown.length - 1;
-                if (promoProps && (dityamAtCell(cells) || lastShort)) {
+                // Коли крок Dityam+ збігається з щойно вставленою карткою
+                // пропозиції (клітинка 36), пропускаємо раунд — два банери
+                // поспіль читаються як суцільна реклама.
+                const lastShort = shown.length < SUGGEST_FIRST - 1 && i === shown.length - 1;
+                if (promoProps && !justSuggested && (dityamAtCell(cells) || lastShort)) {
                   nodes.push(
                     <div className="grid-promo" key={`plus-${i}`}>
                       <PlusSection {...promoProps} index={plusIdx} />
