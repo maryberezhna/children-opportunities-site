@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
 import { CITY_META } from '@/lib/cities';
+import { TOPIC_NAV } from '@/lib/topics';
 
 export default function Footer() {
   return (
@@ -165,6 +166,17 @@ export default function Footer() {
         {Object.entries(CITY_META).map(([slug, meta]) => (
           <Link key={slug} href={`/${slug}`} className="footer-city-link">
             {meta.ua}
+          </Link>
+        ))}
+      </nav>
+
+      {/* Те саме, що з містами: тематичні підбірки без внутрішніх посилань
+          лишились би сиротами. */}
+      <nav className="footer-cities" aria-label="Підбірки за темами">
+        <span className="footer-cities-label">Підбірки:</span>
+        {TOPIC_NAV.map((t) => (
+          <Link key={t.slug} href={`/${t.slug}`} className="footer-city-link">
+            {t.label}
           </Link>
         ))}
       </nav>

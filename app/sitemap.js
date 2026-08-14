@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
+import { TOPIC_LIST } from '@/lib/topics';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -33,5 +34,14 @@ export default async function sitemap() {
     lastModified: new Date(),
   }));
 
-  return [...staticPages, ...cityPages, ...opportunityEntries];
+  // Тематичні підбірки: пріоритет вищий за міські, бо вони цілять у
+  // категорійні запити, де каталог і має вигравати.
+  const topicPages = TOPIC_LIST.map((t) => ({
+    url: `${SITE_URL}/${t.slug}`,
+    changeFrequency: 'daily',
+    priority: 0.9,
+    lastModified: new Date(),
+  }));
+
+  return [...staticPages, ...topicPages, ...cityPages, ...opportunityEntries];
 }

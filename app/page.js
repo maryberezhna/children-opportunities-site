@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { supabase, CARD_FIELDS } from '@/lib/supabase';
 // Ціну читає серверний компонент: lib/wayforpay тягне crypto й секретний ключ,
 // тож у клієнтський бандл він потрапити не має.
@@ -5,6 +6,7 @@ import { PRICE } from '@/lib/wayforpay';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
+import { TOPIC_NAV } from '@/lib/topics';
 import StickyBar from './StickyBar';
 import StickyHeader from './StickyHeader';
 import SubscribePopup from './SubscribePopup';
@@ -118,6 +120,18 @@ export default async function Home() {
             </picture>
           </div>
         </div>
+
+        {/* Найсильніше внутрішнє посилання на підбірки — з головної, ще до
+            каталогу: і людині швидший шлях до потрібного, і Google бачить, що
+            ці сторінки для сайту важливі. */}
+        <nav className="topic-chips" aria-label="Підбірки за темами">
+          <span className="topic-chips-label">Підбірки:</span>
+          {TOPIC_NAV.map((t) => (
+            <Link key={t.slug} href={`/${t.slug}`} className="topic-chip">
+              {t.label}
+            </Link>
+          ))}
+        </nav>
 
         {/* Dityam+ їде всередину каталогу — після перших карток. Перед ними
             він відсував першу можливість за згин: людина бачила пропозицію
