@@ -98,31 +98,18 @@ const AUTO_BATCHES = 3;
 const PROMO_FIRST = 6;
 const PROMO_EVERY = 9;
 
-const dityamAt = (n) =>
-  n === PROMO_FIRST || (n > PROMO_FIRST && (n - PROMO_FIRST) % PROMO_EVERY === 0);
+// Позиції блоку Dityam+ рахуються в КЛІТИНКАХ сітки, а не в картках: блок
+// розтягнутий на всю ширину, і якщо він падає не на межі рядка (кратність
+// трьом на десктопі), сітка лишає перед ним порожні клітинки. Картка «Маєте
+// можливість» займає одну клітинку і зсуває все після себе — рахунок за
+// картками тут уже брехав би.
+const dityamAtCell = (cells) =>
+  cells === PROMO_FIRST ||
+  (cells > PROMO_FIRST && (cells - PROMO_FIRST) % PROMO_EVERY === 0);
 
-// «Маєте можливість? Напишіть нам» — кожні 30 карток. Якщо місце зайняте
-// блоком Dityam+ (перетин на 60-й картці), зсуваємось на одну далі, щоб два
-// банери не стояли стосом.
+// «Маєте можливість? Напишіть нам» — після кожної 30-ї картки.
 const SUGGEST_EVERY = 30;
-function suggestAt(i) {
-  const after = i + 1;
-  if (after % SUGGEST_EVERY === 0 && !dityamAt(after)) return true;
-  if (after > 1 && (after - 1) % SUGGEST_EVERY === 0 && dityamAt(after - 1)) return true;
-  return false;
-}
-
-// Чи ставити блок після картки з таким індексом (0-based).
-function promoSlot(i, totalShown) {
-  const after = i + 1;                       // скільки карток уже пройшло
-  if (after === PROMO_FIRST) return 0;
-  if (after > PROMO_FIRST && (after - PROMO_FIRST) % PROMO_EVERY === 0) {
-    return (after - PROMO_FIRST) / PROMO_EVERY;
-  }
-  // Коротка видача (менше шести карток) інакше лишилась би зовсім без блоку.
-  if (totalShown < PROMO_FIRST && after === totalShown) return 0;
-  return null;
-}
+const suggestAtCard = (card) => card > 0 && card % SUGGEST_EVERY === 0;
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -775,20 +762,30 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       {filtered.length === 0 ? null : (
         <>
           <div className="grid">
-            {filtered.slice(0, visible).map((item, i, shown) => {
-              const slot = promoProps ? promoSlot(i, shown.length) : null;
-              return (
-                <Fragment key={item.id}>
-                  {renderCard(item)}
-                  {slot !== null && (
-                    <div className="grid-promo">
-                      <PlusSection {...promoProps} index={slot} />
-                    </div>
-                  )}
-                  {suggestAt(i) && <SuggestBlock />}
-                </Fragment>
-              );
-            })}
+            {(() => {
+              const shown = filtered.slice(0, visible);
+              const nodes = [];
+              let cells = 0;
+              let plusIdx = 0;
+              shown.forEach((item, i) => {
+                nodes.push(<Fragment key={item.id}>{renderCard(item)}</Fragment>);
+                cells += 1;
+                if (suggestAtCard(i + 1)) {
+                  nodes.push(<SuggestBlock key={`sug-${i}`} />);
+                  cells += 1;
+                }
+                const lastShort = shown.length < PROMO_FIRST && i === shown.length - 1;
+                if (promoProps && (dityamAtCell(cells) || lastShort)) {
+                  nodes.push(
+                    <div className="grid-promo" key={`plus-${i}`}>
+                      <PlusSection {...promoProps} index={plusIdx} />
+                    </div>,
+                  );
+                  plusIdx += 1;
+                }
+              });
+              return nodes;
+            })()}
           </div>
           <div ref={sentinel} aria-hidden="true" />
           {visible < filtered.length && (
