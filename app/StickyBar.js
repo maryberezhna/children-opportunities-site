@@ -1,7 +1,6 @@
 'use client';
 import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
 
-const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const INSTAGRAM_URL = 'https://www.instagram.com/dityam.com.ua';
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
@@ -33,9 +32,9 @@ export default function StickyBar() {
     }
   };
 
-  const trackDonate = () => {
+  const trackEarlyList = () => {
     if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'monobank_click', { event_label: 'sticky_bar' });
+      window.gtag('event', 'plus_earlylist_click', { event_label: 'sticky_bar' });
     }
   };
 
@@ -106,15 +105,13 @@ export default function StickyBar() {
       </a>
 
       <a
-        href={MONOBANK_URL}
-        target="_blank"
-        rel="noopener noreferrer"
+        href="/pidbirka"
         className="sticky-btn sticky-btn-donate"
-        aria-label="Підтримати"
-        onClick={trackDonate}
+        aria-label="Dityam+ early list"
+        onClick={trackEarlyList}
       >
-        <span className="sticky-heart">🧡</span>
-        <span>Підтримати</span>
+        <span className="sticky-heart">🚀</span>
+        <span>Dityam+</span>
       </a>
     </div>
   );

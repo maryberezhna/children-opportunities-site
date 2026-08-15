@@ -45,16 +45,14 @@ export default function Footer() {
           <span>Instagram</span>
         </a>
 
-        <a
-          href="https://send.monobank.ua/jar/F72fDrV2c"
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/pidbirka"
           className="footer-action-btn footer-action-donate"
-          aria-label="Підтримати"
+          aria-label="Dityam+ early list"
         >
-          <span className="footer-action-heart">🧡</span>
-          <span>Підтримати</span>
-        </a>
+          <span className="footer-action-heart">🚀</span>
+          <span>Dityam+ early list</span>
+        </Link>
       </div>
 
       <div className="footer-content">
