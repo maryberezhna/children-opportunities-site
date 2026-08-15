@@ -35,6 +35,7 @@ def send_daily_report(
     health: dict,
     results: list[dict],
     archived: int,
+    llm_alert: dict | None = None,
 ) -> bool:
     """Send the daily scraper report. Returns True if sent successfully."""
     if not GMAIL_APP_PASSWORD:
@@ -43,14 +44,21 @@ def send_daily_report(
 
     today = datetime.now().strftime("%Y-%m-%d")
     n_new = len(new_opportunities)
-    subject = f"🎓 Dityam — {today}: {n_new} записів збережено"
+    # Проблема з LLM важливіша за кількість записів — виносимо її в тему,
+    # інакше лист «0 записів» виглядає як звичайний тихий день.
+    if llm_alert and llm_alert.get("is_billing"):
+        subject = f"❌ Dityam — {today}: закінчились кредити Anthropic, {n_new} збережено"
+    elif llm_alert:
+        subject = f"⚠️ Dityam — {today}: {llm_alert['failures']} помилок LLM, {n_new} збережено"
+    else:
+        subject = f"🎓 Dityam — {today}: {n_new} записів збережено"
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = GMAIL_FROM
     msg["To"] = GMAIL_TO
-    msg.attach(MIMEText(_build_text(today, new_opportunities, health, results, archived), "plain", "utf-8"))
-    msg.attach(MIMEText(_build_html(today, new_opportunities, health, results, archived), "html", "utf-8"))
+    msg.attach(MIMEText(_build_text(today, new_opportunities, health, results, archived, llm_alert), "plain", "utf-8"))
+    msg.attach(MIMEText(_build_html(today, new_opportunities, health, results, archived, llm_alert), "html", "utf-8"))
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
@@ -65,7 +73,34 @@ def send_daily_report(
 
 # ── HTML builder ──────────────────────────────────────────────────────────────
 
-def _build_html(today, new_opps, health, results, archived):
+def _llm_alert_html(llm_alert):
+    if not llm_alert:
+        return ""
+    if llm_alert.get("is_billing"):
+        return f"""
+        <div style="background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:700;color:#dc2626;margin-bottom:6px;">
+            ❌ Закінчились кредити Anthropic API
+          </div>
+          <div style="font-size:14px;color:#7f1d1d;line-height:1.5;">
+            {llm_alert['failures']} записів витягнуто, але не нормалізовано — кожен виклик LLM
+            падає з «credit balance too low». Скрапери працюють даремно, нові можливості
+            не зберігаються.<br>
+            <b>Що зробити:</b> поповнити кредити на
+            <a href="https://console.anthropic.com/settings/billing" style="color:#dc2626;">console.anthropic.com → Billing</a>
+            (і ввімкнути auto-reload, щоб не повторилось). Наступний запуск сам усе надолужить.
+          </div>
+        </div>"""
+    return f"""
+    <div style="background:#fffbeb;border:2px solid #d97706;border-radius:8px;padding:16px;margin-bottom:16px;">
+      <div style="font-size:15px;font-weight:700;color:#b45309;margin-bottom:6px;">
+        ⚠️ Помилки нормалізації (LLM): {llm_alert['failures']}
+      </div>
+      <div style="font-size:13px;color:#78350f;font-family:monospace;">{_esc(llm_alert.get('last_error',''))}</div>
+    </div>"""
+
+
+def _build_html(today, new_opps, health, results, archived, llm_alert=None):
     total_active = health.get("total_active", 0)
     total_archived = health.get("total_archived", 0)
     no_deadline = health.get("no_deadline", 0)
@@ -189,6 +224,8 @@ def _build_html(today, new_opps, health, results, archived):
   <!-- Body -->
   <div style="background:white;padding:24px 28px;border-radius:0 0 10px 10px;box-shadow:0 1px 4px rgba(0,0,0,.06);">
 
+    {_llm_alert_html(llm_alert)}
+
     {error_banner}
 
     {new_section}
@@ -227,10 +264,22 @@ def _build_html(today, new_opps, health, results, archived):
 
 # ── plain-text fallback ───────────────────────────────────────────────────────
 
-def _build_text(today, new_opps, health, results, archived):
+def _build_text(today, new_opps, health, results, archived, llm_alert=None):
     lines = [
         f"🎓 Dityam Scrapers — {today}",
-        "=" * 50,
+        "=" * 50,]
+    if llm_alert and llm_alert.get("is_billing"):
+        lines += [
+            "",
+            "!!! ЗАКІНЧИЛИСЬ КРЕДИТИ ANTHROPIC API !!!",
+            f"{llm_alert['failures']} записів витягнуто, але не збережено.",
+            "Поповнити: https://console.anthropic.com/settings/billing",
+            "",
+        ]
+    elif llm_alert:
+        lines += ["", f"!!! Помилок нормалізації (LLM): {llm_alert['failures']}",
+                  f"    {llm_alert.get('last_error','')}", ""]
+    lines += [
         f"Збережено сьогодні: {len(new_opps)}",
         f"Активних у базі: {health.get('total_active', 0)}",
         f"Архівовано сьогодні: {archived}",

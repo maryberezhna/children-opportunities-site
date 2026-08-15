@@ -180,6 +180,11 @@ class Normalizer:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.model = "claude-haiku-4-5-20251001"
+        # Помилки API збираємо, щоб денний звіт показав їх окремим блоком.
+        # Без цього «0 збережено» два тижні виглядало як норма, поки насправді
+        # кожен виклик падав із «credit balance too low».
+        self.api_failures = 0
+        self.last_api_error = None
 
     def normalize(self, raw_text: str, source: str, source_url: str,
                   raw_title: Optional[str] = None) -> Optional[dict]:
@@ -227,6 +232,8 @@ URL: {source_url}
 
         except Exception as e:
             logger.error(f"Normalize failed for {source_url}: {e}")
+            self.api_failures += 1
+            self.last_api_error = str(e)[:300]
             return None
 
     @staticmethod
