@@ -95,6 +95,42 @@ async function sendNextCandidate(chatId) {
   await sendCandidate(chatId, data[0], Math.max(0, (count || 1) - 1));
 }
 
+// Тап по кнопці «Хочу першим» у пості каналу: t.me/DityamComUABot?start=plus.
+// Зберігаємо chat_id у список очікування — це прямий канал, цінніший за email:
+// коли Dityam+ запуститься, напишемо людині сюди.
+async function handlePlusWaitlist(msg) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const chatId = String(msg.chat.id);
+  const username = msg.from?.username ? `@${msg.from.username}` : null;
+
+  const { data: existing } = await supabase.from('plus_waitlist')
+    .select('id').eq('telegram_chat_id', chatId).maybeSingle();
+
+  if (!existing) {
+    await supabase.from('plus_waitlist').insert({
+      telegram_chat_id: chatId,
+      telegram_username: username,
+      source: 'telegram_post',
+    });
+    // Сповіщення адміну — лише про нових, повторні тапи не шумлять.
+    if (ADMIN_CHAT_ID) {
+      await sendMessage(ADMIN_CHAT_ID,
+        `🚀 <b>Dityam+ — новий у списку очікування</b>
+${username || chatId} · з телеграм-посту`);
+    }
+  }
+
+  await sendMessage(msg.chat.id, existing
+    ? 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.'
+    : 'Ви в списку перших! 🧡
+
+Щойно Dityam+ запуститься — напишемо вам сюди першим, зі знижкою для перших.
+
+А поки що весь каталог відкритий безкоштовно: dityam.com.ua');
+  return new Response('ok');
+}
+
 // Батько відкрив t.me/DityamComUABot?start=<token> → привʼязуємо його chat_id
 // до підписки на персональну підбірку (Dityam+).
 async function handleDigestConnect(token, msg) {
@@ -215,6 +251,7 @@ export async function POST(request) {
     const text = msg.text.trim();
     // Dityam+ digest: /start <token> прив'язує канал, /stop відписує.
     const startArg = text.match(/^\/start\s+(\S+)/i);
+    if (startArg && startArg[1].toLowerCase() === 'plus') return handlePlusWaitlist(msg);
     if (startArg) return handleDigestConnect(startArg[1], msg);          // /start <token> — привʼязка з вебформи
     if (/^\/stop\b/i.test(text)) return handleDigestStop(msg);
     // Адмінська черга модерації.
