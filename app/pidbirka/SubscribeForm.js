@@ -1,131 +1,109 @@
 'use client';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { THEME_OPTIONS } from '@/lib/themes';
 
-const AGE_BANDS = [
-  ['0-3', '0–3 роки'], ['4-6', '4–6 років'], ['7-10', '7–10 років'],
-  ['11-14', '11–14 років'], ['15-18', '15–18 років'],
-];
-const INTERESTS = THEME_OPTIONS.filter((o) => o.value !== 'all');
-const GENDERS = [['any', 'Будь-хто'], ['boy', 'Хлопчик'], ['girl', 'Дівчинка']];
-
+/**
+ * Продаж Dityam+ на паузі — сторінка лише додає в список очікування.
+ * Два шляхи в ту саму таблицю plus_waitlist: Telegram одним тапом
+ * (деп-лінк у бота, найнижчий поріг) або email для тих, хто без Telegram.
+ * Стара анкета профілю (вік/інтереси/канал) повернеться разом із запуском.
+ */
 const C = {
-  ink: '#131b28', muted: '#54617a', line: '#d3dbe9', blue: '#1e4fd6', orange: '#db5a1e',
-  green: '#15803d', chipBg: '#f4f6fb',
+  ink: '#131b28', muted: '#54617a', line: '#d3dbe9', orange: '#db5a1e',
 };
 
-const chip = (on) => ({
-  display: 'inline-block', padding: '8px 14px', borderRadius: 999, cursor: 'pointer',
-  fontSize: 14, fontWeight: 600, userSelect: 'none',
-  border: `1.5px solid ${on ? C.blue : C.line}`,
-  background: on ? C.blue : '#fff', color: on ? '#fff' : C.muted,
-});
-const label = { display: 'block', fontSize: 13, fontWeight: 700, color: C.ink, margin: '22px 0 10px' };
-const input = { width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '11px 13px', borderRadius: 10, border: `1px solid ${C.line}`, fontFamily: 'inherit' };
-
-function toggle(list, v) {
-  return list.includes(v) ? list.filter((x) => x !== v) : [...list, v];
-}
-
 export default function SubscribeForm() {
-  const router = useRouter();
-  const [ages, setAges] = useState([]);
-  const [interests, setInterests] = useState([]);
-  const [gender, setGender] = useState('any');
-  const [freeOnly, setFreeOnly] = useState(false);
-  const [channel, setChannel] = useState('telegram');
   const [email, setEmail] = useState('');
-  const [handle, setHandle] = useState('');
-  const [consent, setConsent] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(null); // {ok, msg}
-
-  const valid = ages.length && interests.length && consent &&
-    (channel === 'email' ? /\S+@\S+\.\S+/.test(email) : handle.trim().length > 1);
+  const [state, setState] = useState('idle'); // idle | sending | done | error
 
   async function submit(e) {
     e.preventDefault();
-    if (!valid || busy) return;
-    setBusy(true); setDone(null);
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) { setState('error'); return; }
+    setState('sending');
     try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          channel, email: email.trim(), telegram_handle: handle.trim(),
-          age_bands: ages, interests, gender,
-          cost_pref: freeOnly ? 'free_only' : 'any', consent,
-        }),
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), source: 'pidbirka' }),
       });
-      const j = await res.json().catch(() => ({}));
-      if (res.ok) {
-        // Ведемо на окремий URL: рекламні системи рахують конверсію за адресою
-        // сторінки, а блок «Готово!» всередині форми адреси не має.
-        // Токен — через sessionStorage: у URL він потрапив би в аналітику,
-        // логи й Referer, а це ключ до чужої відписки.
-        try {
-          if (j.connect) sessionStorage.setItem('dityam_connect_token', j.connect);
-          sessionStorage.setItem('dityam_channel', channel);
-        } catch { /* приватний режим */ }
-        router.push('/dyakuyu');
-        return;
-      } else {
-        setDone({ ok: false, msg: j.error === 'duplicate' ? 'Ти вже підписаний(а) на цю пошту.' : 'Щось пішло не так. Спробуй ще раз.' });
+      const j = await res.json();
+      if (!j.ok) throw new Error('server');
+      setState('done');
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'plus_waitlist_submit', {
+          event_category: 'conversion',
+          event_label: 'pidbirka',
+        });
       }
     } catch {
-      setDone({ ok: false, msg: 'Помилка мережі. Спробуй ще раз.' });
-    } finally { setBusy(false); }
+      setState('error');
+    }
+  }
+
+  if (state === 'done') {
+    return (
+      <div style={{ marginTop: 26, padding: '20px 22px', borderRadius: 14, background: '#f0faf1', border: '1px solid #bfe3c6' }}>
+        <strong style={{ fontSize: 17 }}>Ви в списку! 🧡</strong>
+        <p style={{ margin: '6px 0 0', color: C.muted, fontSize: 15, lineHeight: 1.55 }}>
+          Напишемо першим, щойно Dityam+ запуститься — зі знижкою для перших.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={submit} style={{ marginTop: 10 }}>
-      <label style={label}>Вік дитини <span style={{ color: C.orange }}>*</span> <span style={{ fontWeight: 400, color: C.muted }}>— можна кілька</span></label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {AGE_BANDS.map(([v, l]) => (
-          <span key={v} style={chip(ages.includes(v))} onClick={() => setAges((s) => toggle(s, v))}>{l}</span>
-        ))}
+    <div style={{ marginTop: 26 }}>
+      {/* Telegram — головний шлях: один тап, і людина в списку */}
+      <a
+        href="https://t.me/DityamComUABot?start=plus"
+        style={{
+          display: 'block', textAlign: 'center', padding: '15px 20px',
+          borderRadius: 12, background: '#229ED9', color: '#fff',
+          fontSize: 16, fontWeight: 700, textDecoration: 'none',
+        }}
+      >
+        ✈️ Стати в список через Telegram — один тап
+      </a>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '18px 0' }}>
+        <span style={{ flex: 1, height: 1, background: C.line }} />
+        <span style={{ fontSize: 13, color: C.muted }}>або email</span>
+        <span style={{ flex: 1, height: 1, background: C.line }} />
       </div>
 
-      <label style={label}>Інтереси <span style={{ color: C.orange }}>*</span> <span style={{ fontWeight: 400, color: C.muted }}>— що цікавить дитину</span></label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {INTERESTS.map((o) => (
-          <span key={o.value} style={chip(interests.includes(o.value))} onClick={() => setInterests((s) => toggle(s, o.value))}>{o.label}</span>
-        ))}
-      </div>
-
-      <label style={label}>Стать <span style={{ fontWeight: 400, color: C.muted }}>— щоб краще підбирати (необовʼязково)</span></label>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-        {GENDERS.map(([v, l]) => (
-          <span key={v} style={chip(gender === v)} onClick={() => setGender(v)}>{l}</span>
-        ))}
-      </div>
-
-      <label style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '22px 0 0', cursor: 'pointer', fontSize: 15, color: C.ink }}>
-        <input type="checkbox" checked={freeOnly} onChange={(e) => setFreeOnly(e.target.checked)} style={{ width: 18, height: 18 }} />
-        Надсилати лише безкоштовні можливості
-      </label>
-
-      <label style={label}>Куди надсилати підбірку? <span style={{ color: C.orange }}>*</span></label>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-        <span style={chip(channel === 'telegram')} onClick={() => setChannel('telegram')}>✈️ Telegram</span>
-        <span style={chip(channel === 'email')} onClick={() => setChannel('email')}>✉️ Email</span>
-      </div>
-      {channel === 'email'
-        ? <input style={input} type="email" placeholder="твоя пошта" value={email} onChange={(e) => setEmail(e.target.value)} />
-        : <input style={input} type="text" placeholder="@твій_нік у Telegram" value={handle} onChange={(e) => setHandle(e.target.value)} />}
-
-      <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, margin: '22px 0 0', cursor: 'pointer', fontSize: 13.5, color: C.muted, lineHeight: 1.5 }}>
-        <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0 }} />
-        <span>Погоджуюсь отримувати підбірку й розумію, що можу відписатись будь-коли. Ми зберігаємо лише вік-діапазон та інтереси — <b style={{ color: C.ink }}>жодних точних даних дитини</b>.</span>
-      </label>
-
-      <button type="submit" disabled={!valid || busy} style={{
-        marginTop: 22, width: '100%', padding: '14px', fontSize: 16, fontWeight: 700,
-        borderRadius: 12, border: 'none', cursor: valid && !busy ? 'pointer' : 'not-allowed',
-        background: valid && !busy ? C.orange : C.line, color: '#fff',
-      }}>{busy ? 'Надсилаю…' : 'Оформити підбірку'}</button>
-
-      {done && !done.ok ? <p style={{ marginTop: 12, color: '#d92c2c', fontWeight: 600, fontSize: 14 }}>{done.msg}</p> : null}
-    </form>
+      <form onSubmit={submit} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle'); }}
+          placeholder="ваш@email.com"
+          aria-label="Email для списку очікування"
+          autoComplete="email"
+          style={{
+            flex: '1 1 220px', minWidth: 0, fontSize: 15, padding: '13px 15px',
+            borderRadius: 12, border: `1px solid ${C.line}`, fontFamily: 'inherit',
+          }}
+        />
+        <button
+          type="submit"
+          disabled={state === 'sending'}
+          style={{
+            flexShrink: 0, padding: '13px 22px', fontSize: 15, fontWeight: 700,
+            borderRadius: 12, border: 'none',
+            cursor: state === 'sending' ? 'wait' : 'pointer',
+            background: C.orange, color: '#fff', opacity: state === 'sending' ? 0.6 : 1,
+          }}
+        >
+          {state === 'sending' ? 'Хвилинку…' : 'Дізнатися першим'}
+        </button>
+      </form>
+      {state === 'error' && (
+        <p style={{ margin: '10px 0 0', color: '#d92c2c', fontWeight: 600, fontSize: 14 }}>
+          Перевірте email — здається, у ньому одрук.
+        </p>
+      )}
+      <p style={{ margin: '14px 0 0', fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
+        Жодного спаму: один лист про запуск і знижку для перших.
+      </p>
+    </div>
   );
 }
