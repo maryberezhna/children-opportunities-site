@@ -205,8 +205,10 @@ async def amain():
             print(f"   ⚠️ Помилок нормалізації (LLM): {normalizer.api_failures}")
         sent = notifier.send_daily_report(new_today, health, results, archived,
                                           llm_alert=llm_alert)
-        print(f"📧 Email: {'надіслано ✅' if sent else 'не надіслано (перевірте GMAIL_APP_PASSWORD)'}")
-
+        # send_daily_report повертає канал ('telegram'/'email') або False —
+        # старий підпис «Email ✅» брехав, коли звіт ішов у бот.
+        channel = {'telegram': 'Telegram-бот', 'email': 'Email (запасний)'}.get(sent)
+        print(f"📨 Звіт: {'надіслано у ' + channel + ' ✅' if channel else 'не надіслано ❌'}")
     if any(r["status"] == "error" for r in results):
         sys.exit(1)
 
