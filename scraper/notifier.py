@@ -120,7 +120,7 @@ def send_daily_report(
     запасний, якщо Telegram не налаштований або впав. Обидва одразу не шлемо:
     один звіт двічі — це шум, який привчає ігнорувати обидва."""
     if _send_telegram_report(new_opportunities, health, results, archived, llm_alert):
-        return True
+        return 'telegram'
 
     if not GMAIL_APP_PASSWORD:
         logger.warning("GMAIL_APP_PASSWORD not set — skipping daily email")
@@ -149,7 +149,7 @@ def send_daily_report(
             smtp.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
             smtp.sendmail(GMAIL_FROM, [GMAIL_TO], msg.as_string())
         logger.info("Daily report sent: %s", subject)
-        return True
+        return 'email'  # запасний канал
     except Exception as e:
         logger.error("Failed to send email: %s", e)
         return False
