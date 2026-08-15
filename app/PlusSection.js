@@ -1,5 +1,5 @@
 'use client';
-import Link from 'next/link';
+import { useState } from 'react';
 import { opportunitiesWord } from '@/lib/plural';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
@@ -7,30 +7,15 @@ const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 /**
  * Смуга Dityam+ усередині каталогу. Винесена з SupportPopup, бо блок
  * повторюється кілька разів на сторінці, а плаваюче сердечко з модалкою —
- * рівно одне: якби вони лишались в одному компоненті, кожен повтор додавав
- * би ще одну кнопку поверх іншої.
+ * рівно одне.
  *
- * `index` іде в аналітику, щоб було видно, який саме повтор дає кліки —
- * без цього не зрозуміти, чи варті нижні блоки місця.
+ * Продаж на паузі, поки продукт дороблюється: замість кнопок оплати —
+ * лист очікування. Email летить у plus_waitlist + сповіщенням у бот.
+ * `index` іде в аналітику — видно, який повтор блоку приводить людей.
  */
-export default function PlusSection({ total, price, index = 0 }) {
-  const trackPlus = () => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'plus_cta_click', {
-        event_category: 'engagement',
-        event_label: `catalog_slot_${index}`,
-      });
-    }
-  };
-
-  const trackMore = () => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'plus_more_click', {
-        event_category: 'engagement',
-        event_label: `catalog_slot_${index}`,
-      });
-    }
-  };
+export default function PlusSection({ total, index = 0 }) {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState('idle'); // idle | sending | done | error
 
   const trackMonobank = () => {
     if (typeof window !== 'undefined' && window.gtag) {
@@ -38,10 +23,34 @@ export default function PlusSection({ total, price, index = 0 }) {
     }
   };
 
+  const submit = async (e) => {
+    e.preventDefault();
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
+      setState('error');
+      return;
+    }
+    setState('sending');
+    try {
+      const res = await fetch('/api/waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), source: `catalog_slot_${index}` }),
+      });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'server');
+      setState('done');
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'plus_waitlist_submit', {
+          event_category: 'conversion',
+          event_label: `catalog_slot_${index}`,
+        });
+      }
+    } catch (err) {
+      setState('error');
+    }
+  };
+
   return (
-    /* Компактна смуга: заголовок, чипи переваг і дві кнопки. Все зайве
-       звідси вже прибрано — блок стоїть усередині каталогу й повторюється,
-       тож кожен зайвий рядок множиться на кількість повторів. */
     <section className="plus-section">
       <div className="plus-glow" aria-hidden="true" />
       <div className="plus-inner">
@@ -64,23 +73,38 @@ export default function PlusSection({ total, price, index = 0 }) {
         </div>
 
         <div className="plus-side">
-          <div className="plus-buy">
-            {/* Ціна всередині кнопки, а не поруч: окремим рядком вона
-                читалась як підпис до чогось іншого, а в кнопці одразу
-                відповідає на питання «скільки це коштує». */}
-            <Link href="/pidbirka" className="plus-cta" onClick={trackPlus}>
-              Спробувати Dityam+
-              <span className="plus-cta-price">{price} грн/міс</span>
-            </Link>
-            {/* Веде на ту саму сторінку, але окремою подією: «Спробувати»
-                тиснуть готові, «Дізнатися більше» — ті, кому ще треба
-                почитати. Розрізняти їх у GA важливіше, ніж економити лінк. */}
-            <Link href="/pidbirka" className="plus-more" onClick={trackMore}>
-              Дізнатися більше
-            </Link>
-          </div>
+          {state === 'done' ? (
+            <div className="plus-wait-done" role="status">
+              <strong>Ви в списку! 🧡</strong>
+              <p>Напишемо першим, щойно Dityam+ буде готовий — разом із бонусом за очікування.</p>
+            </div>
+          ) : (
+            <>
+              <p className="plus-wait-note">
+                <span className="plus-soon">скоро</span>
+                Ми саме дороблюємо Dityam+. Залиште email — дізнаєтесь про запуск
+                першими й отримаєте бонус на старті.
+              </p>
+              <form className="plus-wait-form" onSubmit={submit}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle'); }}
+                  placeholder="ваш@email.com"
+                  aria-label="Email для списку очікування"
+                  autoComplete="email"
+                />
+                <button type="submit" disabled={state === 'sending'}>
+                  {state === 'sending' ? 'Хвилинку…' : 'Дізнатися першим'}
+                </button>
+              </form>
+              {state === 'error' && (
+                <p className="plus-wait-error">Перевірте email — здається, у ньому одрук.</p>
+              )}
+            </>
+          )}
           <p className="plus-fine">
-            Каталог лишається безкоштовним для всіх · скасувати будь-коли ·{' '}
+            Каталог лишається безкоштовним для всіх · жодного спаму ·{' '}
             <a href={MONOBANK_URL} target="_blank" rel="noopener noreferrer" onClick={trackMonobank}>підтримати проєкт</a>
           </p>
         </div>

@@ -1,8 +1,5 @@
 import Link from 'next/link';
 import { supabase, CARD_FIELDS } from '@/lib/supabase';
-// Ціну читає серверний компонент: lib/wayforpay тягне crypto й секретний ключ,
-// тож у клієнтський бандл він потрапити не має.
-import { PRICE } from '@/lib/wayforpay';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
@@ -140,7 +137,7 @@ export default async function Home() {
             функцію-фабрику в клієнтський компонент віддати не можна. */}
         <OpportunitiesList
           opportunities={opportunities}
-          promoProps={{ total, price: PRICE }}
+          promoProps={{ total }}
         />
 
         <Footer />
