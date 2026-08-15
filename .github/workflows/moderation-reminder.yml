@@ -1,0 +1,32 @@
+name: Moderation reminder (every 3 days)
+
+# Якщо в черзі модерації є кандидати, яких не чіпали ≥3 днів — нагадує
+# в адмін-чат із кнопкою «Переглянути». Свіжа черга тривоги не здіймає.
+#
+# 09:30 Київ. Дні місяця 1, 4, 7… — на межі місяців інтервал пливе на
+# день-два, і це прийнятна ціна за відсутність таблиці стану.
+on:
+  schedule:
+    - cron: '30 6 */3 * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save @supabase/supabase-js
+      - name: Send moderation reminder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/moderation-reminder.mjs

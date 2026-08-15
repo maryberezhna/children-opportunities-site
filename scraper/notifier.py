@@ -4,9 +4,11 @@ Set these env vars / GitHub Secrets:
   GMAIL_APP_PASSWORD  — 16-char Gmail App Password (myaccount.google.com/apppasswords)
   GMAIL_FROM          — sender address (default: mashaberezhna0209@gmail.com)
 """
+import json
 import logging
 import os
 import smtplib
+import urllib.request
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -30,6 +32,83 @@ _STATUS_COLOR = {"success": "#16a34a", "error": "#dc2626", "empty": "#d97706"}
 _STATUS_LABEL = {"success": "✅ ок", "error": "❌ помилка", "empty": "⚠️ порожньо"}
 
 
+TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
+
+_tg_esc = lambda s: (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
+
+
+def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> bool:
+    """Компактний звіт скраперів в адмін-чат. Повертає True, якщо надіслано."""
+    if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
+        return False
+
+    today = datetime.now().strftime("%d.%m")
+    lines = [f"🕷 <b>Скрапери — {today}</b>", ""]
+    lines.append(
+        f"💾 Збережено: <b>{len(new_opps)}</b> · "
+        f"📚 активних: {health.get('total_active', 0)} · "
+        f"🗄 архівовано: {archived}"
+    )
+
+    if llm_alert and llm_alert.get("is_billing"):
+        lines += ["",
+                  "❌ <b>Закінчились кредити Anthropic API</b>",
+                  f"{llm_alert['failures']} записів витягнуто, але не збережено. "
+                  "Поповнити: console.anthropic.com → Billing "
+                  "(наступний запуск сам надолужить)."]
+    elif llm_alert:
+        lines += ["", f"⚠️ Помилок нормалізації (LLM): {llm_alert['failures']}",
+                  f"<code>{_tg_esc(llm_alert.get('last_error', '')[:150])}</code>"]
+
+    if new_opps:
+        lines += ["", "🆕 <b>Нові:</b>"]
+        for op in new_opps[:10]:
+            title = _tg_esc(op.get("title", "—"))
+            link = op.get("source_url")
+            lines.append(f"• {'<a href=' + chr(34) + _tg_esc(link) + chr(34) + '>' + title + '</a>' if link else title}"
+                         f" — {_tg_esc(op.get('source', ''))}")
+        if len(new_opps) > 10:
+            lines.append(f"…і ще {len(new_opps) - 10}")
+
+    errors = [r for r in results if r["status"] == "error"]
+    if errors:
+        lines += ["", "⚠️ <b>Помилки скраперів:</b>"]
+        for r in errors:
+            lines.append(f"• {_tg_esc(r['name'])} → <code>{_tg_esc(str(r.get('error', ''))[:120])}</code>")
+
+    empty = [r["name"] for r in results if r["status"] == "empty"]
+    if empty:
+        lines += ["", f"⚪ Порожні: {_tg_esc(', '.join(empty))}"]
+
+    payload = {
+        "chat_id": TELEGRAM_ADMIN_CHAT_ID,
+        "text": "\n".join(lines)[:4000],
+        "parse_mode": "HTML",
+        "disable_web_page_preview": True,
+    }
+    # Нові записи падають у чергу модерації — одразу даємо кнопку почати.
+    if new_opps:
+        payload["reply_markup"] = {
+            "inline_keyboard": [[{"text": "▶️ Переглянути чергу", "callback_data": "mod:next"}]]
+        }
+
+    try:
+        req = urllib.request.Request(
+            f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage",
+            data=json.dumps(payload).encode(),
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            ok = json.load(resp).get("ok", False)
+        if ok:
+            logger.info("Telegram report sent")
+        return ok
+    except Exception as e:
+        logger.error("Telegram report failed: %s", e)
+        return False
+
+
 def send_daily_report(
     new_opportunities: list[dict],
     health: dict,
@@ -37,7 +116,12 @@ def send_daily_report(
     archived: int,
     llm_alert: dict | None = None,
 ) -> bool:
-    """Send the daily scraper report. Returns True if sent successfully."""
+    """Щоденний звіт: основний канал — Telegram-бот в адмін-чат, email —
+    запасний, якщо Telegram не налаштований або впав. Обидва одразу не шлемо:
+    один звіт двічі — це шум, який привчає ігнорувати обидва."""
+    if _send_telegram_report(new_opportunities, health, results, archived, llm_alert):
+        return True
+
     if not GMAIL_APP_PASSWORD:
         logger.warning("GMAIL_APP_PASSWORD not set — skipping daily email")
         return False
