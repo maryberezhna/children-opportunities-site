@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { supabase, CARD_FIELDS } from '@/lib/supabase';
 import { TOPIC_NAV } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import { PRICE } from '@/lib/wayforpay';
 import OpportunitiesList from './OpportunitiesList';
 import StickyHeader from './StickyHeader';
 import StickyBar from './StickyBar';
@@ -135,7 +134,7 @@ export default async function TopicPage({ topic }) {
 
         <OpportunitiesList
           opportunities={opportunities}
-          promoProps={{ total, price: PRICE }}
+          promoProps={{ total }}
         />
         <Footer />
       </div>

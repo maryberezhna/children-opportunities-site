@@ -584,3 +584,85 @@
 @media (max-width: 640px) {
   .suggest-card { padding: 20px 18px; }
 }
+
+/* ============ ЛИСТ ОЧІКУВАННЯ DITYAM+ ============ */
+/* Продаж на паузі: замість кнопок оплати — email-форма «дізнатися першим». */
+.plus-wait-note {
+  margin: 0 0 12px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-soft);
+}
+
+.plus-soon {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  vertical-align: 1px;
+}
+
+.plus-wait-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.plus-wait-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  font-size: 14.5px;
+}
+
+.plus-wait-form input:focus {
+  outline: none;
+  border-color: var(--ink);
+}
+
+.plus-wait-form button {
+  flex-shrink: 0;
+  font: inherit;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 12px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.plus-wait-form button:hover { transform: translateY(-1px); }
+.plus-wait-form button:disabled { opacity: 0.6; cursor: wait; }
+.plus-wait-form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+.plus-wait-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #b3402a;
+}
+
+.plus-wait-done strong { font-size: 16.5px; }
+.plus-wait-done p {
+  margin: 6px 0 0;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .plus-wait-form button { width: 100%; }
+}
