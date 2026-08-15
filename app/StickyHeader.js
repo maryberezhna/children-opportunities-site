@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
 
-const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const INSTAGRAM_URL = 'https://www.instagram.com/dityam.com.ua';
 const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
@@ -93,16 +92,16 @@ export default function StickyHeader() {
             <span>Instagram</span>
           </a>
 
+          {/* Замість «Підтримати» — вхід у список очікування Dityam+.
+              Донати лишаються в підвалі й модалці сердечка. */}
           <a
-            href={MONOBANK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            href="/pidbirka"
             className="sticky-header-btn sticky-header-btn-donate"
-            aria-label="Підтримати"
-            onClick={track('monobank')}
+            aria-label="Dityam+ early list"
+            onClick={track('plus_earlylist')}
           >
-            <span className="sticky-header-heart">🧡</span>
-            <span>Підтримати</span>
+            <span className="sticky-header-heart">🚀</span>
+            <span>Dityam+ early list</span>
           </a>
         </div>
 
