@@ -195,7 +195,16 @@ async def amain():
         print(f"   Активних у базі: {health.get('total_active', 0)}")
         print(f"   Архівованих: {health.get('total_archived', 0)}")
         print(f"   Без дедлайну: {health.get('no_deadline', 0)}")
-        sent = notifier.send_daily_report(new_today, health, results, archived)
+        llm_alert = None
+        if normalizer.api_failures:
+            llm_alert = {
+                "failures": normalizer.api_failures,
+                "last_error": normalizer.last_api_error or "",
+                "is_billing": "credit balance" in (normalizer.last_api_error or "").lower(),
+            }
+            print(f"   ⚠️ Помилок нормалізації (LLM): {normalizer.api_failures}")
+        sent = notifier.send_daily_report(new_today, health, results, archived,
+                                          llm_alert=llm_alert)
         print(f"📧 Email: {'надіслано ✅' if sent else 'не надіслано (перевірте GMAIL_APP_PASSWORD)'}")
 
     if any(r["status"] == "error" for r in results):
