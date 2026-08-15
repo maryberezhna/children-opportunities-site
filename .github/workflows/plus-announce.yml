@@ -1,0 +1,30 @@
+name: Plus announcement (Telegram)
+
+# Разовий анонс Dityam+ у канал із кнопкою «Хочу першим» → список очікування.
+# Тільки ручний запуск — це не регулярний пост.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = показати текст, не публікувати'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Post announcement
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/plus-announce.mjs
