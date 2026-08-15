@@ -82,8 +82,9 @@ export default function PlusSection({ total, index = 0 }) {
             <>
               <p className="plus-wait-note">
                 <span className="plus-soon">скоро</span>
-                Ми саме дороблюємо Dityam+. Залиште email — дізнаєтесь про запуск
-                першими й отримаєте бонус на старті.
+                Ми саме дороблюємо Dityam+ — платну помісячну підписку.
+                Залиште email — дізнаєтесь про запуск першими й отримаєте
+                знижку на старті.
               </p>
               <form className="plus-wait-form" onSubmit={submit}>
                 <input
