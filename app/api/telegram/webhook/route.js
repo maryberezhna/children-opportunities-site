@@ -56,7 +56,12 @@ function candidateText(o, remaining) {
   if (o.cost_type === 'free') meta.push('✅ безкоштовно');
   const head = `🆕 <b>Кандидат на апрув</b>${remaining ? ` · ще ${remaining} у черзі` : ''}`;
   const lines = [head, '', `🎓 <b>${escapeHtml(o.title)}</b>`, meta.join(' · ')];
+  // Дата або періодичність — завжди видимі: картка без жодної позначки
+  // не дає зрозуміти, живий запис чи торішній.
   if (o.deadline) lines.push(`⏰ Дедлайн: ${o.deadline}`);
+  else if (o.recurrence === 'annual') lines.push('🔁 Щорічна');
+  else if (o.recurrence === 'ongoing') lines.push('♾ Постійно відкрита');
+  else lines.push('⚠️ Без дати — якщо вона є в джерелі, надішліть нотатку');
   if (o.dup_of) lines.push(`⚠ можливий дублікат (~${Math.round((o.dup_score || 0) * 100)}%)`);
   if (o.summary) lines.push('', escapeHtml(String(o.summary).slice(0, 400)));
   if (o.source_url) lines.push('', `🔗 <a href="${escapeHtml(o.source_url)}">Джерело</a>`);
@@ -88,7 +93,7 @@ async function sendNextCandidate(chatId) {
   const { count } = await supabase.from('opportunities')
     .select('id', { count: 'exact', head: true }).eq('status', 'draft');
   const { data } = await supabase.from('opportunities')
-    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, dup_of, dup_score')
+    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score')
     // updated_at ASC so postponed candidates (touched now) drop to the back.
     .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {

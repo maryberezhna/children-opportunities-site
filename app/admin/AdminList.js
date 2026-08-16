@@ -31,7 +31,10 @@ function MiniCol({ label, item, accent }) {
   const meta = [
     ageLabel(item),
     item.cost_type === 'free' ? 'безкоштовно' : null,
-    item.deadline ? `⏰ ${item.deadline}` : null,
+    item.deadline ? `⏰ ${item.deadline}`
+      : item.recurrence === 'annual' ? '🔁 щорічна'
+      : item.recurrence === 'ongoing' ? '♾ постійна'
+      : '⚠️ без дати',
   ].filter(Boolean).join(' · ');
   return (
     <div style={{ background: '#fff', border: `1px solid ${accent || C.border2}`, borderRadius: 8, padding: '8px 10px' }}>
