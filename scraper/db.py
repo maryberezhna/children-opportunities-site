@@ -20,26 +20,48 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
     now = datetime.now(timezone.utc).isoformat()
     record = {**data, "updated_at": now}
     try:
-        content_hash = record.get("content_hash")
-        if content_hash:
-            existing = (
-                client.table("opportunities")
-                .select("id, verified_at")
-                .eq("content_hash", content_hash)
-                .limit(1)
-                .execute()
-            )
-            if existing.data and existing.data[0].get("verified_at"):
+        # Той самий запис шукаємо за ДВОМА ключами: content_hash (вміст не
+        # змінився) АБО slug (та сама назва+джерело, але вміст сторінки трохи
+        # інший → інший hash). Без другого ключа повторна екстракція зміненої
+        # сторінки падала на unique(slug) і сирець зациклювався в черзі.
+        content_hash = record.get("content_hash") or ""
+        slug = record.get("slug") or ""
+        existing = (
+            client.table("opportunities")
+            .select("id, verified_at")
+            .or_(f"content_hash.eq.{content_hash},slug.eq.{slug}")
+            .limit(1)
+            .execute()
+        )
+        if existing.data:
+            row = existing.data[0]
+            if row.get("verified_at"):
                 # A moderator has reviewed (and possibly hand-edited) this record.
                 # Only bump updated_at as a "source still publishes this" signal —
-                # a full upsert would clobber their edits with re-extracted text.
+                # a full update would clobber their edits with re-extracted text.
+                patch = {"updated_at": now}
+            else:
+                # slug не оновлюємо ніколи: це URL сторінки, зміна назви від
+                # LLM не сміє ламати посилання, що вже живуть у Telegram.
+                patch = {k: v for k, v in record.items() if k != "slug"}
+            try:
+                result = (
+                    client.table("opportunities")
+                    .update(patch)
+                    .eq("id", row["id"])
+                    .execute()
+                )
+            except Exception:
+                # Рідкісний конфлікт (напр. новий content_hash вже зайнятий
+                # іншим рядком) — не втрачаємо сигнал життя джерела.
                 result = (
                     client.table("opportunities")
                     .update({"updated_at": now})
-                    .eq("id", existing.data[0]["id"])
+                    .eq("id", row["id"])
                     .execute()
                 )
-                return result.data[0] if result.data else None
+            return result.data[0] if result.data else None
+
         result = client.table("opportunities").upsert(
             record,
             on_conflict="content_hash"
