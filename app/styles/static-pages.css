@@ -178,8 +178,48 @@
   line-height: 1.55;
 }
 
+/* FAQ на сторінці підбірки: видимий двійник FAQPage-схеми.
+   details/summary — контент лишається в HTML для краулерів без JS. */
+.topic-faq {
+  max-width: 720px;
+  margin: 40px 0 8px;
+}
+
+.topic-faq h2 {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+.topic-faq-item {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 0;
+  margin-bottom: 8px;
+}
+
+.topic-faq-item summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 14.5px;
+  list-style-position: inside;
+}
+
+.topic-faq-item summary:hover { color: var(--accent); }
+
+.topic-faq-item p {
+  padding: 0 16px 14px;
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  line-height: 1.6;
+}
+
 @media (max-width: 640px) {
   .topic-chips { gap: 6px; margin-bottom: 14px; }
   .topic-chip { padding: 6px 12px; font-size: 12.5px; }
   .topic-note { font-size: 13.5px; }
+  .topic-faq-item summary, .topic-faq-item p { font-size: 13.5px; }
 }
