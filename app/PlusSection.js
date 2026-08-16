@@ -82,7 +82,7 @@ export default function PlusSection({ total, index = 0 }) {
             <>
               <p className="plus-wait-note">
                 <span className="plus-soon">скоро</span>
-                Ми саме дороблюємо Dityam+ — платну помісячну підписку.
+                Ми саме дороблюємо Dityam+ — платну підписку (179 грн/міс або 1 490 грн/рік).
                 Залиште email — дізнаєтесь про запуск першими й отримаєте
                 знижку на старті.
               </p>
