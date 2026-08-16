@@ -178,6 +178,42 @@
   line-height: 1.55;
 }
 
+/* Хаб категорій /kategorii: групи чіпів із живими лічильниками. */
+.category-group { margin: 26px 0 4px; }
+
+.category-group h2 { font-size: 19px; margin-bottom: 12px; }
+
+.category-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.category-chip:hover { border-color: var(--accent); color: var(--accent); }
+
+.category-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+@media (max-width: 640px) {
+  .category-chip { font-size: 13px; padding: 7px 12px; }
+}
+
 /* FAQ на сторінці підбірки: видимий двійник FAQPage-схеми.
    details/summary — контент лишається в HTML для краулерів без JS. */
 .topic-faq {
