@@ -17,6 +17,7 @@ import dedup_judge
 import link_check
 import notifier
 import raw_store
+import ttl_requeue
 from db import (get_client, get_health_stats, get_new_today,
                 get_source_registry, record_crawl_result, upsert_opportunity)
 from normalizer import Normalizer, NormalizeError
@@ -192,7 +193,8 @@ def print_summary(results, stats):
     print(f"⏱️  Загальний час: {total_time:.1f}с ({total_time / 60:.1f} хв)\n")
 
     for r in results:
-        icon = {"success": "✅", "error": "❌", "empty": "⚠️ ", "disabled": "⏸ "}[r["status"]]
+        icon = {"success": "✅", "error": "❌", "empty": "⚠️ ",
+                "disabled": "⏸ ", "scheduled": "⏭ "}[r["status"]]
         print(f"  {icon} {r['name']:25s} {r.get('count', 0):3d} нових  "
               f"{r.get('duration', 0):5.1f}s")
 
@@ -253,6 +255,8 @@ async def amain():
     # увімкненим (реєстр не сміє зупинити скрапінг власною недоступністю).
     registry = get_source_registry(sb_client, "python")
 
+    from datetime import timezone as _tz
+
     results = []
     for name, module, tag in scrapers:
         reg_row = registry.get(name)
@@ -261,10 +265,31 @@ async def amain():
             results.append({"name": name, "status": "disabled", "count": 0,
                             "duration": 0, "tag": tag})
             continue
+        # Адаптивний розклад: джерело ще не «дозріло» — пропускаємо (крім
+        # явних запусків --only, де людина просить саме це джерело зараз).
+        next_at = (reg_row or {}).get("next_crawl_at")
+        if next_at and not args.only:
+            try:
+                due = datetime.fromisoformat(next_at.replace("Z", "+00:00"))
+                if due > datetime.now(_tz.utc):
+                    print(f"\n⏭  {name}: за розкладом наступний обхід "
+                          f"{due:%d.%m %H:%M} — пропускаю")
+                    results.append({"name": name, "status": "scheduled",
+                                    "count": 0, "duration": 0, "tag": tag})
+                    continue
+            except ValueError:
+                pass
         result = await run_scraper(name, module, sb_client)
         result["tag"] = tag
         results.append(result)
         await asyncio.sleep(2)
+
+    # TTL: старі записи без дедлайну — на переверифікацію (потрапляють у ту
+    # саму чергу екстракції нижче, тож рішення про «закрито» приходить
+    # цим же запуском).
+    ttl_stats = {}
+    if not args.only and not args.skip:
+        ttl_stats = ttl_requeue.run(sb_client)
 
     # Етап Б: LLM-екстракція спільної черги (нове + недороблене з минулих днів).
     stats = process_pending(normalizer, sb_client)

@@ -154,7 +154,7 @@ def get_source_registry(client: Client, pipeline: str) -> dict:
     try:
         result = (
             client.table("sources")
-            .select("name, enabled, consecutive_failures")
+            .select("name, enabled, consecutive_failures, next_crawl_at")
             .eq("pipeline", pipeline)
             .execute()
         )
@@ -164,15 +164,43 @@ def get_source_registry(client: Client, pipeline: str) -> dict:
         return {}
 
 
-def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> None:
-    """Здоров'я джерела після запуску. checks/changes живлять адаптивний
-    розклад Фази 4; consecutive_failures — майбутні алерти про поламки."""
+def _season_multiplier(client: Client, categories: list) -> float:
+    """Максимальний сезонний множник серед категорій джерела на поточний
+    місяць. 1.0 — без сезону. Помилка → 1.0 (сезонність не критична)."""
+    if not categories:
+        return 1.0
     from datetime import datetime, timezone
-    now = datetime.now(timezone.utc).isoformat()
+    month = datetime.now(timezone.utc).month
+    try:
+        rows = (
+            client.table("category_seasons")
+            .select("multiplier")
+            .in_("category", categories)
+            .eq("month", month)
+            .execute()
+            .data
+        )
+        return max((r["multiplier"] for r in rows), default=1.0) if rows else 1.0
+    except Exception:
+        return 1.0
+
+
+def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> None:
+    """Здоров'я + адаптивний розклад джерела після запуску.
+
+    Інтервал: нові знахідки → ÷2 (частіше, до 1 дня); нічого нового → ×2
+    (рідше, до 30 днів); збій інтервал не змінює (полагодиться — надолужить).
+    Сезон ділить ефективний інтервал: табори навесні скрапляться втричі
+    частіше за свій базовий ритм. pin_interval — завжди щодня (соцмережі,
+    RSS: пости зникають зі стрічки, розтягувати не можна)."""
+    from datetime import datetime, timedelta, timezone
+    now_dt = datetime.now(timezone.utc)
+    now = now_dt.isoformat()
     try:
         current = (
             client.table("sources")
-            .select("consecutive_failures, checks_count, changes_count")
+            .select("consecutive_failures, checks_count, changes_count, "
+                    "crawl_interval_days, pin_interval, categories")
             .eq("name", name).limit(1).execute()
         )
         if not current.data:
@@ -189,6 +217,19 @@ def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> 
                 patch["changes_count"] = (row.get("changes_count") or 0) + 1
         else:
             patch["consecutive_failures"] = (row.get("consecutive_failures") or 0) + 1
+
+        base = row.get("crawl_interval_days") or 1
+        if row.get("pin_interval"):
+            interval, effective = 1, 1
+        elif not ok:
+            interval, effective = base, 1  # зламане перевіряємо щодня, поки не оживе
+        else:
+            interval = max(1, base // 2) if new_items > 0 else min(30, base * 2)
+            season = _season_multiplier(client, row.get("categories") or [])
+            effective = max(1, round(interval / season))
+        patch["crawl_interval_days"] = interval
+        patch["next_crawl_at"] = (now_dt + timedelta(days=effective)).isoformat()
+
         client.table("sources").update(patch).eq("name", name).execute()
     except Exception as e:
         logger.error(f"record_crawl_result failed for {name}: {e}")
