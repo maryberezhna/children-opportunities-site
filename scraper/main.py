@@ -13,6 +13,8 @@ import sys
 import time
 from datetime import datetime
 
+import dedup_judge
+import link_check
 import notifier
 import raw_store
 from db import (get_client, get_health_stats, get_new_today,
@@ -134,6 +136,23 @@ def process_pending(normalizer, sb_client, limit=300):
             stats["rejected"] += 1
             continue
 
+        # Вхідні ворота для НОВИХ записів: мертвий лінк не публікується.
+        # Наявні записи не чіпаємо — їх щодня переперевіряє verify-links.
+        existing = (
+            sb_client.table("opportunities").select("id")
+            .eq("content_hash", normalized.get("content_hash", "")).limit(1)
+            .execute().data
+        )
+        if not existing:
+            alive, reason = link_check.is_alive(normalized.get("source_url", ""))
+            if not alive:
+                raw_store.mark(sb_client, item["id"], "rejected",
+                               error=f"dead link: {reason}")
+                stats["rejected"] += 1
+                print(f"  🔗✗ мертвий лінк ({reason}): "
+                      f"{normalized.get('source_url', '')[:80]}")
+                continue
+
         saved = upsert_opportunity(sb_client, normalized)
         if saved:
             raw_store.mark(sb_client, item["id"], "processed",
@@ -249,6 +268,14 @@ async def amain():
 
     # Етап Б: LLM-екстракція спільної черги (нове + недороблене з минулих днів).
     stats = process_pending(normalizer, sb_client)
+
+    # Етап В: суддя неточних дублів (лише повні запуски — не --only/--skip).
+    if not args.only and not args.skip:
+        dd = dedup_judge.run_sweep(sb_client)
+        if dd["candidates"]:
+            print(f"\n🔍 Дедуплікація: {dd['candidates']} пар-кандидатів, "
+                  f"злито {dd['merged']}, різних {dd['distinct']}, "
+                  f"збоїв {dd['errors']}")
 
     # Expiry/archiving is handled by scripts/check-deadlines.mjs (its own daily cron).
     print_summary(results, stats)
