@@ -1,56 +1,15 @@
 // Eurodesk Programme Database — EU opportunities for youth
-// Primary: RSS feed at /rss (558 items, parsed + filtered)
-// Fallback: curated static list when Cloudflare blocks the RSS on CI
+// RSS feed at /rss (558 items, parsed + filtered).
 //
-// Cloudflare blocks GitHub Actions IPs — both /search and /rss return 403.
-// In that case the static CURATED list is used so the scraper always produces output.
+// Cloudflare blocks GitHub Actions IPs — /rss returns 403 on CI, тож на CI
+// скрапер чесно падає (без фолбеку) і реєстр джерел фіксує збій. Джерело
+// вимкнене в sources (enabled=false), доки не з'явиться проксі чи інший шлях;
+// локально RSS працює.
 
 export const name = 'Eurodesk — EU програми для молоді';
 
 const RSS = 'https://programmes.eurodesk.eu/rss';
 const BASE = 'https://programmes.eurodesk.eu';
-
-// Curated specific programmes for individual Ukrainian youth 14-17.
-// Rule: concrete program with known application process — NOT aggregators,
-// catalogs, organizational grants, or duplicates from other scrapers.
-const CURATED = [
-  { id: '19593', title: 'Euroscola', age_from: 16, age_to: 17, type: 'exchange',
-    summary: 'Занурення в Європейський Парламент для учнів старшої школи. Учні з країн ЄС та партнерів спілкуються з депутатами ЄП і дебатують актуальні теми. Щорічний набір через партнерські школи.' },
-  { id: '19824', title: 'Erasmus+ Youth Exchanges', age_from: 13, age_to: 17, type: 'exchange',
-    summary: 'Фінансовані ЄС короткі (7–21 день) молодіжні обміни між школами та НГО. Українська молодь може брати участь через організацію-партнера з будь-якої країни ЄС. Харчування і проїзд покриті.' },
-  { id: '19693', title: 'Juvenes Translatores — конкурс перекладачів ЄС', age_from: 17, age_to: 17, type: 'competition',
-    summary: 'Щорічний конкурс перекладу від Генерального директорату ЄС. Учасники — учні 17 років, перекладають на рідну мову з однієї з 24 мов ЄС. Переможці запрошуються до Брюсселя.' },
-  { id: '19700', title: 'European Charlemagne Youth Prize', age_from: 16, age_to: 17, type: 'competition',
-    summary: 'Щорічна нагорода для молодіжних проєктів, що підтримують єдність Європи. Вік 16–30 років. Переможці отримують €5000 та запрошення до Европарламенту. Подача безпосередньо на сайті.' },
-  { id: '23235', title: 'YCE Exchange Youth — культурний обмін', age_from: 16, age_to: 17, type: 'exchange',
-    summary: 'Програма культурного обміну для підлітків 16–22 років. Пожити за кордоном у приймаючій родині, вивчити мову та культуру. Застосовуються безпосередньо через YCE.' },
-  { id: '20152', title: 'European Parliament Ambassador School (EPAS)', age_from: 14, age_to: 17, type: 'course',
-    summary: 'Безкоштовна однорічна шкільна програма ЄС. Учні вивчають роботу Европарламенту, беруть участь у симуляціях і відвідують ЄП. Школи реєструються безпосередньо на сайті ЄП.' },
-  { id: '22310', title: 'Girls Go Circular Student Challenge', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Конкурс ЄС для учениць: проєкти на тему циркулярної економіки та STEM. Фіналістки запрошуються на форум у Брюсселі. Реєстрація команд через школу.' },
-  { id: '22130', title: 'International Chemistry Competition (IChO)', age_from: 15, age_to: 17, type: 'competition',
-    summary: 'Міжнародна олімпіада з хімії для учнів старшої школи. Теоретичні та практичні задачі, змагання серед 80+ країн. Участь через Українське хімічне товариство.' },
-  { id: '22131', title: 'International Astronomy and Astrophysics Competition', age_from: 15, age_to: 17, type: 'competition',
-    summary: 'Онлайн-конкурс з астрономії та астрофізики для школярів. Три раунди, безкоштовно, індивідуальна участь. Переможці отримують золоті, срібні та бронзові нагороди.' },
-  { id: '20960', title: 'Plural+ Youth Video Festival', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Конкурс відеороликів від ООН та UNAOC для молоді 9–25 років. Теми: міграція, різноманітність. Відео до 5 хв. Переможці запрошуються на церемонію нагородження в Нью-Йорку.' },
-  { id: '19667', title: 'World Bank International Essay Competition', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Щорічний конкурс есе Світового банку для молоді 14–18 років. Тема щороку нова. Призи та міжнародне визнання. Подача безпосередньо на сайті Worldbank.' },
-  { id: '20861', title: 'European Space Camp', age_from: 17, age_to: 17, type: 'camp',
-    summary: 'Тижневий літній табір в Норвегії для молоді 17–20 років: ракетобудування, астрономія, космічні технології. Обмежена кількість місць, відбір за мотиваційним листом.' },
-  { id: '22037', title: 'Young European Ambassador (YEA)', age_from: 16, age_to: 17, type: 'volunteer',
-    summary: 'Програма ЄС для молоді 16–26 років з країн Східного партнерства, включаючи Україну. Учасники просувають цінності ЄС у своїх громадах. Онлайн-навчання + реальні проєкти.' },
-  { id: '21700', title: 'UNESCO Global Youth Hackathon', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Глобальний хакатон ЮНЕСКО для молоді: командні рішення проблем цифрових прав та онлайн-простору. Переможці представляють проєкти на Інтернет-форумі ООН.' },
-  { id: '22558', title: 'Young Inventors Prize', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Нагорода ЄС молодим інноваторам: рішення у сфері сталого розвитку та технологій. Переможці отримують фінансування і публічне визнання на рівні ЄС.' },
-  { id: '22900', title: 'Young Champions of the Earth', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Програма ЮНЕП ООН для молодих екологічних лідерів. 6 переможців на рік отримують $15 000 на реалізацію проєкту + менторство + медійна підтримка ООН.' },
-  { id: '23100', title: 'beVisioneers Fellowship — Sustainability', age_from: 14, age_to: 17, type: 'grant',
-    summary: 'Стипендіальна програма BMW Foundation: онлайн-навчання, ментори, мережа лідерів із 170+ країн. Фокус на кліматі та технологіях. Подача без обмежень по країні.' },
-  { id: '19713', title: 'WSA Young Innovators', age_from: 14, age_to: 17, type: 'competition',
-    summary: 'Нагорода WSA для молодих соціальних інноваторів, які використовують ІКТ для досягнення Цілей ООН. Номінації від країн-партнерів, включаючи Україну.' },
-];
 
 // Ключові слова, що вказують на молодь / школярів
 const YOUTH_TITLE_KEYWORDS = [
@@ -165,10 +124,11 @@ export async function scrape() {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     xml = await res.text();
   } catch (err) {
-    console.warn(`  ${name}: RSS blocked (${err.message}) — using curated fallback`);
+    // Без фолбеку: заблокований RSS — це збій, реєстр джерел його зафіксує.
+    throw new Error(`RSS недоступний: ${err.message}`);
   }
 
-  if (xml) {
+  {
     // Live RSS parse
     const items = parseRss(xml);
     const rows = [];
@@ -188,9 +148,4 @@ export async function scrape() {
     }
     return rows;
   }
-
-  // Static curated fallback
-  return CURATED.map(({ id, title, age_from, age_to, type, summary }) =>
-    buildRowFromItem({ id, url: `${BASE}/${id}`, title, desc: summary, age_from, age_to, type })
-  );
 }

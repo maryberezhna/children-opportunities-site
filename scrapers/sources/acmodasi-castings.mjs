@@ -36,24 +36,7 @@ export async function scrape() {
     });
   });
 
-  // Fallback: emit the portal entry if no items parsed (selectors may have changed)
-  if (rows.length === 0) {
-    console.warn('  acmodasi: no items parsed — emitting portal index entry');
-    rows.push({
-      title: 'ACMODASI — портал кастингів для акторів',
-      summary: 'Великий портал з десятками кастингів щодня. Розділи для дітей: зйомки у фільмах, серіалах, рекламі, музичних кліпах.',
-      age_from: 5,
-      age_to: 17,
-      opportunity_type: 'competition',
-      categories: ['arts'],
-      child_needs: [],
-      format: 'Онлайн, Україна',
-      cost_type: 'free',
-      deadline: null,
-      source_url: LIST_URL,
-      source: 'ACMODASI',
-    });
-  }
-
+  // Нуль знахідок = зламані селектори. Фолбеку немає свідомо: run.mjs
+  // запише збій у реєстр джерел, і після 3 поспіль адмін отримає алерт.
   return rows;
 }

@@ -7,13 +7,8 @@ export const name = 'Регіональні дитячі табори';
 const LIST_URL = 'https://child.com.ua/dityachi-tabory/';
 
 export async function scrape() {
-  let html;
-  try {
-    html = await fetchHtml(LIST_URL);
-  } catch (err) {
-    console.warn(`  ${name}: list fetch failed (${err.message}) — using curated fallback`);
-    return curatedFallback();
-  }
+  // Збій фетчу прокидаємо: run.mjs запише його в реєстр джерел як failure.
+  const html = await fetchHtml(LIST_URL);
 
   const $ = cheerio.load(html);
   const rows = [];
@@ -44,40 +39,7 @@ export async function scrape() {
     });
   });
 
-  return rows.length > 0 ? rows : curatedFallback();
-}
-
-function curatedFallback() {
-  return [
-    {
-      title: 'Дитячий табір "Дзвінкий" — Закарпаття',
-      summary: 'Літній табір у Карпатах з туристичною та екологічною програмою. Походи, екскурсії, творчі майстерні. Зміни 10-14 днів.',
-      age_from: 7, age_to: 16, opportunity_type: 'camp',
-      categories: ['social','sports'], child_needs: [],
-      format: 'Офлайн, Закарпаття', cost_type: 'paid_affordable',
-      deadline: null,
-      source_url: 'https://child.com.ua/dityachi-tabory/zakarpattya/',
-      source: 'child.com.ua',
-    },
-    {
-      title: 'Eco Camp — екологічний табір на Поліссі',
-      summary: 'Екологічний табір з вивченням флори і фауни, орієнтуванням, базовими навичками виживання. Партнерство з природним заповідником.',
-      age_from: 9, age_to: 15, opportunity_type: 'camp',
-      categories: ['education'], child_needs: [],
-      format: 'Офлайн, Полісся', cost_type: 'paid_affordable',
-      deadline: null,
-      source_url: 'https://child.com.ua/dityachi-tabory/',
-      source: 'child.com.ua',
-    },
-    {
-      title: 'Мовний табір English Time — Одещина',
-      summary: 'Мовний табір з носіями англійської. Повна англомовна програма 14 днів, басейн, пляж, екскурсії історичною Одесою.',
-      age_from: 8, age_to: 16, opportunity_type: 'camp',
-      categories: ['languages','education'], child_needs: [],
-      format: 'Офлайн, Одеська обл.', cost_type: 'paid_affordable',
-      deadline: null,
-      source_url: 'https://child.com.ua/dityachi-tabory/',
-      source: 'child.com.ua',
-    },
-  ];
+  // Нуль знахідок = зламані селектори; фолбеку немає свідомо — run.mjs
+  // зафіксує збій, після 3 поспіль адмін отримає алерт у Telegram.
+  return rows;
 }

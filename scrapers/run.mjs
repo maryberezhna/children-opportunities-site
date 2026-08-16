@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { buildRow, validate } from './lib/normalize.mjs';
 import { applyRules } from './lib/rules.mjs';
 import { toCsv } from './lib/csv.mjs';
+import { loadRegistry, recordCrawl, alertBrokenSources } from './lib/registry.mjs';
 
 import * as acmodasi from './sources/acmodasi-castings.mjs';
 import * as constellation from './sources/constellation-ua.mjs';
@@ -25,9 +26,18 @@ import * as egapStem from './sources/egap-stem.mjs';
 
 // Only mjs-unique sources — the four overlapping with the Python scraper
 // (МАН, МОН, Дія.Освіта, easy.gov) were removed to stop cross-pipeline dupes.
+// `registry` — ім'я рядка в таблиці sources; `network` — чи означає нуль
+// знахідок поламку (список у мережі не буває порожнім; статика — буває).
 const SOURCES = [
-  acmodasi, constellation, festPortal, camps, international, langSchools,
-  ucfGrants, eurodesk, egapStem,
+  { mod: acmodasi, registry: 'acmodasi', network: true },
+  { mod: constellation, registry: 'constellation-ua', network: true },
+  { mod: festPortal, registry: 'fest-portal', network: true },
+  { mod: camps, registry: 'regional-camps', network: true },
+  { mod: international, registry: 'international-competitions', network: true },
+  { mod: langSchools, registry: 'regional-language-schools', network: false },
+  { mod: ucfGrants, registry: 'ucf-grants', network: false },
+  { mod: eurodesk, registry: 'eurodesk', network: true },
+  { mod: egapStem, registry: 'egap-stem', network: false },
 ];
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -39,13 +49,36 @@ async function main() {
   const rejectLog = [];
   let totalRaw = 0;
 
-  for (const source of SOURCES) {
+  const registryClient =
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+      ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+          auth: { persistSession: false },
+        })
+      : null;
+  const registry = await loadRegistry(registryClient, 'node');
+
+  for (const { mod: source, registry: regName, network } of SOURCES) {
+    const regRow = registry[regName];
+    if (regRow && regRow.enabled === false) {
+      console.log(`⏸  ${source.name}: вимкнено в реєстрі джерел — пропускаю`);
+      continue;
+    }
+
     process.stdout.write(`→ ${source.name} ... `);
     let partials = [];
     try {
       partials = await source.scrape();
     } catch (err) {
       console.log(`FAILED (${err.message})`);
+      await recordCrawl(registryClient, regName, false);
+      continue;
+    }
+    // Нуль знахідок із мережевого списку = зламані селектори, а не порожній
+    // сайт. Раніше це маскував «кураторський фолбек» — тепер це чесний збій.
+    const ok = partials.length > 0 || !network;
+    await recordCrawl(registryClient, regName, ok);
+    if (!ok) {
+      console.log('0 rows — селектори, ймовірно, зламались (записано як збій)');
       continue;
     }
     totalRaw += partials.length;
@@ -104,6 +137,9 @@ async function main() {
   }
 
   await upsertToSupabase(live);
+
+  // Джерела, що ламаються 3+ запуски поспіль → алерт адміну в Telegram.
+  await alertBrokenSources(registryClient, 'node');
 }
 
 async function filterByUrlReachability(rows) {
