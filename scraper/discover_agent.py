@@ -31,6 +31,7 @@ from datetime import date, datetime, timezone
 import httpx
 from slugify import slugify
 
+from canonical import canonical_url
 from db import get_client
 from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
 from normalizer import _sanitize
@@ -208,6 +209,7 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
     normalized = re.sub(r"[^\w\s]", "", title.lower())
     normalized = re.sub(r"\s+", " ", normalized).strip()
     rec["content_hash"] = hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
+    rec["canonical_url"] = canonical_url(url)
     return rec
 
 
