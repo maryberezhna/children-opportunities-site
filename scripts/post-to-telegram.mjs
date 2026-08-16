@@ -251,6 +251,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 const { data: pool, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline')
+  .eq('status', 'active')
   .is('telegram_posted_at', null)
   .order('created_at', { ascending: true })
   .limit(POOL_SIZE);

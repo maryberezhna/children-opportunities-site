@@ -14,7 +14,7 @@ import time
 from datetime import datetime
 
 import notifier
-from db import archive_expired, get_client, get_health_stats, get_new_today, upsert_opportunity
+from db import get_client, get_health_stats, get_new_today, upsert_opportunity
 from normalizer import Normalizer
 from scrapers import (
     british_council,
@@ -99,7 +99,7 @@ async def run_scraper(name, module, normalizer, sb_client):
             "duration": duration}
 
 
-def print_summary(results, archived):
+def print_summary(results):
     print(f"\n\n{'=' * 70}\n📊 ФІНАЛЬНИЙ ЗВІТ\n{'=' * 70}")
     success = [r for r in results if r["status"] == "success"]
     errors = [r for r in results if r["status"] == "error"]
@@ -111,7 +111,6 @@ def print_summary(results, archived):
     print(f"⚠️  Порожні:  {len(empty)}")
     print(f"❌ Помилки: {len(errors)}")
     print(f"📦 Всього записів: {total}")
-    print(f"🗄️  Архівовано прострочених: {archived}")
     print(f"⏱️  Загальний час: {total_time:.1f}с ({total_time / 60:.1f} хв)\n")
 
     for r in results:
@@ -178,8 +177,8 @@ async def amain():
         results.append(result)
         await asyncio.sleep(2)
 
-    archived = archive_expired(sb_client)
-    print_summary(results, archived)
+    # Expiry/archiving is handled by scripts/check-deadlines.mjs (its own daily cron).
+    print_summary(results)
 
     end = datetime.now()
     total = (end - start).total_seconds()
