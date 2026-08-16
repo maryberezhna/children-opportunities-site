@@ -19,9 +19,9 @@ if (!SUPABASE_URL || !KEY) {
 }
 const supabase = createClient(SUPABASE_URL, KEY, { auth: { persistSession: false } });
 
-async function countRows(table, filter = (q) => q) {
+async function countRows(table, filter = (q) => q, col = 'id') {
   const { count, error } = await filter(
-    supabase.from(table).select('id', { count: 'exact', head: true }),
+    supabase.from(table).select(col, { count: 'exact', head: true }),
   );
   if (error) {
     console.error(`${table} count failed: ${error.message}`);
@@ -52,7 +52,7 @@ const [active, closed, drafts, added, waitlist, profiles, feedback] = await Prom
   countRows('opportunities', (q) => q.gte('created_at', today)),
   countRows('plus_waitlist'),
   countRows('digest_subscribers'),
-  countRows('opportunity_feedback'),
+  countRows('opportunity_feedback', (q) => q, 'opportunity_id'),
 ]);
 
 // MRR: місячні × 179 + річні × (1490/12) — та сама формула, що в plus-stats.
