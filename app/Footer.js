@@ -177,6 +177,9 @@ export default function Footer() {
             {t.label}
           </Link>
         ))}
+        <Link href="/kategorii" className="footer-city-link">
+          Всі категорії →
+        </Link>
       </nav>
 
       <div className="footer-bottom">
