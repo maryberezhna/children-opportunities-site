@@ -34,6 +34,7 @@ from scrapers import (
     prometheus,
     rss_feeds,
     save_the_children,
+    space_dobrodiy,
     telegram_channels,
     telegram_web,
     unicef,
@@ -48,6 +49,7 @@ SCRAPERS = [
     ("easy.gov.ua", easy_gov, "ukrainian"),
     ("Erasmus+ UA", erasmus, "ukrainian"),
     ("House of Europe", house_of_europe, "ukrainian"),
+    ("Місце Сили (Клуб Добродіїв)", space_dobrodiy, "ukrainian"),
     ("RSS-стрічки", rss_feeds, "ukrainian"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
