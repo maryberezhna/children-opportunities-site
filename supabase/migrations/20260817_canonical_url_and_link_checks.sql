@@ -44,7 +44,10 @@ insert into dedup_hub_urls (url_prefix) values
   ('https://artarsenal.in.ua'),
   ('https://ukraine.uwc.org/apply'),
   ('https://man.gov.ua/contests/olympiad'),
-  ('https://osvita.diia.gov.ua/courses')
+  ('https://osvita.diia.gov.ua/courses'),
+  -- корені орг-сайтів, де кілька різних програм ділять одну адресу
+  ('https://ctdu-kiev.com.ua'),
+  ('https://oman.lviv.ua')
 on conflict do nothing;
 
 -- Захист від дублів між пайплайнами. Спрацьовує лише на INSERT нового активного
