@@ -74,6 +74,9 @@ async function sendCandidate(chatId, o, remaining) {
         { text: '⏭ Відкласти', callback_data: `mod:later:${o.id}` },
         { text: '✏️ Редагувати', url: `${SITE_URL}/admin/edit/${o.id}` },
       ],
+      [
+        { text: '💬 Нотатка (виправлю перед публікацією)', callback_data: `mod:note:${o.id}` },
+      ],
     ],
   });
 }
@@ -257,6 +260,22 @@ export async function POST(request) {
       }
       return new Response('ok');
     }
+
+    // Не команда: якщо чекаємо нотатку від адміна — це вона.
+    if (!text.startsWith('/') && (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID))) {
+      const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+      const { data: st } = await supabase.from('admin_state')
+        .select('awaiting_note_for').eq('chat_id', String(msg.chat.id)).maybeSingle();
+      if (st?.awaiting_note_for) {
+        await supabase.from('opportunities')
+          .update({ moderation_note: text.slice(0, 1000), note_status: 'pending', updated_at: new Date().toISOString() })
+          .eq('id', st.awaiting_note_for);
+        await supabase.from('admin_state').delete().eq('chat_id', String(msg.chat.id));
+        await sendMessage(msg.chat.id,
+          '✍️ Нотатку збережено. Опрацюю і поверну оновлену картку на апрув — зазвичай протягом години.');
+        return new Response('ok');
+      }
+    }
     return new Response('ok');
   }
 
@@ -280,6 +299,30 @@ export async function POST(request) {
       // Surface the id so the admin can set TELEGRAM_ADMIN_CHAT_ID correctly.
       await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
     }
+    return new Response('ok');
+  }
+
+  // 💬 Нотатка: наступне текстове повідомлення адміна стане інструкцією
+  // для LLM («виправ вік», «додай місто», «перепиши заголовок») — скрипт
+  // застосує її до чернетки й поверне картку на апрув.
+  const noteBtn = (cbq.data || '').match(/^mod:note:(.+)$/);
+  if (noteBtn) {
+    const fromId = String(cbq.from?.id || '');
+    const chatId = String(cbq.message?.chat?.id || '');
+    if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID) && chatId !== String(ADMIN_CHAT_ID)) {
+      await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
+      return new Response('ok');
+    }
+    const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+    await supabase.from('admin_state').upsert(
+      { chat_id: chatId, awaiting_note_for: noteBtn[1], created_at: new Date().toISOString() },
+      { onConflict: 'chat_id' },
+    );
+    await answerCallback(cbq.id, 'Чекаю нотатку');
+    await sendMessage(chatId,
+      '💬 Напишіть нотатку одним повідомленням — що виправити чи додати.\n' +
+      'Напр.: «вік 6–12», «це Київ, офлайн», «перепиши заголовок коротше».\n' +
+      'Застосую і поверну картку на апрув.');
     return new Response('ok');
   }
 
