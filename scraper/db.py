@@ -17,8 +17,29 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
     from datetime import datetime, timezone
     # Always stamp updated_at so get_processed_today() can find today's activity.
     # created_at is NOT included here — Supabase keeps the original value on conflict.
-    record = {**data, "updated_at": datetime.now(timezone.utc).isoformat()}
+    now = datetime.now(timezone.utc).isoformat()
+    record = {**data, "updated_at": now}
     try:
+        content_hash = record.get("content_hash")
+        if content_hash:
+            existing = (
+                client.table("opportunities")
+                .select("id, verified_at")
+                .eq("content_hash", content_hash)
+                .limit(1)
+                .execute()
+            )
+            if existing.data and existing.data[0].get("verified_at"):
+                # A moderator has reviewed (and possibly hand-edited) this record.
+                # Only bump updated_at as a "source still publishes this" signal —
+                # a full upsert would clobber their edits with re-extracted text.
+                result = (
+                    client.table("opportunities")
+                    .update({"updated_at": now})
+                    .eq("id", existing.data[0]["id"])
+                    .execute()
+                )
+                return result.data[0] if result.data else None
         result = client.table("opportunities").upsert(
             record,
             on_conflict="content_hash"
@@ -75,7 +96,9 @@ def get_health_stats(client: Client) -> dict:
     """
     try:
         active = client.table("opportunities").select("id", count="exact").eq("status", "active").execute()
-        archived = client.table("opportunities").select("id", count="exact").eq("status", "archived").execute()
+        # The status CHECK constraint allows active|closed|draft — expired records
+        # are marked 'closed' by scripts/check-deadlines.mjs ('archived' doesn't exist).
+        archived = client.table("opportunities").select("id", count="exact").eq("status", "closed").execute()
         deadline_bearing = (
             client.table("opportunities")
             .select("id", count="exact")
@@ -102,16 +125,7 @@ def get_health_stats(client: Client) -> dict:
         return {"total_active": 0, "total_archived": 0, "no_deadline": 0, "deadline_bearing": 0}
 
 
-def archive_expired(client: Client) -> int:
-    from datetime import date
-    today = date.today().isoformat()
-    try:
-        result = client.table("opportunities") \
-            .update({"status": "archived"}) \
-            .lt("deadline", today) \
-            .neq("status", "archived") \
-            .execute()
-        return len(result.data) if result.data else 0
-    except Exception as e:
-        logger.error(f"archive_expired failed: {e}")
-        return 0
+# Expiry is owned solely by scripts/check-deadlines.mjs (daily cron): annual types
+# get their stale deadline nulled, one-off types go to status='closed'. The old
+# archive_expired() here wrote status='archived' — a value the CHECK constraint
+# rejects — so it silently failed on every run and always reported 0.

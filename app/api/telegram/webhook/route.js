@@ -15,6 +15,14 @@ const TG = `https://api.telegram.org/bot${BOT_TOKEN}`;
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 
+// Admin gate — fails CLOSED: without TELEGRAM_ADMIN_CHAT_ID nobody is an admin.
+// A missing env var must lock moderation down, not open it to every bot user.
+// The chat id also counts (identical to the user id in a private chat).
+function isAdmin(fromId, chatId) {
+  if (!ADMIN_CHAT_ID) return false;
+  return String(fromId) === String(ADMIN_CHAT_ID) || String(chatId) === String(ADMIN_CHAT_ID);
+}
+
 function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -166,7 +174,7 @@ async function handleDigestStop(msg) {
 async function handleModeration(action, id, cbq) {
   const fromId = String(cbq.from?.id || '');
   const chatId = String(cbq.message?.chat?.id || '');
-  if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID) && chatId !== String(ADMIN_CHAT_ID)) {
+  if (!isAdmin(fromId, chatId)) {
     await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
     return new Response('ok');
   }
@@ -260,14 +268,14 @@ export async function POST(request) {
     if (/^\/stop\b/i.test(text)) return handleDigestStop(msg);
     // Адмінська черга модерації.
     if (/^\/(start|next|moderate|черга|модерац|далі)/i.test(text)) {
-      if (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID)) {
+      if (isAdmin(msg.from?.id, msg.chat.id)) {
         await sendNextCandidate(msg.chat.id);
       }
       return new Response('ok');
     }
 
     // Не команда: якщо чекаємо нотатку від адміна — це вона.
-    if (!text.startsWith('/') && (!ADMIN_CHAT_ID || String(msg.from?.id) === String(ADMIN_CHAT_ID))) {
+    if (!text.startsWith('/') && isAdmin(msg.from?.id, msg.chat.id)) {
       const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
       const { data: st } = await supabase.from('admin_state')
         .select('awaiting_note_for').eq('chat_id', String(msg.chat.id)).maybeSingle();
@@ -293,9 +301,7 @@ export async function POST(request) {
   if (cbq.data === 'mod:next') {
     const fromId = String(cbq.from?.id || '');
     const chatId = String(cbq.message?.chat?.id || '');
-    // Authorize if ADMIN_CHAT_ID is unset, or it matches either the tapper or
-    // the chat the ping landed in (they're identical in a private chat).
-    const ok = !ADMIN_CHAT_ID || fromId === String(ADMIN_CHAT_ID) || chatId === String(ADMIN_CHAT_ID);
+    const ok = isAdmin(fromId, chatId);
     if (ok) {
       // Visible toast first so the tap never looks like a no-op, then the card.
       await answerCallback(cbq.id, 'Показую наступного…');
@@ -314,7 +320,7 @@ export async function POST(request) {
   if (noteBtn) {
     const fromId = String(cbq.from?.id || '');
     const chatId = String(cbq.message?.chat?.id || '');
-    if (ADMIN_CHAT_ID && fromId !== String(ADMIN_CHAT_ID) && chatId !== String(ADMIN_CHAT_ID)) {
+    if (!isAdmin(fromId, chatId)) {
       await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
       return new Response('ok');
     }
