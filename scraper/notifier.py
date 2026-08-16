@@ -48,7 +48,7 @@ def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> boo
     lines.append(
         f"💾 Збережено: <b>{len(new_opps)}</b> · "
         f"📚 активних: {health.get('total_active', 0)} · "
-        f"🗄 архівовано: {archived}"
+        f"🚪 закрито за текстом сторінки («набір завершено»): {archived}"
     )
 
     if llm_alert and llm_alert.get("is_billing"):
