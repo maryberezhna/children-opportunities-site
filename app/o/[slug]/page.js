@@ -376,12 +376,17 @@ export default async function OpportunityPage({ params }) {
                 <dd>{item.format}</dd>
               </>
             )}
-            {item.deadline && (
+            {item.deadline ? (
               <>
                 <dt>Дедлайн</dt>
                 <dd>{formatDate(item.deadline)}</dd>
               </>
-            )}
+            ) : item.recurrence ? (
+              <>
+                <dt>Подача</dt>
+                <dd>{item.recurrence === 'annual' ? 'Щорічно — стежте за новим набором' : 'Постійно відкрита'}</dd>
+              </>
+            ) : null}
             {item.price_note && (
               <>
                 <dt>Вартість</dt>
