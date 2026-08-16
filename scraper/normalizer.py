@@ -12,6 +12,12 @@ from canonical import canonical_url
 
 logger = logging.getLogger(__name__)
 
+
+class NormalizeError(Exception):
+    """Тимчасовий збій екстракції (API, мережа) — сирець лишається в черзі
+    й буде повторений. НЕ плутати з reject (return None): то остаточне
+    «це не можливість», повторювати нема сенсу."""
+
 # Сторінки, де на ОДНІЙ адресі живе багато різних можливостей. Для них
 # дедуплікація за URL зламала б дані: 24 всеукраїнські олімпіади з різних
 # предметів посилаються на один перелік МОН. Тільки тут ключем лишається
@@ -61,9 +67,16 @@ def _sanitize(data: dict) -> dict:
     # cost_type & deadline are nullable — drop unknown values to null.
     if data.get("cost_type") not in VALID_COST_TYPES:
         data["cost_type"] = None
-    # opportunity_type is NOT NULL — fall back to the most generic valid type.
+    # opportunity_type is NOT NULL, тож значення поза словником мусить чимось
+    # стати — але НЕ мовчки: раніше невідомий тип тихо ставав «course» і
+    # місклассифікація була невидимою. Тепер такий запис іде чернеткою в чергу
+    # модерації з поміткою, а не в живий каталог.
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         data["opportunity_type"] = "course"
+        data["status"] = "draft"
+        data["admin_comment"] = (
+            "auto: LLM віддав невідомий тип можливості — перевір тип перед публікацією"
+        )
     return data
 
 
@@ -139,6 +152,11 @@ aid_type — ЛИШЕ для ДЕРЖАВНОЇ допомоги (держорг
 Якщо це НЕ державна програма (приватна, NGO, міжнародна, бізнес) →
 aid_type = null.
 
+enrollment_status — стан набору за текстом: якщо на сторінці «реєстрацію
+завершено», «набір закрито», «прийом заявок припинено» чи дедлайн у минулому —
+closed/expired. Це головний сигнал актуальності: сторінка може бути жива,
+а набір — ні.
+
 Поверни JSON через extract_opportunity."""
 
 
@@ -170,10 +188,20 @@ EXTRACT_TOOL = {
                                "Для діапазону дат проведення — ПЕРША дата, "
                                "не остання. Немає дедлайну → null.",
             },
+            "enrollment_status": {
+                "type": "string",
+                "enum": ["open", "closed", "expired", "unknown"],
+                "description": "Стан набору ЗА ТЕКСТОМ сторінки: open — подача "
+                               "триває або нема ознак закриття; closed — «набір "
+                               "завершено», «реєстрацію закрито», зникла форма; "
+                               "expired — дедлайн у тексті вже минув; "
+                               "unknown — не зрозуміло.",
+            },
             "confidence": {"type": "number"},
         },
         "required": ["title", "summary", "age_from", "age_to",
-                     "opportunity_type", "cost_type", "confidence"],
+                     "opportunity_type", "cost_type", "enrollment_status",
+                     "confidence"],
     },
 }
 
@@ -200,14 +228,7 @@ URL: {source_url}
 
 Витягни дані через extract_opportunity."""
 
-            response = self.client.messages.create(
-                model=self.model,
-                max_tokens=1500,
-                system=SYSTEM_PROMPT,
-                tools=[EXTRACT_TOOL],
-                tool_choice={"type": "tool", "name": "extract_opportunity"},
-                messages=[{"role": "user", "content": user_msg}],
-            )
+            response = self._call_api(user_msg)
 
             tool_use = next(
                 (b for b in response.content
@@ -231,13 +252,45 @@ URL: {source_url}
             data["canonical_url"] = canonical_url(source_url)
             data.pop("confidence", None)
 
+            # Стан набору за текстом сторінки: закрито/протерміновано → запис
+            # одразу closed, а не «активний до ручної перевірки». Колонки
+            # enrollment_status в базі немає — сигнал мапиться на status.
+            enrollment = data.pop("enrollment_status", "unknown")
+            if enrollment in ("closed", "expired") and data.get("status") != "draft":
+                data["status"] = "closed"
+
             return data
 
         except Exception as e:
             logger.error(f"Normalize failed for {source_url}: {e}")
             self.api_failures += 1
             self.last_api_error = str(e)[:300]
-            return None
+            raise NormalizeError(str(e)[:300]) from e
+
+    def _call_api(self, user_msg: str):
+        """Виклик Haiku з retry: 429/5xx/таймаути — тимчасові, пробуємо ще
+        двічі з паузою. Помилки біллінгу і 4xx не ретраяться — це не лікується
+        повтором, лише палить час усього нічного запуску."""
+        import time as _time
+        last_exc = None
+        for attempt in range(3):
+            try:
+                return self.client.messages.create(
+                    model=self.model,
+                    max_tokens=1500,
+                    system=SYSTEM_PROMPT,
+                    tools=[EXTRACT_TOOL],
+                    tool_choice={"type": "tool", "name": "extract_opportunity"},
+                    messages=[{"role": "user", "content": user_msg}],
+                )
+            except anthropic.APIStatusError as e:
+                if e.status_code not in (429, 500, 502, 503, 529):
+                    raise
+                last_exc = e
+            except (anthropic.APIConnectionError, anthropic.APITimeoutError) as e:
+                last_exc = e
+            _time.sleep(2 * (attempt + 1))
+        raise last_exc
 
     @staticmethod
     def _make_slug(title: str, source: str) -> str:

@@ -14,8 +14,10 @@ import time
 from datetime import datetime
 
 import notifier
-from db import get_client, get_health_stats, get_new_today, upsert_opportunity
-from normalizer import Normalizer
+import raw_store
+from db import (get_client, get_health_stats, get_new_today,
+                get_source_registry, record_crawl_result, upsert_opportunity)
+from normalizer import Normalizer, NormalizeError
 from scrapers import (
     british_council,
     diia_osvita,
@@ -62,60 +64,117 @@ SCRAPERS = [
 SCRAPER_TIMEOUT = 300  # seconds
 
 
-async def run_scraper(name, module, normalizer, sb_client):
+async def run_scraper(name, module, sb_client):
+    """Етап А: лише видобування. Знахідки лягають у raw_items (хеш-гейт:
+    уже бачений вміст не дублюється), LLM тут не викликається — екстракція
+    йде окремим етапом по спільній черзі."""
     print(f"\n{'=' * 70}\n▶️  {name}\n{'=' * 70}")
     start = time.time()
     try:
         raw_items = await asyncio.wait_for(module.fetch_all(), timeout=SCRAPER_TIMEOUT)
     except asyncio.TimeoutError:
+        record_crawl_result(sb_client, name, ok=False, new_items=0)
         return {"name": name, "status": "error",
                 "error": f"timeout >{SCRAPER_TIMEOUT}s", "count": 0,
                 "duration": time.time() - start}
     except Exception as e:
+        record_crawl_result(sb_client, name, ok=False, new_items=0)
         return {"name": name, "status": "error",
                 "error": f"{type(e).__name__}: {e}"[:200],
                 "count": 0, "duration": time.time() - start}
 
     if not raw_items:
+        record_crawl_result(sb_client, name, ok=True, new_items=0)
         return {"name": name, "status": "empty", "count": 0,
                 "duration": time.time() - start}
 
-    saved = 0
-    for raw in raw_items:
-        normalized = normalizer.normalize(
-            raw_text=raw.get("raw_text", ""),
-            source=raw.get("source", name),
-            source_url=raw.get("source_url", ""),
-            raw_title=raw.get("raw_title"),
-        )
-        if not normalized:
-            continue
-        if upsert_opportunity(sb_client, normalized):
-            saved += 1
+    new_raw = raw_store.store_raw_items(sb_client, name, raw_items)
+    record_crawl_result(sb_client, name, ok=True, new_items=new_raw)
 
     duration = time.time() - start
-    print(f"✅ {name}: {saved}/{len(raw_items)} збережено за {duration:.1f}с")
-    return {"name": name, "status": "success", "count": saved,
-            "duration": duration}
+    print(f"✅ {name}: {new_raw} нових із {len(raw_items)} знайдених за {duration:.1f}с")
+    return {"name": name, "status": "success", "count": new_raw,
+            "total_found": len(raw_items), "duration": duration}
 
 
-def print_summary(results):
+def process_pending(normalizer, sb_client, limit=300):
+    """Етап Б: LLM-екстракція спільної черги raw_items — включно з сирцем,
+    що лишився з минулих запусків після збоїв. 5 послідовних збоїв API —
+    зупиняємось: черга нікуди не дінеться, а спроби палити нема сенсу."""
+    queue = raw_store.fetch_pending(sb_client, limit=limit)
+    stats = {"queued": len(queue), "processed": 0, "rejected": 0,
+             "retry": 0, "failed": 0, "closed": 0, "drafts": 0}
+    if not queue:
+        return stats
+
+    print(f"\n{'=' * 70}\n🧠 ЕКСТРАКЦІЯ: {len(queue)} у черзі\n{'=' * 70}")
+    consecutive_errors = 0
+    for item in queue:
+        try:
+            normalized = normalizer.normalize(
+                raw_text=item.get("raw_text", ""),
+                source=item.get("source_name", ""),
+                source_url=item.get("source_url") or "",
+                raw_title=item.get("raw_title"),
+            )
+            consecutive_errors = 0
+        except NormalizeError as e:
+            raw_store.bump_attempt(sb_client, item, str(e))
+            attempts = (item.get("attempts") or 0) + 1
+            stats["failed" if attempts >= raw_store.MAX_ATTEMPTS else "retry"] += 1
+            consecutive_errors += 1
+            if consecutive_errors >= 5:
+                print("🛑 5 збоїв API поспіль — зупиняю екстракцію, "
+                      "решта черги дочекається наступного запуску")
+                break
+            continue
+
+        if not normalized:
+            raw_store.mark(sb_client, item["id"], "rejected")
+            stats["rejected"] += 1
+            continue
+
+        saved = upsert_opportunity(sb_client, normalized)
+        if saved:
+            raw_store.mark(sb_client, item["id"], "processed",
+                           opportunity_id=saved.get("id"))
+            stats["processed"] += 1
+            if normalized.get("status") == "closed":
+                stats["closed"] += 1
+            elif normalized.get("status") == "draft":
+                stats["drafts"] += 1
+        else:
+            raw_store.bump_attempt(sb_client, item, "upsert failed")
+            stats["retry"] += 1
+
+    print(f"✅ Екстракція: {stats['processed']} збережено "
+          f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
+          f"{stats['rejected']} відхилено, {stats['retry']} на повтор, "
+          f"{stats['failed']} вичерпали спроби")
+    return stats
+
+
+def print_summary(results, stats):
     print(f"\n\n{'=' * 70}\n📊 ФІНАЛЬНИЙ ЗВІТ\n{'=' * 70}")
     success = [r for r in results if r["status"] == "success"]
     errors = [r for r in results if r["status"] == "error"]
     empty = [r for r in results if r["status"] == "empty"]
-    total = sum(r.get("count", 0) for r in results)
+    disabled = [r for r in results if r["status"] == "disabled"]
+    total_new = sum(r.get("count", 0) for r in results)
     total_time = sum(r.get("duration", 0) for r in results)
 
     print(f"✅ Успішно: {len(success)}/{len(results)}")
     print(f"⚠️  Порожні:  {len(empty)}")
+    print(f"⏸  Вимкнені в реєстрі: {len(disabled)}")
     print(f"❌ Помилки: {len(errors)}")
-    print(f"📦 Всього записів: {total}")
+    print(f"🆕 Нового сирцю: {total_new}")
+    print(f"🧠 Екстракція: {stats.get('processed', 0)} збережено, "
+          f"{stats.get('rejected', 0)} відхилено, {stats.get('retry', 0)} на повтор")
     print(f"⏱️  Загальний час: {total_time:.1f}с ({total_time / 60:.1f} хв)\n")
 
     for r in results:
-        icon = {"success": "✅", "error": "❌", "empty": "⚠️ "}[r["status"]]
-        print(f"  {icon} {r['name']:25s} {r.get('count', 0):3d} записів  "
+        icon = {"success": "✅", "error": "❌", "empty": "⚠️ ", "disabled": "⏸ "}[r["status"]]
+        print(f"  {icon} {r['name']:25s} {r.get('count', 0):3d} нових  "
               f"{r.get('duration', 0):5.1f}s")
 
     if errors:
@@ -170,15 +229,29 @@ async def amain():
     normalizer = Normalizer()
     sb_client = get_client()
 
+    # Реєстр джерел: вимкнене в sources (enabled=false) пропускається без
+    # деплою. Якщо таблиці ще нема — реєстр порожній і все вважається
+    # увімкненим (реєстр не сміє зупинити скрапінг власною недоступністю).
+    registry = get_source_registry(sb_client, "python")
+
     results = []
     for name, module, tag in scrapers:
-        result = await run_scraper(name, module, normalizer, sb_client)
+        reg_row = registry.get(name)
+        if reg_row is not None and not reg_row.get("enabled", True):
+            print(f"\n⏸  {name}: вимкнено в реєстрі джерел — пропускаю")
+            results.append({"name": name, "status": "disabled", "count": 0,
+                            "duration": 0, "tag": tag})
+            continue
+        result = await run_scraper(name, module, sb_client)
         result["tag"] = tag
         results.append(result)
         await asyncio.sleep(2)
 
+    # Етап Б: LLM-екстракція спільної черги (нове + недороблене з минулих днів).
+    stats = process_pending(normalizer, sb_client)
+
     # Expiry/archiving is handled by scripts/check-deadlines.mjs (its own daily cron).
-    print_summary(results)
+    print_summary(results, stats)
 
     end = datetime.now()
     total = (end - start).total_seconds()
@@ -202,7 +275,8 @@ async def amain():
                 "is_billing": "credit balance" in (normalizer.last_api_error or "").lower(),
             }
             print(f"   ⚠️ Помилок нормалізації (LLM): {normalizer.api_failures}")
-        sent = notifier.send_daily_report(new_today, health, results, archived,
+        sent = notifier.send_daily_report(new_today, health, results,
+                                          stats.get("closed", 0),
                                           llm_alert=llm_alert)
         # send_daily_report повертає канал ('telegram'/'email') або False —
         # старий підпис «Email ✅» брехав, коли звіт ішов у бот.

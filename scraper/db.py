@@ -125,6 +125,53 @@ def get_health_stats(client: Client) -> dict:
         return {"total_active": 0, "total_archived": 0, "no_deadline": 0, "deadline_bearing": 0}
 
 
+def get_source_registry(client: Client, pipeline: str) -> dict:
+    """Реєстр джерел: name → рядок sources. Порожній словник = таблиці ще
+    немає або збій — тоді всі джерела вважаються увімкненими (fail-open
+    свідомо: реєстр не сміє зупинити скрапінг через власну недоступність)."""
+    try:
+        result = (
+            client.table("sources")
+            .select("name, enabled, consecutive_failures")
+            .eq("pipeline", pipeline)
+            .execute()
+        )
+        return {row["name"]: row for row in (result.data or [])}
+    except Exception as e:
+        logger.error(f"get_source_registry failed: {e}")
+        return {}
+
+
+def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> None:
+    """Здоров'я джерела після запуску. checks/changes живлять адаптивний
+    розклад Фази 4; consecutive_failures — майбутні алерти про поламки."""
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    try:
+        current = (
+            client.table("sources")
+            .select("consecutive_failures, checks_count, changes_count")
+            .eq("name", name).limit(1).execute()
+        )
+        if not current.data:
+            return
+        row = current.data[0]
+        patch = {
+            "last_crawled_at": now,
+            "checks_count": (row.get("checks_count") or 0) + 1,
+        }
+        if ok:
+            patch["last_success_at"] = now
+            patch["consecutive_failures"] = 0
+            if new_items > 0:
+                patch["changes_count"] = (row.get("changes_count") or 0) + 1
+        else:
+            patch["consecutive_failures"] = (row.get("consecutive_failures") or 0) + 1
+        client.table("sources").update(patch).eq("name", name).execute()
+    except Exception as e:
+        logger.error(f"record_crawl_result failed for {name}: {e}")
+
+
 # Expiry is owned solely by scripts/check-deadlines.mjs (daily cron): annual types
 # get their stale deadline nulled, one-off types go to status='closed'. The old
 # archive_expired() here wrote status='archived' — a value the CHECK constraint
