@@ -12,8 +12,8 @@ export async function scrape() {
   try {
     html = await fetchHtml(LIST_URL);
   } catch (err) {
-    console.warn(`  ${name}: list fetch failed (${err.message}) — using curated fallback`);
-    return curatedFallback();
+    // Збій фетчу — чесний збій: без фолбеку, реєстр джерел його зафіксує.
+    throw err;
   }
 
   const $ = cheerio.load(html);
@@ -46,34 +46,6 @@ export async function scrape() {
     });
   });
 
-  return rows.length > 0 ? rows : curatedFallback();
-}
-
-function curatedFallback() {
-  return [
-    {
-      title: 'European Union Contest for Young Scientists (EUCYS)',
-      summary: 'Європейський конкурс молодих учених для школярів 14-20 років. Українські переможці МАН представляють країну. Гранти, стипендії, презентація проєктів європейським вченим.',
-      age_from: 14, age_to: 17, opportunity_type: 'competition',
-      categories: ['STEM','education'], child_needs: ['gifted'],
-      format: 'Офлайн, ЄС', cost_type: 'free', deadline: null,
-      source_url: 'https://eucys.eu/', source: 'EUCYS',
-    },
-    {
-      title: 'International Olympiad in Informatics (IOI)',
-      summary: 'Найпрестижніша олімпіада з програмування для школярів. Збірна України відбирається через всеукраїнську олімпіаду МОН. Призи, медалі, портал у топ-університети.',
-      age_from: 14, age_to: 17, opportunity_type: 'olympiad',
-      categories: ['STEM'], child_needs: ['gifted'],
-      format: 'Офлайн, різні країни', cost_type: 'free', deadline: null,
-      source_url: 'https://ioinformatics.org/', source: 'IOI',
-    },
-    {
-      title: 'International Linguistics Olympiad (IOL)',
-      summary: 'Олімпіада з лінгвістики для старшокласників. 200+ учасників із 50 країн. Команда України виборює медалі останні роки. Відбір через всеукраїнський тур.',
-      age_from: 14, age_to: 17, opportunity_type: 'olympiad',
-      categories: ['languages','education'], child_needs: ['gifted'],
-      format: 'Офлайн, різні країни', cost_type: 'free', deadline: null,
-      source_url: 'https://ioling.org/', source: 'IOL',
-    },
-  ];
+  // Нуль знахідок = зламані селектори; фолбеку немає свідомо.
+  return rows;
 }
