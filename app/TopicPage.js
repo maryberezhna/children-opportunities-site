@@ -56,6 +56,8 @@ export default async function TopicPage({ topic }) {
 
   // ItemList — щоб Google бачив підбірку списком, а не просто текстом.
   // BreadcrumbList — щоб у видачі був шлях «Головна › Тема», а не голий URL.
+  // FAQPage — питання-відповіді, які generative engines (Perplexity, ChatGPT,
+  // AI Overviews) цитують дослівно з посиланням на джерело.
   const ld = [
     {
       '@context': 'https://schema.org',
@@ -79,6 +81,25 @@ export default async function TopicPage({ topic }) {
     },
   ];
 
+  if (topic.faq?.length) {
+    ld.push({
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: topic.faq.map((f) => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    });
+  }
+
+  // Самодостатнє речення з числами й датою — саме такий формат AI-двигуни
+  // цитують як відповідь на категорійний запит. Дата чесна: сторінка
+  // перегенеровується (revalidate), а каталог справді оновлюється щодня.
+  const updatedLabel = new Intl.DateTimeFormat('uk-UA', {
+    day: 'numeric', month: 'long', year: 'numeric',
+  }).format(new Date());
+
   const others = TOPIC_NAV.filter((t) => t.slug !== topic.slug);
 
   return (
@@ -101,6 +122,12 @@ export default async function TopicPage({ topic }) {
               <span className="accent">{topic.h1[1]}</span>
             </h1>
             <p>{topic.intro}</p>
+            <p>
+              Станом на {updatedLabel} в каталозі Dityam — {total}{' '}
+              {opportunitiesWord(total)} в цій категорії, перевірених вручну
+              {freeCount > 0 && `, з них ${freeCount} — ${freeWord(freeCount)}`}.
+              Каталог оновлюється щодня.
+            </p>
             <div className="stats">
               <div className="stat">
                 <span className="stat-num">{total}</span>
@@ -136,6 +163,19 @@ export default async function TopicPage({ topic }) {
           opportunities={opportunities}
           promoProps={{ total }}
         />
+
+        {topic.faq?.length > 0 && (
+          <section className="topic-faq" aria-labelledby="topic-faq-title">
+            <h2 id="topic-faq-title">Часті питання</h2>
+            {topic.faq.map((f) => (
+              <details key={f.q} className="topic-faq-item">
+                <summary>{f.q}</summary>
+                <p>{f.a}</p>
+              </details>
+            ))}
+          </section>
+        )}
+
         <Footer />
       </div>
 
