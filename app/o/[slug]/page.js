@@ -210,6 +210,26 @@ function formatDate(dateStr) {
   return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
+// «Перевірено сьогодні / вчора / N днів тому» — чесний сигнал свіжості.
+// last_verified_at ставить щоденний verify-links (лінк живий), verified_at —
+// модератор при схваленні. Понад 30 днів без перевірки — нічого не показуємо,
+// стара дата довіри не додає.
+function verifiedLabel(item) {
+  const ts = item.last_verified_at || item.verified_at;
+  if (!ts) return null;
+  const date = new Date(ts);
+  if (isNaN(date.getTime())) return null;
+  const days = Math.floor((Date.now() - date.getTime()) / 86400000);
+  if (days < 0 || days > 30) return null;
+  if (days === 0) return 'сьогодні';
+  if (days === 1) return 'вчора';
+  const lastDigit = days % 10;
+  const teens = days % 100 >= 11 && days % 100 <= 14;
+  const word = !teens && lastDigit === 1 ? 'день'
+    : !teens && lastDigit >= 2 && lastDigit <= 4 ? 'дні' : 'днів';
+  return `${days} ${word} тому`;
+}
+
 function buildJsonLd(item) {
   const url = `https://dityam.com.ua/o/${item.slug}`;
   const isFree = item.cost_type === 'free';
@@ -403,6 +423,12 @@ export default async function OpportunityPage({ params }) {
               <>
                 <dt>Джерело</dt>
                 <dd>{item.source}</dd>
+              </>
+            )}
+            {verifiedLabel(item) && (
+              <>
+                <dt>Перевірено</dt>
+                <dd>✅ {verifiedLabel(item)}</dd>
               </>
             )}
           </dl>

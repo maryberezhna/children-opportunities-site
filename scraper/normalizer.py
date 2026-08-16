@@ -8,6 +8,8 @@ from typing import Optional
 import anthropic
 from slugify import slugify
 
+from canonical import canonical_url
+
 logger = logging.getLogger(__name__)
 
 # Сторінки, де на ОДНІЙ адресі живе багато різних можливостей. Для них
@@ -226,6 +228,7 @@ URL: {source_url}
             data["content_hash"] = self._make_hash(title, source_url)
             data["source"] = source
             data["source_url"] = source_url
+            data["canonical_url"] = canonical_url(source_url)
             data.pop("confidence", None)
 
             return data
