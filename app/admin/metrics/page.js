@@ -37,8 +37,8 @@ function Card({ value, delta, label }) {
   );
 }
 
-async function count(supabase, table, filter = (q) => q) {
-  const { count: c } = await filter(supabase.from(table).select('id', { count: 'exact', head: true }));
+async function count(supabase, table, filter = (q) => q, col = 'id') {
+  const { count: c } = await filter(supabase.from(table).select(col, { count: 'exact', head: true }));
   return c ?? 0;
 }
 
@@ -75,7 +75,7 @@ export default async function MetricsPage() {
     count(supabase, 'plus_waitlist'),
     count(supabase, 'plus_waitlist', (q) => q.gte('created_at', iso(7))),
     count(supabase, 'digest_subscribers'),
-    count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7))),
+    count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7)), 'opportunity_id'),
     count(supabase, 'opportunity_outcomes'),
     supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
     supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
