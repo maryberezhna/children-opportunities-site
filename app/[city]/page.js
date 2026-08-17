@@ -3,7 +3,6 @@ import Link from 'next/link';
 import { supabase, CARD_FIELDS } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import OpportunitiesList from '../OpportunitiesList';
-import StickyHeader from '../StickyHeader';
 import StickyBar from '../StickyBar';
 import SubscribePopup from '../SubscribePopup';
 import Footer from '../Footer';
@@ -80,7 +79,6 @@ export default async function CityPage({ params }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
-      <StickyHeader />
 
       <div className="container">
         <div className="hero">

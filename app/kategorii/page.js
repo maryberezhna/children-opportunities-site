@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { supabase, CARD_FIELDS } from '@/lib/supabase';
 import { CATEGORY_GROUPS } from '@/lib/categories';
 import { opportunitiesWord } from '@/lib/plural';
-import StickyHeader from '../StickyHeader';
 import Footer from '../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -71,7 +70,6 @@ export default async function KategoriiPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
       />
-      <StickyHeader />
       <div className="container">
         <div className="hero">
           <div className="hero-copy">

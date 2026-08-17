@@ -5,7 +5,6 @@ import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import { TOPIC_NAV } from '@/lib/topics';
 import StickyBar from './StickyBar';
-import StickyHeader from './StickyHeader';
 import SubscribePopup from './SubscribePopup';
 import Footer from './Footer';
 
@@ -56,7 +55,6 @@ export default async function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
-      <StickyHeader />
 
       <div className="container">
         <div className="hero">
