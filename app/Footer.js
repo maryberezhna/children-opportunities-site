@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
-import { CITY_META } from '@/lib/cities';
 import { TOPIC_NAV } from '@/lib/topics';
 import { supabase } from '@/lib/supabase';
 
@@ -80,7 +79,6 @@ export default async function Footer() {
             <div>
               <div className="footer-brand-name">
                 <span>dityam.com.ua</span>
-                <span className="footer-beta">BETA</span>
               </div>
               <div className="footer-brand-tag">Можливості для кожної дитини</div>
             </div>
@@ -149,18 +147,6 @@ export default async function Footer() {
           <Link href="/terms" className="footer-link"><span>Оферта · Повернення</span></Link>
         </div>
       </div>
-
-      {/* Міські сторінки досі були сиротами: існували лише в sitemap, і жодне
-          посилання на сайті на них не вело. За три місяці — нуль показів у
-          пошуку. Це перелінковка, щоб перевірити, чи справа була саме в ній. */}
-      <nav className="footer-cities" aria-label="Можливості за містами">
-        <span className="footer-cities-label">Можливості за містами:</span>
-        {Object.entries(CITY_META).map(([slug, meta]) => (
-          <Link key={slug} href={`/${slug}`} className="footer-city-link">
-            {meta.ua}
-          </Link>
-        ))}
-      </nav>
 
       <div className="footer-bottom">
         <div className="footer-copy">

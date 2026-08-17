@@ -1,5 +1,6 @@
 import localFont from 'next/font/local';
 import Header from './Header';
+import LangSuggest from './LangSuggest';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
@@ -85,7 +86,13 @@ export async function generateMetadata() {
     'табір для підлітків', 'обмін навчання США', 'програми підліткам',
   ],
   authors: [{ name: 'Мері Бережна' }],
-  alternates: { canonical: 'https://dityam.com.ua' },
+  alternates: {
+    canonical: 'https://dityam.com.ua',
+    languages: {
+      uk: 'https://dityam.com.ua',
+      en: 'https://dityam.com.ua/en',
+    },
+  },
   robots: { index: true, follow: true },
   verification: {
     google: 'RvvznKHFJZWAqvC-wcGyakBzZo11cazkLQ6WfGuzRFk',
@@ -150,6 +157,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
+        <LangSuggest />
         <Header />
         {children}
         <ScrollNav />

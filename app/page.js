@@ -61,10 +61,6 @@ export default async function Home() {
           <div className="hero-copy">
           <div className="hero-badges">
             <div className="hero-badge">Безкоштовно і оновлюється щодня</div>
-            <div className="beta-badge" title="Цей сайт у бета-тестуванні">
-              <span className="beta-dot"></span>
-              BETA
-            </div>
           </div>
           <h1>
             Усі можливості
