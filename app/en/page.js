@@ -129,11 +129,9 @@ export default async function EnglishPage() {
       <section style={{ maxWidth: 760, marginTop: 30, marginBottom: 40 }}>
         <h2 style={{ fontSize: 20, marginBottom: 8 }}>Press, partners & support</h2>
         <p style={{ color: 'var(--ink-soft)', maxWidth: '65ch' }}>
-          Dityam is an independent solo-founder project from Ukraine. For press
-          materials and live statistics see the{' '}
-          <Link href="/press">press page</Link>; to support the project —{' '}
-          <Link href="/support">donation options</Link>; for partnerships write
-          to{' '}
+          Dityam is an independent solo-founder project from Ukraine. To
+          support the project — <Link href="/support">donation options</Link>;
+          for press and partnerships write to{' '}
           <a href="mailto:maryberezhna@gmail.com?subject=Dityam%20partnership">
             maryberezhna@gmail.com
           </a>.
