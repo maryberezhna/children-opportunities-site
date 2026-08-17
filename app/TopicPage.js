@@ -3,7 +3,6 @@ import { supabase, CARD_FIELDS } from '@/lib/supabase';
 import { TOPIC_NAV } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
-import StickyHeader from './StickyHeader';
 import StickyBar from './StickyBar';
 import SubscribePopup from './SubscribePopup';
 import SupportPopup from './SupportPopup';
@@ -108,7 +107,6 @@ export default async function TopicPage({ topic }) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
       />
-      <StickyHeader />
 
       <div className="container">
         <div className="hero">

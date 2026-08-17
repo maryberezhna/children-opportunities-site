@@ -1,4 +1,5 @@
 import localFont from 'next/font/local';
+import Header from './Header';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
@@ -149,6 +150,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
+        <Header />
         {children}
         <ScrollNav />
         <TelegramFAB />

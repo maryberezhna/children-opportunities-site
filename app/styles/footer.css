@@ -290,3 +290,24 @@
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Блок довіри в бренд-колонці: живі цифри з бази (як на /press). */
+.footer-proof {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 13.5px;
+  color: var(--ink-soft);
+  margin-top: 10px;
+}
+
+.footer-proof b { color: var(--accent); }
+
+/* Нижній рядок: копірайт зліва, соцмережі справа. */
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}

@@ -2,8 +2,26 @@ import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
 import { CITY_META } from '@/lib/cities';
 import { TOPIC_NAV } from '@/lib/topics';
+import { supabase } from '@/lib/supabase';
 
-export default function Footer() {
+// Живі цифри довіри: ті самі, що на /press — тягнуться з бази, щоб «503»
+// ніколи не застаріло в футері. Збій запиту → чесний фолбек «500+».
+async function getProof() {
+  try {
+    if (!supabase) return null;
+    const { count } = await supabase
+      .from('opportunities')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'active');
+    return count || null;
+  } catch {
+    return null;
+  }
+}
+
+export default async function Footer() {
+  const activeCount = await getProof();
+
   return (
     <footer className="site-footer">
       <div className="footer-actions">
@@ -68,91 +86,67 @@ export default function Footer() {
             </div>
           </div>
           <p className="footer-about">
-            Платформа можливостей для українських дітей 0-18 років — в Україні
-            та за кордоном. Створена на ентузіазмі, без реклами.
+            Всі можливості для українських дітей 0–18 років — в одному місці.
+            Безкоштовно, без реклами.
           </p>
-          <div className="footer-social">
-            <a
-              href="https://www.instagram.com/dityam.com.ua"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-social-link"
-              aria-label="Instagram"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
-                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
-              </svg>
-              <span>Instagram</span>
-            </a>
+          <div className="footer-proof">
+            <span><b>{activeCount ?? '500+'}</b> перевірених можливостей</span>
+            <span><b>200+</b> джерел · оновлюється щодня</span>
+            <span>лінки перевіряються щоночі ✓</span>
           </div>
         </div>
 
         <div className="footer-section">
-          <div className="footer-title">Контакти</div>
+          <div className="footer-title">Каталог</div>
+          <Link href="/" className="footer-link"><span>Всі можливості</span></Link>
+          <Link href="/kategorii" className="footer-link"><span>Всі категорії</span></Link>
+          {TOPIC_NAV.map((t) => (
+            <Link key={t.slug} href={`/${t.slug}`} className="footer-link">
+              <span>{t.label}</span>
+            </Link>
+          ))}
+        </div>
+
+        <div className="footer-section">
+          <div className="footer-title">Батькам</div>
+          <Link href="/events" className="footer-link"><span>Календар дедлайнів</span></Link>
+          <Link href="/sviata" className="footer-link"><span>Свята й події</span></Link>
+          <Link href="/pidbirka" className="footer-link"><span>Dityam+ — персональна добірка</span></Link>
           <a
-            href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua"
+            href="https://t.me/dityam_com_ua"
+            target="_blank"
+            rel="noopener noreferrer"
             className="footer-link"
           >
-            <span className="footer-link-icon">✉</span>
-            <span>Написати нам</span>
+            <span>Telegram-канал</span>
           </a>
           <a
             href="mailto:maryberezhna@gmail.com?subject=Додати%20можливість%20на%20dityam.com.ua"
             className="footer-link"
           >
-            <span className="footer-link-icon">➕</span>
             <span>Запропонувати можливість</span>
           </a>
-          <a href="/contacts" className="footer-link">
-            <span className="footer-link-icon">📍</span>
-            <span>Усі контакти</span>
-          </a>
+          <Link href="/yak-my-pereviriaiemo" className="footer-link">
+            <span>Як ми перевіряємо дані</span>
+          </Link>
         </div>
 
         <div className="footer-section">
-          <div className="footer-title">Сайт</div>
-          <a href="/pidbirka" className="footer-link">
-            <span className="footer-link-icon">🎯</span>
-            <span>Персональна підбірка · Dityam+</span>
-          </a>
-          <a href="/about" className="footer-link">
-            <span className="footer-link-icon">ℹ️</span>
-            <span>Про проєкт</span>
-          </a>
-          <a href="/privacy" className="footer-link">
-            <span className="footer-link-icon">🔒</span>
-            <span>Політика конфіденційності</span>
-          </a>
-          <a href="/terms" className="footer-link">
-            <span className="footer-link-icon">📄</span>
-            <span>Оферта та умови</span>
-          </a>
-          <a href="/refund" className="footer-link">
-            <span className="footer-link-icon">↩️</span>
-            <span>Повернення коштів</span>
-          </a>
-        </div>
-
-        <div className="footer-section">
-          <div className="footer-title">Підтримати</div>
-          <a href="/support" className="footer-link">
-            <span className="footer-link-icon">🌍</span>
-            <span>PayPal & all options</span>
-          </a>
+          <div className="footer-title">Проєкт</div>
+          <Link href="/about" className="footer-link"><span>Про нас</span></Link>
+          <Link href="/press" className="footer-link"><span>Для преси</span></Link>
+          <Link href="/support" className="footer-link"><span>Підтримати проєкт</span></Link>
           <a
             href="https://send.monobank.ua/jar/F72fDrV2c"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link"
           >
-            <span className="footer-link-icon">🧡</span>
             <span>Донат на monobank</span>
           </a>
-          <p className="footer-note">
-            Ваша допомога — паливо для проєкту
-          </p>
+          <Link href="/contacts" className="footer-link"><span>Контакти</span></Link>
+          <Link href="/privacy" className="footer-link"><span>Конфіденційність</span></Link>
+          <Link href="/terms" className="footer-link"><span>Оферта · Повернення</span></Link>
         </div>
       </div>
 
@@ -168,23 +162,13 @@ export default function Footer() {
         ))}
       </nav>
 
-      {/* Те саме, що з містами: тематичні підбірки без внутрішніх посилань
-          лишились би сиротами. */}
-      <nav className="footer-cities" aria-label="Підбірки за темами">
-        <span className="footer-cities-label">Підбірки:</span>
-        {TOPIC_NAV.map((t) => (
-          <Link key={t.slug} href={`/${t.slug}`} className="footer-city-link">
-            {t.label}
-          </Link>
-        ))}
-        <Link href="/kategorii" className="footer-city-link">
-          Всі категорії →
-        </Link>
-      </nav>
-
       <div className="footer-bottom">
         <div className="footer-copy">
           © 2026 dityam.com.ua · Зроблено з любов&apos;ю в Україні 🇺🇦
+        </div>
+        <div className="footer-social">
+          <a href="https://t.me/dityam_com_ua" target="_blank" rel="noopener noreferrer" className="footer-social-link">Telegram</a>
+          <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="footer-social-link">Instagram</a>
         </div>
       </div>
     </footer>
