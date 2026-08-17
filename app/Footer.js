@@ -132,7 +132,6 @@ export default async function Footer() {
         <div className="footer-section">
           <div className="footer-title">Проєкт</div>
           <Link href="/about" className="footer-link"><span>Про нас</span></Link>
-          <Link href="/press" className="footer-link"><span>Для преси</span></Link>
           <Link href="/support" className="footer-link"><span>Підтримати проєкт</span></Link>
           <a
             href="https://send.monobank.ua/jar/F72fDrV2c"

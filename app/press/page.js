@@ -1,6 +1,11 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
+
+// Сторінку тимчасово сховано на прохання (16.08.2026): віддає 404, посилання
+// з футера/en/llms.txt/sitemap прибрані. Повернути — видалити HIDDEN.
+const HIDDEN = true;
 
 export const metadata = {
   title: 'Для медіа — прескіт dityam.com.ua',
@@ -39,6 +44,7 @@ async function getStats() {
 }
 
 export default async function PressPage() {
+  if (HIDDEN) notFound();
   const stats = await getStats();
 
   return (
