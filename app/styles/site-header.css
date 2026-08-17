@@ -195,3 +195,9 @@
   padding: 6px 10px;
   cursor: pointer;
 }
+
+/* Мобільний розвантажено (17.08): CTA Dityam+ уже є в нижньому sticky-bar —
+   у хедері на телефоні лишаються лише лого і бургер. */
+@media (max-width: 640px) {
+  .site-header-inner .site-header-cta { display: none; }
+}
