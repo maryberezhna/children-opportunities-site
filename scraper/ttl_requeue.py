@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 TTL_DAYS = {
     "competition": 60, "olympiad": 60, "hackathon": 60, "camp": 60,
     "exchange": 90, "grant": 90, "scholarship": 90, "course": 90,
-    "festival": 90, "workshop": 90,
+    "festival": 60, "workshop": 90,
     "club": 120, "educational_material": 120,
 }
 DEFAULT_TTL = 120
