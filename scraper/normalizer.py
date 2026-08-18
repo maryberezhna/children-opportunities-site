@@ -284,6 +284,13 @@ URL: {source_url}
                 if v and v < today_iso and data.get("status") != "draft":
                     data["status"] = "closed"
 
+            # Симетрія: відкритий набір без минулих дат ОЖИВЛЯЄ авто-закритий
+            # запис — так сезонна перевірка (recheck_at через ~11 місяців)
+            # повертає торішні фестивалі/табори з новою програмою. Модераторські
+            # записи захищає verified_at у db.upsert_opportunity.
+            if enrollment == "open" and "status" not in data:
+                data["status"] = "active"
+
             return data
 
         except Exception as e:
