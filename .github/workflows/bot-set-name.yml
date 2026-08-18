@@ -1,0 +1,28 @@
+name: Telegram — set bot name (manual)
+
+# Міняє видиме ім'я адмін-бота (Bot API setMyName). Одноразова утиліта:
+# чат бота в списку Telegram виглядав як публічний канал «Dityam.com.ua»
+# і лякав власницю щозвіту.
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Нове імʼя бота'
+        required: false
+        default: 'Dityam Адмінка 🛠'
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Set bot name
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          BOT_NAME: ${{ github.event.inputs.name || 'Dityam Адмінка 🛠' }}
+        run: |
+          resp=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setMyName" \
+            --data-urlencode "name=${BOT_NAME}")
+          echo "$resp"
+          echo "$resp" | grep -q '"ok":true' || exit 1

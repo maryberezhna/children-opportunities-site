@@ -198,6 +198,7 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "source": f"🔎 Агент: {kw}" if region["name"] == "Україна"
                   else f"🔎 Агент: {kw} · {region['name']}",
         "source_url": url,
+        "canonical_url": canonical_url(url),
         "status": "draft",
     }
     rec = _sanitize(rec)
@@ -217,6 +218,13 @@ def _norm_title(t: str) -> str:
     t = (t or "").lower()
     t = re.sub(r"[^\w\s]", " ", t)
     return re.sub(r"\s+", " ", t).strip()
+
+
+def _domain(u: str) -> str:
+    """Registrable-домен без www: для «цей сайт уже в каталозі»-дедупу."""
+    from urllib.parse import urlparse
+    netloc = urlparse(u or "").netloc.lower()
+    return netloc[4:] if netloc.startswith("www.") else netloc
 
 
 def _best_match(title: str, existing: list) -> tuple:
@@ -278,18 +286,46 @@ def main() -> int:
     # Existing titles (active + draft) for duplicate analysis — every candidate
     # is compared against these BEFORE it can enter the moderation queue.
     try:
-        rows = (client.table("opportunities").select("title, slug")
+        rows = (client.table("opportunities").select("title, slug, canonical_url, source_url")
                 .in_("status", ["active", "draft"]).execute().data or [])
     except Exception as e:
         logger.warning("  Не вдалося завантажити наявні для дедупу: %s", e)
         rows = []
     existing = [(r["slug"], _norm_title(r.get("title"))) for r in rows if r.get("slug")]
 
+    # URL-дедуп: назва кандидата може бути якою завгодно, але сайт, що вже є в
+    # каталозі, НЕ сміє пропонуватися як новий (кейс liouba-lorrukraine.fr —
+    # запис існував з квітня, а дедуп по назві його не бачив). Домени-хаби
+    # (портали з багатьма окремими можливостями) виключаємо через dedup_hub_urls.
+    existing_cus, existing_domains = set(), set()
+    for r in rows:
+        cu = r.get("canonical_url") or (canonical_url(r["source_url"]) if r.get("source_url") else "")
+        if cu:
+            existing_cus.add(cu)
+            existing_domains.add(_domain(cu))
+    try:
+        hub_rows = client.table("dedup_hub_urls").select("url").execute().data or []
+    except Exception:
+        hub_rows = []
+    hub_domains = {_domain(h["url"]) for h in hub_rows if h.get("url")}
+
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     for c in candidates:
         rec = to_record(c, kw, region)
         if not rec:
             skipped += 1
+            continue
+
+        cu = rec.get("canonical_url") or ""
+        dom = _domain(cu)
+        if cu and cu in existing_cus:
+            dup_skipped += 1
+            logger.info("  ⏭ URL уже в каталозі — не пропоную: %s", cu)
+            continue
+        if dom and dom in existing_domains and dom not in hub_domains:
+            dup_skipped += 1
+            logger.info("  ⏭ домен уже в каталозі (%s) — не пропоную: %s",
+                        dom, rec["title"][:55])
             continue
 
         # Duplicate analysis (also catches near-dupes within this batch).
@@ -321,6 +357,9 @@ def main() -> int:
             ).execute()
             added += 1
             existing.append((rec["slug"], _norm_title(rec["title"])))
+            if cu:
+                existing_cus.add(cu)
+                existing_domains.add(dom)
             logger.info("  ✅ draft%s: %s",
                         f" ⚠дубль~{int(score*100)}%" if rec.get("dup_of") else "",
                         rec["title"][:65])
