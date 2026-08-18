@@ -2,11 +2,16 @@
  * Daily deadline check.
  *
  * For every opportunity with deadline <= today:
- * - If type is "annual" (olympiads, contests, scholarships, camps, festivals,
- *   exchanges, grants, study_abroad) — clear `deadline = NULL`. The next scrape
- *   will repopulate with this year's date when the source publishes it. We do
- *   NOT try to add +1 year ourselves because the actual deadline often shifts.
+ * - If type is "annual" (olympiads, contests, scholarships, exchanges, grants,
+ *   study_abroad) — clear `deadline = NULL`. The next scrape will repopulate
+ *   with this year's date when the source publishes it. We do NOT try to add
+ *   +1 year ourselves because the actual deadline often shifts.
+ *   Festivals and camps are NOT annual here: they are date-bound events, and a
+ *   past event must close, not sit visible "till next year" (the ATLAS bug).
  * - Otherwise — mark `cost_type = 'closed'` so UI hides the "apply now" CTA.
+ *
+ * Separately, every non-closed opportunity with event_end_date < today is
+ * closed: the event has happened, regardless of deadlines.
  *
  * Also prints (and writes to artifact) a report with stats and the items that
  * are due within the next 7 / 30 days.
@@ -29,7 +34,7 @@ import { fileURLToPath } from 'node:url';
 
 const ANNUAL_TYPES = new Set([
   'olympiad', 'competition', 'exchange', 'scholarship',
-  'festival', 'camp', 'grant', 'study_abroad',
+  'grant', 'study_abroad',
 ]);
 
 const TYPE_LABELS = {
@@ -149,6 +154,33 @@ if (expiredAnnual.length > 0) {
   console.log('');
 }
 
+// --- Події, що вже відбулися (event_end_date < today) ---
+const { data: endedEvents, error: endedErr } = await supabase
+  .from('opportunities')
+  .select('id, title, event_end_date, opportunity_type')
+  .not('event_end_date', 'is', null)
+  .lt('event_end_date', stamp)
+  .neq('status', 'closed');
+
+if (endedErr) console.error('Supabase select (ended events) error:', endedErr);
+
+let endedClosed = 0;
+if ((endedEvents || []).length > 0) {
+  console.log(`🏁 CLOSING ${endedEvents.length} finished events (event_end_date passed):`);
+  for (const r of endedEvents) {
+    console.log(`  ${r.event_end_date}  ${r.title}  (${r.opportunity_type})`);
+    if (!DRY_RUN) {
+      const { error: e } = await supabase
+        .from('opportunities')
+        .update({ status: 'closed', updated_at: new Date().toISOString() })
+        .eq('id', r.id);
+      if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
+      else endedClosed += 1;
+    }
+  }
+  console.log('');
+}
+
 console.log(`🟢 DUE WITHIN 30 DAYS (${dueSoon.length}):`);
 for (const r of dueSoon) {
   const tag = r.daysLeft <= 7 ? '⚡' : '  ';
@@ -157,7 +189,7 @@ for (const r of dueSoon) {
 
 if (!DRY_RUN) {
   console.log('');
-  console.log(`Done: archived=${archived}, deadline-cleared=${refreshed}, failed=${failed}`);
+  console.log(`Done: archived=${archived}, events-closed=${endedClosed}, deadline-cleared=${refreshed}, failed=${failed}`);
 }
 
 // --- Persist artifact for GitHub Actions ---
@@ -168,10 +200,13 @@ await mkdir(outDir, { recursive: true });
 const reportLines = [
   `Deadline check — ${stamp}`,
   '='.repeat(60),
-  `archived=${archived}, deadline-cleared=${refreshed}, failed=${failed}, due-soon=${dueSoon.length}`,
+  `archived=${archived}, events-closed=${endedClosed}, deadline-cleared=${refreshed}, failed=${failed}, due-soon=${dueSoon.length}`,
   '',
   `Expired one-shot → archived (cost_type='closed'):`,
   ...expiredOneShot.map((r) => `  ${r.deadline} [${-r.daysLeft}d]  ${r.title}`),
+  '',
+  `Finished events → closed (event_end_date passed):`,
+  ...(endedEvents || []).map((r) => `  ${r.event_end_date}  ${r.title}`),
   '',
   `Expired annual → deadline cleared:`,
   ...expiredAnnual.map((r) => `  ${r.deadline} [${-r.daysLeft}d]  ${r.title}`),

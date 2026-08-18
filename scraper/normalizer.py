@@ -56,14 +56,15 @@ VALID_OPP_TYPES = {
 def _sanitize(data: dict) -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
     the whole record."""
-    dl = data.get("deadline")
-    if dl:
-        try:
-            # Accepts "2026-4-5" too, normalises to "2026-04-05"; rejects word
-            # dates like "квітень" / "abril 2024".
-            data["deadline"] = datetime.strptime(str(dl).strip(), "%Y-%m-%d").date().isoformat()
-        except ValueError:
-            data["deadline"] = None
+    for key in ("deadline", "event_end_date"):
+        val = data.get(key)
+        if val:
+            try:
+                # Accepts "2026-4-5" too, normalises to "2026-04-05"; rejects word
+                # dates like "квітень" / "abril 2024".
+                data[key] = datetime.strptime(str(val).strip(), "%Y-%m-%d").date().isoformat()
+            except ValueError:
+                data[key] = None
     # cost_type & deadline are nullable — drop unknown values to null.
     if data.get("cost_type") not in VALID_COST_TYPES:
         data["cost_type"] = None
@@ -118,6 +119,14 @@ deadline — ОСТАННІЙ ДЕНЬ ПОДАЧІ ЗАЯВКИ, формат Y
 - Одна дата проведення («15 вересня») → бери її.
 - Дедлайну немає, програма постійна або набір триває цілий рік → null.
 - Рік не вказано → найближчий майбутній.
+
+event_end_date — ОСТАННІЙ ДЕНЬ ПРОВЕДЕННЯ датованої події (табір, фестиваль,
+табірна зміна, фінал конкурсу, обмін), формат YYYY-MM-DD:
+- Діапазон дат проведення («13–16 серпня 2026») → ОСТАННЯ дата діапазону.
+- Одна дата проведення → вона ж.
+- Постійна програма, гурток, курс без конкретних дат → null.
+Дата «сьогодні» вказана в повідомленні. Якщо подія вже ЗАВЕРШИЛАСЬ або дедлайн
+у минулому — це НЕ актуальна можливість: enrollment_status=expired.
 
 Типи opportunity_type:
 course, olympiad, competition, club, exchange, camp, scholarship,
@@ -188,6 +197,12 @@ EXTRACT_TOOL = {
                                "Для діапазону дат проведення — ПЕРША дата, "
                                "не остання. Немає дедлайну → null.",
             },
+            "event_end_date": {
+                "type": ["string", "null"],
+                "description": "Останній день ПРОВЕДЕННЯ датованої події, "
+                               "YYYY-MM-DD. Для діапазону — ОСТАННЯ дата. "
+                               "Постійна програма без дат → null.",
+            },
             "enrollment_status": {
                 "type": "string",
                 "enum": ["open", "closed", "expired", "unknown"],
@@ -219,7 +234,9 @@ class Normalizer:
     def normalize(self, raw_text: str, source: str, source_url: str,
                   raw_title: Optional[str] = None) -> Optional[dict]:
         try:
-            user_msg = f"""Джерело: {source}
+            today_iso = datetime.utcnow().date().isoformat()
+            user_msg = f"""Сьогодні: {today_iso}
+Джерело: {source}
 URL: {source_url}
 Заголовок: {raw_title or '(немає)'}
 
@@ -258,6 +275,14 @@ URL: {source_url}
             enrollment = data.pop("enrollment_status", "unknown")
             if enrollment in ("closed", "expired") and data.get("status") != "draft":
                 data["status"] = "closed"
+
+            # Дати в минулому — запобіжник, незалежний від LLM: подія, що вже
+            # відбулась, або дедлайн, що минув, не сміють дати active-запис
+            # (кейс «ATLAS Weekend висів активним через місяць після події»).
+            for key in ("deadline", "event_end_date"):
+                v = data.get(key)
+                if v and v < today_iso and data.get("status") != "draft":
+                    data["status"] = "closed"
 
             return data
 
