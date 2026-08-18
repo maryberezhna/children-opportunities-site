@@ -37,6 +37,18 @@ const ANNUAL_TYPES = new Set([
   'grant', 'study_abroad',
 ]);
 
+// Сезонні типи: закриваємо чесно, але через ~11 місяців дивимось ще раз —
+// ttl_requeue перечитає сторінку, і нова річна програма оживить запис.
+const SEASONAL_RECHECK_TYPES = new Set([
+  'festival', 'camp', 'summer_school', 'sport_tournament', 'excursion',
+]);
+const seasonalRecheck = (type) => {
+  if (!SEASONAL_RECHECK_TYPES.has(type)) return {};
+  const d = new Date();
+  d.setMonth(d.getMonth() + 11);
+  return { recheck_at: d.toISOString().slice(0, 10) };
+};
+
 const TYPE_LABELS = {
   course: 'Курс',
   olympiad: 'Олімпіада',
@@ -129,7 +141,8 @@ if (expiredOneShot.length > 0) {
     if (!DRY_RUN) {
       const { error: e } = await supabase
         .from('opportunities')
-        .update({ status: 'closed', updated_at: new Date().toISOString() })
+        .update({ status: 'closed', updated_at: new Date().toISOString(),
+                  ...seasonalRecheck(r.opportunity_type) })
         .eq('id', r.id);
       if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
       else archived += 1;
@@ -172,7 +185,8 @@ if ((endedEvents || []).length > 0) {
     if (!DRY_RUN) {
       const { error: e } = await supabase
         .from('opportunities')
-        .update({ status: 'closed', updated_at: new Date().toISOString() })
+        .update({ status: 'closed', updated_at: new Date().toISOString(),
+                  ...seasonalRecheck(r.opportunity_type) })
         .eq('id', r.id);
       if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
       else endedClosed += 1;

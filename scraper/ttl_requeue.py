@@ -33,6 +33,10 @@ TTL_DAYS = {
 }
 DEFAULT_TTL = 120
 LIMIT_PER_RUN = 20
+# Сезонні перевірки закритих подій (recheck_at, ставить check-deadlines при
+# закритті фестивалю/табору: closed + 11 місяців — подивитися, чи не
+# з'явилась нова річна програма).
+SEASONAL_LIMIT_PER_RUN = 10
 UA = "Mozilla/5.0 (compatible; DityamTTLCheck/1.0; +https://dityam.com.ua)"
 
 
@@ -54,7 +58,8 @@ def _fetch_text(url: str) -> str | None:
 
 def run(client) -> dict:
     """Один прохід TTL. Ніколи не кидає виняток."""
-    stats = {"checked": 0, "requeued": 0, "refreshed": 0, "skipped": 0}
+    stats = {"checked": 0, "requeued": 0, "refreshed": 0, "skipped": 0,
+             "seasonal_checked": 0, "seasonal_requeued": 0}
     try:
         now = datetime.now(timezone.utc)
         rows = (
@@ -79,38 +84,75 @@ def run(client) -> dict:
                 due.append(r)
             if len(due) >= LIMIT_PER_RUN:
                 break
-        if not due:
-            return stats
+        if due:
+            print(f"\n{'=' * 70}\n⏳ TTL: {len(due)} записів без дедлайну на переверифікацію\n{'=' * 70}")
+            for r in due:
+                stats["checked"] += 1
+                text = _fetch_text(r["source_url"])
+                if not text:
+                    stats["skipped"] += 1  # мертвий/недоступний — справа verify-links
+                    continue
+                content_hash = raw_store.raw_hash(r["source_url"], text)
+                existing = (
+                    client.table("raw_items").select("id")
+                    .eq("content_hash", content_hash).limit(1).execute().data
+                )
+                if existing:
+                    # Сторінка не змінилась — минулий висновок чинний, TTL скидаємо.
+                    client.table("opportunities").update(
+                        {"updated_at": now.isoformat()}
+                    ).eq("id", r["id"]).execute()
+                    stats["refreshed"] += 1
+                else:
+                    raw_store.store_raw_items(client, r.get("source") or "ttl-recheck", [{
+                        "source": r.get("source") or "ttl-recheck",
+                        "source_url": r["source_url"],
+                        "raw_title": r.get("title"),
+                        "raw_text": text,
+                    }])
+                    stats["requeued"] += 1
+            print(f"✅ TTL: {stats['requeued']} у чергу на переекстракцію, "
+                  f"{stats['refreshed']} підтверджено без змін, "
+                  f"{stats['skipped']} недоступні (лишаються verify-links)")
 
-        print(f"\n{'=' * 70}\n⏳ TTL: {len(due)} записів без дедлайну на переверифікацію\n{'=' * 70}")
-        for r in due:
-            stats["checked"] += 1
-            text = _fetch_text(r["source_url"])
-            if not text:
-                stats["skipped"] += 1  # мертвий/недоступний — справа verify-links
-                continue
-            content_hash = raw_store.raw_hash(r["source_url"], text)
-            existing = (
-                client.table("raw_items").select("id")
-                .eq("content_hash", content_hash).limit(1).execute().data
-            )
-            if existing:
-                # Сторінка не змінилась — минулий висновок чинний, TTL скидаємо.
+        # --- Сезонні перевірки: закриті події, яким настав recheck_at ---
+        # Одна спроба на сезон: recheck_at знімаємо одразу, щоб не зациклитись.
+        # Якщо сторінка змінилась — переекстракція вирішить долю запису
+        # (нова річна програма з відкритим набором оживить його в normalizer).
+        seasonal = (
+            client.table("opportunities")
+            .select("id, title, source, source_url, recheck_at")
+            .eq("status", "closed")
+            .lte("recheck_at", now.date().isoformat())
+            .order("recheck_at")
+            .limit(SEASONAL_LIMIT_PER_RUN)
+            .execute()
+            .data or []
+        )
+        if seasonal:
+            print(f"\n⏰ Сезонні перевірки: {len(seasonal)} закритих подій (recheck_at настав)")
+            for r in seasonal:
+                stats["seasonal_checked"] += 1
                 client.table("opportunities").update(
-                    {"updated_at": now.isoformat()}
+                    {"recheck_at": None}
                 ).eq("id", r["id"]).execute()
-                stats["refreshed"] += 1
-            else:
-                raw_store.store_raw_items(client, r.get("source") or "ttl-recheck", [{
-                    "source": r.get("source") or "ttl-recheck",
-                    "source_url": r["source_url"],
+                url = r.get("source_url") or ""
+                text = _fetch_text(url) if url.startswith("http") else None
+                if not text:
+                    continue  # сторінка мертва — подія лишається closed
+                content_hash = raw_store.raw_hash(url, text)
+                if (client.table("raw_items").select("id")
+                        .eq("content_hash", content_hash).limit(1).execute().data):
+                    continue  # сторінка як була — нового сезону немає
+                raw_store.store_raw_items(client, r.get("source") or "seasonal-recheck", [{
+                    "source": r.get("source") or "seasonal-recheck",
+                    "source_url": url,
                     "raw_title": r.get("title"),
                     "raw_text": text,
                 }])
-                stats["requeued"] += 1
-        print(f"✅ TTL: {stats['requeued']} у чергу на переекстракцію, "
-              f"{stats['refreshed']} підтверджено без змін, "
-              f"{stats['skipped']} недоступні (лишаються verify-links)")
+                stats["seasonal_requeued"] += 1
+            print(f"✅ Сезонні: {stats['seasonal_requeued']} з {stats['seasonal_checked']} "
+                  f"пішли на переекстракцію (решта без змін або недоступні)")
     except Exception as e:
         logger.error("ttl_requeue failed: %s", e)
     return stats
