@@ -43,6 +43,13 @@ CHANNELS: list[tuple[str, str]] = [
     ("unicef_ukraine", "UNICEF Ukraine"),
     ("mozhlyvosti_ua", "Можливості UA"),
     ("Mozhlyvosti", "Можливості"),
+    # Додано 18.08.2026 з добірки @husenytsiaa (Notion-таска «Telegram-канали
+    # як джерела»): перевірені на живість і релевантність 0–18. Перекіс у
+    # студентське відсіює нормалізатор.
+    ("tviyspace", "Твій космос можливостей"),
+    ("unicompass", "UniCompass"),
+    ("grantovyphishky", "Грантові фішки"),
+    ("news_from_united_youth", "United Youth"),
 ]
 
 _BROWSER = {
