@@ -35,7 +35,6 @@ from scrapers import (
     rss_feeds,
     save_the_children,
     space_dobrodiy,
-    telegram_channels,
     telegram_web,
     unicef,
 )
@@ -57,7 +56,6 @@ SCRAPERS = [
     ("British Council", british_council, "thematic"),
     # Соціальні мережі
     ("Telegram (веб)", telegram_web, "social"),      # без API-ключів (t.me/s/)
-    ("Telegram канали", telegram_channels, "social"),
     ("Instagram", instagram_monitor, "social"),
     ("Facebook", facebook_pages, "social"),
 ]
