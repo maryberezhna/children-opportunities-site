@@ -30,6 +30,9 @@ FEEDS: list[tuple[str, str]] = [
     ("Громадський простір", "https://www.prostir.ua/feed/"),
     ("Освіта.ua", "https://osvita.ua/rss/"),
     ("Освіторія", "https://osvitoria.media/feed/"),
+    # Додано 18.08.2026 (Notion-таска «Telegram-канали як джерела»): TG-канал
+    # Unistudy мертвий з 03.2022, натомість сайт має живий WordPress-RSS.
+    ("Unistudy", "https://unistudy.org.ua/feed/"),
 ]
 
 # Стрічки Google Alerts — через змінну оточення, а не в коді: їхні адреси
