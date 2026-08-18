@@ -50,6 +50,9 @@ CHANNELS: list[tuple[str, str]] = [
     ("unicompass", "UniCompass"),
     ("grantovyphishky", "Грантові фішки"),
     ("news_from_united_youth", "United Youth"),
+    # Додано 18.08.2026: знайдений хендл із тієї ж добірки @husenytsiaa.
+    # Студентський перекіс (як unicompass) — нормалізатор відсіює 18+.
+    ("alwaysinomniaparatus", "In Omnia Paratus"),
 ]
 
 _BROWSER = {
