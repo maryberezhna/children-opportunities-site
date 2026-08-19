@@ -99,9 +99,18 @@ async function main() {
     return;
   }
 
-  // 3. Доповнення закріпленого
+  // 3. Доповнення закріпленого — або закріплення нового, якщо закріпу немає
   if (!pinned) {
-    console.log('Закріпленого поста немає — нічого доповнювати.');
+    // Закріпити мовчки: підписники щойно отримали сповіщення про сам пост,
+    // друге за хвилину — це вже шум.
+    const p = await api('pinChatMessage', {
+      chat_id: CHAT_ID,
+      message_id: sent.result.message_id,
+      disable_notification: true,
+    });
+    console.log(p.ok
+      ? '✓ Закріпу в каналі не було — закріпили новий пост.'
+      : `⚠️ Не вдалося закріпити: ${p.error_code} ${p.description}`);
     return;
   }
   const oldText = pinned.text;
