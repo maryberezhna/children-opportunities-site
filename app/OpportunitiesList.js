@@ -34,6 +34,10 @@ const AGE_GROUPS = [
 
 const TYPE_OPTIONS = [
   { label: 'Усі', value: 'all' },
+  // «Онлайн» — це формат участі, а не тема, тож живе тут, серед типів, і
+  // стоїть першим: дистанційна участь знімає питання міста, тому це найчастіший
+  // фільтр для родин поза великими містами й за кордоном.
+  { label: '💻 Онлайн', value: 'online', highlight: true },
   { label: 'Курси', value: 'course' },
   { label: 'Конкурси', value: 'competition' },
   { label: 'Олімпіади', value: 'olympiad' },
@@ -46,6 +50,15 @@ const TYPE_OPTIONS = [
   { label: 'Фестивалі', value: 'festival' },
   { label: 'Гуртки', value: 'club' },
 ];
+
+// Дистанційна участь. Ознаку беремо з трьох місць, бо джерела пишуть формат
+// по-різному: поле format («Онлайн», «Гібрид», «online»), місто «Онлайн» у
+// cities і згадка в назві/описі, коли формат узагалі не заповнений.
+const ONLINE_RE = /(онлайн|online|дистанц|гібрид|hybrid|zoom|вебінар)/i;
+const isOnline = (item) =>
+  ONLINE_RE.test(item.format || '')
+  || (item.cities || []).some((c) => ONLINE_RE.test(c))
+  || ONLINE_RE.test(`${item.title || ''} ${item.summary || ''}`);
 
 // Subcategories of state aid (держдопомога). Rendered as a nested sub-filter
 // only when the "Держдопомога" type is active. Values match opportunities.aid_type.
@@ -189,7 +202,7 @@ function FilterPanel({ menu }) {
           <button
             key={o.value}
             type="button"
-            className={`filter-btn ${on ? 'active' : ''}`}
+            className={`filter-btn ${on ? 'active' : ''} ${o.highlight ? 'filter-btn-hl' : ''}`}
             onClick={() => onToggle(o.value)}
           >
             {o.label}
@@ -229,6 +242,16 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     readSet('type', setTypes);
     readSet('aid', setAidTypes);
     readSet('theme', setThemes);
+    // Старі посилання з ?theme=online (до переїзду «Онлайн» у фільтр «Тип»)
+    // мають і далі показувати онлайн-можливості, а не порожню видачу.
+    if ((p.get('theme') || '').split(',').includes('online')) {
+      setThemes((prev) => {
+        const next = new Set(prev);
+        next.delete('online');
+        return next;
+      });
+      setTypes((prev) => new Set([...prev, 'online']));
+    }
     readSet('need', setNeeds);
     readSet('cost', setCosts);
     readSet('deadline', setDeadlines);
@@ -381,7 +404,8 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     // незалежно від її opportunity_type (виплата, табір, гурток…).
     type: (item) => types.size === 0
       || types.has(item.opportunity_type)
-      || (types.has('gov_aid') && Boolean(item.aid_type)),
+      || (types.has('gov_aid') && Boolean(item.aid_type))
+      || (types.has('online') && isOnline(item)),
     aid: (item) => aidTypes.size === 0 || aidTypes.has(item.aid_type),
     theme: (item) => {
       if (themes.size === 0) return true;
@@ -482,6 +506,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       type: set('type', (i, out) => {
         out.add(i.opportunity_type);
         if (i.aid_type) out.add('gov_aid');
+        if (isOnline(i)) out.add('online');
       }),
       aid: set('aid', (i, out) => { if (i.aid_type) out.add(i.aid_type); }),
       theme: set('theme', (i, out) => (themeMap.get(i.id) || []).forEach((t) => out.add(t))),
