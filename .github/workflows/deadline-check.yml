@@ -5,6 +5,10 @@ on:
     - cron: '0 6 * * *'  # daily 06:00 UTC (09:00 Kyiv summer / 08:00 winter)
   workflow_dispatch:
     inputs:
+      preview:
+        description: 'Показати пости на всі 7 днів, нічого не надсилаючи'
+        required: false
+        default: 'false'
       dry_run:
         description: 'Print actions without writing to DB'
         required: false
@@ -38,6 +42,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           NOTIFY: ${{ github.event.inputs.notify || 'true' }}
+          PREVIEW: ${{ github.event.inputs.preview || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
         run: node scripts/check-deadlines.mjs
 
