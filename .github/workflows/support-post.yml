@@ -1,10 +1,9 @@
 name: Telegram — weekly support post
 
+# ВИМКНЕНО ЗА РОЗКЛАДОМ 19.08.2026: у суботу це був другий пост за день.
+# Прохання про підтримку тепер живе рядком у самому дайджесті (раз на тиждень,
+# у неділю) — scripts/check-deadlines.mjs. Ручний запуск лишається.
 on:
-  schedule:
-    # Saturdays 11:00 Kyiv summer time (08:00 UTC). Не перетинається з
-    # щоденним діджестом (06:00 UTC) і ботом нових постів (06:00, 15:00 UTC).
-    - cron: '0 8 * * 6'
   workflow_dispatch:
     inputs:
       dry_run:
