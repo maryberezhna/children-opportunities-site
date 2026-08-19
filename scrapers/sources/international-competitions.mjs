@@ -1,42 +1,81 @@
-import * as cheerio from 'cheerio';
 import { fetchHtml } from '../lib/fetch.mjs';
 
 export const name = 'Міжнародні конкурси та олімпіади';
 
-// Society for Science events index — covers Regeneron ISEF, Broadcom MASTERS,
-// Thermo Fisher JIC, etc. Stable structure (event tiles).
-const LIST_URL = 'https://www.societyforscience.org/competitions/';
+// Society for Science проводить три конкурси, відкриті для школярів з України
+// (напряму або через афілійовані відбори, зокрема МАН). Індексної сторінки з
+// картками більше немає — з 2026 це лонгрід-модулі, тому старі селектори
+// (article/.card) давали нуль рядків кожного запуску. Натомість ходимо на самі
+// сторінки конкурсів: кожен фетч — реальна перевірка живості, а якщо сторінка
+// зникне, адаптер чесно впаде і реєстр джерел це зафіксує.
+const COMPETITIONS = [
+  {
+    path: 'isef',
+    fallbackTitle: 'Regeneron International Science and Engineering Fair (ISEF)',
+    summary:
+      'Найбільша у світі наукова виставка для старшокласників: учасники з понад 60 країн '
+      + 'змагаються у 21 напрямі STEM, призовий фонд — близько $8 млн. Українські школярі '
+      + 'потрапляють через національний відбір (МАН).',
+    age_from: 14,
+    age_to: 17,
+  },
+  {
+    path: 'broadcom-masters',
+    fallbackTitle: 'Broadcom MASTERS — конкурс для молодших школярів',
+    summary:
+      'Науково-інженерний конкурс для учнів середньої школи (6–8 класи): дослідницькі '
+      + 'проєкти, командні STEM-завдання, стипендії переможцям. Відбір — через афілійовані '
+      + 'наукові ярмарки.',
+    age_from: 11,
+    age_to: 14,
+  },
+  {
+    path: 'regeneron-sts',
+    fallbackTitle: 'Regeneron Science Talent Search',
+    summary:
+      'Найстаріший науковий конкурс США для випускних класів: оригінальне дослідження, '
+      + 'фінал у Вашингтоні, призи до $250 000. Для школярів останнього року навчання.',
+    age_from: 16,
+    age_to: 17,
+  },
+];
+
+const BASE = 'https://www.societyforscience.org';
+
+/** Офіційна назва зі сторінки: <title> без хвоста « - Society for Science». */
+function titleFrom(html, fallback) {
+  const m = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  if (!m) return fallback;
+  const t = m[1]
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s*[-|–]\s*Society for Science.*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return t.length > 5 ? t : fallback;
+}
 
 export async function scrape() {
-  let html;
-  try {
-    html = await fetchHtml(LIST_URL);
-  } catch (err) {
-    // Збій фетчу — чесний збій: без фолбеку, реєстр джерел його зафіксує.
-    throw err;
-  }
-
-  const $ = cheerio.load(html);
   const rows = [];
 
-  $('article, .competition-card, .program-card, .card').each((_, el) => {
-    const $el = $(el);
-    const title = $el.find('h2, h3').first().text().trim();
-    if (!title || title.length < 4) return;
-
-    const href = $el.find('a').first().attr('href');
-    const url = href?.startsWith('http') ? href : href ? new URL(href, LIST_URL).toString() : LIST_URL;
-    const summary = $el.find('p').first().text().trim().slice(0, 280);
+  for (const c of COMPETITIONS) {
+    const url = `${BASE}/${c.path}/`;
+    // Помилку фетчу НЕ ковтаємо: якщо всі три сторінки лягли, rows лишиться
+    // порожнім і run.mjs запише збій — саме та поведінка, якої ми хочемо.
+    let html;
+    try {
+      html = await fetchHtml(url);
+    } catch (err) {
+      console.warn(`  ⚠ ${name}: ${url} — ${err.message}`);
+      continue;
+    }
 
     rows.push({
-      title: `${title} — Society for Science`,
-      summary: summary
-        ? `${summary} Українські школярі можуть подаватись напряму або через МАН.`
-        : 'Міжнародний науковий конкурс від Society for Science. Українські школярі подаються напряму або через МАН.',
-      age_from: 13,
-      age_to: 17,
+      title: `${titleFrom(html, c.fallbackTitle)} — Society for Science`,
+      summary: `${c.summary} Участь безкоштовна.`,
+      age_from: c.age_from,
+      age_to: c.age_to,
       opportunity_type: 'competition',
-      categories: ['STEM','education'],
+      categories: ['STEM', 'education'],
       child_needs: ['gifted'],
       format: 'Онлайн + США',
       cost_type: 'free',
@@ -44,8 +83,7 @@ export async function scrape() {
       source_url: url,
       source: 'Society for Science',
     });
-  });
+  }
 
-  // Нуль знахідок = зламані селектори; фолбеку немає свідомо.
   return rows;
 }

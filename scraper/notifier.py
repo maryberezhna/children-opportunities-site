@@ -38,6 +38,37 @@ TELEGRAM_ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
 _tg_esc = lambda s: (str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;"))
 
 
+def _days_left(deadline: str | None) -> int | None:
+    """Скільки днів лишилось до дедлайну; None — якщо дедлайну немає/битий."""
+    if not deadline:
+        return None
+    try:
+        d = datetime.strptime(str(deadline)[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    return (d - datetime.now().date()).days
+
+
+def _deadline_label(deadline: str | None) -> str:
+    """« ⏳ до 15.09 (27 дн.)» — те, за чим у звіті видно, чим зайнятись першим."""
+    left = _days_left(deadline)
+    if left is None:
+        return " · <i>без дедлайну</i>"
+    day = datetime.strptime(str(deadline)[:10], "%Y-%m-%d").strftime("%d.%m")
+    if left < 0:
+        return f" · 🔴 дедлайн минув ({day})"
+    if left == 0:
+        return f" · 🔥 <b>дедлайн сьогодні</b> ({day})"
+    urgency = "🔥" if left <= 3 else ("⚡" if left <= 14 else "⏳")
+    return f" · {urgency} до <b>{day}</b> ({left} дн.)"
+
+
+def _deadline_sort_key(op: dict):
+    """Найтерміновіші — вгору; записи без дедлайну — в кінець списку."""
+    left = _days_left(op.get("deadline"))
+    return (1, 0) if left is None else (0, left)
+
+
 def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> bool:
     """Компактний звіт скраперів в адмін-чат. Повертає True, якщо надіслано."""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
@@ -62,11 +93,14 @@ def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> boo
                   f"<code>{_tg_esc(llm_alert.get('last_error', '')[:150])}</code>"]
 
     if new_opps:
+        # Дедлайн — головне, за чим у звіті приймають рішення «зайнятись зараз
+        # чи потім», тож він іде одразу після назви, зі скільки днів лишилось.
         lines += ["", "🆕 <b>Нові:</b>"]
-        for op in new_opps[:10]:
+        for op in sorted(new_opps, key=_deadline_sort_key)[:10]:
             title = _tg_esc(op.get("title", "—"))
             link = op.get("source_url")
-            lines.append(f"• {'<a href=' + chr(34) + _tg_esc(link) + chr(34) + '>' + title + '</a>' if link else title}"
+            head = ('<a href="' + _tg_esc(link) + '">' + title + '</a>') if link else title
+            lines.append(f"• {head}{_deadline_label(op.get('deadline'))}"
                          f" — {_tg_esc(op.get('source', ''))}")
         if len(new_opps) > 10:
             lines.append(f"…і ще {len(new_opps) - 10}")
