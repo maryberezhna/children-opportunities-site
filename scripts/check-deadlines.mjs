@@ -352,8 +352,36 @@ async function sendDailyDigest() {
     });
     lines.push('');
   }
+  // Секція «нові»: раніше окремі картки слав telegram-bot (до 8 повідомлень
+  // на день). Тепер новинки живуть тут, одним рядком кожна — канал має рівно
+  // один пост на добу. У суботу цю секцію не додаємо: тема дня і так «нові».
+  if (today.getDay() !== 6) {
+    const dayAgo = new Date(Date.now() - 36 * 3600 * 1000).toISOString();
+    const fresh = pool
+      .filter((r) => (r.created_at || '') >= dayAgo)
+      .filter((r) => !themed.some((t) => t.id === r.id))
+      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+      .slice(0, 3);
+    if (fresh.length > 0) {
+      lines.push(`🆕 <b>Щойно додали</b>`);
+      lines.push('');
+      fresh.forEach((r, i) => {
+        lines.push(formatLine(r, i));
+        if (i < fresh.length - 1) lines.push('');
+      });
+      lines.push('');
+    }
+  }
+
   const moreUrl = theme.link || 'https://dityam.com.ua';
-  lines.push(`🔗 Більше — на <a href="${moreUrl}">dityam.com.ua</a>`);
+  lines.push(`🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>${moreUrl !== 'https://dityam.com.ua' ? ` · <a href="${moreUrl}">добірка дня</a>` : ''}`);
+
+  // Прохання про підтримку — раз на тиждень, у неділю, рядком усередині
+  // дайджесту. Окремий суботній пост скасовано: він був другим за добу.
+  if (today.getDay() === 0) {
+    lines.push('');
+    lines.push('🧡 Каталог безкоштовний і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
+  }
 
   // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
   // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти

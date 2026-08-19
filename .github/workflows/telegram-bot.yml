@@ -1,11 +1,12 @@
 name: Telegram bot — post new opportunities
 
+# ВИМКНЕНО ЗА РОЗКЛАДОМ 19.08.2026. Слав до 8 ОКРЕМИХ повідомлень за запуск
+# (MAX_PER_RUN=8) — разом із ранковим дайджестом і нічними метриками підписник
+# отримував до 10 сповіщень на добу. Канал тепер має рівно один пост на день:
+# тематичний дайджест о 09:00 (scripts/check-deadlines.mjs), куди нові
+# можливості потрапляють секцією «нові в каталозі».
+# Ручний запуск лишається — інколи треба підняти окрему можливість.
 on:
-  schedule:
-    # Once daily — 15:00 Kyiv summer time (12:00 UTC)
-    # deadline-check digest runs at 06:00 UTC → 6h gap between messages
-    # max 1 new opportunity post per day → total ≤ 2 Telegram messages/day
-    - cron: '0 12 * * *'
   workflow_dispatch:
     inputs:
       dry_run:

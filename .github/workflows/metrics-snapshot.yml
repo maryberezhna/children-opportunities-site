@@ -27,5 +27,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Метрики — внутрішня річ, підписникам вони не потрібні. Шлемо в
+          # адмін-чат, а не в канал (до 19.08.2026 летіли в канал о 23:10).
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
         run: node scripts/metrics-snapshot.mjs
