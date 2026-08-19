@@ -311,7 +311,11 @@ const SITUATIONS = [
   },
   {
     text: '«Дитина здібна до математики, а в нашій школі це нікому не потрібно»',
-    filter: (r) => ['olympiad', 'competition', 'hackathon'].includes(r.opportunity_type),
+    // Тип «конкурс» надто широкий — під нього підпадають і спортивні
+    // змагання. Тому додатково звіряємося зі словами в назві й описі.
+    filter: (r) => ['olympiad', 'competition', 'hackathon'].includes(r.opportunity_type)
+      && /(математик|фізик|хімі|біолог|інформатик|наук|stem|дослідн|інженер|винахід|програм)/i
+        .test(`${r.title || ''} ${r.summary || ''}`),
   },
   {
     text: '«Хочемо, щоб дитина побачила світ, але бюджету на поїздки немає»',
@@ -358,7 +362,7 @@ async function sendDailyDigest(dayOverride = null) {
   const todayIso = today.toISOString().slice(0, 10);
   const { data: poolData, error: poolErr } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at, source, child_needs')
     .eq('status', 'active')
     .or(`deadline.is.null,deadline.gte.${todayIso}`);
   if (poolErr) {
@@ -582,8 +586,14 @@ function buildNumberPost(pool, weekIndex) {
     },
   ];
 
-  const card = CARDS[weekIndex % CARDS.length];
-  if (!card.value) return null;
+  // Порожню картку пропускаємо й беремо наступну: інакше формат тихо
+  // відкочувався в дайджест, і «цифра дня» ніколи не виходила.
+  let card = null;
+  for (let i = 0; i < CARDS.length; i += 1) {
+    const c = CARDS[(weekIndex + i) % CARDS.length];
+    if (c.value) { card = c; break; }
+  }
+  if (!card) return null;
   return [
     `📊 <b>${card.value}</b>`,
     '',
