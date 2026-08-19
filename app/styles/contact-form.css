@@ -1,0 +1,175 @@
+/* Контактна форма на /contacts */
+
+.contact-form {
+  display: grid;
+  gap: 14px;
+  margin: 22px 0 34px;
+  padding: 22px;
+  border: 1px solid #e8e3d6;
+  border-radius: 16px;
+  background: #fffdf8;
+  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.05);
+}
+
+.contact-field {
+  display: grid;
+  gap: 6px;
+}
+
+.contact-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #131b28;
+}
+
+.contact-req {
+  font-weight: 500;
+  font-size: 12.5px;
+  color: #8a94a6;
+}
+
+.contact-select,
+.contact-input,
+.contact-textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* < 16px змушує iOS зумити сторінку на фокусі */
+  color: #131b28;
+  background: #fff;
+  border: 1px solid #d9e0ea;
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.contact-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' fill='none' stroke='%2354617a' stroke-width='2' stroke-linecap='round'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  padding-right: 38px;
+  cursor: pointer;
+}
+
+.contact-textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.5;
+}
+
+.contact-select:focus,
+.contact-input:focus,
+.contact-textarea:focus {
+  outline: 2px solid #e85d24;
+  outline-offset: 1px;
+  border-color: #e85d24;
+}
+
+.contact-hint {
+  margin: -4px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #54617a;
+}
+
+.contact-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.contact-submit {
+  justify-self: start;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  background: #e85d24;
+  border: 0;
+  border-radius: 999px;
+  padding: 13px 32px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.contact-submit:hover:not(:disabled) {
+  background: #d24f19;
+  transform: translateY(-1px);
+}
+
+.contact-submit:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.contact-error {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.45;
+  color: #b3372e;
+}
+
+.contact-privacy {
+  margin: 0;
+  font-size: 13px;
+  color: #8a94a6;
+}
+
+.contact-form-done {
+  margin: 22px 0 34px;
+  padding: 30px 24px;
+  text-align: center;
+  border: 1px solid #e8e3d6;
+  border-radius: 16px;
+  background: #fef7e0;
+}
+
+.contact-form-done-icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.contact-form-done h3 {
+  margin: 12px 0 6px;
+  font-size: 22px;
+}
+
+.contact-form-done p {
+  margin: 0 auto;
+  max-width: 46ch;
+  font-size: 15.5px;
+  line-height: 1.55;
+  color: #54617a;
+}
+
+.contact-form-again {
+  margin-top: 16px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: #e85d24;
+  background: transparent;
+  border: 1.5px solid #e85d24;
+  border-radius: 999px;
+  padding: 9px 22px;
+  cursor: pointer;
+}
+
+.contact-form-again:hover {
+  background: #e85d24;
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .contact-form {
+    padding: 18px 15px;
+  }
+
+  .contact-row {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-submit {
+    justify-self: stretch;
+    text-align: center;
+  }
+}

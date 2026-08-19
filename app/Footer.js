@@ -141,7 +141,7 @@ export default async function Footer() {
           >
             <span>Донат на monobank</span>
           </a>
-          <Link href="/contacts" className="footer-link"><span>Контакти</span></Link>
+          <Link href="/contacts" className="footer-link"><span>Написати нам · контакти</span></Link>
           <Link href="/privacy" className="footer-link"><span>Конфіденційність</span></Link>
           <Link href="/terms" className="footer-link"><span>Оферта · Повернення</span></Link>
         </div>

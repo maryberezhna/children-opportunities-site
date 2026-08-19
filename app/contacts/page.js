@@ -1,8 +1,9 @@
 import Link from 'next/link';
+import ContactForm from './ContactForm';
 
 export const metadata = {
-  title: 'Контакти',
-  description: 'Як зв\'язатися з командою dityam.com.ua: email, Instagram, запропонувати нову програму, повідомити про помилку.',
+  title: 'Написати нам — контакти Dityam',
+  description: 'Контактна форма dityam.com.ua: запропонувати можливість, повідомити про помилку чи прострочену програму, поскаржитись, запропонувати співпрацю або запит від медіа.',
   alternates: { canonical: 'https://dityam.com.ua/contacts' },
 };
 
@@ -13,41 +14,35 @@ export default function ContactsPage() {
         <Link href="/">← Усі можливості</Link>
       </nav>
       <article className="legal-page">
-        <h1>Контакти</h1>
+        <h1>Написати нам</h1>
 
         <p className="lead">
           Будемо раді зворотному зв'язку, новим програмам, виправленням помилок
-          або просто привітанням.
+          або просто привітанням. Оберіть тему — і напишіть кілька слів.
         </p>
 
+        <ContactForm />
+
+        <h2>Інші способи звʼязку</h2>
         <div className="contact-grid">
           <a href="mailto:maryberezhna@gmail.com" className="contact-card">
             <span className="contact-icon">✉️</span>
             <div>
-              <div className="contact-title">Написати нам</div>
+              <div className="contact-title">Email</div>
               <div className="contact-sub">maryberezhna@gmail.com</div>
             </div>
           </a>
 
           <a
-            href="mailto:maryberezhna@gmail.com?subject=Запропонувати%20можливість%20на%20dityam.com.ua"
+            href="https://t.me/dityam_com_ua"
+            target="_blank"
+            rel="noopener noreferrer"
             className="contact-card"
           >
-            <span className="contact-icon">➕</span>
+            <span className="contact-icon">✈️</span>
             <div>
-              <div className="contact-title">Запропонувати можливість</div>
-              <div className="contact-sub">Знаєте програму, якої тут немає? Розкажіть.</div>
-            </div>
-          </a>
-
-          <a
-            href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua"
-            className="contact-card"
-          >
-            <span className="contact-icon">🐛</span>
-            <div>
-              <div className="contact-title">Повідомити про помилку</div>
-              <div className="contact-sub">Прострочена програма, неправильний опис, баг.</div>
+              <div className="contact-title">Telegram-канал</div>
+              <div className="contact-sub">@dityam_com_ua — нові можливості щодня</div>
             </div>
           </a>
 
