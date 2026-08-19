@@ -7,10 +7,8 @@ import { applyRules } from './lib/rules.mjs';
 import { toCsv } from './lib/csv.mjs';
 import { loadRegistry, recordCrawl, alertBrokenSources } from './lib/registry.mjs';
 
-import * as acmodasi from './sources/acmodasi-castings.mjs';
 import * as constellation from './sources/constellation-ua.mjs';
 import * as festPortal from './sources/fest-portal.mjs';
-import * as camps from './sources/regional-camps.mjs';
 import * as international from './sources/international-competitions.mjs';
 import * as langSchools from './sources/regional-language-schools.mjs';
 import * as ucfGrants from './sources/ucf-grants.mjs';
@@ -23,16 +21,22 @@ import * as egapStem from './sources/egap-stem.mjs';
 // import * as monOlympiads from './sources/mon-subject-olympiads.mjs';
 // import * as diiaOsvita from './sources/diia-osvita.mjs';
 // import * as easyGov from './sources/easy-gov.mjs';
+//
+// Видалено 19.08.2026 (жодного успішного обходу за весь час, фолбеки це
+// маскували):
+//   acmodasi — сайт перебудовано, списки кастингів більше не в HTML
+//     (/castings/* віддає лендинг із JS-фільтрами); до того ж комерційні
+//     кастинги акторів — слабкий фіт для каталогу можливостей.
+//   regional-camps — домен child.com.ua не відповідає взагалі (мертвий),
+//     і скрапив він платні табори.
 
 // Only mjs-unique sources — the four overlapping with the Python scraper
 // (МАН, МОН, Дія.Освіта, easy.gov) were removed to stop cross-pipeline dupes.
 // `registry` — ім'я рядка в таблиці sources; `network` — чи означає нуль
 // знахідок поламку (список у мережі не буває порожнім; статика — буває).
 const SOURCES = [
-  { mod: acmodasi, registry: 'acmodasi', network: true },
   { mod: constellation, registry: 'constellation-ua', network: true },
   { mod: festPortal, registry: 'fest-portal', network: true },
-  { mod: camps, registry: 'regional-camps', network: true },
   { mod: international, registry: 'international-competitions', network: true },
   { mod: langSchools, registry: 'regional-language-schools', network: false },
   { mod: ucfGrants, registry: 'ucf-grants', network: false },
