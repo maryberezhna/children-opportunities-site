@@ -1,19 +1,18 @@
-/* Контактна форма на /contacts */
+/* Контактна форма на /contacts.
+   Без картки-обгортки і без обведення полів: рамка в рамці дає «коробки в
+   коробках». Форму тримає купи ритм відступів, а поля читаються як поля
+   завдяки заливці — контур зʼявляється лише на фокусі. */
 
 .contact-form {
   display: grid;
-  gap: 14px;
-  margin: 22px 0 34px;
-  padding: 22px;
-  border: 1px solid #e8e3d6;
-  border-radius: 16px;
-  background: #fffdf8;
-  box-shadow: 0 10px 30px rgba(26, 26, 26, 0.05);
+  gap: 18px;
+  margin: 22px 0 36px;
+  max-width: 620px;
 }
 
 .contact-field {
   display: grid;
-  gap: 6px;
+  gap: 7px;
 }
 
 .contact-label {
@@ -25,7 +24,7 @@
 .contact-req {
   font-weight: 500;
   font-size: 12.5px;
-  color: #8a94a6;
+  color: #a3aab8;
 }
 
 .contact-select,
@@ -35,40 +34,54 @@
   font: inherit;
   font-size: 16px; /* < 16px змушує iOS зумити сторінку на фокусі */
   color: #131b28;
-  background: #fff;
-  border: 1px solid #d9e0ea;
-  border-radius: 10px;
-  padding: 11px 13px;
+  background: #f5f2ea;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 12px 14px;
+  transition: background 0.15s ease;
+}
+
+.contact-select::placeholder,
+.contact-input::placeholder,
+.contact-textarea::placeholder {
+  color: #9aa1af;
+}
+
+.contact-select:hover,
+.contact-input:hover,
+.contact-textarea:hover {
+  background: #f0ece1;
 }
 
 .contact-select {
   appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='9' viewBox='0 0 14 9'><path d='M1 1l6 6 6-6' fill='none' stroke='%2354617a' stroke-width='2' stroke-linecap='round'/></svg>");
   background-repeat: no-repeat;
-  background-position: right 13px center;
-  padding-right: 38px;
+  background-position: right 14px center;
+  padding-right: 40px;
   cursor: pointer;
 }
 
 .contact-textarea {
   resize: vertical;
-  min-height: 120px;
+  min-height: 130px;
   line-height: 1.5;
 }
 
 .contact-select:focus,
 .contact-input:focus,
 .contact-textarea:focus {
-  outline: 2px solid #e85d24;
-  outline-offset: 1px;
+  outline: none;
+  background: #fff;
   border-color: #e85d24;
+  box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.15);
 }
 
 .contact-hint {
-  margin: -4px 0 0;
+  margin: -10px 0 0;
   font-size: 14px;
   line-height: 1.45;
-  color: #54617a;
+  color: #6b7688;
 }
 
 .contact-row {
@@ -86,7 +99,7 @@
   background: #e85d24;
   border: 0;
   border-radius: 999px;
-  padding: 13px 32px;
+  padding: 13px 34px;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.15s ease;
 }
@@ -102,23 +115,23 @@
 }
 
 .contact-error {
-  margin: 0;
+  margin: -6px 0 0;
   font-size: 14.5px;
   line-height: 1.45;
   color: #b3372e;
 }
 
 .contact-privacy {
-  margin: 0;
+  margin: -8px 0 0;
   font-size: 13px;
-  color: #8a94a6;
+  color: #9aa1af;
 }
 
 .contact-form-done {
-  margin: 22px 0 34px;
+  margin: 22px 0 36px;
   padding: 30px 24px;
+  max-width: 620px;
   text-align: center;
-  border: 1px solid #e8e3d6;
   border-radius: 16px;
   background: #fef7e0;
 }
@@ -160,10 +173,6 @@
 }
 
 @media (max-width: 640px) {
-  .contact-form {
-    padding: 18px 15px;
-  }
-
   .contact-row {
     grid-template-columns: 1fr;
   }

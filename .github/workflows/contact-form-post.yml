@@ -1,0 +1,38 @@
+name: Telegram — contact form announcement (manual)
+
+# Анонс контактної форми: окремий пост + доповнення закріпленого поста.
+# Одноразова утиліта, запускається руками.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Показати текст і поточний закріп, нічого не публікуючи'
+        required: false
+        default: 'true'
+      skip_pinned:
+        description: 'Опублікувати пост, але не чіпати закріплений'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Post contact-form announcement
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          SKIP_PINNED: ${{ github.event.inputs.skip_pinned || 'false' }}
+        run: node scripts/post-contact-form.mjs
