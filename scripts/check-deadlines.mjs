@@ -76,6 +76,11 @@ const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const NOTIFY = process.env.NOTIFY === 'true' || process.argv.includes('--notify');
 const DRY_RUN = process.env.DRY_RUN === 'true' || process.argv.includes('--dry-run');
+// PREVIEW=true — зібрати пости й надрукувати, нічого не шлючи і не змінюючи
+// в базі. FORCE_DAY=0..6 — показати формат конкретного дня тижня (для вичитки).
+const PREVIEW = process.env.PREVIEW === 'true';
+const FORCE_DAY = process.env.FORCE_DAY != null && process.env.FORCE_DAY !== ''
+  ? Number(process.env.FORCE_DAY) : null;
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -280,6 +285,48 @@ const THEMES = [
   },
 ];
 
+// Формат поста за днем тижня. Сім однакових дайджестів на тиждень читати
+// нудно, тож ритм міняється: історія → дайджест → ситуація → цифра.
+// 0=Нд ... 6=Сб. Затверджено 19.08.2026.
+const FORMAT_BY_DAY = [
+  'number',    // Нд — цифра дня + рядок про підтримку
+  'situation', // Пн — життєва ситуація
+  'story',     // Вт — одна можливість глибоко
+  'digest',    // Ср — класичний дайджест
+  'story',     // Чт — одна можливість глибоко
+  'digest',    // Пт — класичний дайджест
+  'digest',    // Сб — дайджест із темою «нові на сайті»
+];
+
+// Ситуації для формату «situation»: починаємо з болю батьків, а не з програми.
+// Ротація по тижнях, щоб та сама ситуація не поверталась щопонеділка.
+const SITUATIONS = [
+  {
+    text: '«Дитині 15, хоче спробувати щось своє, а грошей на гуртки зараз немає»',
+    filter: (r) => r.age_to >= 14 && r.cost_type === 'free',
+  },
+  {
+    text: '«Переїхали в іншу область, дитина ні з ким не знайома і сидить у телефоні»',
+    filter: (r) => r.cost_type === 'free' && ['club', 'camp', 'course', 'competition'].includes(r.opportunity_type),
+  },
+  {
+    text: '«Дитина здібна до математики, а в нашій школі це нікому не потрібно»',
+    filter: (r) => ['olympiad', 'competition', 'hackathon'].includes(r.opportunity_type),
+  },
+  {
+    text: '«Хочемо, щоб дитина побачила світ, але бюджету на поїздки немає»',
+    filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
+  },
+  {
+    text: '«Щойно народилась дитина — і незрозуміло, що взагалі належить родині»',
+    filter: (r) => r.age_from <= 3 && r.cost_type === 'free',
+  },
+  {
+    text: '«Дитина цілий день малює, а куди з цим піти — не знаємо»',
+    filter: (r) => ['festival', 'competition', 'club', 'workshop'].includes(r.opportunity_type),
+  },
+];
+
 // Shown once every ~3 weeks (21-day cycle) instead of the weekday theme.
 const PAID_THEME = {
   heading: '💳 Сьогодні — платні можливості',
@@ -289,11 +336,18 @@ const PAID_THEME = {
 };
 
 // --- Optional: notify Telegram with daily digest ---
-if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
+if (PREVIEW) {
+  // Вичитка: показуємо пости на всі сім днів тижня за один прогін.
+  const DAYS = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця", 'Субота'];
+  for (let d = 0; d < 7; d += 1) {
+    console.log(`\n${'='.repeat(64)}\n${DAYS[d].toUpperCase()} — формат «${FORMAT_BY_DAY[d]}»\n${'='.repeat(64)}`);
+    await sendDailyDigest(d);
+  }
+} else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
   await sendDailyDigest();
 }
 
-async function sendDailyDigest() {
+async function sendDailyDigest(dayOverride = null) {
   // Section A: truly urgent — deadline 0..3 days. Top 3.
   const urgent = dueSoon
     .filter((r) => r.daysLeft >= 0 && r.daysLeft <= 3)
@@ -318,7 +372,7 @@ async function sendDailyDigest() {
   const dayOfYear = Math.floor(
     (Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
       - Date.UTC(today.getUTCFullYear(), 0, 1)) / 86400000);
-  const theme = dayOfYear % 21 === 0 ? PAID_THEME : THEMES[today.getDay()];
+  const theme = dayOfYear % 21 === 0 ? PAID_THEME : THEMES[dayOverride ?? FORCE_DAY ?? today.getDay()];
   let themed = pool.filter(theme.filter);
   if (theme.sortBy === 'created_at_desc') {
     themed.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
@@ -332,6 +386,51 @@ async function sendDailyDigest() {
     return;
   }
 
+  const weekday = dayOverride ?? FORCE_DAY ?? today.getDay();
+  const format = FORMAT_BY_DAY[weekday];
+  const weekIndex = Math.floor(dayOfYear / 7);
+
+  // --- Формат «story»: одна можливість глибоко ---
+  if (format === 'story') {
+    const hero = urgent[0] || themed[0];
+    if (hero) {
+      const heroLines = buildStoryPost(hero, theme);
+      await postToChannel(heroLines, `story (${hero.slug})`);
+      return;
+    }
+  }
+
+  // --- Формат «situation»: життєва ситуація + 3 відповіді ---
+  if (format === 'situation') {
+    const situation = SITUATIONS[weekIndex % SITUATIONS.length];
+    const picks = shuffle(pool.filter(situation.filter)).slice(0, 3);
+    if (picks.length >= 2) {
+      const sLines = [`<b>${situation.text}</b>`, ''];
+      sLines.push(`${picks.length === 3 ? 'Три варіанти' : 'Ось варіанти'}, за які не треба платити:`);
+      sLines.push('');
+      picks.forEach((r, i) => {
+        sLines.push(formatLine(r, i));
+        if (i < picks.length - 1) sLines.push('');
+      });
+      sLines.push('');
+      sLines.push(`👉 Ще ${freeCountForPost(pool)} безкоштовних — на <a href="https://dityam.com.ua">dityam.com.ua</a>`);
+      await postToChannel(sLines, 'situation');
+      return;
+    }
+  }
+
+  // --- Формат «number»: одна цифра + пояснення ---
+  if (format === 'number') {
+    const nLines = buildNumberPost(pool, weekIndex);
+    if (nLines) {
+      nLines.push('');
+      nLines.push('🧡 Каталог безкоштовний і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
+      await postToChannel(nLines, 'number');
+      return;
+    }
+  }
+
+  // --- Формат «digest» (і запасний варіант, якщо для інших не набралось) ---
   const lines = [];
   if (urgent.length > 0) {
     lines.push(`⏰ <b>Дедлайн наближається (${urgent.length})</b>`);
@@ -355,7 +454,7 @@ async function sendDailyDigest() {
   // Секція «нові»: раніше окремі картки слав telegram-bot (до 8 повідомлень
   // на день). Тепер новинки живуть тут, одним рядком кожна — канал має рівно
   // один пост на добу. У суботу цю секцію не додаємо: тема дня і так «нові».
-  if (today.getDay() !== 6) {
+  if ((dayOverride ?? FORCE_DAY ?? today.getDay()) !== 6) {
     const dayAgo = new Date(Date.now() - 36 * 3600 * 1000).toISOString();
     const fresh = pool
       .filter((r) => (r.created_at || '') >= dayAgo)
@@ -378,7 +477,7 @@ async function sendDailyDigest() {
 
   // Прохання про підтримку — раз на тиждень, у неділю, рядком усередині
   // дайджесту. Окремий суботній пост скасовано: він був другим за добу.
-  if (today.getDay() === 0) {
+  if ((dayOverride ?? FORCE_DAY ?? today.getDay()) === 0) {
     lines.push('');
     lines.push('🧡 Каталог безкоштовний і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
   }
@@ -389,26 +488,114 @@ async function sendDailyDigest() {
   lines.push('');
   lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/pidbirka">Dityam+</a> відбере ваші й нагадає вчасно.');
 
+  await postToChannel(lines, `digest (urgent=${urgent.length}, themed=${themed.length})`);
+}
+
+/** Відправка в канал. Один шлях для всіх форматів поста. */
+async function postToChannel(lines, label) {
+  const text = lines.join('\n');
+  if (DRY_RUN || PREVIEW) {
+    console.log(`\n--- ПОСТ [${label}] ---\n${text}\n--- /ПОСТ ---`);
+    return;
+  }
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         chat_id: TELEGRAM_CHAT_ID,
-        text: lines.join('\n'),
+        text,
         parse_mode: 'HTML',
         disable_web_page_preview: true,
       }),
     });
     const json = await res.json();
-    if (json.ok) {
-      console.log(`📨 Daily digest sent — urgent=${urgent.length}, themed=${themed.length} (${theme.heading}).`);
-    } else {
-      console.error(`Telegram error: ${json.description}`);
-    }
+    if (json.ok) console.log(`📨 Пост надіслано — ${label}.`);
+    else console.error(`Telegram error: ${json.description}`);
   } catch (e) {
     console.error(`Telegram send failed: ${e.message}`);
   }
+}
+
+/** Формат «story»: одна можливість розгорнуто. */
+function buildStoryPost(r, theme) {
+  const url = `https://dityam.com.ua/o/${r.slug}`;
+  const lines = [`<b>${escapeHtml(r.title)}</b>`, ''];
+
+  if (r.summary) lines.push(escapeHtml(r.summary.slice(0, 400)));
+  lines.push('');
+
+  const age = ageLabel(r);
+  if (age) lines.push(`👶 Для кого: ${age}`);
+  const typeLabel = TYPE_LABELS[r.opportunity_type];
+  if (typeLabel) lines.push(`📚 Формат: ${typeLabel}`);
+  if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
+  else if (r.cost_type === 'partially_free') lines.push('💳 Скільки коштує: є фінансування');
+
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    lines.push(`⏰ Дедлайн: <b>${tag}</b>`);
+  } else if (r.deadline) {
+    lines.push(`⏰ Дедлайн: <b>${formatDeadlineDate(r.deadline)}</b>`);
+  } else {
+    lines.push('⏰ Дедлайну немає — набір триває');
+  }
+
+  lines.push('');
+  lines.push(`👉 <a href="${url}">Умови й подача — на dityam.com.ua</a>`);
+  if (theme?.link) lines.push(`🔗 Схожі можливості — <a href="${theme.link}">тут</a>`);
+  return lines;
+}
+
+/** Формат «number»: одна цифра, яка щось означає. */
+function buildNumberPost(pool, weekIndex) {
+  const free = pool.filter((r) => r.cost_type === 'free').length;
+  const sources = new Set(pool.map((r) => r.source).filter(Boolean)).size;
+  const withNeeds = pool.filter((r) => (r.child_needs || []).length > 0).length;
+
+  const CARDS = [
+    {
+      value: free,
+      text: [
+        'Стільки безкоштовних можливостей для дітей відкрито просто зараз: гуртки, табори, олімпіади, стипендії, виплати.',
+        '',
+        'Це не оцінка, а точне число з каталогу на сьогодні. Вони працюють, і вони справді безкоштовні.',
+        '',
+        'Питання лише в тому, чи родина про них дізнається.',
+      ],
+    },
+    {
+      value: sources,
+      text: [
+        'Стільки різних джерел ми перечитуємо, щоб зібрати ці можливості в одному місці: сайти міністерств, фондів, громадських організацій, телеграм-канали.',
+        '',
+        'Родині не треба обходити їх усі. Достатньо одного сайту.',
+      ],
+    },
+    {
+      value: withNeeds,
+      text: [
+        'Стільки можливостей у каталозі позначені за життєвою ситуацією дитини: ВПО, інвалідність, діти ветеранів і загиблих захисників, онкозахворювання, малозабезпечені родини, сироти.',
+        '',
+        'Такого фільтра немає більше ніде в Україні. Бо саме цим родинам найважче знайти те, що для них.',
+      ],
+    },
+  ];
+
+  const card = CARDS[weekIndex % CARDS.length];
+  if (!card.value) return null;
+  return [
+    `📊 <b>${card.value}</b>`,
+    '',
+    ...card.text,
+    '',
+    '👉 <a href="https://dityam.com.ua">dityam.com.ua</a>',
+  ];
+}
+
+/** Скільки безкоштовних у пулі — для підпису під ситуацією. */
+function freeCountForPost(pool) {
+  return pool.filter((r) => r.cost_type === 'free').length;
 }
 
 function ageLabel(r) {
