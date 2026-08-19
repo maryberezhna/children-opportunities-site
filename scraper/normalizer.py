@@ -65,6 +65,19 @@ def _sanitize(data: dict) -> dict:
                 data[key] = datetime.strptime(str(val).strip(), "%Y-%m-%d").date().isoformat()
             except ValueError:
                 data[key] = None
+    # Вік: у базі CHECK 0..18, а LLM іноді віддає верхню межу самої програми
+    # («13–19 років» → age_to=19). Раніше такий запис падав на констрейнті і
+    # ЗНИКАВ (так загубився набір WonderStage) — тепер просто підрізаємо до
+    # нашого діапазону: програма для 13–19 лишається валідною для 13–18.
+    for key, default in (("age_from", 0), ("age_to", 18)):
+        try:
+            val = int(data.get(key, default))
+        except (TypeError, ValueError):
+            val = default
+        data[key] = max(0, min(18, val))
+    if data["age_from"] > data["age_to"]:
+        data["age_from"], data["age_to"] = data["age_to"], data["age_from"]
+
     # cost_type & deadline are nullable — drop unknown values to null.
     if data.get("cost_type") not in VALID_COST_TYPES:
         data["cost_type"] = None
