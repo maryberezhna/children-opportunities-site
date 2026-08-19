@@ -32,6 +32,13 @@ export async function POST(request) {
     return Response.json({ ok: false, error: 'short' }, { status: 400 });
   }
 
+  // Контакт обовʼязковий і на сервері: без нього не відповісти, а перевірка
+  // лише в браузері спам не спиняє — боти шлють POST напряму.
+  const contactOk = /\S+@\S+\.\S+/.test(contact) || contact.replace(/\D/g, '').length >= 7;
+  if (!contactOk) {
+    return Response.json({ ok: false, error: 'contact' }, { status: 400 });
+  }
+
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!sbUrl || !key) return Response.json({ ok: false, error: 'server' }, { status: 500 });
@@ -56,9 +63,7 @@ export async function POST(request) {
       '',
       esc(message).slice(0, 1200),
       url ? `\n🔗 ${esc(url)}` : null,
-      name || contact
-        ? `\n👤 ${esc([name, contact].filter(Boolean).join(' · '))}`
-        : '\n👤 <i>без контактів — відповісти не вийде</i>',
+      `\n👤 ${esc([name, contact].filter(Boolean).join(' · '))}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',
     ].filter(Boolean);

@@ -15,9 +15,14 @@ export default function ContactForm() {
   const active = CONTACT_TYPE_MAP[type];
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Контакт обовʼязковий: анонімні звернення — це або спам, або лист, на який
+  // фізично не можна відповісти. Перевірка навмисно м'яка: пошта або будь-що
+  // з 7+ цифрами (телефон у будь-якому форматі, з пробілами й дужками).
+  const contactOk = (v) => /\S+@\S+\.\S+/.test(v) || (v.replace(/\D/g, '').length >= 7);
+
   const submit = async (e) => {
     e.preventDefault();
-    if (form.message.trim().length < 10) {
+    if (form.message.trim().length < 10 || !contactOk(form.contact.trim())) {
       setState('error');
       return;
     }
@@ -112,9 +117,12 @@ export default function ContactForm() {
           <input className="contact-input" value={form.name} onChange={set('name')} placeholder="Ім'я" />
         </label>
         <label className="contact-field">
-          <span className="contact-label">Email або телефон</span>
+          <span className="contact-label">
+            Email або телефон <span className="contact-req">обовʼязково</span>
+          </span>
           <input
             className="contact-input"
+            required
             value={form.contact}
             onChange={set('contact')}
             placeholder="щоб ми могли відповісти"
@@ -138,7 +146,9 @@ export default function ContactForm() {
         <p className="contact-error">
           {form.message.trim().length < 10
             ? 'Напишіть, будь ласка, хоча б кілька слів — так ми зрозуміємо, чим допомогти.'
-            : 'Не вдалося надіслати. Спробуйте ще раз або напишіть на maryberezhna@gmail.com.'}
+            : !contactOk(form.contact.trim())
+              ? 'Лишіть email або телефон — без них ми не зможемо відповісти.'
+              : 'Не вдалося надіслати. Спробуйте ще раз або напишіть на maryberezhna@gmail.com.'}
         </p>
       )}
 
