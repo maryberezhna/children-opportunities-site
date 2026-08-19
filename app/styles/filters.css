@@ -184,6 +184,27 @@
   border-color: var(--ink);
 }
 
+/* Підсвічена опція (зараз — «Онлайн»): помітна, але не кричить — акцентна
+   рамка й тепла заливка, а не суцільний акцентний фон, інакше вона б
+   змагалася за увагу з обраним станом. */
+.filter-btn-hl {
+  background: var(--accent-soft, #fef2eb);
+  border-color: var(--accent, #e85d24);
+  color: var(--accent-ink, #b8430f);
+  font-weight: 600;
+}
+
+.filter-btn-hl:hover {
+  border-color: var(--accent, #e85d24);
+  background: #fde5d8;
+}
+
+.filter-btn-hl.active {
+  background: var(--accent, #e85d24);
+  border-color: var(--accent, #e85d24);
+  color: #fff;
+}
+
 /* Пошук — рівноправний елемент панелі: тягнеться на вільне місце, але не
    менше 200px, інакше при багатьох випадайках стискався б у щілину. */
 .search-wrap { position: relative; flex: 1 1 200px; min-width: 180px; }
