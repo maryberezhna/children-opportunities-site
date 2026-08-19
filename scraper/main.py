@@ -22,6 +22,7 @@ from db import (get_client, get_health_stats, get_new_today,
                 get_source_registry, record_crawl_result, upsert_opportunity)
 from normalizer import Normalizer, NormalizeError
 from scrapers import (
+    acmodasi,
     british_council,
     diia_osvita,
     easy_gov,
@@ -55,6 +56,7 @@ SCRAPERS = [
     ("Save the Children", save_the_children, "thematic"),
     ("British Council", british_council, "thematic"),
     # Соціальні мережі
+    ("ACMODASI", acmodasi, "ukrainian"),             # кастинги/набори для дітей
     ("Telegram (веб)", telegram_web, "social"),      # без API-ключів (t.me/s/)
     ("Instagram", instagram_monitor, "social"),
     ("Facebook", facebook_pages, "social"),
