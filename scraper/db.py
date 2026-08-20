@@ -72,18 +72,48 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
         return None
 
 
+def find_active_by_canonical(client: Client, canonical: str) -> dict | None:
+    """Активний запис на цьому канонічному URL, якщо він є.
+
+    Використовується як ворота ПЕРЕД викликом LLM: якщо можливість із цієї
+    адреси вже в базі й ще свіжа, екстрагувати сирець немає сенсу — результат
+    усе одно склеїться дедуплікацією, але токени вже будуть витрачені.
+    Хаб-сторінки сюди не потрапляють: там на одному URL багато різних
+    можливостей, і пропуск з'їдав би нові (перевірку робить викликач).
+    """
+    if not canonical:
+        return None
+    try:
+        rows = (
+            client.table("opportunities")
+            .select("id, title, opportunity_type, updated_at")
+            .eq("canonical_url", canonical)
+            .eq("status", "active")
+            .limit(1)
+            .execute()
+        )
+        return rows.data[0] if rows.data else None
+    except Exception as e:
+        # Недоступна база — не блокуємо конвеєр, просто не економимо цього разу.
+        logger.error(f"find_active_by_canonical failed: {e}")
+        return None
+
+
 def get_new_today(client: Client) -> list[dict]:
     """Return all opportunities processed (inserted or updated) today (UTC).
 
     Uses updated_at rather than created_at so that recurring upserts of
     existing records (e.g. daily MAN contests refresh) are included.
+    `created_at` їде разом із рядком: звіт ділить список на справді нові й
+    просто оновлені, інакше квітневий запис показувався як «🆕 Нове».
     """
     from datetime import datetime, timezone
     today = datetime.now(timezone.utc).date().isoformat()
     try:
         result = (
             client.table("opportunities")
-            .select("title, source, source_url, opportunity_type, age_from, age_to, deadline, cost_type")
+            .select("title, source, source_url, opportunity_type, age_from, "
+                    "age_to, deadline, cost_type, created_at")
             .gte("updated_at", today)
             .eq("status", "active")
             .order("source")

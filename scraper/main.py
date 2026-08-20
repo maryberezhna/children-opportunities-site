@@ -11,15 +11,17 @@ import argparse
 import asyncio
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import dedup_judge
+import hubs
 import link_check
 import notifier
 import raw_store
 import ttl_requeue
-from db import (get_client, get_health_stats, get_new_today,
-                get_source_registry, record_crawl_result, upsert_opportunity)
+from db import (find_active_by_canonical, get_client, get_health_stats,
+                get_new_today, get_source_registry, record_crawl_result,
+                upsert_opportunity)
 from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
@@ -102,19 +104,64 @@ async def run_scraper(name, module, sb_client):
             "total_found": len(raw_items), "duration": duration}
 
 
+def _fresh_duplicate(sb_client, item):
+    """Чи веде цей сирець на можливість, яка вже є в базі і ще не протухла.
+
+    Повертає рядок можливості (пропускаємо екстракцію) або None (екстрагуємо).
+    Свіжість міряємо тим самим TTL, що й переверифікація, — щоб ворота ніколи
+    не з'їли запис, який саме прийшов на плановий перегляд.
+    """
+    canonical = (item.get("canonical_url") or "").strip()
+    if not canonical or hubs.is_hub(canonical):
+        return None
+    existing = find_active_by_canonical(sb_client, canonical)
+    if not existing:
+        return None
+    ttl = ttl_requeue.TTL_DAYS.get(existing.get("opportunity_type"),
+                                   ttl_requeue.DEFAULT_TTL)
+    updated = existing.get("updated_at") or ""
+    try:
+        age = datetime.now(timezone.utc) - datetime.fromisoformat(
+            updated.replace("Z", "+00:00"))
+    except ValueError:
+        return None  # незрозуміла дата — краще екстрагувати, ніж загубити
+    return existing if age <= timedelta(days=ttl) else None
+
+
 def process_pending(normalizer, sb_client, limit=300):
     """Етап Б: LLM-екстракція спільної черги raw_items — включно з сирцем,
     що лишився з минулих запусків після збоїв. 5 послідовних збоїв API —
     зупиняємось: черга нікуди не дінеться, а спроби палити нема сенсу."""
     queue = raw_store.fetch_pending(sb_client, limit=limit)
     stats = {"queued": len(queue), "processed": 0, "rejected": 0,
-             "retry": 0, "failed": 0, "closed": 0, "drafts": 0}
+             "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0}
     if not queue:
         return stats
 
     print(f"\n{'=' * 70}\n🧠 ЕКСТРАКЦІЯ: {len(queue)} у черзі\n{'=' * 70}")
     consecutive_errors = 0
     for item in queue:
+        # ── Ворота перед LLM ────────────────────────────────────────────
+        # Дедуплікація донедавна стояла ПІСЛЯ екстракції: Haiku відпрацьовував,
+        # і аж тоді ставало ясно, що така можливість уже в базі. Токени за
+        # такий сирець уже сплачені. Тепер перевіряємо до виклику — за
+        # canonical_url, який скрапер порахував ще на етапі складання черги.
+        #
+        # Кого НЕ пропускаємо повз екстракцію:
+        #   • хаби — там на одному URL багато різних можливостей;
+        #   • записи, яким настав TTL: повторна екстракція і є той механізм,
+        #     що ловить «набір завершено» на сторінках без дедлайну. Такий
+        #     запис уже прострочив свій TTL, тож умова свіжості його не ловить.
+        #   • сезонні перевірки: вони стосуються записів зі статусом closed,
+        #     а шукаємо ми лише active.
+        dup = _fresh_duplicate(sb_client, item)
+        if dup:
+            raw_store.mark(sb_client, item["id"], "rejected",
+                           error=f"duplicate: вже є {dup['id']}",
+                           opportunity_id=dup["id"])
+            stats["skipped_dup"] += 1
+            continue
+
         try:
             normalized = normalizer.normalize(
                 raw_text=item.get("raw_text", ""),
@@ -171,6 +218,7 @@ def process_pending(normalizer, sb_client, limit=300):
 
     print(f"✅ Екстракція: {stats['processed']} збережено "
           f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
+          f"{stats['skipped_dup']} пропущено до LLM (вже є), "
           f"{stats['rejected']} відхилено, {stats['retry']} на повтор, "
           f"{stats['failed']} вичерпали спроби")
     return stats
@@ -251,6 +299,7 @@ async def amain():
 
     normalizer = Normalizer()
     sb_client = get_client()
+    hubs.prime(sb_client)  # єдине джерело правди — таблиця dedup_hub_urls
 
     # Реєстр джерел: вимкнене в sources (enabled=false) пропускається без
     # деплою. Якщо таблиці ще нема — реєстр порожній і все вважається

@@ -8,6 +8,7 @@ from typing import Optional
 import anthropic
 from slugify import slugify
 
+import hubs
 from canonical import canonical_url
 
 logger = logging.getLogger(__name__)
@@ -18,23 +19,10 @@ class NormalizeError(Exception):
     й буде повторений. НЕ плутати з reject (return None): то остаточне
     «це не можливість», повторювати нема сенсу."""
 
-# Сторінки, де на ОДНІЙ адресі живе багато різних можливостей. Для них
-# дедуплікація за URL зламала б дані: 24 всеукраїнські олімпіади з різних
-# предметів посилаються на один перелік МОН. Тільки тут ключем лишається
-# title+url — у решті випадків URL сам по собі ідентифікує можливість.
-HUB_URLS = (
-    "https://mon.gov.ua/osvita-2/zagalna-serednya-osvita/olimpiadi-ta-konkursi",
-    "https://diia.gov.ua/services",
-    "https://mms.gov.ua/",
-    "https://mincult.gov.ua/",
-    "https://constellation.org.ua/",
-    "https://fest-portal.com/meropriyatiya",
-    "https://klitschkofoundation.org/projects",
-    "https://artarsenal.in.ua/",
-    "https://ukraine.uwc.org/apply",
-    "https://man.gov.ua/contests/olympiad",
-    "https://osvita.diia.gov.ua/courses",
-)
+# Сторінки, де на ОДНІЙ адресі живе багато різних можливостей, живуть тепер у
+# `hubs` — єдиному джерелі правди, що читає таблицю `dedup_hub_urls`. Раніше
+# список був захардкоджений тут і розійшовся з базою: два центри творчості
+# були в таблиці, але не в коді.
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
 # The AI occasionally returns something off-list (e.g. deadline "квітень",
@@ -365,7 +353,7 @@ URL: {source_url}
         одній адресі справді живе багато різних можливостей (перелік олімпіад
         МОН, каталог послуг Дії). Для них лишаємо title+url.
         """
-        if any(url.rstrip("/").startswith(h.rstrip("/")) for h in HUB_URLS):
+        if hubs.is_hub(url):
             normalized = re.sub(r"[^\w\s]", "", title.lower())
             normalized = re.sub(r"\s+", " ", normalized).strip()
             return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
