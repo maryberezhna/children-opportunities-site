@@ -6,6 +6,7 @@
     python main.py --skip unicef,erasmus # всі крім цих
     python main.py --ukrainian           # тільки українські
     python main.py --thematic            # тільки тематичні
+    python main.py --diaspora            # тільки діаспорні (закордон)
 """
 import argparse
 import asyncio
@@ -26,6 +27,7 @@ from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
     british_council,
+    diaspora_schools,
     diia_osvita,
     easy_gov,
     erasmus,
@@ -53,6 +55,8 @@ SCRAPERS = [
     ("House of Europe", house_of_europe, "ukrainian"),
     ("Місце Сили (Клуб Добродіїв)", space_dobrodiy, "ukrainian"),
     ("RSS-стрічки", rss_feeds, "ukrainian"),
+    # Діаспора — українські родини за кордоном
+    ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
@@ -262,6 +266,8 @@ def parse_args():
     p.add_argument("--thematic", action="store_true")
     p.add_argument("--social", action="store_true",
                    help="Тільки соцмережі (Telegram, Instagram, Facebook)")
+    p.add_argument("--diaspora", action="store_true",
+                   help="Тільки діаспорні джерела (українські родини за кордоном)")
     return p.parse_args()
 
 
@@ -284,6 +290,8 @@ def filter_scrapers(scrapers, args):
         out = [s for s in out if s[2] == "thematic"]
     elif args.social:
         out = [s for s in out if s[2] == "social"]
+    elif args.diaspora:
+        out = [s for s in out if s[2] == "diaspora"]
     return out
 
 
