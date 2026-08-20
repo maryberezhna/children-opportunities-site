@@ -8,6 +8,7 @@ from typing import Optional
 import anthropic
 from slugify import slugify
 
+import hubs
 from canonical import canonical_url
 
 logger = logging.getLogger(__name__)
@@ -18,23 +19,10 @@ class NormalizeError(Exception):
     й буде повторений. НЕ плутати з reject (return None): то остаточне
     «це не можливість», повторювати нема сенсу."""
 
-# Сторінки, де на ОДНІЙ адресі живе багато різних можливостей. Для них
-# дедуплікація за URL зламала б дані: 24 всеукраїнські олімпіади з різних
-# предметів посилаються на один перелік МОН. Тільки тут ключем лишається
-# title+url — у решті випадків URL сам по собі ідентифікує можливість.
-HUB_URLS = (
-    "https://mon.gov.ua/osvita-2/zagalna-serednya-osvita/olimpiadi-ta-konkursi",
-    "https://diia.gov.ua/services",
-    "https://mms.gov.ua/",
-    "https://mincult.gov.ua/",
-    "https://constellation.org.ua/",
-    "https://fest-portal.com/meropriyatiya",
-    "https://klitschkofoundation.org/projects",
-    "https://artarsenal.in.ua/",
-    "https://ukraine.uwc.org/apply",
-    "https://man.gov.ua/contests/olympiad",
-    "https://osvita.diia.gov.ua/courses",
-)
+# Сторінки, де на ОДНІЙ адресі живе багато різних можливостей, живуть тепер у
+# `hubs` — єдиному джерелі правди, що читає таблицю `dedup_hub_urls`. Раніше
+# список був захардкоджений тут і розійшовся з базою: два центри творчості
+# були в таблиці, але не в коді.
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
 # The AI occasionally returns something off-list (e.g. deadline "квітень",
@@ -81,6 +69,19 @@ def _sanitize(data: dict) -> dict:
     # cost_type & deadline are nullable — drop unknown values to null.
     if data.get("cost_type") not in VALID_COST_TYPES:
         data["cost_type"] = None
+
+    # Країни: лишаємо тільки відомі коди, решту мовчки викидаємо. Порожньо —
+    # тоді None, а не «ua» за замовчуванням: діаспорний запис із невизначеною
+    # країною краще побачити порожнім, ніж помилково приписаним Україні.
+    raw_countries = data.get("countries") or []
+    if isinstance(raw_countries, str):
+        raw_countries = [raw_countries]
+    countries = []
+    for c in raw_countries:
+        code = str(c).strip().lower()[:2]
+        if code in VALID_COUNTRIES and code not in countries:
+            countries.append(code)
+    data["countries"] = countries or None
     # opportunity_type is NOT NULL, тож значення поза словником мусить чимось
     # стати — але НЕ мовчки: раніше невідомий тип тихо ставав «course» і
     # місклассифікація була невидимою. Тепер такий запис іде чернеткою в чергу
@@ -94,6 +95,17 @@ def _sanitize(data: dict) -> dict:
     return data
 
 
+# Країни, де реально живуть українські родини — і куди їздять на програми.
+# Коди ISO 3166-1 alpha-2 у нижньому регістрі. Список закритий НАВМИСНО:
+# поле `categories` показало, що буде з вільним текстом від LLM — 200 значень
+# чотирма мовами. Тут краще втратити рідкісну країну, ніж вокабуляр.
+VALID_COUNTRIES = {
+    "ua", "pl", "de", "cz", "sk", "hu", "ro", "md", "at", "ch",
+    "it", "es", "fr", "nl", "be", "gb", "ie", "se", "no", "dk",
+    "fi", "ee", "lv", "lt", "pt", "gr", "hr", "si", "bg", "tr",
+    "ca", "us", "il", "jp", "au",
+}
+
 SYSTEM_PROMPT = """Ти аналізуєш тексти про можливості для УКРАЇНСЬКИХ ДІТЕЙ 0-18 років —
 в Україні та за кордоном (Польща, Німеччина, Чехія та інші країни, де живуть
 українські родини). Можливість за кордоном приймай, якщо вона доступна
@@ -105,6 +117,10 @@ SYSTEM_PROMPT = """Ти аналізуєш тексти про можливос�
 3. Класифікувати opportunity_type
 4. Визначити cost_type
 5. Витягнути child_needs якщо є (ВПО, сироти, інвалідність тощо)
+6. Визначити countries — де саме можливість доступна дитині, кодами
+   ISO alpha-2: Україна → ua, Польща → pl, Німеччина → de, Чехія → cz.
+   Онлайн без прив'язки до місця → країна організатора. Країни в тексті
+   немає і джерело українське → ["ua"]. НЕ вигадуй країну з назви мови.
 
 ВІДХИЛЯЙ (confidence=0.0) якщо текст описує:
 - АГРЕГАТОР або ПЛАТФОРМУ що збирає/показує інші можливості:
@@ -201,6 +217,14 @@ EXTRACT_TOOL = {
                          "free_activities", "vocational", None],
                 "description": "Вид державної допомоги (лише для держпрограм), "
                                "інакше null",
+            },
+            "countries": {
+                "type": "array",
+                "items": {"type": "string"},
+                "description": "Країни, де можливість доступна дитині. Коди "
+                               "ISO 3166-1 alpha-2 у нижньому регістрі: ua, pl, "
+                               "de, cz… Якщо в тексті країна не названа і "
+                               "джерело українське — [\"ua\"].",
             },
             "format": {"type": "string"},
             "cost_type": {"type": "string"},
@@ -365,7 +389,7 @@ URL: {source_url}
         одній адресі справді живе багато різних можливостей (перелік олімпіад
         МОН, каталог послуг Дії). Для них лишаємо title+url.
         """
-        if any(url.rstrip("/").startswith(h.rstrip("/")) for h in HUB_URLS):
+        if hubs.is_hub(url):
             normalized = re.sub(r"[^\w\s]", "", title.lower())
             normalized = re.sub(r"\s+", " ", normalized).strip()
             return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]

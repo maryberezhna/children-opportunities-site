@@ -9,7 +9,7 @@ import logging
 import os
 import smtplib
 import urllib.request
-from datetime import datetime
+from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -69,6 +69,21 @@ def _deadline_sort_key(op: dict):
     return (1, 0) if left is None else (0, left)
 
 
+def _split_new_vs_updated(opps):
+    """Ділить сьогоднішній список на створені сьогодні і просто оновлені.
+
+    `get_new_today()` вибирає за `updated_at` — навмисно, щоб було видно, що
+    джерело досі живе. Але підписувати все це словом «Нові» не можна: запис
+    від квітня, якого лише торкнулись, показувався як сьогоднішня знахідка.
+    """
+    today = datetime.now(timezone.utc).date().isoformat()
+    created, updated = [], []
+    for op in opps:
+        (created if str(op.get("created_at") or "").startswith(today)
+         else updated).append(op)
+    return created, updated
+
+
 def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> bool:
     """Компактний звіт скраперів в адмін-чат. Повертає True, якщо надіслано."""
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
@@ -76,8 +91,9 @@ def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> boo
 
     today = datetime.now().strftime("%d.%m")
     lines = [f"🕷 <b>Скрапери — {today}</b>", ""]
+    created, updated = _split_new_vs_updated(new_opps)
     lines.append(
-        f"💾 Збережено: <b>{len(new_opps)}</b> · "
+        f"🆕 Нових: <b>{len(created)}</b> · ♻️ оновлено: {len(updated)} · "
         f"📚 активних: {health.get('total_active', 0)} · "
         f"🚪 закрито за текстом сторінки («набір завершено»): {archived}"
     )
@@ -92,18 +108,26 @@ def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> boo
         lines += ["", f"⚠️ Помилок нормалізації (LLM): {llm_alert['failures']}",
                   f"<code>{_tg_esc(llm_alert.get('last_error', '')[:150])}</code>"]
 
-    if new_opps:
+    if created:
         # Дедлайн — головне, за чим у звіті приймають рішення «зайнятись зараз
         # чи потім», тож він іде одразу після назви, зі скільки днів лишилось.
         lines += ["", "🆕 <b>Нові:</b>"]
-        for op in sorted(new_opps, key=_deadline_sort_key)[:10]:
+        for op in sorted(created, key=_deadline_sort_key)[:10]:
             title = _tg_esc(op.get("title", "—"))
             link = op.get("source_url")
             head = ('<a href="' + _tg_esc(link) + '">' + title + '</a>') if link else title
             lines.append(f"• {head}{_deadline_label(op.get('deadline'))}"
                          f" — {_tg_esc(op.get('source', ''))}")
-        if len(new_opps) > 10:
-            lines.append(f"…і ще {len(new_opps) - 10}")
+        if len(created) > 10:
+            lines.append(f"…і ще {len(created) - 10}")
+
+    # Оновлені показуємо стисло: це не новини, а підтвердження, що джерело
+    # досі публікує запис. Раніше вони йшли під заголовком «Нові» — і звіт
+    # видавав квітневий запис за сьогоднішню знахідку.
+    if updated:
+        names = ", ".join(_tg_esc(o.get("title", "—")) for o in updated[:5])
+        tail = f" …і ще {len(updated) - 5}" if len(updated) > 5 else ""
+        lines += ["", f"♻️ <b>Оновлено:</b> {names}{tail}"]
 
     errors = [r for r in results if r["status"] == "error"]
     if errors:
@@ -122,7 +146,8 @@ def _send_telegram_report(new_opps, health, results, archived, llm_alert) -> boo
         "disable_web_page_preview": True,
     }
     # Нові записи падають у чергу модерації — одразу даємо кнопку почати.
-    if new_opps:
+    # Оновлені туди не йдуть, тож кнопка з'являється лише під справді новим.
+    if created:
         payload["reply_markup"] = {
             "inline_keyboard": [[{"text": "▶️ Переглянути чергу", "callback_data": "mod:next"}]]
         }
