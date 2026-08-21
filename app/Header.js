@@ -9,7 +9,6 @@ import { usePathname } from 'next/navigation';
 const NAV = [
   { href: '/', label: 'Каталог', match: (p) => p === '/' },
   { href: '/kategorii', label: 'Категорії', match: (p) => p.startsWith('/kategorii') },
-  { href: '/events', label: 'Календар', match: (p) => p.startsWith('/events') || p.startsWith('/sviata') },
   { href: '/about', label: 'Про проєкт', match: (p) => p.startsWith('/about') || p.startsWith('/press') || p.startsWith('/yak-my-pereviriaiemo') },
   { href: '/contacts', label: 'Написати нам', match: (p) => p.startsWith('/contacts') },
 ];

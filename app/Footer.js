@@ -107,8 +107,6 @@ export default async function Footer() {
 
         <div className="footer-section">
           <div className="footer-title">Батькам</div>
-          <Link href="/events" className="footer-link"><span>Календар дедлайнів</span></Link>
-          <Link href="/sviata" className="footer-link"><span>Свята й події</span></Link>
           <Link href="/pidbirka" className="footer-link"><span>Dityam+ — персональна добірка</span></Link>
           <a
             href="https://t.me/dityam_com_ua"
