@@ -13,6 +13,60 @@
   margin-bottom: 8px;
 }
 
+/* Стрічка логотипів видань під цифрами: перше, що бачить журналіст після
+   статистики. Логотипи в різних форматах і з різним тлом, тож кожен садимо
+   в однакову білу плашку — інакше червоний кружок «Українок» поряд із
+   чорним написом «ШоТам» читається як збій, а не як добірка.
+   Плашки однакової ширини й вирівняні по центру: за такої розкладки перенос
+   на телефоні не лишає розтягнутого недоряду.
+   Селектори з .legal-page — щоб перебити спільні для сторінки .legal-page ul
+   і .legal-page a: інакше список отримує відступ під маркери, а плашки —
+   підкреслення посилання. */
+.legal-page .press-logos {
+  list-style: none;
+  padding: 0;
+  margin: 16px 0 8px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.legal-page .press-logos li {
+  margin-bottom: 0;
+}
+
+.legal-page .press-logos a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 120px;
+  height: 62px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.legal-page .press-logos a:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-2px);
+}
+
+.press-logos img {
+  display: block;
+  width: auto;
+  max-width: 88px;
+  max-height: 22px;
+}
+
+/* Квадратні емблеми при спільній висоті виглядають утричі дрібнішими за
+   написи, бо в них немає ширини — компенсуємо висотою. */
+.press-logos img.is-square {
+  max-height: 40px;
+}
+
 .press-mentions {
   list-style: none;
   padding: 0;
@@ -153,6 +207,15 @@
   .legal-page .lead { font-size: 16px; }
   .legal-page h2 { font-size: 18px; }
   .contact-card { padding: 14px 16px; }
+}
+
+/* На вузьких екранах (320px) дві плашки по 120px уже не вміщаються в рядок,
+   і стрічка витягується в стовпчик на п'ять екранів. Трохи вужчі плашки
+   лишають дві в рядку. */
+@media (max-width: 420px) {
+  .legal-page .press-logos a { width: 104px; height: 56px; }
+  .press-logos img { max-width: 74px; }
+  .press-logos img.is-square { max-height: 34px; }
 }
 
 

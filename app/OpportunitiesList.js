@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useState, useMemo, useEffect } from 'react';
+import { Fragment, useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
 import Link from 'next/link';
 import PlusSection from './PlusSection';
 import SuggestBlock from './SuggestBlock';
@@ -119,8 +119,62 @@ const suggestTakesCell = (n) =>
   n === SUGGEST_FIRST ||
   (n > SUGGEST_FIRST && (n - SUGGEST_FIRST) % SUGGEST_EVERY === 0);
 
+// Крок Dityam+ — приблизно кожні дев'ять клітинок, але сам блок вставляємо
+// лише на межі ряду: він на всю ширину, тож посеред ряду лишив би порожні
+// клітинки праворуч від останньої картки.
 const PROMO_EVERY_CELLS = 9;
-const dityamAtCell = (cells) => cells > 0 && cells % PROMO_EVERY_CELLS === 0;
+
+// Розкладає картки по клітинках сітки разом із вставними блоками.
+// cells — послідовність того, що малюємо; fullRowCells/fullRowCards — остання
+// точка, де ряд закінчився рівно (по ній підрізаємо обірваний хвіст).
+function planCells(cardCount, cols, withPromo) {
+  const cells = [];
+  let cellNo = 0;        // клітинки-картки; промо на всю ширину сюди не рахуємо
+  let sinceRowStart = 0; // клітинок від початку поточного ряду
+  let sincePromo = 0;    // клітинок від останнього Dityam+
+  let promoIdx = 0;
+  let fullRowCells = 0;
+  let fullRowCards = 0;
+  for (let i = 0; i < cardCount; i += 1) {
+    cells.push({ t: 'card', i });
+    cellNo += 1;
+    sinceRowStart += 1;
+    sincePromo += 1;
+    let justSuggested = false;
+    if (suggestTakesCell(cellNo + 1)) {
+      cells.push({ t: 'suggest' });
+      cellNo += 1;
+      sinceRowStart += 1;
+      sincePromo += 1;
+      justSuggested = true;
+    }
+    const rowClosed = sinceRowStart % cols === 0;
+    const lastShort = cardCount < SUGGEST_FIRST - 1 && i === cardCount - 1;
+    // justSuggested: коли крок Dityam+ збігається з щойно вставленою карткою
+    // пропозиції (клітинка 36), раунд пропускаємо — два банери поспіль
+    // читаються як суцільна реклама.
+    if (withPromo && !justSuggested && ((sincePromo >= PROMO_EVERY_CELLS && rowClosed) || lastShort)) {
+      cells.push({ t: 'promo', idx: promoIdx });
+      promoIdx += 1;
+      sinceRowStart = 0;
+      sincePromo = 0;
+    }
+    if (sinceRowStart % cols === 0) {
+      fullRowCells = cells.length;
+      fullRowCards = i + 1;
+    }
+  }
+  return { cells, fullRowCells, fullRowCards };
+}
+
+// Скільки колонок малює сітка — видно лише з готового layout, а він є тільки
+// в браузері. На сервері useLayoutEffect не виконується й React лається, тож
+// там підміняємо його на useEffect.
+const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
+
+// Поки заміру немає (серверна розмітка й перший рендер), розкладаємо як на
+// десктопі — три колонки: так було до цієї зміни, і гідрація не розходиться.
+const ASSUMED_COLS = 3;
 
 const SORT_OPTIONS = [
   { label: 'За віком дитини', value: 'age' },
@@ -578,6 +632,29 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     setVisible(PAGE_SIZE);
   }, [filtered]);
 
+  // Ширину колонок задає auto-fill, тож їхню кількість знає лише браузер:
+  // читаємо її з порахованих треків сітки й перечитуємо, коли міняється ширина.
+  const gridRef = useRef(null);
+  const [cols, setCols] = useState(0); // 0 — ще не виміряно
+  const hasGrid = filtered.length > 0;
+  useIsoLayoutEffect(() => {
+    const el = gridRef.current;
+    if (!el) return undefined;
+    const measure = () => {
+      // У порахованому вигляді це список ширин («340px 340px 340px»).
+      // Якщо сітка ще не розкладена (наприклад, прихована), браузер віддасть
+      // вихідне repeat(auto-fill, …) — тоді заміру просто немає.
+      const parts = (getComputedStyle(el).gridTemplateColumns || '').split(' ').filter(Boolean);
+      const n = parts.length && parts.every((t) => t.endsWith('px')) ? parts.length : 0;
+      if (n > 0) setCols((prev) => (prev === n ? prev : n));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [hasGrid]);
+
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
     if (item.age_from === 0 && item.age_to >= 17) return '0-18 років';
@@ -664,6 +741,21 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       ) : null}
     </article>
   );
+
+  // Обірваний останній ряд лишав порожні клітинки праворуч від останньої
+  // картки — це читалося як помилка верстки. Тому хвіст, що не добирає до
+  // повного ряду, не малюємо: ці картки приїдуть наступною партією.
+  // Виняток — остання партія: далі показувати нічого, тож малюємо все.
+  const batchSize = Math.min(visible, filtered.length);
+  const plan = useMemo(
+    () => planCells(batchSize, cols || ASSUMED_COLS, !!promoProps),
+    [batchSize, cols, promoProps],
+  );
+  const trim = cols > 0 && batchSize < filtered.length && plan.fullRowCards > 0;
+  const rendered = trim ? plan.fullRowCards : batchSize;
+  const planShown = trim
+    ? { ...plan, cells: plan.cells.slice(0, plan.fullRowCells) }
+    : plan;
 
   return (
     <>
@@ -761,47 +853,30 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
 
       {filtered.length === 0 ? null : (
         <>
-          <div className="grid">
-            {(() => {
-              const shown = filtered.slice(0, visible);
-              const nodes = [];
-              let cells = 0;
-              let plusIdx = 0;
-              shown.forEach((item, i) => {
-                nodes.push(<Fragment key={item.id}>{renderCard(item)}</Fragment>);
-                cells += 1;
-                let justSuggested = false;
-                if (suggestTakesCell(cells + 1)) {
-                  nodes.push(<SuggestBlock key={`sug-${i}`} />);
-                  cells += 1;
-                  justSuggested = true;
-                }
-                // Коли крок Dityam+ збігається з щойно вставленою карткою
-                // пропозиції (клітинка 36), пропускаємо раунд — два банери
-                // поспіль читаються як суцільна реклама.
-                const lastShort = shown.length < SUGGEST_FIRST - 1 && i === shown.length - 1;
-                if (promoProps && !justSuggested && (dityamAtCell(cells) || lastShort)) {
-                  nodes.push(
-                    <div className="grid-promo" key={`plus-${i}`}>
-                      <PlusSection {...promoProps} index={plusIdx} />
-                    </div>,
-                  );
-                  plusIdx += 1;
-                }
-              });
-              return nodes;
-            })()}
+          <div className="grid" ref={gridRef}>
+            {planShown.cells.map((c, n) => {
+              if (c.t === 'card') {
+                const item = filtered[c.i];
+                return <Fragment key={item.id}>{renderCard(item)}</Fragment>;
+              }
+              if (c.t === 'suggest') return <SuggestBlock key={`sug-${n}`} />;
+              return (
+                <div className="grid-promo" key={`plus-${n}`}>
+                  <PlusSection {...promoProps} index={c.idx} />
+                </div>
+              );
+            })}
           </div>
-          {visible < filtered.length && (
+          {rendered < filtered.length && (
             <div className="load-more-wrap">
               <button
                 className="load-more"
-                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+                onClick={() => setVisible(rendered + PAGE_SIZE)}
               >
-                Показати ще {Math.min(PAGE_SIZE, filtered.length - visible)}
+                Показати ще {Math.min(PAGE_SIZE, filtered.length - rendered)}
               </button>
               <div className="load-more-hint">
-                Показано {visible} з {filtered.length}
+                Показано {rendered} з {filtered.length}
               </div>
             </div>
           )}

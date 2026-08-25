@@ -4,9 +4,15 @@ import { CITY_META } from '@/lib/cities';
 
 // Публікації про проєкт. Порядок — як виходили; ШоТам були перші.
 // Облік ведеться в Notion «Про нас пишуть — медіатека», сюди переносимо руками.
+//
+// logo — файл із public/press/logos. Розміри вказані справжні: без них браузер
+// не знає висоту рядка до завантаження картинки і сторінка смикається.
+// У частини видань логотип квадратний (емблема, а не напис) — такі показуємо
+// трохи більшими, інакше поряд із широкими написами вони губляться.
 const MENTIONS = [
   {
     outlet: 'ШоТам',
+    logo: { src: '/press/logos/shotam.svg', width: 256, height: 45 },
     date: '17 серпня 2026',
     title:
       'Усі можливості в одному місці: українка запустила безплатний каталог активностей для дітей',
@@ -14,6 +20,7 @@ const MENTIONS = [
   },
   {
     outlet: 'Дон Патріот',
+    logo: { src: '/press/logos/donpatriot.png', width: 70, height: 70 },
     date: '17 серпня 2026',
     title:
       'Можливості для кожної дитини: в Україні зʼявився єдиний агрегатор дитячих ініціатив і виплат',
@@ -21,6 +28,7 @@ const MENTIONS = [
   },
   {
     outlet: 'Українки',
+    logo: { src: '/press/logos/ukrainky.png', width: 200, height: 200 },
     date: '18 серпня 2026',
     title:
       'Українка Марія Бережна створила безплатний каталог можливостей для дітей',
@@ -28,6 +36,7 @@ const MENTIONS = [
   },
   {
     outlet: 'Ти Київ',
+    logo: { src: '/press/logos/tykyiv.svg', width: 143, height: 25 },
     date: '18 серпня 2026',
     title:
       'Українка створила безплатний каталог активностей для дітей по всій Україні: що в ньому є',
@@ -35,6 +44,7 @@ const MENTIONS = [
   },
   {
     outlet: 'WoMo',
+    logo: { src: '/press/logos/womo.png', width: 440, height: 81 },
     date: '18 серпня 2026',
     title: 'Можливості для дітей: безплатна платформа Dityam.com.ua',
     url: 'https://womo.ua/ukrayinka-stvoryla-bezplatnyj-katalog-mozhlyvostej-dlya-ditej/',
@@ -129,6 +139,28 @@ export default async function PressPage() {
           </>
         ) : null}
 
+        <h2>Про нас пишуть</h2>
+        <ul className="press-logos">
+          {MENTIONS.map((m) => (
+            <li key={m.url}>
+              <a
+                href={m.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={m.title}
+              >
+                <img
+                  src={m.logo.src}
+                  width={m.logo.width}
+                  height={m.logo.height}
+                  alt={m.outlet}
+                  className={m.logo.width / m.logo.height < 1.5 ? 'is-square' : undefined}
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
+
         <h2>Опис одним абзацом</h2>
         <blockquote className="press-quote">
           dityam.com.ua — безкоштовна платформа, де зібрані можливості для дітей
@@ -158,7 +190,7 @@ export default async function PressPage() {
           </li>
         </ul>
 
-        <h2>Про нас пишуть</h2>
+        <h2>Повний перелік публікацій</h2>
         <ul className="press-mentions">
           {MENTIONS.map((m) => (
             <li key={m.url}>
@@ -175,6 +207,11 @@ export default async function PressPage() {
 
         <h2>Логотипи і зображення</h2>
         <ul>
+          <li>
+            <a href="/press/dityam-brand-kit.zip" download>Бренд-кіт (ZIP, 1,1 МБ)</a> —
+            знак і локапи у SVG та PNG, версії для світлого й темного фону, палітра,
+            шрифт DM Sans і правила використання
+          </li>
           <li>
             <a href="/icon.svg" download>Іконка (SVG)</a> — для favicon і дрібних розмірів
           </li>
