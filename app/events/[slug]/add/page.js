@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { googleCalendarUrl } from '@/lib/calendar-links';
@@ -9,11 +9,11 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }) {
+  if (!supabase) return { title: 'Не знайдено' };
   const { data: item } = await supabase
     .from('opportunities')
     .select('title, slug')
     .eq('slug', params.slug)
-    .eq('status', 'active')
     .maybeSingle();
 
   if (!item) return { title: 'Не знайдено' };
@@ -26,14 +26,22 @@ export async function generateMetadata({ params }) {
 export default async function AddToCalendarPage({ params }) {
   if (!supabase) notFound();
 
+  // Статус тут НЕ фільтруємо. Раніше фільтрували — і сторінка починала
+  // віддавати 404, щойно можливість закривалась. Посилання на неї живуть
+  // у постах каналу й у Google з травня, тож 404 накопичувались: станом на
+  // 25.08.2026 їх було 79, і кожне нове закриття додавало ще одне.
   const { data: item } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, deadline')
+    .select('slug, title, summary, deadline, status')
     .eq('slug', params.slug)
-    .eq('status', 'active')
     .maybeSingle();
 
-  if (!item || !item.deadline) notFound();
+  if (!item) notFound();
+
+  // Запис існує, але додавати в календар уже нічого: набір закрито або
+  // дедлайну немає. Ведемо на саму можливість — там людина побачить, що
+  // сталося, і знайде посилання далі.
+  if (item.status !== 'active' || !item.deadline) redirect(`/o/${item.slug}`);
 
   const googleUrl = googleCalendarUrl({
     title: item.title,
