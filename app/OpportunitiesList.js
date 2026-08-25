@@ -1,5 +1,5 @@
 'use client';
-import { Fragment, useState, useMemo, useEffect, useRef } from 'react';
+import { Fragment, useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import PlusSection from './PlusSection';
 import SuggestBlock from './SuggestBlock';
@@ -98,12 +98,11 @@ const DEADLINE_OPTIONS = [
 
 // Cards rendered per batch. Filtering stays client-side (the chips, the city list
 // and the result count all need the full set), so this caps the DOM, not the fetch.
-const PAGE_SIZE = 24;
-
-// Скільки партій дозвантажуються самі, поки людина гортає. Не безкінечно:
-// після трьох (96 карток) повертається кнопка, інакше до підвалу з посиланнями
-// на міста й теми доскролити стало б неможливо.
-const AUTO_BATCHES = 3;
+//
+// Автопідвантаження прибрано (25.08.2026): партії доїжджали самі, поки людина
+// гортала, і футер відсувався швидше, ніж до нього доскролювали. Тепер рівно
+// одна партія, далі — кнопка, і одразу за нею футер.
+const PAGE_SIZE = 30;
 
 // Обидва вставні блоки позиціонуються в КЛІТИНКАХ сітки, а не в картках:
 // повноширинний блок Dityam+ має падати рівно на межу рядка (кратність трьом
@@ -575,32 +574,9 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   // Any change to the filtered set puts the user back at the top of a fresh batch —
   // keeping a large `visible` across filter changes would dump hundreds of cards at once.
   const [visible, setVisible] = useState(PAGE_SIZE);
-  const [autoLoads, setAutoLoads] = useState(0);
-  const sentinel = useRef(null);
   useEffect(() => {
     setVisible(PAGE_SIZE);
-    setAutoLoads(0);
   }, [filtered]);
-
-  // Дозавантаження без кліку: щойно низ списку наближається на 600px —
-  // підвантажуємо наступну партію. Кнопка лишається для тих, хто дійшов до
-  // ліміту авто-партій, і для клавіатури.
-  useEffect(() => {
-    if (visible >= filtered.length) return undefined;
-    if (autoLoads >= AUTO_BATCHES) return undefined;
-    const el = sentinel.current;
-    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) return;
-        setVisible((v) => v + PAGE_SIZE);
-        setAutoLoads((n) => n + 1);
-      },
-      { rootMargin: '600px 0px' },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [visible, filtered.length, autoLoads]);
 
   const ageLabel = (item) => {
     if (item.age_from === item.age_to) return `${item.age_from} років`;
@@ -816,27 +792,14 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
               return nodes;
             })()}
           </div>
-          <div ref={sentinel} aria-hidden="true" />
           {visible < filtered.length && (
             <div className="load-more-wrap">
-              {autoLoads >= AUTO_BATCHES ? (
-                <button
-                  className="load-more"
-                  onClick={() => {
-                    setVisible((v) => v + PAGE_SIZE);
-                    setAutoLoads(0);   // клік дає ще три авто-партії
-                  }}
-                >
-                  Показати ще {Math.min(PAGE_SIZE, filtered.length - visible)}
-                </button>
-              ) : (
-                <div className="load-more-spinner" role="status" aria-live="polite">
-                  <span className="load-more-dot" />
-                  <span className="load-more-dot" />
-                  <span className="load-more-dot" />
-                  <span className="sr-only">Завантажуємо ще можливості</span>
-                </div>
-              )}
+              <button
+                className="load-more"
+                onClick={() => setVisible((v) => v + PAGE_SIZE)}
+              >
+                Показати ще {Math.min(PAGE_SIZE, filtered.length - visible)}
+              </button>
               <div className="load-more-hint">
                 Показано {visible} з {filtered.length}
               </div>

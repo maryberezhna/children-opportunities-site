@@ -11,7 +11,10 @@ async function getProof() {
     const { count } = await supabase
       .from('opportunities')
       .select('id', { count: 'exact', head: true })
-      .eq('status', 'active');
+      // Той самий фільтр, що й у каталозі: дублі віддають 301 і в підрахунок
+      // не йдуть, інакше тут 462, а на головній 438.
+      .eq('status', 'active')
+      .is('canonical_slug', null);
     return count || null;
   } catch {
     return null;

@@ -17,9 +17,13 @@ async function getStats() {
   try {
     if (!supabase) return {};
     const [active, verified] = await Promise.all([
-      supabase.from('opportunities').select('id', { count: 'exact', head: true }).eq('status', 'active'),
+      // .is('canonical_slug', null) — той самий фільтр, що й у каталозі: без нього
+      // сторінка довіри показувала 462, а головна 438.
       supabase.from('opportunities').select('id', { count: 'exact', head: true })
-        .eq('status', 'active').gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
+        .eq('status', 'active').is('canonical_slug', null),
+      supabase.from('opportunities').select('id', { count: 'exact', head: true })
+        .eq('status', 'active').is('canonical_slug', null)
+        .gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
     ]);
     return { active: active.count, verified: verified.count };
   } catch {
