@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, publicOpportunities, countActiveOpportunities } from '@/lib/supabase';
 import Footer from '../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -17,11 +17,11 @@ async function getStats() {
   try {
     if (!supabase) return {};
     const [active, verified] = await Promise.all([
-      supabase.from('opportunities').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-      supabase.from('opportunities').select('id', { count: 'exact', head: true })
-        .eq('status', 'active').gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
+      countActiveOpportunities(),
+      publicOpportunities('id', { count: 'exact', head: true })
+        .gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
     ]);
-    return { active: active.count, verified: verified.count };
+    return { active, verified: verified.count };
   } catch {
     return {};
   }

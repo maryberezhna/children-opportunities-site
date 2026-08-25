@@ -114,7 +114,8 @@ async function sendMainMenu(bot, chatId) {
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
     .select('title, slug, age_from, age_to, cost_type, summary, created_at')
-    .eq('status', 'active').order('created_at', { ascending: false }).limit(200);
+    .eq('status', 'active').is('canonical_slug', null)
+    .order('created_at', { ascending: false }).limit(200);
   const interests = new Set(sub.interests || []);
   const freeOnly = sub.cost_pref === 'free_only';
   const matched = (opps || []).filter((o) => {

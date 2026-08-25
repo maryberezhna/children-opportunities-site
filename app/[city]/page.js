@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, CARD_FIELDS } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import OpportunitiesList from '../OpportunitiesList';
 import StickyBar from '../StickyBar';
@@ -35,12 +35,7 @@ export async function generateMetadata({ params }) {
 
 async function getCityOpportunities(cityName) {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('opportunities')
-    .select(CARD_FIELDS)
-    .eq('status', 'active')
-    // Дублі (canonical_slug заповнений) віддають 301 і в каталозі не потрібні.
-    .is('canonical_slug', null)
+  const { data, error } = await publicOpportunities()
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.filter((o) => {

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, CARD_FIELDS } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
@@ -15,12 +15,7 @@ async function getOpportunities() {
     console.warn('Supabase not configured — returning empty opportunities list');
     return [];
   }
-  const { data, error } = await supabase
-    .from('opportunities')
-    .select(CARD_FIELDS)
-    .eq('status', 'active')
-    // Дублі (canonical_slug заповнений) віддають 301 і в каталозі не потрібні.
-    .is('canonical_slug', null)
+  const { data, error } = await publicOpportunities()
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -4,7 +4,7 @@
 // що», у markdown, який моделі читають напряму. Генерується з бази: лічильники
 // на момент запиту, перегенерація раз на добу.
 
-import { supabase } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { TOPIC_LIST } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 
@@ -15,11 +15,9 @@ const SITE = 'https://dityam.com.ua';
 export async function GET() {
   let rows = [];
   if (supabase) {
-    const { data } = await supabase
-      .from('opportunities')
-      .select('title, opportunity_type, cost_type, aid_type, cities')
-      .eq('status', 'active')
-      .is('canonical_slug', null);
+    const { data } = await publicOpportunities(
+      'title, opportunity_type, cost_type, aid_type, cities',
+    );
     rows = data || [];
   }
 

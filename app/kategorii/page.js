@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, CARD_FIELDS } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { CATEGORY_GROUPS } from '@/lib/categories';
 import { opportunitiesWord } from '@/lib/plural';
 import Footer from '../Footer';
@@ -17,11 +17,7 @@ export const metadata = {
 
 async function getActive() {
   if (!supabase) return [];
-  const { data } = await supabase
-    .from('opportunities')
-    .select(CARD_FIELDS)
-    .eq('status', 'active')
-    .is('canonical_slug', null);
+  const { data } = await publicOpportunities();
   return data || [];
 }
 

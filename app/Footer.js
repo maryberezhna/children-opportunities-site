@@ -1,18 +1,13 @@
 import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
 import { TOPIC_NAV } from '@/lib/topics';
-import { supabase } from '@/lib/supabase';
+import { countActiveOpportunities } from '@/lib/supabase';
 
 // Живі цифри довіри: ті самі, що на /press — тягнуться з бази, щоб «503»
 // ніколи не застаріло в футері. Збій запиту → чесний фолбек «500+».
 async function getProof() {
   try {
-    if (!supabase) return null;
-    const { count } = await supabase
-      .from('opportunities')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active');
-    return count || null;
+    return await countActiveOpportunities();
   } catch {
     return null;
   }

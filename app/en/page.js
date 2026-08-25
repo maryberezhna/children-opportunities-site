@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, countActiveOpportunities } from '@/lib/supabase';
 import { TOPIC_LIST } from '@/lib/topics';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -28,11 +28,7 @@ export const metadata = {
 async function getStats() {
   try {
     if (!supabase) return {};
-    const { count } = await supabase
-      .from('opportunities')
-      .select('id', { count: 'exact', head: true })
-      .eq('status', 'active');
-    return { active: count };
+    return { active: await countActiveOpportunities() };
   } catch {
     return {};
   }

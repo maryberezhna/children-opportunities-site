@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, CARD_FIELDS } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { TOPIC_NAV } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
@@ -30,12 +30,7 @@ export function topicMetadata(topic) {
 
 async function getTopicOpportunities(topic) {
   if (!supabase) return [];
-  const { data, error } = await supabase
-    .from('opportunities')
-    .select(CARD_FIELDS)
-    .eq('status', 'active')
-    // Дублі (canonical_slug заповнений) віддають 301 і в підбірці не потрібні.
-    .is('canonical_slug', null)
+  const { data, error } = await publicOpportunities()
     .order('created_at', { ascending: false });
   if (error || !data) return [];
   return data.filter(topic.match);

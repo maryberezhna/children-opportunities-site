@@ -1,7 +1,13 @@
 /* Футер сайту */
 /* ============ ФУТЕР САЙТУ ============ */
 
+/* Футер ширший за контент-колонку (.container — 1100px): у ньому чотири
+   секції, і на 1100px вони тиснуться. Виривається з контейнера через
+   margin-left:50% + translateX(-50%), тож лишається по центру екрана. */
 .site-footer {
+  width: min(1320px, calc(100vw - 40px));
+  margin-left: 50%;
+  transform: translateX(-50%);
   margin-top: 60px;
   padding: 0;
   background: var(--surface);
@@ -131,12 +137,32 @@
   animation: heartbeat 1.8s ease-in-out infinite;
 }
 
+/* Чотири колонки під чотири секції розмітки: бренд, Каталог, Батькам, Проєкт.
+   Було три — і «Проєкт» падав у другий ряд, лишаючи дві третини рядка порожніми. */
 .footer-content {
   display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
+  grid-template-columns: 1.5fr 1fr 1fr 1fr;
   gap: 40px;
   padding: 32px 32px 0;
   margin-bottom: 28px;
+}
+
+/* Проміжна ширина: чотири колонки вже тиснуться, одна — ще зарано. */
+@media (max-width: 1000px) {
+  .footer-content {
+    grid-template-columns: 1fr 1fr;
+    gap: 28px 32px;
+  }
+}
+
+/* Вирване з контейнера позиціонування ламало б мобільний, де футер і так
+   на всю ширину — там повертаємо звичайний потік. */
+@media (max-width: 640px) {
+  .site-footer {
+    width: auto;
+    margin-left: 0;
+    transform: none;
+  }
 }
 
 .footer-section { display: flex; flex-direction: column; gap: 10px; }
