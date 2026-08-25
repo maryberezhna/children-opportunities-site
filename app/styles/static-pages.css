@@ -13,6 +13,26 @@
   margin-bottom: 8px;
 }
 
+.press-mentions {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+
+.press-mentions li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.press-mentions li:last-child {
+  border-bottom: none;
+}
+
+.press-mention-meta {
+  font-size: 13px;
+  color: var(--ink-muted);
+}
+
 .press-quote {
   margin: 12px 0;
   padding: 18px 22px;
