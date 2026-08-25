@@ -1,11 +1,45 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 
-// Сторінку тимчасово сховано на прохання (16.08.2026): віддає 404, посилання
-// з футера/en/llms.txt/sitemap прибрані. Повернути — видалити HIDDEN.
-const HIDDEN = true;
+// Публікації про проєкт. Порядок — як виходили; ШоТам були перші.
+// Облік ведеться в Notion «Про нас пишуть — медіатека», сюди переносимо руками.
+const MENTIONS = [
+  {
+    outlet: 'ШоТам',
+    date: '17 серпня 2026',
+    title:
+      'Усі можливості в одному місці: українка запустила безплатний каталог активностей для дітей',
+    url: 'https://shotam.info/usi-mozhlyvosti-v-odnomu-mistsi-ukrainka-zapustyla-bezplatnyy-kataloh-aktyvnostey-dlia-ditey/',
+  },
+  {
+    outlet: 'Дон Патріот',
+    date: '17 серпня 2026',
+    title:
+      'Можливості для кожної дитини: в Україні зʼявився єдиний агрегатор дитячих ініціатив і виплат',
+    url: 'https://donpatriot.news/mozhlyvosti-dlya-kozhnoyi-dytyny-v-ukrayini-zyavyvsya-yedynyj-agregator-dytyachyh-inicziatyv-i-vyplat',
+  },
+  {
+    outlet: 'Українки',
+    date: '18 серпня 2026',
+    title:
+      'Українка Марія Бережна створила безплатний каталог можливостей для дітей',
+    url: 'https://ukrainky.com.ua/ukrayinka-mariya-berezhna-stvoryla-bezplatnyj-katalog-mozhlyvostej-dlya-ditej/',
+  },
+  {
+    outlet: 'Ти Київ',
+    date: '18 серпня 2026',
+    title:
+      'Українка створила безплатний каталог активностей для дітей по всій Україні: що в ньому є',
+    url: 'https://tykyiv.com/news/ukrayinka-stvorila-bezplatnii-katalog-aktivnostei-dlia-ditei-po-vsii-ukrayini-shcho-v-nomu-ie/',
+  },
+  {
+    outlet: 'WoMo',
+    date: '18 серпня 2026',
+    title: 'Можливості для дітей: безплатна платформа Dityam.com.ua',
+    url: 'https://womo.ua/ukrayinka-stvoryla-bezplatnyj-katalog-mozhlyvostej-dlya-ditej/',
+  },
+];
 
 export const metadata = {
   title: 'Для медіа — прескіт dityam.com.ua',
@@ -23,7 +57,10 @@ async function getStats() {
   const { data, error } = await supabase
     .from('opportunities')
     .select('cost_type, source, opportunity_type, cities, child_needs')
-    .eq('status', 'active');
+    .eq('status', 'active')
+    // Той самий фільтр, що й на головній: без нього прескіт показував би 462
+    // проти 438 на сайті — і журналіст процитував би число, якого не бачить.
+    .is('canonical_slug', null);
   if (error || !data) return null;
 
   const cities = new Set();
@@ -44,7 +81,6 @@ async function getStats() {
 }
 
 export default async function PressPage() {
-  if (HIDDEN) notFound();
   const stats = await getStats();
 
   return (
@@ -99,10 +135,10 @@ export default async function PressPage() {
 
         <h2>Опис одним абзацом</h2>
         <blockquote className="press-quote">
-          dityam.com.ua — безкоштовний каталог можливостей для дітей 0-18 років в
-          Україні. Курси, олімпіади, стипендії, табори, гранти, медична допомога та
-          державні виплати зібрані в одному місці з фільтрами за віком, регіоном,
-          вартістю й особливими потребами дитини. Кожен запис перевіряється вручну
+          dityam.com.ua — безкоштовна платформа, де зібрані можливості для дітей
+          0-18 років в Україні. Курси, олімпіади, стипендії, табори, гранти, медична
+          допомога та державні виплати — в одному місці, з фільтрами за віком,
+          регіоном, вартістю й особливими потребами дитини. Кожен запис перевіряється вручну
           і має посилання на офіційне джерело. Окрема увага — дітям ВПО, дітям
           ветеранів і загиблих захисників та дітям з особливими потребами.
         </blockquote>
@@ -112,7 +148,7 @@ export default async function PressPage() {
           <li><strong>Що це:</strong> платформа можливостей для українських дітей — в Україні та за кордоном</li>
           <li><strong>Для кого:</strong> батьки, опікуни, вчителі, соціальні працівники</li>
           <li><strong>Вік дітей:</strong> 0-18 років</li>
-          <li><strong>Вартість для родин:</strong> каталог безкоштовний, без реклами</li>
+          <li><strong>Вартість для родин:</strong> платформа безкоштовна, без реклами</li>
           <li><strong>Хто робить:</strong> Мері Бережна, соло-проєкт</li>
           <li><strong>Як наповнюється:</strong> щоденні скрапери МОН, МАН, IREX, UNICEF, Erasmus+ та інших джерел + ручна модерація кожного запису</li>
           <li>
@@ -124,6 +160,21 @@ export default async function PressPage() {
               </span>
             ))}
           </li>
+        </ul>
+
+        <h2>Про нас пишуть</h2>
+        <ul className="press-mentions">
+          {MENTIONS.map((m) => (
+            <li key={m.url}>
+              <a href={m.url} target="_blank" rel="noopener noreferrer">
+                {m.title}
+              </a>
+              <br />
+              <span className="press-mention-meta">
+                {m.outlet} · {m.date}
+              </span>
+            </li>
+          ))}
         </ul>
 
         <h2>Логотипи і зображення</h2>
@@ -163,7 +214,7 @@ export default async function PressPage() {
           Мері Бережна —{' '}
           <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
           Відповідаю на запити щодо коментарів, статистики та історій родин, які
-          знайшли програму через каталог. Якщо потрібні дані під конкретний зріз
+          знайшли програму через платформу. Якщо потрібні дані під конкретний зріз
           (за віком, регіоном чи типом допомоги) — напишіть, підготую.
         </p>
       </article>
