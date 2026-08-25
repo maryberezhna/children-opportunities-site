@@ -30,6 +30,13 @@ async function countRows(table, filter = (q) => q, col = 'id') {
   return count ?? 0;
 }
 
+// Обвал числа підписників майже завжди означає не втечу людей, а те, що
+// метрику підключили не туди. Так і сталось 19.08.2026: у воркфлоу підмінили
+// TELEGRAM_CHAT_ID на TELEGRAM_ADMIN_CHAT_ID, і лічильник тиждень показував
+// 2 — рівно стільки учасників в адмін-чаті. Тому не просто пишемо число, а
+// звіряємо з учорашнім і кричимо в лог, якщо воно завалилось.
+const MEMBERS_DROP_ALERT = 0.5;   // падіння більш ніж удвічі — підозріло
+
 async function telegramMembers() {
   if (!BOT || !CHANNEL) return null;
   try {
@@ -37,8 +44,30 @@ async function telegramMembers() {
       `https://api.telegram.org/bot${BOT}/getChatMemberCount?chat_id=${encodeURIComponent(CHANNEL)}`,
     );
     const json = await r.json();
-    return json.ok ? json.result : null;
-  } catch {
+    if (!json.ok) {
+      console.error(`getChatMemberCount failed: ${json.description || 'unknown'}`);
+      return null;
+    }
+    const members = json.result;
+
+    const { data: prev } = await supabase
+      .from('metrics_daily')
+      .select('day, telegram_members')
+      .not('telegram_members', 'is', null)
+      .order('day', { ascending: false })
+      .limit(1);
+
+    const last = prev?.[0];
+    if (last && last.telegram_members > 10 && members < last.telegram_members * MEMBERS_DROP_ALERT) {
+      console.error(
+        `⚠️  Підписників ${members}, а ${last.day} було ${last.telegram_members}. ` +
+        'Люди так не йдуть — перевір, чи TELEGRAM_CHAT_ID вказує на канал, ' +
+        'а не на адмін-чат.',
+      );
+    }
+    return members;
+  } catch (e) {
+    console.error(`telegramMembers failed: ${e.message}`);
     return null;
   }
 }
