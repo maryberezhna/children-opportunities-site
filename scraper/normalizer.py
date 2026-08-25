@@ -3,7 +3,7 @@ import os
 import hashlib
 import re
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 import anthropic
 from slugify import slugify
@@ -234,6 +234,71 @@ EXTRACT_TOOL = {
 }
 
 
+# Наскільки давньою може бути дата поточного року, щоб усе ще вважатись
+# «щойно минулою», а не торішньою. Півроку — компроміс для межі грудень/січень:
+# оголошення в грудні про «15 січня» має означати січень НАСТУПНОГО року.
+_SNAP_BACKSTOP_DAYS = 180
+
+
+def _fix_invented_years(data: dict, haystack: str, today_iso: str) -> dict:
+    """Полагодити дати, яким модель дописала чужий рік.
+
+    Модель регулярно ставить до дати без року рік із минулого — попри пряме
+    правило в промпті. За два тижні так з'явилось 13 «протермінованих»
+    записів, і в усіх день і місяць збігались із датою додавання, а рік — ні:
+        «13 серпня» у пості від 15.08.2026 → deadline 2024-08-13
+        «20 серпня» у пості від 15.08.2026 → deadline 2025-08-20
+    Це не старі можливості, а живі з підробленим роком.
+
+    Критерій детермінований, без здогадок: якщо дата в минулому І цього року
+    НЕМАЄ в тексті дослівно — рік вигадали, підставляємо рік публікації.
+    Якщо рік у тексті є, дату не чіпаємо: вона чесно торішня.
+    """
+    for key in ("deadline", "event_end_date"):
+        v = data.get(key)
+        if not v or v >= today_iso:
+            continue
+        year = v[:4]
+        if year in haystack:
+            continue  # рік справді написаний у тексті — дата чесна
+        fixed = _snap_year_to_now(v, today_iso)
+        if not fixed or fixed == v:
+            continue
+        data[key] = fixed
+        data["admin_comment"] = (
+            (data.get("admin_comment") or "")
+            + f" auto: {key} {v} → {fixed}, року {year} у тексті немає "
+              "(LLM його вигадав) — перевір дату"
+        ).strip()
+    return data
+
+
+def _snap_year_to_now(date_iso: str, today_iso: str) -> str | None:
+    """Підставити рік ПУБЛІКАЦІЇ до дати, якій модель дописала чужий рік.
+
+    День і місяць у таких випадках правильні — помиляється саме рік, тож
+    беремо поточний. Свідомо НЕ шукаємо «найближчу майбутню» дату: лекція
+    13 серпня, яку витягли 15 серпня, справді вже минула, і чесна відповідь —
+    13 серпня цього року (запис піде в closed), а не вигаданий дедлайн через рік.
+
+    Виняток — межа року: якщо дата поточного року опинилась більш ніж за
+    пів року позаду, це радше про наступний рік («15 січня» в грудневому пості).
+    """
+    try:
+        d = datetime.strptime(date_iso, "%Y-%m-%d").date()
+        today = datetime.strptime(today_iso, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+    for year in (today.year, today.year + 1):
+        try:
+            candidate = d.replace(year=year)
+        except ValueError:
+            continue  # 29 лютого у невисокосному році
+        if (today - candidate).days <= _SNAP_BACKSTOP_DAYS:
+            return candidate.isoformat()
+    return None
+
+
 class Normalizer:
     def __init__(self):
         self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -289,6 +354,9 @@ URL: {source_url}
             if enrollment in ("closed", "expired") and data.get("status") != "draft":
                 data["status"] = "closed"
 
+            data = _fix_invented_years(
+                data, f"{raw_text} {raw_title or ''}", today_iso)
+
             # Дати в минулому — запобіжник, незалежний від LLM: подія, що вже
             # відбулась, або дедлайн, що минув, не сміють дати active-запис
             # (кейс «ATLAS Weekend висів активним через місяць після події»).
@@ -296,6 +364,21 @@ URL: {source_url}
                 v = data.get(key)
                 if v and v < today_iso and data.get("status") != "draft":
                     data["status"] = "closed"
+
+            # Архівний мотлох. Дата в минулому, рік у тексті стоїть — значить
+            # це справді торішній або позаторішній запис. Зберігати сенс має
+            # лише те, що може ожити наступного сезону (recheck_at ~11 міс).
+            # Усе старше року — артефакт архівної сторінки: у базу потрапив
+            # мовний табір із дедлайном 2017-06-20. Такому в каталозі не місце.
+            cutoff = (datetime.utcnow().date() - timedelta(days=400)).isoformat()
+            for key in ("deadline", "event_end_date"):
+                v = data.get(key)
+                if v and v < cutoff:
+                    logger.info(
+                        "Відхилено як архівне: %s=%s (старше 400 днів) — %s",
+                        key, v, source_url,
+                    )
+                    return None
 
             # Симетрія: відкритий набір без минулих дат ОЖИВЛЯЄ авто-закритий
             # запис — так сезонна перевірка (recheck_at через ~11 місяців)
