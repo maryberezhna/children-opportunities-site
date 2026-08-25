@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 
 // Публікації про проєкт. Порядок — як виходили; ШоТам були перші.
@@ -54,13 +54,9 @@ export const revalidate = 3600;
 
 async function getStats() {
   if (!supabase) return null;
-  const { data, error } = await supabase
-    .from('opportunities')
-    .select('cost_type, source, opportunity_type, cities, child_needs')
-    .eq('status', 'active')
-    // Той самий фільтр, що й на головній: без нього прескіт показував би 462
-    // проти 438 на сайті — і журналіст процитував би число, якого не бачить.
-    .is('canonical_slug', null);
+  const { data, error } = await publicOpportunities(
+    'cost_type, source, opportunity_type, cities, child_needs',
+  );
   if (error || !data) return null;
 
   const cities = new Set();

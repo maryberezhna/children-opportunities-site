@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, publicOpportunities } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 import OutcomeForm from './OutcomeForm';
@@ -58,10 +58,7 @@ const RELATED_FIELDS = 'slug, title, summary, opportunity_type, age_from, age_to
 
 async function getRelated(item, limit = 8) {
   if (!supabase || !item) return [];
-  const { data } = await supabase
-    .from('opportunities')
-    .select(RELATED_FIELDS)
-    .eq('status', 'active')
+  const { data } = await publicOpportunities(RELATED_FIELDS)
     .neq('slug', item.slug)
     .eq('opportunity_type', item.opportunity_type)
     .lte('age_from', item.age_to)
@@ -69,10 +66,7 @@ async function getRelated(item, limit = 8) {
     .limit(limit);
   if (data && data.length >= 4) return data;
 
-  const { data: fallback } = await supabase
-    .from('opportunities')
-    .select(RELATED_FIELDS)
-    .eq('status', 'active')
+  const { data: fallback } = await publicOpportunities(RELATED_FIELDS)
     .neq('slug', item.slug)
     .lte('age_from', item.age_to)
     .gte('age_to', item.age_from)

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase';
+import { supabase, countActiveOpportunities } from '@/lib/supabase';
 import { TOPIC_LIST } from '@/lib/topics';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -28,14 +28,7 @@ export const metadata = {
 async function getStats() {
   try {
     if (!supabase) return {};
-    const { count } = await supabase
-      .from('opportunities')
-      .select('id', { count: 'exact', head: true })
-      // Той самий фільтр, що й у каталозі: дублі віддають 301 і в підрахунок
-      // не йдуть, інакше тут 462, а на головній 438.
-      .eq('status', 'active')
-      .is('canonical_slug', null);
-    return { active: count };
+    return { active: await countActiveOpportunities() };
   } catch {
     return {};
   }

@@ -6,7 +6,7 @@ import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
 import AccessibilityPanel from './AccessibilityPanel';
 import ServiceWorker from './ServiceWorker';
-import { supabase } from '@/lib/supabase';
+import { countActiveOpportunities } from '@/lib/supabase';
 import './globals.css';
 
 // Шрифти вендорнуті локально, а не через next/font/google.
@@ -57,16 +57,8 @@ const caveat = localFont({
 // over-promises (429 → "400+"). Falls back to 400 if the DB is unreachable
 // at build time — so it can never regress to the old static "80+".
 async function getProgramCount() {
-  if (!supabase) return null;
   try {
-    const { count, error } = await supabase
-      .from('opportunities')
-      .select('id', { count: 'exact', head: true })
-      // Той самий фільтр, що й у каталозі: дублі віддають 301 і в підрахунок
-      // не йдуть, інакше тут 462, а на головній 438.
-      .eq('status', 'active')
-      .is('canonical_slug', null);
-    return error ? null : (count ?? null);
+    return await countActiveOpportunities();
   } catch {
     return null;
   }
