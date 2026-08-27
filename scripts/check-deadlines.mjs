@@ -99,6 +99,15 @@ const stamp = today.toISOString().slice(0, 10);
 const lookahead = new Date(today);
 lookahead.setDate(today.getDate() + 30);
 
+// Скільки днів має лишатись до дедлайну, щоб можливість узагалі потрапила в
+// пост. Дайджест виходить о 09:00: можливість із дедлайном «сьогодні» —
+// це не можливість, а привід засмутитись. На заявку треба зібрати документи,
+// спитати батьків, інколи щось відсканувати, тож нижня межа — три дні.
+const MIN_LEAD_DAYS = Number(process.env.MIN_LEAD_DAYS || 3);
+const minLead = new Date(today);
+minLead.setDate(today.getDate() + MIN_LEAD_DAYS);
+const minLeadIso = minLead.toISOString().slice(0, 10);
+
 const { data, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, cost_type, status, source_url')
@@ -352,19 +361,21 @@ if (PREVIEW) {
 }
 
 async function sendDailyDigest(dayOverride = null) {
-  // Section A: truly urgent — deadline 0..3 days. Top 3.
+  // Section A: truly urgent — deadline MIN_LEAD_DAYS..7 days. Top 3.
+  // Було 0..3, тобто в «терміново» потрапляли й ті, що спливають сьогодні.
+  // Піднявши нижню межу, довелось підняти й верхню: інакше в секцію
+  // проходили б лише записи рівно з трьома днями і вона б порожніла.
   const urgent = dueSoon
-    .filter((r) => r.daysLeft >= 0 && r.daysLeft <= 3)
+    .filter((r) => r.daysLeft >= MIN_LEAD_DAYS && r.daysLeft <= 7)
     .slice(0, 3);
 
   // Section B: themed pool — fetch all active opportunities (not closed),
   // either with no deadline or with deadline in the future.
-  const todayIso = today.toISOString().slice(0, 10);
   const { data: poolData, error: poolErr } = await supabase
     .from('opportunities')
     .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at, source, child_needs')
     .eq('status', 'active')
-    .or(`deadline.is.null,deadline.gte.${todayIso}`);
+    .or(`deadline.is.null,deadline.gte.${minLeadIso}`);
   if (poolErr) {
     console.error(`Pool fetch failed: ${poolErr.message}`);
     return;

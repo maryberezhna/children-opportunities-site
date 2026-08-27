@@ -12,6 +12,10 @@ const MAX_PER_RUN = Number(process.env.MAX_PER_RUN || 8);
 const MAX_PER_TYPE = Number(process.env.MAX_PER_TYPE || 2);
 const POOL_SIZE = Number(process.env.POOL_SIZE || 80);
 const DRY_RUN = process.env.DRY_RUN === 'true';
+// Скільки днів має лишатись до дедлайну, щоб можливість пішла в канал.
+// Пост із дедлайном «сьогодні» підписник прочитає вже після того, як подача
+// закриється, — на заявку треба хоч кілька днів.
+const MIN_LEAD_DAYS = Number(process.env.MIN_LEAD_DAYS || 3);
 
 const required = {
   NEXT_PUBLIC_SUPABASE_URL: SUPABASE_URL,
@@ -248,11 +252,17 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
 
+const minLead = new Date();
+minLead.setHours(0, 0, 0, 0);
+minLead.setDate(minLead.getDate() + MIN_LEAD_DAYS);
+const minLeadIso = minLead.toISOString().slice(0, 10);
+
 const { data: pool, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline')
   .eq('status', 'active')
   .is('telegram_posted_at', null)
+  .or(`deadline.is.null,deadline.gte.${minLeadIso}`)
   .order('created_at', { ascending: true })
   .limit(POOL_SIZE);
 
