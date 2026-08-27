@@ -36,6 +36,7 @@ BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 GMAIL_FROM = os.environ.get("GMAIL_FROM", "mashaberezhna0209@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 MAX_ITEMS = 8             # максимум можливостей в одному сповіщенні
+MIN_LEAD_DAYS = int(os.environ.get("MIN_LEAD_DAYS", "3"))  # мінімум днів до дедлайну
 
 # --- 12 канонічних тем (у синхроні з lib/themes.js / keywords.py) ---
 THEME_CATEGORIES = {
@@ -236,12 +237,25 @@ def main():
     client = get_client()
 
     opps = client.table("opportunities").select(
-        "id, title, summary, slug, age_from, age_to, cost_type, created_at"
+        "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline"
     ).eq("status", "active").execute().data or []
+
+    # Дедлайн «сьогодні» або «завтра» — це не можливість, а привід засмутитись:
+    # поки підписник прочитає підбірку й збере документи, подача вже закриється.
+    # Тому відсіваємо все, до чого лишилось менше MIN_LEAD_DAYS днів. Записи без
+    # дедлайну (набір триває постійно) лишаються.
+    min_deadline = (datetime.now(timezone.utc).date() + timedelta(days=MIN_LEAD_DAYS)).isoformat()
+    before = len(opps)
+    opps = [o for o in opps if not o.get("deadline") or str(o["deadline"])[:10] >= min_deadline]
+    dropped = before - len(opps)
+
     for o in opps:
         o["_themes"] = match_themes(f"{o['title']} {o.get('summary') or ''}")
         o["_created"] = parse_ts(o.get("created_at"))
-    logger.info("Loaded %d active opportunities", len(opps))
+    logger.info(
+        "Loaded %d active opportunities (%d skipped — дедлайн ближче ніж за %d дні)",
+        len(opps), dropped, MIN_LEAD_DAYS,
+    )
 
     if args.demo:
         subs = [{
