@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
+import OpportunitiesBackdrop from './OpportunitiesBackdrop';
 import SupportPopup from './SupportPopup';
 import { TOPIC_NAV } from '@/lib/topics';
 import StickyBar from './StickyBar';
@@ -124,6 +125,11 @@ export default async function Home() {
             заплатити раніше, ніж те, за що платить.
             Передаємо пропси, а не готовий елемент: сторінка серверна, а
             функцію-фабрику в клієнтський компонент віддати не можна. */}
+        <OpportunitiesBackdrop
+          title="Усі можливості"
+          subtitle={`${total} перевірених програм для дітей 0–18 років. Фільтри — за віком, містом, вартістю й потребами дитини.`}
+        />
+
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}

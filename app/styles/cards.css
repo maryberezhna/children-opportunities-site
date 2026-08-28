@@ -225,3 +225,73 @@
   border: 0;
 }
 
+
+/* ---- Смуга з фоновим відео перед блоком можливостей ---- */
+/* Висота фіксована й невелика: це заставка над списком, а не тло під ним.
+   Тло під списком тягнулося б на кілька тисяч пікселів і все одно було б
+   затемнене до непомітності — див. коментар у OpportunitiesBackdrop.js. */
+.opps-backdrop {
+  position: relative;
+  height: 260px;
+  margin: 0 0 28px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--frame);
+  display: flex;
+  align-items: flex-end;
+}
+
+.opps-backdrop-media {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Відео лягає поверх постера: поки воно вантажиться — або взагалі не
+   вмикається — смуга вже має картинку, а не порожній прямокутник. */
+.opps-backdrop-video { z-index: 1; }
+
+/* Затемнення знизу вгору: заголовок сидить унизу смуги, і саме там кадр має
+   бути найтемнішим. Угорі лишаємо відео майже чистим, інакше ховати його під
+   суцільною плівкою немає сенсу. */
+.opps-backdrop-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(
+    to bottom,
+    rgba(26, 26, 26, 0) 0%,
+    rgba(26, 26, 26, 0.15) 40%,
+    rgba(26, 26, 26, 0.72) 100%
+  );
+}
+
+.opps-backdrop-copy {
+  position: relative;
+  z-index: 3;
+  padding: 22px 26px;
+  color: #fff;
+}
+
+.opps-backdrop-copy h2 {
+  font-size: clamp(22px, 3vw, 30px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
+
+.opps-backdrop-copy p {
+  margin: 6px 0 0;
+  font-size: 15px;
+  opacity: 0.88;
+  max-width: 52ch;
+}
+
+@media (max-width: 640px) {
+  .opps-backdrop { height: 180px; border-radius: 16px; margin-bottom: 20px; }
+  .opps-backdrop-copy { padding: 16px 18px; }
+  .opps-backdrop-copy p { font-size: 14px; }
+}

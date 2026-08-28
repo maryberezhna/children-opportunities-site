@@ -20,3 +20,24 @@ Static assets served at the site root.
    - https://www.opengraph.xyz/?url=https%3A%2F%2Fdityam.com.ua
    - Telegram: paste the URL into a chat, the preview should refresh.
    - Or `curl -s https://dityam.com.ua | grep og:image`.
+
+## Фон блоку можливостей (`backdrop.*`)
+
+Смуга з відео над списком можливостей — `app/OpportunitiesBackdrop.js`.
+Три файли: `backdrop.mp4`, `backdrop.webm` і постер `backdrop.jpg`.
+
+Щоб підмінити відео, з вихідного кліпу:
+
+```sh
+SRC="шлях/до/кліпу.mp4"
+ffmpeg -y -i "$SRC" -t 8 -an -vf "scale=1280:-2,fps=24" \
+  -c:v libvpx-vp9 -crf 46 -b:v 0 -row-mt 1 public/backdrop.webm
+ffmpeg -y -i "$SRC" -t 8 -an -vf "scale=1280:-2,fps=24" \
+  -c:v libx264 -crf 32 -preset slow -pix_fmt yuv420p -movflags +faststart public/backdrop.mp4
+ffmpeg -y -ss 1 -i "$SRC" -frames:v 1 -vf "scale=1280:-2" -q:v 4 public/backdrop.jpg
+```
+
+`-an` обов'язковий: доріжка звуку в фоновому відео не потрібна й лише важить.
+`-t 8` — цикл на вісім секунд; довший цикл важчий, а різниці не видно.
+Тримати кожен файл до ~800 КБ: більше — і смуга починає заважати сторінці,
+заради якої вона стоїть.
