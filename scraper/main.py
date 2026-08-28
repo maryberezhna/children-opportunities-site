@@ -27,11 +27,13 @@ from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
     british_council,
+    cprs_kyiv,
     diaspora_schools,
     diia_osvita,
     easy_gov,
     erasmus,
     facebook_pages,
+    gurtok,
     house_of_europe,
     instagram_monitor,
     man_contests,
@@ -39,6 +41,7 @@ from scrapers import (
     prometheus,
     rss_feeds,
     save_the_children,
+    shkolyar,
     space_dobrodiy,
     telegram_web,
     unicef,
@@ -55,6 +58,12 @@ SCRAPERS = [
     ("House of Europe", house_of_europe, "ukrainian"),
     ("Місце Сили (Клуб Добродіїв)", space_dobrodiy, "ukrainian"),
     ("RSS-стрічки", rss_feeds, "ukrainian"),
+    # Переліки гуртків. Найслабша наша категорія: постійний набір поруч
+    # із домом — саме те, що шукає батько на початку навчального року.
+    # Це агрегатори, не першоджерела, тож у sources їм ставимо trust_tier=3.
+    ("Гурток (gurtok.org)", gurtok, "ukrainian"),
+    ("Школяр (shkolyar.org.ua)", shkolyar, "ukrainian"),
+    ("ЦПР Святошинського району (cprs.kiev.ua)", cprs_kyiv, "ukrainian"),
     # Діаспора — українські родини за кордоном
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
