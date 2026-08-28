@@ -110,7 +110,7 @@ const minLeadIso = minLead.toISOString().slice(0, 10);
 
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, cost_type, status, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_end_date, cost_type, status, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -373,7 +373,7 @@ async function sendDailyDigest(dayOverride = null) {
   // either with no deadline or with deadline in the future.
   const { data: poolData, error: poolErr } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, created_at, source, child_needs')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at, source, child_needs')
     .eq('status', 'active')
     .or(`deadline.is.null,deadline.gte.${minLeadIso}`);
   if (poolErr) {
@@ -547,14 +547,9 @@ function buildStoryPost(r, theme) {
   if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
   else if (r.cost_type === 'partially_free') lines.push('💳 Скільки коштує: є фінансування');
 
-  if (r.daysLeft != null && r.daysLeft >= 0) {
-    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    lines.push(`⏰ Дедлайн: <b>${tag}</b>`);
-  } else if (r.deadline) {
-    lines.push(`⏰ Дедлайн: <b>${formatDeadlineDate(r.deadline)}</b>`);
-  } else {
-    lines.push('⏰ Дедлайну немає — набір триває');
-  }
+  const when = whenLine(r);
+  if (when) lines.push(when);
+  else lines.push('⏰ Дедлайну немає — набір триває');
 
   lines.push('');
   lines.push(`👉 <a href="${url}">Умови й подача — на dityam.com.ua</a>`);
@@ -628,6 +623,51 @@ function ageLabel(r) {
   return `${r.age_from}–${r.age_to} років`;
 }
 
+// Типи, де дата в полі deadline — це не «останній день подачі», а день,
+// коли воно відбувається. Для них «Дедлайн» — брехня: подія не закривається,
+// вона просто настає. competition сюди свідомо НЕ входить: у конкурсів дата
+// майже завжди означає останній день подачі роботи.
+const EVENT_TYPES = new Set([
+  'camp', 'festival', 'excursion', 'conference', 'hackathon',
+  'workshop', 'sport_tournament', 'summer_school',
+]);
+
+// Заповнений event_end_date — це вже пряма ознака датованої події, хоч би
+// який був тип: його ставлять саме тим записам, що мають день проведення.
+const isEvent = (r) => EVENT_TYPES.has(r.opportunity_type) || Boolean(r.event_end_date);
+
+// Один рядок про дату — «Коли» для подій, «Дедлайн» для подачі.
+// Для подій навмисно не пишемо «за 3 дн.»: у події важлива сама дата, бо
+// її треба вписати в календар, а не встигнути до неї.
+// Діапазон дат події. Коли місяць і рік збігаються, не повторюємо їх двічі:
+// «12 — 15 вересня 2026» замість «12 вересня 2026 — 15 вересня 2026».
+function formatDateRange(fromStr, toStr) {
+  const from = formatDeadlineDate(fromStr);
+  if (!from) return null;
+  const to = formatDeadlineDate(toStr);
+  if (!to || to === from) return from;
+  const a = new Date(fromStr);
+  const b = new Date(toStr);
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    return `${a.getDate()} — ${to}`;
+  }
+  return `${from} — ${to}`;
+}
+
+function whenLine(r, indent = '') {
+  if (isEvent(r)) {
+    const when = formatDateRange(r.deadline, r.event_end_date);
+    if (!when) return null;
+    return `${indent}📅 Коли: <b>${when}</b>`;
+  }
+  if (r.daysLeft != null && r.daysLeft >= 0) {
+    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
+    return `${indent}⏰ Дедлайн: <b>${tag}</b>`;
+  }
+  const dl = formatDeadlineDate(r.deadline);
+  return dl ? `${indent}⏰ Дедлайн: <b>${dl}</b>` : null;
+}
+
 function formatDeadlineDate(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -656,14 +696,9 @@ function formatLine(r, index) {
   const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
   if (meta.length) lines.push(`   ${meta.join(' · ')}`);
 
-  // Deadline line
-  if (r.daysLeft != null && r.daysLeft >= 0) {
-    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    lines.push(`   ⏰ Дедлайн: <b>${tag}</b>`);
-  } else if (r.deadline) {
-    const dl = formatDeadlineDate(r.deadline);
-    if (dl) lines.push(`   ⏰ Дедлайн: <b>${dl}</b>`);
-  }
+  // Рядок дати: «Коли» для подій, «Дедлайн» для подачі.
+  const whenLineText = whenLine(r, '   ');
+  if (whenLineText) lines.push(whenLineText);
 
   // Full description (up to 500 chars, same as individual post)
   if (r.summary) {

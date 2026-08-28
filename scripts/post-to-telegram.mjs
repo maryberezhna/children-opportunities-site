@@ -80,6 +80,37 @@ function ageLabel(item) {
   return `${item.age_from}–${item.age_to} років`;
 }
 
+// Типи, де дата в deadline — це день проведення, а не останній день подачі.
+// competition свідомо не входить: у конкурсів це майже завжди дата подачі.
+const EVENT_TYPES = new Set([
+  'camp', 'festival', 'excursion', 'conference', 'hackathon',
+  'workshop', 'sport_tournament', 'summer_school',
+]);
+const isEvent = (item) => EVENT_TYPES.has(item.opportunity_type) || Boolean(item.event_end_date);
+
+// «Коли» для подій, «Дедлайн» для подачі.
+// Діапазон дат події. Коли місяць і рік збігаються, не повторюємо їх двічі:
+// «12 — 15 вересня 2026» замість «12 вересня 2026 — 15 вересня 2026».
+function formatDateRange(fromStr, toStr) {
+  const from = formatDeadline(fromStr);
+  if (!from) return null;
+  const to = formatDeadline(toStr);
+  if (!to || to === from) return from;
+  const a = new Date(fromStr);
+  const b = new Date(toStr);
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    return `${a.getDate()} — ${to}`;
+  }
+  return `${from} — ${to}`;
+}
+
+function whenLine(item) {
+  const from = formatDeadline(item.deadline);
+  if (!from) return null;
+  if (!isEvent(item)) return `⏰ Дедлайн: <b>${from}</b>`;
+  return `📅 Коли: <b>${formatDateRange(item.deadline, item.event_end_date)}</b>`;
+}
+
 function formatDeadline(dateStr) {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -122,7 +153,8 @@ function buildMessageA(item) {
   if (cost) meta.push(item.cost_type === 'free' ? `✅ ${cost}` : cost);
   lines.push(meta.join(' · '));
 
-  if (deadline) lines.push(`⏰ Дедлайн: <b>${deadline}</b>`);
+  const when = whenLine(item);
+  if (when) lines.push(when);
   if (item.format) lines.push(`📍 ${escapeHtml(item.format)}`);
 
   if (item.summary) {
@@ -152,7 +184,13 @@ function buildMessageB(item) {
 
   const meta = [typeLabel, ageLabel(item)];
   if (cost) meta.push(cost);
-  if (deadline) meta.push(`до ${deadline}`);
+  // «до 12 вересня» для події означало б, що подача закривається, — а це
+  // день, коли вона відбувається.
+  if (deadline) {
+    meta.push(isEvent(item)
+      ? formatDateRange(item.deadline, item.event_end_date)
+      : `до ${deadline}`);
+  }
   lines.push(meta.join(' · '));
 
   if (item.summary) {
@@ -259,7 +297,7 @@ const minLeadIso = minLead.toISOString().slice(0, 10);
 
 const { data: pool, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_end_date')
   .eq('status', 'active')
   .is('telegram_posted_at', null)
   .or(`deadline.is.null,deadline.gte.${minLeadIso}`)
