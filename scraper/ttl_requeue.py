@@ -15,6 +15,7 @@
 Ліміт на запуск тримає вартість передбачуваною; найстаріші — перші.
 """
 import logging
+import time
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -32,7 +33,31 @@ TTL_DAYS = {
     "club": 120, "educational_material": 120,
 }
 DEFAULT_TTL = 120
-LIMIT_PER_RUN = 20
+
+# Джерела-агрегатори тримаємо на коротшому повідку. Гурток не має дедлайну,
+# тож дата його не закриє ніколи — єдине, що відрізняє живий запис від
+# мертвого, це оця переперевірка. А в чужому переліку гурток може зникнути,
+# змінити ціну чи адресу, і сам перелік нам про це не скаже.
+# Переперевірка тут майже безкоштовна: сторінки цих трьох сайтів віддають
+# стабільний текст, тож хеш збігається і повторна екстракція не запускається.
+AGGREGATOR_SOURCES = {
+    "Гурток (gurtok.org)",
+    "Школяр (shkolyar.org.ua)",
+    "ЦПР Святошинського району (cprs.kiev.ua)",
+}
+AGGREGATOR_TTL_DAYS = 45
+
+# Пропускна здатність. Записів без дедлайну після додавання переліків гуртків
+# стане близько 1 100. За 20 на ніч повний круг тривав би 55 ночей — тобто
+# запис міг бути неправдою півтора місяця навіть за коротким TTL. За 60 на
+# ніч круг займає ~19 ночей і TTL нарешті означає те, що написано.
+LIMIT_PER_RUN = 60
+# Вікно вибірки має бути помітно більшим за ліміт: із нього ще відсіюються
+# ті, кому TTL не настав.
+FETCH_WINDOW = 400
+# Після імпорту в тисячі записів однакова дата оновлення, тож ніч легко
+# може виявитись шістдесятьма запитами поспіль до одного сайту.
+DELAY_BETWEEN_CHECKS = 0.5
 # Сезонні перевірки закритих подій (recheck_at, ставить check-deadlines при
 # закритті фестивалю/табору: closed + 11 місяців — подивитися, чи не
 # з'явилась нова річна програма).
@@ -68,13 +93,16 @@ def run(client) -> dict:
             .eq("status", "active")
             .is_("deadline", "null")
             .order("updated_at")
-            .limit(120)
+            .limit(FETCH_WINDOW)
             .execute()
             .data or []
         )
         due = []
         for r in rows:
-            ttl = TTL_DAYS.get(r.get("opportunity_type"), DEFAULT_TTL)
+            if r.get("source") in AGGREGATOR_SOURCES:
+                ttl = AGGREGATOR_TTL_DAYS
+            else:
+                ttl = TTL_DAYS.get(r.get("opportunity_type"), DEFAULT_TTL)
             updated = r.get("updated_at") or ""
             try:
                 age = now - datetime.fromisoformat(updated.replace("Z", "+00:00"))
@@ -88,6 +116,8 @@ def run(client) -> dict:
             print(f"\n{'=' * 70}\n⏳ TTL: {len(due)} записів без дедлайну на переверифікацію\n{'=' * 70}")
             for r in due:
                 stats["checked"] += 1
+                if stats["checked"] > 1:
+                    time.sleep(DELAY_BETWEEN_CHECKS)
                 text = _fetch_text(r["source_url"])
                 if not text:
                     stats["skipped"] += 1  # мертвий/недоступний — справа verify-links
