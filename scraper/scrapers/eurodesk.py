@@ -27,6 +27,16 @@ PAGE_TIMEOUT_MS = 45_000
 
 _ID_RE = re.compile(r"^(\d+)-")
 
+# Колір картки в них — це категорія. Зелена означає стажування: усі 23 зелені
+# картки на момент перевірки були traineeship, internship або au pair, а вони
+# без винятку вимагають вищої освіти чи 18+. Не женемо їх через екстракцію:
+# це чверть усього обсягу й гарантовано нуль на виході.
+#
+# Червоні НЕ ріжемо, хоч там теж багато дорослого: поруч із «Mobility Staff
+# Adult Education» лежать «Erasmus+ Youth Exchanges» і «Youth4Ocean Forum»,
+# які нам якраз потрібні. Там вік вирішує екстракція.
+SKIP_COLORS = {"green"}
+
 
 def _text(node) -> str:
     return node.get_text(" ", strip=True) if node else ""
@@ -38,7 +48,11 @@ def parse_open(html: str) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
     items, seen = [], set()
 
+    skipped = 0
     for card in soup.select('[data-role="card"]'):
+        if (card.get("data-color") or "") in SKIP_COLORS:
+            skipped += 1
+            continue
         title = _text(card.select_one('[data-role="title"]'))
         if not title:
             continue
@@ -75,6 +89,8 @@ def parse_open(html: str) -> list[dict]:
             "raw_text": "\n".join(p for p in parts if p)[:4000],
         })
 
+    if skipped:
+        logger.info("Eurodesk: пропущено %d карток-стажувань (18+)", skipped)
     return items
 
 
