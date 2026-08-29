@@ -18,6 +18,9 @@ Env:
                              Якщо буде HTTP 400 "web search not supported" —
                              постав claude-opus-4-8.
   DISCOVER_MAX              — опц., скільки кандидатів шукати (деф. 5)
+  DISCOVER_REGION           — опц., перебити ротацію: назва міста або країни
+                             («Дніпро», «Польща»). Потрібно, щоб закрити місто,
+                             де в нас нуль, не чекаючи його дня в циклі.
   DRY_RUN=true              — лише вивести, нічого не писати
 """
 import os
@@ -64,8 +67,22 @@ def keyword_of_day() -> str:
 
 
 def region_of_day() -> dict:
-    """Регіон дня — окрема ротація від теми. Довжини 151 і 20 взаємно прості,
-    тож пари (тема, регіон) не повторюються роками."""
+    """Регіон дня — окрема ротація від теми, щоб пари (тема, регіон) не
+    повторювались роками.
+
+    DISCOVER_REGION=Дніпро перебиває ротацію. Без цього нове місто чекало б
+    свого дня до 48 діб, а міста, де в нас нуль, треба вміти закрити сьогодні.
+    """
+    forced = (os.environ.get("DISCOVER_REGION") or "").strip()
+    if forced:
+        for r in REGION_ROTATION:
+            if r["name"].casefold() == forced.casefold():
+                logger.info(f"Регіон задано вручну: {r['name']}")
+                return r
+        known = ", ".join(sorted({r["name"] for r in REGION_ROTATION}))
+        raise SystemExit(
+            f"DISCOVER_REGION={forced!r} — такого регіону немає.\nДоступні: {known}"
+        )
     doy = date.today().timetuple().tm_yday
     return REGION_ROTATION[doy % len(REGION_ROTATION)]
 
