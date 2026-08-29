@@ -35,6 +35,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Перевірити порядок оголошень у скрипті
+        run: node scripts/check-script-order.mjs
+
       - name: Audit & archive deadlines
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
