@@ -108,6 +108,19 @@ const minLead = new Date(today);
 minLead.setDate(today.getDate() + MIN_LEAD_DAYS);
 const minLeadIso = minLead.toISOString().slice(0, 10);
 
+// Типи, де дата в полі deadline — це не «останній день подачі», а день,
+// коли воно відбувається. Для них «Дедлайн» — брехня: подія не закривається,
+// вона просто настає. competition сюди свідомо НЕ входить: у конкурсів дата
+// майже завжди означає останній день подачі роботи.
+const EVENT_TYPES = new Set([
+  'camp', 'festival', 'excursion', 'conference', 'hackathon',
+  'workshop', 'sport_tournament', 'summer_school',
+]);
+
+// Заповнений event_end_date — це вже пряма ознака датованої події, хоч би
+// який був тип: його ставлять саме тим записам, що мають день проведення.
+const isEvent = (r) => EVENT_TYPES.has(r.opportunity_type) || Boolean(r.event_end_date);
+
 const { data, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_end_date, cost_type, status, source_url')
@@ -622,19 +635,6 @@ function ageLabel(r) {
   if (r.age_from === r.age_to) return `${r.age_from} років`;
   return `${r.age_from}–${r.age_to} років`;
 }
-
-// Типи, де дата в полі deadline — це не «останній день подачі», а день,
-// коли воно відбувається. Для них «Дедлайн» — брехня: подія не закривається,
-// вона просто настає. competition сюди свідомо НЕ входить: у конкурсів дата
-// майже завжди означає останній день подачі роботи.
-const EVENT_TYPES = new Set([
-  'camp', 'festival', 'excursion', 'conference', 'hackathon',
-  'workshop', 'sport_tournament', 'summer_school',
-]);
-
-// Заповнений event_end_date — це вже пряма ознака датованої події, хоч би
-// який був тип: його ставлять саме тим записам, що мають день проведення.
-const isEvent = (r) => EVENT_TYPES.has(r.opportunity_type) || Boolean(r.event_end_date);
 
 // Один рядок про дату — «Коли» для подій, «Дедлайн» для подачі.
 // Для подій навмисно не пишемо «за 3 дн.»: у події важлива сама дата, бо
