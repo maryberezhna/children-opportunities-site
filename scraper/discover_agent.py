@@ -32,7 +32,7 @@ import httpx
 from slugify import slugify
 
 from canonical import canonical_url
-from db import get_client
+from db import get_client, record_crawl_result
 from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
 from normalizer import _sanitize
 
@@ -366,6 +366,14 @@ def main() -> int:
         except Exception as e:
             logger.error("  ✗ insert failed for '%s': %s", rec["title"][:50], e)
             skipped += 1
+
+    # Здоров'я агента в тому ж реєстрі, що й у решти джерел. Без цього
+    # рядок discover-agent мав checks_count=0 і порожній last_success_at:
+    # агент міг мовчки падати тижнями, і ніде б це не спливло.
+    try:
+        record_crawl_result(client, "discover-agent", ok=True, new_items=added)
+    except Exception as e:
+        logger.error("Не вдалось записати здоров'я discover-agent: %s", e)
 
     notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "

@@ -335,6 +335,10 @@ class Normalizer:
 
     def normalize(self, raw_text: str, source: str, source_url: str,
                   raw_title: Optional[str] = None) -> Optional[dict]:
+        # Причина останнього відхилення. Без неї 510 із 519 відсіяних записів
+        # лежали в raw_items із порожнім last_error: неможливо було ні довести,
+        # що фільтр працює, ні помітити, коли він почне різати живе.
+        self.last_reject_reason = None
         try:
             today_iso = datetime.utcnow().date().isoformat()
             user_msg = f"""Сьогодні: {today_iso}
@@ -355,11 +359,14 @@ URL: {source_url}
                 None
             )
             if not tool_use:
+                self.last_reject_reason = "не можливість для дитини (модель не витягла даних)"
                 return None
 
             data = tool_use.input
             if data.get("confidence", 0) < 0.5:
+                conf = data.get("confidence", 0)
                 logger.info(f"Low confidence, skipping: {source_url}")
+                self.last_reject_reason = f"низька впевненість моделі ({conf})"
                 return None
 
             data = _sanitize(dict(data))
@@ -402,6 +409,7 @@ URL: {source_url}
                         "Відхилено як архівне: %s=%s (старше 400 днів) — %s",
                         key, v, source_url,
                     )
+                    self.last_reject_reason = f"архівне: {key}={v} (старше 400 днів)"
                     return None
 
             # Симетрія: відкритий набір без минулих дат ОЖИВЛЯЄ авто-закритий

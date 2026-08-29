@@ -184,7 +184,9 @@ def get_source_registry(client: Client, pipeline: str) -> dict:
     try:
         result = (
             client.table("sources")
-            .select("name, enabled, consecutive_failures, next_crawl_at")
+            .select("name, enabled, consecutive_failures, next_crawl_at, "
+                    "crawl_interval_days, last_crawled_at, categories, pin_interval, "
+                    "config")
             .eq("pipeline", pipeline)
             .execute()
         )
@@ -194,6 +196,9 @@ def get_source_registry(client: Client, pipeline: str) -> dict:
         return {}
 
 
+_season_cache: dict = {}
+
+
 def _season_multiplier(client: Client, categories: list) -> float:
     """Максимальний сезонний множник серед категорій джерела на поточний
     місяць. 1.0 — без сезону. Помилка → 1.0 (сезонність не критична)."""
@@ -201,6 +206,9 @@ def _season_multiplier(client: Client, categories: list) -> float:
         return 1.0
     from datetime import datetime, timezone
     month = datetime.now(timezone.utc).month
+    key = (month, tuple(sorted(categories)))
+    if key in _season_cache:
+        return _season_cache[key]
     try:
         rows = (
             client.table("category_seasons")
@@ -210,9 +218,62 @@ def _season_multiplier(client: Client, categories: list) -> float:
             .execute()
             .data
         )
-        return max((r["multiplier"] for r in rows), default=1.0) if rows else 1.0
+        value = max((r["multiplier"] for r in rows), default=1.0) if rows else 1.0
+        _season_cache[key] = value
+        return value
     except Exception:
         return 1.0
+
+
+def get_source_configs(client: Client) -> dict:
+    """name → config джерела. Окремо від get_source_registry: той фільтрує за
+    pipeline, а екстракція обробляє чергу з усіх пайплайнів разом.
+    Помилка → порожньо: налаштування не сміють зупинити екстракцію."""
+    try:
+        rows = client.table("sources").select("name, config").execute().data or []
+        return {r["name"]: (r.get("config") or {}) for r in rows}
+    except Exception as e:
+        logger.error(f"get_source_configs failed: {e}")
+        return {}
+
+
+def due_at(client: Client, row: dict):
+    """Коли джерело справді має обходитись, з поправкою на поточний сезон.
+
+    next_crawl_at рахується В МОМЕНТ ЗАПИСУ, множником того місяця. Через це
+    джерело, обійдене 24 серпня й відкладене на 1 вересня, не відчуває
+    вересневого підсилення (konkursy ×3) до самого 1 вересня — тобто МОН і
+    МАН мовчать цілий тиждень якраз тоді, коли починається навчальний рік.
+
+    Тут перераховуємо дату від останнього обходу з множником ПОТОЧНОГО місяця
+    і беремо ранішу з двох. Сезон може лише наблизити обхід, ніколи не
+    відсунути: інакше зміна місяця могла б випадково приспати джерело.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    def _parse(v):
+        if not v:
+            return None
+        try:
+            return datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    stored = _parse(row.get("next_crawl_at"))
+    if row.get("pin_interval"):
+        return stored
+
+    last = _parse(row.get("last_crawled_at"))
+    base = row.get("crawl_interval_days") or 1
+    if last is None:
+        return stored
+
+    season = _season_multiplier(client, row.get("categories") or [])
+    effective = max(1, round(base / season))
+    recomputed = last + timedelta(days=effective)
+    if stored is None:
+        return recomputed
+    return min(stored, recomputed)
 
 
 def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> None:
