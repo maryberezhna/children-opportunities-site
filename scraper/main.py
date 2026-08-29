@@ -31,6 +31,7 @@ from scrapers import (
     diia_osvita,
     easy_gov,
     erasmus,
+    eurodesk,
     facebook_pages,
     house_of_europe,
     instagram_monitor,
@@ -59,6 +60,8 @@ SCRAPERS = [
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
+    # Потребує браузера: сайт малюється на клієнті (див. модуль).
+    ("Eurodesk", eurodesk, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
     ("British Council", british_council, "thematic"),
     # Соціальні мережі

@@ -26,6 +26,18 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # Браузер потрібен рівно одному джерелу — Eurodesk: його сайт малюється
+      # на клієнті, у відповіді по HTTP немає ні програм, ні посилань.
+      # Кешуємо, щоб не тягнути ~130 МБ щоночі.
+      - name: Кеш браузера Playwright
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-chromium-${{ hashFiles('scraper/requirements.txt') }}
+
+      - name: Встановити Chromium для Playwright
+        run: python -m playwright install --with-deps chromium
+
       - name: Run scraper
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
