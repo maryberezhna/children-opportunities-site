@@ -221,11 +221,19 @@ def process_pending(normalizer, sb_client, limit=300):
         # міста, хоч у тексті стоїть «Київ». Місто — головний фільтр на сайті,
         # тож без нього запис для людини з іншого міста просто не існує.
         # Онлайн не чіпаємо: там відсутність міста і є правильна відповідь.
-        default_city = (source_configs.get(item.get("source_name")) or {}).get("default_city")
-        if default_city and not normalized.get("cities"):
+        if not normalized.get("cities"):
             fmt = (normalized.get("format") or "").lower()
-            if "онлайн" not in fmt and "online" not in fmt:
-                normalized["cities"] = [default_city]
+            is_online = "онлайн" in fmt or "online" in fmt or "дистанц" in fmt
+            if is_online:
+                # «Онлайн» — теж відповідь на питання «де», і сайт уміє її
+                # читати: фільтр міст розпізнає «Онлайн» у cities. Без цього
+                # онлайн-можливості випадали з фільтра зовсім — людина, яка
+                # обрала своє місто, їх не бачила, хоч вони доступні звідусіль.
+                normalized["cities"] = ["Онлайн"]
+            else:
+                default_city = (source_configs.get(item.get("source_name")) or {}).get("default_city")
+                if default_city:
+                    normalized["cities"] = [default_city]
 
         saved = upsert_opportunity(sb_client, normalized)
         if saved:
