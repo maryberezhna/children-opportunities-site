@@ -1,20 +1,24 @@
 import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
 import { TOPIC_NAV } from '@/lib/topics';
-import { countActiveOpportunities } from '@/lib/supabase';
+import { countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
 
-// Живі цифри довіри: ті самі, що на /press — тягнуться з бази, щоб «503»
-// ніколи не застаріло в футері. Збій запиту → чесний фолбек «500+».
+// Живі цифри довіри: ті самі, що на /press — тягнуться з бази, щоб число
+// ніколи не застаріло в футері. Збій запиту → занижений фолбек із lib.
 async function getProof() {
   try {
-    return await countActiveOpportunities();
+    const [active, sources] = await Promise.all([
+      countActiveOpportunities(),
+      countActiveSources(),
+    ]);
+    return { active, sources };
   } catch {
-    return null;
+    return { active: null, sources: null };
   }
 }
 
 export default async function Footer() {
-  const activeCount = await getProof();
+  const { active: activeCount, sources: sourceCount } = await getProof();
 
   return (
     <footer className="site-footer">
@@ -83,8 +87,8 @@ export default async function Footer() {
             Безкоштовно, без реклами.
           </p>
           <div className="footer-proof">
-            <span><b>{activeCount ?? '500+'}</b> перевірених можливостей</span>
-            <span><b>200+</b> джерел · оновлюється щодня</span>
+            <span><b>{activeCount ?? FALLBACK.opportunities}</b> перевірених можливостей</span>
+            <span><b>{sourceCount ?? FALLBACK.sources}</b> джерел · оновлюється щодня</span>
             <span>лінки перевіряються щоночі ✓</span>
           </div>
         </div>

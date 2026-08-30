@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, countActiveOpportunities } from '@/lib/supabase';
+import { supabase, publicOpportunities, countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
 import Footer from '../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -16,12 +16,13 @@ export const metadata = {
 async function getStats() {
   try {
     if (!supabase) return {};
-    const [active, verified] = await Promise.all([
+    const [active, verified, sources] = await Promise.all([
       countActiveOpportunities(),
       publicOpportunities('id', { count: 'exact', head: true })
         .gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
+      countActiveSources(),
     ]);
-    return { active, verified: verified.count };
+    return { active, verified: verified.count, sources };
   } catch {
     return {};
   }
@@ -30,7 +31,7 @@ async function getStats() {
 const STEPS = [
   {
     icon: '🔎',
-    title: 'Щодня збираємо з 200+ джерел',
+    title: 'Щодня збираємо з усіх наших джерел',
     text: 'Державні сайти, фонди, посольства, громадські організації, освітні платформи й Telegram-канали. Скрапери та пошуковий агент працюють щоночі; частота під кожне джерело своя — сезонні (табори навесні, олімпіади восени) перевіряються частіше.',
   },
   {
@@ -61,7 +62,7 @@ const STEPS = [
 ];
 
 export default async function YakPereviriaiemo() {
-  const { active, verified } = await getStats();
+  const { active, verified, sources } = await getStats();
 
   return (
     <>
@@ -82,7 +83,7 @@ export default async function YakPereviriaiemo() {
             </p>
             <div className="stats">
               <div className="stat">
-                <span className="stat-num">{active ?? '500+'}</span>
+                <span className="stat-num">{active ?? FALLBACK.opportunities}</span>
                 <span className="stat-label">активних можливостей</span>
               </div>
               <div className="stat">
@@ -90,7 +91,7 @@ export default async function YakPereviriaiemo() {
                 <span className="stat-label">з лінком, перевіреним за 3 доби</span>
               </div>
               <div className="stat">
-                <span className="stat-num">200+</span>
+                <span className="stat-num">{sources ?? FALLBACK.sources}</span>
                 <span className="stat-label">джерел щодня</span>
               </div>
             </div>

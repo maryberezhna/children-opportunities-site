@@ -1,15 +1,21 @@
 import Link from 'next/link';
-import { supabase, countActiveOpportunities } from '@/lib/supabase';
+import { supabase, countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
 import { TOPIC_LIST } from '@/lib/topics';
 
 const SITE_URL = 'https://dityam.com.ua';
 
 export const revalidate = 3600;
 
-export const metadata = {
+// Опис теж рахуємо з бази, як у layout: тут стояло зашите «500+», хоча в
+// базі 449 — і саме цей текст показував Google. Округлюємо вниз до
+// півсотні, щоб число ніколи не обіцяло більше, ніж є.
+export async function generateMetadata() {
+  const count = await countActiveOpportunities().catch(() => null);
+  const n = count && count >= 50 ? Math.floor(count / 50) * 50 : 400;
+  return {
   title: 'Dityam — opportunities for Ukrainian children worldwide',
   description:
-    'A free catalogue of 500+ verified opportunities for Ukrainian children aged 0–18 — in Ukraine and abroad: camps, scholarships, olympiads, exchange programs, grants and aid. Updated daily from 200+ sources, every link checked nightly.',
+    `A free catalogue of ${n}+ verified opportunities for Ukrainian children aged 0–18 — in Ukraine and abroad: camps, scholarships, olympiads, exchange programs, grants and aid. Updated daily, every link checked nightly.`,
   alternates: {
     canonical: `${SITE_URL}/en`,
     languages: { uk: `${SITE_URL}/`, en: `${SITE_URL}/en` },
@@ -23,12 +29,17 @@ export const metadata = {
     description:
       'Free catalogue of verified opportunities for Ukrainian children 0–18, in Ukraine and abroad. Updated daily.',
   },
-};
+  };
+}
 
 async function getStats() {
   try {
     if (!supabase) return {};
-    return { active: await countActiveOpportunities() };
+    const [active, sources] = await Promise.all([
+      countActiveOpportunities(),
+      countActiveSources(),
+    ]);
+    return { active, sources };
   } catch {
     return {};
   }
@@ -44,7 +55,7 @@ const WHAT = [
 ];
 
 export default async function EnglishPage() {
-  const { active } = await getStats();
+  const { active, sources } = await getStats();
 
   return (
     <div className="container" lang="en">
@@ -62,16 +73,16 @@ export default async function EnglishPage() {
             Dityam is a free, ad-free catalogue of verified opportunities for
             Ukrainian children aged 0–18 — those still in Ukraine and those
             scattered across the world by the war. Camps, scholarships,
-            olympiads, exchanges, grants and aid programs: gathered from 200+
-            sources, checked daily, all in one place.
+            olympiads, exchanges, grants and aid programs: gathered from
+            {' '}{sources ?? FALLBACK.sources} sources, checked daily, all in one place.
           </p>
           <div className="stats">
             <div className="stat">
-              <span className="stat-num">{active ?? '500+'}</span>
+              <span className="stat-num">{active ?? FALLBACK.opportunities}</span>
               <span className="stat-label">verified opportunities</span>
             </div>
             <div className="stat">
-              <span className="stat-num">200+</span>
+              <span className="stat-num">{sources ?? FALLBACK.sources}</span>
               <span className="stat-label">sources, updated daily</span>
             </div>
             <div className="stat">
