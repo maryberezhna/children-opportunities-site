@@ -1,7 +1,50 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 
 const STORAGE_KEY = 'a11y-settings';
+
+// Панель висить на всіх сторінках, тож на /en кнопка «Доступність» і весь
+// її вміст лишалися українськими — єдиний український острів на англійській
+// сторінці, ще й у віджеті, який відкривають саме ті, кому важко читати.
+const L = {
+  uk: {
+    trigger: 'Доступність',
+    title: 'Налаштування доступності',
+    close: 'Закрити',
+    fontSize: 'Розмір тексту',
+    smaller: 'Зменшити текст',
+    bigger: 'Збільшити текст',
+    spacing: 'Відступи між буквами',
+    lessSpace: 'Зменшити відступ',
+    moreSpace: 'Збільшити відступ',
+    colour: 'Колір',
+    bw: 'Ч/Б',
+    other: 'Інше',
+    cursor: 'Великий курсор',
+    readingLine: 'Лінія для читання',
+    underline: 'Підкреслювати посилання',
+    reset: '× Скасувати зміни',
+  },
+  en: {
+    trigger: 'Accessibility',
+    title: 'Accessibility settings',
+    close: 'Close',
+    fontSize: 'Text size',
+    smaller: 'Smaller text',
+    bigger: 'Larger text',
+    spacing: 'Letter spacing',
+    lessSpace: 'Less spacing',
+    moreSpace: 'More spacing',
+    colour: 'Colour',
+    bw: 'B/W',
+    other: 'More',
+    cursor: 'Large cursor',
+    readingLine: 'Reading line',
+    underline: 'Underline links',
+    reset: '× Reset changes',
+  },
+};
 
 const DEFAULTS = {
   fontSize: 100,
@@ -33,6 +76,8 @@ function applySettings(s) {
 }
 
 export default function AccessibilityPanel() {
+  const pathname = usePathname() || '/';
+  const t = pathname.startsWith('/en') ? L.en : L.uk;
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(DEFAULTS);
 
@@ -69,14 +114,14 @@ export default function AccessibilityPanel() {
       <button
         className="a11y-trigger"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Налаштування доступності"
+        aria-label={t.title}
         aria-expanded={open}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="3" />
           <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z" />
         </svg>
-        <span>Доступність</span>
+        <span>{t.trigger}</span>
       </button>
 
       {/* Backdrop */}
@@ -85,10 +130,10 @@ export default function AccessibilityPanel() {
       )}
 
       {/* Panel */}
-      <div className={`a11y-panel${open ? ' a11y-panel--open' : ''}`} role="dialog" aria-label="Налаштування доступності" aria-modal="true">
+      <div className={`a11y-panel${open ? ' a11y-panel--open' : ''}`} role="dialog" aria-label={t.title} aria-modal="true">
         <div className="a11y-panel-header">
-          <span>Налаштування доступності</span>
-          <button className="a11y-close" onClick={() => setOpen(false)} aria-label="Закрити">
+          <span>{t.title}</span>
+          <button className="a11y-close" onClick={() => setOpen(false)} aria-label={t.close}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -98,19 +143,19 @@ export default function AccessibilityPanel() {
         <div className="a11y-panel-body">
           {/* Font size */}
           <div className="a11y-row">
-            <label className="a11y-label">Розмір тексту</label>
+            <label className="a11y-label">{t.fontSize}</label>
             <div className="a11y-stepper">
               <button
                 className="a11y-step-btn"
                 onClick={() => update({ fontSize: Math.max(80, settings.fontSize - 10) })}
-                aria-label="Зменшити текст"
+                aria-label={t.smaller}
                 disabled={settings.fontSize <= 80}
               >−</button>
               <span className="a11y-step-val">{settings.fontSize}%</span>
               <button
                 className="a11y-step-btn"
                 onClick={() => update({ fontSize: Math.min(150, settings.fontSize + 10) })}
-                aria-label="Збільшити текст"
+                aria-label={t.bigger}
                 disabled={settings.fontSize >= 150}
               >+</button>
             </div>
@@ -118,19 +163,19 @@ export default function AccessibilityPanel() {
 
           {/* Letter spacing */}
           <div className="a11y-row">
-            <label className="a11y-label">Відступи між буквами</label>
+            <label className="a11y-label">{t.spacing}</label>
             <div className="a11y-stepper">
               <button
                 className="a11y-step-btn"
                 onClick={() => update({ letterSpacing: Math.max(0, settings.letterSpacing - 1) })}
-                aria-label="Зменшити відступ"
+                aria-label={t.lessSpace}
                 disabled={settings.letterSpacing <= 0}
               >−</button>
               <span className="a11y-step-val">{settings.letterSpacing}%</span>
               <button
                 className="a11y-step-btn"
                 onClick={() => update({ letterSpacing: Math.min(10, settings.letterSpacing + 1) })}
-                aria-label="Збільшити відступ"
+                aria-label={t.moreSpace}
                 disabled={settings.letterSpacing >= 10}
               >+</button>
             </div>
@@ -141,7 +186,7 @@ export default function AccessibilityPanel() {
 
           {/* Color mode */}
           <div className="a11y-row">
-            <label className="a11y-label">Колір</label>
+            <label className="a11y-label">{t.colour}</label>
             <div className="a11y-toggle-group">
               <button
                 className={`a11y-toggle-btn${!settings.bw ? ' active' : ''}`}
@@ -151,7 +196,7 @@ export default function AccessibilityPanel() {
                   <circle cx="12" cy="12" r="5" fill="#f6a623" />
                   <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#f6a623" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                Колір
+                {t.colour}
               </button>
               <button
                 className={`a11y-toggle-btn${settings.bw ? ' active' : ''}`}
@@ -161,7 +206,7 @@ export default function AccessibilityPanel() {
                   <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" fill="#888" />
                   <path d="M12 2v20A10 10 0 0 0 12 2z" fill="#222" />
                 </svg>
-                Ч/Б
+                {t.bw}
               </button>
             </div>
           </div>
@@ -169,11 +214,11 @@ export default function AccessibilityPanel() {
           {/* Divider */}
           <div className="a11y-divider" />
 
-          <p className="a11y-section-title">Інше</p>
+          <p className="a11y-section-title">{t.other}</p>
 
           {/* Large cursor */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">Великий курсор</span>
+            <span className="a11y-label">{t.cursor}</span>
             <button
               role="switch"
               aria-checked={settings.largeCursor}
@@ -186,7 +231,7 @@ export default function AccessibilityPanel() {
 
           {/* Reading line */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">Лінія для читання</span>
+            <span className="a11y-label">{t.readingLine}</span>
             <button
               role="switch"
               aria-checked={settings.readingLine}
@@ -199,7 +244,7 @@ export default function AccessibilityPanel() {
 
           {/* Underline links */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">Підкреслювати посилання</span>
+            <span className="a11y-label">{t.underline}</span>
             <button
               role="switch"
               aria-checked={settings.underlineLinks}
@@ -219,7 +264,7 @@ export default function AccessibilityPanel() {
             onClick={reset}
             disabled={isDefault}
           >
-            × Скасувати зміни
+            {t.reset}
           </button>
         </div>
       </div>
