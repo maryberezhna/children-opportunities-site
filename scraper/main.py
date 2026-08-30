@@ -20,9 +20,9 @@ import link_check
 import notifier
 import raw_store
 import ttl_requeue
-from db import (find_active_by_canonical, get_client, get_health_stats,
-                get_new_today, get_source_registry, record_crawl_result,
-                upsert_opportunity)
+from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
+                get_new_today, get_source_configs, get_source_registry,
+                record_crawl_result, upsert_opportunity)
 from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
@@ -32,6 +32,7 @@ from scrapers import (
     diia_osvita,
     easy_gov,
     erasmus,
+    eurodesk,
     facebook_pages,
     gurtok,
     house_of_europe,
@@ -68,6 +69,8 @@ SCRAPERS = [
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
+    # Потребує браузера: сайт малюється на клієнті (див. модуль).
+    ("Eurodesk", eurodesk, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
     ("British Council", british_council, "thematic"),
     # Соціальні мережі
@@ -146,6 +149,9 @@ def process_pending(normalizer, sb_client, limit=300):
     що лишився з минулих запусків після збоїв. 5 послідовних збоїв API —
     зупиняємось: черга нікуди не дінеться, а спроби палити нема сенсу."""
     queue = raw_store.fetch_pending(sb_client, limit=limit)
+    # Налаштування джерел читаємо один раз на прогін, не на кожен запис.
+    source_configs = get_source_configs(sb_client)
+
     stats = {"queued": len(queue), "processed": 0, "rejected": 0,
              "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0}
     if not queue:
@@ -195,7 +201,12 @@ def process_pending(normalizer, sb_client, limit=300):
             continue
 
         if not normalized:
-            raw_store.mark(sb_client, item["id"], "rejected")
+            # Причину бере з нормалізатора: без неї відхилення непрозорі —
+            # неможливо ні довести, що фільтр працює, ні побачити, коли він
+            # почне різати живе.
+            reason = getattr(normalizer, "last_reject_reason", None)
+            raw_store.mark(sb_client, item["id"], "rejected",
+                           error=reason or "відхилено екстракцією (причина не вказана)")
             stats["rejected"] += 1
             continue
 
@@ -215,6 +226,26 @@ def process_pending(normalizer, sb_client, limit=300):
                 print(f"  🔗✗ мертвий лінк ({reason}): "
                       f"{normalized.get('source_url', '')[:80]}")
                 continue
+
+        # Місто з налаштувань джерела. У фізично прив'язаних джерел воно
+        # завжди те саме (простір у Києві, центр у Житомирі), але модель його
+        # регулярно не витягує: у «Місця Сили» 15 записів із 15 приїхали без
+        # міста, хоч у тексті стоїть «Київ». Місто — головний фільтр на сайті,
+        # тож без нього запис для людини з іншого міста просто не існує.
+        # Онлайн не чіпаємо: там відсутність міста і є правильна відповідь.
+        if not normalized.get("cities"):
+            fmt = (normalized.get("format") or "").lower()
+            is_online = "онлайн" in fmt or "online" in fmt or "дистанц" in fmt
+            if is_online:
+                # «Онлайн» — теж відповідь на питання «де», і сайт уміє її
+                # читати: фільтр міст розпізнає «Онлайн» у cities. Без цього
+                # онлайн-можливості випадали з фільтра зовсім — людина, яка
+                # обрала своє місто, їх не бачила, хоч вони доступні звідусіль.
+                normalized["cities"] = ["Онлайн"]
+            else:
+                default_city = (source_configs.get(item.get("source_name")) or {}).get("default_city")
+                if default_city:
+                    normalized["cities"] = [default_city]
 
         saved = upsert_opportunity(sb_client, normalized)
         if saved:
@@ -335,18 +366,17 @@ async def amain():
             continue
         # Адаптивний розклад: джерело ще не «дозріло» — пропускаємо (крім
         # явних запусків --only, де людина просить саме це джерело зараз).
-        next_at = (reg_row or {}).get("next_crawl_at")
-        if next_at and not args.only:
-            try:
-                due = datetime.fromisoformat(next_at.replace("Z", "+00:00"))
-                if due > datetime.now(_tz.utc):
-                    print(f"\n⏭  {name}: за розкладом наступний обхід "
-                          f"{due:%d.%m %H:%M} — пропускаю")
-                    results.append({"name": name, "status": "scheduled",
-                                    "count": 0, "duration": 0, "tag": tag})
-                    continue
-            except ValueError:
-                pass
+        # Дату беремо через due_at: він перераховує її з множником ПОТОЧНОГО
+        # місяця, інакше вересневе підсилення не діяло б на дати, поставлені
+        # ще в серпні.
+        if reg_row and not args.only:
+            due = due_at(sb_client, reg_row)
+            if due and due > datetime.now(_tz.utc):
+                print(f"\n⏭  {name}: за розкладом наступний обхід "
+                      f"{due:%d.%m %H:%M} — пропускаю")
+                results.append({"name": name, "status": "scheduled",
+                                "count": 0, "duration": 0, "tag": tag})
+                continue
         result = await run_scraper(name, module, sb_client)
         result["tag"] = tag
         results.append(result)

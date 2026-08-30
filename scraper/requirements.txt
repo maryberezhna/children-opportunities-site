@@ -8,3 +8,6 @@ python-slugify==8.0.4
 tenacity==9.0.0
 # Social media
 instaloader==4.13.1
+# Браузер — лише для Eurodesk: сайт малюється на клієнті, у HTML по HTTP
+# немає ні програм, ні посилань (див. scrapers/eurodesk.py).
+playwright==1.47.0
