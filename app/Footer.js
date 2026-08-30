@@ -21,6 +21,21 @@ async function getProof() {
 // обривалась після останнього абзацу — ні навігації, ні контактів, ні цифр,
 // ні юридичних сторінок. Дублювати компонент не можна: у ньому живі цифри й
 // два десятки посилань, і копія розійшлася б із оригіналом за місяць.
+// Там, де англійська сторінка існує, посилання веде на неї. Решта — на
+// українську: краще чесно привести на існуючу сторінку, ніж на 404.
+const HREF = {
+  uk: {
+    home: '/', categories: '/kategorii', verify: '/yak-my-pereviriaiemo',
+    about: '/about', press: '/press', support: '/support',
+    contacts: '/contacts', privacy: '/privacy', terms: '/terms',
+  },
+  en: {
+    home: '/en', categories: '/kategorii', verify: '/en/how-we-verify',
+    about: '/en/about', press: '/press', support: '/en/support',
+    contacts: '/en/contacts', privacy: '/en/privacy', terms: '/en/terms',
+  },
+};
+
 const STRINGS = {
   uk: {
     write: 'Написати',
@@ -94,6 +109,7 @@ const STRINGS = {
 export default async function Footer({ lang = 'uk' }) {
   const { active: activeCount, sources: sourceCount } = await getProof();
   const t = STRINGS[lang] || STRINGS.uk;
+  const href = HREF[lang] || HREF.uk;
   const topicLabel = (item) =>
     (lang === 'en' && item.labelEn) || item.label;
 
@@ -169,8 +185,8 @@ export default async function Footer({ lang = 'uk' }) {
 
         <div className="footer-section">
           <div className="footer-title">{t.catalogue}</div>
-          <Link href="/" className="footer-link"><span>{t.allOpps}</span></Link>
-          <Link href="/kategorii" className="footer-link"><span>{t.allCategories}</span></Link>
+          <Link href={href.home} className="footer-link"><span>{t.allOpps}</span></Link>
+          <Link href={href.categories} className="footer-link"><span>{t.allCategories}</span></Link>
           {TOPIC_NAV.map((item) => (
             <Link key={item.slug} href={`/${item.slug}`} className="footer-link">
               <span>{topicLabel(item)}</span>
@@ -195,16 +211,16 @@ export default async function Footer({ lang = 'uk' }) {
           >
             <span>{t.suggest}</span>
           </a>
-          <Link href="/yak-my-pereviriaiemo" className="footer-link">
+          <Link href={href.verify} className="footer-link">
             <span>{t.verify}</span>
           </Link>
         </div>
 
         <div className="footer-section">
           <div className="footer-title">{t.project}</div>
-          <Link href="/about" className="footer-link"><span>{t.aboutUs}</span></Link>
-          <Link href="/press" className="footer-link"><span>{t.press}</span></Link>
-          <Link href="/support" className="footer-link"><span>{t.support}</span></Link>
+          <Link href={href.about} className="footer-link"><span>{t.aboutUs}</span></Link>
+          <Link href={href.press} className="footer-link"><span>{t.press}</span></Link>
+          <Link href={href.support} className="footer-link"><span>{t.support}</span></Link>
           <a
             href="https://send.monobank.ua/jar/F72fDrV2c"
             target="_blank"
@@ -213,9 +229,9 @@ export default async function Footer({ lang = 'uk' }) {
           >
             <span>{t.donate}</span>
           </a>
-          <Link href="/contacts" className="footer-link"><span>{t.contacts}</span></Link>
-          <Link href="/privacy" className="footer-link"><span>{t.privacy}</span></Link>
-          <Link href="/terms" className="footer-link"><span>{t.terms}</span></Link>
+          <Link href={href.contacts} className="footer-link"><span>{t.contacts}</span></Link>
+          <Link href={href.privacy} className="footer-link"><span>{t.privacy}</span></Link>
+          <Link href={href.terms} className="footer-link"><span>{t.terms}</span></Link>
         </div>
       </div>
 

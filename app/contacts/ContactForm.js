@@ -7,7 +7,50 @@ import { CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
  * плейсхолдер — людина одразу бачить, що саме варто написати, а адмінка
  * отримує розсортовану пошту замість купи «просто листів».
  */
-export default function ContactForm() {
+const L = {
+  uk: {
+    doneTitle: 'Дякуємо, лист надійшов!',
+    doneText: 'Ми читаємо все і відповідаємо, якщо ви лишили контакт. Пропозиції можливостей зазвичай зʼявляються на сайті протягом кількох днів.',
+    again: 'Написати ще раз',
+    topic: 'Тема звернення',
+    message: 'Повідомлення',
+    required: 'обовʼязково',
+    link: 'Посилання',
+    name: 'Як вас звати',
+    namePlaceholder: "Ім'я",
+    contact: 'Email або телефон',
+    contactPlaceholder: 'щоб ми могли відповісти',
+    errShort: 'Напишіть, будь ласка, хоча б кілька слів — так ми зрозуміємо, чим допомогти.',
+    errContact: 'Лишіть email або телефон — без них ми не зможемо відповісти.',
+    errSend: 'Не вдалося надіслати. Спробуйте ще раз або напишіть на maryberezhna@gmail.com.',
+    sending: 'Надсилаємо…',
+    submit: 'Надіслати',
+    privacy: 'Ми не передаємо ваші контакти третім сторонам і не надсилаємо реклами.',
+  },
+  en: {
+    doneTitle: 'Thank you, your message arrived!',
+    doneText: 'We read everything and reply if you left a contact. Suggested opportunities usually appear on the site within a few days.',
+    again: 'Write again',
+    topic: 'What is it about',
+    message: 'Message',
+    required: 'required',
+    link: 'Link',
+    name: 'Your name',
+    namePlaceholder: 'Name',
+    contact: 'Email or phone',
+    contactPlaceholder: 'so we can reply',
+    errShort: 'Please write at least a few words, so we understand how to help.',
+    errContact: 'Leave an email or a phone number — without one we can’t reply.',
+    errSend: 'Could not send. Please try again, or write to maryberezhna@gmail.com.',
+    sending: 'Sending…',
+    submit: 'Send',
+    privacy: 'We don’t pass your contacts to third parties and we don’t send advertising.',
+  },
+};
+
+export default function ContactForm({ lang = 'uk' }) {
+  const t = L[lang] || L.uk;
+  const isEn = lang === 'en';
   const [type, setType] = useState('opportunity');
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [form, setForm] = useState({ message: '', name: '', contact: '', url: '', website: '' });
@@ -53,13 +96,10 @@ export default function ContactForm() {
     return (
       <div className="contact-form-done">
         <div className="contact-form-done-icon">🧡</div>
-        <h3>Дякуємо, лист надійшов!</h3>
-        <p>
-          Ми читаємо все і відповідаємо, якщо ви лишили контакт.
-          Пропозиції можливостей зазвичай зʼявляються в каталозі протягом кількох днів.
-        </p>
+        <h3>{t.doneTitle}</h3>
+        <p>{t.doneText}</p>
         <button type="button" className="contact-form-again" onClick={() => setState('idle')}>
-          Написати ще раз
+          {t.again}
         </button>
       </div>
     );
@@ -68,23 +108,23 @@ export default function ContactForm() {
   return (
     <form className="contact-form" onSubmit={submit}>
       <label className="contact-field">
-        <span className="contact-label">Тема звернення</span>
+        <span className="contact-label">{t.topic}</span>
         <select
           className="contact-select"
           value={type}
           onChange={(e) => { setType(e.target.value); setState('idle'); }}
         >
-          {CONTACT_TYPES.map((t) => (
-            <option key={t.value} value={t.value}>{t.emoji} {t.label}</option>
+          {CONTACT_TYPES.map((o) => (
+            <option key={o.value} value={o.value}>{o.emoji} {(isEn && o.labelEn) || o.label}</option>
           ))}
         </select>
       </label>
 
-      <p className="contact-hint">{active.hint}</p>
+      <p className="contact-hint">{(isEn && active.hintEn) || active.hint}</p>
 
       <label className="contact-field">
         <span className="contact-label">
-          Повідомлення <span className="contact-req">обовʼязково</span>
+          {t.message} <span className="contact-req">{t.required}</span>
         </span>
         <textarea
           className="contact-textarea"
@@ -93,13 +133,13 @@ export default function ContactForm() {
           minLength={10}
           value={form.message}
           onChange={set('message')}
-          placeholder={active.placeholder}
+          placeholder={(isEn && active.placeholderEn) || active.placeholder}
         />
       </label>
 
       {(type === 'opportunity' || type === 'error') && (
         <label className="contact-field">
-          <span className="contact-label">Посилання</span>
+          <span className="contact-label">{t.link}</span>
           <input
             className="contact-input"
             type="url"
@@ -113,19 +153,19 @@ export default function ContactForm() {
 
       <div className="contact-row">
         <label className="contact-field">
-          <span className="contact-label">Як вас звати</span>
-          <input className="contact-input" value={form.name} onChange={set('name')} placeholder="Ім'я" />
+          <span className="contact-label">{t.name}</span>
+          <input className="contact-input" value={form.name} onChange={set('name')} placeholder={t.namePlaceholder} />
         </label>
         <label className="contact-field">
           <span className="contact-label">
-            Email або телефон <span className="contact-req">обовʼязково</span>
+            {t.contact} <span className="contact-req">{t.required}</span>
           </span>
           <input
             className="contact-input"
             required
             value={form.contact}
             onChange={set('contact')}
-            placeholder="щоб ми могли відповісти"
+            placeholder={t.contactPlaceholder}
           />
         </label>
       </div>
@@ -145,19 +185,19 @@ export default function ContactForm() {
       {state === 'error' && (
         <p className="contact-error">
           {form.message.trim().length < 10
-            ? 'Напишіть, будь ласка, хоча б кілька слів — так ми зрозуміємо, чим допомогти.'
+            ? t.errShort
             : !contactOk(form.contact.trim())
-              ? 'Лишіть email або телефон — без них ми не зможемо відповісти.'
-              : 'Не вдалося надіслати. Спробуйте ще раз або напишіть на maryberezhna@gmail.com.'}
+              ? t.errContact
+              : t.errSend}
         </p>
       )}
 
       <button type="submit" className="contact-submit" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Надсилаємо…' : 'Надіслати'}
+        {state === 'sending' ? t.sending : t.submit}
       </button>
 
       <p className="contact-privacy">
-        Ми не передаємо ваші контакти третім сторонам і не надсилаємо реклами.
+        {t.privacy}
       </p>
     </form>
   );

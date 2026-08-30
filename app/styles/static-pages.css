@@ -441,3 +441,55 @@
   line-height: 1.6;
   color: var(--ink-muted);
 }
+
+/* Кроки перевірки даних. Той самий вигляд, що на /yak-my-pereviriaiemo, але
+   класами, а не інлайновими стилями: англійська сторінка мала б повторити
+   ще один набір style-атрибутів, і різниця між двома версіями почалася б
+   рівно з них. */
+.verify-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.verify-row:last-child { border-bottom: none; }
+
+.verify-icon { font-size: 26px; line-height: 1.2; }
+
+.verify-title { font-size: 17px; margin: 0 0 4px; }
+
+.verify-text {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* Форма звернення спільна з українською сторінкою — підписи в ній
+   українські. Замість вдавати, що це не так, кажемо прямо. */
+.legal-page .contact-lang-note {
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--ink-muted);
+}
+
+.legal-page .contact-fine {
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+
+/* Статус перекладу юридичного документа. Стоїть першим рядком, а не дрібним
+   шрифтом унизу: людина має знати, який текст чинний, ДО того як прийме
+   рішення на підставі прочитаного. */
+.legal-page .legal-note {
+  margin: 0 0 22px;
+  padding: 12px 16px;
+  border-left: 3px solid var(--border);
+  background: var(--surface);
+  border-radius: 0 10px 10px 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-soft);
+}

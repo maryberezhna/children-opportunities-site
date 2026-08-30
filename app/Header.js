@@ -6,14 +6,48 @@ import { usePathname } from 'next/navigation';
 // Постійний хедер: 4 маршрути-хаби + пошук + одна CTA. Глибина (підбірки,
 // міста, категорії) живе на хабах і у футері — меню не росте разом із
 // каталогом. Старий StickyHeader (виринав по скролу, без навігації) замінено.
+// hrefEn — англійський двійник, якщо він є. Інакше лишається українська
+// сторінка: привести на існуючу чесніше, ніж на 404.
 const NAV = [
-  { href: '/', label: 'Каталог', en: 'Catalogue', match: (p) => p === '/' },
-  { href: '/kategorii', label: 'Категорії', en: 'Categories', match: (p) => p.startsWith('/kategorii') },
-  { href: '/about', label: 'Про проєкт', en: 'About', match: (p) => p.startsWith('/about') || p.startsWith('/press') || p.startsWith('/yak-my-pereviriaiemo') },
-  { href: '/contacts', label: 'Написати нам', en: 'Contact', match: (p) => p.startsWith('/contacts') },
+  { href: '/', hrefEn: '/en', label: 'Каталог', en: 'Catalogue',
+    match: (p) => p === '/' || p === '/en' },
+  { href: '/kategorii', label: 'Категорії', en: 'Categories',
+    match: (p) => p.startsWith('/kategorii') },
+  { href: '/about', hrefEn: '/en/about', label: 'Про проєкт', en: 'About',
+    match: (p) => /^\/(en\/)?(about|press|yak-my-pereviriaiemo|how-we-verify)/.test(p) },
+  { href: '/contacts', hrefEn: '/en/contacts', label: 'Написати нам', en: 'Contact',
+    match: (p) => /^\/(en\/)?contacts/.test(p) },
 ];
 
-const isEn = (p) => p.startsWith('/en');
+const isEn = (p) => p === '/en' || p.startsWith('/en/');
+
+// Перемикач має вести на ТУ САМУ сторінку іншою мовою, а не на головну:
+// інакше людина, що читає «Як ми перевіряємо дані», натискає English і
+// опиняється в каталозі, загубивши те, що читала.
+//
+// Слаги, які не збігаються, — тут; решта відрізняється лише префіксом /en,
+// а сторінка можливості (/o/slug) збігається сама собою.
+const SLUG_PAIRS = [
+  ['/yak-my-pereviriaiemo', '/en/how-we-verify'],
+];
+
+const HAS_EN = ['/about', '/contacts', '/support', '/privacy', '/terms'];
+
+export function counterpart(pathname, toEnglish) {
+  const p = pathname || '/';
+  for (const [uk, en] of SLUG_PAIRS) {
+    if (toEnglish && p === uk) return en;
+    if (!toEnglish && p === en) return uk;
+  }
+  if (toEnglish) {
+    if (p === '/') return '/en';
+    if (p.startsWith('/o/') || HAS_EN.includes(p)) return `/en${p}`;
+    return '/en';
+  }
+  if (p === '/en') return '/';
+  const rest = p.replace(/^\/en/, '');
+  return rest || '/';
+}
 
 const POPULAR = [
   { href: '/bezkoshtovni-tabory', label: 'Табори', en: 'Camps' },
@@ -41,6 +75,7 @@ export default function Header() {
   const isEnglish = isEn(pathname);
   const [open, setOpen] = useState(false);
   const t = (item) => (isEnglish ? item.en : item.label);
+  const to = (item) => ((isEnglish && item.hrefEn) || item.href);
 
   // Меню закривається при переході — інакше висить над новою сторінкою.
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -64,7 +99,7 @@ export default function Header() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link href="/" className="site-header-logo" onClick={track('logo')}>
+        <Link href={isEnglish ? '/en' : '/'} className="site-header-logo" onClick={track('logo')}>
           <span aria-hidden="true">🧡</span> dityam.com.ua
         </Link>
 
@@ -72,7 +107,7 @@ export default function Header() {
           {NAV.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={to(item)}
               className={`site-header-link${item.match(pathname) ? ' active' : ''}`}
               onClick={track(item.label)}
             >
@@ -81,7 +116,7 @@ export default function Header() {
           ))}
         </nav>
 
-        <form className="site-header-search" action="/" method="get" role="search">
+        <form className="site-header-search" action={isEnglish ? '/en' : '/'} method="get" role="search">
           <input
             type="search"
             name="q"
@@ -97,7 +132,7 @@ export default function Header() {
             Ведемо чесно: /en — це не перекладений каталог, а англійський
             вступ до проєкту, тож підпис «English», а не «EN-версія сайту». */}
         <Link
-          href={isEnglish ? '/' : '/en'}
+          href={counterpart(pathname, !isEnglish)}
           className="site-header-lang"
           hrefLang={isEnglish ? 'uk' : 'en'}
           lang={isEnglish ? 'uk' : 'en'}
@@ -128,13 +163,13 @@ export default function Header() {
           {NAV.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={to(item)}
               className={`site-header-menu-item${item.match(pathname) ? ' active' : ''}`}
             >
               {t(item)}
             </Link>
           ))}
-          <form className="site-header-menu-search" action="/" method="get" role="search">
+          <form className="site-header-menu-search" action={isEnglish ? '/en' : '/'} method="get" role="search">
             <input type="search" name="q" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
           </form>
           <div className="site-header-menu-sub">{isEnglish ? 'Popular' : 'Популярне'}</div>
@@ -145,7 +180,7 @@ export default function Header() {
           </div>
           {/* На вузькому екрані перемикач у шапці схований — тут його місце. */}
           <Link
-            href={isEnglish ? '/' : '/en'}
+            href={counterpart(pathname, !isEnglish)}
             className="site-header-menu-item"
             hrefLang={isEnglish ? 'uk' : 'en'}
             lang={isEnglish ? 'uk' : 'en'}
