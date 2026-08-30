@@ -75,7 +75,8 @@ async function telegramMembers() {
 const today = new Date().toISOString().slice(0, 10);
 
 const [active, closed, drafts, added, waitlist, profiles, feedback] = await Promise.all([
-  countRows('opportunities', (q) => q.eq('status', 'active')),
+  countRows('opportunities', (q) => q.eq('status', 'active')
+    .is('canonical_slug', null)),
   countRows('opportunities', (q) => q.eq('status', 'closed')),
   countRows('opportunities', (q) => q.eq('status', 'draft')),
   countRows('opportunities', (q) => q.gte('created_at', today)),
@@ -88,7 +89,8 @@ const [active, closed, drafts, added, waitlist, profiles, feedback] = await Prom
 const { data: subs } = await supabase
   .from('digest_subscribers')
   .select('status, billing_period')
-  .eq('status', 'active');
+  .eq('status', 'active')
+    .is('canonical_slug', null);
 const yearly = (subs || []).filter((s) => s.billing_period === 'yearly').length;
 const monthly = (subs || []).length - yearly;
 const mrr = Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));

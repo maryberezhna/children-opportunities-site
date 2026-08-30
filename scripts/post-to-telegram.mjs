@@ -299,6 +299,7 @@ const { data: pool, error } = await supabase
   .from('opportunities')
   .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_end_date')
   .eq('status', 'active')
+  .is('canonical_slug', null)
   .is('telegram_posted_at', null)
   .or(`deadline.is.null,deadline.gte.${minLeadIso}`)
   .order('created_at', { ascending: true })
