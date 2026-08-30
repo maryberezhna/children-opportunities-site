@@ -810,10 +810,10 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       ) : null}
 
       <div className="meta">
-        {formatLabel(item.format) ? (
+        {formatLabel(item.format, lang) ? (
           <div className="meta-row">
             <span className="meta-label">{t.format}</span>
-            <span className="meta-val">{formatLabel(item.format)}</span>
+            <span className="meta-val">{formatLabel(item.format, lang)}</span>
           </div>
         ) : null}
         {/* Місто — перше, що питає людина про подію: «а це де?». Досі картка

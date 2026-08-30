@@ -13,7 +13,7 @@ import { supabase, publicOpportunities } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
-  NEED_LABELS_EN, ANNUAL_TYPES, cityLabel,
+  NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
 } from '@/lib/labels';
 import OutcomeForm from './[slug]/OutcomeForm';
 import Details from './[slug]/Details';
@@ -528,10 +528,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           ) : null}
 
           <dl className="opportunity-meta">
-            {item.format && (
+            {formatLabel(item.format, lang) && (
               <>
                 <dt>{t.format}</dt>
-                <dd>{item.format}</dd>
+                <dd>{formatLabel(item.format, lang)}</dd>
               </>
             )}
             {(item.cities || []).length > 0 && (
