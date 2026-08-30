@@ -5,6 +5,11 @@ import { usePathname } from 'next/navigation';
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
 
+// Ідентифікатор Google Ads (AW-…). Живе в env, бо кампанія може
+// зупинитись або змінитись, а перезбирати сайт заради цього не хочеться.
+// Порожній — і тег просто не вантажиться: GA4 працює як і працював.
+const ADS_ID = process.env.NEXT_PUBLIC_GOOGLE_ADS_ID || '';
+
 // Внутрішні маршрути, які не мають потрапляти в статистику. Модерація давала
 // ~16 переглядів на місяць — це власна робота, а не аудиторія, і вона псувала
 // і кількість сторінок, і показники залученості.
@@ -26,6 +31,7 @@ export function Analytics() {
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${GA_ID}');
+          ${ADS_ID ? `gtag('config', '${ADS_ID}');` : ''}
         `}
       </Script>
       {HOTJAR_ID ? (
