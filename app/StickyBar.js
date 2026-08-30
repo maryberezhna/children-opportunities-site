@@ -1,8 +1,7 @@
 'use client';
 import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
+import { TELEGRAM_URL, INSTAGRAM_URL } from '@/lib/social';
 
-const INSTAGRAM_URL = 'https://www.instagram.com/dityam.com.ua';
-const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
 export default function StickyBar() {

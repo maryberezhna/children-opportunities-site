@@ -310,6 +310,56 @@
 .details-list li { margin-bottom: 6px; }
 .opportunity-details strong { color: var(--ink); font-weight: 500; }
 
+/* ---- Постійний блок Telegram ---- */
+/* Стоїть під описом можливості: людина щойно дочитала й ухвалює рішення —
+   це найкращий момент попросити лишитись. На відміну від підказки біля
+   кнопки, блок нікуди не зникає. */
+.tg-block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin: 28px 0 0;
+  padding: 20px 22px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+}
+
+.tg-block-text { min-width: 0; flex: 1 1 260px; }
+
+.tg-block-title {
+  margin: 0 0 6px;
+  font-size: 18px;
+  line-height: 1.3;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.tg-block-desc {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+/* Колір, ховер, радіус і фокус — у спільному .tg-cta (subscribe-popup.css).
+   Тут лишається тільки те, чим блокова кнопка відрізняється від підказки. */
+.tg-block-cta {
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 12px 20px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: background 0.2s;
+}
+
+@media (max-width: 640px) {
+  .tg-block { padding: 18px; }
+  .tg-block-cta { width: 100%; justify-content: center; }
+}
+
 /* Вторинна кнопка поряд із головною CTA.
    Клас .cal-btn стоїть у розмітці двох сторінок — «Додати в календар» на
    сторінці можливості й «How we verify data» на /en — але в CSS його не було

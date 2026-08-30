@@ -6,6 +6,7 @@ import SuggestBlock from './SuggestBlock';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES, isEvent, dateLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
+import { trackOpportunityClick } from '@/lib/track';
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -661,14 +662,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     return `${item.age_from}-${item.age_to} років`;
   };
 
-  const handleLinkClick = (title) => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'opportunity_click', {
-        event_category: 'engagement',
-        event_label: title,
-      });
-    }
-  };
+  const handleLinkClick = (title) => trackOpportunityClick(title, 'list');
 
   const deadlineChip = (item) => {
     const days = daysUntilDeadline(item.deadline);

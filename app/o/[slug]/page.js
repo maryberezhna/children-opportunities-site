@@ -5,6 +5,9 @@ import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
 import OutcomeForm from './OutcomeForm';
 import Details from './Details';
+import OutboundCta from './OutboundCta';
+import SubscribePopup from '../../SubscribePopup';
+import TelegramSubscribeBlock from '../../TelegramSubscribeBlock';
 
 
 const NEED_LABELS = {
@@ -429,14 +432,7 @@ export default async function OpportunityPage({ params }) {
 
           <div className="opportunity-actions">
             {item.source_url && (
-              <a
-                href={item.source_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="opportunity-cta"
-              >
-                Перейти до офіційного сайту ↗
-              </a>
+              <OutboundCta href={item.source_url} title={item.title} />
             )}
             {item.deadline && (
               <Link href={addToCalendarPageUrl(item.slug).replace('https://dityam.com.ua', '')} className="cal-btn">
@@ -447,6 +443,8 @@ export default async function OpportunityPage({ params }) {
         </article>
 
         <Details text={item.details} />
+
+        <TelegramSubscribeBlock place="detail_page" />
 
         <OutcomeForm opportunityId={item.id} title={item.title} />
 
@@ -494,6 +492,12 @@ export default async function OpportunityPage({ params }) {
           </section>
         )}
       </div>
+
+      {/* 53% сесій приземляються одразу на сторінку можливості (285 із 421
+          органічних за місяць) — і донедавна жодна з них не бачила пропозиції
+          підписатись: підказка стояла тільки на головній, тематичних і
+          міських сторінках. */}
+      <SubscribePopup />
     </>
   );
 }
