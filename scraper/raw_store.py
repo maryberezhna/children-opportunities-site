@@ -20,6 +20,20 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 5
 
 
+def _clean(value):
+    """Прибирає символи, яких Postgres не приймає в text.
+
+    Нульовий байт трапляється в сирому HTML — і вставка падає цілком:
+    «22P05: \u0000 cannot be converted to text». Знахідка при цьому просто
+    зникала (30.08 так загубився «Smile Fest»), причому мовчки: помилка
+    писалась у лог, а скрапер рахував себе успішним. Чистимо вміст, а не
+    відкидаємо запис — текст від цього не страждає, бо NUL там і так сміття.
+    """
+    if not isinstance(value, str):
+        return value
+    return value.replace("\x00", "")
+
+
 def raw_hash(source_url: str, raw_text: str) -> str:
     return hashlib.sha256(f"{source_url}|{raw_text}".encode()).hexdigest()[:32]
 
@@ -29,15 +43,15 @@ def store_raw_items(client, source_name: str, raw_items: list[dict]) -> int:
     (раніше не бачених) — це і є сигнал «джерело змінилось» для реєстру."""
     new_count = 0
     for raw in raw_items:
-        text = (raw.get("raw_text") or "").strip()
-        url = (raw.get("source_url") or "").strip()
+        text = _clean(raw.get("raw_text") or "").strip()
+        url = _clean(raw.get("source_url") or "").strip()
         if not text:
             continue
         row = {
-            "source_name": raw.get("source", source_name),
+            "source_name": _clean(raw.get("source", source_name)),
             "source_url": url or None,
             "canonical_url": canonical_url(url),
-            "raw_title": raw.get("raw_title"),
+            "raw_title": _clean(raw.get("raw_title")),
             "raw_text": text,
             "content_hash": raw_hash(url, text),
         }
