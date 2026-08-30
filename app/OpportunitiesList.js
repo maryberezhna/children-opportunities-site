@@ -3,10 +3,10 @@ import { Fragment, useState, useMemo, useEffect, useLayoutEffect, useRef } from 
 import Link from 'next/link';
 import PlusSection from './PlusSection';
 import SuggestBlock from './SuggestBlock';
-import { OPPORTUNITY_CLICK_EVENT } from './SubscribePopup';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
 import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES, isEvent, dateLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
+import { trackOpportunityClick } from '@/lib/track';
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -662,20 +662,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     return `${item.age_from}-${item.age_to} років`;
   };
 
-  const handleLinkClick = (title) => {
-    if (typeof window === 'undefined') return;
-    if (window.gtag) {
-      window.gtag('event', 'opportunity_click', {
-        event_category: 'engagement',
-        event_label: title,
-      });
-    }
-    // Момент цінності: людина знайшла потрібне й іде до організатора. Підказка
-    // про Telegram чекає на цю подію й покаже себе, коли людина повернеться.
-    window.dispatchEvent(new CustomEvent(OPPORTUNITY_CLICK_EVENT, {
-      detail: { title },
-    }));
-  };
+  const handleLinkClick = (title) => trackOpportunityClick(title, 'list');
 
   const deadlineChip = (item) => {
     const days = daysUntilDeadline(item.deadline);

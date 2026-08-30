@@ -344,26 +344,15 @@
   color: var(--ink-muted);
 }
 
+/* Колір, ховер, радіус і фокус — у спільному .tg-cta (subscribe-popup.css).
+   Тут лишається тільки те, чим блокова кнопка відрізняється від підказки. */
 .tg-block-cta {
   flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
   gap: 8px;
   padding: 12px 20px;
-  background: #229ed9;
-  color: #fff;
-  border-radius: 999px;
-  text-decoration: none;
   font-weight: 600;
   font-size: 15px;
   transition: background 0.2s;
-}
-
-.tg-block-cta:hover { background: #1b85b5; }
-
-.tg-block-cta:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
 }
 
 @media (max-width: 640px) {

@@ -262,11 +262,13 @@
   margin-top: 2px;
 }
 
-.tg-callout-cta {
-  flex-shrink: 0;
-  font-size: 13.5px;
-  font-weight: 500;
-  padding: 8px 15px;
+/* Спільна основа для обох кнопок Telegram — підказки біля кнопки й постійного
+   блоку на сторінці можливості. Раніше синій колір, ховер, радіус і фокус
+   стояли копіями у двох таблицях стилів: перефарбувати бренд чи полагодити
+   контраст довелося б двічі, і кнопки розійшлися б із першою ж правкою. */
+.tg-cta {
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
   background: #229ed9;
   color: #fff;
@@ -274,7 +276,20 @@
   white-space: nowrap;
 }
 
-.tg-callout-cta:hover { background: #1b85b5; }
+.tg-cta:hover { background: #1b85b5; }
+
+.tg-cta:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Розмір під підказку: вона вузька й ділить рядок із текстом та хрестиком. */
+.tg-callout-cta {
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 500;
+  padding: 8px 15px;
+}
 
 .tg-callout-close {
   flex-shrink: 0;
@@ -291,7 +306,6 @@
 
 .tg-callout-close:hover { background: var(--bg); color: var(--ink); }
 
-.tg-callout-cta:focus-visible,
 .tg-callout-close:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -311,7 +325,9 @@
   .tg-callout-text strong { font-size: 13.5px; white-space: nowrap; }
   .tg-callout-text span { display: none; }
   .tg-callout-cta { padding: 7px 12px; font-size: 12.5px; }
-  /* Хрестик на телефоні прибираємо: підказка й так зникає за 10 секунд, а
-     34 зайвих пікселі — це різниця між одним рядком і двома. */
-  .tg-callout-close { display: none; }
+  /* Хрестик на телефоні лишається, хоч місця й обмаль. Раніше його ховали з
+     розрахунку «підказка й так зникає за 10 секунд» — але зникнення більше не
+     глушить сесію, тож без хрестика підказку на телефоні не спекатись ніяк:
+     Esc там немає. Тому кнопка вужча, а не відсутня. */
+  .tg-callout-close { width: 20px; height: 20px; font-size: 11px; }
 }

@@ -1,7 +1,6 @@
 'use client';
 import { trackConversion } from '@/lib/track';
-
-const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
+import { TELEGRAM_URL } from '@/lib/social';
 
 /**
  * Постійний блок підписки — на відміну від підказки біля кнопки, він нікуди
@@ -30,7 +29,7 @@ export default function TelegramSubscribeBlock({ place = 'detail_page' }) {
         href={TELEGRAM_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="tg-block-cta"
+        className="tg-cta tg-block-cta"
         onClick={handleClick}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

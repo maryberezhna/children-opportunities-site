@@ -1,7 +1,6 @@
 'use client';
 import { trackConversion } from '@/lib/track';
-
-const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
+import { TELEGRAM_URL } from '@/lib/social';
 
 export default function TelegramFAB() {
   const handleClick = () => {
