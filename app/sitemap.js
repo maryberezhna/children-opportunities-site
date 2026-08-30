@@ -82,7 +82,13 @@ export default async function sitemap() {
     ];
   });
 
-  const staticPages = bilingualPages
+  // Календар дедлайнів поки лише українською, тож без alternates: обіцяти
+  // Google англійську версію, якої немає, — це 404 у Search Console.
+  const monolingual = [
+    { url: `${SITE_URL}/dedlainy`, changeFrequency: 'daily', priority: 0.9 },
+  ];
+
+  const staticPages = [...bilingualPages, ...monolingual]
     .map((entry) => ({ ...entry, lastModified: new Date() }));
 
   const cityPages = Object.keys(CITY_META).flatMap((slug) => {
