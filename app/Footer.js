@@ -17,33 +17,110 @@ async function getProof() {
   }
 }
 
-export default async function Footer() {
+// Футер двомовний, бо /en його не мала зовсім: англійська сторінка просто
+// обривалась після останнього абзацу — ні навігації, ні контактів, ні цифр,
+// ні юридичних сторінок. Дублювати компонент не можна: у ньому живі цифри й
+// два десятки посилань, і копія розійшлася б із оригіналом за місяць.
+const STRINGS = {
+  uk: {
+    write: 'Написати',
+    writeAria: 'Написати нам',
+    writeSubject: 'Зауваження%20до%20dityam.com.ua',
+    subscribe: 'Підписатись',
+    subscribeAria: 'Підписатись на розсилку',
+    plus: 'Dityam+ early list',
+    tag: 'Можливості для кожної дитини',
+    about: 'Всі можливості для українських дітей 0–18 років — в одному місці. Безкоштовно, без реклами.',
+    proofOpps: 'перевірених можливостей',
+    proofSources: 'джерел · оновлюється щодня',
+    proofLinks: 'лінки перевіряються щоночі ✓',
+    catalogue: 'Каталог',
+    allOpps: 'Всі можливості',
+    allCategories: 'Всі категорії',
+    parents: 'Батькам',
+    plusLink: 'Dityam+ — персональна добірка',
+    telegram: 'Telegram-канал',
+    suggest: 'Запропонувати можливість',
+    suggestSubject: 'Додати%20можливість%20на%20dityam.com.ua',
+    verify: 'Як ми перевіряємо дані',
+    project: 'Проєкт',
+    aboutUs: 'Про нас',
+    press: 'Для преси',
+    support: 'Підтримати проєкт',
+    donate: 'Донат на monobank',
+    contacts: 'Написати нам · контакти',
+    privacy: 'Конфіденційність',
+    terms: 'Оферта · Повернення',
+    copy: '© 2026 dityam.com.ua · Зроблено з любов’ю в Україні 🇺🇦',
+  },
+  en: {
+    write: 'Write to us',
+    writeAria: 'Write to us',
+    writeSubject: 'Feedback%20on%20dityam.com.ua',
+    subscribe: 'Subscribe',
+    subscribeAria: 'Subscribe to the newsletter',
+    plus: 'Dityam+ early list',
+    tag: 'Opportunities for every child',
+    about: 'Every opportunity for Ukrainian children aged 0–18 in one place. Free, no ads.',
+    proofOpps: 'verified opportunities',
+    proofSources: 'sources · updated daily',
+    proofLinks: 'links checked nightly ✓',
+    catalogue: 'Catalogue',
+    allOpps: 'All opportunities',
+    allCategories: 'All categories',
+    parents: 'For parents',
+    plusLink: 'Dityam+ — a personal selection',
+    telegram: 'Telegram channel',
+    suggest: 'Suggest an opportunity',
+    suggestSubject: 'Add%20an%20opportunity%20to%20dityam.com.ua',
+    verify: 'How we verify data',
+    project: 'Project',
+    aboutUs: 'About us',
+    press: 'For press',
+    support: 'Support the project',
+    donate: 'Donate via monobank',
+    contacts: 'Contact us',
+    privacy: 'Privacy',
+    terms: 'Terms · Refunds',
+    copy: '© 2026 dityam.com.ua · Made with love in Ukraine 🇺🇦',
+  },
+};
+
+// Підбірки ведуть на українські сторінки, але підпис у списку має читатись:
+// колонка з незрозумілих слів на англійській сторінці — та сама поламаність,
+// що й порожня колонка в героєві. Підпис беремо з lib/topics.js, де він
+// лежить поруч з українським: власна копія списку тут уже одного разу
+// розійшлася з оригіналом і в англійський футер протекли «Конкурси».
+export default async function Footer({ lang = 'uk' }) {
   const { active: activeCount, sources: sourceCount } = await getProof();
+  const t = STRINGS[lang] || STRINGS.uk;
+  const topicLabel = (item) =>
+    (lang === 'en' && item.labelEn) || item.label;
 
   return (
-    <footer className="site-footer">
+    <footer className="site-footer" lang={lang}>
       <div className="footer-actions">
         <a
-          href="mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua"
+          href={`mailto:maryberezhna@gmail.com?subject=${t.writeSubject}`}
           className="footer-action-btn footer-action-write"
-          aria-label="Написати нам"
+          aria-label={t.writeAria}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
             <polyline points="22,6 12,13 2,6"></polyline>
           </svg>
-          <span>Написати</span>
+          <span>{t.write}</span>
         </a>
 
         <SubscribeButton
           className="footer-action-btn footer-action-subscribe"
-          ariaLabel="Підписатись на розсилку"
+          ariaLabel={t.subscribeAria}
           source="footer"
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span>Підписатись</span>
+          <span>{t.subscribe}</span>
         </SubscribeButton>
 
         <a
@@ -67,7 +144,7 @@ export default async function Footer() {
           aria-label="Dityam+ early list"
         >
           <span className="footer-action-heart">🚀</span>
-          <span>Dityam+ early list</span>
+          <span>{t.plus}</span>
         </Link>
       </div>
 
@@ -79,76 +156,71 @@ export default async function Footer() {
               <div className="footer-brand-name">
                 <span>dityam.com.ua</span>
               </div>
-              <div className="footer-brand-tag">Можливості для кожної дитини</div>
+              <div className="footer-brand-tag">{t.tag}</div>
             </div>
           </div>
-          <p className="footer-about">
-            Всі можливості для українських дітей 0–18 років — в одному місці.
-            Безкоштовно, без реклами.
-          </p>
+          <p className="footer-about">{t.about}</p>
           <div className="footer-proof">
-            <span><b>{activeCount ?? FALLBACK.opportunities}</b> перевірених можливостей</span>
-            <span><b>{sourceCount ?? FALLBACK.sources}</b> джерел · оновлюється щодня</span>
-            <span>лінки перевіряються щоночі ✓</span>
+            <span><b>{activeCount ?? FALLBACK.opportunities}</b> {t.proofOpps}</span>
+            <span><b>{sourceCount ?? FALLBACK.sources}</b> {t.proofSources}</span>
+            <span>{t.proofLinks}</span>
           </div>
         </div>
 
         <div className="footer-section">
-          <div className="footer-title">Каталог</div>
-          <Link href="/" className="footer-link"><span>Всі можливості</span></Link>
-          <Link href="/kategorii" className="footer-link"><span>Всі категорії</span></Link>
-          {TOPIC_NAV.map((t) => (
-            <Link key={t.slug} href={`/${t.slug}`} className="footer-link">
-              <span>{t.label}</span>
+          <div className="footer-title">{t.catalogue}</div>
+          <Link href="/" className="footer-link"><span>{t.allOpps}</span></Link>
+          <Link href="/kategorii" className="footer-link"><span>{t.allCategories}</span></Link>
+          {TOPIC_NAV.map((item) => (
+            <Link key={item.slug} href={`/${item.slug}`} className="footer-link">
+              <span>{topicLabel(item)}</span>
             </Link>
           ))}
         </div>
 
         <div className="footer-section">
-          <div className="footer-title">Батькам</div>
-          <Link href="/pidbirka" className="footer-link"><span>Dityam+ — персональна добірка</span></Link>
+          <div className="footer-title">{t.parents}</div>
+          <Link href="/pidbirka" className="footer-link"><span>{t.plusLink}</span></Link>
           <a
             href="https://t.me/dityam_com_ua"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link"
           >
-            <span>Telegram-канал</span>
+            <span>{t.telegram}</span>
           </a>
           <a
-            href="mailto:maryberezhna@gmail.com?subject=Додати%20можливість%20на%20dityam.com.ua"
+            href={`mailto:maryberezhna@gmail.com?subject=${t.suggestSubject}`}
             className="footer-link"
           >
-            <span>Запропонувати можливість</span>
+            <span>{t.suggest}</span>
           </a>
           <Link href="/yak-my-pereviriaiemo" className="footer-link">
-            <span>Як ми перевіряємо дані</span>
+            <span>{t.verify}</span>
           </Link>
         </div>
 
         <div className="footer-section">
-          <div className="footer-title">Проєкт</div>
-          <Link href="/about" className="footer-link"><span>Про нас</span></Link>
-          <Link href="/press" className="footer-link"><span>Для преси</span></Link>
-          <Link href="/support" className="footer-link"><span>Підтримати проєкт</span></Link>
+          <div className="footer-title">{t.project}</div>
+          <Link href="/about" className="footer-link"><span>{t.aboutUs}</span></Link>
+          <Link href="/press" className="footer-link"><span>{t.press}</span></Link>
+          <Link href="/support" className="footer-link"><span>{t.support}</span></Link>
           <a
             href="https://send.monobank.ua/jar/F72fDrV2c"
             target="_blank"
             rel="noopener noreferrer"
             className="footer-link"
           >
-            <span>Донат на monobank</span>
+            <span>{t.donate}</span>
           </a>
-          <Link href="/contacts" className="footer-link"><span>Написати нам · контакти</span></Link>
-          <Link href="/privacy" className="footer-link"><span>Конфіденційність</span></Link>
-          <Link href="/terms" className="footer-link"><span>Оферта · Повернення</span></Link>
+          <Link href="/contacts" className="footer-link"><span>{t.contacts}</span></Link>
+          <Link href="/privacy" className="footer-link"><span>{t.privacy}</span></Link>
+          <Link href="/terms" className="footer-link"><span>{t.terms}</span></Link>
         </div>
       </div>
 
       <div className="footer-bottom">
-        <div className="footer-copy">
-          © 2026 dityam.com.ua · Зроблено з любов&apos;ю в Україні 🇺🇦
-        </div>
+        <div className="footer-copy">{t.copy}</div>
         <div className="footer-social">
           <a href="https://t.me/dityam_com_ua" target="_blank" rel="noopener noreferrer" className="footer-social-link">Telegram</a>
           <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="footer-social-link">Instagram</a>
