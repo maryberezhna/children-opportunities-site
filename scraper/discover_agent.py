@@ -34,6 +34,8 @@ from datetime import date, datetime, timezone
 import httpx
 from slugify import slugify
 
+from urllib.parse import urlparse
+
 from canonical import canonical_url
 from db import get_client, record_crawl_result
 from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
@@ -197,6 +199,22 @@ def _clamp_age(v, default):
     return max(0, min(18, n))
 
 
+def publisher(url: str) -> str:
+    """Хто опублікував — за адресою. Це і є джерело в тому сенсі, у якому його
+    читає людина на сайті.
+
+    Раніше в source лежав пошуковий запит агента («🔎 Агент: гончарство»).
+    Він потрібен модератору, але це не організація: 50 опублікованих записів
+    показували відвідувачам внутрішній запит замість того, хто це проводить.
+    Слід агента тепер живе в admin_comment, який публічно не видно.
+    """
+    try:
+        host = (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+    return host[4:] if host.startswith("www.") else host
+
+
 def to_record(c: dict, kw: str, region: dict) -> dict | None:
     title = (c.get("title") or "").strip()
     url = (c.get("url") or "").strip()
@@ -211,9 +229,11 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "opportunity_type": c.get("opportunity_type"),
         "cost_type": c.get("cost_type"),
         "deadline": c.get("deadline"),
-        # Країна в source — щоб на /admin одразу було видно, звідки кандидат
-        "source": f"🔎 Агент: {kw}" if region["name"] == "Україна"
-                  else f"🔎 Агент: {kw} · {region['name']}",
+        # Джерело — той, хто опублікував. Слід агента (запит і країна) іде в
+        # admin_comment: модератору він потрібен, відвідувачу — ні.
+        "source": publisher(url) or "інтернет",
+        "admin_comment": f"🔎 Агент: {kw}" if region["name"] == "Україна"
+                         else f"🔎 Агент: {kw} · {region['name']}",
         "source_url": url,
         "canonical_url": canonical_url(url),
         "status": "draft",

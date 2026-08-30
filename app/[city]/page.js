@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import OpportunitiesList from '../OpportunitiesList';
+import { kyivToday } from '@/lib/dates';
 import StickyBar from '../StickyBar';
 import SubscribePopup from '../SubscribePopup';
 import Footer from '../Footer';
@@ -109,7 +110,7 @@ export default async function CityPage({ params }) {
           ))}
         </nav>
 
-        <OpportunitiesList opportunities={opportunities} presetCity={cityName} />
+        <OpportunitiesList opportunities={opportunities} presetCity={cityName} today={kyivToday()} />
         <Footer />
       </div>
 

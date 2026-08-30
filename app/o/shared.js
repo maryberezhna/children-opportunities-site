@@ -11,6 +11,7 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
+import { daysUntil, kyivToday } from '@/lib/dates';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
   NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
@@ -478,6 +479,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
     ],
   };
 
+  const today = kyivToday();
   const needs = (item.child_needs || []).filter((n) => NEEDS[n]);
   // Мова конкретного тексту: доки перекладу для запису немає, показуємо
   // оригінал — і чесно позначаємо його як українську, щоб екранний читач не
@@ -604,7 +606,9 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             </h2>
             <ul className="opportunity-related-list">
               {related.map((r) => {
-                const days = r.deadline ? Math.ceil((new Date(r.deadline) - new Date().setHours(0, 0, 0, 0)) / 86400000) : null;
+                // Той самий календарний розрахунок, що в каталозі: різниця
+                // від часового поясу сервера не залежить.
+                const days = daysUntil(r.deadline, today);
                 const rNeeds = (r.child_needs || []).filter((n) => NEEDS[n]);
                 const rSummary = field(r, 'summary', lang);
                 return (
