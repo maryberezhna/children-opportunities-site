@@ -3,7 +3,11 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Повернення коштів',
   description: 'Умови та порядок повернення коштів і скасування підписки Dityam+.',
-  alternates: { canonical: 'https://dityam.com.ua/refund' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/refund',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/refund', en: 'https://dityam.com.ua/en/refund' },
+  },
   robots: { index: true, follow: true },
 };
 

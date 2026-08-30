@@ -3,7 +3,7 @@ import {
   supabase, publicOpportunities, CARD_FIELDS_EN,
   countActiveOpportunities, countActiveSources, FALLBACK,
 } from '@/lib/supabase';
-import { TOPIC_NAV } from '@/lib/topics';
+import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import OpportunitiesList from '../OpportunitiesList';
 import Footer from '../Footer';
 
@@ -132,7 +132,7 @@ export default async function EnglishPage() {
         <nav className="topic-chips" aria-label="Collections by topic">
           <span className="topic-chips-label">Collections:</span>
           {TOPIC_NAV.map((t) => (
-            <Link key={t.slug} href={`/${t.slug}`} className="topic-chip">
+            <Link key={t.slug} href={topicPath(t, 'en')} className="topic-chip">
               {t.labelEn || t.label}
             </Link>
           ))}

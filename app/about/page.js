@@ -3,7 +3,11 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Про проєкт — як народився dityam.com.ua',
   description: 'Платформа можливостей для українських дітей 0-18 років — в Україні та за кордоном. Безкоштовно, без реклами, з ентузіазму.',
-  alternates: { canonical: 'https://dityam.com.ua/about' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/about',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/about', en: 'https://dityam.com.ua/en/about' },
+  },
 };
 
 export default function AboutPage() {

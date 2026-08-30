@@ -3,7 +3,11 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Політика конфіденційності',
   description: 'Як dityam.com.ua обробляє ваші дані: аналітика, підписка, файли cookie, права користувача.',
-  alternates: { canonical: 'https://dityam.com.ua/privacy' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/privacy',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/privacy', en: 'https://dityam.com.ua/en/privacy' },
+  },
   robots: { index: true, follow: true },
 };
 

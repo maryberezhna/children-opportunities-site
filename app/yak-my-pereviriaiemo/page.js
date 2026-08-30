@@ -10,7 +10,11 @@ export const metadata = {
   title: 'Як ми перевіряємо дані — Dityam',
   description:
     'Як працює каталог Dityam: 200+ джерел, щоденні оновлення, автоматична перевірка кожного лінка щоночі, детекція закритих наборів і ручна модерація сумнівного. Чесно про те, що стоїть за словом «перевірено».',
-  alternates: { canonical: `${SITE_URL}/yak-my-pereviriaiemo` },
+  alternates: {
+    canonical: 'https://dityam.com.ua/yak-my-pereviriaiemo',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/yak-my-pereviriaiemo', en: 'https://dityam.com.ua/en/how-we-verify' },
+  },
 };
 
 async function getStats() {

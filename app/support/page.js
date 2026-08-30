@@ -8,7 +8,11 @@ export const metadata = {
   title: 'Підтримати проєкт — dityam.com.ua',
   description:
     'Підтримайте безкоштовну платформу можливостей для українських дітей 0–18 років. Донат через PayPal або monobank — допомагає додавати нові програми та розвивати сайт.',
-  alternates: { canonical: 'https://dityam.com.ua/support' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/support',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/support', en: 'https://dityam.com.ua/en/support' },
+  },
   openGraph: {
     type: 'website',
     url: 'https://dityam.com.ua/support',

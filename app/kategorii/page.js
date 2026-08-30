@@ -12,7 +12,14 @@ export const metadata = {
   title: 'Категорії можливостей для дітей — курси, табори, стипендії, конкурси',
   description:
     'Всі категорії можливостей для дітей 0–18 в одному місці: освіта, табори й обміни, стипендії та гранти, міжнародні програми, конкурси, волонтерство, кар’єра. Живі лічильники, оновлюється щодня.',
-  alternates: { canonical: `${SITE_URL}/kategorii` },
+  alternates: {
+    canonical: `${SITE_URL}/kategorii`,
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: {
+      uk: `${SITE_URL}/kategorii`,
+      en: `${SITE_URL}/en/categories`,
+    },
+  },
 };
 
 async function getActive() {
