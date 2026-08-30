@@ -44,16 +44,44 @@ export default async function sitemap() {
     ];
   });
 
+  // Сторінки, що мають англійський двійник: обидві версії з hreflang, щоб
+  // Google склеїв їх як одну сторінку двома мовами, а не як дублі.
+  const BILINGUAL = [
+    { uk: '', en: '/en', changeFrequency: 'daily', priority: 1.0, priorityEn: 0.9 },
+    { uk: '/about', en: '/en/about', changeFrequency: 'monthly', priority: 0.5 },
+    { uk: '/yak-my-pereviriaiemo', en: '/en/how-we-verify', changeFrequency: 'monthly', priority: 0.5 },
+    { uk: '/contacts', en: '/en/contacts', changeFrequency: 'monthly', priority: 0.4 },
+    { uk: '/support', en: '/en/support', changeFrequency: 'monthly', priority: 0.4 },
+    { uk: '/privacy', en: '/en/privacy', changeFrequency: 'yearly', priority: 0.2 },
+    { uk: '/terms', en: '/en/terms', changeFrequency: 'yearly', priority: 0.2 },
+  ];
+
+  const bilingualPages = BILINGUAL.flatMap((entry) => {
+    const languages = {
+      uk: `${SITE_URL}${entry.uk}`,
+      en: `${SITE_URL}${entry.en}`,
+    };
+    return [
+      {
+        url: languages.uk,
+        changeFrequency: entry.changeFrequency,
+        priority: entry.priority,
+        alternates: { languages },
+      },
+      {
+        url: languages.en,
+        changeFrequency: entry.changeFrequency,
+        // Трохи нижчий за український: оригінал лишається основною версією.
+        priority: entry.priorityEn ?? Math.max(0.1, entry.priority - 0.1),
+        alternates: { languages },
+      },
+    ];
+  });
+
   const staticPages = [
-    { url: SITE_URL, changeFrequency: 'daily', priority: 1.0 },
+    ...bilingualPages,
     { url: `${SITE_URL}/kategorii`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/en`, changeFrequency: 'daily', priority: 0.9 },
-    { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${SITE_URL}/yak-my-pereviriaiemo`, changeFrequency: 'monthly', priority: 0.5 },
-    { url: `${SITE_URL}/contacts`, changeFrequency: 'monthly', priority: 0.4 },
     { url: `${SITE_URL}/press`, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${SITE_URL}/support`, changeFrequency: 'monthly', priority: 0.4 },
-    { url: `${SITE_URL}/privacy`, changeFrequency: 'yearly', priority: 0.2 },
   ].map((entry) => ({ ...entry, lastModified: new Date() }));
 
   const cityPages = Object.keys(CITY_META).map((slug) => ({

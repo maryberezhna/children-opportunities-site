@@ -147,11 +147,15 @@ export default async function EnglishPage() {
           lang="en"
         />
 
+        {/* Чесно про походження текстів: переклад машинний, і сказати про це
+            треба самим, а не чекати, поки людина спіткнеться об дивну фразу.
+            Оригінал завжди за один клік — на українській версії сторінки. */}
         <p className="en-origin-note">
-          Listings are translated automatically and checked against the
-          original. Links lead to the organisers’ own pages, which are usually
-          in Ukrainian — your browser translates those in one click:
-          right-click the page in Chrome or Edge and choose{' '}
+          Listing texts are translated automatically from the Ukrainian
+          originals; the original is always one click away on the Ukrainian
+          version of any page. Links lead to the organisers’ own sites, which
+          are usually in Ukrainian — your browser translates those in one
+          click: right-click the page in Chrome or Edge and choose{' '}
           <i>Translate to English</i>, or press the translate icon in the
           address bar in Safari and Firefox.
         </p>
