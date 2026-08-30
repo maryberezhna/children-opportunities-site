@@ -57,8 +57,15 @@ export function middleware(request) {
   if (chosen !== 'en') {
     if (BOTS.test(request.headers.get('user-agent') || '')) return NextResponse.next();
 
+    // Заголовка мови немає взагалі — це не браузер. Так ходять монітори,
+    // health-check'и й прев'ю-боти: uptime-перевірка отримувала 307 і щогодини
+    // повідомляла, що сайт лежить. Живий відвідувач Accept-Language надсилає
+    // завжди, тож на людей це правило не поширюється.
+    const accept = request.headers.get('accept-language');
+    if (!accept) return NextResponse.next();
+
     // Читає українською — лишається на українській, хоч би де він був.
-    if (readsUkrainian(acceptLanguageTags(request.headers.get('accept-language')))) {
+    if (readsUkrainian(acceptLanguageTags(accept))) {
       return NextResponse.next();
     }
 
