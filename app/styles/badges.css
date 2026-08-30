@@ -207,3 +207,10 @@
 .stat-num { font-size: 28px; font-weight: 500; color: var(--ink); }
 .stat-label { font-size: 13px; color: var(--ink-muted); }
 
+
+/* Чип події: спокійний синій замість тривожного помаранчевого дедлайну —
+   подія не закривається, вона настає, і поспішати з подачею нікуди. */
+.chip-event {
+  background: #eaf2fb;
+  color: #1f4f7a;
+}

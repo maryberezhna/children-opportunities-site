@@ -4,7 +4,7 @@ import Link from 'next/link';
 import PlusSection from './PlusSection';
 import SuggestBlock from './SuggestBlock';
 import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
-import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES } from '@/lib/labels';
+import { TYPE_LABELS, AID_TYPE_LABELS, ANNUAL_TYPES, isEvent, dateLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 
 const NEED_LABELS = {
@@ -679,6 +679,15 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     if (days < 0) {
       return annual ? <span className="chip chip-annual">🔄 відкривається щороку</span> : null;
     }
+    // Для події лічильник означає інше: не «лишилось стільки на подачу», а
+    // «відбудеться через стільки». «⏰ 3 днів» на фестивалі читається як
+    // пекучий дедлайн, хоча подавати нікуди не треба.
+    if (isEvent(item)) {
+      if (days === 0) return <span className="chip chip-event">📅 сьогодні</span>;
+      if (days === 1) return <span className="chip chip-event">📅 завтра</span>;
+      if (days <= 30) return <span className="chip chip-event">📅 через {days} дн.</span>;
+      return null;
+    }
     if (days === 0) return <span className="chip chip-deadline-urgent">⏰ сьогодні</span>;
     if (days <= 7) return <span className="chip chip-deadline-urgent">⏰ {days} {days === 1 ? 'день' : 'днів'}</span>;
     if (days <= 30) return <span className="chip chip-deadline-soon">⏳ {days} днів</span>;
@@ -708,16 +717,32 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       <p className="card-summary">{item.summary}</p>
 
       <div className="meta">
-        {item.format ? (
+        {formatLabel(item.format) ? (
           <div className="meta-row">
             <span className="meta-label">Формат</span>
-            <span className="meta-val">{item.format}</span>
+            <span className="meta-val">{formatLabel(item.format)}</span>
+          </div>
+        ) : null}
+        {/* Місто — перше, що питає людина про подію: «а це де?». Досі картка
+            цього не показувала взагалі, і «Місце Сили» виглядало як подія
+            невідомо де. */}
+        {(item.cities || []).length ? (
+          <div className="meta-row">
+            <span className="meta-label">Місто</span>
+            <span className="meta-val">{item.cities.slice(0, 2).join(', ')}</span>
           </div>
         ) : null}
         {item.deadline ? (
           <div className="meta-row">
-            <span className="meta-label">Дедлайн</span>
-            <span className="meta-val">{formatDeadline(item.deadline)}</span>
+            {/* Підпис і логіка — з lib/labels, спільні з ботом. Інакше бот
+                пише «Коли», а картка поруч «Дедлайн» про ту саму подію. */}
+            <span className="meta-label">{dateLabel(item)}</span>
+            <span className="meta-val">
+              {isEvent(item) && item.event_end_date
+                && item.event_end_date !== item.deadline
+                ? `${formatDeadline(item.deadline)} — ${formatDeadline(item.event_end_date)}`
+                : formatDeadline(item.deadline)}
+            </span>
           </div>
         ) : null}
         {item.source ? (

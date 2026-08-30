@@ -28,6 +28,8 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { opportunitiesWord } from '../lib/plural.js';
+// Спільне з сайтом визначення події — щоб бот і картка не розходились.
+import { isEvent } from '../lib/labels.js';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -107,19 +109,6 @@ const MIN_LEAD_DAYS = Number(process.env.MIN_LEAD_DAYS || 3);
 const minLead = new Date(today);
 minLead.setDate(today.getDate() + MIN_LEAD_DAYS);
 const minLeadIso = minLead.toISOString().slice(0, 10);
-
-// Типи, де дата в полі deadline — це не «останній день подачі», а день,
-// коли воно відбувається. Для них «Дедлайн» — брехня: подія не закривається,
-// вона просто настає. competition сюди свідомо НЕ входить: у конкурсів дата
-// майже завжди означає останній день подачі роботи.
-const EVENT_TYPES = new Set([
-  'camp', 'festival', 'excursion', 'conference', 'hackathon',
-  'workshop', 'sport_tournament', 'summer_school',
-]);
-
-// Заповнений event_end_date — це вже пряма ознака датованої події, хоч би
-// який був тип: його ставлять саме тим записам, що мають день проведення.
-const isEvent = (r) => EVENT_TYPES.has(r.opportunity_type) || Boolean(r.event_end_date);
 
 // Чи можна цей запис показувати людям. Рівно ті самі два фільтри, що й у
 // публічній вибірці сайту (lib/supabase.js): активний і не дубль.

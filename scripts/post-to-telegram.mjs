@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+// Спільне з сайтом визначення події.
+import { isEvent } from '../lib/labels.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,14 +81,6 @@ function ageLabel(item) {
   if (item.age_from === item.age_to) return `${item.age_from} років`;
   return `${item.age_from}–${item.age_to} років`;
 }
-
-// Типи, де дата в deadline — це день проведення, а не останній день подачі.
-// competition свідомо не входить: у конкурсів це майже завжди дата подачі.
-const EVENT_TYPES = new Set([
-  'camp', 'festival', 'excursion', 'conference', 'hackathon',
-  'workshop', 'sport_tournament', 'summer_school',
-]);
-const isEvent = (item) => EVENT_TYPES.has(item.opportunity_type) || Boolean(item.event_end_date);
 
 // «Коли» для подій, «Дедлайн» для подачі.
 // Діапазон дат події. Коли місяць і рік збігаються, не повторюємо їх двічі:
