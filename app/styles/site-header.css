@@ -201,3 +201,30 @@
 @media (max-width: 640px) {
   .site-header-inner .site-header-cta { display: none; }
 }
+
+/* Перемикач мови. Тон нижчий за навігацію й за CTA: це службова дія, а не
+   розділ сайту — має бути знайденим, коли шукаєш, і не перетягувати увагу,
+   коли не шукаєш. */
+.site-header-lang {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-muted);
+  text-decoration: none;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.site-header-lang:hover,
+.site-header-lang:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+@media (max-width: 900px) {
+  /* На вузькому екрані ховаємо: там і так тісно, а в бургер-меню перемикач
+     додано окремим пунктом. */
+  .site-header-lang { display: none; }
+}

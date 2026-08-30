@@ -9,7 +9,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: 'Dityam — opportunities for Ukrainian children worldwide',
   description:
-    'A free catalogue of 500+ verified opportunities for Ukrainian children aged 0–18 — in Ukraine and abroad: camps, scholarships, olympiads, exchange programs, grants and aid. Updated daily from 200+ sources, every link checked nightly.',
+    'A free catalogue of 400+ verified opportunities for Ukrainian children aged 0–18 — in Ukraine and abroad: camps, scholarships, olympiads, exchange programs, grants and aid. Updated daily from 200+ sources, every link checked nightly.',
   alternates: {
     canonical: `${SITE_URL}/en`,
     languages: { uk: `${SITE_URL}/`, en: `${SITE_URL}/en` },
@@ -67,7 +67,7 @@ export default async function EnglishPage() {
           </p>
           <div className="stats">
             <div className="stat">
-              <span className="stat-num">{active ?? '500+'}</span>
+              <span className="stat-num">{active ?? '400+'}</span>
               <span className="stat-label">verified opportunities</span>
             </div>
             <div className="stat">

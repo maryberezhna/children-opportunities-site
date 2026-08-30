@@ -13,6 +13,8 @@ const NAV = [
   { href: '/contacts', label: 'Написати нам', match: (p) => p.startsWith('/contacts') },
 ];
 
+const isEn = (p) => p.startsWith('/en');
+
 const POPULAR = [
   { href: '/bezkoshtovni-tabory', label: 'Табори' },
   { href: '/bezkoshtovni-hurtky', label: 'Гуртки' },
@@ -25,6 +27,7 @@ const POPULAR = [
 
 export default function Header() {
   const pathname = usePathname() || '/';
+  const isEnglish = isEn(pathname);
   const [open, setOpen] = useState(false);
 
   // Меню закривається при переході — інакше висить над новою сторінкою.
@@ -68,6 +71,22 @@ export default function Header() {
           />
         </form>
 
+        {/* Перемикач мови. Досі його не було зовсім: англійська сторінка
+            існувала, але потрапити на неї можна було лише через одноразовий
+            банер LangSuggest, і тільки з неукраїнським браузером. Українець
+            не знайшов би її ніколи, а з /en не було шляху назад.
+            Ведемо чесно: /en — це не перекладений каталог, а англійський
+            вступ до проєкту, тож підпис «English», а не «EN-версія сайту». */}
+        <Link
+          href={isEnglish ? '/' : '/en'}
+          className="site-header-lang"
+          hrefLang={isEnglish ? 'uk' : 'en'}
+          lang={isEnglish ? 'uk' : 'en'}
+          onClick={track(isEnglish ? 'lang-uk' : 'lang-en')}
+        >
+          {isEnglish ? 'Українською' : 'English'}
+        </Link>
+
         <Link href="/pidbirka" className="site-header-cta" onClick={track('plus')}>
           Dityam+
         </Link>
@@ -103,6 +122,15 @@ export default function Header() {
               <Link key={c.href} href={c.href} className="site-header-chip">{c.label}</Link>
             ))}
           </div>
+          {/* На вузькому екрані перемикач у шапці схований — тут його місце. */}
+          <Link
+            href={isEnglish ? '/' : '/en'}
+            className="site-header-menu-item"
+            hrefLang={isEnglish ? 'uk' : 'en'}
+            lang={isEnglish ? 'uk' : 'en'}
+          >
+            {isEnglish ? '🇺🇦 Українською' : '🇬🇧 English'}
+          </Link>
         </div>
       )}
     </header>
