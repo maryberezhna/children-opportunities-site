@@ -2,12 +2,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { rememberLang } from './Header';
+import { readsUkrainian } from '@/lib/lang';
 
-// Ненав'язлива пропозиція англійської версії для відвідувачів із
-// неукраїнським браузером. Свідомо НЕ авторедірект: значна частина
-// закордонних відвідувачів — українська діаспора з браузером німецькою чи
-// польською, і виривати їх з української версії не можна. Банер закривається
-// назавжди (localStorage).
+// Пропозиція англійської версії для тих, кого не забрав редірект: людина
+// в Україні з неукраїнським браузером. Тих, хто заходить з-за кордону,
+// /middleware.js веде на /en одразу. Банер закривається назавжди
+// (localStorage) — і клік по ньому запамʼятовує вибір мови, щоб редірект
+// та перемикач у шапці не сперечалися між собою.
 const KEY = 'dityam_lang_suggest_dismissed';
 
 export default function LangSuggest() {
@@ -17,10 +19,10 @@ export default function LangSuggest() {
   useEffect(() => {
     try {
       if (localStorage.getItem(KEY)) return;
-      const langs = navigator.languages || [navigator.language || ''];
-      const primary = (langs[0] || '').toLowerCase();
-      // uk/ru — читають українську; решті пропонуємо англійську сторінку.
-      if (primary.startsWith('uk') || primary.startsWith('ru')) return;
+      // Те саме визначення україномовності, що й у середника: інакше він
+      // лишав би людину на українській, а банер тут же пропонував їй
+      // англійську — два різні рішення про одну людину.
+      if (readsUkrainian(navigator.languages || [navigator.language || ''])) return;
       setShow(true);
       if (window.gtag) window.gtag('event', 'lang_suggest_shown');
     } catch {
@@ -43,7 +45,10 @@ export default function LangSuggest() {
       <Link
         href="/en"
         className="lang-suggest-link"
-        onClick={() => { if (window.gtag) window.gtag('event', 'lang_suggest_click'); }}
+        onClick={() => {
+          rememberLang('en');
+          if (window.gtag) window.gtag('event', 'lang_suggest_click');
+        }}
       >
         View in English →
       </Link>

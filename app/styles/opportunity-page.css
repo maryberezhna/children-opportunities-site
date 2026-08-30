@@ -359,3 +359,29 @@
   .tg-block { padding: 18px; }
   .tg-block-cta { width: 100%; justify-content: center; }
 }
+
+/* Вторинна кнопка поряд із головною CTA.
+   Клас .cal-btn стоїть у розмітці двох сторінок — «Додати в календар» на
+   сторінці можливості й «How we verify data» на /en — але в CSS його не було
+   зовсім. Обидві рендерилися голим текстом упритул до чорної кнопки: пара
+   виглядала як кнопка з випадковим підписом збоку. */
+.cal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 15px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+
+.cal-btn:hover {
+  border-color: var(--ink-muted);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}

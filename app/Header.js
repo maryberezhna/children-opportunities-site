@@ -7,28 +7,40 @@ import { usePathname } from 'next/navigation';
 // міста, категорії) живе на хабах і у футері — меню не росте разом із
 // каталогом. Старий StickyHeader (виринав по скролу, без навігації) замінено.
 const NAV = [
-  { href: '/', label: 'Каталог', match: (p) => p === '/' },
-  { href: '/kategorii', label: 'Категорії', match: (p) => p.startsWith('/kategorii') },
-  { href: '/about', label: 'Про проєкт', match: (p) => p.startsWith('/about') || p.startsWith('/press') || p.startsWith('/yak-my-pereviriaiemo') },
-  { href: '/contacts', label: 'Написати нам', match: (p) => p.startsWith('/contacts') },
+  { href: '/', label: 'Каталог', en: 'Catalogue', match: (p) => p === '/' },
+  { href: '/kategorii', label: 'Категорії', en: 'Categories', match: (p) => p.startsWith('/kategorii') },
+  { href: '/about', label: 'Про проєкт', en: 'About', match: (p) => p.startsWith('/about') || p.startsWith('/press') || p.startsWith('/yak-my-pereviriaiemo') },
+  { href: '/contacts', label: 'Написати нам', en: 'Contact', match: (p) => p.startsWith('/contacts') },
 ];
 
 const isEn = (p) => p.startsWith('/en');
 
 const POPULAR = [
-  { href: '/bezkoshtovni-tabory', label: 'Табори' },
-  { href: '/bezkoshtovni-hurtky', label: 'Гуртки' },
-  { href: '/konkursy', label: 'Конкурси' },
-  { href: '/mizhnarodni-olimpiady', label: 'Олімпіади' },
-  { href: '/prohramy-obminu', label: 'Обміни' },
-  { href: '/kyiv', label: 'Київ' },
-  { href: '/lviv', label: 'Львів' },
+  { href: '/bezkoshtovni-tabory', label: 'Табори', en: 'Camps' },
+  { href: '/bezkoshtovni-hurtky', label: 'Гуртки', en: 'Clubs' },
+  { href: '/konkursy', label: 'Конкурси', en: 'Contests' },
+  { href: '/mizhnarodni-olimpiady', label: 'Олімпіади', en: 'Olympiads' },
+  { href: '/prohramy-obminu', label: 'Обміни', en: 'Exchanges' },
+  { href: '/kyiv', label: 'Київ', en: 'Kyiv' },
+  { href: '/lviv', label: 'Львів', en: 'Lviv' },
 ];
+
+// Вибір мови треба памʼятати: середник /middleware.js відправляє відвідувача
+// не з України на /en, і без цієї позначки натиснуте «Українською» відкидало б
+// його назад тим самим редіректом. Рік — щоб вибір пережив сесію.
+export function rememberLang(lang) {
+  try {
+    document.cookie = `dityam_lang=${lang}; path=/; max-age=31536000; samesite=lax`;
+  } catch {
+    /* noop */
+  }
+}
 
 export default function Header() {
   const pathname = usePathname() || '/';
   const isEnglish = isEn(pathname);
   const [open, setOpen] = useState(false);
+  const t = (item) => (isEnglish ? item.en : item.label);
 
   // Меню закривається при переході — інакше висить над новою сторінкою.
   useEffect(() => { setOpen(false); }, [pathname]);
@@ -42,6 +54,13 @@ export default function Header() {
     }
   };
 
+  const switchLang = () => {
+    rememberLang(isEnglish ? 'uk' : 'en');
+    track(isEnglish ? 'lang-uk' : 'lang-en')();
+  };
+
+  const searchPlaceholder = isEnglish ? 'Search opportunities…' : 'Пошук можливостей…';
+
   return (
     <header className="site-header">
       <div className="site-header-inner">
@@ -49,7 +68,7 @@ export default function Header() {
           <span aria-hidden="true">🧡</span> dityam.com.ua
         </Link>
 
-        <nav className="site-header-nav" aria-label="Головна навігація">
+        <nav className="site-header-nav" aria-label={isEnglish ? 'Main navigation' : 'Головна навігація'}>
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -57,7 +76,7 @@ export default function Header() {
               className={`site-header-link${item.match(pathname) ? ' active' : ''}`}
               onClick={track(item.label)}
             >
-              {item.label}
+              {t(item)}
             </Link>
           ))}
         </nav>
@@ -66,8 +85,8 @@ export default function Header() {
           <input
             type="search"
             name="q"
-            placeholder="Пошук можливостей…"
-            aria-label="Пошук можливостей"
+            placeholder={searchPlaceholder}
+            aria-label={searchPlaceholder}
           />
         </form>
 
@@ -82,7 +101,7 @@ export default function Header() {
           className="site-header-lang"
           hrefLang={isEnglish ? 'uk' : 'en'}
           lang={isEnglish ? 'uk' : 'en'}
-          onClick={track(isEnglish ? 'lang-uk' : 'lang-en')}
+          onClick={switchLang}
         >
           {isEnglish ? 'Українською' : 'English'}
         </Link>
@@ -94,7 +113,9 @@ export default function Header() {
         <button
           type="button"
           className={`site-header-burger${open ? ' open' : ''}`}
-          aria-label={open ? 'Закрити меню' : 'Відкрити меню'}
+          aria-label={open
+            ? (isEnglish ? 'Close menu' : 'Закрити меню')
+            : (isEnglish ? 'Open menu' : 'Відкрити меню')}
           aria-expanded={open}
           onClick={() => setOpen(!open)}
         >
@@ -110,16 +131,16 @@ export default function Header() {
               href={item.href}
               className={`site-header-menu-item${item.match(pathname) ? ' active' : ''}`}
             >
-              {item.label}
+              {t(item)}
             </Link>
           ))}
           <form className="site-header-menu-search" action="/" method="get" role="search">
-            <input type="search" name="q" placeholder="Пошук можливостей…" aria-label="Пошук можливостей" />
+            <input type="search" name="q" placeholder={searchPlaceholder} aria-label={searchPlaceholder} />
           </form>
-          <div className="site-header-menu-sub">Популярне</div>
+          <div className="site-header-menu-sub">{isEnglish ? 'Popular' : 'Популярне'}</div>
           <div className="site-header-menu-chips">
             {POPULAR.map((c) => (
-              <Link key={c.href} href={c.href} className="site-header-chip">{c.label}</Link>
+              <Link key={c.href} href={c.href} className="site-header-chip">{t(c)}</Link>
             ))}
           </div>
           {/* На вузькому екрані перемикач у шапці схований — тут його місце. */}
@@ -128,6 +149,7 @@ export default function Header() {
             className="site-header-menu-item"
             hrefLang={isEnglish ? 'uk' : 'en'}
             lang={isEnglish ? 'uk' : 'en'}
+            onClick={switchLang}
           >
             {isEnglish ? '🇺🇦 Українською' : '🇬🇧 English'}
           </Link>
