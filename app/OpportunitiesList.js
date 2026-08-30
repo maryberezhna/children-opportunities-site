@@ -257,16 +257,18 @@ const SORT_OPTIONS = [
   { label: 'Нещодавно додані', en: 'Recently added', value: 'recent' },
 ];
 
+// Дедлайн у базі — календарна дата, а не момент часу. getDate() віддає її в
+// поясі того, хто читає: «2026-08-31» у Нью-Йорку ставало 30 серпня, бо
+// північ за Гринвічем там ще вчорашній вечір. Діаспора бачила кожен дедлайн
+// на добу раніше, а розмітка з сервера не збігалася з тим, що рахував
+// браузер. Тож беремо UTC-складові — те саме число, що в базі, скрізь.
 function formatDeadline(dateStr, lang = 'uk') {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   const months = lang === 'en' ? MONTHS_EN
     : ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
-  const day = date.getDate();
-  const month = months[date.getMonth()];
-  const year = date.getFullYear();
-  return `${day} ${month} ${year}`;
+  return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 // «Сьогодні» приходить пропом із сервера — див. lib/dates.js. Рахувати його

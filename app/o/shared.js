@@ -188,14 +188,14 @@ const MONTHS = {
     'July', 'August', 'September', 'October', 'November', 'December'],
 };
 
+// UTC-складові, а не локальні: дата в базі календарна, і в поясі на захід
+// від Гринвіча локальні getDate() зсувають її на добу назад.
 export function formatDate(dateStr, lang = 'uk') {
   if (!dateStr) return null;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return dateStr;
   const months = MONTHS[lang] || MONTHS.uk;
-  return lang === 'en'
-    ? `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`
-    : `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+  return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
 // «Перевірено сьогодні / вчора / N днів тому» — чесний сигнал свіжості.
