@@ -235,7 +235,15 @@ EXTRACT_TOOL = {
                                "de, cz… Якщо в тексті країна не названа і "
                                "джерело українське — [\"ua\"].",
             },
-            "format": {"type": "string"},
+            "format": {
+                "type": ["string", "null"],
+                "enum": ["online", "offline", "hybrid", None],
+                "description": "Формат участі дитини: online — лише "
+                               "дистанційно, offline — лише наживо, hybrid — "
+                               "і так, і так. Місто, країна, назва платформи, "
+                               "спосіб подачі заявки й тип можливості сюди НЕ "
+                               "йдуть. Якщо з тексту незрозуміло — null.",
+            },
             "cost_type": {"type": "string"},
             "deadline": {
                 "type": ["string", "null"],
