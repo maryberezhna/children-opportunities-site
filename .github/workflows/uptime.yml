@@ -16,17 +16,46 @@ jobs:
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
         run: |
           FAILS=""
-          for path in "/" "/kategorii" "/o/unicef-upshift-sotsialni-proekty-molodi-a65a9d" "/llms.txt"; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://dityam.com.ua$path" || echo "000")
-            if [ "$code" != "200" ]; then
-              # повтор через 30с — не алертимо на одиничний мережевий чих
-              sleep 30
-              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://dityam.com.ua$path" || echo "000")
-              if [ "$code" != "200" ]; then
-                FAILS="$FAILS• dityam.com.ua$path → HTTP $code%0A"
+
+          # Перевіряємо не «чи віддає 200», а «чи бачить те, що має бачити».
+          # Сайт двомовний, і на головній стоїть мовний середник: та сама
+          # адреса відповідає по-різному залежно від того, хто прийшов.
+          # Раніше перевірка ходила без жодних заголовків, отримувала редірект
+          # на /en і щогодини повідомляла, що сайт лежить.
+          UK='accept-language: uk-UA,uk;q=0.9'
+          EN='accept-language: en-US,en;q=0.9'
+
+          check() {  # опис, очікуваний код, шлях, [заголовок]
+            local what="$1" want="$2" path="$3" hdr="${4:-}"
+            local code
+            for attempt in 1 2; do
+              if [ -n "$hdr" ]; then
+                code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 -H "$hdr" "https://dityam.com.ua$path" || echo "000")
+              else
+                code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 20 "https://dityam.com.ua$path" || echo "000")
               fi
-            fi
-          done
+              [ "$code" = "$want" ] && return 0
+              # повтор через 30с — не алертимо на одиничний мережевий чих
+              [ "$attempt" = 1 ] && sleep 30
+            done
+            FAILS="$FAILS• $what: dityam.com.ua$path → HTTP $code (мало бути $want)%0A"
+          }
+
+          # Український відвідувач бачить український каталог без редіректу.
+          check "українська головна" 200 "/" "$UK"
+          # Англомовний із-за кордону — англійський. Це не збій, а функція:
+          # якщо редірект зламається, ми маємо про це знати так само швидко.
+          check "редірект для англомовного" 307 "/" "$EN"
+          # Монітори й health-check'и без заголовка мови нікуди не ведуться.
+          check "запит без мови" 200 "/"
+
+          check "англійський каталог" 200 "/en"
+          check "категорії" 200 "/kategorii"
+          check "сторінка можливості" 200 "/o/unicef-upshift-sotsialni-proekty-molodi-a65a9d"
+          check "англійська сторінка можливості" 200 "/en/o/unicef-upshift-sotsialni-proekty-molodi-a65a9d"
+          check "про проєкт англійською" 200 "/en/about"
+          check "llms.txt" 200 "/llms.txt"
+
           if [ -n "$FAILS" ]; then
             echo "DOWN: $FAILS"
             if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_ADMIN_CHAT_ID" ]; then
@@ -36,4 +65,4 @@ jobs:
             fi
             exit 1
           fi
-          echo "✅ Всі сторінки відповідають 200"
+          echo "✅ Усі перевірки пройдено"
