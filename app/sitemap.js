@@ -54,6 +54,10 @@ export default async function sitemap() {
     { uk: '/support', en: '/en/support', changeFrequency: 'monthly', priority: 0.4 },
     { uk: '/privacy', en: '/en/privacy', changeFrequency: 'yearly', priority: 0.2 },
     { uk: '/terms', en: '/en/terms', changeFrequency: 'yearly', priority: 0.2 },
+    { uk: '/refund', en: '/en/refund', changeFrequency: 'yearly', priority: 0.2 },
+    { uk: '/press', en: '/en/press', changeFrequency: 'monthly', priority: 0.4 },
+    { uk: '/kategorii', en: '/en/categories', changeFrequency: 'daily', priority: 0.8 },
+    { uk: '/pidbirka', en: '/en/plus', changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   const bilingualPages = BILINGUAL.flatMap((entry) => {
@@ -78,27 +82,26 @@ export default async function sitemap() {
     ];
   });
 
-  const staticPages = [
-    ...bilingualPages,
-    { url: `${SITE_URL}/kategorii`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/press`, changeFrequency: 'monthly', priority: 0.4 },
-  ].map((entry) => ({ ...entry, lastModified: new Date() }));
+  const staticPages = bilingualPages
+    .map((entry) => ({ ...entry, lastModified: new Date() }));
 
-  const cityPages = Object.keys(CITY_META).map((slug) => ({
-    url: `${SITE_URL}/${slug}`,
-    changeFrequency: 'daily',
-    priority: 0.7,
-    lastModified: new Date(),
-  }));
+  const cityPages = Object.keys(CITY_META).flatMap((slug) => {
+    const languages = { uk: `${SITE_URL}/${slug}`, en: `${SITE_URL}/en/${slug}` };
+    return [
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.7, lastModified: new Date(), alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.6, lastModified: new Date(), alternates: { languages } },
+    ];
+  });
 
   // Тематичні підбірки: пріоритет вищий за міські, бо вони цілять у
   // категорійні запити, де каталог і має вигравати.
-  const topicPages = TOPIC_LIST.map((t) => ({
-    url: `${SITE_URL}/${t.slug}`,
-    changeFrequency: 'daily',
-    priority: 0.9,
-    lastModified: new Date(),
-  }));
+  const topicPages = TOPIC_LIST.flatMap((t) => {
+    const languages = { uk: `${SITE_URL}/${t.slug}`, en: `${SITE_URL}/en/${t.en.slug}` };
+    return [
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.9, lastModified: new Date(), alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.8, lastModified: new Date(), alternates: { languages } },
+    ];
+  });
 
   return [...staticPages, ...topicPages, ...cityPages, ...opportunityEntries];
 }

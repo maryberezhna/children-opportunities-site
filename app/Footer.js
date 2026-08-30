@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import SubscribeButton from './SubscribeButton';
-import { TOPIC_NAV } from '@/lib/topics';
+import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import { countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
 
 // Живі цифри довіри: ті самі, що на /press — тягнуться з бази, щоб число
@@ -28,11 +28,13 @@ const HREF = {
     home: '/', categories: '/kategorii', verify: '/yak-my-pereviriaiemo',
     about: '/about', press: '/press', support: '/support',
     contacts: '/contacts', privacy: '/privacy', terms: '/terms',
+    plus: '/pidbirka',
   },
   en: {
-    home: '/en', categories: '/kategorii', verify: '/en/how-we-verify',
-    about: '/en/about', press: '/press', support: '/en/support',
+    home: '/en', categories: '/en/categories', verify: '/en/how-we-verify',
+    about: '/en/about', press: '/en/press', support: '/en/support',
     contacts: '/en/contacts', privacy: '/en/privacy', terms: '/en/terms',
+    plus: '/en/plus',
   },
 };
 
@@ -155,7 +157,7 @@ export default async function Footer({ lang = 'uk' }) {
         </a>
 
         <Link
-          href="/pidbirka"
+          href={href.plus}
           className="footer-action-btn footer-action-donate"
           aria-label="Dityam+ early list"
         >
@@ -188,7 +190,7 @@ export default async function Footer({ lang = 'uk' }) {
           <Link href={href.home} className="footer-link"><span>{t.allOpps}</span></Link>
           <Link href={href.categories} className="footer-link"><span>{t.allCategories}</span></Link>
           {TOPIC_NAV.map((item) => (
-            <Link key={item.slug} href={`/${item.slug}`} className="footer-link">
+            <Link key={item.slug} href={topicPath(item, lang)} className="footer-link">
               <span>{topicLabel(item)}</span>
             </Link>
           ))}
@@ -196,7 +198,7 @@ export default async function Footer({ lang = 'uk' }) {
 
         <div className="footer-section">
           <div className="footer-title">{t.parents}</div>
-          <Link href="/pidbirka" className="footer-link"><span>{t.plusLink}</span></Link>
+          <Link href={href.plus} className="footer-link"><span>{t.plusLink}</span></Link>
           <a
             href="https://t.me/dityam_com_ua"
             target="_blank"

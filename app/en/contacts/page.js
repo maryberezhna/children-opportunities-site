@@ -78,7 +78,7 @@ export default function ContactsPageEn() {
 
         <p className="contact-fine">
           Terms of service — <Link href="/en/terms">public offer</Link> ·
-          Refunds — <Link href="/refund">here</Link>.
+          Refunds — <Link href="/en/refund">here</Link>.
         </p>
       </article>
       <Footer lang="en" />

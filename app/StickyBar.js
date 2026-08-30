@@ -1,10 +1,16 @@
 'use client';
+import { usePathname } from 'next/navigation';
 import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
 import { TELEGRAM_URL, INSTAGRAM_URL } from '@/lib/social';
 
 const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
 export default function StickyBar() {
+  // Панель висить на всіх сторінках, зокрема англійських, тож адресу Dityam+
+  // беремо з поточного шляху — інакше з /en людина падала на українську.
+  const pathname = usePathname() || '/';
+  const isEnglish = pathname === '/en' || pathname.startsWith('/en/');
+
   const openSubscribe = () => {
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent(OPEN_SUBSCRIBE_EVENT, {
@@ -104,7 +110,7 @@ export default function StickyBar() {
       </a>
 
       <a
-        href="/pidbirka"
+        href={isEnglish ? '/en/plus' : '/pidbirka'}
         className="sticky-btn sticky-btn-donate"
         aria-label="Dityam+ early list"
         onClick={trackEarlyList}

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { TOPIC_LIST } from '@/lib/topics';
+import { CITY_META } from '@/lib/cities';
 
 // Постійний хедер: 4 маршрути-хаби + пошук + одна CTA. Глибина (підбірки,
 // міста, категорії) живе на хабах і у футері — меню не росте разом із
@@ -11,8 +13,8 @@ import { usePathname } from 'next/navigation';
 const NAV = [
   { href: '/', hrefEn: '/en', label: 'Каталог', en: 'Catalogue',
     match: (p) => p === '/' || p === '/en' },
-  { href: '/kategorii', label: 'Категорії', en: 'Categories',
-    match: (p) => p.startsWith('/kategorii') },
+  { href: '/kategorii', hrefEn: '/en/categories', label: 'Категорії', en: 'Categories',
+    match: (p) => p.startsWith('/kategorii') || p.startsWith('/en/categories') },
   { href: '/about', hrefEn: '/en/about', label: 'Про проєкт', en: 'About',
     match: (p) => /^\/(en\/)?(about|press|yak-my-pereviriaiemo|how-we-verify)/.test(p) },
   { href: '/contacts', hrefEn: '/en/contacts', label: 'Написати нам', en: 'Contact',
@@ -29,9 +31,23 @@ const isEn = (p) => p === '/en' || p.startsWith('/en/');
 // а сторінка можливості (/o/slug) збігається сама собою.
 const SLUG_PAIRS = [
   ['/yak-my-pereviriaiemo', '/en/how-we-verify'],
+  ['/kategorii', '/en/categories'],
+  ['/pidbirka', '/en/plus'],
+  ['/dyakuyu', '/en/thank-you'],
+  // Підбірки мають свої англійські слаги, бо існують заради пошуку.
+  ...TOPIC_LIST.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
 ];
 
-const HAS_EN = ['/about', '/contacts', '/support', '/privacy', '/terms'];
+// Сторінки, де слаг однаковий і різниця лише в префіксі /en.
+const HAS_EN = [
+  '/about', '/contacts', '/support', '/privacy', '/terms',
+  '/press', '/refund', '/offline',
+  ...Object.keys(CITY_META).map((c) => `/${c}`),
+];
+
+// Префіксні гілки: сторінка можливості та «додати в календар» збігаються
+// слагом, але слаг динамічний, тож переліком їх не задати.
+const PREFIX_EN = ['/o/', '/events/'];
 
 export function counterpart(pathname, toEnglish) {
   const p = pathname || '/';
@@ -41,7 +57,7 @@ export function counterpart(pathname, toEnglish) {
   }
   if (toEnglish) {
     if (p === '/') return '/en';
-    if (p.startsWith('/o/') || HAS_EN.includes(p)) return `/en${p}`;
+    if (HAS_EN.includes(p) || PREFIX_EN.some((x) => p.startsWith(x))) return `/en${p}`;
     return '/en';
   }
   if (p === '/en') return '/';
@@ -50,13 +66,13 @@ export function counterpart(pathname, toEnglish) {
 }
 
 const POPULAR = [
-  { href: '/bezkoshtovni-tabory', label: 'Табори', en: 'Camps' },
-  { href: '/bezkoshtovni-hurtky', label: 'Гуртки', en: 'Clubs' },
-  { href: '/konkursy', label: 'Конкурси', en: 'Contests' },
-  { href: '/mizhnarodni-olimpiady', label: 'Олімпіади', en: 'Olympiads' },
-  { href: '/prohramy-obminu', label: 'Обміни', en: 'Exchanges' },
-  { href: '/kyiv', label: 'Київ', en: 'Kyiv' },
-  { href: '/lviv', label: 'Львів', en: 'Lviv' },
+  { href: '/bezkoshtovni-tabory', hrefEn: '/en/free-camps', label: 'Табори', en: 'Camps' },
+  { href: '/bezkoshtovni-hurtky', hrefEn: '/en/free-clubs-and-courses', label: 'Гуртки', en: 'Clubs' },
+  { href: '/konkursy', hrefEn: '/en/contests', label: 'Конкурси', en: 'Contests' },
+  { href: '/mizhnarodni-olimpiady', hrefEn: '/en/olympiads', label: 'Олімпіади', en: 'Olympiads' },
+  { href: '/prohramy-obminu', hrefEn: '/en/exchange-programs', label: 'Обміни', en: 'Exchanges' },
+  { href: '/kyiv', hrefEn: '/en/kyiv', label: 'Київ', en: 'Kyiv' },
+  { href: '/lviv', hrefEn: '/en/lviv', label: 'Львів', en: 'Lviv' },
 ];
 
 // Вибір мови треба памʼятати: середник /middleware.js відправляє відвідувача
@@ -141,7 +157,7 @@ export default function Header() {
           {isEnglish ? 'Українською' : 'English'}
         </Link>
 
-        <Link href="/pidbirka" className="site-header-cta" onClick={track('plus')}>
+        <Link href={isEnglish ? '/en/plus' : '/pidbirka'} className="site-header-cta" onClick={track('plus')}>
           Dityam+
         </Link>
 
@@ -175,7 +191,7 @@ export default function Header() {
           <div className="site-header-menu-sub">{isEnglish ? 'Popular' : 'Популярне'}</div>
           <div className="site-header-menu-chips">
             {POPULAR.map((c) => (
-              <Link key={c.href} href={c.href} className="site-header-chip">{t(c)}</Link>
+              <Link key={c.href} href={to(c)} className="site-header-chip">{t(c)}</Link>
             ))}
           </div>
           {/* На вузькому екрані перемикач у шапці схований — тут його місце. */}

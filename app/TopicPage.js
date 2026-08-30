@@ -156,7 +156,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
       />
 
-      <div className="container">
+      <div className="container" lang={lang === 'en' ? 'en' : undefined}>
         <div className="hero">
           <div className="hero-copy">
             <div className="hero-badges">
@@ -190,12 +190,12 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
         {/* Другий абзац — не прикраса: сторінка без тексту виглядає для Google
             як список посилань, а такі в категорійній видачі не ранжуються. */}
-        <p className="topic-note">{topic.note}</p>
+        <p className="topic-note">{c.note}</p>
 
-        <nav className="city-nav" aria-label="Інші підбірки">
+        <nav className="city-nav" aria-label={ch.otherTopics}>
           {others.map((t) => (
-            <Link key={t.slug} href={`/${t.slug}`} className="city-nav-link">
-              {t.label}
+            <Link key={t.slug} href={topicPath(t, lang)} className="city-nav-link">
+              {lang === 'en' ? t.labelEn : t.label}
             </Link>
           ))}
         </nav>
@@ -203,12 +203,13 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}
+          lang={lang}
         />
 
-        {topic.faq?.length > 0 && (
+        {c.faq?.length > 0 && (
           <section className="topic-faq" aria-labelledby="topic-faq-title">
-            <h2 id="topic-faq-title">Часті питання</h2>
-            {topic.faq.map((f) => (
+            <h2 id="topic-faq-title">{ch.faqTitle}</h2>
+            {c.faq.map((f) => (
               <details key={f.q} className="topic-faq-item">
                 <summary>{f.q}</summary>
                 <p>{f.a}</p>
@@ -217,7 +218,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           </section>
         )}
 
-        <Footer />
+        <Footer lang={lang} />
       </div>
 
       <SupportPopup />
