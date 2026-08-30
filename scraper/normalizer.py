@@ -255,7 +255,15 @@ EXTRACT_TOOL = {
                                "Онлайн-конкурс від закордонного організатора — "
                                "теж true. Гурток у Житомирі — false.",
             },
-            "format": {"type": "string"},
+            "format": {
+                "type": ["string", "null"],
+                "enum": ["online", "offline", "hybrid", None],
+                "description": "Формат участі дитини: online — лише "
+                               "дистанційно, offline — лише наживо, hybrid — "
+                               "і так, і так. Місто, країна, назва платформи, "
+                               "спосіб подачі заявки й тип можливості сюди НЕ "
+                               "йдуть. Якщо з тексту незрозуміло — null.",
+            },
             "cities": {
                 "type": "array",
                 "items": {"type": "string"},
