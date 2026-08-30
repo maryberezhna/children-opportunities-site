@@ -54,7 +54,7 @@ export default async function Image({ params }) {
 
   // Slug зник між білдом і рендером — віддаємо загальну картку, не 500.
   const title = item?.title || 'Можливості для дитини';
-  const typeLabel = item ? (TYPE_LABELS[item.opportunity_type] || 'Можливість') : 'Каталог';
+  const typeLabel = item ? (TYPE_LABELS[item.opportunity_type] || 'Можливість') : 'можливості для дітей';
   const chips = [];
   // Без емодзі: у Manrope немає для них гліфів, а satori інакше тягнув би
   // SVG-емодзі з зовнішнього CDN на кожен рендер. Текст несе ту саму інформацію.
