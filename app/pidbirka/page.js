@@ -1,8 +1,16 @@
 import SubscribeForm from './SubscribeForm';
 
+const SITE_URL = 'https://dityam.com.ua';
+
 export const metadata = {
   title: 'Dityam+ — скоро · список очікування',
   description: 'Dityam+ — 179 грн/міс або 1 490 грн/рік: щомісячна персональна добірка під дитину, нагадування про дедлайни, допомога із заявками. Станьте в список — першим знижка.',
+  // Свого canonical тут не було, і сторінка успадковувала з layout адресу
+  // головної — тобто казала Google, що вона дублікат головної.
+  alternates: {
+    canonical: `${SITE_URL}/pidbirka`,
+    languages: { uk: `${SITE_URL}/pidbirka`, en: `${SITE_URL}/en/plus` },
+  },
 };
 
 const box = { maxWidth: 640, margin: '48px auto 90px', padding: '0 20px', fontFamily: 'system-ui, -apple-system, sans-serif', color: '#131b28' };

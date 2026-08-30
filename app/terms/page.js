@@ -3,7 +3,11 @@ import Link from 'next/link';
 export const metadata = {
   title: 'Публічна оферта та умови',
   description: 'Умови надання платної підписки Dityam+: предмет, ціни, оплата, порядок надання послуги, скасування, реквізити.',
-  alternates: { canonical: 'https://dityam.com.ua/terms' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/terms',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/terms', en: 'https://dityam.com.ua/en/terms' },
+  },
   robots: { index: true, follow: true },
 };
 

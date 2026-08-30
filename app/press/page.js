@@ -1,93 +1,26 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
-
-// Публікації про проєкт. Порядок — як виходили; ШоТам були перші.
-// Облік ведеться в Notion «Про нас пишуть — медіатека», сюди переносимо руками.
-//
-// logo — файл із public/press/logos. Розміри вказані справжні: без них браузер
-// не знає висоту рядка до завантаження картинки і сторінка смикається.
-// У частини видань логотип квадратний (емблема, а не напис) — такі показуємо
-// трохи більшими, інакше поряд із широкими написами вони губляться.
-const MENTIONS = [
-  {
-    outlet: 'ШоТам',
-    logo: { src: '/press/logos/shotam.svg', width: 256, height: 45 },
-    date: '17 серпня 2026',
-    title:
-      'Усі можливості в одному місці: українка запустила безплатний каталог активностей для дітей',
-    url: 'https://shotam.info/usi-mozhlyvosti-v-odnomu-mistsi-ukrainka-zapustyla-bezplatnyy-kataloh-aktyvnostey-dlia-ditey/',
-  },
-  {
-    outlet: 'Дон Патріот',
-    logo: { src: '/press/logos/donpatriot.png', width: 70, height: 70 },
-    date: '17 серпня 2026',
-    title:
-      'Можливості для кожної дитини: в Україні зʼявився єдиний агрегатор дитячих ініціатив і виплат',
-    url: 'https://donpatriot.news/mozhlyvosti-dlya-kozhnoyi-dytyny-v-ukrayini-zyavyvsya-yedynyj-agregator-dytyachyh-inicziatyv-i-vyplat',
-  },
-  {
-    outlet: 'Українки',
-    logo: { src: '/press/logos/ukrainky.png', width: 200, height: 200 },
-    date: '18 серпня 2026',
-    title:
-      'Українка Марія Бережна створила безплатний каталог можливостей для дітей',
-    url: 'https://ukrainky.com.ua/ukrayinka-mariya-berezhna-stvoryla-bezplatnyj-katalog-mozhlyvostej-dlya-ditej/',
-  },
-  {
-    outlet: 'Ти Київ',
-    logo: { src: '/press/logos/tykyiv.svg', width: 143, height: 25 },
-    date: '18 серпня 2026',
-    title:
-      'Українка створила безплатний каталог активностей для дітей по всій Україні: що в ньому є',
-    url: 'https://tykyiv.com/news/ukrayinka-stvorila-bezplatnii-katalog-aktivnostei-dlia-ditei-po-vsii-ukrayini-shcho-v-nomu-ie/',
-  },
-  {
-    outlet: 'WoMo',
-    logo: { src: '/press/logos/womo.png', width: 440, height: 81 },
-    date: '18 серпня 2026',
-    title: 'Можливості для дітей: безплатна платформа Dityam.com.ua',
-    url: 'https://womo.ua/ukrayinka-stvoryla-bezplatnyj-katalog-mozhlyvostej-dlya-ditej/',
-  },
-];
+import { MENTIONS, pressStats } from '@/lib/press';
 
 export const metadata = {
   title: 'Для медіа — прескіт dityam.com.ua',
   description:
     'Прескіт dityam.com.ua: цифри проєкту, опис одним абзацом, логотипи, контакт для журналістів. Платформа можливостей для українських дітей 0-18 років.',
-  alternates: { canonical: 'https://dityam.com.ua/press' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/press',
+    languages: {
+      uk: 'https://dityam.com.ua/press',
+      en: 'https://dityam.com.ua/en/press',
+    },
+  },
 };
 
 // Цифри тягнемо живими: журналіст цитує те, що бачить, тож застаріле «280+»
 // у статичному тексті рано чи пізно стало б помилкою в чужій публікації.
 export const revalidate = 3600;
 
-async function getStats() {
-  if (!supabase) return null;
-  const { data, error } = await publicOpportunities(
-    'cost_type, source, opportunity_type, cities, child_needs',
-  );
-  if (error || !data) return null;
-
-  const cities = new Set();
-  const needs = new Set();
-  data.forEach((o) => {
-    (o.cities || []).forEach((c) => cities.add(c));
-    (o.child_needs || []).forEach((n) => needs.add(n));
-  });
-
-  return {
-    total: data.length,
-    free: data.filter((o) => o.cost_type === 'free').length,
-    sources: new Set(data.map((o) => o.source).filter(Boolean)).size,
-    types: new Set(data.map((o) => o.opportunity_type).filter(Boolean)).size,
-    cities: cities.size,
-    needs: needs.size,
-  };
-}
-
 export default async function PressPage() {
-  const stats = await getStats();
+  const stats = await pressStats();
 
   return (
     <div className="container">

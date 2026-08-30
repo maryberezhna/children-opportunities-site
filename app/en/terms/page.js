@@ -100,7 +100,7 @@ export default function TermsPageEn() {
           The subscription runs indefinitely until the user cancels it. You can
           cancel <strong>at any time</strong> with the <code>/stop</code> command
           in the bot — further charges then stop. Refund terms are on the{' '}
-          <Link href="/refund">Refunds</Link> page.
+          <Link href="/en/refund">Refunds</Link> page.
         </p>
 
         <h2>6. Rights and obligations</h2>

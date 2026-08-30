@@ -101,7 +101,7 @@ export default function AboutPageEn() {
         <p>
           The platform is free for families and ad-free, for good. The project
           is independent: what helps it grow is the{' '}
-          <Link href="/pidbirka">Dityam+</Link> subscription — a personal
+          <Link href="/en/plus">Dityam+</Link> subscription — a personal
           selection of opportunities for your child (the waiting list is open
           now). And if you simply want to help, a donation on{' '}
           <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer">monobank</a>{' '}

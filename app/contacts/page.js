@@ -4,7 +4,11 @@ import ContactForm from './ContactForm';
 export const metadata = {
   title: 'Написати нам — контакти Dityam',
   description: 'Контактна форма dityam.com.ua: запропонувати можливість, повідомити про помилку чи прострочену програму, поскаржитись, запропонувати співпрацю або запит від медіа.',
-  alternates: { canonical: 'https://dityam.com.ua/contacts' },
+  alternates: {
+    canonical: 'https://dityam.com.ua/contacts',
+    // Взаємність обовʼязкова: односторонню анотацію Google ігнорує.
+    languages: { uk: 'https://dityam.com.ua/contacts', en: 'https://dityam.com.ua/en/contacts' },
+  },
 };
 
 export default function ContactsPage() {

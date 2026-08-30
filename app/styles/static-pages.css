@@ -343,63 +343,6 @@
   .topic-faq-item summary, .topic-faq-item p { font-size: 13.5px; }
 }
 
-/* Англійський лендинг.
-   Сторінку було зверстано інлайновими стилями: 32 атрибути style проти двох
-   на решті сайту. Звідси й відчуття «зовсім не така» — свої розміри
-   заголовків, свої відступи, свої розділові лінії, які ні з чим не збігались.
-   Тепер розмітка чиста, а вигляд задається тут, поруч із рештою сторінок. */
-.en-page section {
-  max-width: 720px;
-  margin: 30px 0 0;
-}
-
-.en-page section h2 {
-  font-size: 20px;
-  margin-bottom: 10px;
-}
-
-.en-page section p {
-  color: var(--ink-soft);
-  max-width: 65ch;
-  line-height: 1.6;
-}
-
-.en-page section p + p { margin-top: 14px; }
-
-.en-what-row {
-  display: flex;
-  gap: 13px;
-  align-items: baseline;
-  padding: 11px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-/* Остання лінія висіла в повітрі й читалась як обрізаний список. */
-.en-what-row:last-child { border-bottom: none; }
-
-.en-what-icon { font-size: 21px; }
-.en-what-note { color: var(--ink-soft); }
-
-.en-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.en-page .en-actions a { text-decoration: none; }
-
-@media (max-width: 640px) {
-  .en-page section { margin-top: 24px; }
-  /* Дві кнопки поруч на 390px злипались у два обрізані прямокутники. */
-  .en-actions a { flex: 1 1 100%; justify-content: center; }
-}
-
-/* Секція зі справжніми картками — на всю ширину контейнера, як каталог:
-   решта секцій /en вужчі, і сітка в 720 px розсипалася б на одну колонку. */
-.en-page section.en-latest { max-width: none; }
-.en-page .en-grid { margin-top: 18px; }
-
 /* Як перекласти сайт. Раніше тут стояло одне речення «your browser's translate
    feature works well» — порада, якою неможливо скористатися, не знаючи, де ця
    кнопка. Тепер по кроку на браузер. */

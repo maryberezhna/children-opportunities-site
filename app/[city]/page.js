@@ -21,7 +21,13 @@ export async function generateMetadata({ params }) {
   return {
     title: `Можливості для дітей у ${locative} — курси, олімпіади, стипендії`,
     description: `Безкоштовний каталог можливостей для дітей 0–18 років у ${locative}: курси, олімпіади, стипендії, табори, медична допомога. Оновлюється щодня.`,
-    alternates: { canonical: `https://dityam.com.ua/${params.city}` },
+    alternates: {
+      canonical: `https://dityam.com.ua/${params.city}`,
+      languages: {
+        uk: `https://dityam.com.ua/${params.city}`,
+        en: `https://dityam.com.ua/en/${params.city}`,
+      },
+    },
     openGraph: {
       type: 'website',
       locale: 'uk_UA',
