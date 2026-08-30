@@ -36,7 +36,7 @@ from scrapers import (
     facebook_pages,
     gurtok,
     house_of_europe,
-    instagram_monitor,
+    instagram_graph,
     man_contests,
     mon_olympiads,
     prometheus,
@@ -76,14 +76,14 @@ SCRAPERS = [
     # Соціальні мережі
     ("ACMODASI", acmodasi, "ukrainian"),             # кастинги/набори для дітей
     ("Telegram (веб)", telegram_web, "social"),      # без API-ключів (t.me/s/)
-    ("Instagram", instagram_monitor, "social"),
+    ("Instagram", instagram_graph, "social"),
     ("Facebook", facebook_pages, "social"),
 ]
 
 
 # No single async scraper may hang the pipeline (protects the end-of-run email).
 # NB: only interrupts at await points — sync-blocking scrapers must fail fast
-# on their own (see instagram_monitor's max_connection_attempts=1).
+# on their own.
 SCRAPER_TIMEOUT = 300  # seconds
 
 
