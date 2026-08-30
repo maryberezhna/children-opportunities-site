@@ -394,3 +394,39 @@
   /* Дві кнопки поруч на 390px злипались у два обрізані прямокутники. */
   .en-actions a { flex: 1 1 100%; justify-content: center; }
 }
+
+/* Секція зі справжніми картками — на всю ширину контейнера, як каталог:
+   решта секцій /en вужчі, і сітка в 720 px розсипалася б на одну колонку. */
+.en-page section.en-latest { max-width: none; }
+.en-page .en-grid { margin-top: 18px; }
+
+/* Як перекласти сайт. Раніше тут стояло одне речення «your browser's translate
+   feature works well» — порада, якою неможливо скористатися, не знаючи, де ця
+   кнопка. Тепер по кроку на браузер. */
+.en-howto {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  max-width: 65ch;
+}
+
+.en-howto li {
+  position: relative;
+  padding: 9px 0 9px 22px;
+  color: var(--ink-soft);
+  font-size: 14.5px;
+  line-height: 1.6;
+  border-bottom: 1px solid var(--border);
+}
+
+.en-howto li:last-child { border-bottom: none; }
+
+.en-howto li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  top: 9px;
+  color: var(--ink-muted);
+}
+
+.en-howto b { color: var(--ink); font-weight: 600; }

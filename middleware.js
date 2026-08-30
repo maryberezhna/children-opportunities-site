@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { readsUkrainian, acceptLanguageTags } from '@/lib/lang';
 
 /**
  * Хто заходить не з України — бачить англійську сторінку.
@@ -10,6 +11,11 @@ import { NextResponse } from 'next/server';
  *
  * Вибір людини сильніший за геолокацію: перемикач у шапці ставить cookie
  * dityam_lang, і після одного кліку редірект більше не спрацьовує ніколи.
+ *
+ * Мову вирішує браузер, а не адреса. Найбільша частина закордонного трафіку —
+ * українська діаспора: країна каже «Польща», а людині потрібен український
+ * каталог. Тож країна лише окреслює, кого взагалі питати, а відповідає
+ * Accept-Language: є в списку українська чи російська — нікуди не ведемо.
  */
 
 // Краулерів не чіпаємо. Google обходить сайт із американських адрес: якби
@@ -47,14 +53,21 @@ export function middleware(request) {
   const chosen = request.cookies.get('dityam_lang')?.value;
   if (chosen === 'uk') return NextResponse.next();
 
-  if (BOTS.test(request.headers.get('user-agent') || '')) return NextResponse.next();
+  // Явно обрана англійська б'є все інше — навіть український браузер.
+  if (chosen !== 'en') {
+    if (BOTS.test(request.headers.get('user-agent') || '')) return NextResponse.next();
 
-  // Vercel віддає країну в заголовку; локально його немає — тоді нічого
-  // не робимо, щоб dev-сервер поводився передбачувано.
-  const country =
-    request.geo?.country || request.headers.get('x-vercel-ip-country') || '';
+    // Читає українською — лишається на українській, хоч би де він був.
+    if (readsUkrainian(acceptLanguageTags(request.headers.get('accept-language')))) {
+      return NextResponse.next();
+    }
 
-  if (chosen !== 'en' && (!country || country === 'UA')) return NextResponse.next();
+    // Vercel віддає країну в заголовку; локально його немає — тоді нічого
+    // не робимо, щоб dev-сервер поводився передбачувано.
+    const country =
+      request.geo?.country || request.headers.get('x-vercel-ip-country') || '';
+    if (!country || country === 'UA') return NextResponse.next();
+  }
 
   const to = url.clone();
   to.pathname = '/en';
