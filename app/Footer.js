@@ -194,6 +194,11 @@ export default async function Footer({ lang = 'uk' }) {
               <span>{topicLabel(item)}</span>
             </Link>
           ))}
+          {/* Лише українською: англійської версії календаря ще немає, а вести
+              англомовного читача на українську сторінку гірше, ніж не вести. */}
+          {lang !== 'en' && (
+            <Link href="/dedlainy" className="footer-link"><span>Календар дедлайнів</span></Link>
+          )}
         </div>
 
         <div className="footer-section">
