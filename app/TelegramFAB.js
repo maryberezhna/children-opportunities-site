@@ -1,11 +1,15 @@
 'use client';
-import { trackConversion } from '@/lib/track';
 
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 
 export default function TelegramFAB() {
   const handleClick = () => {
-    trackConversion('telegram_join_click', { event_label: 'floating_button' });
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'telegram_join_click', {
+        event_category: 'conversion',
+        event_label: 'floating_button',
+      });
+    }
   };
 
   return (
