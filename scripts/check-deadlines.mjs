@@ -121,9 +121,19 @@ const EVENT_TYPES = new Set([
 // який був тип: його ставлять саме тим записам, що мають день проведення.
 const isEvent = (r) => EVENT_TYPES.has(r.opportunity_type) || Boolean(r.event_end_date);
 
+// Чи можна цей запис показувати людям. Рівно ті самі два фільтри, що й у
+// публічній вибірці сайту (lib/supabase.js): активний і не дубль.
+//
+// Навіщо окремо. Головний запит цього скрипта свідомо бере ВСІ статуси —
+// він же й архівує прострочене, тож мусить бачити і draft, і closed. Але
+// його результат ішов просто в пост, і в канал 29.08 потрапили три картки
+// зі статусом draft: люди клікали й отримували 404, бо сайт чернетки не
+// показує. Тобто канал публікував ще не перевірене.
+const isPublishable = (r) => r.status === 'active' && !r.canonical_slug;
+
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_end_date, cost_type, status, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_end_date, cost_type, status, canonical_slug, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -379,6 +389,7 @@ async function sendDailyDigest(dayOverride = null) {
   // Піднявши нижню межу, довелось підняти й верхню: інакше в секцію
   // проходили б лише записи рівно з трьома днями і вона б порожніла.
   const urgent = dueSoon
+    .filter(isPublishable)
     .filter((r) => r.daysLeft >= MIN_LEAD_DAYS && r.daysLeft <= 7)
     .slice(0, 3);
 
@@ -388,6 +399,7 @@ async function sendDailyDigest(dayOverride = null) {
     .from('opportunities')
     .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at, source, child_needs')
     .eq('status', 'active')
+    .is('canonical_slug', null)
     .or(`deadline.is.null,deadline.gte.${minLeadIso}`);
   if (poolErr) {
     console.error(`Pool fetch failed: ${poolErr.message}`);
