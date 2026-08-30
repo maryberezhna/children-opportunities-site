@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { opportunitiesWord } from '@/lib/plural';
+import { trackConversion } from '@/lib/track';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
@@ -39,12 +40,9 @@ export default function PlusSection({ total, index = 0 }) {
       const data = await res.json();
       if (!data.ok) throw new Error(data.error || 'server');
       setState('done');
-      if (typeof window !== 'undefined' && window.gtag) {
-        window.gtag('event', 'plus_waitlist_submit', {
-          event_category: 'conversion',
-          event_label: `catalog_slot_${index}`,
-        });
-      }
+      trackConversion('plus_waitlist_submit', {
+        event_label: `catalog_slot_${index}`,
+      });
     } catch (err) {
       setState('error');
     }
