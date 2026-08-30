@@ -4,7 +4,43 @@ import { useEffect, useState } from 'react';
 // «Я подався» / «Мене взяли» під можливістю. Форма навмисне мінімальна:
 // жодних обовʼязкових полів, крім самого факту. Що менше просимо — то більше
 // родин доходить до кінця, а нам для метрики й пітчу достатньо факту.
-export default function OutcomeForm({ opportunityId, title }) {
+const L = {
+  uk: {
+    done: 'Дякуємо, що поділились 💛 Такі історії допомагають нам показати, що платформа справді працює.',
+    title: 'Подавались на цю можливість?',
+    sub: 'Розкажіть — це анонімно. Ми не питаємо ні імені дитини, ні віку, ні школи.',
+    applied: 'Я подався / подалась',
+    accepted: 'Нас взяли 🎉',
+    storyLabel: 'Кілька слів про досвід (необовʼязково)',
+    storyPlaceholder: 'Як проходив відбір, що було складно, що порадите іншим…',
+    cityLabel: 'Місто (необовʼязково)',
+    cityPlaceholder: 'Львів',
+    consent: 'Можна звʼязатися зі мною, якщо історію захочуть розповісти в медіа',
+    contactLabel: 'Email або @телеграм для звʼязку',
+    sending: 'Надсилаємо…',
+    submit: 'Надіслати',
+    error: 'Не вдалося надіслати. Спробуйте ще раз.',
+  },
+  en: {
+    done: 'Thank you for sharing 💛 Stories like this help us show that the platform really works.',
+    title: 'Did you apply for this?',
+    sub: 'Tell us — it’s anonymous. We don’t ask for the child’s name, age or school.',
+    applied: 'I applied',
+    accepted: 'We got in 🎉',
+    storyLabel: 'A few words about it (optional)',
+    storyPlaceholder: 'How the selection went, what was hard, what you’d tell others…',
+    cityLabel: 'City (optional)',
+    cityPlaceholder: 'Lviv',
+    consent: 'You may contact me if media want to tell this story',
+    contactLabel: 'Email or @telegram to reach you',
+    sending: 'Sending…',
+    submit: 'Send',
+    error: 'Could not send. Please try again.',
+  },
+};
+
+export default function OutcomeForm({ opportunityId, title, lang = 'uk' }) {
+  const t = L[lang] || L.uk;
   const [stage, setStage] = useState(null);      // 'applied' | 'accepted'
   const [story, setStory] = useState('');
   const [city, setCity] = useState('');
@@ -59,20 +95,15 @@ export default function OutcomeForm({ opportunityId, title }) {
   if (alreadySent || state === 'done') {
     return (
       <section className="outcome-box outcome-box-done">
-        <p>
-          Дякуємо, що поділились 💛 Такі історії допомагають нам показати, що
-          каталог справді працює.
-        </p>
+        <p>{t.done}</p>
       </section>
     );
   }
 
   return (
     <section className="outcome-box">
-      <h2 className="outcome-title">Подавались на цю можливість?</h2>
-      <p className="outcome-sub">
-        Розкажіть — це анонімно. Ми не питаємо ні імені дитини, ні віку, ні школи.
-      </p>
+      <h2 className="outcome-title">{t.title}</h2>
+      <p className="outcome-sub">{t.sub}</p>
 
       <form onSubmit={submit}>
         <div className="outcome-stages">
@@ -81,21 +112,21 @@ export default function OutcomeForm({ opportunityId, title }) {
             className={`outcome-stage ${stage === 'applied' ? 'active' : ''}`}
             onClick={() => setStage('applied')}
           >
-            Я подався / подалась
+            {t.applied}
           </button>
           <button
             type="button"
             className={`outcome-stage ${stage === 'accepted' ? 'active' : ''}`}
             onClick={() => setStage('accepted')}
           >
-            Нас взяли 🎉
+            {t.accepted}
           </button>
         </div>
 
         {stage ? (
           <div className="outcome-details">
             <label className="outcome-label" htmlFor="outcome-story">
-              Кілька слів про досвід (необовʼязково)
+              {t.storyLabel}
             </label>
             <textarea
               id="outcome-story"
@@ -104,11 +135,11 @@ export default function OutcomeForm({ opportunityId, title }) {
               maxLength={1200}
               value={story}
               onChange={(e) => setStory(e.target.value)}
-              placeholder="Як проходив відбір, що було складно, що порадите іншим…"
+              placeholder={t.storyPlaceholder}
             />
 
             <label className="outcome-label" htmlFor="outcome-city">
-              Місто (необовʼязково)
+              {t.cityLabel}
             </label>
             <input
               id="outcome-city"
@@ -117,7 +148,7 @@ export default function OutcomeForm({ opportunityId, title }) {
               maxLength={80}
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              placeholder="Львів"
+              placeholder={t.cityPlaceholder}
             />
 
             <label className="outcome-checkbox">
@@ -127,14 +158,14 @@ export default function OutcomeForm({ opportunityId, title }) {
                 onChange={(e) => setConsent(e.target.checked)}
               />
               <span>
-                Можна звʼязатися зі мною, якщо історію захочуть розповісти в медіа
+                {t.consent}
               </span>
             </label>
 
             {consent ? (
               <>
                 <label className="outcome-label" htmlFor="outcome-contact">
-                  Email або @телеграм для звʼязку
+                  {t.contactLabel}
                 </label>
                 <input
                   id="outcome-contact"
@@ -161,11 +192,11 @@ export default function OutcomeForm({ opportunityId, title }) {
             />
 
             <button type="submit" className="outcome-submit" disabled={state === 'sending'}>
-              {state === 'sending' ? 'Надсилаємо…' : 'Надіслати'}
+              {state === 'sending' ? t.sending : t.submit}
             </button>
 
             {state === 'error' ? (
-              <p className="outcome-error">Не вдалося надіслати. Спробуйте ще раз.</p>
+              <p className="outcome-error">{t.error}</p>
             ) : null}
           </div>
         ) : null}

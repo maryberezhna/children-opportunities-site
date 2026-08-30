@@ -25,7 +25,11 @@ const SCAN_DIRS = [join(ROOT, 'app'), join(ROOT, 'scripts')];
 // Адмінка бачить повний набір навмисне — модератор працює і з дублями.
 const ALLOW = [
   'app/admin/',
-  'app/o/[slug]/page.js',
+  // Спільний модуль сторінки можливості: читає запис за slug (canonical_slug
+  // потрібен, щоб віддати 301) і перелічує слаги для generateStaticParams.
+  // Розмітка переїхала сюди з app/o/[slug]/page.js, коли зʼявився англійський
+  // двійник /en/o/[slug] — маршрути тепер тонкі й самі нічого не питають.
+  'app/o/shared.js',
   'app/api/events/[slug]/ics/route.js',
   'app/events/[slug]/add/page.js',
   'app/api/telegram/webhook/route.js',

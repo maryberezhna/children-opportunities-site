@@ -133,7 +133,12 @@ def translate_one(llm, row):
     # попередній переклад порожнечею, просто не чіпаємо поле.
     if (out.get("summary_en") or "").strip():
         patch["summary_en"] = out["summary_en"].strip()
-    if (out.get("details_en") or "").strip():
+    # Повний опис перекладаємо ЛИШЕ якщо він є в оригіналі. Просити модель
+    # мовчати недостатньо: на восьми записах без details вона однаково
+    # написала «повний опис», переказавши короткий. Виходило, що англійська
+    # сторінка розповідає більше за українську — а перевіряти цей текст ні з
+    # чим. Тож рішення приймає не модель, а наявність оригіналу.
+    if row.get("details") and (out.get("details_en") or "").strip():
         patch["details_en"] = out["details_en"].strip()
     return patch
 

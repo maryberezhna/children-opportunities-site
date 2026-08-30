@@ -15,17 +15,39 @@ export default async function sitemap() {
         .in('status', ['active', 'closed']).is('canonical_slug', null)
     : { data: [] };
 
-  const opportunityEntries = (data || []).map((row) => ({
-    url: `${SITE_URL}/o/${row.slug}`,
-    lastModified: row.updated_at ? new Date(row.updated_at) : undefined,
-    changeFrequency: row.status === 'active' ? 'daily' : 'monthly',
-    priority: row.status === 'active' ? 0.8 : 0.3,
-  }));
+  // Дві мовні версії кожної сторінки. alternates каже Google, що це та сама
+  // можливість двома мовами, а не дубль: без цього англійська конкурувала б
+  // з українською за той самий запит і обидві просіли б.
+  const opportunityEntries = (data || []).flatMap((row) => {
+    const lastModified = row.updated_at ? new Date(row.updated_at) : undefined;
+    const changeFrequency = row.status === 'active' ? 'daily' : 'monthly';
+    const languages = {
+      uk: `${SITE_URL}/o/${row.slug}`,
+      en: `${SITE_URL}/en/o/${row.slug}`,
+    };
+    return [
+      {
+        url: languages.uk,
+        lastModified,
+        changeFrequency,
+        priority: row.status === 'active' ? 0.8 : 0.3,
+        alternates: { languages },
+      },
+      {
+        url: languages.en,
+        lastModified,
+        changeFrequency,
+        // Трохи нижчий за український: оригінал лишається основною версією.
+        priority: row.status === 'active' ? 0.7 : 0.3,
+        alternates: { languages },
+      },
+    ];
+  });
 
   const staticPages = [
     { url: SITE_URL, changeFrequency: 'daily', priority: 1.0 },
     { url: `${SITE_URL}/kategorii`, changeFrequency: 'daily', priority: 0.8 },
-    { url: `${SITE_URL}/en`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${SITE_URL}/en`, changeFrequency: 'daily', priority: 0.9 },
     { url: `${SITE_URL}/about`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/yak-my-pereviriaiemo`, changeFrequency: 'monthly', priority: 0.5 },
     { url: `${SITE_URL}/contacts`, changeFrequency: 'monthly', priority: 0.4 },
