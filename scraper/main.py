@@ -10,6 +10,7 @@
 """
 import argparse
 import asyncio
+import os
 import sys
 import time
 from datetime import datetime, timedelta, timezone
@@ -144,22 +145,40 @@ def _fresh_duplicate(sb_client, item):
     return existing if age <= timedelta(days=ttl) else None
 
 
-def process_pending(normalizer, sb_client, limit=300):
+# Скільки часу відводимо на екстракцію. Черга живе в базі й нікуди не
+# дінеться, тож зупинитися самим краще, ніж бути вбитим по таймауту job'а:
+# 30.08 прогін помер посеред екстракції, і разом із ним пропали і підсумок,
+# і звіт у чат — ми навіть не знали, скільки записів устигло обробитись.
+EXTRACT_BUDGET_SEC = int(os.environ.get("EXTRACT_BUDGET_SEC", "2100"))
+
+
+def process_pending(normalizer, sb_client, limit=500):
     """Етап Б: LLM-екстракція спільної черги raw_items — включно з сирцем,
     що лишився з минулих запусків після збоїв. 5 послідовних збоїв API —
-    зупиняємось: черга нікуди не дінеться, а спроби палити нема сенсу."""
+    зупиняємось: черга нікуди не дінеться, а спроби палити нема сенсу.
+    Так само зупиняємось, коли вичерпано бюджет часу."""
     queue = raw_store.fetch_pending(sb_client, limit=limit)
     # Налаштування джерел читаємо один раз на прогін, не на кожен запис.
     source_configs = get_source_configs(sb_client)
 
     stats = {"queued": len(queue), "processed": 0, "rejected": 0,
-             "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0}
+             "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0,
+             "out_of_time": 0}
     if not queue:
         return stats
 
-    print(f"\n{'=' * 70}\n🧠 ЕКСТРАКЦІЯ: {len(queue)} у черзі\n{'=' * 70}")
+    print(f"\n{'=' * 70}\n🧠 ЕКСТРАКЦІЯ: {len(queue)} у черзі "
+          f"(бюджет {EXTRACT_BUDGET_SEC // 60} хв)\n{'=' * 70}")
     consecutive_errors = 0
-    for item in queue:
+    started = time.time()
+    for idx, item in enumerate(queue):
+        spent = time.time() - started
+        if spent > EXTRACT_BUDGET_SEC:
+            stats["out_of_time"] = len(queue) - idx
+            print(f"⏱  Бюджет вичерпано за {spent / 60:.1f} хв — зупиняюсь. "
+                  f"{stats['out_of_time']} записів лишились у черзі "
+                  f"до наступного запуску.")
+            break
         # ── Ворота перед LLM ────────────────────────────────────────────
         # Дедуплікація донедавна стояла ПІСЛЯ екстракції: Haiku відпрацьовував,
         # і аж тоді ставало ясно, що така можливість уже в базі. Токени за
@@ -260,6 +279,8 @@ def process_pending(normalizer, sb_client, limit=300):
             raw_store.bump_attempt(sb_client, item, "upsert failed")
             stats["retry"] += 1
 
+    if stats.get("out_of_time"):
+        print(f"↩️  Не дійшла черга до {stats['out_of_time']} записів — вони pending.")
     print(f"✅ Екстракція: {stats['processed']} збережено "
           f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
           f"{stats['skipped_dup']} пропущено до LLM (вже є), "

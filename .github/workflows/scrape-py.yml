@@ -7,11 +7,19 @@ on:
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  # Без цього вивід Python буферизується, і коли прогін убиває по таймауту,
+  # у логах не лишається нічого: 30.08 після падіння не було видно навіть,
+  # на якому джерелі все спинилось.
+  PYTHONUNBUFFERED: '1'
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # 30 хвилин перестало вистачати, коли додались три переліки гуртків:
+    # черга екстракції виросла до 653 записів, і прогін убивало посеред
+    # роботи — разом із підсумком і звітом у чат. Сам скрипт зупиняється за
+    # EXTRACT_BUDGET_SEC, тож цей таймаут — лише страховка зверху.
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: scraper
@@ -59,4 +67,8 @@ jobs:
           # Facebook Graph API (опціонально)
           FB_APP_ID: ${{ secrets.FB_APP_ID }}
           FB_APP_SECRET: ${{ secrets.FB_APP_SECRET }}
+          # Скільки часу відводимо на LLM-екстракцію черги. Менше за
+          # timeout-minutes, щоб скрипт устиг сам зупинитись, надрукувати
+          # підсумок і надіслати звіт — а не був убитий посеред роботи.
+          EXTRACT_BUDGET_SEC: '2400'
         run: python main.py
