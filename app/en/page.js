@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { supabase, countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
+import { supabase, publicOpportunities, CARD_FIELDS, countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
 import { TOPIC_NAV } from '@/lib/topics';
+import { TYPE_LABELS_EN, isEvent } from '@/lib/labels';
 import Footer from '../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -46,6 +47,49 @@ async function getStats() {
   }
 }
 
+// Сторінка розповідала про записи, але жодного не показувала: людина мала
+// повірити на слово й піти в каталог наосліп.
+//
+// Беремо по одній свіжій можливості на кожен рядок списку «What's inside»,
+// а не шість найновіших: найновіші — це шість однакових гуртків з одного
+// агрегатора, і замість обіцяної широти виходив би доказ протилежного.
+const SHOWCASE_TYPES = ['camp', 'course', 'olympiad', 'exchange', 'scholarship', 'grant'];
+
+async function getShowcase() {
+  try {
+    if (!supabase) return [];
+    const rows = await Promise.all(
+      SHOWCASE_TYPES.map(async (type) => {
+        const { data } = await publicOpportunities(CARD_FIELDS)
+          .eq('opportunity_type', type)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        return data?.[0] || null;
+      }),
+    );
+    return rows.filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function ageLabel(item) {
+  const from = item.age_from;
+  const to = item.age_to;
+  if (from == null && to == null) return null;
+  if (from != null && to != null) return `${from}–${to} yrs`;
+  if (from != null) return `${from}+ yrs`;
+  return `up to ${to} yrs`;
+}
+
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+function shortDate(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getUTCDate()} ${MONTHS_EN[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+}
+
 const WHAT = [
   { icon: '🏕️', en: 'Camps & recreation', note: 'free and subsidised, in Ukraine and abroad' },
   { icon: '🎓', en: 'Courses & clubs', note: 'from coding to arts, many online' },
@@ -60,7 +104,7 @@ const WHAT = [
 // найкоротший шлях до можливостей виглядав як виноска.
 
 export default async function EnglishPage() {
-  const { active, sources } = await getStats();
+  const [{ active, sources }, showcase] = await Promise.all([getStats(), getShowcase()]);
 
   return (
     <div className="container en-page" lang="en">
@@ -137,13 +181,86 @@ export default async function EnglishPage() {
         ))}
       </section>
 
+      {showcase.length ? (
+        <section className="en-latest">
+          <h2>What a listing looks like</h2>
+          <p>
+            One live opportunity from each category above — exactly the cards
+            you’ll find in the catalogue.
+          </p>
+          <div className="grid en-grid">
+            {showcase.map((item) => (
+              <article key={item.id} className="card">
+                <div className="chips">
+                  <span className="chip chip-type">
+                    {TYPE_LABELS_EN[item.opportunity_type] || item.opportunity_type}
+                  </span>
+                  {ageLabel(item) ? <span className="chip chip-age">{ageLabel(item)}</span> : null}
+                  {item.cost_type === 'free' ? <span className="chip chip-free">free</span> : null}
+                  {item.cost_type === 'partially_free' ? <span className="chip chip-paid">funded</span> : null}
+                  {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">affordable</span> : null}
+                </div>
+
+                {/* Назва й опис — українською: це самі дані, і саме на них
+                    видно, що доведеться перекладати. Рамка картки при цьому
+                    англійська, тож зрозуміло, що це за річ і для кого. */}
+                <h3 lang="uk">
+                  <Link href={`/o/${item.slug}`} className="card-title-link">
+                    {item.title}
+                  </Link>
+                </h3>
+                {item.summary ? <p className="card-summary" lang="uk">{item.summary}</p> : null}
+
+                <div className="meta">
+                  {(item.cities || []).length ? (
+                    <div className="meta-row">
+                      <span className="meta-label">City</span>
+                      <span className="meta-val" lang="uk">{item.cities.slice(0, 2).join(', ')}</span>
+                    </div>
+                  ) : null}
+                  {item.deadline && shortDate(item.deadline) ? (
+                    <div className="meta-row">
+                      {/* Той самий поділ, що на сайті й у боті: у події —
+                          дата, дедлайн лише там, де справді подають заявку. */}
+                      <span className="meta-label">{isEvent(item) ? 'When' : 'Deadline'}</span>
+                      <span className="meta-val">{shortDate(item.deadline)}</span>
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section>
         <h2>Listings are in Ukrainian</h2>
         <p>
           Listings are written in Ukrainian — the language of the families we
-          serve. If you’re a parent, just head straight to the listings; if you’re a
-          teacher, volunteer or partner helping a Ukrainian family abroad, your
-          browser’s translate feature works well on every page.
+          serve. Titles, descriptions and cities stay in the original, because
+          that’s how the organisers publish them. Your browser translates the
+          whole site in one click:
+        </p>
+        <ul className="en-howto">
+          <li>
+            <b>Chrome, Edge, Brave</b> — right-click anywhere on the page and choose
+            <i> Translate to English</i>, or press the translate icon in the address bar.
+          </li>
+          <li>
+            <b>Safari on a Mac</b> — press the translate icon in the address bar,
+            then <i>Translate to English</i>.
+          </li>
+          <li>
+            <b>Firefox</b> — press the translate icon in the address bar and pick English.
+          </li>
+          <li>
+            <b>On a phone</b> — Chrome shows a <i>Translate</i> bar at the bottom;
+            in Safari tap <i>Aa</i> next to the address, then <i>Translate to English</i>.
+          </li>
+        </ul>
+        <p>
+          Links, filters and the search box keep working while translated — only
+          the words change.
         </p>
         <div className="en-actions">
           <Link href="/" className="opportunity-cta">

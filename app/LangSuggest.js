@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { rememberLang } from './Header';
+import { readsUkrainian } from '@/lib/lang';
 
 // Пропозиція англійської версії для тих, кого не забрав редірект: людина
 // в Україні з неукраїнським браузером. Тих, хто заходить з-за кордону,
@@ -18,10 +19,10 @@ export default function LangSuggest() {
   useEffect(() => {
     try {
       if (localStorage.getItem(KEY)) return;
-      const langs = navigator.languages || [navigator.language || ''];
-      const primary = (langs[0] || '').toLowerCase();
-      // uk/ru — читають українську; решті пропонуємо англійську сторінку.
-      if (primary.startsWith('uk') || primary.startsWith('ru')) return;
+      // Те саме визначення україномовності, що й у середника: інакше він
+      // лишав би людину на українській, а банер тут же пропонував їй
+      // англійську — два різні рішення про одну людину.
+      if (readsUkrainian(navigator.languages || [navigator.language || ''])) return;
       setShow(true);
       if (window.gtag) window.gtag('event', 'lang_suggest_shown');
     } catch {
