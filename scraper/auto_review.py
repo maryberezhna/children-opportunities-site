@@ -190,6 +190,17 @@ def classify(row: dict, client) -> tuple[str, str]:
     return YELLOW, f"суддя не пропустив: {j.get('reason', '')}"
 
 
+def _with_trace(row: dict, note: str) -> str:
+    """Дописує рішення до наявного коментаря, а не затирає його.
+
+    У коментарі вже може лежати слід пошукового агента («🔎 Агент: гончарство»)
+    — єдине місце, де видно, звідки взявся кандидат. Затерши його, модератор
+    втрачає контекст саме тоді, коли він потрібен: на розборі спірного запису.
+    """
+    prev = (row.get("admin_comment") or "").strip()
+    return (f"{prev} · {note}" if prev else note)[:500]
+
+
 def apply_decision(sb, row: dict, corridor: str, reason: str) -> None:
     """Зелений публікуємо, червоний закриваємо, жовтий не чіпаємо взагалі."""
     if corridor == GREEN:
@@ -197,10 +208,11 @@ def apply_decision(sb, row: dict, corridor: str, reason: str) -> None:
             "status": "active",
             # verified_at НЕ ставимо: це позначка ручної перевірки людиною,
             # і брехати нею не можна. Слід лишаємо в admin_comment.
-            "admin_comment": f"auto-approved v1 · {reason}"[:500],
+            "admin_comment": _with_trace(row, f"auto-approved v1 · {reason}"),
         }
     elif corridor == RED:
-        patch = {"status": "closed", "admin_comment": f"auto-rejected v1 · {reason}"[:500]}
+        patch = {"status": "closed",
+                 "admin_comment": _with_trace(row, f"auto-rejected v1 · {reason}")}
     else:
         return
     sb.table("opportunities").update(patch).eq("id", row["id"]).execute()

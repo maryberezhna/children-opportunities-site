@@ -10,6 +10,7 @@ import {
   cityLabel,
 } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
+import { daysUntil, kyivToday } from '@/lib/dates';
 import { trackOpportunityClick } from '@/lib/track';
 
 // Увесь текст каталогу двома мовами. Той самий компонент обслуговує / і /en:
@@ -268,18 +269,12 @@ function formatDeadline(dateStr, lang = 'uk') {
   return `${day} ${month} ${year}`;
 }
 
-function daysUntilDeadline(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return null;
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const diff = Math.ceil((date - now) / (1000 * 60 * 60 * 24));
-  return diff;
-}
+// «Сьогодні» приходить пропом із сервера — див. lib/dates.js. Рахувати його
+// тут означало б рахувати двічі: на сервері в UTC, у браузері в Києві — і
+// отримати різні числа на тому самому записі.
 
-function deadlineMatches(item, value) {
-  const days = daysUntilDeadline(item.deadline);
+function deadlineMatches(item, value, today) {
+  const days = daysUntil(item.deadline, today);
   if (value === 'none') return days === null;
   if (value === 'week') return days !== null && days >= 0 && days <= 7;
   if (value === 'month') return days !== null && days >= 0 && days <= 31;
@@ -340,7 +335,12 @@ function FilterPanel({ menu, lang }) {
   );
 }
 
-export default function OpportunitiesList({ opportunities, presetCity, promoProps = null, lang = 'uk' }) {
+export default function OpportunitiesList({ opportunities, presetCity, promoProps = null, lang = 'uk', today }) {
+  // Сторінка передає «сьогодні» пропом — тоді число однакове в розмітці й у
+  // браузері. Якщо не передала, рахуємо самі: kyivToday() не залежить від
+  // часового поясу середовища, тож розбіжність лишається хіба що на п'ять
+  // хвилин довкола київської півночі, поки сторінка не перегенерувалась.
+  const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
   const isEn = lang === 'en';
   const [ages, setAges] = useState(() => new Set());
@@ -520,9 +520,9 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   // Прострочені разові можливості не показуємо ніде — ні в списку, ні при
   // підрахунку доступних опцій фільтрів.
   const liveItems = useMemo(() => opportunities.filter((item) => {
-    const days = daysUntilDeadline(item.deadline);
+    const days = daysUntil(item.deadline, todayIso);
     return !(days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type));
-  }), [opportunities]);
+  }), [opportunities, todayIso]);
 
   // Один предикат на секцію фільтрів. Це єдине джерело правди: за ними і
   // фільтрується список, і рахується, які опції взагалі мають сенс показувати.
@@ -545,7 +545,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       || (item.child_needs || []).some((n) => needs.has(n)),
     cost: (item) => costs.size === 0 || costs.has(item.cost_type),
     deadline: (item) => deadlines.size === 0
-      || [...deadlines].some((v) => deadlineMatches(item, v)),
+      || [...deadlines].some((v) => deadlineMatches(item, v, todayIso)),
     city: (item) => {
       if (selectedCities.size === 0) return true;
       const itemCities = item.cities || [];
@@ -565,7 +565,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       return [item.title, item.summary, item.source, item.title_en, item.summary_en]
         .filter(Boolean).join(' ').toLowerCase().includes(q);
     },
-  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap]);
+  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap, todayIso]);
 
   const FACETS = ['age', 'type', 'aid', 'theme', 'need', 'cost', 'deadline', 'city', 'query'];
 
@@ -574,7 +574,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
 
     // Lower rank = higher priority. Urgent deadlines bubble to the very top.
     const deadlineRank = (item) => {
-      const days = daysUntilDeadline(item.deadline);
+      const days = daysUntil(item.deadline, todayIso);
       if (days === null) return 4;
       if (days < 0) return 4;
       if (days <= 7) return 0;
@@ -585,8 +585,8 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
 
     if (sort === 'deadline') {
       result.sort((a, b) => {
-        const aDays = daysUntilDeadline(a.deadline);
-        const bDays = daysUntilDeadline(b.deadline);
+        const aDays = daysUntil(a.deadline, todayIso);
+        const bDays = daysUntil(b.deadline, todayIso);
         if (aDays === null && bDays === null) return 0;
         if (aDays === null) return 1;
         if (bDays === null) return -1;
@@ -613,7 +613,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     }
 
     return result;
-  }, [liveItems, predicates, sort]);
+  }, [liveItems, predicates, sort, todayIso]);
 
   // Доступні опції кожної секції: рахуємо на тому, що проходить УСІ ІНШІ
   // фільтри. Саму секцію виключаємо — інакше вибір у ній схлопнув би її власний
@@ -650,7 +650,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       deadline: (() => {
         const items = candidates('deadline');
         return new Set(DEADLINE_OPTIONS
-          .filter((d) => d.value !== 'all' && items.some((i) => deadlineMatches(i, d.value)))
+          .filter((d) => d.value !== 'all' && items.some((i) => deadlineMatches(i, d.value, todayIso)))
           .map((d) => d.value));
       })(),
       city: set('city', (i, out) => (i.cities || []).forEach((c) => out.add(c))),
@@ -690,7 +690,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       ...m,
       options: m.all.filter((o) => isOfferable(m.id, o.value, m.selected)),
     }));
-  }, [ages, types, aidTypes, themes, deadlines, needs, costs, selectedCities, available]);
+  }, [ages, types, aidTypes, themes, deadlines, needs, costs, selectedCities, available, todayIso]);
 
   const openMenu = menus.find((m) => m.id === openId && m.options.length) || null;
 
@@ -748,7 +748,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   const handleLinkClick = (title) => trackOpportunityClick(title, 'list');
 
   const deadlineChip = (item) => {
-    const days = daysUntilDeadline(item.deadline);
+    const days = daysUntil(item.deadline, todayIso);
     const annual = ANNUAL_TYPES.has(item.opportunity_type);
     if (days === null) {
       return annual ? <span className="chip chip-annual">{t.annual}</span> : null;

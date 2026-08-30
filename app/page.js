@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
+import { kyivToday } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
 import SupportPopup from './SupportPopup';
 import { TOPIC_NAV } from '@/lib/topics';
@@ -127,6 +128,7 @@ export default async function Home() {
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}
+          today={kyivToday()}
         />
 
         <Footer />
