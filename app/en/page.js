@@ -74,7 +74,7 @@ export default async function EnglishPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
-      <div className="container en-page" lang="en">
+      <div className="container" lang="en">
         <div className="hero">
           <div className="hero-copy">
             <div className="hero-badges">
