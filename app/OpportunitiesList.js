@@ -656,7 +656,13 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       aid: set('aid', (i, out) => { if (i.aid_type) out.add(i.aid_type); }),
       theme: set('theme', (i, out) => (themeMap.get(i.id) || []).forEach((t) => out.add(t))),
       need: set('need', (i, out) => (i.child_needs || []).forEach((n) => out.add(n))),
-      cost: set('cost', (i, out) => { if (i.cost_type) out.add(i.cost_type); }),
+      // «Платно» — синтетичне значення поверх двох реальних: якщо його не
+      // додати сюди, опція ховається як «немає таких записів», хоча платні
+      // можливості на сторінці є.
+      cost: set('cost', (i, out) => {
+        if (i.cost_type) out.add(i.cost_type);
+        if (i.cost_type === 'paid_affordable' || i.cost_type === 'paid_premium') out.add('paid');
+      }),
       deadline: (() => {
         const items = candidates('deadline');
         return new Set(DEADLINE_OPTIONS
