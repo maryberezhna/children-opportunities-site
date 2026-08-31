@@ -41,18 +41,22 @@ const NEED_LABELS = {
 };
 
 const COST_LABELS = {
+  // Платне називаємо платним: «Доступно» і «Преміум» описували ціну словами,
+  // які нічого не коштують — людина читала «доступно» й дізнавалась про суму
+  // вже на сайті організатора. Саму суму, якщо вона відома, показує сусідній
+  // рядок «Вартість» із price_note.
   uk: {
     free: 'Безкоштовно',
     partially_free: 'З фінансуванням',
-    paid_affordable: 'Доступно',
-    paid_premium: 'Преміум',
+    paid_affordable: 'Платно',
+    paid_premium: 'Платно',
     closed: 'Закрита подача',
   },
   en: {
     free: 'Free',
     partially_free: 'Funded',
-    paid_affordable: 'Affordable',
-    paid_premium: 'Premium',
+    paid_affordable: 'Paid',
+    paid_premium: 'Paid',
     closed: 'Applications closed',
   },
 };
@@ -70,7 +74,7 @@ const L = {
     stateAid: 'держдопомога',
     free: 'безкоштовно',
     funded: 'з фінансуванням',
-    affordable: 'доступно',
+    paid: 'платно',
     format: 'Формат',
     deadline: 'Дедлайн',
     applications: 'Подача',
@@ -96,7 +100,7 @@ const L = {
     stateAid: 'state aid',
     free: 'free',
     funded: 'funded',
-    affordable: 'affordable',
+    paid: 'paid',
     format: 'Format',
     deadline: 'Deadline',
     applications: 'Applications',
@@ -223,17 +227,20 @@ export function verifiedLabel(item, lang = 'uk') {
 // Google обрізає сніпет приблизно на 160 символах — усе довше не побачать.
 const DESC_MAX = 158;
 
+// Те саме правило й у сніпеті для Google: «доступна вартість» у видачі — це
+// обіцянка, яку сторінка не виконує. Люди шукають «… ціна» саме тому, що
+// хочуть знати, скільки це коштує, — «платно» відповідає, «доступно» ні.
 const COST_DESC = {
   uk: {
     free: 'безкоштовно',
     partially_free: 'з фінансуванням',
-    paid_affordable: 'доступна вартість',
-    paid_premium: 'платна участь',
+    paid_affordable: 'платно',
+    paid_premium: 'платно',
   },
   en: {
     free: 'free',
     partially_free: 'funded',
-    paid_affordable: 'affordable',
+    paid_affordable: 'paid',
     paid_premium: 'paid',
   },
 };
@@ -519,6 +526,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
             {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
             {item.cost_type === 'partially_free' ? <span className="chip chip-paid">{t.funded}</span> : null}
+            {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
+              ? <span className="chip chip-paid">{t.paid}</span> : null}
             {needs.map((n) => (
               <span key={n} className="chip chip-need">{NEEDS[n]}</span>
             ))}
@@ -619,7 +628,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                         <span className="chip chip-age">{ageRangeLabel(r, lang)}</span>
                         {r.cost_type === 'free' && <span className="chip chip-free">{t.free}</span>}
                         {r.cost_type === 'partially_free' && <span className="chip chip-paid">{t.funded}</span>}
-                        {r.cost_type === 'paid_affordable' && <span className="chip chip-paid">{t.affordable}</span>}
+                        {(r.cost_type === 'paid_affordable' || r.cost_type === 'paid_premium')
+                          && <span className="chip chip-paid">{t.paid}</span>}
                         {days !== null && days >= 0 && days <= 7 && (
                           <span className="chip chip-deadline-urgent">
                             ⏰ {days === 0 ? t.today : (lang === 'en' ? `${days} days` : `${days} днів`)}
