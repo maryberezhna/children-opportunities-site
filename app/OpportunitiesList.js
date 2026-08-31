@@ -34,7 +34,7 @@ const UI = {
     stateAid: 'держдопомога',
     free: 'безкоштовно',
     funded: 'з фінансуванням',
-    affordable: 'доступно',
+    paid: 'платно',
     annual: '🔄 щорічно',
     annualPast: '🔄 відкривається щороку',
     today: 'сьогодні',
@@ -63,7 +63,7 @@ const UI = {
     stateAid: 'state aid',
     free: 'free',
     funded: 'funded',
-    affordable: 'affordable',
+    paid: 'paid',
     annual: '🔄 every year',
     annualPast: '🔄 opens every year',
     today: 'today',
@@ -160,6 +160,9 @@ const COST_OPTIONS = [
   { label: 'Будь-яка', en: 'Any', value: 'all' },
   { label: 'Безкоштовно', en: 'Free', value: 'free' },
   { label: 'З фінансуванням', en: 'Funded', value: 'partially_free' },
+  // Платне має бути видно у фільтрі так само, як безкоштовне: інакше його
+  // не можна ні знайти, ні відсіяти, і воно просто губиться в загальній купі.
+  { label: 'Платно', en: 'Paid', value: 'paid' },
 ];
 
 const DEADLINE_OPTIONS = [
@@ -545,7 +548,12 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     },
     need: (item) => needs.size === 0
       || (item.child_needs || []).some((n) => needs.has(n)),
-    cost: (item) => costs.size === 0 || costs.has(item.cost_type),
+    // «Платно» — один вибір на дві вартості в базі: людині байдуже, чи це
+    // paid_affordable, чи paid_premium — їй важливо, що це коштує грошей.
+    cost: (item) => costs.size === 0
+      || costs.has(item.cost_type)
+      || (costs.has('paid') && (item.cost_type === 'paid_affordable'
+                                || item.cost_type === 'paid_premium')),
     deadline: (item) => deadlines.size === 0
       || [...deadlines].some((v) => deadlineMatches(item, v, todayIso)),
     city: (item) => {
@@ -787,7 +795,12 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
         <span className="chip chip-age">{ageLabel(item)}</span>
         {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
         {item.cost_type === 'partially_free' ? <span className="chip chip-paid">{t.funded}</span> : null}
-        {item.cost_type === 'paid_affordable' ? <span className="chip chip-paid">{t.affordable}</span> : null}
+        {/* Платне називаємо платним. Раніше paid_affordable показувався як
+            «доступно», а paid_premium не мав чипа взагалі — картка мовчала про
+            те, що участь коштує грошей, і людина дізнавалась про це вже на
+            сторінці організатора. */}
+        {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
+          ? <span className="chip chip-paid">{t.paid}</span> : null}
         {deadlineChip(item)}
         {(item.child_needs || []).filter((n) => NEED_LABELS[n]).slice(0, 2).map((n) => (
           <span key={n} className="chip chip-need">
