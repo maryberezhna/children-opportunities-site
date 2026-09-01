@@ -27,6 +27,7 @@ from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
 from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
+    american_councils,
     british_council,
     cprs_kyiv,
     diaspora_schools,
@@ -40,6 +41,7 @@ from scrapers import (
     gurtok,
     ocnttum_if,
     palats_dp,
+    presidentfund,
     pum_lutsk,
     house_of_europe,
     instagram_graph,
@@ -65,6 +67,11 @@ SCRAPERS = [
     ("House of Europe", house_of_europe, "ukrainian"),
     ("Місце Сили (Клуб Добродіїв)", space_dobrodiy, "ukrainian"),
     ("RSS-стрічки", rss_feeds, "ukrainian"),
+    # Дефіцитні категорії (рішення Марії 01.09: гуртки стоп, шукаємо складне —
+    # стипендії, гранти, обміни). Обидва — першоджерела зі стандартним
+    # запобіжником свіжості.
+    ("Фонд Президента України (presidentfund.gov.ua)", presidentfund, "ukrainian"),
+    ("American Councils Ukraine (americancouncils.org.ua)", american_councils, "ukrainian"),
     # Переліки гуртків. Найслабша наша категорія: постійний набір поруч
     # із домом — саме те, що шукає батько на початку навчального року.
     # Це агрегатори, не першоджерела, тож у sources їм ставимо trust_tier=3.
