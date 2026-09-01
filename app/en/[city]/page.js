@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, publicOpportunities, CARD_FIELDS_EN } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS_EN } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import OpportunitiesList from '../../OpportunitiesList';
 import StickyBar from '../../StickyBar';
@@ -43,8 +43,8 @@ export async function generateMetadata({ params }) {
 // назвою — англійська існує лише для того, що бачить людина.
 async function getCityOpportunities(cityName) {
   if (!supabase) return [];
-  const { data, error } = await publicOpportunities(CARD_FIELDS_EN)
-    .order('created_at', { ascending: false });
+  const { data, error } = await fetchAllRows(() =>
+    publicOpportunities(CARD_FIELDS_EN).order('created_at', { ascending: false }).order('id'));
   if (error || !data) return [];
   return data.filter((o) => {
     const cities = o.cities || [];

@@ -1,7 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, publicOpportunities } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
+import { TOPIC_LIST } from '@/lib/topics';
+import { MIN_LOCAL, localTopicCount } from '@/lib/city-topics';
 import OpportunitiesList from '../OpportunitiesList';
 import { kyivToday } from '@/lib/dates';
 import StickyBar from '../StickyBar';
@@ -42,8 +44,8 @@ export async function generateMetadata({ params }) {
 
 async function getCityOpportunities(cityName) {
   if (!supabase) return [];
-  const { data, error } = await publicOpportunities()
-    .order('created_at', { ascending: false });
+  const { data, error } = await fetchAllRows(() =>
+    publicOpportunities().order('created_at', { ascending: false }).order('id'));
   if (error || !data) return [];
   return data.filter((o) => {
     const cities = o.cities || [];
@@ -74,6 +76,12 @@ export default async function CityPage({ params }) {
   };
 
   const otherCities = Object.entries(CITY_META).filter(([slug]) => slug !== params.city);
+
+  // Підбірки цього міста, що пройшли поріг локальних записів, — ті самі
+  // правила, що в /[city]/[topic]. Лінкуємо лише на сторінки, які існують.
+  const cityTopics = TOPIC_LIST.filter(
+    (t) => localTopicCount(opportunities, t, cityName) >= MIN_LOCAL,
+  );
 
   return (
     <>
@@ -107,6 +115,16 @@ export default async function CityPage({ params }) {
             </div>
           </div>
         </div>
+
+        {cityTopics.length > 0 && (
+          <nav className="city-nav" aria-label={`Підбірки у ${locative}`}>
+            {cityTopics.map((t) => (
+              <Link key={t.slug} href={`/${params.city}/${t.slug}`} className="city-nav-link">
+                {t.nav} у {locative}
+              </Link>
+            ))}
+          </nav>
+        )}
 
         <nav className="city-nav" aria-label="Інші міста">
           {otherCities.map(([slug, meta]) => (

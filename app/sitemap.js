@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import { TOPIC_LIST } from '@/lib/topics';
+import { qualifyingCombos } from '@/lib/city-topics';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -11,8 +12,10 @@ export default async function sitemap() {
   // «завершилась»), індексовані, і Google має переобійти їх швидше — 114
   // з них досі висять у Search Console як 404 із часів, коли так і було.
   const { data } = supabase
-    ? await supabase.from('opportunities').select('slug, updated_at, status')
-        .in('status', ['active', 'closed']).is('canonical_slug', null)
+    ? await fetchAllRows(() =>
+        supabase.from('opportunities').select('slug, updated_at, status')
+          .in('status', ['active', 'closed']).is('canonical_slug', null)
+          .order('id'))
     : { data: [] };
 
   // Дві мовні версії кожної сторінки. alternates каже Google, що це та сама
@@ -109,5 +112,20 @@ export default async function sitemap() {
     ];
   });
 
-  return [...staticPages, ...topicPages, ...cityPages, ...opportunityEntries];
+  // «Місто × підбірка» — лише комбінації над порогом локальних записів:
+  // ті самі правила, що в /[city]/[topic], інакше sitemap обіцяв би 404.
+  // Українською без alternates: англійського двійника ці сторінки не мають.
+  const { data: comboRows } = supabase
+    ? await fetchAllRows(() =>
+        publicOpportunities('title, cost_type, aid_type, opportunity_type, cities')
+          .order('id'))
+    : { data: [] };
+  const cityTopicPages = qualifyingCombos(comboRows || []).map(({ citySlug, topicSlug }) => ({
+    url: `${SITE_URL}/${citySlug}/${topicSlug}`,
+    changeFrequency: 'daily',
+    priority: 0.8,
+    lastModified: new Date(),
+  }));
+
+  return [...staticPages, ...topicPages, ...cityPages, ...cityTopicPages, ...opportunityEntries];
 }

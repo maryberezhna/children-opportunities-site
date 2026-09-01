@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import OpportunitiesList from './OpportunitiesList';
@@ -79,8 +79,9 @@ export function topicMetadata(topic, lang = 'uk') {
 
 async function getTopicOpportunities(topic, lang) {
   if (!supabase) return [];
-  const { data, error } = await publicOpportunities(lang === 'en' ? CARD_FIELDS_EN : CARD_FIELDS)
-    .order('created_at', { ascending: false });
+  const { data, error } = await fetchAllRows(() =>
+    publicOpportunities(lang === 'en' ? CARD_FIELDS_EN : CARD_FIELDS)
+      .order('created_at', { ascending: false }).order('id'));
   if (error || !data) return [];
   return data.filter(topic.match);
 }
