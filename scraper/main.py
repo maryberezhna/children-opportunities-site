@@ -453,6 +453,16 @@ async def amain():
         print(f"   Активних у базі: {health.get('total_active', 0)}")
         print(f"   Архівованих: {health.get('total_archived', 0)}")
         print(f"   Без дедлайну: {health.get('no_deadline', 0)}")
+        # Кеш промпта нормалізатора: read має рости з другого виклику запуску.
+        # Нуль read при сотнях викликів = кеш зламався (змінився префікс або
+        # він став коротшим за мінімум моделі) — платимо повну ціну знову.
+        total_in = (normalizer.cache_read_tokens + normalizer.cache_write_tokens
+                    + normalizer.uncached_input_tokens)
+        if total_in:
+            hit = normalizer.cache_read_tokens * 100 // total_in
+            print(f"   💾 Кеш промпта LLM: read {normalizer.cache_read_tokens:,} · "
+                  f"write {normalizer.cache_write_tokens:,} · "
+                  f"без кешу {normalizer.uncached_input_tokens:,} ({hit}% hit)")
         llm_alert = None
         if normalizer.api_failures:
             llm_alert = {
