@@ -37,6 +37,8 @@ const UI = {
     funded: 'з фінансуванням',
     paid: 'платно',
     topWeek: '⭐ Топ тижня',
+    topWeekTitle: '⭐ Топ-3 можливості тижня',
+    topWeekNote: 'Обрано з тих, що безкоштовні, ще відкриті для подачі й підходять широкому віку.',
     annual: '🔄 щорічно',
     annualPast: '🔄 відкривається щороку',
     today: 'сьогодні',
@@ -67,6 +69,8 @@ const UI = {
     funded: 'funded',
     paid: 'paid',
     topWeek: '⭐ Pick of the week',
+    topWeekTitle: '⭐ Top 3 opportunities this week',
+    topWeekNote: 'Picked from those that are free, still open for applications and fit a wide age range.',
     annual: '🔄 every year',
     annualPast: '🔄 opens every year',
     today: 'today',
@@ -629,19 +633,8 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       });
     }
 
-    // Трійка тижня — нагору, хоч би яке сортування обрали. Позначка без
-    // підйому не працює: три картки десь на сьомому екрані ніхто не побачить,
-    // а обіцянку «топ тижня» ми при цьому вже дали.
-    // Виняток — коли людина сама попросила «найближчий дедлайн»: там її
-    // питання конкретне, і перебивати відповідь редакційним вибором нечесно.
-    if (sort !== 'deadline') {
-      const top = result.filter(isTop);
-      if (top.length) {
-        const rest = result.filter((o) => !isTop(o));
-        result = [...top, ...rest];
-      }
-    }
-
+    // Трійку нагору більше не піднімаємо: вона має власну секцію над
+    // фільтрами. Підйом лише дублював би її першими трьома картками списку.
     return result;
   }, [liveItems, predicates, sort, todayIso, thisWeek]);
 
@@ -807,6 +800,13 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     return null;
   };
 
+  // Трійка рахується від повного набору, а не від відфільтрованого: секція
+  // над фільтрами не має зникати від того, що людина обрала «Табори».
+  const topWeek = useMemo(
+    () => liveItems.filter(isTop).slice(0, 3),
+    [liveItems, thisWeek],
+  );
+
   const renderCard = (item) => (
     <article key={item.id} className="card">
       <div className="chips">
@@ -919,6 +919,22 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
 
   return (
     <>
+      {/* Трійка тижня окремою секцією, а не позначкою в списку.
+          Позначка на картці загубилась: у ряду з чотирьох чипів її просто не
+          читали, і обіцянка «топ тижня» лишалась невиконаною. Секція каже те
+          саме розміром, а не кольором.
+          Секція показує ту саму трійку незалежно від фільтрів — це редакційний
+          вибір тижня, а не результат пошуку. У каталозі нижче ці можливості
+          теж лишаються: інакше фільтр «Табори» ховав би табір, який ми самі
+          щойно назвали найкращим. */}
+      {topWeek.length ? (
+        <section className="top-week" aria-labelledby="top-week-title">
+          <h2 className="top-week-title" id="top-week-title">{t.topWeekTitle}</h2>
+          <p className="top-week-note">{t.topWeekNote}</p>
+          <div className="grid top-week-grid">{topWeek.map(renderCard)}</div>
+        </section>
+      ) : null}
+
       <div className="filters">
         {/* Компактний рядок легко проґавити, а фільтри — головний спосіб
             звузити 400 карток до своїх. Підпис пояснює, навіщо їх чіпати. */}
