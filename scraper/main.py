@@ -35,6 +35,8 @@ from scrapers import (
     erasmus,
     eurodesk,
     facebook_pages,
+    firstpalace_kharkiv,
+    gordiy_zp,
     gurtok,
     house_of_europe,
     instagram_graph,
@@ -66,6 +68,13 @@ SCRAPERS = [
     ("Гурток (gurtok.org)", gurtok, "ukrainian"),
     ("Школяр (shkolyar.org.ua)", shkolyar, "ukrainian"),
     ("ЦПР Святошинського району (cprs.kiev.ua)", cprs_kyiv, "ukrainian"),
+    # Палаци творчості — ПЕРШОДЖЕРЕЛА (комунальні заклади зі сторінкою на
+    # кожен гурток), на відміну від агрегаторів вище. Обидва зі вбудованим
+    # запобіжником свіжості: сайт без згадок поточного/минулого року не
+    # скрапиться, а попереджає в лог (урок 01.09.2026 — застаріле джерело
+    # гірше за порожнє місто).
+    ("Харківський обласний ПДЮТ (firstpalace.kh.ua)", firstpalace_kharkiv, "ukrainian"),
+    ("Запорізький міський ПДЮТ (gordiy.zp.ua)", gordiy_zp, "ukrainian"),
     # Діаспора — українські родини за кордоном
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
