@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import { daysUntil, kyivToday } from '@/lib/dates';
+import { isoWeek } from '@/lib/week';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
   NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
@@ -75,6 +76,7 @@ const L = {
     free: 'безкоштовно',
     funded: 'з фінансуванням',
     paid: 'платно',
+    topWeek: '⭐ Топ тижня',
     format: 'Формат',
     deadline: 'Дедлайн',
     applications: 'Подача',
@@ -101,6 +103,7 @@ const L = {
     free: 'free',
     funded: 'funded',
     paid: 'paid',
+    topWeek: '⭐ Pick of the week',
     format: 'Format',
     deadline: 'Deadline',
     applications: 'Applications',
@@ -146,7 +149,7 @@ export async function getOpportunity(slug) {
 }
 
 const RELATED_FIELDS =
-  'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs, title_en, summary_en';
+  'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs, title_en, summary_en, featured_week';
 
 export async function getRelated(item, limit = 8) {
   if (!supabase || !item) return [];
@@ -521,6 +524,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
         <article className={`opportunity-page${isClosed ? ' opportunity-page-closed' : ''}`}>
           <div className="opportunity-chips">
+            {item.featured_week === isoWeek()
+              ? <span className="chip chip-top">{t.topWeek}</span> : null}
             <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
             {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
             <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>

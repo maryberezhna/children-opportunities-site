@@ -11,6 +11,7 @@ import {
 } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 import { daysUntil, kyivToday } from '@/lib/dates';
+import { isoWeek } from '@/lib/week';
 import { trackOpportunityClick } from '@/lib/track';
 
 // Увесь текст каталогу двома мовами. Той самий компонент обслуговує / і /en:
@@ -35,6 +36,7 @@ const UI = {
     free: 'безкоштовно',
     funded: 'з фінансуванням',
     paid: 'платно',
+    topWeek: '⭐ Топ тижня',
     annual: '🔄 щорічно',
     annualPast: '🔄 відкривається щороку',
     today: 'сьогодні',
@@ -64,6 +66,7 @@ const UI = {
     free: 'free',
     funded: 'funded',
     paid: 'paid',
+    topWeek: '⭐ Pick of the week',
     annual: '🔄 every year',
     annualPast: '🔄 opens every year',
     today: 'today',
@@ -346,6 +349,10 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   // часового поясу середовища, тож розбіжність лишається хіба що на п'ять
   // хвилин довкола київської півночі, поки сторінка не перегенерувалась.
   const todayIso = today || kyivToday();
+  // Позначка живе рівно свій тиждень: у базі лежить не прапорець, а тиждень,
+  // тож забути погасити її неможливо — вона гасне сама в понеділок.
+  const thisWeek = isoWeek();
+  const isTop = (item) => item.featured_week === thisWeek;
   const t = UI[lang] || UI.uk;
   const isEn = lang === 'en';
   const [ages, setAges] = useState(() => new Set());
@@ -622,8 +629,21 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       });
     }
 
+    // Трійка тижня — нагору, хоч би яке сортування обрали. Позначка без
+    // підйому не працює: три картки десь на сьомому екрані ніхто не побачить,
+    // а обіцянку «топ тижня» ми при цьому вже дали.
+    // Виняток — коли людина сама попросила «найближчий дедлайн»: там її
+    // питання конкретне, і перебивати відповідь редакційним вибором нечесно.
+    if (sort !== 'deadline') {
+      const top = result.filter(isTop);
+      if (top.length) {
+        const rest = result.filter((o) => !isTop(o));
+        result = [...top, ...rest];
+      }
+    }
+
     return result;
-  }, [liveItems, predicates, sort, todayIso]);
+  }, [liveItems, predicates, sort, todayIso, thisWeek]);
 
   // Доступні опції кожної секції: рахуємо на тому, що проходить УСІ ІНШІ
   // фільтри. Саму секцію виключаємо — інакше вибір у ній схлопнув би її власний
@@ -790,6 +810,7 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   const renderCard = (item) => (
     <article key={item.id} className="card">
       <div className="chips">
+        {isTop(item) ? <span className="chip chip-top">{t.topWeek}</span> : null}
         <span className="chip chip-type">
           {(isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type] || item.opportunity_type}
         </span>

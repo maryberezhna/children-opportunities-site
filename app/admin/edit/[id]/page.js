@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import LoginForm from '../../LoginForm';
 import EditForm from './EditForm';
+import { isoWeek } from '@/lib/week';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,7 +36,7 @@ export default async function EditPage({ params }) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data } = await supabase
       .from('opportunities')
-      .select('id, title, summary, deadline, age_from, age_to, cost_type, opportunity_type, source, source_url, status, price_note, details')
+      .select('id, title, summary, deadline, age_from, age_to, cost_type, opportunity_type, source, source_url, status, price_note, details, featured_week')
       .eq('id', params.id)
       .maybeSingle();
     opp = data;
@@ -49,7 +50,7 @@ export default async function EditPage({ params }) {
     <>
       <h1 style={{ fontSize: 22, marginBottom: 2 }}>Редагувати можливість</h1>
       <p style={{ color: '#54617a', fontSize: 14, marginTop: 0 }}>{opp.source || '—'} · статус: <b>{opp.status}</b></p>
-      <EditForm opp={opp} />
+      <EditForm opp={{ ...opp, currentWeek: isoWeek() }} />
     </>,
   );
 }

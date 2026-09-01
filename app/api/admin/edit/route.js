@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import { isoWeek } from '@/lib/week';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -40,6 +41,9 @@ export async function POST(request) {
   if (TYPES.includes(b.opportunity_type)) patch.opportunity_type = b.opportunity_type;
   if (typeof b.price_note === 'string') patch.price_note = b.price_note.trim().slice(0, 200) || null;
   if (typeof b.details === 'string') patch.details = b.details.trim().slice(0, 20000) || null;
+  // Ручний топ тижня. Пишемо не прапорець, а сам тиждень: знята галочка
+  // гасить позначку одразу, а забута — сама в понеділок.
+  if (typeof b.featured === 'boolean') patch.featured_week = b.featured ? isoWeek() : null;
   if (b.publish) { patch.status = 'active'; patch.verified_at = new Date().toISOString(); }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
