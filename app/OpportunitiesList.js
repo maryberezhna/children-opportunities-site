@@ -919,22 +919,6 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
 
   return (
     <>
-      {/* Трійка тижня окремою секцією, а не позначкою в списку.
-          Позначка на картці загубилась: у ряду з чотирьох чипів її просто не
-          читали, і обіцянка «топ тижня» лишалась невиконаною. Секція каже те
-          саме розміром, а не кольором.
-          Секція показує ту саму трійку незалежно від фільтрів — це редакційний
-          вибір тижня, а не результат пошуку. У каталозі нижче ці можливості
-          теж лишаються: інакше фільтр «Табори» ховав би табір, який ми самі
-          щойно назвали найкращим. */}
-      {topWeek.length ? (
-        <section className="top-week" aria-labelledby="top-week-title">
-          <h2 className="top-week-title" id="top-week-title">{t.topWeekTitle}</h2>
-          <p className="top-week-note">{t.topWeekNote}</p>
-          <div className="grid top-week-grid">{topWeek.map(renderCard)}</div>
-        </section>
-      ) : null}
-
       <div className="filters">
         {/* Компактний рядок легко проґавити, а фільтри — головний спосіб
             звузити 400 карток до своїх. Підпис пояснює, навіщо їх чіпати. */}
@@ -1015,6 +999,23 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
           ))}
         </select>
       </div>
+
+      {/* Трійка тижня — просто над картками, нижче фільтрів і лічильника.
+          Позначка на самій картці загубилась: у ряду з чотирьох чипів її не
+          читали. Секція каже те саме розміром, а не кольором — і при цьому
+          нічого не зсуває: фільтри й рядок «Знайдено» лишаються на місці.
+
+          Показує ту саму трійку незалежно від фільтрів — це редакційний вибір
+          тижня, а не результат пошуку. У каталозі нижче ці можливості теж
+          лишаються: інакше фільтр «Табори» ховав би табір, який ми самі щойно
+          назвали найкращим. */}
+      {topWeek.length ? (
+        <section className="top-week" aria-labelledby="top-week-title">
+          <h2 className="top-week-title" id="top-week-title">{t.topWeekTitle}</h2>
+          <p className="top-week-note">{t.topWeekNote}</p>
+          <div className="grid top-week-grid">{topWeek.map(renderCard)}</div>
+        </section>
+      ) : null}
 
       {filtered.length === 0 ? (
         <div className="empty">
