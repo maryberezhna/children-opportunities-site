@@ -21,6 +21,9 @@ export default function EditForm({ opp }) {
     age_from: opp.age_from ?? 0, age_to: opp.age_to ?? 18,
     cost_type: opp.cost_type || 'free', opportunity_type: opp.opportunity_type || 'course',
     price_note: opp.price_note || '', details: opp.details || '',
+    // Прапорець, а не рядок: модератор думає «так, це в топ цього тижня»,
+    // а не «який зараз ISO-тиждень». Тиждень підставляє сервер.
+    featured: opp.featured_week === opp.currentWeek,
   });
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState('');
@@ -60,8 +63,18 @@ export default function EditForm({ opp }) {
       <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>
       <textarea style={{ ...I, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13.5 }} rows={14} value={f.details} onChange={up('details')} placeholder={'## Хто може подаватись\n- учні 8-11 класів\n\n## Етапи\n...'} />
-      <div style={{ display: 'none' }}>
-      </div>
+      {/* Ручний вибір перебиває правило: щотижневий скрипт бачить позначку
+          й лишає її, добираючи решту трійки сам. Знімається так само —
+          зняттям галочки, і наступного понеділка вона згасне в будь-якому разі. */}
+      <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
+        <input
+          type="checkbox"
+          checked={f.featured}
+          onChange={(e) => setF((s) => ({ ...s, featured: e.target.checked }))}
+          style={{ width: 17, height: 17, cursor: 'pointer' }}
+        />
+        <span>⭐ Топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— показувати з позначкою й нагорі каталогу до понеділка</span></span>
+      </label>
       {opp.source_url ? <p style={{ marginTop: 12, fontSize: 13 }}><a href={opp.source_url} target="_blank" rel="noreferrer" style={{ color: '#1e4fd6' }}>🔗 відкрити джерело ↗</a></p> : null}
       <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => save(false)} disabled={busy} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>💾 Зберегти чернеткою</button>
