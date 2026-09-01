@@ -38,6 +38,9 @@ from scrapers import (
     firstpalace_kharkiv,
     gordiy_zp,
     gurtok,
+    ocnttum_if,
+    palats_dp,
+    pum_lutsk,
     house_of_europe,
     instagram_graph,
     man_contests,
@@ -75,6 +78,9 @@ SCRAPERS = [
     # гірше за порожнє місто).
     ("Харківський обласний ПДЮТ (firstpalace.kh.ua)", firstpalace_kharkiv, "ukrainian"),
     ("Запорізький міський ПДЮТ (gordiy.zp.ua)", gordiy_zp, "ukrainian"),
+    ("Івано-Франківський ОДЦНТТУМ (ocnttum.if.ua)", ocnttum_if, "ukrainian"),
+    ("Палац учнівської молоді Луцька (pum-lutsk.org)", pum_lutsk, "ukrainian"),
+    ("Палац творчості дітей та юнацтва Дніпра (palats.dp.ua)", palats_dp, "ukrainian"),
     # Діаспора — українські родини за кордоном
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
