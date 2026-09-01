@@ -1,6 +1,7 @@
 """Підключення до Supabase."""
 import os
 import logging
+import re
 from typing import Optional
 from supabase import create_client, Client
 
@@ -33,6 +34,34 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
             .limit(1)
             .execute()
         )
+        if not existing.data:
+            # Третій ключ — страховка від транслітераційних дублів. Обидва
+            # ключі вище історично нестабільні: формула content_hash уже раз
+            # змінювалась (записи з квітня мають старий хеш), а slugify
+            # транслітерує по-різному залежно від того, яка unidecode-бібліотека
+            # стоїть в оточенні («kvity-peremohy» / «kviti-peremogi» — 01.09
+            # злито 20 таких пар). canonical_url сам по собі ключем бути не
+            # може: на одній сторінці МОН живе 19 різних олімпіад. А от
+            # canonical_url + нормалізована назва — може: та сама сторінка
+            # плюс та сама назва означає той самий запис, як би не порахувались
+            # hash і slug.
+            cu = (record.get("canonical_url") or "").strip()
+            if cu:
+                def _norm_title(t):
+                    return re.sub(r"[^0-9a-zа-яіїєґ]+", "", (t or "").lower())
+                want = _norm_title(record.get("title"))
+                if want:
+                    same_page = (
+                        client.table("opportunities")
+                        .select("id, title, verified_at")
+                        .eq("canonical_url", cu)
+                        .limit(50)
+                        .execute()
+                    )
+                    for row in (same_page.data or []):
+                        if _norm_title(row.get("title")) == want:
+                            existing.data = [row]
+                            break
         if existing.data:
             row = existing.data[0]
             if row.get("verified_at"):

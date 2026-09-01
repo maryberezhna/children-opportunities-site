@@ -538,9 +538,29 @@ URL: {source_url}
             _time.sleep(2 * (attempt + 1))
         raise last_exc
 
-    @staticmethod
-    def _make_slug(title: str, source: str) -> str:
-        base = slugify(title, max_length=80, word_boundary=True)
+    # Власна транслітераційна таблиця замість дефолтної поведінки slugify.
+    # python-slugify транслітерує кирилицю тим unidecode-пакетом, який
+    # ВИПАДКОВО стоїть в оточенні: text-unidecode дає «kvity-peremohy»,
+    # Unidecode — «kviti-peremogi». Два запуски в різних оточеннях робили
+    # два різні слаги для того самого запису — і дубль у базі (01.09 злито
+    # 20 таких пар). Таблиця спрощена офіційна (без позиційних правил
+    # «є→ye на початку слова»): для слага важлива детермінованість, не
+    # філологічна точність. Наявні слаги не переганяються — це живі URL.
+    _UK2LAT = [
+        ("зг", "zgh"),
+        ("а", "a"), ("б", "b"), ("в", "v"), ("г", "h"), ("ґ", "g"),
+        ("д", "d"), ("е", "e"), ("є", "ie"), ("ж", "zh"), ("з", "z"),
+        ("и", "y"), ("і", "i"), ("ї", "i"), ("й", "i"), ("к", "k"),
+        ("л", "l"), ("м", "m"), ("н", "n"), ("о", "o"), ("п", "p"),
+        ("р", "r"), ("с", "s"), ("т", "t"), ("у", "u"), ("ф", "f"),
+        ("х", "kh"), ("ц", "ts"), ("ч", "ch"), ("ш", "sh"), ("щ", "shch"),
+        ("ь", ""), ("ю", "iu"), ("я", "ia"), ("'", ""), ("ʼ", ""), ("’", ""),
+    ]
+
+    @classmethod
+    def _make_slug(cls, title: str, source: str) -> str:
+        base = slugify(title.lower(), replacements=cls._UK2LAT,
+                       max_length=80, word_boundary=True)
         short_hash = hashlib.md5(f"{title}{source}".encode()).hexdigest()[:6]
         return f"{base}-{short_hash}"
 
