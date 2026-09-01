@@ -1,8 +1,5 @@
 import Link from 'next/link';
-import {
-  supabase, publicOpportunities, CARD_FIELDS_EN,
-  countActiveOpportunities, countActiveSources, FALLBACK,
-} from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS_EN, countActiveOpportunities, countActiveSources, FALLBACK,  } from '@/lib/supabase';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import OpportunitiesList from '../OpportunitiesList';
 import Footer from '../Footer';
@@ -40,8 +37,8 @@ export async function generateMetadata() {
 // Той самий набір, що й на українській головній, плюс англійські поля.
 async function getOpportunities() {
   if (!supabase) return [];
-  const { data, error } = await publicOpportunities(CARD_FIELDS_EN)
-    .order('created_at', { ascending: false });
+  const { data, error } = await fetchAllRows(() =>
+    publicOpportunities(CARD_FIELDS_EN).order('created_at', { ascending: false }).order('id'));
   if (error) {
     console.error('Supabase error:', error);
     return [];

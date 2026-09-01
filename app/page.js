@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
@@ -16,8 +16,8 @@ async function getOpportunities() {
     console.warn('Supabase not configured — returning empty opportunities list');
     return [];
   }
-  const { data, error } = await publicOpportunities()
-    .order('created_at', { ascending: false });
+  const { data, error } = await fetchAllRows(() =>
+    publicOpportunities().order('created_at', { ascending: false }).order('id'));
 
   if (error) {
     console.error('Supabase error:', error);

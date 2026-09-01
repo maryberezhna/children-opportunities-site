@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { publicOpportunities, CARD_FIELDS, isSupabaseConfigured } from '@/lib/supabase';
+import { publicOpportunities, fetchAllRows, CARD_FIELDS, isSupabaseConfigured } from '@/lib/supabase';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import { placeLabel, isInternational } from '@/lib/geo';
 import ReminderForm from './ReminderForm';
@@ -25,13 +25,14 @@ async function getItems() {
   if (!isSupabaseConfigured) return [];
   const today = new Date();
   const until = new Date(today.getTime() + WINDOW_DAYS * 86400000);
-  const { data, error } = await publicOpportunities(
+  const { data, error } = await fetchAllRows(() => publicOpportunities(
     `${CARD_FIELDS}, is_international, countries`,
   )
     .not('deadline', 'is', null)
     .gte('deadline', iso(today))
     .lte('deadline', iso(until))
-    .order('deadline', { ascending: true });
+    .order('deadline', { ascending: true })
+    .order('id'));
   return error ? [] : (data || []);
 }
 
