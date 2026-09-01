@@ -395,6 +395,12 @@ class Normalizer:
         # кожен виклик падав із «credit balance too low».
         self.api_failures = 0
         self.last_api_error = None
+        # Кеш-статистика за запуск: якщо cache_read лишається нулем при
+        # сотнях викликів — кешування зламалось (див. _call_api) і ми знову
+        # платимо повну ціну за той самий префікс.
+        self.cache_read_tokens = 0
+        self.cache_write_tokens = 0
+        self.uncached_input_tokens = 0
 
     def normalize(self, raw_text: str, source: str, source_url: str,
                   raw_title: Optional[str] = None) -> Optional[dict]:
@@ -498,14 +504,31 @@ URL: {source_url}
         last_exc = None
         for attempt in range(3):
             try:
-                return self.client.messages.create(
+                resp = self.client.messages.create(
                     model=self.model,
                     max_tokens=1500,
-                    system=SYSTEM_PROMPT,
+                    # Кеш промпта: префікс tools+system однаковий у КОЖНОМУ
+                    # виклику (схема + 6К знаків інструкцій), а за нічний
+                    # запуск викликів сотні поспіль. Без cache_control ми
+                    # платили за цей префікс повну ціну щоразу; з ним перший
+                    # виклик пише кеш (×1.25), решта читає за ~10% ціни.
+                    # Брейкпоінт на system покриває і tools — вони рендеряться
+                    # перед system у префіксі.
+                    system=[{
+                        "type": "text",
+                        "text": SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }],
                     tools=[EXTRACT_TOOL],
                     tool_choice={"type": "tool", "name": "extract_opportunity"},
                     messages=[{"role": "user", "content": user_msg}],
                 )
+                u = getattr(resp, "usage", None)
+                if u is not None:
+                    self.cache_read_tokens += getattr(u, "cache_read_input_tokens", 0) or 0
+                    self.cache_write_tokens += getattr(u, "cache_creation_input_tokens", 0) or 0
+                    self.uncached_input_tokens += getattr(u, "input_tokens", 0) or 0
+                return resp
             except anthropic.APIStatusError as e:
                 if e.status_code not in (429, 500, 502, 503, 529):
                     raise
