@@ -242,3 +242,45 @@
   border-color: #f0c377;
   box-shadow: 0 4px 18px rgba(240, 179, 119, 0.22);
 }
+
+/* Трійка тижня окремою секцією над фільтрами.
+   Позначка на картці загубилась серед чотирьох інших чипів — секція каже те
+   саме розміром, а не кольором. Тепле тло відділяє її від каталогу, не
+   перетворюючи на банер. */
+.top-week {
+  margin: 0 0 26px;
+  padding: 22px 24px 26px;
+  border: 1px solid #f0c377;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff7ea 0%, #fefcf7 60%);
+}
+
+.top-week-title {
+  margin: 0 0 4px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.top-week-note {
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-muted);
+  max-width: 62ch;
+}
+
+/* Рівно три в ряд на десктопі: секція має читатись як добірка, а не як
+   початок нескінченного списку. */
+.top-week-grid { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+@media (max-width: 640px) {
+  .top-week { padding: 18px 16px 20px; border-radius: 14px; }
+  .top-week-title { font-size: 18px; }
+}
+
+/* Усередині секції чип «Топ тижня» зайвий: заголовок над картками каже те
+   саме, і повторення лише з'їдає рядок, потрібний типу, віку й вартості.
+   У каталозі нижче чип лишається — там він єдине, що вирізняє ці записи. */
+.top-week .chip-top { display: none; }
