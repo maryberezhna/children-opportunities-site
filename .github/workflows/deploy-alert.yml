@@ -1,0 +1,25 @@
+# Сітка №2: алерт у Telegram, коли деплой main падає (01.09.2026 між
+# поломкою і виявленням минуло пів дня — виявили випадково). Vercel шле
+# commit status; фільтруємо лише main і лише сам деплой, не коментарі.
+name: deploy-alert
+on:
+  status
+jobs:
+  alert:
+    if: >
+      github.event.state == 'failure' &&
+      github.event.context == 'Vercel' &&
+      contains(join(github.event.branches.*.name, ','), 'main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Telegram
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+        run: |
+          curl -s "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            --data-urlencode chat_id="${CHAT}" \
+            --data-urlencode text="🔴 Деплой main упав: ${{ github.event.description }}
+${{ github.event.target_url }}
+Коміт: ${{ github.event.commit.commit.message }}" >/dev/null
+          echo "alert sent"

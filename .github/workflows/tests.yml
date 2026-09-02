@@ -1,0 +1,28 @@
+# Тести інваріантів на кожен PR — страхувальна сітка №3 (01.09.2026).
+# Народилась з інциденту: мерж #158 затер fetchAllRows, прод пів дня не
+# збирався, і жодна перевірка цього не ловила. Джоби tests-js і tests-py —
+# обовʼязкові перевірки в branch protection гілки main.
+name: tests
+on:
+  pull_request:
+  push:
+    branches: [main]
+jobs:
+  tests-js:
+    name: tests-js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - run: npm test
+  tests-py:
+    name: tests-py
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r scraper/requirements.txt
+      - run: python -m unittest discover -s scraper/tests -v
