@@ -54,6 +54,7 @@ from scrapers import (
     space_dobrodiy,
     telegram_web,
     unicef,
+    uwc_ukraine,
 )
 
 SCRAPERS = [
@@ -92,6 +93,10 @@ SCRAPERS = [
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
+    # «Дитина їде за кордон» — пріоритет 1 від 03.09.2026: попит (топ-15
+    # переглядів — суцільні обміни й закордонні програми) не мав системних
+    # джерел. Стипендії UWC — флагман цієї категорії.
+    ("UWC Ukraine (ukraine.uwc.org)", uwc_ukraine, "thematic"),
     # Потребує браузера: сайт малюється на клієнті (див. модуль).
     ("Eurodesk", eurodesk, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
