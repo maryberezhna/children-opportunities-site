@@ -54,6 +54,7 @@ from scrapers import (
     space_dobrodiy,
     telegram_web,
     unicef,
+    ugs_foundation,
     uwc_ukraine,
 )
 
@@ -97,6 +98,7 @@ SCRAPERS = [
     # переглядів — суцільні обміни й закордонні програми) не мав системних
     # джерел. Стипендії UWC — флагман цієї категорії.
     ("UWC Ukraine (ukraine.uwc.org)", uwc_ukraine, "thematic"),
+    ("Ukraine Global Scholars (ugs.foundation)", ugs_foundation, "thematic"),
     # Потребує браузера: сайт малюється на клієнті (див. модуль).
     ("Eurodesk", eurodesk, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
