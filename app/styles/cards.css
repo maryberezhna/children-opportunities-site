@@ -67,6 +67,7 @@
 .chip-paid { background: var(--warm-2); color: #8a5a0a; }
 .chip-need { background: var(--pink-2); color: #8a1a3a; }
 .chip-aid { background: #e5eefc; color: #1b4a8f; font-weight: 500; }
+.chip-intl { background: #e0f2fe; color: #075985; }
 
 .chip-deadline-urgent {
   background: #fee2e2;
