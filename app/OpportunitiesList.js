@@ -38,7 +38,6 @@ const UI = {
     paid: 'платно',
     topWeek: '⭐ Топ тижня',
     topWeekTitle: '⭐ Топ-3 можливості тижня',
-    topWeekNote: 'Обрано з тих, що безкоштовні, ще відкриті для подачі й підходять широкому віку.',
     annual: '🔄 щорічно',
     annualPast: '🔄 відкривається щороку',
     today: 'сьогодні',
@@ -70,7 +69,6 @@ const UI = {
     paid: 'paid',
     topWeek: '⭐ Pick of the week',
     topWeekTitle: '⭐ Top 3 opportunities this week',
-    topWeekNote: 'Picked from those that are free, still open for applications and fit a wide age range.',
     annual: '🔄 every year',
     annualPast: '🔄 opens every year',
     today: 'today',
@@ -1012,7 +1010,6 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       {topWeek.length ? (
         <section className="top-week" aria-labelledby="top-week-title">
           <h2 className="top-week-title" id="top-week-title">{t.topWeekTitle}</h2>
-          <p className="top-week-note">{t.topWeekNote}</p>
           <div className="grid top-week-grid">{topWeek.map(renderCard)}</div>
         </section>
       ) : null}

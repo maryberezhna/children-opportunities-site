@@ -256,20 +256,15 @@
 }
 
 .top-week-title {
-  margin: 0 0 4px;
+  /* Підпис під заголовком прибрано, тож відступ до карток тримає сам
+     заголовок — інакше він злипався б із першою карткою. */
+  margin: 0 0 18px;
   font-size: 21px;
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--ink);
 }
 
-.top-week-note {
-  margin: 0 0 18px;
-  font-size: 13.5px;
-  line-height: 1.5;
-  color: var(--ink-muted);
-  max-width: 62ch;
-}
 
 /* Рівно три в ряд на десктопі: секція має читатись як добірка, а не як
    початок нескінченного списку. */
