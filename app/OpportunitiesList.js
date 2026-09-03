@@ -10,6 +10,7 @@ import {
   cityLabel,
 } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
+import { goesAbroad, isInternational } from '@/lib/geo';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { isoWeek } from '@/lib/week';
 import { trackOpportunityClick } from '@/lib/track';
@@ -19,7 +20,7 @@ import { trackOpportunityClick } from '@/lib/track';
 // підписами підбірок у футері.
 const UI = {
   uk: {
-    filtersHint: 'Оберіть вік, тему й місто — покажемо лише те, що підходить вашій дитині',
+    filtersHint: 'Оберіть вік, тему і де шукаєте — покажемо лише те, що підходить вашій дитині',
     reset: 'Скинути',
     found: 'Знайдено',
     sort: 'Сортувати',
@@ -30,7 +31,9 @@ const UI = {
     of: 'з',
     details: 'Детальніше ↗',
     format: 'Формат',
-    city: 'Місто',
+    city: 'Де',
+    abroad: 'За кордоном',
+    intl: 'міжнародна',
     source: 'Джерело',
     stateAid: 'держдопомога',
     free: 'безкоштовно',
@@ -47,10 +50,10 @@ const UI = {
     age: (from, to) => (from === to ? `${from} років`
       : from === 0 && to >= 17 ? '0-18 років' : `${from}-${to} років`),
     groups: { age: 'Вік', type: 'Тип', aid: 'Вид допомоги', theme: 'Тема',
-      deadline: 'Дедлайн', need: 'Особлива потреба', cost: 'Вартість', city: 'Місто' },
+      deadline: 'Дедлайн', need: 'Особлива потреба', cost: 'Вартість', city: 'Де' },
   },
   en: {
-    filtersHint: 'Pick an age, a topic and a city — we’ll show only what fits your child',
+    filtersHint: 'Pick an age, a topic and a place — we’ll show only what fits your child',
     reset: 'Reset',
     found: 'Found',
     sort: 'Sort',
@@ -61,7 +64,9 @@ const UI = {
     of: 'of',
     details: 'Details ↗',
     format: 'Format',
-    city: 'City',
+    city: 'Where',
+    abroad: 'Abroad',
+    intl: 'international',
     source: 'Source',
     stateAid: 'state aid',
     free: 'free',
@@ -78,7 +83,7 @@ const UI = {
     age: (from, to) => (from === to ? `age ${from}`
       : from === 0 && to >= 17 ? '0–18 yrs' : `${from}–${to} yrs`),
     groups: { age: 'Age', type: 'Type', aid: 'Aid type', theme: 'Topic',
-      deadline: 'Deadline', need: 'Special need', cost: 'Cost', city: 'City' },
+      deadline: 'Deadline', need: 'Special need', cost: 'Cost', city: 'Where' },
   },
 };
 
@@ -399,6 +404,16 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     readSet('cost', setCosts);
     readSet('deadline', setDeadlines);
     readSet('city', setSelectedCities);
+    // Старі посилання з ?city=Міжнародні (до появи опції «За кордоном»)
+    // мають і далі показувати закордонні можливості, а не порожню видачу.
+    if ((p.get('city') || '').split(',').includes('Міжнародні')) {
+      setSelectedCities((prev) => {
+        const next = new Set(prev);
+        next.delete('Міжнародні');
+        next.add('abroad');
+        return next;
+      });
+    }
     const q = p.get('q');
     if (q) setQuery(q);
     const sortVal = p.get('sort');
@@ -567,12 +582,15 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       || [...deadlines].some((v) => deadlineMatches(item, v, todayIso)),
     city: (item) => {
       if (selectedCities.size === 0) return true;
+      // «За кордоном» — не місто в cities, а вивід із countries та
+      // is_international (lib/geo): AFS і Erasmus не мають конкретного міста.
+      if (selectedCities.has('abroad') && goesAbroad(item)) return true;
       const itemCities = item.cities || [];
       if (itemCities.some((c) => selectedCities.has(c))) return true;
       // «Вся Україна» просвічує крізь фільтр за конкретним містом (Київ,
-      // Харків…), але НЕ крізь Онлайн / Міжнародні / Вся Україна.
+      // Харків…), але НЕ крізь Онлайн / За кордоном / Вся Україна.
       if (!itemCities.includes('Вся Україна')) return false;
-      const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна']);
+      const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна', 'abroad']);
       return [...selectedCities].some((c) => !VIRTUAL.has(c));
     },
     // Шукаємо і в оригіналі, і в перекладі одночасно, незалежно від мови
@@ -680,7 +698,10 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
           .filter((d) => d.value !== 'all' && items.some((i) => deadlineMatches(i, d.value, todayIso)))
           .map((d) => d.value));
       })(),
-      city: set('city', (i, out) => (i.cities || []).forEach((c) => out.add(c))),
+      city: set('city', (i, out) => {
+        (i.cities || []).forEach((c) => out.add(c));
+        if (goesAbroad(i)) out.add('abroad');
+      }),
     };
   }, [liveItems, predicates, themeMap]);
 
@@ -707,8 +728,14 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       {
         id: 'city',
         label: t.groups.city,
-        all: sortCities([...new Set([...available.city, ...selectedCities])])
-          .map((c) => ({ label: cityLabel(c, lang), value: c })),
+        // «Де» замість «Місто»: закордон — окрема перша опція, а не
+        // псевдомісто «Міжнародні» в кінці списку. «Онлайн» живе у «Тип».
+        all: [
+          { label: `🌍 ${t.abroad}`, value: 'abroad', highlight: true },
+          ...sortCities([...new Set([...available.city, ...selectedCities])])
+            .filter((c) => c !== 'Міжнародні' && c !== 'Онлайн' && c !== 'abroad')
+            .map((c) => ({ label: cityLabel(c, lang), value: c })),
+        ],
         selected: selectedCities,
         onToggle: handlers.city,
       },
@@ -805,6 +832,20 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     [liveItems, thisWeek],
   );
 
+  // Підпис «Де» на картці: чи треба їхати → куди саме → чи можна з дому →
+  // чи це всюди. «За кордоном» першим свідомо: це єдина відповідь, яка
+  // змінює планування родини на місяці вперед.
+  const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
+  const placeText = (item) => {
+    if (goesAbroad(item)) return t.abroad;
+    const real = (item.cities || []).filter((c) => !PSEUDO_CITIES.has(c));
+    const shown = real.length
+      ? real
+      : (item.cities || []).filter((c) => c !== 'Міжнародні');
+    if (!shown.length) return null;
+    return shown.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
+  };
+
   const renderCard = (item) => (
     <article key={item.id} className="card">
       <div className="chips">
@@ -812,6 +853,11 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
         <span className="chip chip-type">
           {(isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type] || item.opportunity_type}
         </span>
+        {/* «Міжнародна» — і коли їхати нікуди не треба: онлайн-конкурс від
+            закордонного організатора лишається міжнародним рівнем. */}
+        {isInternational(item) ? (
+          <span className="chip chip-intl">🌍 {t.intl}</span>
+        ) : null}
         {item.aid_type ? (
           <span className="chip chip-aid">
             🏛 {(isEn ? AID_TYPE_LABELS_EN : AID_TYPE_LABELS)[item.aid_type] || t.stateAid}
@@ -856,13 +902,13 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
             <span className="meta-val">{formatLabel(item.format, lang)}</span>
           </div>
         ) : null}
-        {/* Місто — перше, що питає людина про подію: «а це де?». Досі картка
+        {/* «Де» — перше, що питає людина про подію: «а це де?». Досі картка
             цього не показувала взагалі, і «Місце Сили» виглядало як подія
             невідомо де. */}
-        {(item.cities || []).length ? (
+        {placeText(item) ? (
           <div className="meta-row">
             <span className="meta-label">{t.city}</span>
-            <span className="meta-val">{item.cities.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ')}</span>
+            <span className="meta-val">{placeText(item)}</span>
           </div>
         ) : null}
         {item.deadline ? (
