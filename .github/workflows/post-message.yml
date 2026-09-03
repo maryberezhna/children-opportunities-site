@@ -1,0 +1,35 @@
+name: Пост у канал із файлу
+
+# Публікує готовий текст із content/telegram/. Написати новий пост = додати
+# туди файл і запустити цей воркфлоу з його імʼям — окремий скрипт і окремий
+# воркфлоу під кожен пост більше не потрібні.
+on:
+  workflow_dispatch:
+    inputs:
+      file:
+        description: 'Файл із текстом, напр. content/telegram/build-future.html'
+        required: true
+      dry_run:
+        description: 'true = лише показати текст, не публікувати'
+        required: false
+        default: 'true'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Опублікувати
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FILE: ${{ github.event.inputs.file }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: node scripts/post-message.mjs
