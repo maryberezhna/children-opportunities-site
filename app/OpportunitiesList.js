@@ -11,6 +11,7 @@ import {
 } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 import { goesAbroad, isInternational } from '@/lib/geo';
+import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { isoWeek } from '@/lib/week';
 import { trackOpportunityClick } from '@/lib/track';
@@ -469,6 +470,26 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
     return m;
   }, [opportunities]);
 
+  // Пошуковий індекс: усе, чим людина може описати запис, — включно з
+  // містами, типом і темами, яких у тексті картки може й не бути. Рахується
+  // один раз на набір записів, а не на кожне натискання клавіші в полі.
+  const searchIndex = useMemo(() => {
+    const themeLabel = new Map(THEME_OPTIONS.map((o) => [o.value, `${o.label} ${o.en}`]));
+    const m = new Map();
+    opportunities.forEach((o) => {
+      m.set(o.id, buildHaystack([
+        o.title, o.summary, o.source, o.title_en, o.summary_en, o.format,
+        ...(o.cities || []),
+        ...(o.cities || []).map((c) => cityLabel(c, 'en')),
+        TYPE_LABELS[o.opportunity_type], TYPE_LABELS_EN[o.opportunity_type],
+        o.aid_type ? AID_TYPE_LABELS[o.aid_type] : null,
+        ...[...(themeMap.get(o.id) || [])].map((t) => themeLabel.get(t)),
+        goesAbroad(o) ? 'за кордоном abroad' : null,
+      ]));
+    });
+    return m;
+  }, [opportunities, themeMap]);
+
   const sortCities = (list) => [...list].sort((a, b) => {
     if (a === 'Онлайн') return -1;
     if (b === 'Онлайн') return 1;
@@ -593,16 +614,16 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
       const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна', 'abroad']);
       return [...selectedCities].some((c) => !VIRTUAL.has(c));
     },
-    // Шукаємо і в оригіналі, і в перекладі одночасно, незалежно від мови
-    // сторінки: на англійській людина введе «camp», а на українській хтось
-    // вставить назву з англійського листа — обидва запити мають знаходити.
+    // Пошук по словах через lib/search: «шахи київ» знаходить шахи в Києві,
+    // «табори» — «табір», «build for future» — «Build Future». Індекс запису
+    // рахується один раз у searchIndex, а не на кожне натискання клавіші.
     query: (item) => {
-      if (!query) return true;
-      const q = query.toLowerCase();
-      return [item.title, item.summary, item.source, item.title_en, item.summary_en]
-        .filter(Boolean).join(' ').toLowerCase().includes(q);
+      const tokens = queryTokens(query);
+      if (!tokens.length) return true;
+      const hay = searchIndex.get(item.id);
+      return Boolean(hay) && matchesQuery(tokens, hay);
     },
-  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap, todayIso]);
+  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap, searchIndex, todayIso]);
 
   const FACETS = ['age', 'type', 'aid', 'theme', 'need', 'cost', 'deadline', 'city', 'query'];
 
