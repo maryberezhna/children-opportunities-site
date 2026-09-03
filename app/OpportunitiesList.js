@@ -21,7 +21,6 @@ import { trackOpportunityClick } from '@/lib/track';
 // підписами підбірок у футері.
 const UI = {
   uk: {
-    filtersHint: 'Оберіть вік, тему і де шукаєте — покажемо лише те, що підходить вашій дитині',
     reset: 'Скинути',
     found: 'Знайдено',
     sort: 'Сортувати',
@@ -54,7 +53,6 @@ const UI = {
       deadline: 'Дедлайн', need: 'Особлива потреба', cost: 'Вартість', city: 'Де' },
   },
   en: {
-    filtersHint: 'Pick an age, a topic and a place — we’ll show only what fits your child',
     reset: 'Reset',
     found: 'Found',
     sort: 'Sort',
@@ -985,16 +983,8 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
   return (
     <>
       <div className="filters">
-        {/* Компактний рядок легко проґавити, а фільтри — головний спосіб
-            звузити 400 карток до своїх. Підпис пояснює, навіщо їх чіпати. */}
-        <div className="filters-hint">
-          <svg className="filters-hint-icon" viewBox="0 0 20 20" aria-hidden="true">
-            <path d="M3 6h9M15 6h2M3 14h2M8 14h9" strokeWidth="1.8" strokeLinecap="round" />
-            <circle cx="13.5" cy="6" r="2.2" strokeWidth="1.8" />
-            <circle cx="6.5" cy="14" r="2.2" strokeWidth="1.8" />
-          </svg>
-          {t.filtersHint}
-        </div>
+        {/* Без рядка-підказки: підписані випадайки і пошук пояснюють себе
+            самі, а зайвий рядок тексту робив панель важчою, ніж вона є. */}
         <div className="filters-bar">
           {menus.map((m) => (
             <FilterButton
@@ -1003,6 +993,21 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
               openId={openId} setOpenId={setOpenId}
             />
           ))}
+
+          {/* Сортування живе разом з іншими елементами керування видачею:
+              окремий рядок під панеллю лише додавав сторінці ще одну смугу.
+              Стоїть перед пошуком, щоб пігулки трималися купи, а пошук
+              розтягувався на залишок рядка. */}
+          <select
+            className="sort-select"
+            value={sort}
+            onChange={(e) => setSort(e.target.value)}
+            aria-label={isEn ? 'Sorting' : 'Сортування'}
+          >
+            {SORT_OPTIONS.map((s) => (
+              <option key={s.value} value={s.value}>{t.sort}: {isEn && s.en ? s.en : s.label}</option>
+            ))}
+          </select>
 
           {/* Пошук лишається на видноті: це найчастіша дія, ховати її у
               випадайку означало б зробити гірше, а не компактніше. */}
@@ -1046,29 +1051,21 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
         )}
       </div>
 
-      <div className="toolbar">
-        <div className="count">
+      {/* Лічильник — лише коли фільтри чи пошук звузили видачу: без них він
+          слово в слово повторював число зі статистики в хіро двома рядками
+          вище. З активними фільтрами це вже не дубль, а відповідь. */}
+      {activeCount > 0 && (
+        <div className="count" role="status">
           {t.found} <strong>{filtered.length}</strong>{' '}
           {isEn
             ? (filtered.length === 1 ? 'opportunity' : 'opportunities')
             : opportunitiesWord(filtered.length)}
         </div>
-        <select
-          className="sort-select"
-          value={sort}
-          onChange={(e) => setSort(e.target.value)}
-          aria-label={isEn ? 'Sorting' : 'Сортування'}
-        >
-          {SORT_OPTIONS.map((s) => (
-            <option key={s.value} value={s.value}>{t.sort}: {isEn && s.en ? s.en : s.label}</option>
-          ))}
-        </select>
-      </div>
+      )}
 
-      {/* Трійка тижня — просто над картками, нижче фільтрів і лічильника.
+      {/* Трійка тижня — просто над картками, нижче фільтрів.
           Позначка на самій картці загубилась: у ряду з чотирьох чипів її не
-          читали. Секція каже те саме розміром, а не кольором — і при цьому
-          нічого не зсуває: фільтри й рядок «Знайдено» лишаються на місці.
+          читали. Секція каже те саме розміром, а не кольором.
 
           Показує ту саму трійку незалежно від фільтрів — це редакційний вибір
           тижня, а не результат пошуку. У каталозі нижче ці можливості теж
