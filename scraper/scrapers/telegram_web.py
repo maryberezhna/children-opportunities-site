@@ -53,6 +53,14 @@ CHANNELS: list[tuple[str, str]] = [
     # Додано 18.08.2026: знайдений хендл із тієї ж добірки @husenytsiaa.
     # Студентський перекіс (як unicompass) — нормалізатор відсіює 18+.
     ("alwaysinomniaparatus", "In Omnia Paratus"),
+    # Додано 03.09.2026 (пріоритет «дитина їде за кордон»): попит на обміни й
+    # закордонні програми — вся топ-15 переглядів сайту, а системних джерел
+    # під нього не було. Обидва хендли перевірені емпірично: /s/ відкритий,
+    # пости свіжі (FLEX Alumni — 25.08, EducationUSA — 03.09). Мертві
+    # кандидати (unistudy, erasmus_ua, afs_ukraine…) не додаємо — перевірено
+    # тоді ж: закриті або покинуті з 2022.
+    ("flexalumniukraine", "FLEX Alumni Ukraine"),
+    ("educationusaukraine", "EducationUSA Ukraine"),
 ]
 
 _BROWSER = {
