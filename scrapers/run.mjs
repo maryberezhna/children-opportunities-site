@@ -8,7 +8,6 @@ import { toCsv } from './lib/csv.mjs';
 import { loadRegistry, recordCrawl, alertBrokenSources } from './lib/registry.mjs';
 
 import * as constellation from './sources/constellation-ua.mjs';
-import * as festPortal from './sources/fest-portal.mjs';
 import * as international from './sources/international-competitions.mjs';
 import * as langSchools from './sources/regional-language-schools.mjs';
 import * as ucfGrants from './sources/ucf-grants.mjs';
@@ -29,6 +28,13 @@ import * as egapStem from './sources/egap-stem.mjs';
 //     кастинги акторів — слабкий фіт для каталогу можливостей.
 //   regional-camps — домен child.com.ua не відповідає взагалі (мертвий),
 //     і скрапив він платні табори.
+//
+// Видалено 04.09.2026:
+//   fest-portal — сайт переїхав на Wix-SPA (www.fest-portal.com), стара
+//     сторінка /meropriyatiya/ віддає 404, статичного HTML зі списком подій
+//     немає (6 збоїв поспіль з 29.08). За весь час джерело дало 3 записи,
+//     всі вже closed; платні вокально-хореографічні фестивалі — слабкий фіт
+//     за пріоритетами контенту. У таблиці sources вимкнено (enabled=false).
 
 // Only mjs-unique sources — the four overlapping with the Python scraper
 // (МАН, МОН, Дія.Освіта, easy.gov) were removed to stop cross-pipeline dupes.
@@ -36,7 +42,6 @@ import * as egapStem from './sources/egap-stem.mjs';
 // знахідок поламку (список у мережі не буває порожнім; статика — буває).
 const SOURCES = [
   { mod: constellation, registry: 'constellation-ua', network: true },
-  { mod: festPortal, registry: 'fest-portal', network: true },
   { mod: international, registry: 'international-competitions', network: true },
   { mod: langSchools, registry: 'regional-language-schools', network: false },
   { mod: ucfGrants, registry: 'ucf-grants', network: false },

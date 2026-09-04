@@ -54,7 +54,6 @@ export const LANDING_URLS = new Set([
   'https://klitschkofoundation.org/projects/',
   'https://mon.gov.ua/osvita-2/zagalna-serednya-osvita/olimpiadi-ta-konkursi',
   'https://constellation.org.ua/',
-  'https://fest-portal.com/meropriyatiya/',
 ]);
 
 // Specific URLs that have historically been mass-duplicated (usually because
