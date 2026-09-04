@@ -3,6 +3,7 @@ import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS_EN, countActiv
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import OpportunitiesList from '../OpportunitiesList';
 import Footer from '../Footer';
+import PressLogos from '../PressLogos';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -106,6 +107,14 @@ export default async function EnglishPage() {
                 <span className="stat-num">0–18</span>
                 <span className="stat-label">years old</span>
               </div>
+            </div>
+
+            {/* Медіазгадки — одразу в хіро, як на українській головній. */}
+            <div className="hero-press">
+              <Link href="/en/press" className="hero-press-label">
+                In the media:
+              </Link>
+              <PressLogos />
             </div>
           </div>
 

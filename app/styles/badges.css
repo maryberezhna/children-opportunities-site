@@ -207,6 +207,61 @@
 .stat-num { font-size: 28px; font-weight: 500; color: var(--ink); }
 .stat-label { font-size: 13px; color: var(--ink-muted); }
 
+/* «Про нас пишуть» у хіро. Логотипи знебарвлені й пригашені: це підпис
+   під статистикою, а не експонат — повний колір повертається на ховері.
+   Розміри дрібніші, ніж на /press, тому свої, а не спільні з нею. */
+.hero-press {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin-top: 20px;
+}
+
+.hero-press-label {
+  font-size: 13px;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.hero-press-label:hover {
+  color: var(--ink-soft);
+  text-decoration: underline;
+}
+
+.hero-press .press-logos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+}
+
+.hero-press .press-logos a {
+  display: flex;
+  align-items: center;
+  opacity: 0.55;
+  filter: grayscale(1);
+  transition: opacity 0.2s, filter 0.2s;
+}
+
+.hero-press .press-logos a:hover,
+.hero-press .press-logos a:focus-visible {
+  opacity: 1;
+  filter: none;
+}
+
+.hero-press .press-logos img {
+  max-height: 17px;
+  max-width: 80px;
+}
+
+.hero-press .press-logos img.is-square {
+  max-height: 28px;
+}
+
 
 /* Чип події: спокійний синій замість тривожного помаранчевого дедлайну —
    подія не закривається, вона настає, і поспішати з подачею нікуди. */

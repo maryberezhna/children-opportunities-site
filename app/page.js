@@ -3,6 +3,7 @@ import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
+import PressLogos from './PressLogos';
 import SupportPopup from './SupportPopup';
 import { TOPIC_NAV } from '@/lib/topics';
 import StickyBar from './StickyBar';
@@ -88,6 +89,15 @@ export default async function Home() {
               <span className="stat-num">0-18</span>
               <span className="stat-label">років</span>
             </div>
+          </div>
+
+          {/* Медіазгадки — одразу в хіро, а не тільки на /press: довіру
+              будують там, де людина вирішує, лишатися чи ні. */}
+          <div className="hero-press">
+            <Link href="/press" className="hero-press-label">
+              Про нас пишуть:
+            </Link>
+            <PressLogos />
           </div>
           </div>
 
