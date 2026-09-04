@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { CITY_META } from '@/lib/cities';
 import { MENTIONS, pressStats } from '@/lib/press';
+import PressLogos from '../../PressLogos';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -71,21 +72,7 @@ export default async function PressPage() {
         ) : null}
 
         <h2>Coverage</h2>
-        <ul className="press-logos">
-          {MENTIONS.map((m) => (
-            <li key={m.url}>
-              <a href={m.url} target="_blank" rel="noopener noreferrer" title={m.title}>
-                <img
-                  src={m.logo.src}
-                  width={m.logo.width}
-                  height={m.logo.height}
-                  alt={m.outlet}
-                  className={m.logo.width / m.logo.height < 1.5 ? 'is-square' : undefined}
-                />
-              </a>
-            </li>
-          ))}
-        </ul>
+        <PressLogos />
 
         <h2>Description in one paragraph</h2>
         <blockquote className="press-quote">

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Footer from '../../Footer';
+import PressLogos from '../../PressLogos';
 
 export const metadata = {
   title: 'About the project — how dityam.com.ua started',
@@ -86,6 +87,13 @@ export default function AboutPageEn() {
           <li>We only add free or affordable programmes</li>
           <li>One-off events that have passed are hidden automatically</li>
         </ul>
+
+        <h2>In the media</h2>
+        <PressLogos />
+        <p>
+          All publications, project figures and materials for journalists are
+          on the <Link href="/en/press">press page</Link>.
+        </p>
 
         <h2>How to take part</h2>
         <p>
