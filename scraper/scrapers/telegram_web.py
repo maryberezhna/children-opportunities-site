@@ -61,6 +61,10 @@ CHANNELS: list[tuple[str, str]] = [
     # тоді ж: закриті або покинуті з 2022.
     ("flexalumniukraine", "FLEX Alumni Ukraine"),
     ("educationusaukraine", "EducationUSA Ukraine"),
+    # Goethe-Institut Ukraine: сайт (і навіть RSS-шляхи) за 403/Vue-рендером,
+    # тож офіційний TG — єдине читабельне джерело. Пише нечасто (~раз на
+    # місяць), але там курси для дітей і PASCH-події. Перевірено 04.09.2026.
+    ("goetheukraine", "Goethe-Institut Ukraine"),
 ]
 
 _BROWSER = {

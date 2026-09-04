@@ -27,6 +27,7 @@ from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
 from normalizer import Normalizer, NormalizeError
 from scrapers import (
     acmodasi,
+    america_house,
     american_councils,
     british_council,
     cprs_kyiv,
@@ -99,6 +100,10 @@ SCRAPERS = [
     # джерел. Стипендії UWC — флагман цієї категорії.
     ("UWC Ukraine (ukraine.uwc.org)", uwc_ukraine, "thematic"),
     ("Ukraine Global Scholars (ugs.foundation)", ugs_foundation, "thematic"),
+    # Події для підлітків у Києві; JSON-ендпоінт Squarespace, дорослі події
+    # відсіює словник релевантності ще до LLM. Схвалено Марією 03.09.2026:
+    # «якщо є гарні заходи можемо додати».
+    ("America House Kyiv (americahousekyiv.org)", america_house, "ukrainian"),
     # Потребує браузера: сайт малюється на клієнті (див. модуль).
     ("Eurodesk", eurodesk, "thematic"),
     ("Save the Children", save_the_children, "thematic"),
