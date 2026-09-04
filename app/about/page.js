@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import PressLogos from '../PressLogos';
 
 export const metadata = {
   title: 'Про проєкт — як народився dityam.com.ua',
@@ -78,6 +79,13 @@ export default function AboutPage() {
           <li>Додаємо тільки безкоштовні або доступні програми</li>
           <li>Прострочені одноразові події автоматично приховуються</li>
         </ul>
+
+        <h2>Про нас пишуть</h2>
+        <PressLogos />
+        <p>
+          Усі публікації, цифри проєкту й матеріали для журналістів — на{' '}
+          <Link href="/press">сторінці для медіа</Link>.
+        </p>
 
         <h2>Як долучитися</h2>
         <p>
