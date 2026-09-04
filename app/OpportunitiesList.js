@@ -1,279 +1,187 @@
 'use client';
-import { Fragment, useState, useMemo, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import PlusSection from './PlusSection';
-import SuggestBlock from './SuggestBlock';
-import { THEME_OPTIONS, matchThemes } from '@/lib/themes';
-import {
-  TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
-  NEED_LABELS_EN, ANNUAL_TYPES, isEvent, dateLabel, dateLabelEn, formatLabel,
-  cityLabel,
-} from '@/lib/labels';
+import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent } from '@/lib/labels';
+import { cityLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
-import { goesAbroad, isInternational } from '@/lib/geo';
-import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { daysUntil, kyivToday } from '@/lib/dates';
-import { isoWeek } from '@/lib/week';
+import { goesAbroad } from '@/lib/geo';
+import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { trackOpportunityClick } from '@/lib/track';
+import { readMode, onModeChange } from '@/lib/mode';
 
-// Увесь текст каталогу двома мовами. Той самий компонент обслуговує / і /en:
-// копія на кожну мову розійшлася б із оригіналом за місяць, як уже сталося з
-// підписами підбірок у футері.
+// Каталог, версія редизайну (вересень 2026, референс «Dityam — новий дизайн
+// головної»). Один компонент обслуговує головну, /en і сторінки міст/тем.
+//
+// Що змінилось проти старої версії:
+// - фільтри стали одновибірними: ряд пігулок «Тип» + чотири селекти + пошук —
+//   замість девʼяти розкривних мультифільтрів;
+// - зʼявився режим «Підліткам» (перемикач у шапці): свої пігулки, вік
+//   класами, фільтр «Що дає» по teen_tags і поля картки «Отримаєш / Треба»;
+// - «Топ тижня» — три найближчі дедлайни автоматично, а не кураторська
+//   трійка featured_week;
+// - сортування зафіксоване: найближчий дедлайн угорі, без дедлайну — вкінці.
+
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const UI = {
   uk: {
-    reset: 'Скинути',
     found: 'Знайдено',
-    sort: 'Сортувати',
+    hint: 'спочатку — з найближчим дедлайном',
+    reset: 'Скинути',
     nothingTitle: 'Нічого не знайдено',
-    nothingText: 'Спробуйте послабити критерії пошуку або скинути фільтри.',
+    nothingText: 'Спробуйте інший фільтр.',
     showMore: 'Показати ще',
-    shown: 'Показано',
-    of: 'з',
     details: 'Детальніше ↗',
-    format: 'Формат',
-    city: 'Де',
-    abroad: 'За кордоном',
-    intl: 'міжнародна',
-    source: 'Джерело',
-    stateAid: 'держдопомога',
-    free: 'безкоштовно',
-    funded: 'з фінансуванням',
-    paid: 'платно',
-    topWeek: '⭐ Топ тижня',
-    topWeekTitle: '⭐ Топ-3 можливості тижня',
+    topTitle: '⏰ Топ тижня',
+    topSub: 'три дедлайни, які закриваються найближчими днями',
     annual: '🔄 щорічно',
-    annualPast: '🔄 відкривається щороку',
+    open: 'набір відкритий',
     today: 'сьогодні',
     tomorrow: 'завтра',
     inDays: (n) => `через ${n} дн.`,
     daysLeft: (n) => `${n} ${n === 1 ? 'день' : 'днів'}`,
-    age: (from, to) => (from === to ? `${from} років`
-      : from === 0 && to >= 17 ? '0-18 років' : `${from}-${to} років`),
-    groups: { age: 'Вік', type: 'Тип', aid: 'Вид допомоги', theme: 'Тема',
-      deadline: 'Дедлайн', need: 'Особлива потреба', cost: 'Вартість', city: 'Де' },
+    until: (d) => `до ${d}`,
+    noDeadline: 'без дедлайну',
+    searchParents: 'FLEX, програмування, допомога ВПО…',
+    searchTeens: 'FLEX, стажування, НМТ…',
+    f: { format: 'Формат', place: 'Де', source: 'Джерело',
+      benefit: 'Отримаєш', requirement: 'Треба', deadline: 'Дедлайн' },
+    sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
+      need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
+    all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном',
+    countWord: (n) => opportunitiesWord(n),
   },
   en: {
-    reset: 'Reset',
     found: 'Found',
-    sort: 'Sort',
+    hint: 'closest deadline first',
+    reset: 'Reset',
     nothingTitle: 'Nothing found',
-    nothingText: 'Try relaxing the filters or resetting them.',
-    showMore: 'Show',
-    shown: 'Showing',
-    of: 'of',
+    nothingText: 'Try a different filter.',
+    showMore: 'Show more',
     details: 'Details ↗',
-    format: 'Format',
-    city: 'Where',
-    abroad: 'Abroad',
-    intl: 'international',
-    source: 'Source',
-    stateAid: 'state aid',
-    free: 'free',
-    funded: 'funded',
-    paid: 'paid',
-    topWeek: '⭐ Pick of the week',
-    topWeekTitle: '⭐ Top 3 opportunities this week',
+    topTitle: '⏰ Top this week',
+    topSub: 'three deadlines closing soonest',
     annual: '🔄 every year',
-    annualPast: '🔄 opens every year',
+    open: 'enrolment open',
     today: 'today',
     tomorrow: 'tomorrow',
     inDays: (n) => `in ${n} days`,
     daysLeft: (n) => `${n} ${n === 1 ? 'day' : 'days'}`,
-    age: (from, to) => (from === to ? `age ${from}`
-      : from === 0 && to >= 17 ? '0–18 yrs' : `${from}–${to} yrs`),
-    groups: { age: 'Age', type: 'Type', aid: 'Aid type', theme: 'Topic',
-      deadline: 'Deadline', need: 'Special need', cost: 'Cost', city: 'Where' },
+    until: (d) => `by ${d}`,
+    noDeadline: 'no deadline',
+    searchParents: 'FLEX, coding, IDP aid…',
+    searchTeens: 'FLEX, internships…',
+    f: { format: 'Format', place: 'Where', source: 'Source',
+      benefit: 'You get', requirement: 'You need', deadline: 'Deadline' },
+    sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
+      need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
+    all: 'All', anyCost: 'Any', abroad: '🌍 Abroad',
+    countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
   },
 };
 
-// Англійська дата: місяць словом, як і в українській версії, але без відмінків.
-const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-const NEED_LABELS = {
-  gifted: 'обдаровані',
-  disability: 'інвалідність',
-  autism: 'РАС',
-  idp: 'ВПО',
-  veteran_family: 'діти ветеранів і загиблих',
-  de_occupied: 'з деокупованих',
-  frontline: 'з прифронтових',
-  oncology: 'онкохворі',
-  rare_disease: 'рідкісні хвороби',
-  low_income: 'малозабезпечені',
-  orphan: 'сироти',
-  large_family: 'багатодітні',
-  rural: 'сільська місцевість',
+// Пігулки «Тип» — свої на кожен режим. «Онлайн» лишається в обох свідомо,
+// хоч у референсі його немає: це найчастіший фільтр родин поза великими
+// містами й за кордоном.
+const TYPE_CHIPS = {
+  parents: [
+    { value: 'online', label: '💻 Онлайн', en: '💻 Online' },
+    { value: 'club', label: 'Гуртки', en: 'Clubs' },
+    { value: 'course', label: 'Курси', en: 'Courses' },
+    { value: 'camp', label: 'Табори', en: 'Camps' },
+    { value: 'olympiad', label: 'Олімпіади', en: 'Olympiads' },
+    { value: 'competition', label: 'Конкурси', en: 'Competitions' },
+    { value: 'payments', label: 'Виплати', en: 'Payments' },
+    { value: 'medical_aid', label: 'Мед. допомога', en: 'Medical aid' },
+  ],
+  teens: [
+    { value: 'online', label: '💻 Онлайн', en: '💻 Online' },
+    { value: 'exchange', label: 'Обміни', en: 'Exchanges' },
+    { value: 'internship', label: 'Стажування', en: 'Internships' },
+    { value: 'scholarship', label: 'Стипендії', en: 'Scholarships' },
+    { value: 'grant', label: 'Гранти', en: 'Grants' },
+    { value: 'volunteer', label: 'Волонтерство', en: 'Volunteering' },
+    { value: 'competition', label: 'Конкурси', en: 'Competitions' },
+  ],
 };
 
-const AGE_GROUPS = [
-  { label: 'Усі', en: 'All', value: 'all' },
-  { label: '0-3', value: '0-3' },
-  { label: '4-6', value: '4-6' },
-  { label: '7-11', value: '7-11' },
-  { label: '12-14', value: '12-14' },
-  { label: '15-17', value: '15-17' },
+const AGE_OPTS = {
+  parents: [
+    ['0-3', '0–3'], ['4-6', '4–6'], ['7-11', '7–11'],
+    ['12-14', '12–14'], ['15-17', '15–17'],
+  ],
+  // Підліток думає класами, не роками (референс «Підлітки — пропозиція
+  // функціоналу»): мапимо клас на віковий діапазон.
+  teens: [
+    ['12-14', '7–8 клас', '7–8 grade'], ['14-16', '9–10 клас', '9–10 grade'],
+    ['16-17', '11 клас', '11 grade'], ['17-18', 'після школи', 'after school'],
+  ],
+};
+
+const NEED_OPTS = [
+  ['idp', 'ВПО', 'Displaced'],
+  ['gifted', 'Обдаровані', 'Gifted'],
+  ['disability', 'Інвалідність', 'Disability'],
+  ['veteran_family', 'Діти ветеранів', "Veterans' children"],
+  ['low_income', 'Малозабезпечені', 'Low income'],
+  ['orphan', 'Сироти', 'Orphans'],
+  ['oncology', 'Онкохворі', 'Cancer patients'],
 ];
 
-const TYPE_OPTIONS = [
-  { label: 'Усі', en: 'All', value: 'all' },
-  // «Онлайн» — це формат участі, а не тема, тож живе тут, серед типів, і
-  // стоїть першим: дистанційна участь знімає питання міста, тому це найчастіший
-  // фільтр для родин поза великими містами й за кордоном.
-  { label: '💻 Онлайн', en: '💻 Online', value: 'online', highlight: true },
-  { label: 'Курси', en: 'Courses', value: 'course' },
-  { label: 'Конкурси', en: 'Competitions', value: 'competition' },
-  { label: 'Олімпіади', en: 'Olympiads', value: 'olympiad' },
-  { label: 'Обміни', en: 'Exchanges', value: 'exchange' },
-  { label: 'Табори', en: 'Camps', value: 'camp' },
-  { label: 'Стипендії', en: 'Scholarships', value: 'scholarship' },
-  { label: 'Держдопомога', en: 'State aid', value: 'gov_aid' },
-  { label: 'Гранти', en: 'Grants', value: 'grant' },
-  { label: 'Мед. допомога', en: 'Medical aid', value: 'medical_aid' },
-  { label: 'Фестивалі', en: 'Festivals', value: 'festival' },
-  { label: 'Гуртки', en: 'Clubs', value: 'club' },
+const GIVES_OPTS = [
+  ['без досвіду', 'Без досвіду', 'No experience needed'],
+  ['гроші', 'Гроші', 'Money'],
+  ['поїздка', 'Поїздка', 'A trip'],
+  ['досвід', 'Досвід', 'Experience'],
+  ['сертифікат', 'Сертифікат', 'Certificate'],
 ];
 
-// Дистанційна участь. Ознаку беремо з трьох місць, бо джерела пишуть формат
-// по-різному: поле format («Онлайн», «Гібрид», «online»), місто «Онлайн» у
-// cities і згадка в назві/описі, коли формат узагалі не заповнений.
+const COST_OPTS = [
+  ['free', 'Безкоштовно', 'Free'],
+  ['partial', 'З фінансуванням', 'Funded'],
+  // «Платно» видиме нарівні з безкоштовним: інакше платне не можна ні
+  // знайти, ні відсіяти (урок #152).
+  ['paid', 'Платно', 'Paid'],
+];
+
+const DEADLINE_OPTS = [
+  ['week', 'Цього тижня', 'This week'],
+  ['month', 'Цього місяця', 'This month'],
+  ['none', 'Без дедлайну', 'No deadline'],
+];
+
+// Кольори чипа типу (bg / текст) — палітра референсу, ключі — наші
+// opportunity_type. Все, чого немає в мапі, отримує кремовий.
+const TAG_COLORS = {
+  club: ['#fde8c7', '#8a5a0a'], internship: ['#fde8c7', '#8a5a0a'],
+  course: ['#fef7e0', '#8a5a0a'], workshop: ['#fef7e0', '#8a5a0a'],
+  camp: ['#e8f4f2', '#0a5348'], hackathon: ['#e8f4f2', '#0a5348'],
+  summer_school: ['#e8f4f2', '#0a5348'],
+  olympiad: ['#ede8f8', '#4c3d8c'], exchange: ['#ede8f8', '#4c3d8c'],
+  study_program: ['#ede8f8', '#4c3d8c'],
+  competition: ['#fde8ef', '#8a1a3a'], volunteer: ['#fde8ef', '#8a1a3a'],
+  festival: ['#fde8ef', '#8a1a3a'], sport_tournament: ['#fde8ef', '#8a1a3a'],
+  allowance: ['#e4f2d6', '#2d5814'], support_payment: ['#e4f2d6', '#2d5814'],
+  medical_aid: ['#e4f2d6', '#2d5814'], scholarship: ['#e4f2d6', '#2d5814'],
+  grant: ['#e4f2d6', '#2d5814'], humanitarian: ['#e4f2d6', '#2d5814'],
+};
+
+const DL_COLORS = {
+  urgent: ['#fde3e3', '#991b1b'],
+  soon: ['#fef2d4', '#78350f'],
+  calm: ['#f7f1e6', '#8a8a8a'],
+  event: ['#e5eefc', '#1b4a8f'],
+};
+
 const ONLINE_RE = /(онлайн|online|дистанц|гібрид|hybrid|zoom|вебінар)/i;
 const isOnline = (item) =>
   ONLINE_RE.test(item.format || '')
   || (item.cities || []).some((c) => ONLINE_RE.test(c))
   || ONLINE_RE.test(`${item.title || ''} ${item.summary || ''}`);
 
-// Subcategories of state aid (держдопомога). Rendered as a nested sub-filter
-// only when the "Держдопомога" type is active. Values match opportunities.aid_type.
-const AID_TYPE_OPTIONS = [
-  { label: 'Грошові виплати', en: 'Cash payments', value: 'cash' },
-  { label: 'Соц. стипендії', en: 'Social scholarships', value: 'scholarship' },
-  { label: 'Оздоровлення', en: 'Recreation', value: 'recreation' },
-  { label: 'Безкоштовні секції', en: 'Free activities', value: 'free_activities' },
-  { label: 'Проф. навчання', en: 'Vocational training', value: 'vocational' },
-];
-
-
-const NEED_OPTIONS = [
-  { label: 'Усі діти', en: 'All children', value: 'all' },
-  { label: 'ВПО', en: 'Displaced', value: 'idp' },
-  { label: 'Інвалідність', en: 'Disability', value: 'disability' },
-  { label: 'Обдаровані', en: 'Gifted', value: 'gifted' },
-  { label: 'Онкохворі', en: 'Cancer patients', value: 'oncology' },
-  { label: 'Діти ветеранів і загиблих захисників', en: 'Veterans’ and fallen soldiers’ children', value: 'veteran_family' },
-  { label: 'Малозабезпечені', en: 'Low income', value: 'low_income' },
-  { label: 'Сироти', en: 'Orphans', value: 'orphan' },
-];
-
-const COST_OPTIONS = [
-  { label: 'Будь-яка', en: 'Any', value: 'all' },
-  { label: 'Безкоштовно', en: 'Free', value: 'free' },
-  { label: 'З фінансуванням', en: 'Funded', value: 'partially_free' },
-  // Платне має бути видно у фільтрі так само, як безкоштовне: інакше його
-  // не можна ні знайти, ні відсіяти, і воно просто губиться в загальній купі.
-  { label: 'Платно', en: 'Paid', value: 'paid' },
-];
-
-const DEADLINE_OPTIONS = [
-  { label: 'Усі', en: 'All', value: 'all' },
-  { label: 'Цього тижня', en: 'This week', value: 'week' },
-  { label: 'Цього місяця', en: 'This month', value: 'month' },
-  { label: 'Найближчі 3 місяці', en: 'Next 3 months', value: 'quarter' },
-  { label: 'Без дедлайну (постійні)', en: 'No deadline (ongoing)', value: 'none' },
-];
-
-// Cards rendered per batch. Filtering stays client-side (the chips, the city list
-// and the result count all need the full set), so this caps the DOM, not the fetch.
-//
-// Автопідвантаження прибрано (25.08.2026): партії доїжджали самі, поки людина
-// гортала, і футер відсувався швидше, ніж до нього доскролювали. Тепер рівно
-// одна партія, далі — кнопка, і одразу за нею футер.
-const PAGE_SIZE = 30;
-
-// Обидва вставні блоки позиціонуються в КЛІТИНКАХ сітки, а не в картках:
-// повноширинний блок Dityam+ має падати рівно на межу рядка (кратність трьом
-// на десктопі), інакше сітка лишає перед ним порожні клітинки, а картка
-// «Маєте можливість» сама займає клітинку і зсуває все після себе.
-//
-// Розклад: клітинка 6 — «Маєте можливість» (шоста, як просила Мария),
-// після клітинок 9, 18, 27… — Dityam+ (межі рядків, кожні три ряди),
-// далі «Маєте можливість» повторюється кожні 30 клітинок (36, 66, 96) —
-// там, де вона збігається з кроком Dityam+, той раунд Dityam+ пропускаємо.
-const SUGGEST_FIRST = 6;
-const SUGGEST_EVERY = 30;
-const suggestTakesCell = (n) =>
-  n === SUGGEST_FIRST ||
-  (n > SUGGEST_FIRST && (n - SUGGEST_FIRST) % SUGGEST_EVERY === 0);
-
-// Крок Dityam+ — приблизно кожні дев'ять клітинок, але сам блок вставляємо
-// лише на межі ряду: він на всю ширину, тож посеред ряду лишив би порожні
-// клітинки праворуч від останньої картки.
-const PROMO_EVERY_CELLS = 9;
-
-// Розкладає картки по клітинках сітки разом із вставними блоками.
-// cells — послідовність того, що малюємо; fullRowCells/fullRowCards — остання
-// точка, де ряд закінчився рівно (по ній підрізаємо обірваний хвіст).
-function planCells(cardCount, cols, withPromo) {
-  const cells = [];
-  let cellNo = 0;        // клітинки-картки; промо на всю ширину сюди не рахуємо
-  let sinceRowStart = 0; // клітинок від початку поточного ряду
-  let sincePromo = 0;    // клітинок від останнього Dityam+
-  let promoIdx = 0;
-  let fullRowCells = 0;
-  let fullRowCards = 0;
-  for (let i = 0; i < cardCount; i += 1) {
-    cells.push({ t: 'card', i });
-    cellNo += 1;
-    sinceRowStart += 1;
-    sincePromo += 1;
-    let justSuggested = false;
-    if (suggestTakesCell(cellNo + 1)) {
-      cells.push({ t: 'suggest' });
-      cellNo += 1;
-      sinceRowStart += 1;
-      sincePromo += 1;
-      justSuggested = true;
-    }
-    const rowClosed = sinceRowStart % cols === 0;
-    const lastShort = cardCount < SUGGEST_FIRST - 1 && i === cardCount - 1;
-    // justSuggested: коли крок Dityam+ збігається з щойно вставленою карткою
-    // пропозиції (клітинка 36), раунд пропускаємо — два банери поспіль
-    // читаються як суцільна реклама.
-    if (withPromo && !justSuggested && ((sincePromo >= PROMO_EVERY_CELLS && rowClosed) || lastShort)) {
-      cells.push({ t: 'promo', idx: promoIdx });
-      promoIdx += 1;
-      sinceRowStart = 0;
-      sincePromo = 0;
-    }
-    if (sinceRowStart % cols === 0) {
-      fullRowCells = cells.length;
-      fullRowCards = i + 1;
-    }
-  }
-  return { cells, fullRowCells, fullRowCards };
-}
-
-// Скільки колонок малює сітка — видно лише з готового layout, а він є тільки
-// в браузері. На сервері useLayoutEffect не виконується й React лається, тож
-// там підміняємо його на useEffect.
-const useIsoLayoutEffect = typeof window === 'undefined' ? useEffect : useLayoutEffect;
-
-// Поки заміру немає (серверна розмітка й перший рендер), розкладаємо як на
-// десктопі — три колонки: так було до цієї зміни, і гідрація не розходиться.
-const ASSUMED_COLS = 3;
-
-const SORT_OPTIONS = [
-  { label: 'За віком дитини', en: 'By age', value: 'age' },
-  { label: 'Найближчий дедлайн', en: 'Deadline soonest', value: 'deadline' },
-  { label: 'Назва А-Я', en: 'Title A–Z', value: 'title' },
-  { label: 'Нещодавно додані', en: 'Recently added', value: 'recent' },
-];
-
-// Дедлайн у базі — календарна дата, а не момент часу. getDate() віддає її в
-// поясі того, хто читає: «2026-08-31» у Нью-Йорку ставало 30 серпня, бо
-// північ за Гринвічем там ще вчорашній вечір. Діаспора бачила кожен дедлайн
-// на добу раніше, а розмітка з сервера не збігалася з тим, що рахував
-// браузер. Тож беремо UTC-складові — те саме число, що в базі, скрізь.
 function formatDeadline(dateStr, lang = 'uk') {
   if (!dateStr) return null;
   const date = new Date(dateStr);
@@ -283,196 +191,88 @@ function formatDeadline(dateStr, lang = 'uk') {
   return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
 }
 
-// «Сьогодні» приходить пропом із сервера — див. lib/dates.js. Рахувати його
-// тут означало б рахувати двічі: на сервері в UTC, у браузері в Києві — і
-// отримати різні числа на тому самому записі.
-
-function deadlineMatches(item, value, today) {
-  const days = daysUntil(item.deadline, today);
-  if (value === 'none') return days === null;
-  if (value === 'week') return days !== null && days >= 0 && days <= 7;
-  if (value === 'month') return days !== null && days >= 0 && days <= 31;
-  if (value === 'quarter') return days !== null && days >= 0 && days <= 92;
-  return false;
-}
-
 function ageMatches(item, value) {
-  const [f, t] = value.split('-').map(Number);
-  return item.age_from <= t && item.age_to >= f;
+  const [f, tt] = value.split('-').map(Number);
+  return item.age_from <= tt && item.age_to >= f;
 }
 
+const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
 
-// Одна випадайка фільтра. Панель — той самий набір чипів, що був раніше:
-// множинний вибір, «Усі» для скидання секції, приховані порожні опції.
-// Змінюється лише подача — дев'ять рядків згорнулись у рядок кнопок.
-function FilterButton({ id, label, options, selected, openId, setOpenId }) {
-  if (!options.length) return null;
-  const isOpen = openId === id;
-  const count = selected.size;
-  return (
-    <button
-      type="button"
-      id={`fm-btn-${id}`}
-      className={`fm-btn ${count ? 'has' : ''} ${isOpen ? 'open' : ''}`}
-      aria-expanded={isOpen}
-      aria-controls="fm-panel"
-      onClick={() => setOpenId(isOpen ? null : id)}
-    >
-      {label}
-      {count > 0 && <span className="fm-count">{count}</span>}
-      <span className="fm-caret" aria-hidden="true" />
-    </button>
-  );
-}
-
-// Розкривається під рядком кнопок, а не з-під кожної окремо: панель на всю
-// ширину не вилазить за край екрана на телефоні й не перекриває картки.
-function FilterPanel({ menu, lang }) {
-  if (!menu) return null;
-  const { label, options, selected, onToggle } = menu;
-  return (
-    <div className="fm-panel" id="fm-panel" role="group" aria-label={label}>
-      {options.map((o) => {
-        const on = o.value === 'all' ? selected.size === 0 : selected.has(o.value);
-        return (
-          <button
-            key={o.value}
-            type="button"
-            className={`filter-btn ${on ? 'active' : ''} ${o.highlight ? 'filter-btn-hl' : ''}`}
-            onClick={() => onToggle(o.value)}
-          >
-            {o.en && lang === 'en' ? o.en : o.label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-export default function OpportunitiesList({ opportunities, presetCity, promoProps = null, lang = 'uk', today }) {
-  // Сторінка передає «сьогодні» пропом — тоді число однакове в розмітці й у
-  // браузері. Якщо не передала, рахуємо самі: kyivToday() не залежить від
-  // часового поясу середовища, тож розбіжність лишається хіба що на п'ять
-  // хвилин довкола київської півночі, поки сторінка не перегенерувалась.
+export default function OpportunitiesList({
+  opportunities, presetCity, promoProps = null, lang = 'uk', today, modeAware = false,
+}) {
   const todayIso = today || kyivToday();
-  // Позначка живе рівно свій тиждень: у базі лежить не прапорець, а тиждень,
-  // тож забути погасити її неможливо — вона гасне сама в понеділок.
-  const thisWeek = isoWeek();
-  const isTop = (item) => item.featured_week === thisWeek;
   const t = UI[lang] || UI.uk;
   const isEn = lang === 'en';
-  const [ages, setAges] = useState(() => new Set());
-  const [types, setTypes] = useState(() => new Set());
-  const [aidTypes, setAidTypes] = useState(() => new Set());
-  const [themes, setThemes] = useState(() => new Set());
-  const [needs, setNeeds] = useState(() => new Set());
-  const [costs, setCosts] = useState(() => new Set());
-  const [deadlines, setDeadlines] = useState(() => new Set());
-  const [selectedCities, setSelectedCities] = useState(() =>
-    presetCity ? new Set([presetCity]) : new Set()
-  );
+
+  // Режим «Батькам / Підліткам» вмикається лише там, де в шапці є
+  // перемикач (головна). На сторінках міст і тем каталог завжди
+  // батьківський — там своя обіцянка в заголовку сторінки.
+  const [mode, setMode] = useState('parents');
+  useEffect(() => {
+    if (!modeAware) return undefined;
+    setMode(readMode());
+    return onModeChange(setMode);
+  }, [modeAware]);
+  const teens = mode === 'teens';
+
+  const [type, setType] = useState('all');
+  const [age, setAge] = useState('all');
+  const [deadline, setDeadline] = useState('all');
+  const [need, setNeed] = useState('all');
+  const [cost, setCost] = useState('all');
+  const [place, setPlace] = useState(presetCity || 'all');
   const [query, setQuery] = useState('');
-  // Одночасно відкрита лише одна випадайка — інакше вони перекривають одна одну.
-  const [openId, setOpenId] = useState(null);
-  const [sort, setSort] = useState('age');
-  // Guards the URL-writing effect below: until the initial read has run, writing
-  // would wipe the very query string we're about to parse.
+  const [limit, setLimit] = useState(6);
   const [hydrated, setHydrated] = useState(false);
 
+  // Читання фільтрів з URL — щоб відфільтрований вигляд можна було шерити.
+  // Старі мультизначення (?type=a,b) читаємо по першому токену.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const readSet = (key, setter) => {
-      const raw = p.get(key);
-      if (raw) setter(new Set(raw.split(',').filter(Boolean)));
-    };
-    readSet('age', setAges);
-    readSet('type', setTypes);
-    readSet('aid', setAidTypes);
-    readSet('theme', setThemes);
-    // Старі посилання з ?theme=online (до переїзду «Онлайн» у фільтр «Тип»)
-    // мають і далі показувати онлайн-можливості, а не порожню видачу.
-    if ((p.get('theme') || '').split(',').includes('online')) {
-      setThemes((prev) => {
-        const next = new Set(prev);
-        next.delete('online');
-        return next;
-      });
-      setTypes((prev) => new Set([...prev, 'online']));
+    const one = (key) => (p.get(key) || '').split(',').filter(Boolean)[0];
+    const setters = { type: setType, age: setAge, deadline: setDeadline,
+      need: setNeed, cost: setCost };
+    for (const [key, setter] of Object.entries(setters)) {
+      const v = one(key);
+      if (v) setter(v);
     }
-    readSet('need', setNeeds);
-    readSet('cost', setCosts);
-    readSet('deadline', setDeadlines);
-    readSet('city', setSelectedCities);
-    // Старі посилання з ?city=Міжнародні (до появи опції «За кордоном»)
-    // мають і далі показувати закордонні можливості, а не порожню видачу.
-    if ((p.get('city') || '').split(',').includes('Міжнародні')) {
-      setSelectedCities((prev) => {
-        const next = new Set(prev);
-        next.delete('Міжнародні');
-        next.add('abroad');
-        return next;
-      });
-    }
+    const city = one('city');
+    if (city) setPlace(city === 'Міжнародні' ? 'abroad' : city);
     const q = p.get('q');
     if (q) setQuery(q);
-    const sortVal = p.get('sort');
-    if (sortVal && SORT_OPTIONS.some((o) => o.value === sortVal)) setSort(sortVal);
     setHydrated(true);
   }, []);
 
-  // Mirror filter state back into the URL so a filtered view can be bookmarked,
-  // shared and restored. replaceState — not push — because every chip tap would
-  // otherwise pile up in the back stack and make ← unusable.
   useEffect(() => {
-    if (!hydrated) return;
-    // Debounced so typing in the search box doesn't rewrite the URL per keystroke.
+    if (!hydrated) return undefined;
     const timer = setTimeout(() => {
-      const p = new URLSearchParams();
-      const writeSet = (key, set) => {
-        if (set.size > 0) p.set(key, [...set].join(','));
-      };
-      writeSet('age', ages);
-      writeSet('type', types);
-      writeSet('aid', aidTypes);
-      writeSet('theme', themes);
-      writeSet('need', needs);
-      writeSet('cost', costs);
-      writeSet('deadline', deadlines);
-      // On a city landing page (/kyiv) the preset is already in the path —
-      // repeating it as ?city= would be noise. Any wider selection still gets written.
-      const presetOnly =
-        presetCity && selectedCities.size === 1 && selectedCities.has(presetCity);
-      if (!presetOnly) writeSet('city', selectedCities);
-      if (query.trim()) p.set('q', query.trim());
-      if (sort !== 'age') p.set('sort', sort);
-
-      const qs = p.toString();
-      window.history.replaceState(
-        null,
-        '',
-        qs ? `${window.location.pathname}?${qs}` : window.location.pathname
-      );
+      const p = new URLSearchParams(window.location.search);
+      const keep = p.get('for'); // режим пише lib/mode — не затираємо
+      const next = new URLSearchParams();
+      if (keep === 'teens') next.set('for', 'teens');
+      const write = (key, v, def = 'all') => { if (v !== def) next.set(key, v); };
+      write('type', type); write('age', age); write('deadline', deadline);
+      write('need', need); write('cost', cost);
+      if (!(presetCity && place === presetCity)) write('city', place);
+      if (query.trim()) next.set('q', query.trim());
+      const qs = next.toString();
+      window.history.replaceState(null, '',
+        qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
     }, 250);
     return () => clearTimeout(timer);
-  }, [
-    hydrated, ages, types, aidTypes, themes, needs, costs, deadlines,
-    selectedCities, query, sort, presetCity,
-  ]);
+  }, [hydrated, type, age, deadline, need, cost, place, query, presetCity]);
 
-  // Theme tags per opportunity, derived from title+summary keywords (lib/themes).
-  const themeMap = useMemo(() => {
-    const m = new Map();
-    opportunities.forEach((o) => {
-      m.set(o.id, new Set(matchThemes(`${o.title || ''} ${o.summary || ''}`)));
-    });
-    return m;
-  }, [opportunities]);
+  // Зміна режиму скидає фільтри: у батьків і підлітків різні словники.
+  useEffect(() => {
+    if (!modeAware) return;
+    setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
+    setCost('all'); setQuery(''); setLimit(6);
+    if (!presetCity) setPlace('all');
+  }, [mode, modeAware, presetCity]);
 
-  // Пошуковий індекс: усе, чим людина може описати запис, — включно з
-  // містами, типом і темами, яких у тексті картки може й не бути. Рахується
-  // один раз на набір записів, а не на кожне натискання клавіші в полі.
+  // Пошуковий індекс: рахується раз на набір записів (див. lib/search).
   const searchIndex = useMemo(() => {
-    const themeLabel = new Map(THEME_OPTIONS.map((o) => [o.value, `${o.label} ${o.en}`]));
     const m = new Map();
     opportunities.forEach((o) => {
       m.set(o.id, buildHaystack([
@@ -480,649 +280,427 @@ export default function OpportunitiesList({ opportunities, presetCity, promoProp
         ...(o.cities || []),
         ...(o.cities || []).map((c) => cityLabel(c, 'en')),
         TYPE_LABELS[o.opportunity_type], TYPE_LABELS_EN[o.opportunity_type],
-        o.aid_type ? AID_TYPE_LABELS[o.aid_type] : null,
-        ...[...(themeMap.get(o.id) || [])].map((t) => themeLabel.get(t)),
+        o.teen_benefit, o.teen_requirement,
         goesAbroad(o) ? 'за кордоном abroad' : null,
       ]));
     });
     return m;
-  }, [opportunities, themeMap]);
+  }, [opportunities]);
 
-  const sortCities = (list) => [...list].sort((a, b) => {
-    if (a === 'Онлайн') return -1;
-    if (b === 'Онлайн') return 1;
-    if (a === 'Вся Україна') return -1;
-    if (b === 'Вся Україна') return 1;
-    if (a === 'Міжнародні') return 1;
-    if (b === 'Міжнародні') return -1;
-    return a.localeCompare(b, 'uk');
-  });
-
-  const toggle = (setter) => (value) => {
-    if (value === 'all') {
-      setter(new Set());
-      return;
-    }
-    setter((prev) => {
-      const next = new Set(prev);
-      if (next.has(value)) next.delete(value);
-      else next.add(value);
-      return next;
-    });
-  };
-
-  const handlers = {
-    age: toggle(setAges),
-    // Deselecting the "Держдопомога" umbrella (or resetting to "Усі") also
-    // clears any state-aid subcategory selection so it can't linger hidden.
-    type: (value) => {
-      toggle(setTypes)(value);
-      if (value === 'gov_aid' || value === 'all') setAidTypes(new Set());
-    },
-    aid: toggle(setAidTypes),
-    theme: toggle(setThemes),
-    need: toggle(setNeeds),
-    cost: toggle(setCosts),
-    deadline: toggle(setDeadlines),
-    city: toggle(setSelectedCities),
-  };
-
-  const isActive = (set, value) => (value === 'all' ? set.size === 0 : set.has(value));
-
-  // Клік поза панеллю і Escape закривають випадайку — без цього вона лишалась
-  // би відкритою, поки не клікнеш саме по кнопці.
-  useEffect(() => {
-    if (openId === null) return;
-    // Кліки по самій панелі не закривають її: вибір фільтрів множинний,
-    // і закриття після кожної позначки зробило б добір неможливим.
-    const onDown = (e) => {
-      if (!e.target.closest('.fm-btn, .fm-panel')) setOpenId(null);
-    };
-    const onKey = (e) => { if (e.key === 'Escape') setOpenId(null); };
-    document.addEventListener('pointerdown', onDown);
-    document.addEventListener('keydown', onKey);
-    return () => {
-      document.removeEventListener('pointerdown', onDown);
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [openId]);
-
-  const activeCount =
-    ages.size + types.size + aidTypes.size + themes.size + needs.size +
-    costs.size + deadlines.size + selectedCities.size + (query.trim() ? 1 : 0);
-
-  // Сортування свідомо НЕ чіпаємо: це не фільтр, і скидати спосіб перегляду
-  // разом із вибором — несподіванка для людини.
-  const resetAll = () => {
-    setAges(new Set());
-    setTypes(new Set());
-    setAidTypes(new Set());
-    setThemes(new Set());
-    setNeeds(new Set());
-    setCosts(new Set());
-    setDeadlines(new Set());
-    setSelectedCities(presetCity ? new Set([presetCity]) : new Set());
-    setQuery('');
-  };
-
-  // Прострочені разові можливості не показуємо ніде — ні в списку, ні при
-  // підрахунку доступних опцій фільтрів.
+  // Прострочені разові можливості не показуємо ніде.
   const liveItems = useMemo(() => opportunities.filter((item) => {
     const days = daysUntil(item.deadline, todayIso);
-    return !(days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type));
-  }), [opportunities, todayIso]);
+    if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
+    // База підліткового режиму: все, що доступне у 13+.
+    if (teens && item.age_to < 13) return false;
+    return true;
+  }), [opportunities, todayIso, teens]);
 
-  // Один предикат на секцію фільтрів. Це єдине джерело правди: за ними і
-  // фільтрується список, і рахується, які опції взагалі мають сенс показувати.
-  // Тримати дві копії цієї логіки означало б, що вони рано чи пізно розійдуться.
   const predicates = useMemo(() => ({
-    age: (item) => ages.size === 0 || [...ages].some((v) => ageMatches(item, v)),
-    // "gov_aid" — парасолька: підходить будь-яка можливість із aid_type,
-    // незалежно від її opportunity_type (виплата, табір, гурток…).
-    type: (item) => types.size === 0
-      || types.has(item.opportunity_type)
-      || (types.has('gov_aid') && Boolean(item.aid_type))
-      || (types.has('online') && isOnline(item)),
-    aid: (item) => aidTypes.size === 0 || aidTypes.has(item.aid_type),
-    theme: (item) => {
-      if (themes.size === 0) return true;
-      const itemThemes = themeMap.get(item.id);
-      return Boolean(itemThemes) && [...themes].some((t) => itemThemes.has(t));
+    type: (item) => {
+      if (type === 'all') return true;
+      if (type === 'online') return isOnline(item);
+      if (type === 'payments') {
+        return item.opportunity_type === 'allowance'
+          || item.opportunity_type === 'support_payment'
+          || item.aid_type === 'cash';
+      }
+      return item.opportunity_type === type;
     },
-    need: (item) => needs.size === 0
-      || (item.child_needs || []).some((n) => needs.has(n)),
-    // «Платно» — один вибір на дві вартості в базі: людині байдуже, чи це
-    // paid_affordable, чи paid_premium — їй важливо, що це коштує грошей.
-    cost: (item) => costs.size === 0
-      || costs.has(item.cost_type)
-      || (costs.has('paid') && (item.cost_type === 'paid_affordable'
-                                || item.cost_type === 'paid_premium')),
-    deadline: (item) => deadlines.size === 0
-      || [...deadlines].some((v) => deadlineMatches(item, v, todayIso)),
-    city: (item) => {
-      if (selectedCities.size === 0) return true;
-      // «За кордоном» — не місто в cities, а вивід із countries та
-      // is_international (lib/geo): AFS і Erasmus не мають конкретного міста.
-      if (selectedCities.has('abroad') && goesAbroad(item)) return true;
-      const itemCities = item.cities || [];
-      if (itemCities.some((c) => selectedCities.has(c))) return true;
-      // «Вся Україна» просвічує крізь фільтр за конкретним містом (Київ,
-      // Харків…), але НЕ крізь Онлайн / За кордоном / Вся Україна.
-      if (!itemCities.includes('Вся Україна')) return false;
-      const VIRTUAL = new Set(['Онлайн', 'Міжнародні', 'Вся Україна', 'abroad']);
-      return [...selectedCities].some((c) => !VIRTUAL.has(c));
+    age: (item) => age === 'all' || ageMatches(item, age),
+    deadline: (item) => {
+      if (deadline === 'all') return true;
+      const days = daysUntil(item.deadline, todayIso);
+      if (deadline === 'none') return days === null;
+      if (deadline === 'week') return days !== null && days >= 0 && days <= 7;
+      if (deadline === 'month') return days !== null && days >= 0 && days <= 31;
+      return true;
     },
-    // Пошук по словах через lib/search: «шахи київ» знаходить шахи в Києві,
-    // «табори» — «табір», «build for future» — «Build Future». Індекс запису
-    // рахується один раз у searchIndex, а не на кожне натискання клавіші.
+    need: (item) => {
+      if (need === 'all') return true;
+      if (teens) {
+        if ((item.teen_tags || []).includes(need)) return true;
+        // «Поїздка» працює і до розмітки: закордон видно з географії.
+        return need === 'поїздка' && goesAbroad(item);
+      }
+      return (item.child_needs || []).includes(need);
+    },
+    cost: (item) => {
+      if (cost === 'all') return true;
+      if (cost === 'free') return item.cost_type === 'free';
+      if (cost === 'partial') return item.cost_type === 'partially_free';
+      return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
+    },
+    place: (item) => {
+      if (place === 'all') return true;
+      if (place === 'abroad') return goesAbroad(item);
+      const cities = item.cities || [];
+      if (cities.includes(place)) return true;
+      // «Вся Україна» просвічує крізь вибір конкретного міста.
+      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(place);
+    },
     query: (item) => {
       const tokens = queryTokens(query);
       if (!tokens.length) return true;
       const hay = searchIndex.get(item.id);
       return Boolean(hay) && matchesQuery(tokens, hay);
     },
-  }), [ages, types, aidTypes, themes, needs, costs, deadlines, selectedCities, query, themeMap, searchIndex, todayIso]);
+  }), [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex]);
 
-  const FACETS = ['age', 'type', 'aid', 'theme', 'need', 'cost', 'deadline', 'city', 'query'];
+  const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
 
-  const filtered = useMemo(() => {
-    let result = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
+  const hasActive = type !== 'all' || age !== 'all' || deadline !== 'all'
+    || need !== 'all' || cost !== 'all' || Boolean(query.trim())
+    || (presetCity ? place !== presetCity : place !== 'all');
 
-    // Lower rank = higher priority. Urgent deadlines bubble to the very top.
-    const deadlineRank = (item) => {
-      const days = daysUntil(item.deadline, todayIso);
-      if (days === null) return 4;
-      if (days < 0) return 4;
-      if (days <= 7) return 0;
-      if (days <= 30) return 1;
-      if (days <= 92) return 2;
-      return 3;
-    };
-
-    if (sort === 'deadline') {
-      result.sort((a, b) => {
-        const aDays = daysUntil(a.deadline, todayIso);
-        const bDays = daysUntil(b.deadline, todayIso);
-        if (aDays === null && bDays === null) return 0;
-        if (aDays === null) return 1;
-        if (bDays === null) return -1;
-        if (aDays < 0 && bDays < 0) return 0;
-        if (aDays < 0) return 1;
-        if (bDays < 0) return -1;
-        return aDays - bDays;
-      });
-    } else {
-      let secondary;
-      if (sort === 'age') secondary = (a, b) => a.age_from - b.age_from;
-      else if (sort === 'title') {
-        const name = (o) => (isEn && o.title_en) || o.title || '';
-        secondary = (a, b) => name(a).localeCompare(name(b), isEn ? 'en' : 'uk');
-      }
-      else if (sort === 'recent') secondary = (a, b) => (b.created_at || '').localeCompare(a.created_at || '');
-      else secondary = () => 0;
-
-      result.sort((a, b) => {
-        const rank = deadlineRank(a) - deadlineRank(b);
-        if (rank !== 0) return rank;
-        return secondary(a, b);
-      });
-    }
-
-    // Трійку нагору більше не піднімаємо: вона має власну секцію над
-    // фільтрами. Підйом лише дублював би її першими трьома картками списку.
-    return result;
-  }, [liveItems, predicates, sort, todayIso, thisWeek]);
-
-  // Доступні опції кожної секції: рахуємо на тому, що проходить УСІ ІНШІ
-  // фільтри. Саму секцію виключаємо — інакше вибір у ній схлопнув би її власний
-  // список до однієї обраної опції.
-  //
-  // Навіщо: у 3 роки стипендій не буває, і показувати «Стипендії» дитині цього
-  // віку — обіцяти порожній екран. Мертвий фільтр гірший за відсутній.
+  // Доступні опції: рахуємо на тому, що проходить усі ІНШІ фільтри, — мертва
+  // опція гірша за відсутню (у 3 роки стипендій не буває).
   const available = useMemo(() => {
     const candidates = (skip) =>
       liveItems.filter((item) => FACETS.every((k) => k === skip || predicates[k](item)));
-
-    const set = (skip, extract) => {
-      const out = new Set();
-      candidates(skip).forEach((item) => extract(item, out));
-      return out;
-    };
-
-    return {
-      age: (() => {
-        const items = candidates('age');
-        return new Set(AGE_GROUPS
-          .filter((g) => g.value !== 'all' && items.some((i) => ageMatches(i, g.value)))
-          .map((g) => g.value));
-      })(),
-      type: set('type', (i, out) => {
-        out.add(i.opportunity_type);
-        if (i.aid_type) out.add('gov_aid');
-        if (isOnline(i)) out.add('online');
-      }),
-      aid: set('aid', (i, out) => { if (i.aid_type) out.add(i.aid_type); }),
-      theme: set('theme', (i, out) => (themeMap.get(i.id) || []).forEach((t) => out.add(t))),
-      need: set('need', (i, out) => (i.child_needs || []).forEach((n) => out.add(n))),
-      // «Платно» — синтетичне значення поверх двох реальних: якщо його не
-      // додати сюди, опція ховається як «немає таких записів», хоча платні
-      // можливості на сторінці є.
-      cost: set('cost', (i, out) => {
-        if (i.cost_type) out.add(i.cost_type);
-        if (i.cost_type === 'paid_affordable' || i.cost_type === 'paid_premium') out.add('paid');
-      }),
-      deadline: (() => {
-        const items = candidates('deadline');
-        return new Set(DEADLINE_OPTIONS
-          .filter((d) => d.value !== 'all' && items.some((i) => deadlineMatches(i, d.value, todayIso)))
-          .map((d) => d.value));
-      })(),
-      city: set('city', (i, out) => {
-        (i.cities || []).forEach((c) => out.add(c));
-        if (goesAbroad(i)) out.add('abroad');
-      }),
-    };
-  }, [liveItems, predicates, themeMap]);
-
-  // Обрану опцію показуємо завжди, навіть якщо вона стала порожньою — інакше
-  // її не було б чим зняти, і людина застрягла б у нульовій видачі.
-  const isOfferable = (facet, value, selected) =>
-    value === 'all' || selected.has(value) || available[facet].has(value);
-
-  // Один опис на фільтр — з нього будуються і кнопки рядка, і вміст розкривної
-  // панелі, і чипи обраного. Раніше кожен фільтр був окремим блоком розмітки,
-  // і будь-яка зміна доводилось повторювати тричі.
-  const menus = useMemo(() => {
-    const list = [
-      { id: 'age', label: t.groups.age, all: AGE_GROUPS, selected: ages, onToggle: handlers.age },
-      { id: 'type', label: t.groups.type, all: TYPE_OPTIONS, selected: types, onToggle: handlers.type },
-      // Підтипи держдопомоги мають сенс лише всередині «Держдопомоги».
-      ...(types.has('gov_aid')
-        ? [{ id: 'aid', label: t.groups.aid, all: AID_TYPE_OPTIONS, selected: aidTypes, onToggle: handlers.aid }]
-        : []),
-      { id: 'theme', label: t.groups.theme, all: THEME_OPTIONS, selected: themes, onToggle: handlers.theme },
-      { id: 'deadline', label: t.groups.deadline, all: DEADLINE_OPTIONS, selected: deadlines, onToggle: handlers.deadline },
-      { id: 'need', label: t.groups.need, all: NEED_OPTIONS, selected: needs, onToggle: handlers.need },
-      { id: 'cost', label: t.groups.cost, all: COST_OPTIONS, selected: costs, onToggle: handlers.cost },
-      {
-        id: 'city',
-        label: t.groups.city,
-        // «Де» замість «Місто»: закордон — окрема перша опція, а не
-        // псевдомісто «Міжнародні» в кінці списку. «Онлайн» живе у «Тип».
-        all: [
-          { label: `🌍 ${t.abroad}`, value: 'abroad', highlight: true },
-          ...sortCities([...new Set([...available.city, ...selectedCities])])
-            .filter((c) => c !== 'Міжнародні' && c !== 'Онлайн' && c !== 'abroad')
-            .map((c) => ({ label: cityLabel(c, lang), value: c })),
-        ],
-        selected: selectedCities,
-        onToggle: handlers.city,
-      },
-    ];
-    return list.map((m) => ({
-      ...m,
-      options: m.all.filter((o) => isOfferable(m.id, o.value, m.selected)),
-    }));
-  }, [ages, types, aidTypes, themes, deadlines, needs, costs, selectedCities, available, todayIso]);
-
-  const openMenu = menus.find((m) => m.id === openId && m.options.length) || null;
-
-  // Обране лишається на видноті зі згорнутими випадайками — і знімається
-  // одним кліком по чипу.
-  const activeChips = useMemo(() => menus.flatMap((m) => [...m.selected]
-    .map((value) => {
-      const opt = m.all.find((o) => o.value === value);
-      return {
-        facet: m.id,
-        value,
-        label: opt ? opt.label : value,
-        onRemove: () => m.onToggle(value),
-      };
-    })), [menus]);
-
-  // Any change to the filtered set puts the user back at the top of a fresh batch —
-  // keeping a large `visible` across filter changes would dump hundreds of cards at once.
-  const [visible, setVisible] = useState(PAGE_SIZE);
-  useEffect(() => {
-    setVisible(PAGE_SIZE);
-  }, [filtered]);
-
-  // Ширину колонок задає auto-fill, тож їхню кількість знає лише браузер:
-  // читаємо її з порахованих треків сітки й перечитуємо, коли міняється ширина.
-  const gridRef = useRef(null);
-  const [cols, setCols] = useState(0); // 0 — ще не виміряно
-  const hasGrid = filtered.length > 0;
-  useIsoLayoutEffect(() => {
-    const el = gridRef.current;
-    if (!el) return undefined;
-    const measure = () => {
-      // У порахованому вигляді це список ширин («340px 340px 340px»).
-      // Якщо сітка ще не розкладена (наприклад, прихована), браузер віддасть
-      // вихідне repeat(auto-fill, …) — тоді заміру просто немає.
-      const parts = (getComputedStyle(el).gridTemplateColumns || '').split(' ').filter(Boolean);
-      const n = parts.length && parts.every((t) => t.endsWith('px')) ? parts.length : 0;
-      if (n > 0) setCols((prev) => (prev === n ? prev : n));
-    };
-    measure();
-    if (typeof ResizeObserver === 'undefined') return undefined;
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [hasGrid]);
-
-  const ageLabel = (item) => t.age(item.age_from, item.age_to);
-
-  // Англійський текст із бази, з відкатом на оригінал. Переклад доїжджає
-  // партіями, тож у будь-який момент частина записів ще без нього — і
-  // українська назва тут краща за порожню картку.
-  const enField = (item, field) =>
-    (isEn && item[`${field}_en`]) || item[field] || '';
-
-  const handleLinkClick = (title) => trackOpportunityClick(title, 'list');
-
-  const deadlineChip = (item) => {
-    const days = daysUntil(item.deadline, todayIso);
-    const annual = ANNUAL_TYPES.has(item.opportunity_type);
-    if (days === null) {
-      return annual ? <span className="chip chip-annual">{t.annual}</span> : null;
+    const chips = new Set();
+    candidates('type').forEach((item) => {
+      chips.add(item.opportunity_type);
+      if (isOnline(item)) chips.add('online');
+      if (item.opportunity_type === 'allowance' || item.opportunity_type === 'support_payment'
+        || item.aid_type === 'cash') chips.add('payments');
+    });
+    const ages = new Set();
+    const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
+    {
+      const items = candidates('age');
+      for (const [value] of ageList) {
+        if (items.some((i) => ageMatches(i, value))) ages.add(value);
+      }
     }
-    if (days < 0) {
-      return annual ? <span className="chip chip-annual">{t.annualPast}</span> : null;
+    const needs = new Set();
+    candidates('need').forEach((item) => {
+      if (teens) {
+        (item.teen_tags || []).forEach((x) => needs.add(x));
+        if (goesAbroad(item)) needs.add('поїздка');
+      } else {
+        (item.child_needs || []).forEach((x) => needs.add(x));
+      }
+    });
+    const costs = new Set();
+    candidates('cost').forEach((item) => {
+      if (item.cost_type === 'free') costs.add('free');
+      if (item.cost_type === 'partially_free') costs.add('partial');
+      if (item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium') costs.add('paid');
+    });
+    const deadlines = new Set();
+    {
+      const items = candidates('deadline');
+      for (const item of items) {
+        const days = daysUntil(item.deadline, todayIso);
+        if (days === null) deadlines.add('none');
+        else {
+          if (days >= 0 && days <= 7) deadlines.add('week');
+          if (days >= 0 && days <= 31) deadlines.add('month');
+        }
+      }
     }
-    // Для події лічильник означає інше: не «лишилось стільки на подачу», а
-    // «відбудеться через стільки». «⏰ 3 днів» на фестивалі читається як
-    // пекучий дедлайн, хоча подавати нікуди не треба.
-    if (isEvent(item)) {
-      if (days === 0) return <span className="chip chip-event">📅 {t.today}</span>;
-      if (days === 1) return <span className="chip chip-event">📅 {t.tomorrow}</span>;
-      if (days <= 30) return <span className="chip chip-event">📅 {t.inDays(days)}</span>;
-      return null;
-    }
-    if (days === 0) return <span className="chip chip-deadline-urgent">⏰ {t.today}</span>;
-    if (days <= 7) return <span className="chip chip-deadline-urgent">⏰ {t.daysLeft(days)}</span>;
-    if (days <= 30) return <span className="chip chip-deadline-soon">⏳ {t.daysLeft(days)}</span>;
-    return null;
-  };
+    const places = new Set();
+    candidates('place').forEach((item) => {
+      (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+      if (goesAbroad(item)) places.add('abroad');
+    });
+    return { chips, ages, needs, costs, deadlines, places };
+  }, [liveItems, predicates, teens, todayIso]);
 
-  // Трійка рахується від повного набору, а не від відфільтрованого: секція
-  // над фільтрами не має зникати від того, що людина обрала «Табори».
-  const topWeek = useMemo(
-    () => liveItems.filter(isTop).slice(0, 3),
-    [liveItems, thisWeek],
+  const filtered = useMemo(() => {
+    const list = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
+    // Найближчий дедлайн угорі; без дедлайну — вкінці, свіжіші перші.
+    return list.sort((a, b) => {
+      const da = daysUntil(a.deadline, todayIso);
+      const db = daysUntil(b.deadline, todayIso);
+      const ra = da === null || da < 0 ? 9999 : da;
+      const rb = db === null || db < 0 ? 9999 : db;
+      if (ra !== rb) return ra - rb;
+      return (b.created_at || '').localeCompare(a.created_at || '');
+    });
+  }, [liveItems, predicates, todayIso]);
+
+  // Топ тижня: три найближчі живі дедлайни. Показується без активних
+  // фільтрів і виключається з основної стрічки, щоб не дублювався.
+  const topCards = useMemo(() => {
+    if (hasActive) return [];
+    return liveItems
+      .filter((item) => {
+        const days = daysUntil(item.deadline, todayIso);
+        return days !== null && days >= 0;
+      })
+      .sort((a, b) => daysUntil(a.deadline, todayIso) - daysUntil(b.deadline, todayIso))
+      .slice(0, 3);
+  }, [liveItems, hasActive, todayIso]);
+
+  const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
+  const stream = useMemo(
+    () => (topCards.length ? filtered.filter((c) => !topIds.has(c.id)) : filtered),
+    [filtered, topCards, topIds],
   );
 
-  // Підпис «Де» на картці: чи треба їхати → куди саме → чи можна з дому →
-  // чи це всюди. «За кордоном» першим свідомо: це єдина відповідь, яка
-  // змінює планування родини на місяці вперед.
-  const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
+  useEffect(() => { setLimit(6); }, [type, age, deadline, need, cost, place, query]);
+
+  const reset = () => {
+    setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
+    setCost('all'); setQuery(''); setLimit(6);
+    setPlace(presetCity || 'all');
+  };
+
+  const enField = (item, field) => (isEn && item[`${field}_en`]) || item[field] || '';
+
+  const dlChip = (item) => {
+    const days = daysUntil(item.deadline, todayIso);
+    const annual = ANNUAL_TYPES.has(item.opportunity_type);
+    if (days === null || days < 0) {
+      return { text: annual ? t.annual : t.open, kind: 'calm' };
+    }
+    if (isEvent(item)) {
+      if (days === 0) return { text: `📅 ${t.today}`, kind: 'event' };
+      if (days === 1) return { text: `📅 ${t.tomorrow}`, kind: 'event' };
+      return { text: `📅 ${t.inDays(days)}`, kind: 'event' };
+    }
+    if (days === 0) return { text: `⏰ ${t.today}`, kind: 'urgent' };
+    if (days <= 7) return { text: `⏰ ${t.daysLeft(days)}`, kind: 'urgent' };
+    if (days <= 30) return { text: `⏳ ${t.daysLeft(days)}`, kind: 'soon' };
+    return { text: t.until(formatDeadline(item.deadline, lang)), kind: 'calm' };
+  };
+
   const placeText = (item) => {
-    if (goesAbroad(item)) return t.abroad;
+    if (goesAbroad(item)) return t.abroad.replace('🌍 ', '');
     const real = (item.cities || []).filter((c) => !PSEUDO_CITIES.has(c));
-    const shown = real.length
-      ? real
+    const shown = real.length ? real
       : (item.cities || []).filter((c) => c !== 'Міжнародні');
     if (!shown.length) return null;
     return shown.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
   };
 
-  const renderCard = (item) => (
-    <article key={item.id} className="card">
-      <div className="chips">
-        {isTop(item) ? <span className="chip chip-top">{t.topWeek}</span> : null}
-        <span className="chip chip-type">
-          {(isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type] || item.opportunity_type}
-        </span>
-        {/* «Міжнародна» — і коли їхати нікуди не треба: онлайн-конкурс від
-            закордонного організатора лишається міжнародним рівнем. */}
-        {isInternational(item) ? (
-          <span className="chip chip-intl">🌍 {t.intl}</span>
-        ) : null}
-        {item.aid_type ? (
-          <span className="chip chip-aid">
-            🏛 {(isEn ? AID_TYPE_LABELS_EN : AID_TYPE_LABELS)[item.aid_type] || t.stateAid}
-          </span>
-        ) : null}
-        <span className="chip chip-age">{ageLabel(item)}</span>
-        {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
-        {item.cost_type === 'partially_free' ? <span className="chip chip-paid">{t.funded}</span> : null}
-        {/* Платне називаємо платним. Раніше paid_affordable показувався як
-            «доступно», а paid_premium не мав чипа взагалі — картка мовчала про
-            те, що участь коштує грошей, і людина дізнавалась про це вже на
-            сторінці організатора. */}
-        {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
-          ? <span className="chip chip-paid">{t.paid}</span> : null}
-        {deadlineChip(item)}
-        {(item.child_needs || []).filter((n) => NEED_LABELS[n]).slice(0, 2).map((n) => (
-          <span key={n} className="chip chip-need">
-            {(isEn ? NEED_LABELS_EN : NEED_LABELS)[n]}
-          </span>
-        ))}
-      </div>
+  const renderCard = (item) => {
+    const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || ['#f7f1e6', '#4a4a4a'];
+    const dl = dlChip(item);
+    const [dlBg, dlFg] = DL_COLORS[dl.kind];
+    const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
+      || item.opportunity_type;
+    // Підліткова картка відповідає на «що я отримаю і що зробити», а не
+    // «формат і джерело». Поки запис без розмітки — батьківські поля.
+    const teenReady = teens && (item.teen_benefit || item.teen_requirement);
+    const fields = teenReady
+      ? [
+        [t.f.benefit, item.teen_benefit],
+        [t.f.requirement, item.teen_requirement],
+        [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline],
+      ]
+      : [
+        [t.f.format, item.format || null],
+        [t.f.place, placeText(item)],
+        teens
+          ? [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline]
+          : [t.f.source, item.source || null],
+      ];
 
-      {/* Англійське поле з бази, з відкатом на оригінал: доки перекладач не
-          дійшов до запису, краще показати українську назву, ніж порожнечу.
-          lang на елементі — щоб екранний читач не читав українську з
-          англійською вимовою. */}
-      <h3>
-        <Link href={`${isEn ? '/en' : ''}/o/${item.slug}`} className="card-title-link" lang={isEn && !item.title_en ? 'uk' : undefined}>
-          {enField(item, 'title')}
-        </Link>
-      </h3>
-      {enField(item, 'summary') ? (
-        <p className="card-summary" lang={isEn && !item.summary_en ? 'uk' : undefined}>
-          {enField(item, 'summary')}
-        </p>
-      ) : null}
+    return (
+      <article key={item.id} className="v2-card">
+        <div className="v2-card-tags">
+          <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
+          <span className="v2-tag" style={{ background: dlBg, color: dlFg }}>{dl.text}</span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <h3>
+            <Link
+              href={`${isEn ? '/en' : ''}/o/${item.slug}`}
+              lang={isEn && !item.title_en ? 'uk' : undefined}
+            >
+              {enField(item, 'title')}
+            </Link>
+          </h3>
+          {enField(item, 'summary') ? (
+            <p className="v2-card-summary" lang={isEn && !item.summary_en ? 'uk' : undefined}>
+              {enField(item, 'summary')}
+            </p>
+          ) : null}
+        </div>
+        <dl>
+          {fields.filter(([, v]) => v).map(([k, v]) => (
+            <FieldRow key={k} k={k} v={v} />
+          ))}
+        </dl>
+        {item.source_url ? (
+          <a
+            href={item.source_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="v2-card-more"
+            onClick={() => trackOpportunityClick(item.title, 'list')}
+          >
+            {t.details}
+          </a>
+        ) : null}
+      </article>
+    );
+  };
 
-      <div className="meta">
-        {formatLabel(item.format, lang) ? (
-          <div className="meta-row">
-            <span className="meta-label">{t.format}</span>
-            <span className="meta-val">{formatLabel(item.format, lang)}</span>
-          </div>
-        ) : null}
-        {/* «Де» — перше, що питає людина про подію: «а це де?». Досі картка
-            цього не показувала взагалі, і «Місце Сили» виглядало як подія
-            невідомо де. */}
-        {placeText(item) ? (
-          <div className="meta-row">
-            <span className="meta-label">{t.city}</span>
-            <span className="meta-val">{placeText(item)}</span>
-          </div>
-        ) : null}
-        {item.deadline ? (
-          <div className="meta-row">
-            {/* Підпис і логіка — з lib/labels, спільні з ботом. Інакше бот
-                пише «Коли», а картка поруч «Дедлайн» про ту саму подію. */}
-            <span className="meta-label">{(isEn ? dateLabelEn : dateLabel)(item)}</span>
-            <span className="meta-val">
-              {isEvent(item) && item.event_end_date
-                && item.event_end_date !== item.deadline
-                ? `${formatDeadline(item.deadline, lang)} — ${formatDeadline(item.event_end_date, lang)}`
-                : formatDeadline(item.deadline, lang)}
-            </span>
-          </div>
-        ) : null}
-        {item.source ? (
-          <div className="meta-row">
-            <span className="meta-label">{t.source}</span>
-            <span className="meta-val">{item.source}</span>
-          </div>
-        ) : null}
-      </div>
+  const chips = TYPE_CHIPS[teens ? 'teens' : 'parents']
+    .filter((c) => available.chips.has(c.value) || type === c.value);
 
-      {item.source_url ? (
-        <a
-          href={item.source_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="link-btn"
-          onClick={() => handleLinkClick(item.title)}
-        >
-          {t.details}
-        </a>
-      ) : null}
-    </article>
-  );
+  const optLabel = (o) => (isEn && o[2] ? o[2] : o[1]);
+  const selectOpts = (list, availableSet, current) =>
+    list.filter(([value]) => availableSet.has(value) || current === value);
 
-  // Обірваний останній ряд лишав порожні клітинки праворуч від останньої
-  // картки — це читалося як помилка верстки. Тому хвіст, що не добирає до
-  // повного ряду, не малюємо: ці картки приїдуть наступною партією.
-  // Виняток — остання партія: далі показувати нічого, тож малюємо все.
-  const batchSize = Math.min(visible, filtered.length);
-  const plan = useMemo(
-    () => planCells(batchSize, cols || ASSUMED_COLS, !!promoProps),
-    [batchSize, cols, promoProps],
-  );
-  const trim = cols > 0 && batchSize < filtered.length && plan.fullRowCards > 0;
-  const rendered = trim ? plan.fullRowCards : batchSize;
-  const planShown = trim
-    ? { ...plan, cells: plan.cells.slice(0, plan.fullRowCells) }
-    : plan;
+  const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
+  const needList = teens ? GIVES_OPTS : NEED_OPTS;
+  const placeList = useMemo(() => {
+    const cities = [...available.places].filter((p) => p !== 'abroad')
+      .sort((a, b) => a.localeCompare(b, 'uk'));
+    const out = [];
+    if (available.places.has('abroad') || place === 'abroad') out.push(['abroad', t.abroad, t.abroad]);
+    for (const c of cities) out.push([c, c, cityLabel(c, 'en')]);
+    return out;
+  }, [available.places, place, t.abroad]);
+
+  const count = stream.length + (hasActive ? 0 : topCards.length);
+  const shown = stream.slice(0, limit);
 
   return (
     <>
-      <div className="filters">
-        {/* Без рядка-підказки: підписані випадайки і пошук пояснюють себе
-            самі, а зайвий рядок тексту робив панель важчою, ніж вона є. */}
-        <div className="filters-bar">
-          {menus.map((m) => (
-            <FilterButton
-              key={m.id} id={m.id} label={m.label}
-              options={m.options} selected={m.selected}
-              openId={openId} setOpenId={setOpenId}
-            />
-          ))}
-
-          {/* Сортування живе разом з іншими елементами керування видачею:
-              окремий рядок під панеллю лише додавав сторінці ще одну смугу.
-              Стоїть перед пошуком, щоб пігулки трималися купи, а пошук
-              розтягувався на залишок рядка. */}
-          <select
-            className="sort-select"
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            aria-label={isEn ? 'Sorting' : 'Сортування'}
+      <section className="v2-filters" aria-label={isEn ? 'Filters' : 'Фільтри'}>
+        <div className="v2-chips">
+          <button
+            type="button"
+            className={`v2-chip${type === 'all' ? ' is-on' : ''}`}
+            onClick={() => setType('all')}
           >
-            {SORT_OPTIONS.map((s) => (
-              <option key={s.value} value={s.value}>{t.sort}: {isEn && s.en ? s.en : s.label}</option>
-            ))}
-          </select>
+            {t.all}
+          </button>
+          {chips.map((c) => (
+            <button
+              key={c.value}
+              type="button"
+              className={`v2-chip${type === c.value ? ' is-on' : ''}`}
+              onClick={() => setType(type === c.value ? 'all' : c.value)}
+            >
+              {isEn ? c.en : c.label}
+            </button>
+          ))}
+        </div>
 
-          {/* Пошук лишається на видноті: це найчастіша дія, ховати її у
-              випадайку означало б зробити гірше, а не компактніше. */}
-          <div className="search-wrap">
+        <div className="v2-selects">
+          <Select
+            label={teens ? t.sel.grade : t.sel.age}
+            allLabel={t.all}
+            value={age}
+            onChange={setAge}
+            options={selectOpts(ageList, available.ages, age).map((o) => [o[0], optLabel(o)])}
+          />
+          <Select
+            label={t.sel.deadline}
+            allLabel={t.all}
+            value={deadline}
+            onChange={setDeadline}
+            options={selectOpts(DEADLINE_OPTS, available.deadlines, deadline).map((o) => [o[0], optLabel(o)])}
+          />
+          <Select
+            label={teens ? t.sel.gives : t.sel.need}
+            allLabel={t.all}
+            value={need}
+            onChange={setNeed}
+            options={selectOpts(needList, available.needs, need).map((o) => [o[0], optLabel(o)])}
+          />
+          <Select
+            label={t.sel.cost}
+            allLabel={t.anyCost}
+            value={cost}
+            onChange={setCost}
+            options={selectOpts(COST_OPTS, available.costs, cost).map((o) => [o[0], optLabel(o)])}
+          />
+          {!presetCity ? (
+            <Select
+              label={t.sel.where}
+              allLabel={t.all}
+              value={place}
+              onChange={setPlace}
+              options={placeList.map((o) => [o[0], isEn ? o[2] : o[1]])}
+            />
+          ) : null}
+          <label className="v2-search">
+            <span className="v2-search-icon" aria-hidden="true">🔍</span>
             <input
               type="search"
-              className="search-input"
-              placeholder={isEn ? 'FLEX, coding, aid for displaced families…' : 'FLEX, програмування, допомога ВПО...'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              placeholder={teens ? t.searchTeens : t.searchParents}
+              aria-label={isEn ? 'Search' : 'Пошук'}
             />
-          </div>
-
-          {activeCount > 0 && (
-            <button type="button" className="filters-reset" onClick={resetAll}>
-              {t.reset}
-              <span className="filters-reset-count">{activeCount}</span>
-            </button>
-          )}
+          </label>
+          {hasActive ? (
+            <button type="button" className="v2-reset" onClick={reset}>{t.reset}</button>
+          ) : null}
         </div>
 
-        <FilterPanel menu={openMenu} lang={lang} />
-
-        {/* Обране видно й зі згорнутими випадайками — інакше після скролу
-            неможливо згадати, що саме звузило видачу. */}
-        {activeChips.length > 0 && (
-          <div className="filters-active">
-            {activeChips.map((c) => (
-              <button
-                key={`${c.facet}:${c.value}`}
-                type="button"
-                className="chip-active"
-                onClick={c.onRemove}
-                aria-label={isEn ? `Remove filter “${c.label}”` : `Прибрати фільтр «${c.label}»`}
-              >
-                {c.label}
-                <span className="chip-x" aria-hidden="true">×</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Лічильник — лише коли фільтри чи пошук звузили видачу: без них він
-          слово в слово повторював число зі статистики в хіро двома рядками
-          вище. З активними фільтрами це вже не дубль, а відповідь. */}
-      {activeCount > 0 && (
-        <div className="count" role="status">
-          {t.found} <strong>{filtered.length}</strong>{' '}
-          {isEn
-            ? (filtered.length === 1 ? 'opportunity' : 'opportunities')
-            : opportunitiesWord(filtered.length)}
+        <div className="v2-found">
+          <span>{t.found} <strong>{count}</strong> {t.countWord(count)}</span>
+          <span className="v2-found-hint">{t.hint}</span>
         </div>
-      )}
+      </section>
 
-      {/* Трійка тижня — просто над картками, нижче фільтрів.
-          Позначка на самій картці загубилась: у ряду з чотирьох чипів її не
-          читали. Секція каже те саме розміром, а не кольором.
-
-          Показує ту саму трійку незалежно від фільтрів — це редакційний вибір
-          тижня, а не результат пошуку. У каталозі нижче ці можливості теж
-          лишаються: інакше фільтр «Табори» ховав би табір, який ми самі щойно
-          назвали найкращим. */}
-      {topWeek.length ? (
-        <section className="top-week" aria-labelledby="top-week-title">
-          <h2 className="top-week-title" id="top-week-title">{t.topWeekTitle}</h2>
-          <div className="grid top-week-grid">{topWeek.map(renderCard)}</div>
+      {topCards.length === 3 ? (
+        <section className="v2-top" aria-label={t.topTitle}>
+          <div className="v2-top-head">
+            <h2>{t.topTitle}</h2>
+            <span>{t.topSub}</span>
+          </div>
+          <div className="v2-grid">
+            {topCards.map(renderCard)}
+          </div>
         </section>
       ) : null}
 
-      {filtered.length === 0 ? (
-        <div className="empty">
-          <div className="empty-icon">🔍</div>
+      {shown.length ? (
+        <section className="v2-grid">
+          {shown.map(renderCard)}
+        </section>
+      ) : (
+        <div className="v2-empty">
+          <span style={{ fontSize: 32 }} aria-hidden="true">🔍</span>
           <h3>{t.nothingTitle}</h3>
           <p>{t.nothingText}</p>
         </div>
-      ) : null}
-
-      {/* Коли видача порожня, карток немає — і промо-блок разом із ними зник
-          би зі сторінки. Тут він саме доречний: людина шукала й не знайшла. */}
-      {filtered.length === 0 && promoProps ? (
-        <div className="grid-promo"><PlusSection {...promoProps} index={0} lang={lang} /></div>
-      ) : null}
-
-      {filtered.length === 0 ? null : (
-        <>
-          <div className="grid" ref={gridRef}>
-            {planShown.cells.map((c, n) => {
-              if (c.t === 'card') {
-                const item = filtered[c.i];
-                return <Fragment key={item.id}>{renderCard(item)}</Fragment>;
-              }
-              if (c.t === 'suggest') return <SuggestBlock key={`sug-${n}`} lang={lang} />;
-              return (
-                <div className="grid-promo" key={`plus-${n}`}>
-                  <PlusSection {...promoProps} index={c.idx} lang={lang} />
-                </div>
-              );
-            })}
-          </div>
-          {rendered < filtered.length && (
-            <div className="load-more-wrap">
-              <button
-                className="load-more"
-                onClick={() => setVisible(rendered + PAGE_SIZE)}
-              >
-                {t.showMore} {Math.min(PAGE_SIZE, filtered.length - rendered)}{isEn ? ' more' : ''}
-              </button>
-              <div className="load-more-hint">
-                {t.shown} {rendered} {t.of} {filtered.length}
-              </div>
-            </div>
-          )}
-        </>
       )}
+
+      {stream.length > limit ? (
+        <div className="v2-more-row">
+          <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + 6)}>
+            {t.showMore}
+          </button>
+        </div>
+      ) : null}
+
+      {promoProps ? <PlusSection {...promoProps} lang={lang} /> : null}
     </>
+  );
+}
+
+function FieldRow({ k, v }) {
+  return (
+    <>
+      <dt>{k}</dt>
+      <dd>{v}</dd>
+    </>
+  );
+}
+
+function Select({ label, allLabel, value, onChange, options }) {
+  return (
+    <select
+      className="v2-select"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={label}
+    >
+      <option value="all">{`${label}: ${allLabel}`}</option>
+      {options.map(([v, l]) => (
+        <option key={v} value={v}>{l}</option>
+      ))}
+    </select>
   );
 }
