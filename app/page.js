@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
-import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
-import SupportPopup from './SupportPopup';
-import { TOPIC_NAV } from '@/lib/topics';
-import StickyBar from './StickyBar';
-import SubscribePopup from './SubscribePopup';
+import HomeHero from './HomeHero';
+import HomeBlocks from './HomeBlocks';
 import Footer from './Footer';
+import { TOPIC_NAV } from '@/lib/topics';
 
 export const revalidate = 300;
+
+// Головна, редизайн (вересень 2026): крем-градієнт, хіро без фото, перемикач
+// «Батькам / Підліткам» у шапці, автоматичний «Топ тижня», два нижні блоки
+// (Telegram + «Запропонувати можливість»). Email-підписки, стікі-бар і
+// плаваюче сердечко зняті свідомо — один заклик на екран.
 
 async function getOpportunities() {
   if (!supabase) {
@@ -46,103 +49,35 @@ export default async function Home() {
   };
 
   return (
-    <>
+    <div className="v2-page">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <div className="container">
-        <div className="hero">
-          <div className="hero-copy">
-          <div className="hero-badges">
-            <div className="hero-badge">Безкоштовно і оновлюється щодня</div>
-          </div>
-          <h1>
-            Усі можливості
-            <br />
-            <span className="accent">для вашої дитини</span>
-            <br />
-            в одному місці
-          </h1>
-          {/* «0-18 років» уже є в статистиці, «для дитини» — у заголовку;
-              лід повторював обидва й займав три рядки замість двох. */}
-          <p>
-            Курси, олімпіади, стипендії, табори, медична допомога та виплати —
-            в Україні та за кордоном. Кожну програму перевіряємо вручну.
-          </p>
-          <div className="stats">
-            <div className="stat">
-              <span className="stat-num">{total}</span>
-              <span className="stat-label">{opportunitiesWord(total)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">{freeCount}</span>
-              <span className="stat-label">{freeWord(freeCount)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">{sourceCount}</span>
-              <span className="stat-label">{sourcesWord(sourceCount)}</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">0-18</span>
-              <span className="stat-label">років</span>
-            </div>
-          </div>
-          </div>
+      <main className="v2-container">
+        <HomeHero total={total} freeCount={freeCount} sourceCount={sourceCount} />
 
-          {/* Праворуч від тексту — жива фотографія замість порожнечі.
-              webp із jpg-запасним варіантом; розміри задані, щоб верстка
-              не стрибала, поки картинка вантажиться. */}
-          <div className="hero-photo">
-            <picture>
-              <source srcSet="/hero-kids.webp" type="image/webp" />
-              <img
-                src="/hero-kids.jpg"
-                width={880}
-                height={543}
-                alt="Усміхнені діти на дитячому майданчику"
-                fetchPriority="high"
-              />
-            </picture>
-          </div>
-        </div>
-
-        {/* Найсильніше внутрішнє посилання на підбірки — з головної, ще до
-            каталогу: і людині швидший шлях до потрібного, і Google бачить, що
-            ці сторінки для сайту важливі. */}
-        <nav className="topic-chips" aria-label="Підбірки за темами">
-          <span className="topic-chips-label">Підбірки:</span>
-          {TOPIC_NAV.map((t) => (
-            <Link key={t.slug} href={`/${t.slug}`} className="topic-chip">
-              {t.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Dityam+ їде всередину каталогу — після перших карток. Перед ними
-            він відсував першу можливість за згин: людина бачила пропозицію
-            заплатити раніше, ніж те, за що платить.
-            Передаємо пропси, а не готовий елемент: сторінка серверна, а
-            функцію-фабрику в клієнтський компонент віддати не можна. */}
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}
           today={kyivToday()}
+          modeAware
         />
 
-        <Footer />
-      </div>
+        {/* Тихий рядок підбірок: найсильніше внутрішнє посилання на
+            SEO-сторінки — з головної, але вже після каталогу. */}
+        <nav className="v2-topics" aria-label="Підбірки за темами">
+          <span className="v2-topics-label">Підбірки:</span>
+          {TOPIC_NAV.map((t) => (
+            <Link key={t.slug} href={`/${t.slug}`}>{t.label}</Link>
+          ))}
+        </nav>
 
-      {/* Плаваюче сердечко з модалкою підтримки — рівно одне на сторінку,
-          на відміну від смуги Dityam+, що повторюється в каталозі. */}
-      <SupportPopup />
+        <HomeBlocks />
+      </main>
 
-      {/* ============ STICKY BAR — ВИНЕСЕНО В КЛІЄНТСЬКИЙ КОМПОНЕНТ ============ */}
-      <StickyBar />
-
-      {/* ============ АВТО-ПОП-АП ПІДПИСКИ (10 сек або 15 карток) ============ */}
-      <SubscribePopup />
-    </>
+      <Footer />
+    </div>
   );
 }
