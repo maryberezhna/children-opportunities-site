@@ -1,0 +1,252 @@
+/* Сторінка «Для медіа» в новому дизайні (вересень 2026). Префікс pk- (press
+   kit); хіро, кнопки й панелі — спільні з головною, з home-v2.css. */
+
+.pk-page { padding-bottom: 24px; }
+
+/* Хіро без фото: одна колонка, заголовок трохи стриманіший за головну. */
+.pk-hero { grid-template-columns: 1fr; padding-bottom: 0; }
+.pk-hero h1 { font-size: clamp(34px, 4.6vw, 54px); }
+
+.pk-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.pk-actions a { display: inline-flex; align-items: center; text-decoration: none; }
+
+.pk-section { display: flex; flex-direction: column; gap: 18px; }
+
+.pk-section h2,
+.pk-panel h2 {
+  margin: 0;
+  font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.pk-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.pk-section-head > span { font-size: 13px; color: var(--v2-ink-3); }
+
+.pk-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--v2-ink-3); }
+
+/* ── Цифри ─────────────────────────────────────────────────────────────── */
+.pk-stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+}
+
+.pk-stat {
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pk-stat-num {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--v2-ink);
+}
+
+.pk-stat-label { font-size: 13px; line-height: 1.35; color: var(--v2-ink-2); }
+
+/* ── Публікації ────────────────────────────────────────────────────────── */
+.pk-mentions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pk-mention {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.pk-mention:hover {
+  transform: translateY(-2px);
+  border-color: var(--v2-line-strong);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.06);
+}
+
+.pk-mention-logo { height: 40px; display: flex; align-items: center; }
+.pk-mention-logo img { display: block; width: auto; height: auto; max-width: 120px; max-height: 22px; }
+/* Квадратні емблеми при спільній висоті виглядають утричі дрібнішими за
+   написи, бо в них немає ширини — компенсуємо висотою. */
+.pk-mention-logo img.is-square { max-height: 40px; }
+
+.pk-mention-meta { font-size: 13px; color: var(--v2-ink-3); }
+
+.pk-mention h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--v2-ink);
+}
+
+.pk-mention-more { margin-top: auto; font-size: 13px; font-weight: 500; color: var(--v2-accent); }
+
+/* ── Опис + «Коротко» ──────────────────────────────────────────────────── */
+.pk-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.pk-panel {
+  background: var(--v2-cream);
+  border: 1px solid var(--v2-line);
+  border-radius: 20px;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pk-quote {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--v2-ink-2);
+}
+
+.pk-copy {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--v2-line-strong);
+  background: #ffffff;
+  color: var(--v2-ink);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.pk-copy:hover { border-color: var(--v2-ink); }
+
+.pk-facts { margin: 0; display: grid; gap: 12px; }
+
+.pk-facts > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.5;
+}
+
+.pk-facts dt { color: var(--v2-ink-3); }
+.pk-facts dd { margin: 0; color: var(--v2-ink); }
+
+.pk-facts a {
+  color: var(--v2-ink);
+  text-decoration: underline;
+  text-decoration-color: var(--v2-line-strong);
+  text-underline-offset: 2px;
+}
+
+.pk-facts a:hover { color: var(--v2-accent); text-decoration-color: currentColor; }
+
+/* ── Завантаження ──────────────────────────────────────────────────────── */
+.pk-downloads {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.pk-download {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.pk-download:hover {
+  transform: translateY(-2px);
+  border-color: var(--v2-line-strong);
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.06);
+}
+
+.pk-download-preview {
+  aspect-ratio: 1200 / 630;
+  margin-bottom: 6px;
+  border-radius: 10px;
+  background: var(--v2-cream);
+  border: 1px solid var(--v2-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.pk-download-preview.is-cover { background: #ffffff; }
+.pk-download-preview.is-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pk-download-preview.is-icon img { width: 56px; height: 56px; display: block; }
+
+.pk-lockup { display: inline-flex; align-items: center; gap: 8px; }
+.pk-lockup .v2-logo-heart { font-size: 20px; }
+.pk-lockup .v2-logo-script { font-size: 26px; }
+
+.pk-download strong { font-size: 15px; font-weight: 600; color: var(--v2-ink); }
+.pk-download-meta { font-weight: 400; color: var(--v2-ink-3); }
+.pk-download > span { font-size: 13px; line-height: 1.45; color: var(--v2-ink-2); }
+.pk-download-cta { margin-top: auto; padding-top: 4px; font-weight: 500; color: var(--v2-accent) !important; }
+
+/* ── Контакт і посилання ───────────────────────────────────────────────── */
+.pk-links {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.pk-links span { color: var(--v2-ink-3); }
+.pk-links a { color: var(--v2-ink); text-decoration: none; font-weight: 500; }
+.pk-links a:hover { color: var(--v2-accent); }
+
+/* ── Адаптив ───────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pk-stats { grid-template-columns: repeat(3, 1fr); }
+  .pk-mentions, .pk-downloads { grid-template-columns: 1fr 1fr; }
+  .pk-two { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 600px) {
+  .pk-stats { grid-template-columns: 1fr 1fr; }
+  .pk-stat { padding: 14px; }
+  .pk-stat-num { font-size: 26px; }
+  .pk-mentions, .pk-downloads { grid-template-columns: 1fr; }
+  .pk-panel { padding: 22px 18px; }
+  .pk-facts > div { grid-template-columns: 1fr; gap: 2px; }
+  .pk-section h2, .pk-panel h2 { font-size: 21px; }
+}

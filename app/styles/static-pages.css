@@ -1,20 +1,8 @@
 /* Юридичні / статичні сторінки */
 
-/* ---- Прескіт (/press) ---- */
-.press-stats {
-  flex-wrap: wrap;
-  gap: 12px 28px;
-  margin: 16px 0 8px;
-}
-
-.press-note {
-  font-size: 13px;
-  color: var(--ink-muted);
-  margin-bottom: 8px;
-}
-
-/* Стрічка логотипів видань під цифрами: перше, що бачить журналіст після
-   статистики. Логотипи в різних форматах і з різним тлом, тож кожен садимо
+/* ---- Стрічка «Про нас пишуть» (/about, /en/about) ---- */
+/* Стрічка логотипів видань на сторінці «Про проєкт» (/press переїхала на
+   press-v2.css). Логотипи в різних форматах і з різним тлом, тож кожен садимо
    в однакову білу плашку — інакше червоний кружок «Українок» поряд із
    чорним написом «ШоТам» читається як збій, а не як добірка.
    Плашки однакової ширини й вирівняні по центру: за такої розкладки перенос
@@ -65,36 +53,6 @@
    написи, бо в них немає ширини — компенсуємо висотою. */
 .press-logos img.is-square {
   max-height: 40px;
-}
-
-.press-mentions {
-  list-style: none;
-  padding: 0;
-  margin: 12px 0;
-}
-
-.press-mentions li {
-  padding: 10px 0;
-  border-bottom: 1px solid var(--border);
-}
-
-.press-mentions li:last-child {
-  border-bottom: none;
-}
-
-.press-mention-meta {
-  font-size: 13px;
-  color: var(--ink-muted);
-}
-
-.press-quote {
-  margin: 12px 0;
-  padding: 18px 22px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
-  border-radius: 12px;
-  color: var(--ink-soft);
 }
 
 /* ============ ЮРИДИЧНІ / СТАТИЧНІ СТОРІНКИ ============ */
