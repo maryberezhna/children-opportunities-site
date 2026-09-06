@@ -10,6 +10,10 @@ import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 // бачить Google, і саме вона лишається дефолтом для нових відвідувачів.
 //
 // Текст ліворуч, фото праворуч, під текстом — статистика великими цифрами.
+// Фото теж залежить від режиму: батькам — діти на майданчику, підліткам —
+// пʼятеро підлітків (Tim Mossholder, Unsplash, hOF1bWoet_Q; ліцензія Unsplash
+// дозволяє використання без вказання автора). Малюки в хіро сторінки для
+// 13–18-річних читались як «це не про мене» — зауваження Марії, 6.09.2026.
 // Референс редизайну пропонував хіро без фото й тихий рядок «N можливостей ·
 // N безкоштовно»; Марія повернула обидва елементи з попередньої головної:
 // фото робить сторінку живою, а «1119 можливостей» великим кеглем — це
@@ -25,6 +29,7 @@ const COPY = {
         + 'для дітей 0–18 років в Україні та за кордоном. Перевірені програми, '
         + 'зібрані вручну.',
       age: '0–18',
+      photoAlt: 'Усміхнені діти на дитячому майданчику',
     },
     teens: {
       lead: 'Можливості',
@@ -34,11 +39,11 @@ const COPY = {
         + 'стажування, стипендії, волонтерство, підготовка до НМТ. Перевірено, '
         + 'більшість безкоштовно.',
       age: '13–18',
+      photoAlt: 'Пʼятеро усміхнених підлітків надворі',
     },
     live: 'Безкоштовно і оновлюється щодня',
     press: 'Про нас пишуть:',
     years: 'років',
-    photoAlt: 'Усміхнені діти на дитячому майданчику',
   },
   en: {
     parents: {
@@ -49,6 +54,7 @@ const COPY = {
         + 'for children aged 0–18 in Ukraine and abroad. Verified programs, '
         + 'curated by hand.',
       age: '0–18',
+      photoAlt: 'Smiling children on a playground',
     },
     teens: {
       lead: 'Opportunities',
@@ -57,11 +63,11 @@ const COPY = {
       sub: 'Everything you can apply to on your own at 13–18: exchanges abroad, '
         + 'internships, scholarships, volunteering. Verified, mostly free.',
       age: '13–18',
+      photoAlt: 'Five smiling teenagers outdoors',
     },
     live: 'Free and updated daily',
     press: 'Featured in:',
     years: 'years',
-    photoAlt: 'Smiling children on a playground',
   },
 };
 
@@ -75,6 +81,7 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
   const t = COPY[lang] || COPY.uk;
   const c = t[mode];
   const isEn = lang === 'en';
+  const photo = mode === 'teens' ? '/hero-teens' : '/hero-kids';
 
   // total і sourceCount на /en можуть прийти рядком-запаскою («400+»), тому
   // українські відмінки рахуємо лише для чисел, англійські слова — сталі.
@@ -118,15 +125,16 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
 
       {/* Праворуч від тексту — жива фотографія замість порожнечі. webp із
           jpg-запасним варіантом; розміри задані, щоб верстка не стрибала,
-          поки картинка вантажиться. */}
+          поки картинка вантажиться. key={mode} перемонтовує <picture> при
+          зміні режиму: інакше браузер не завжди переобирає <source>. */}
       <div className="v2-hero-photo">
-        <picture>
-          <source srcSet="/hero-kids.webp" type="image/webp" />
+        <picture key={mode}>
+          <source srcSet={`${photo}.webp`} type="image/webp" />
           <img
-            src="/hero-kids.jpg"
+            src={`${photo}.jpg`}
             width={880}
             height={543}
-            alt={t.photoAlt}
+            alt={c.photoAlt}
             fetchPriority="high"
           />
         </picture>
