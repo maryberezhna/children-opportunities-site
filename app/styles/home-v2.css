@@ -438,7 +438,9 @@
 /* ── Сітка і картки ────────────────────────────────────────────────────── */
 .v2-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  /* min(300px, 100%): на екранах вужчих за 340px картка не тягне сторінку
+     за край, а стискається до ширини контейнера. */
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 16px;
 }
 
@@ -824,10 +826,18 @@
 
 @media (max-width: 720px) {
   .v2-container { padding: 0 20px; }
-  .v2-header-inner { padding: 10px 16px; gap: 10px; }
+  /* Хедер на телефоні. Лого + перемикач + «Підтримати» в один ряд — це
+     ~520px, у 375 не влазить. Тому обгортку правої частини розчиняємо
+     (display: contents), кнопка лишається в першому ряду праворуч від лого,
+     а перемикач «Батькам / Підліткам» стає другим рядом на всю ширину. Він
+     є лише на головній, тож інші сторінки лишаються однорядковими. */
+  .v2-header-inner { padding: 8px 16px; gap: 8px 10px; flex-wrap: wrap; }
+  .v2-logo-script { font-size: 26px; }
   .v2-nav { display: none; }
-  .v2-mode button { padding: 7px 12px; font-size: 13px; }
-  .v2-support-btn { padding: 9px 13px; }
+  .v2-header-right { display: contents; }
+  .v2-support-btn { margin-left: auto; padding: 8px 13px; }
+  .v2-mode { order: 10; flex-basis: 100%; }
+  .v2-mode button { flex: 1; padding: 6px 12px; font-size: 13px; }
   /* На телефоні фото йде під текст і стає нижчою смугою: повний овал
      відсунув би каталог за другий екран, тож лишаємо скруглений прямокутник. */
   .v2-hero { padding-top: 36px; grid-template-columns: 1fr; gap: 28px; }
@@ -838,4 +848,11 @@
   .v2-bottom { grid-template-columns: 1fr; }
   .v2-footer-grid { grid-template-columns: 1fr; gap: 28px; }
   .v2-dialog { padding: 36px 22px 28px; }
+}
+
+/* Дуже вузькі екрани (320–340px): лого ще трохи менше, щоб лого й
+   «Підтримати» не тіснилися в першому ряду. */
+@media (max-width: 340px) {
+  .v2-logo-script { font-size: 23px; }
+  .v2-logo-heart { font-size: 19px; }
 }
