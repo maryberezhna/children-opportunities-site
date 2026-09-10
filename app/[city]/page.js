@@ -80,7 +80,7 @@ export default async function CityPage({ params }) {
   // Підбірки цього міста, що пройшли поріг локальних записів, — ті самі
   // правила, що в /[city]/[topic]. Лінкуємо лише на сторінки, які існують.
   const cityTopics = TOPIC_LIST.filter(
-    (t) => localTopicCount(opportunities, t, cityName) >= MIN_LOCAL,
+    (t) => !t.noCityPages && localTopicCount(opportunities, t, cityName) >= MIN_LOCAL,
   );
 
   return (
