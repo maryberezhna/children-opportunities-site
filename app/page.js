@@ -55,9 +55,9 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <main className="v2-container">
-        <HomeHero total={total} freeCount={freeCount} sourceCount={sourceCount} />
+      <HomeHero total={total} freeCount={freeCount} sourceCount={sourceCount} />
 
+      <main className="v2-container">
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}

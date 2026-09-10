@@ -140,7 +140,9 @@
 /* Текст ліворуч, фото праворуч. Ширина правої колонки обмежена з обох
    боків, щоб заголовок не з'їжджав у вузький стовпчик на середніх екранах. */
 .v2-hero {
-  padding: 56px 0 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 56px 32px 40px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(260px, 30vw, 400px);
   gap: 48px;
@@ -819,6 +821,50 @@
   padding: 24px 0;
 }
 
+/* ── Режим «Підліткам»: напрям A ───────────────────────────────────────────
+   Чорне лише там, де емоція: хіро, дедлайни, «Топ тижня». Картки й текст
+   лишаються світлими — довгий текст на темному читати важче (NN/g, Ergonomics
+   2025). Режим вивішує HomeHero атрибутом data-mode на <html>. */
+.v2-hero-link {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--v2-accent);
+  text-decoration: none;
+  margin-top: -8px;
+}
+.v2-hero-link:hover { color: var(--v2-accent-hover); text-decoration: underline; }
+
+html[data-mode="teens"] .v2-hero-band {
+  background:
+    radial-gradient(700px 360px at 90% 20%, rgba(232, 93, 36, 0.22), transparent 70%),
+    #141414;
+  color: #f7f1e6;
+}
+html[data-mode="teens"] .v2-hero h1 { color: #f7f1e6; }
+html[data-mode="teens"] .v2-hero-status,
+html[data-mode="teens"] .v2-hero-sub { color: #c9c3b6; }
+html[data-mode="teens"] .v2-stat-num { color: #f7f1e6; }
+html[data-mode="teens"] .v2-stat-label,
+html[data-mode="teens"] .hero-press-label { color: #8f897c; }
+html[data-mode="teens"] .hero-press-label:hover { color: #c9c3b6; }
+/* Логотипи видань на чорному: монохромні світлі, без повернення кольору. */
+html[data-mode="teens"] .hero-press .press-logos a {
+  filter: grayscale(1) invert(1) brightness(1.4);
+  opacity: 0.6;
+}
+html[data-mode="teens"] .hero-press .press-logos a:hover,
+html[data-mode="teens"] .hero-press .press-logos a:focus-visible {
+  filter: grayscale(1) invert(1) brightness(1.7);
+  opacity: 1;
+}
+/* Фото: замість теплої плями — рівне кремове кільце. */
+html[data-mode="teens"] .v2-hero-photo::before { inset: -12px; background: #f7f1e6; }
+
+/* «Топ тижня» — чорний блок, картки всередині лишаються білими. */
+html[data-mode="teens"] .v2-top { background: #1a1a1a; }
+html[data-mode="teens"] .v2-top-head h2 { color: #f7f1e6; }
+html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
+
 /* ── Адаптив ───────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
   .v2-footer-grid { grid-template-columns: 1fr 1fr; }
@@ -840,7 +886,8 @@
   .v2-mode button { flex: 1; padding: 6px 12px; font-size: 13px; }
   /* На телефоні фото йде під текст і стає нижчою смугою: повний овал
      відсунув би каталог за другий екран, тож лишаємо скруглений прямокутник. */
-  .v2-hero { padding-top: 36px; grid-template-columns: 1fr; gap: 28px; }
+  .v2-hero { padding: 36px 20px 28px; grid-template-columns: 1fr; gap: 28px; }
+  html[data-mode="teens"] .v2-hero-photo::before { inset: -8px; border-radius: 30px; }
   .v2-hero-photo img { aspect-ratio: 16 / 10; border-radius: 24px; }
   .v2-hero-photo::before { border-radius: 28px; inset: -10px -4px 0 -10px; }
   .v2-stats { gap: 10px 24px; }
