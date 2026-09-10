@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
 import { kyivToday } from '@/lib/dates';
+import { audienceStats } from '@/lib/audience';
 import OpportunitiesList from './OpportunitiesList';
 import HomeHero from './HomeHero';
 import HomeBlocks from './HomeBlocks';
@@ -31,9 +32,12 @@ async function getOpportunities() {
 
 export default async function Home() {
   const opportunities = await getOpportunities();
+  const today = kyivToday();
+  // Дві трійки цифр: у режимі «Підліткам» хіро показує підліткові, а не
+  // загальні — інакше воно обіцяє більше, ніж каталог під ним покаже.
+  const stats = audienceStats(opportunities, today);
+  const teenStats = audienceStats(opportunities, today, true);
   const total = opportunities.length;
-  const freeCount = opportunities.filter(o => o.cost_type === 'free').length;
-  const sourceCount = new Set(opportunities.map(o => o.source)).size;
 
   const itemListLd = {
     '@context': 'https://schema.org',
@@ -55,13 +59,13 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <HomeHero total={total} freeCount={freeCount} sourceCount={sourceCount} />
+      <HomeHero stats={stats} teenStats={teenStats} />
 
       <main className="v2-container">
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}
-          today={kyivToday()}
+          today={today}
           modeAware
         />
 

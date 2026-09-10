@@ -4,6 +4,7 @@ import Link from 'next/link';
 import PressLogos from './PressLogos';
 import { readMode, onModeChange } from '@/lib/mode';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
+import { trackConversion } from '@/lib/track';
 
 // Хіро головної: копія залежить від режиму «Батькам / Підліткам», тому
 // компонент клієнтський. SSR завжди віддає батьківську версію — саме її
@@ -45,7 +46,8 @@ const COPY = {
         + 'більшість безкоштовно.',
       age: '13–18',
       photoAlt: 'Пʼятеро усміхнених підлітків надворі',
-      link: 'Їдеш за кордон? Усі обміни, стипендії й табори →',
+      link: true,
+      linkText: 'Їдеш за кордон? Усі обміни, стипендії й табори',
       linkHref: '/za-kordon',
     },
     live: 'Безкоштовно і оновлюється щодня',
@@ -71,7 +73,8 @@ const COPY = {
         + 'internships, scholarships, volunteering. Verified, mostly free.',
       age: '13–18',
       photoAlt: 'Five smiling teenagers outdoors',
-      link: 'Going abroad? All exchanges, scholarships and camps →',
+      link: true,
+      linkText: 'Going abroad? All exchanges, scholarships and camps',
       linkHref: '/en/abroad',
     },
     live: 'Free and updated daily',
@@ -80,7 +83,9 @@ const COPY = {
   },
 };
 
-export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' }) {
+// Цифри приходять двома наборами: підліткові рахуються тим самим предикатом,
+// що й каталог (lib/audience), інакше хіро обіцяє більше, ніж каталог покаже.
+export default function HomeHero({ stats: parentStats, teenStats, lang = 'uk' }) {
   const [mode, setMode] = useState('parents');
   useEffect(() => {
     const apply = (m) => {
@@ -102,10 +107,11 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
 
   // total і sourceCount на /en можуть прийти рядком-запаскою («400+»), тому
   // українські відмінки рахуємо лише для чисел, англійські слова — сталі.
+  const n = (mode === 'teens' ? teenStats : parentStats) || parentStats || {};
   const stats = [
-    { num: total, label: isEn ? 'opportunities' : opportunitiesWord(total) },
-    { num: freeCount, label: isEn ? 'free' : freeWord(freeCount) },
-    { num: sourceCount, label: isEn ? 'sources' : sourcesWord(sourceCount) },
+    { num: n.total, label: isEn ? 'opportunities' : opportunitiesWord(n.total) },
+    { num: n.freeCount, label: isEn ? 'free' : freeWord(n.freeCount) },
+    { num: n.sourceCount, label: isEn ? 'sources' : sourcesWord(n.sourceCount) },
     { num: c.age, label: t.years },
   ];
 
@@ -121,9 +127,6 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
           {c.lead} <span className="v2-script">{c.script}</span>{c.tail}
         </h1>
         <p className="v2-hero-sub">{c.sub}</p>
-        {c.link ? (
-          <Link href={c.linkHref} className="v2-hero-link">{c.link}</Link>
-        ) : null}
 
         <div className="v2-stats">
           {stats.map((s) => (
@@ -133,6 +136,24 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
             </div>
           ))}
         </div>
+
+        {/* Підбірка «За кордон» — окремий блок, а не рядок у тексті: це
+            найсильніший запит підлітків, і як посилання серед абзаців його
+            не помічали. Клік шлемо в аналітику окремою подією, щоб бачити
+            конверсію хіро → підбірка (GA4: teen_abroad_click). */}
+        {c.link ? (
+          <Link
+            href={c.linkHref}
+            className="v2-hero-cta"
+            onClick={() => trackConversion('teen_abroad_click', {
+              event_label: c.linkHref,
+              event_source: 'hero_teens',
+            })}
+          >
+            <span>{c.linkText}</span>
+            <span className="v2-hero-cta-arrow" aria-hidden="true">→</span>
+          </Link>
+        ) : null}
 
         {/* Медіазгадки — одразу в хіро: довіру будують там, де людина
             вирішує, лишатися чи ні. Компонент спільний із /press і /about. */}
