@@ -52,7 +52,7 @@ const UI = {
       benefit: 'Отримаєш', requirement: 'Треба', deadline: 'Дедлайн' },
     sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
-    all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном',
+    all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном', online: '💻 Онлайн',
     countWord: (n) => opportunitiesWord(n),
   },
   en: {
@@ -79,7 +79,7 @@ const UI = {
       benefit: 'You get', requirement: 'You need', deadline: 'Deadline' },
     sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
-    all: 'All', anyCost: 'Any', abroad: '🌍 Abroad',
+    all: 'All', anyCost: 'Any', abroad: '🌍 Abroad', online: '💻 Online',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
   },
 };
@@ -98,16 +98,28 @@ const TYPE_CHIPS = {
     { value: 'payments', label: 'Виплати', en: 'Payments' },
     { value: 'medical_aid', label: 'Мед. допомога', en: 'Medical aid' },
   ],
+  // Підлітковий набір спершу повторював лише «дорослі» типи (обміни,
+  // стажування, стипендії, гранти, волонтерство, конкурси) — а це 160
+  // записів з 1006, які підліток бачить. Решту — 543 гуртки, 150 курсів,
+  // 37 олімпіад, 34 табори — відфільтрувати не було чим. «Онлайн» переїхав
+  // звідси в «Де»: це місце, а не тип, і саме там його шукають.
   teens: [
-    { value: 'online', label: '💻 Онлайн', en: '💻 Online' },
     { value: 'exchange', label: 'Обміни', en: 'Exchanges' },
-    { value: 'internship', label: 'Стажування', en: 'Internships' },
     { value: 'scholarship', label: 'Стипендії', en: 'Scholarships' },
     { value: 'grant', label: 'Гранти', en: 'Grants' },
+    { value: 'internship', label: 'Стажування', en: 'Internships' },
     { value: 'volunteer', label: 'Волонтерство', en: 'Volunteering' },
     { value: 'competition', label: 'Конкурси', en: 'Competitions' },
+    { value: 'olympiad', label: 'Олімпіади', en: 'Olympiads' },
+    { value: 'camp', label: 'Табори', en: 'Camps' },
+    // Гуртки, курси й воркшопи — одна пігулка: підліток не розрізняє їх за
+    // типом у базі, для нього це «вчитися чогось поруч або онлайн».
+    { value: 'classes', label: 'Курси та гуртки', en: 'Courses & clubs' },
   ],
 };
+
+// Типи, які ховаються за пігулкою «Курси та гуртки».
+const CLASSES_TYPES = ['club', 'course', 'workshop'];
 
 const AGE_OPTS = {
   parents: [
@@ -314,6 +326,7 @@ export default function OpportunitiesList({
           || item.opportunity_type === 'support_payment'
           || item.aid_type === 'cash';
       }
+      if (type === 'classes') return CLASSES_TYPES.includes(item.opportunity_type);
       return item.opportunity_type === type;
     },
     age: (item) => age === 'all' || ageMatches(item, age),
@@ -343,6 +356,7 @@ export default function OpportunitiesList({
     place: (item) => {
       if (place === 'all') return true;
       if (place === 'abroad') return goesAbroad(item);
+      if (place === 'online') return isOnline(item);
       const cities = item.cities || [];
       if (cities.includes(place)) return true;
       // «Вся Україна» просвічує крізь вибір конкретного міста.
@@ -373,6 +387,7 @@ export default function OpportunitiesList({
       if (isOnline(item)) chips.add('online');
       if (item.opportunity_type === 'allowance' || item.opportunity_type === 'support_payment'
         || item.aid_type === 'cash') chips.add('payments');
+      if (CLASSES_TYPES.includes(item.opportunity_type)) chips.add('classes');
     });
     const ages = new Set();
     const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
@@ -413,6 +428,9 @@ export default function OpportunitiesList({
     candidates('place').forEach((item) => {
       (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
       if (goesAbroad(item)) places.add('abroad');
+      // «Онлайн» — місце, а не тип: у батьківському режимі його дає пігулка,
+      // у підлітковому він живе тут.
+      if (teens && isOnline(item)) places.add('online');
     });
     return { chips, ages, needs, costs, deadlines, places };
   }, [liveItems, predicates, teens, todayIso]);
@@ -559,13 +577,14 @@ export default function OpportunitiesList({
   const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
   const needList = teens ? GIVES_OPTS : NEED_OPTS;
   const placeList = useMemo(() => {
-    const cities = [...available.places].filter((p) => p !== 'abroad')
+    const cities = [...available.places].filter((p) => p !== 'abroad' && p !== 'online')
       .sort((a, b) => a.localeCompare(b, 'uk'));
     const out = [];
     if (available.places.has('abroad') || place === 'abroad') out.push(['abroad', t.abroad, t.abroad]);
+    if (available.places.has('online') || place === 'online') out.push(['online', t.online, t.online]);
     for (const c of cities) out.push([c, c, cityLabel(c, 'en')]);
     return out;
-  }, [available.places, place, t.abroad]);
+  }, [available.places, place, t.abroad, t.online]);
 
   const count = stream.length + (hasActive ? 0 : topCards.length);
   const shown = stream.slice(0, limit);
