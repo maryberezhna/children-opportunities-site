@@ -2,7 +2,6 @@
 /* ============ МОБІЛЬНА АДАПТИВНІСТЬ ============ */
 
 @media (max-width: 640px) {
-  body { padding-bottom: 80px; }
   .container { padding: 20px 16px 30px; }
   .hero { margin-bottom: 28px; }
 

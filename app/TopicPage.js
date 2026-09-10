@@ -219,8 +219,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           </section>
         )}
 
-        <Footer lang={lang} />
       </div>
+      <Footer lang={lang} />
 
       <SupportPopup />
       <StickyBar />

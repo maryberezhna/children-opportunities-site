@@ -120,8 +120,8 @@ export default async function CityPage({ params }) {
         </nav>
 
         <OpportunitiesList opportunities={opportunities} presetCity={cityName} lang="en" />
-        <Footer lang="en" />
       </div>
+      <Footer lang="en" />
 
       <StickyBar />
       <SubscribePopup />

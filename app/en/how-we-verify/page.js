@@ -71,57 +71,59 @@ export default async function HowWeVerifyEn() {
   const { active, verified, sources } = await getStats();
 
   return (
-    <div className="container" lang="en">
-      <div className="hero">
-        <div className="hero-copy">
-          <div className="hero-badges">
-            <Link href="/en" className="city-back-link">← All opportunities</Link>
-          </div>
-          <h1>
-            How we verify
-            <br />
-            <span className="accent">the data</span>
-          </h1>
-          <p>
-            “Verified” on Dityam isn’t a promise — it’s a daily process. Here is
-            how it works, honestly and without magic.
-          </p>
-          <div className="stats">
-            <div className="stat">
-              <span className="stat-num">{active ?? FALLBACK.opportunities}</span>
-              <span className="stat-label">active opportunities</span>
+    <>
+      <div className="container" lang="en">
+        <div className="hero">
+          <div className="hero-copy">
+            <div className="hero-badges">
+              <Link href="/en" className="city-back-link">← All opportunities</Link>
             </div>
-            <div className="stat">
-              <span className="stat-num">{verified ?? '—'}</span>
-              <span className="stat-label">links checked within 3 days</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">{sources ?? FALLBACK.sources}</span>
-              <span className="stat-label">sources, every day</span>
+            <h1>
+              How we verify
+              <br />
+              <span className="accent">the data</span>
+            </h1>
+            <p>
+              “Verified” on Dityam isn’t a promise — it’s a daily process. Here is
+              how it works, honestly and without magic.
+            </p>
+            <div className="stats">
+              <div className="stat">
+                <span className="stat-num">{active ?? FALLBACK.opportunities}</span>
+                <span className="stat-label">active opportunities</span>
+              </div>
+              <div className="stat">
+                <span className="stat-num">{verified ?? '—'}</span>
+                <span className="stat-label">links checked within 3 days</span>
+              </div>
+              <div className="stat">
+                <span className="stat-num">{sources ?? FALLBACK.sources}</span>
+                <span className="stat-label">sources, every day</span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <section className="topic-faq">
-        {STEPS.map((s) => (
-          <div key={s.title} className="verify-row">
-            <span className="verify-icon" aria-hidden="true">{s.icon}</span>
-            <div>
-              <h2 className="verify-title">{s.title}</h2>
-              <p className="verify-text">{s.text}</p>
+        <section className="topic-faq">
+          {STEPS.map((s) => (
+            <div key={s.title} className="verify-row">
+              <span className="verify-icon" aria-hidden="true">{s.icon}</span>
+              <div>
+                <h2 className="verify-title">{s.title}</h2>
+                <p className="verify-text">{s.text}</p>
+              </div>
             </div>
-          </div>
-        ))}
-      </section>
+          ))}
+        </section>
 
-      <p className="topic-note" style={{ marginTop: 24 }}>
-        Spotted a mistake or a dead link?{' '}
-        <a href="mailto:maryberezhna@gmail.com?subject=Error%20on%20dityam.com.ua">Write to us</a> —
-        we’ll fix it and say thank you. And if you know an opportunity that isn’t here yet,{' '}
-        <a href="mailto:maryberezhna@gmail.com?subject=Add%20an%20opportunity">suggest it</a>.
-      </p>
+        <p className="topic-note" style={{ marginTop: 24 }}>
+          Spotted a mistake or a dead link?{' '}
+          <a href="mailto:maryberezhna@gmail.com?subject=Error%20on%20dityam.com.ua">Write to us</a> —
+          we’ll fix it and say thank you. And if you know an opportunity that isn’t here yet,{' '}
+          <a href="mailto:maryberezhna@gmail.com?subject=Add%20an%20opportunity">suggest it</a>.
+        </p>
+      </div>
       <Footer lang="en" />
-    </div>
+    </>
   );
 }
