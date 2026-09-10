@@ -134,6 +134,12 @@ SYSTEM = """Ти звіряєш картку можливості з текст�
   «18+». Наведи цю фразу в reason.
 - verdict = fix, якщо сторінка ПРЯМО називає інший вік або клас, ніж у
   картці: «учні 8-10 класів», «ages 15-17». Наведи цю фразу в reason.
+
+  УВАГА: клас — це не вік. Якщо на сторінці клас, переклади його у роки:
+  1 клас = 6-7 років, 5 клас = 10-11, 8 клас = 13-14, 9 клас = 14-15,
+  10 клас = 15-16, 11 клас = 16-17. Так само з англійським «grade»:
+  «grades 10-11» означає вік 15-17, а НЕ 10-11 років. «High school»
+  загалом — це 14-18.
 - verdict = ok, якщо сторінка підтверджує суть картки й не суперечить віку.
 - verdict = unclear в усіх інших випадках: сторінка ні про що конкретне,
   саме навігація, іншою мовою без деталей, captcha, «403», «сторінку не
@@ -235,10 +241,23 @@ def build_patch(row: dict, ans: dict) -> tuple[dict, str]:
         patch = {}
         af = _age(ans.get("age_from"), row.get("age_from"))
         at = _age(ans.get("age_to"), row.get("age_to"))
+        old_from, old_to = row.get("age_from"), row.get("age_to")
         if af is not None and at is not None and af <= at:
-            if af != row.get("age_from"):
+            # Новий діапазон, який узагалі не перетинається зі старим, — це не
+            # уточнення, а інша можливість. На практиці це майже завжди
+            # плутанина класу з віком: для SHAD (grades 10-11, тобто 15-17
+            # років) модель повернула вік 10-11. Правило про клас у промпті
+            # тепер є, але код має тримати межу й тоді, коли модель його
+            # проігнорує: справжня зміна аудиторії — це wrong_audience, а не
+            # правка двох чисел.
+            disjoint = (old_from is not None and old_to is not None
+                        and (at < old_from or af > old_to))
+            if disjoint:
+                return {}, (f"fix відхилено: {old_from}-{old_to} → {af}-{at} "
+                            "не перетинаються (схоже на клас замість віку)")
+            if af != old_from:
                 patch["age_from"] = af
-            if at != row.get("age_to"):
+            if at != old_to:
                 patch["age_to"] = at
         ot = (ans.get("opportunity_type") or "").strip()
         if ot in VALID_OPP_TYPES and ot != row.get("opportunity_type"):
