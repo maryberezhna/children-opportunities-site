@@ -24,9 +24,20 @@ content_hash АБО slug АБО canonical_url+назва. Заголовок, н
   ok             — сторінка підтверджує запис, лише скидаємо updated_at;
   fix            — та сама можливість, але поля хибні: правимо вік / тип /
                    вартість на місці;
-  wrong_audience — сторінка не для дітей 0–18 (виш, магістратура, 18+) →
-                   status='draft' + пояснення в moderation_note;
-  mismatch       — сторінка взагалі не про цю можливість → так само draft.
+  wrong_audience — сторінка ПРЯМО каже, що це для студентів вишів чи
+                   дорослих → status='draft' + пояснення в moderation_note;
+  unclear        — сторінка нічого не підтверджує й нічого не спростовує →
+                   НІЧОГО не робимо, лише пишемо в лог.
+
+Чому немає висновку «сторінка про інше». Перший сухий прогін 10.09.2026 дав
+його 15 записам із 25 — Yale Young Global Scholars, PASCH, Microsoft Imagine
+Cup Junior, BBC Learning English. Усі вони існують. Причина в тому, що
+квітневі записи часто вказують на ГОЛОВНУ сторінку сайту, а не на сторінку
+програми: pasch-net.de віддає 8 КБ німецької навігації про вебінари для
+вчителів, bbc.co.uk/learningenglish — саме меню, Yale за межами України
+відповідає 403. Модель чесно бачила, що сторінка не описує запис, і робила з
+цього хибний висновок, що запис неправдивий. «Не сказано» і «сказано інше» —
+різні речі, і тепер перше не веде до жодної дії.
 
 Чому draft, а не видалення: рішення ухвалює модель по одній сторінці, і
 помилитись вона може. Draft ховає запис із сайту, але лишає його Марії на
@@ -60,6 +71,12 @@ logger = logging.getLogger("audit_seed")
 MODEL = "claude-haiku-4-5-20251001"
 SEED_DATE = "2026-04-21"
 PAGE_LIMIT = 6000          # символів сторінки в промпт
+MIN_PAGE_CHARS = 400       # коротше — сторінка-заглушка, не зміст
+BLOCK_MARKERS = (
+    "403 forbidden", "404 not found", "access denied", "just a moment",
+    "enable javascript", "checking your browser", "are you a robot",
+    "captcha", "сторінку не знайдено", "доступ заборонено",
+)
 DELAY_BETWEEN = 0.5        # пауза між зверненнями до чужих сайтів
 UA = "Mozilla/5.0 (compatible; DityamSeedAudit/1.0; +https://dityam.com.ua)"
 
@@ -71,13 +88,17 @@ TOOL = {
         "properties": {
             "verdict": {
                 "type": "string",
-                "enum": ["ok", "fix", "wrong_audience", "mismatch"],
+                "enum": ["ok", "fix", "wrong_audience", "unclear"],
                 "description": (
                     "ok — сторінка підтверджує збережені дані; "
-                    "fix — та сама можливість, але вік/тип/вартість хибні; "
-                    "wrong_audience — можливість НЕ для дітей 0-18 (студенти "
-                    "вишів, магістратура, 18+, дорослі фахівці); "
-                    "mismatch — сторінка описує щось зовсім інше"
+                    "fix — та сама можливість, але вік/тип/вартість хибні "
+                    "(сторінка ПРЯМО називає інший вік); "
+                    "wrong_audience — сторінка ПРЯМО каже, що це для "
+                    "студентів вишів, магістратури або дорослих; "
+                    "unclear — сторінка не описує цю можливість або майже не "
+                    "має змісту (головна сторінка сайту, саме меню, "
+                    "captcha, сторінка помилки). ЦЕ ЗНАЧЕННЯ ЗА "
+                    "ЗАМОВЧУВАННЯМ, коли доказів немає"
                 ),
             },
             "age_from": {"type": "integer", "description": "Виправлений мінімальний вік, 0-18"},
@@ -101,19 +122,28 @@ SYSTEM = """Ти звіряєш картку можливості з текст�
 насправді описують програми для студентів вишів, магістратури чи дорослих,
 на платформі бути не повинні — навіть якщо в назві є слово «молодь».
 
-Правила:
-- Вік бери зі сторінки. «Учні 8-10 класів» — це 13-16. «Bachelor's degree
-  holders», «undergraduate students», «магістратура» — це НЕ школярі:
-  verdict = wrong_audience.
-- Якщо сторінка підтверджує вік і суть запису — verdict = ok.
-- Якщо це та сама можливість, але вік чи тип у картці не той, що на
-  сторінці — verdict = fix і поверни виправлені поля.
-- Якщо сторінка про щось зовсім інше (сайт перебудували, посилання веде на
-  головну) — verdict = mismatch.
-- Не вигадуй. Якщо на сторінці немає віку, а решта збігається — ok.
+ГОЛОВНЕ ПРАВИЛО. Багато карток вказують на головну сторінку сайту, а не на
+сторінку конкретної програми. Тоді в тексті буде меню, новини, загальний
+опис організації — і жодного слова про саму можливість. Це НЕ доказ, що
+картка неправдива. Такий випадок — unclear, і ми нічого не робимо.
 
-reason пиши одним реченням українською, конкретно: що саме на сторінці
-суперечить картці."""
+Діяти можна лише тоді, коли сторінка ПРЯМО щось стверджує:
+- verdict = wrong_audience, якщо на сторінці написано, що учасники —
+  студенти вишів, випускники, магістранти або дорослі: «bachelor's degree»,
+  «undergraduate students», «for university students», «магістратура»,
+  «18+». Наведи цю фразу в reason.
+- verdict = fix, якщо сторінка ПРЯМО називає інший вік або клас, ніж у
+  картці: «учні 8-10 класів», «ages 15-17». Наведи цю фразу в reason.
+- verdict = ok, якщо сторінка підтверджує суть картки й не суперечить віку.
+- verdict = unclear в усіх інших випадках: сторінка ні про що конкретне,
+  саме навігація, іншою мовою без деталей, captcha, «403», «сторінку не
+  знайдено», або просто нічого про цю можливість не сказано.
+
+Сумніваєшся — unclear. Помилковий unclear нічого не коштує: запис лишається
+як був. Помилковий wrong_audience ховає із сайту справжню можливість.
+
+reason пиши одним реченням українською. Для wrong_audience і fix — з
+цитатою зі сторінки."""
 
 
 def fetch_text(url: str) -> str | None:
@@ -129,7 +159,18 @@ def fetch_text(url: str) -> str | None:
         for tag in soup(["script", "style", "nav", "footer", "header"]):
             tag.decompose()
         text = " ".join(soup.get_text(" ").split())
-        return text[:PAGE_LIMIT] if text else None
+        if not text:
+            return None
+        # Сторінка-заглушка. Yale за межами України віддає 68 символів «403
+        # Forbidden» із кодом 403, але деякі захисти повертають те саме з
+        # кодом 200 — на код покладатись не можна. Такий текст моделі краще
+        # не показувати взагалі: вона з нього робить висновок, якого там нема.
+        if len(text) < MIN_PAGE_CHARS:
+            return None
+        low = text[:400].lower()
+        if any(m in low for m in BLOCK_MARKERS):
+            return None
+        return text[:PAGE_LIMIT]
     except Exception:
         return None
 
@@ -181,9 +222,8 @@ def build_patch(row: dict, ans: dict) -> tuple[dict, str]:
     verdict = ans.get("verdict")
     reason = (ans.get("reason") or "").strip()
 
-    if verdict in ("wrong_audience", "mismatch"):
-        label = ("не для дітей 0-18" if verdict == "wrong_audience"
-                 else "сторінка про інше")
+    if verdict == "wrong_audience":
+        label = "не для дітей 0-18"
         return ({
             "status": "draft",
             # note_status НЕ чіпаємо: 'pending' запустив би process_notes.py,
@@ -210,7 +250,7 @@ def build_patch(row: dict, ans: dict) -> tuple[dict, str]:
             return {}, "fix без змін — лишаємо як є"
         return patch, "→ " + ", ".join(f"{k}={v}" for k, v in patch.items())
 
-    return {}, "ok"
+    return {}, ("unclear" if verdict == "unclear" else "ok")
 
 
 def main() -> int:
@@ -243,7 +283,8 @@ def main() -> int:
         rows = rows[:args.limit]
     logger.info("Записів набору %s до звірки: %d", args.created, len(rows))
 
-    stats = {"ok": 0, "fix": 0, "draft": 0, "unreachable": 0, "no_answer": 0}
+    stats = {"ok": 0, "fix": 0, "draft": 0, "unclear": 0,
+             "unreachable": 0, "no_answer": 0}
     for i, row in enumerate(rows):
         if i:
             time.sleep(DELAY_BETWEEN)
@@ -266,7 +307,7 @@ def main() -> int:
 
         patch, note = build_patch(row, ans)
         if not patch:
-            stats["ok"] += 1
+            stats["unclear" if ans.get("verdict") == "unclear" else "ok"] += 1
             continue
         stats["draft" if patch.get("status") == "draft" else "fix"] += 1
         logger.info("%-58s | %s", title, note)
@@ -275,9 +316,10 @@ def main() -> int:
 
     logger.info(
         "Готово. Підтверджено: %d | виправлено: %d | у чернетки: %d | "
-        "недоступних: %d | без відповіді: %d%s",
-        stats["ok"], stats["fix"], stats["draft"], stats["unreachable"],
-        stats["no_answer"], "  (dry-run, нічого не записано)" if args.dry_run else "",
+        "без доказів: %d | недоступних: %d | без відповіді: %d%s",
+        stats["ok"], stats["fix"], stats["draft"], stats["unclear"],
+        stats["unreachable"], stats["no_answer"],
+        "  (dry-run, нічого не записано)" if args.dry_run else "",
     )
     return 0
 
