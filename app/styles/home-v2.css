@@ -635,78 +635,103 @@
 .v2-topics a:hover { color: var(--v2-accent); }
 
 /* ── Футер ─────────────────────────────────────────────────────────────── */
+/* Формат (вересень 2026): чорна смуга на всю ширину, великий рукописний
+   wordmark по центру, чотири колонки посилань, ряд «Слідкувати», копірайт.
+   Колонки — лише посилання, без описів і цифр. */
 .v2-footer {
+  --footer-fg: #ffffff;
+  --footer-muted: #8a8a8a;
   margin-top: 72px;
-  border-top: 1px solid var(--v2-line);
-  background: var(--v2-cream);
+  background: #0b0b0b;
+  color: var(--footer-fg);
+  /* Якщо сторінка коротша за екран, під футером визирало б світле тло body.
+     Тінь домальовує ту саму чорноту на 100vh униз: вона починається рівно
+     від верху футера (spread 50vh + зсув 50vh), нічого вище не перекриває
+     і, на відміну від псевдоелемента, не додає сторінці висоти. */
+  box-shadow: 0 50vh 0 50vh #0b0b0b;
 }
 
 /* Футер завжди рендериться ПІСЛЯ .container, а не всередині: інакше нижній
-   відступ контейнера і body лишали під кремовою смугою білий блок, а
-   виламування на всю ширину через calc(50% - 50vw) давало горизонтальний
-   скрол там, де є класичний скролбар. Контейнер уже несе 40px знизу —
-   зменшуємо відступ футера, щоб ритм лишився як на головній (40 + 32). */
+   відступ контейнера і body лишали під футером білий блок, а виламування на
+   всю ширину через calc(50% - 50vw) давало горизонтальний скрол там, де є
+   класичний скролбар. Контейнер уже несе 40px знизу — зменшуємо відступ
+   футера, щоб ритм лишився як на головній (40 + 32). */
 .container + .v2-footer { margin-top: 32px; }
 
 .v2-footer-inner {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 32px 32px;
+  padding: 88px 32px 48px;
   display: flex;
   flex-direction: column;
-  gap: 40px;
+  gap: 72px;
+}
+
+/* Wordmark — той самий рукописний шрифт і нахил, що в лого хедера, тільки
+   великий і білий. Мінімум 44px, щоб 13 символів влізли у 320px. */
+.v2-footer-mark {
+  align-self: center;
+  font-family: var(--font-caveat), cursive;
+  font-style: italic;
+  font-weight: 700;
+  font-size: clamp(44px, 11vw, 168px);
+  line-height: 0.9;
+  color: var(--footer-fg);
+  text-decoration: none;
+  transform: rotate(-2deg);
+  transition: color 0.15s;
 }
 
 .v2-footer-grid {
   display: grid;
-  grid-template-columns: 1.6fr 1fr 1fr 1fr;
+  grid-template-columns: repeat(4, 1fr);
   gap: 40px;
 }
 
-.v2-footer-brand {
+.v2-footer-col,
+.v2-footer-follow {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 14px;
 }
 
-.v2-footer-brand p {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.55;
-  color: var(--v2-ink-2);
-  max-width: 420px;
-}
-
-.v2-footer-col {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 .v2-footer-col-title {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--v2-ink-3);
+  color: var(--footer-fg);
+  margin-bottom: 4px;
 }
 
 .v2-footer-col a,
-.v2-footer-col button {
+.v2-footer-col button,
+.v2-footer-social a {
   font-family: inherit;
-  font-size: 15px;
-  color: var(--v2-ink);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--footer-fg);
   background: none;
   border: none;
   padding: 0;
   cursor: pointer;
   text-align: left;
   text-decoration: none;
+  transition: color 0.15s;
 }
 
-.v2-footer-col a:hover, .v2-footer-col button:hover { color: var(--v2-accent); }
+.v2-footer-mark:hover,
+.v2-footer-col a:hover,
+.v2-footer-col button:hover,
+.v2-footer-social a:hover { color: var(--v2-accent); }
 
-.v2-footer-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--v2-ink-3); }
+.v2-footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 56px;
+}
 
 .v2-footer-bottom {
   display: flex;
@@ -714,11 +739,12 @@
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
-  border-top: 1px solid var(--v2-line);
-  padding-top: 20px;
-  font-size: 13px;
-  color: var(--v2-ink-3);
+  font-size: 15px;
+  color: var(--footer-muted);
 }
+
+.v2-footer-bottom a { color: inherit; text-decoration: none; }
+.v2-footer-bottom a:hover { color: var(--footer-fg); }
 
 /* ── Поп-ап «Запропонувати можливість» ─────────────────────────────────── */
 .v2-overlay {
@@ -824,7 +850,7 @@
 
 /* ── Адаптив ───────────────────────────────────────────────────────────── */
 @media (max-width: 900px) {
-  .v2-footer-grid { grid-template-columns: 1fr 1fr; }
+  .v2-footer-grid { grid-template-columns: 1fr 1fr; gap: 36px 32px; }
 }
 
 @media (max-width: 720px) {
@@ -849,7 +875,11 @@
   .v2-stats { gap: 10px 24px; }
   .v2-stat-num { font-size: 22px; }
   .v2-bottom { grid-template-columns: 1fr; }
-  .v2-footer-grid { grid-template-columns: 1fr; gap: 28px; }
+  .v2-footer-inner { padding: 64px 20px 36px; gap: 48px; }
+  /* Посилання короткі — дві колонки влазять і на 360px. */
+  .v2-footer-grid { grid-template-columns: 1fr 1fr; gap: 32px 20px; }
+  .v2-footer-col a, .v2-footer-col button, .v2-footer-social a { font-size: 16px; }
+  .v2-footer-social { gap: 12px 36px; }
   .v2-dialog { padding: 36px 22px 28px; }
 }
 
