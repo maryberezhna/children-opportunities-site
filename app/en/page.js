@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS_EN, countActiveOpportunities, countActiveSources, FALLBACK,  } from '@/lib/supabase';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
+import { kyivToday } from '@/lib/dates';
+import { audienceStats } from '@/lib/audience';
 import OpportunitiesList from '../OpportunitiesList';
 import HomeHero from '../HomeHero';
 import HomeBlocks from '../HomeBlocks';
@@ -50,9 +52,10 @@ async function getOpportunities() {
 
 export default async function EnglishPage() {
   const opportunities = await getOpportunities();
+  const today = kyivToday();
+  const stats = audienceStats(opportunities, today);
+  const teenStats = audienceStats(opportunities, today, true);
   const total = opportunities.length;
-  const freeCount = opportunities.filter((o) => o.cost_type === 'free').length;
-  const sourceCount = new Set(opportunities.map((o) => o.source)).size;
 
   const itemListLd = {
     '@context': 'https://schema.org',
@@ -75,9 +78,16 @@ export default async function EnglishPage() {
       />
 
       <HomeHero
-        total={total || FALLBACK.opportunities}
-        freeCount={freeCount}
-        sourceCount={sourceCount || FALLBACK.sources}
+        stats={{
+          total: stats.total || FALLBACK.opportunities,
+          freeCount: stats.freeCount,
+          sourceCount: stats.sourceCount || FALLBACK.sources,
+        }}
+        teenStats={{
+          total: teenStats.total || FALLBACK.opportunities,
+          freeCount: teenStats.freeCount,
+          sourceCount: teenStats.sourceCount || FALLBACK.sources,
+        }}
         lang="en"
       />
 
@@ -88,6 +98,7 @@ export default async function EnglishPage() {
         <OpportunitiesList
           opportunities={opportunities}
           promoProps={{ total }}
+          today={today}
           lang="en"
           modeAware
         />

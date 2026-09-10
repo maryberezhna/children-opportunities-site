@@ -6,6 +6,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent } from '@/lib/labels
 import { cityLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 import { daysUntil, kyivToday } from '@/lib/dates';
+import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { trackOpportunityClick } from '@/lib/track';
@@ -296,14 +297,13 @@ export default function OpportunitiesList({
     return m;
   }, [opportunities]);
 
-  // Прострочені разові можливості не показуємо ніде.
-  const liveItems = useMemo(() => opportunities.filter((item) => {
-    const days = daysUntil(item.deadline, todayIso);
-    if (days !== null && days < 0 && !ANNUAL_TYPES.has(item.opportunity_type)) return false;
-    // База підліткового режиму: все, що доступне у 13+.
-    if (teens && item.age_to < 13) return false;
-    return true;
-  }), [opportunities, todayIso, teens]);
+  // Прострочені разові можливості не показуємо ніде, а в режимі «Підліткам» —
+  // ще й те, що закінчується раніше 13 років. Предикати спільні з хіро
+  // (lib/audience), щоб цифра над каталогом і цифра в каталозі не розходились.
+  const liveItems = useMemo(
+    () => visibleFor(opportunities, todayIso, teens),
+    [opportunities, todayIso, teens],
+  );
 
   const predicates = useMemo(() => ({
     type: (item) => {
