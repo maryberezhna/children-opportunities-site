@@ -74,14 +74,14 @@ export default async function EnglishPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <main className="v2-container">
-        <HomeHero
-          total={total || FALLBACK.opportunities}
-          freeCount={freeCount}
-          sourceCount={sourceCount || FALLBACK.sources}
-          lang="en"
-        />
+      <HomeHero
+        total={total || FALLBACK.opportunities}
+        freeCount={freeCount}
+        sourceCount={sourceCount || FALLBACK.sources}
+        lang="en"
+      />
 
+      <main className="v2-container">
         {/* Той самий каталог, що на головній, лише мовою сторінки: назви й
             описи — англійські поля з бази, а доки перекладу для запису немає,
             показуємо оригінал, а не порожнечу. */}

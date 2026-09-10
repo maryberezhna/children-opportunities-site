@@ -176,6 +176,15 @@ const DL_COLORS = {
   event: ['#e5eefc', '#1b4a8f'],
 };
 
+// Підлітковий режим (напрям A): дедлайн, що горить, — чорний стікер на
+// білій картці; «відкрито» і «до дати» лишаються спокійними.
+const DL_COLORS_TEENS = {
+  urgent: ['#1a1a1a', '#f7f1e6'],
+  soon: ['#1a1a1a', '#f7f1e6'],
+  calm: ['#f1ebde', '#4a4a4a'],
+  event: ['#1a1a1a', '#f7f1e6'],
+};
+
 const ONLINE_RE = /(онлайн|online|дистанц|гібрид|hybrid|zoom|вебінар)/i;
 const isOnline = (item) =>
   ONLINE_RE.test(item.format || '')
@@ -479,7 +488,7 @@ export default function OpportunitiesList({
   const renderCard = (item) => {
     const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || ['#f7f1e6', '#4a4a4a'];
     const dl = dlChip(item);
-    const [dlBg, dlFg] = DL_COLORS[dl.kind];
+    const [dlBg, dlFg] = (teens ? DL_COLORS_TEENS : DL_COLORS)[dl.kind];
     const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
       || item.opportunity_type;
     // Підліткова картка відповідає на «що я отримаю і що зробити», а не

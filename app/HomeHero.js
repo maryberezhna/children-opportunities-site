@@ -9,6 +9,11 @@ import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 // компонент клієнтський. SSR завжди віддає батьківську версію — саме її
 // бачить Google, і саме вона лишається дефолтом для нових відвідувачів.
 //
+// Хіро живе ПОЗА .v2-container: у режимі «Підліткам» це чорна смуга на всю
+// ширину (напрям A з канвасу «Dityam.com.ua для підлітків», вибір Марії
+// 10.09.2026). Режим вивішується атрибутом data-mode на <html>, і решта
+// сторінки (чипи, дедлайни, «Топ тижня») темніє через CSS, без пропсів.
+//
 // Текст ліворуч, фото праворуч, під текстом — статистика великими цифрами.
 // Фото теж залежить від режиму: батькам — діти на майданчику, підліткам —
 // пʼятеро підлітків (Tim Mossholder, Unsplash, hOF1bWoet_Q; ліцензія Unsplash
@@ -40,6 +45,8 @@ const COPY = {
         + 'більшість безкоштовно.',
       age: '13–18',
       photoAlt: 'Пʼятеро усміхнених підлітків надворі',
+      link: 'Їдеш за кордон? Усі обміни, стипендії й табори →',
+      linkHref: '/za-kordon',
     },
     live: 'Безкоштовно і оновлюється щодня',
     press: 'Про нас пишуть:',
@@ -64,6 +71,8 @@ const COPY = {
         + 'internships, scholarships, volunteering. Verified, mostly free.',
       age: '13–18',
       photoAlt: 'Five smiling teenagers outdoors',
+      link: 'Going abroad? All exchanges, scholarships and camps →',
+      linkHref: '/en/abroad',
     },
     live: 'Free and updated daily',
     press: 'Featured in:',
@@ -74,8 +83,16 @@ const COPY = {
 export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' }) {
   const [mode, setMode] = useState('parents');
   useEffect(() => {
-    setMode(readMode());
-    return onModeChange(setMode);
+    const apply = (m) => {
+      setMode(m);
+      document.documentElement.dataset.mode = m;
+    };
+    apply(readMode());
+    const off = onModeChange(apply);
+    return () => {
+      off();
+      delete document.documentElement.dataset.mode;
+    };
   }, []);
 
   const t = COPY[lang] || COPY.uk;
@@ -93,7 +110,8 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
   ];
 
   return (
-    <section className="v2-hero">
+    <section className="v2-hero-band">
+    <div className="v2-hero">
       <div className="v2-hero-copy">
         <div className="v2-hero-status">
           <span className="v2-dot" aria-hidden="true" />
@@ -103,6 +121,9 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
           {c.lead} <span className="v2-script">{c.script}</span>{c.tail}
         </h1>
         <p className="v2-hero-sub">{c.sub}</p>
+        {c.link ? (
+          <Link href={c.linkHref} className="v2-hero-link">{c.link}</Link>
+        ) : null}
 
         <div className="v2-stats">
           {stats.map((s) => (
@@ -139,6 +160,7 @@ export default function HomeHero({ total, freeCount, sourceCount, lang = 'uk' })
           />
         </picture>
       </div>
+    </div>
     </section>
   );
 }
