@@ -73,7 +73,9 @@ TOOL = {
                                            "організатор, учасники з різних країн "
                                            "або поїздка за кордон. Онлайн-конкурс "
                                            "від закордонного організатора — теж "
-                                           "true. Гурток у Житомирі — false.",
+                                           "true. Гурток у Житомирі — false, "
+                                           "навіть якщо його вихованці їздили "
+                                           "на міжнародні фестивалі.",
                         },
                     },
                     "required": ["i", "countries", "is_international"],
@@ -94,6 +96,10 @@ SYSTEM = """Ти визначаєш географію можливостей д
 Два поля незалежні. Онлайн-конкурс від японського організатора:
 countries = [], is_international = true — їхати нікуди не треба, але
 можливість міжнародна.
+
+Участь вихованців у міжнародних фестивалях, змаганнях чи концерти за
+кордоном у минулому НЕ роблять гурток міжнародним: is_international = false.
+Міжнародна — сама можливість, а не біографія колективу.
 
 Не вгадуй. Якщо з тексту місце незрозуміле — countries порожній."""
 
@@ -165,13 +171,24 @@ def main() -> int:
     db = get_client()
     ai = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    q = (db.table("opportunities")
-         .select("id, title, summary, details, source, countries, is_international")
-         .eq("status", "active")
-         .is_("canonical_slug", "null"))
+    # PostgREST віддає до 1000 рядків, а активних уже більше — гортаємо
+    # сторінками, як у backfill_teen.py, інакше хвіст мовчки лишиться без
+    # розмітки.
+    rows, start = [], 0
+    while True:
+        page = (db.table("opportunities")
+                .select("id, title, summary, details, source, countries, is_international")
+                .eq("status", "active")
+                .is_("canonical_slug", "null")
+                .order("id")
+                .range(start, start + 999)
+                .execute().data or [])
+        rows.extend(page)
+        if len(page) < 1000:
+            break
+        start += 1000
     if args.limit:
-        q = q.limit(args.limit)
-    rows = q.execute().data or []
+        rows = rows[:args.limit]
     logger.info("Записів до перегляду: %d", len(rows))
 
     changed = abroad = intl = 0
