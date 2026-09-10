@@ -110,8 +110,8 @@ export default async function CategoriesPage() {
           Cannot find your category? Write to us — the catalogue is updated daily,
           and we add new directions wherever verified opportunities appear.
         </p>
-        <Footer lang="en" />
       </div>
+      <Footer lang="en" />
     </>
   );
 }

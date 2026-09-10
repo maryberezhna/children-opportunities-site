@@ -119,8 +119,8 @@ export default async function YakPereviriaiemo() {
           виправимо і скажемо дякую. А якщо знаєте можливість, якої в каталозі нема —{' '}
           <a href="mailto:maryberezhna@gmail.com?subject=Додати%20можливість">пропонуйте</a>.
         </p>
-        <Footer />
       </div>
+      <Footer />
     </>
   );
 }

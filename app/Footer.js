@@ -12,7 +12,7 @@ const INSTAGRAM_URL = 'https://www.instagram.com/dityam.com.ua';
 const T = {
   uk: {
     about: 'Платформа безкоштовних і доступних програм для дітей 0–18 років '
-      + 'в Україні та за кордоном. Зроблено на ентузіазмі, без реклами.',
+      + 'в Україні та за кордоном.',
     contact: "Зв'язок",
     telegram: 'Telegram-канал',
     instagram: 'Instagram',
@@ -38,7 +38,7 @@ const T = {
   },
   en: {
     about: 'A platform of free and affordable programs for children aged 0–18 '
-      + 'in Ukraine and abroad. Built on enthusiasm, no ads.',
+      + 'in Ukraine and abroad.',
     contact: 'Contact',
     telegram: 'Telegram channel',
     instagram: 'Instagram',

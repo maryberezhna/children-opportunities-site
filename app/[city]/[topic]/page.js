@@ -187,8 +187,8 @@ export default async function CityTopicPage({ params }) {
           presetCity={cityData.ua}
           today={kyivToday()}
         />
-        <Footer />
       </div>
+      <Footer />
 
       <StickyBar />
       <SubscribePopup />

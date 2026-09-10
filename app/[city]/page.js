@@ -135,8 +135,8 @@ export default async function CityPage({ params }) {
         </nav>
 
         <OpportunitiesList opportunities={opportunities} presetCity={cityName} today={kyivToday()} />
-        <Footer />
       </div>
+      <Footer />
 
       <StickyBar />
       <SubscribePopup />
