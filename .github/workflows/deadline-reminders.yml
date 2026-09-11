@@ -1,14 +1,28 @@
 name: Dityam+ — deadline reminders (daily)
 
-# Щодня о 07:00 UTC (10:00 Київ) нагадує підписникам про можливості, до подачі
-# яких лишилось 7 або 2 дні. Це та частина обіцянки «ми нагадаємо», за яку
-# люди платять: втрачають не через незнання, а через «потім».
+# Нагадує підписникам про можливості, до подачі яких лишилось 7 або 2 дні.
+# Це та частина обіцянки «ми нагадаємо», за яку люди платять: втрачають не
+# через незнання, а через «потім».
 #
-# Йде ПІСЛЯ deadline-check (06:00), який архівує прострочені — щоб не
-# нагадувати про те, що вже закрилось.
+# ЧОМУ ТРИ ЗАПИСИ CRON, А НЕ ОДИН. Розклад GitHub Actions для цього
+# репозиторію не виконується: заміряно 11.09.2026 по журналу прогонів —
+# «06:00» стабільно спрацьовує о 10:04-11:47, «щогодини» виходить раз на
+# ~4.5 години. Затримка тримається щодня щонайменше десять днів поспіль.
+# З одним записом о 07:00 нагадування йшло близько 15:00 за Києвом замість
+# обіцяної десятої.
+#
+# Три ранкові запити дають бодай один запуск у потрібному вікні і за
+# швидкого, і за повільного GitHub:
+#   швидкий:  02:11 і 04:11 відсіють ворота, 06:11 UTC = 09:11 Київ — шле;
+#   повільний: 02:11 прийде о 06:41-07:59 UTC = 09:41-10:59 Київ — шле.
+# Зайві запуски того самого дня нічого не надішлють: пара
+# (підписник × можливість × вікно) захищена UNIQUE у digest_reminders_sent,
+# а ранні відсікає SEND_AFTER_HOUR (scraper/send_window.py).
 on:
   schedule:
-    - cron: '0 7 * * *'
+    - cron: '11 2 * * *'
+    - cron: '11 4 * * *'
+    - cron: '11 6 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
@@ -23,6 +37,10 @@ on:
         description: 'вікна через кому (деф. 7,2)'
         required: false
         default: '7,2'
+      any_time:
+        description: 'true = слати негайно, не чекати вікна 9:00 Київ'
+        required: false
+        default: 'true'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -50,13 +68,23 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: mashaberezhna0209@gmail.com
           SITE_URL: https://dityam.com.ua
+          # Раніше за цю годину за Києвом нічого не шлемо — див. коментар
+          # про розклад вище. 0 вимкнув би ворота повністю.
+          SEND_AFTER_HOUR: '9'
         run: |
           DAYS="${{ github.event.inputs.days }}"
           [ -z "$DAYS" ] && DAYS="7,2"
+          # Ручний запуск за замовчуванням шле одразу: людина натиснула
+          # кнопку свідомо, змушувати її чекати ранку безглуздо.
+          ANY=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.any_time }}" != "false" ]; then
+            ANY="--any-time"
+          fi
           if [ "${{ github.event.inputs.demo }}" = "true" ]; then
             python deadline_reminders.py --demo --days "$DAYS"
           elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python deadline_reminders.py --dry-run --days "$DAYS"
           else
-            python deadline_reminders.py --days "$DAYS"
+            python deadline_reminders.py --days "$DAYS" $ANY
           fi
