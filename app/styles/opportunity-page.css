@@ -260,24 +260,76 @@
 
 .outcome-error { font-size: 14px; color: #c0392b; margin-top: 6px; }
 
-/* ---- Плашка «можливість завершилась» на архівних сторінках ---- */
+/* ---- Плашка «можливість завершилась» на архівних сторінках ----
+
+   Плашка навмисно велика й помаранчева. Попередня була бежевою смужкою на
+   бежевому тлі: людина її проминала, читала опис як актуальний і йшла
+   подаватись на закритий набір. Тут ціна помилки — змарнований вечір
+   батьків, тож попередження мусить перекривати заголовок за помітністю. */
 .closed-banner {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  margin: 0 0 20px;
-  padding: 16px 18px;
-  background: var(--warm-1);
-  border: 1px solid var(--warm-2);
+  gap: 16px;
+  margin: 0 0 28px;
+  padding: 22px 24px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-left-width: 6px;
   border-radius: 14px;
   color: var(--ink-soft);
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 16px;
+  line-height: 1.55;
 }
 
-.closed-banner strong { color: var(--ink); }
-.closed-banner a { color: var(--accent); white-space: nowrap; }
-.closed-banner-icon { font-size: 20px; line-height: 1.3; flex-shrink: 0; }
+.closed-banner strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+/* Посилання на живі можливості — окремим рядком і кнопкою, а не словом
+   усередині абзацу: це єдина дія, яка тут має сенс. */
+.closed-banner a {
+  /* Окремим рядком, а не inline: інакше абзац обтікає кнопку і хвіст
+     речення повисає збоку. */
+  display: block;
+  width: fit-content;
+  margin-top: 14px;
+  padding: 9px 16px;
+  background: var(--accent);
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.closed-banner a:hover { background: var(--accent-ink, #b8430f); }
+.closed-banner-icon { font-size: 26px; line-height: 1.2; flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  .closed-banner { padding: 18px; gap: 12px; font-size: 15px; }
+  .closed-banner strong { font-size: 19px; }
+}
+
+/* Сам опис — сірим. Текст лишається читабельним (його ще можуть шукати
+   в гуглі), але вже не конкурує з плашкою за увагу. */
+.opportunity-page-closed .opportunity-title,
+.opportunity-page-closed .opportunity-summary,
+.opportunity-page-closed .opportunity-meta dt,
+.opportunity-page-closed .opportunity-meta dd,
+.closed-dim .opportunity-details {
+  color: var(--ink-muted);
+}
+
+.opportunity-page-closed .opportunity-chips {
+  filter: grayscale(1);
+  opacity: 0.65;
+}
 
 /* Приглушуємо картку, щоб архівна сторінка не читалась як актуальна пропозиція */
 .opportunity-page-closed .opportunity-cta {
