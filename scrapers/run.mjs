@@ -8,19 +8,21 @@ import { toCsv } from './lib/csv.mjs';
 import { loadRegistry, recordCrawl, alertBrokenSources } from './lib/registry.mjs';
 
 import * as constellation from './sources/constellation-ua.mjs';
-import * as festPortal from './sources/fest-portal.mjs';
 import * as international from './sources/international-competitions.mjs';
 import * as langSchools from './sources/regional-language-schools.mjs';
 import * as ucfGrants from './sources/ucf-grants.mjs';
-import * as eurodesk from './sources/eurodesk.mjs';
 import * as egapStem from './sources/egap-stem.mjs';
-// МАН, МОН-олімпіади, Дія.Освіта та easy.gov веде тепер ЛИШЕ Python-скрапер
+// МАН, МОН-олімпіади, Дія.Освіта та easy.gov веде ЛИШЕ Python-скрапер
 // (scraper/scrapers/), через AI-нормалізатор. Раніше обидва пайплайни скрапили
-// їх із різним content_hash → дублікати в базі. Не повертати сюди.
-// import * as manContests from './sources/man-contests.mjs';
-// import * as monOlympiads from './sources/mon-subject-olympiads.mjs';
-// import * as diiaOsvita from './sources/diia-osvita.mjs';
-// import * as easyGov from './sources/easy-gov.mjs';
+// їх із різним content_hash → дублікати в базі. Файли видалені 11.09.2026:
+// закоментований імпорт два місяці виглядав як «тимчасово вимкнено», хоча
+// повертати його не можна. Не додавати сюди знову.
+//
+// Видалено 11.09.2026 (рішення Марії прибрати непотрібні скрапери):
+//   fest-portal — вимкнений у реєстрі, фестивалі приходять із телеграм-джерел;
+//   eurodesk — Cloudflare на CI віддає 403 при кожному запуску, робочого
+//     обходу немає; європейські програми дублюються через RSS і House of
+//     Europe.
 //
 // Видалено 19.08.2026 (жодного успішного обходу за весь час, фолбеки це
 // маскували):
@@ -36,11 +38,9 @@ import * as egapStem from './sources/egap-stem.mjs';
 // знахідок поламку (список у мережі не буває порожнім; статика — буває).
 const SOURCES = [
   { mod: constellation, registry: 'constellation-ua', network: true },
-  { mod: festPortal, registry: 'fest-portal', network: true },
   { mod: international, registry: 'international-competitions', network: true },
   { mod: langSchools, registry: 'regional-language-schools', network: false },
   { mod: ucfGrants, registry: 'ucf-grants', network: false },
-  { mod: eurodesk, registry: 'eurodesk', network: true },
   { mod: egapStem, registry: 'egap-stem', network: false },
 ];
 
