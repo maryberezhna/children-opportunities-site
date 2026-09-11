@@ -1,17 +1,31 @@
 name: Dityam+ — personal alerts (daily)
 
-# Щодня (08:30 UTC, після нічного скрапу) шле активним підписникам НОВІ
-# можливості під профіль дитини. Якщо нового нема — нічого не надсилає.
-# Ручний запуск — з dry_run для тесту.
+# Шле активним підписникам НОВІ можливості під профіль дитини. Якщо нового
+# нема — нічого не надсилає. Ручний запуск — з dry_run для тесту.
+#
+# Три записи cron із тієї ж причини, що й у deadline-reminders: розклад
+# GitHub Actions тут запізнюється на 4-5 годин (заміряно 11.09.2026,
+# подробиці в scraper/send_window.py). Ворота SEND_AFTER_HOUR відсікають
+# запуски раніше 10:00 за Києвом, повтору не буде через last_sent_at.
+#
+# Добірка може піти до нічного скрапу того ж дня — тоді свіжі знахідки
+# поїдуть наступного разу. Це відставання на добу, і воно саме себе
+# виправляє: скрипт бере все, що зʼявилось після last_sent_at.
 on:
   schedule:
-    - cron: '30 8 * * *'
+    - cron: '41 4 * * *'
+    - cron: '41 6 * * *'
+    - cron: '41 8 * * *'
   workflow_dispatch:
     inputs:
       dry_run:
         description: 'true = нічого не слати, лише лог'
         required: false
         default: 'false'
+      any_time:
+        description: 'true = слати негайно, не чекати вікна 10:00 Київ'
+        required: false
+        default: 'true'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -39,9 +53,15 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: mashaberezhna0209@gmail.com
           SITE_URL: https://dityam.com.ua
+          SEND_AFTER_HOUR: '10'
         run: |
+          ANY=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.any_time }}" != "false" ]; then
+            ANY="--any-time"
+          fi
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python personal_digest.py --dry-run
           else
-            python personal_digest.py
+            python personal_digest.py $ANY
           fi

@@ -15,6 +15,12 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
   --dry-run   нічого не шле й не оновлює last_sent_at — лише друкує, кому що пішло б
   --force     ігнорує вікно «14 днів» (слати всім активним зараз)
   --demo      синтетичний підписник — прев'ю матчингу без доступу до таблиці підписників
+  --any-time  ігнорувати ворота часу (див. send_window.py)
+
+Про годину відправки: те саме, що в deadline_reminders — розклад cron у
+GitHub Actions запізнюється на 4-5 годин, тож воркфлоу просить кілька
+ранкових запусків, а ворота відсікають зарані. Повтору не буде: last_sent_at
+не дає надіслати ту саму добірку двічі.
 """
 import argparse
 import html
@@ -27,6 +33,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import httpx
+
+import send_window
 
 logger = logging.getLogger("personal_digest")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -231,7 +239,12 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--demo", action="store_true")
+    ap.add_argument("--any-time", action="store_true",
+                    help="не зважати на ворота часу (ручний запуск, тест)")
     args = ap.parse_args()
+
+    if not (args.dry_run or args.demo or args.any_time) and send_window.too_early():
+        return 0
 
     from db import get_client
     client = get_client()

@@ -26,6 +26,14 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
   --days 7,2  які вікна перевіряти (для тесту)
   --demo      синтетичні профілі замість реальних підписників: дає перевірити
               матчинг на живому каталозі, поки платних підписників ще немає
+  --any-time  ігнорувати ворота часу (див. send_window.py): слати негайно,
+              о котрій би не запустили
+
+Про годину відправки. Розклад cron у GitHub Actions для цього репозиторію
+запізнюється на 4-5 годин щодня — заміряно 11.09.2026, подробиці й цифри в
+send_window.py. Тому воркфлоу просить кілька ранкових запусків, а ворота
+відсікають ті з них, що прийшли до 9:00 за Києвом. Дубля від зайвого запуску
+не буде: пара (підписник × можливість × вікно) захищена UNIQUE.
 """
 import argparse
 import html
@@ -34,6 +42,7 @@ import sys
 
 from datetime import date, timedelta
 
+import send_window
 from personal_digest import (
     SITE_URL,
     age_overlaps,
@@ -118,7 +127,15 @@ def main() -> int:
                     help="вікна нагадувань через кому, напр. 7,2")
     ap.add_argument("--demo", action="store_true",
                     help="синтетичні профілі — перевірка матчингу без підписників")
+    ap.add_argument("--any-time", action="store_true",
+                    help="не зважати на ворота часу (ручний запуск, тест)")
     args = ap.parse_args()
+
+    # Ворота часу — до будь-яких запитів у базу. dry-run і demo нічого не
+    # шлють, тож їх не блокуємо.
+    if not (args.dry_run or args.demo or args.any_time) and send_window.too_early():
+        return 0
+
     windows = [int(x) for x in str(args.days).split(",") if x.strip().isdigit()]
 
     from db import get_client
