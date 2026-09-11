@@ -1,7 +1,7 @@
 import { TOPICS } from '@/lib/topics';
 import TopicPage, { topicMetadata } from '../TopicPage';
 
-const topic = TOPICS['dity-veteraniv'];
+const topic = TOPICS['dity-zakhysnykiv'];
 
 export const revalidate = 300;
 export const metadata = topicMetadata(topic);

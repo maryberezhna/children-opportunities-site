@@ -65,17 +65,17 @@ test('за кордон: український гурток із міткою �
 // вже в заявці, тому правило вимагає звʼязки «діти/родини» + статус.
 test('дітям ветеранів: мітка child_needs достатня', () => {
   const o = { title: 'Табір у Карпатах', summary: '', child_needs: ['veteran_family'] };
-  assert.equal(TOPICS['dity-veteraniv'].match(o), true);
+  assert.equal(TOPICS['dity-zakhysnykiv'].match(o), true);
 });
 
 test('дітям ветеранів: звʼязка «діти + загиблі» у тексті — так', () => {
   const o = { title: 'Безкоштовний табір', child_needs: [],
               summary: 'Путівки для дітей загиблих захисників України, 7–17 років.' };
-  assert.equal(TOPICS['dity-veteraniv'].match(o), true);
+  assert.equal(TOPICS['dity-zakhysnykiv'].match(o), true);
 });
 
 test('дітям ветеранів: згадка ветеранів мимохідь — ні', () => {
   const o = { title: 'StudBiz Award — премія для шкільних підприємств', child_needs: [],
               summary: 'Серед партнерів премії — ветеранські організації та бізнес.' };
-  assert.equal(TOPICS['dity-veteraniv'].match(o), false);
+  assert.equal(TOPICS['dity-zakhysnykiv'].match(o), false);
 });
