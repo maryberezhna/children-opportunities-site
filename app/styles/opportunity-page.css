@@ -126,6 +126,13 @@
   gap: 14px;
 }
 
+/* Картки в ряду — однакової висоти. Сама картка лежить усередині <li>, і
+   без цих двох правил вона стискалась до свого тексту: сусіди в ряду
+   виходили різні, а сітка читалась як недороблена. Розтягується коробка,
+   не текст — вміст лишається притиснутим до верху. */
+.opportunity-related-list > li { display: flex; }
+.opportunity-related-list .card { flex: 1; }
+
 @media (max-width: 640px) {
   .opportunity-related { margin: 32px 0 16px; }
   .opportunity-related-list { grid-template-columns: 1fr; }
