@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { pushModeration } from '@/lib/notion';
+import { missingRequired } from '@/lib/required';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -67,9 +68,17 @@ function candidateText(o, remaining) {
   // Дата або періодичність — завжди видимі: картка без жодної позначки
   // не дає зрозуміти, живий запис чи торішній.
   if (o.deadline) lines.push(`⏰ Дедлайн: ${o.deadline}`);
+  else if (o.event_end_date) lines.push(`⏰ Завершення: ${o.event_end_date}`);
   else if (o.recurrence === 'annual') lines.push('🔁 Щорічна');
   else if (o.recurrence === 'ongoing') lines.push('♾ Постійно відкрита');
-  else lines.push('⚠️ Без дати — якщо вона є в джерелі, надішліть нотатку');
+  // Обовʼязковий мінімум перед сайтом: дата, тип, вік, вартість і
+  // місце-або-формат (вимога Марії 11.09.2026). Показуємо перелік ДО тапу,
+  // щоб кнопка «Додати» не відмовляла несподівано.
+  const missing = missingRequired(o);
+  if (missing.length) {
+    lines.push(`⛔ Не піде на сайт — бракує: ${missing.join(', ')}`,
+               '✏️ Редагувати — дозаповнити й опублікувати');
+  }
   if (o.dup_of) lines.push(`⚠ можливий дублікат (~${Math.round((o.dup_score || 0) * 100)}%)`);
   if (o.summary) lines.push('', escapeHtml(String(o.summary).slice(0, 400)));
   if (o.source_url) lines.push('', `🔗 <a href="${escapeHtml(o.source_url)}">Джерело</a>`);
@@ -101,7 +110,7 @@ async function sendNextCandidate(chatId) {
   const { count } = await supabase.from('opportunities')
     .select('id', { count: 'exact', head: true }).eq('status', 'draft');
   const { data } = await supabase.from('opportunities')
-    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score')
+    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, recurrence, format, cities, countries, is_international, dup_of, dup_score')
     // updated_at ASC so postponed candidates (touched now) drop to the back.
     .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {
@@ -184,6 +193,22 @@ async function handleModeration(action, id, cbq) {
   }
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const now = new Date().toISOString();
+
+  // Кнопка могла приїхати зі старої картки, а запис відтоді змінитись —
+  // тож перевіряємо обовʼязковий мінімум на сервері, перед самим записом.
+  if (action === 'add') {
+    const { data: row } = await supabase
+      .from('opportunities')
+      .select('age_from, age_to, deadline, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .eq('id', id)
+      .maybeSingle();
+    const missing = row ? missingRequired(row) : [];
+    if (missing.length) {
+      await answerCallback(cbq.id, `Не можна публікувати — бракує: ${missing.join(', ')}. Тапни ✏️ Редагувати`);
+      return new Response('ok');
+    }
+  }
+
   const patch = { updated_at: now };
   if (action === 'add') { patch.status = 'active'; patch.verified_at = now; }
   else if (action === 'skip') { patch.status = 'closed'; }

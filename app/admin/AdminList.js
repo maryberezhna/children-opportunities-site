@@ -1,5 +1,8 @@
 'use client';
 import { useState, useMemo } from 'react';
+// Той самий перелік, що й у конвеєрі: модератор бачить у черзі рівно те
+// формулювання, яким нормалізатор позначив запис.
+import { missingRequired } from '@/lib/required';
 
 const TYPE_LABELS = {
   course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
@@ -64,6 +67,10 @@ function Card({ o, mode, onAction, match }) {
       : action === 'verify' ? 'verified' : action === 'remove' ? 'removed' : 'commented');
   }
 
+  // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
+  // сайт (вимога Марії 11.09.2026). Неповний запис показуємо з переліком
+  // того, чого бракує, і з прямим лінком, де це дозаповнити.
+  const missing = missingRequired(o);
   const gone = done === 'approved' || done === 'skipped' || done === 'removed';
   const bg = done === 'approved' || done === 'verified' ? C.greenBg
     : done === 'skipped' || done === 'removed' ? C.greyBg : '#fff';
@@ -85,6 +92,15 @@ function Card({ o, mode, onAction, match }) {
           ? <span style={{ color: C.green, fontWeight: 600 }}>✓ перевірено</span> : null}
       </div>
 
+      {missing.length ? (
+        <div style={{ background: '#fdecec', border: '1px solid #f3bcbc', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
+          <div style={{ color: '#a11b1b', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+            ⛔ {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'} — бракує: {missing.join(', ')}
+          </div>
+          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
+        </div>
+      ) : null}
+
       {o.dup_of ? (
         <div style={{ background: C.warnBg, borderRadius: 10, padding: '9px 11px', marginBottom: 10, border: '1px solid #f3d3ad' }}>
           <div style={{ color: C.warnInk, fontSize: 13, fontWeight: 600, marginBottom: 7 }}>
@@ -101,7 +117,9 @@ function Card({ o, mode, onAction, match }) {
         </div>
       ) : null}
 
-      <h3 style={{ margin: '0 0 6px', fontSize: 16, lineHeight: 1.3 }}>{o.title}</h3>
+      <h3 style={{ margin: '0 0 6px', fontSize: 16, lineHeight: 1.3 }}>
+        <a href={`/admin/edit/${o.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{o.title}</a>
+      </h3>
       {o.summary ? <p style={{ margin: '0 0 9px', fontSize: 14, color: C.ink2, lineHeight: 1.5 }}>{o.summary}</p> : null}
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 13, color: C.ink2, marginBottom: 11, flexWrap: 'wrap' }}>
@@ -129,7 +147,7 @@ function Card({ o, mode, onAction, match }) {
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
             {mode === 'drafts' ? (
               <>
-                <Btn onClick={() => act('approve')} busy={busy} bg={C.green} fg="#fff">✅ Додати на сайт</Btn>
+                <Btn onClick={() => act('approve')} busy={busy || missing.length > 0} bg={C.green} fg="#fff">✅ Додати на сайт</Btn>
                 <Btn onClick={() => act('skip')} busy={busy} border>❌ Пропустити</Btn>
               </>
             ) : (
@@ -185,6 +203,14 @@ export default function AdminList({ drafts, actives, matches = {} }) {
 
   const flaggedCount = useMemo(() => actives.filter((o) => o.dup_of).length, [actives]);
 
+  // Окрема вкладка для того, що вже на сайті, але без обовʼязкового мінімуму.
+  // Ворота конвеєра тримають нові записи, а ці лишились з часу, коли правила
+  // ще не було, — і знайти їх інакше нічим (11.09.2026).
+  const incomplete = useMemo(
+    () => actives.filter((o) => missingRequired(o).length > 0),
+    [actives],
+  );
+
   const tabBtn = (id, label) => (
     <button onClick={() => setTab(id)}
       style={{
@@ -201,9 +227,24 @@ export default function AdminList({ drafts, actives, matches = {} }) {
       <div style={{ display: 'flex', gap: 9, marginBottom: 18 }}>
         {tabBtn('drafts', `🆕 Кандидати (${drafts.length})`)}
         {tabBtn('active', `✅ Активні (${actives.length})`)}
+        {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
       </div>
 
-      {tab === 'drafts' ? (
+      {tab === 'incomplete' ? (
+        incomplete.length === 0 ? (
+          <p style={{ color: C.ink2 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
+        ) : (
+          <>
+            <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
+              Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
+              не стають — ворота конвеєра їх не пускають.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+              {incomplete.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} />)}
+            </div>
+          </>
+        )
+      ) : tab === 'drafts' ? (
         drafts.length === 0 ? (
           <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
         ) : (
