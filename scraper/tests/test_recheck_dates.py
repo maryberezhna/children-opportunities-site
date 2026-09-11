@@ -17,7 +17,18 @@ TODAY = date.today()
 TODAY_ISO = TODAY.isoformat()
 SOON = (TODAY + timedelta(days=30)).isoformat()
 PAST = (TODAY - timedelta(days=30)).isoformat()
-QUOTE = "Прийом заявок триває до 15 жовтня 2026 року"
+
+
+def quote_for(iso):
+    """Цитата, в якій ця дата справді стоїть.
+
+    Правило «дата мусить бути в цитаті» перевіряє саме це, тож фікстура не
+    може обійтись довільним реченням — інакше тест перевіряв би не те."""
+    y, m, d = iso.split("-")
+    return f"Прийом заявок триває до {d}.{m}.{y} включно"
+
+
+QUOTE = quote_for(SOON)
 
 
 def row(**over):
@@ -31,6 +42,9 @@ def out(**over):
     base = {"page_kind": "one_opportunity", "enrollment": "unknown",
             "evidence": QUOTE, "confidence": 0.9}
     base.update(over)
+    # Цитата за замовчуванням підтверджує саме ту дату, яку віддали.
+    if "evidence" not in over and base.get("deadline"):
+        base["evidence"] = quote_for(base["deadline"])
     return base
 
 
@@ -72,6 +86,13 @@ class ClosingRules(unittest.TestCase):
         patch, _ = decide(row(), out(deadline=PAST, recurrence="annual"), TODAY_ISO)
         self.assertNotIn("status", patch)
 
+    def test_past_deadline_of_annual_is_not_written(self):
+        # Торішнє число на картці — саме те, що обурило Марію 11.09.2026.
+        # Пишемо періодичність, а не прострочену дату.
+        patch, _ = decide(row(), out(deadline=PAST, recurrence="annual"), TODAY_ISO)
+        self.assertNotIn("deadline", patch)
+        self.assertEqual(patch["recurrence"], "annual")
+
     def test_seasonal_type_gets_recheck_date(self):
         # Табір закривається чесно, але через ~11 місяців ttl_requeue
         # перечитає сторінку: нова зміна оживить запис.
@@ -105,6 +126,69 @@ class PageKind(unittest.TestCase):
         self.assertIn("немає", why)
 
 
+class DateMustBeInTheQuote(unittest.TestCase):
+    """Найтонше місце всієї роботи. У першому прогоні 11.09.2026 модель
+    віддала для FLEX дату 30.06.2027 із цитатою «Аплікаційну форму на
+    програму FLEX 2026-2027 відкрито!» — числа там немає й близько. Так само
+    зʼявились 19 вересня з «у вересні 2026-го» і 1 жовтня з цитати без жодної
+    цифри. Тепер і день, і місяць мусять стояти в самій цитаті."""
+
+    def test_year_alone_is_not_a_date(self):
+        patch, _ = decide(row(), out(
+            deadline="2027-06-30",
+            evidence="Аплікаційну форму на програму FLEX 2026-2027 відкрито!"), TODAY_ISO)
+        self.assertEqual(patch, {})
+
+    def test_month_alone_is_not_a_date(self):
+        patch, _ = decide(row(), out(
+            deadline="2026-09-19",
+            evidence="У вересні 2026-го він повертається туди, де починався"), TODAY_ISO)
+        self.assertEqual(patch, {})
+
+    def test_quote_without_digits_is_not_a_date(self):
+        patch, _ = decide(row(), out(
+            deadline="2026-10-01",
+            evidence="Запрошуємо творчих дітей до участі у конкурсі малюнка"), TODAY_ISO)
+        self.assertEqual(patch, {})
+
+    def test_month_name_counts(self):
+        patch, _ = decide(row(), out(
+            deadline="2026-11-05",
+            evidence="Application Deadline is November 5, 2026 at 8pm ET"), TODAY_ISO)
+        self.assertEqual(patch["deadline"], "2026-11-05")
+
+    def test_numeric_date_counts(self):
+        patch, _ = decide(row(), out(
+            deadline="2026-09-30",
+            evidence="Табір триває 23.06.2026-30.09.2026 за розкладом"), TODAY_ISO)
+        self.assertEqual(patch["deadline"], "2026-09-30")
+
+
+class ClosedNeedsAClosingWord(unittest.TestCase):
+    """Модель позначила закритою стипендіальну програму, яка щойно почалась,
+    і навела цитатою розклад занять (11.09.2026). Тепер підстава для
+    закриття мусить бути в самій цитаті."""
+
+    def test_schedule_is_not_a_closure(self):
+        patch, why = decide(row(), out(
+            enrollment="closed",
+            evidence="1 червня – 31 липня: Навчання та тестування учасників"), TODAY_ISO)
+        self.assertEqual(patch, {})
+        self.assertIn("не підтверджує", why)
+
+    def test_closing_word_is(self):
+        patch, _ = decide(row(), out(
+            enrollment="closed",
+            evidence="Прийом заявок на інкубацію наразі закрито"), TODAY_ISO)
+        self.assertEqual(patch["status"], "closed")
+
+    def test_english_closing_word_is(self):
+        patch, _ = decide(row(), out(
+            enrollment="closed",
+            evidence="The Award has now closed for entries"), TODAY_ISO)
+        self.assertEqual(patch["status"], "closed")
+
+
 class DateSanity(unittest.TestCase):
     def test_rejects_nonsense(self):
         for bad in (None, "", "квітень", "2026-13-45", 20261001):
@@ -118,7 +202,7 @@ class DateSanity(unittest.TestCase):
         self.assertEqual(_valid_date(f" {SOON} "), SOON)
 
     def test_recurrence_only_when_no_date(self):
-        # Конкретна дата сильніша за «щорічність»: вона закриє запис вчасно.
+        # Майбутня дата сильніша за «щорічність»: вона закриє запис вчасно.
         patch, _ = decide(row(), out(deadline=SOON, recurrence="annual"), TODAY_ISO)
         self.assertEqual(patch.get("deadline"), SOON)
         self.assertNotIn("recurrence", patch)

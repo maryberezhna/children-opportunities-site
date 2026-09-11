@@ -30,6 +30,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY,
 import argparse
 import logging
 import os
+import re
 import time
 from datetime import date, timedelta
 
@@ -189,6 +190,49 @@ def _valid_date(v) -> str | None:
 MIN_CONFIDENCE = 0.6
 MIN_EVIDENCE = 15
 
+# Слова, якими сторінка СЛОВАМИ каже, що все скінчилось. Без жодного з них
+# «enrollment=closed» не приймається: у першому прогоні 11.09.2026 модель
+# позначила закритою стипендіальну програму, яка щойно почалась, і цитатою
+# навела розклад занять. Тепер підстава мусить бути в самій цитаті.
+CLOSED_MARKERS = (
+    "заверш", "закрит", "закінч", "припинен", "відбул", "минул",
+    "closed", "finished", "ended", "expired", "no longer",
+)
+
+MONTHS_UK = {
+    1: ("січн",), 2: ("лют",), 3: ("берез",), 4: ("квітн",), 5: ("трав",),
+    6: ("червн",), 7: ("липн",), 8: ("серпн",), 9: ("вересн", "вересень"),
+    10: ("жовтн",), 11: ("листопад",), 12: ("грудн",),
+}
+MONTHS_EN = {
+    1: ("jan",), 2: ("feb",), 3: ("mar",), 4: ("apr",), 5: ("may",),
+    6: ("jun",), 7: ("jul",), 8: ("aug",), 9: ("sep",), 10: ("oct",),
+    11: ("nov",), 12: ("dec",),
+}
+
+
+def _date_supported_by(iso: str, evidence: str) -> bool:
+    """Чи стоїть ця дата в самій цитаті.
+
+    Найтонше місце всієї роботи. У першому прогоні модель повернула для FLEX
+    дату 2027-06-30 із цитатою «Аплікаційну форму на програму FLEX 2026-2027
+    відкрито!» — числа 30 червня там немає й близько. Так само зʼявились
+    19 вересня з «у вересні 2026-го» і 1 жовтня з цитати без жодної цифри.
+
+    Тому правило просте й механічне: і день, і місяць мусять бути в цитаті —
+    день як окреме число, місяць як число або як назва. Не збіглось — дати
+    для нас немає, запис іде людині.
+    """
+    if not iso or not evidence:
+        return False
+    y, m, d = (int(x) for x in iso.split("-"))
+    low = evidence.lower()
+    if not re.search(rf"(?<!\d){d:02d}(?!\d)|(?<!\d){d}(?!\d)", low):
+        return False
+    if re.search(rf"(?<!\d){m:02d}(?!\d)", low):
+        return True
+    return any(name in low for name in MONTHS_UK[m] + MONTHS_EN[m])
+
 # Сезонні типи закриваємо чесно, але через ~11 місяців дивимось ще раз:
 # ttl_requeue перечитає сторінку, і нова річна програма оживить запис. Та
 # сама домовленість, що в scripts/check-deadlines.mjs — не розходитись.
@@ -226,12 +270,21 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
     if len(evidence) < MIN_EVIDENCE or conf < MIN_CONFIDENCE:
         return {}, "сторінка про строки не говорить"
 
+    # Дата приймається, лише якщо вона стоїть у самій цитаті.
     deadline = _valid_date(out.get("deadline"))
+    if deadline and not _date_supported_by(deadline, evidence):
+        deadline = None
     end = _valid_date(out.get("event_end_date"))
+    if end and not _date_supported_by(end, evidence):
+        end = None
     recurrence = out.get("recurrence") if out.get("recurrence") in ("annual", "ongoing") else None
 
     # Набір закрито словами самої сторінки — знімаємо з сайту.
+    low = evidence.lower()
     if out.get("enrollment") == "closed":
+        if not any(mark in low for mark in CLOSED_MARKERS):
+            # Модель каже «закрито», а цитата цього не каже. Віримо цитаті.
+            return {}, "модель каже «закрито», але цитата цього не підтверджує"
         return ({"status": "closed", **_seasonal(row)},
                 f"набір закрито: «{evidence[:120]}»")
 
@@ -241,16 +294,21 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
                 f"дедлайн минув ({deadline}): «{evidence[:120]}»")
 
     patch = {}
-    if deadline:
+    # Дедлайн у минулому в щорічної програми — це торішній дедлайн. Писати
+    # його не можна: саме прострочена дата на картці й обурила Марію
+    # 11.09.2026. Пишемо періодичність — «щорічна, дата наступного набору
+    # невідома» чесніше за минулорічне число.
+    if deadline and not (deadline < today and recurrence == "annual"):
         patch["deadline"] = deadline
-    if end:
+    if end and end >= today:
         patch["event_end_date"] = end
-    if recurrence and not deadline:
+    if recurrence and not patch.get("deadline"):
         patch["recurrence"] = recurrence
     if not patch:
         return {}, "сторінка про строки не говорить"
 
-    label = deadline or end or {"annual": "щорічна", "ongoing": "постійна"}[recurrence]
+    label = (patch.get("deadline") or patch.get("event_end_date")
+             or {"annual": "щорічна", "ongoing": "постійна"}[patch["recurrence"]])
     return patch, f"{label}: «{evidence[:120]}»"
 
 
