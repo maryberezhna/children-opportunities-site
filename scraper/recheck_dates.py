@@ -72,6 +72,16 @@ TOOL = {
                                "триває постійно, без сезону. Порожньо, якщо "
                                "сторінка про це не говорить.",
             },
+            "page_kind": {
+                "type": "string",
+                "enum": ["one_opportunity", "listing_or_org", "not_found"],
+                "description": "one_opportunity — сторінка описує ОДНУ конкретну "
+                               "можливість зі своїми строками. listing_or_org — "
+                               "це головна сторінка організації або перелік "
+                               "багатьох програм: єдиної дати тут бути не може. "
+                               "not_found — сторінки немає, редирект на каталог, "
+                               "помилка.",
+            },
             "enrollment": {
                 "type": "string",
                 "enum": ["open", "closed", "unknown"],
@@ -90,7 +100,7 @@ TOOL = {
             },
             "confidence": {"type": "number", "description": "0.0–1.0"},
         },
-        "required": ["enrollment", "evidence", "confidence"],
+        "required": ["page_kind", "enrollment", "evidence", "confidence"],
         "additionalProperties": False,
     },
 }
@@ -113,8 +123,11 @@ enrollment="unknown" і не заповнюй дати. Порожня відп�
 - не став enrollment="closed" через те, що дата минула — для цього є окреме
   поле deadline. closed — це коли сторінка СЛОВАМИ каже, що все скінчилось.
 
-Сторінка може виявитись зовсім не тією: помилка 404, головна замість
-програми, редирект на каталог. Тоді enrollment="unknown" і порожній evidence."""
+Спершу визнач page_kind. Дуже часто адреса веде не на можливість, а на
+головну сторінку організації або на перелік програм — там єдиної дати бути
+не може в принципі. Це не привід щось вигадати, це окремий діагноз:
+page_kind="listing_or_org". Якщо сторінки немає або редирект вивів кудись
+інде — page_kind="not_found". У цих двох випадках дати не заповнюй."""
 
 
 def fetch_text(url: str) -> tuple[str | None, str]:
@@ -197,6 +210,16 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
     нічого не міняємо."""
     evidence = (out.get("evidence") or "").strip()
     conf = out.get("confidence", 0)
+    kind = out.get("page_kind")
+
+    # Адреса веде на головну організації або на перелік програм. Єдиної дати
+    # там немає й бути не може — і це діагноз не про дату, а про сам запис:
+    # у базу потрапила організація замість можливості. Вигадувати тут
+    # особливо нічого: віддаємо людині як є.
+    if kind == "listing_or_org":
+        return {}, "сторінка не про одну можливість — це головна або перелік"
+    if kind == "not_found":
+        return {}, "сторінки за адресою немає"
 
     # Без цитати висновку немає. Це не формальність: саме цитата відрізняє
     # прочитане від вигаданого.
@@ -252,8 +275,9 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
             .limit(limit).execute().data or [])
 
     print(f"Активних записів без жодної дати: {len(rows)}\n")
-    stats = {"closed": 0, "dated": 0, "recurring": 0, "unreachable": 0, "unclear": 0}
-    closed_list, dated_list, left_list = [], [], []
+    stats = {"closed": 0, "dated": 0, "recurring": 0, "unreachable": 0,
+             "unclear": 0, "not_an_opportunity": 0}
+    closed_list, dated_list, left_list, hub_list = [], [], [], []
 
     for row in rows:
         url = row.get("source_url")
@@ -271,8 +295,13 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
 
         patch, why = decide(row, ask(llm, row, page), today)
         if not patch:
-            stats["unclear"] += 1
-            left_list.append((row, why))
+            if why.startswith("сторінка не про одну можливість") or \
+                    why.startswith("сторінки за адресою немає"):
+                stats["not_an_opportunity"] += 1
+                hub_list.append((row, why))
+            else:
+                stats["unclear"] += 1
+                left_list.append((row, why))
             continue
 
         if patch.get("status") == "closed":
@@ -300,10 +329,12 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
     dump("🔴 ЗНЯТИ З САЙТУ (набір закрито або дедлайн минув)", closed_list)
     dump("⏰ ДАТУ ЗНАЙДЕНО", dated_list)
     dump("🟡 ЛИШАЄТЬСЯ БЕЗ ДАТИ", left_list)
+    dump("🔵 НЕ МОЖЛИВІСТЬ, А ОРГАНІЗАЦІЯ ЧИ ПЕРЕЛІК (нічого не міняємо)", hub_list)
 
     print(f"Разом: закрито {stats['closed']}, дат поставлено {stats['dated']}, "
           f"періодичність {stats['recurring']}, недоступних {stats['unreachable']}, "
-          f"без відповіді {stats['unclear']}")
+          f"без відповіді {stats['unclear']}, "
+          f"не можливість {stats['not_an_opportunity']}")
     if not apply:
         print("\nЦе дамп. Нічого не записано. Щоб застосувати: --apply")
     return stats

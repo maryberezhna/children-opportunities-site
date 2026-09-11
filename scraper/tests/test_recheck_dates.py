@@ -28,7 +28,8 @@ def row(**over):
 
 
 def out(**over):
-    base = {"enrollment": "unknown", "evidence": QUOTE, "confidence": 0.9}
+    base = {"page_kind": "one_opportunity", "enrollment": "unknown",
+            "evidence": QUOTE, "confidence": 0.9}
     base.update(over)
     return base
 
@@ -84,6 +85,24 @@ class ClosingRules(unittest.TestCase):
                           out(enrollment="closed", evidence="Набір завершено"),
                           TODAY_ISO)
         self.assertNotIn("recheck_at", patch)
+
+
+class PageKind(unittest.TestCase):
+    """Половина записів без дати веде не на можливість, а на головну
+    організації або на перелік програм (49 зі 127 станом на 11.09.2026).
+    Дати там немає й бути не може — і це діагноз про сам запис, а не про дату."""
+
+    def test_listing_writes_nothing(self):
+        patch, why = decide(row(), out(page_kind="listing_or_org",
+                                       deadline=SOON, enrollment="open"), TODAY_ISO)
+        self.assertEqual(patch, {})
+        self.assertIn("головна або перелік", why)
+
+    def test_missing_page_writes_nothing(self):
+        patch, why = decide(row(), out(page_kind="not_found",
+                                       enrollment="closed"), TODAY_ISO)
+        self.assertEqual(patch, {})
+        self.assertIn("немає", why)
 
 
 class DateSanity(unittest.TestCase):
