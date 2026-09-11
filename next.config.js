@@ -20,6 +20,15 @@ module.exports = {
         destination: '/',
         permanent: true,
       },
+      // Підбірка прожила під адресою /dity-veteraniv менше доби, але встигла
+      // потрапити в sitemap і у футер, тож віддаємо 301, а не 404. Адресу
+      // змінили слідом за копією: у текстах ми кажемо «захисники», не
+      // «ветерани».
+      {
+        source: '/dity-veteraniv',
+        destination: '/dity-zakhysnykiv',
+        permanent: true,
+      },
       // Календар свят видалено (1 перегляд за 60 днів, у sitemap не було).
       {
         source: '/sviata',
