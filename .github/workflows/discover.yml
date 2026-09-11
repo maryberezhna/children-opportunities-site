@@ -17,6 +17,10 @@ on:
         description: 'Скільки кандидатів шукати (деф. 5)'
         required: false
         default: ''
+      region:
+        description: 'Регіон замість регіону дня («Україна», «Польща», «Дніпро»)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -52,4 +56,10 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           DISCOVER_KEYWORD: ${{ github.event.inputs.keyword }}
           DISCOVER_MAX: ${{ github.event.inputs.max_candidates }}
+          # Регіон дня — окрема ротація від теми, і при прицільному запуску
+          # вона зводить нанівець сенс: тема «для дітей загиблих захисників»
+          # × регіон «Кривий Ріг» дала дві місцеві музичні школи замість
+          # загальнонаціональних програм. Агент читав DISCOVER_REGION і
+          # раніше, але у воркфлоу змінну не пробрасывали.
+          DISCOVER_REGION: ${{ github.event.inputs.region }}
         run: python discover_agent.py
