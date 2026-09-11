@@ -1,0 +1,58 @@
+name: Telegram — надіслати рілс в адмінку (manual)
+
+# Рендери відео живуть поза репозиторієм і важать десятки мегабайтів.
+# Щоб не тягнути їх у git-історію, файл заливається ассетом ЧЕРНЕТКОВОГО
+# релізу (він не видно публічно), воркфлоу забирає його за GITHUB_TOKEN
+# і віддає боту. Реліз після відправки можна видалити.
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Тег чернеткового релізу з відео'
+        required: true
+      asset:
+        description: 'Назва файлу-ассета'
+        required: false
+        default: 'reel-4-mozhlyvostei.mp4'
+      caption:
+        description: 'Підпис до відео (HTML)'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Тільки показати, що буде надіслано'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Download video from draft release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.event.inputs.release_tag }}
+          ASSET: ${{ github.event.inputs.asset }}
+        run: |
+          mkdir -p renders
+          gh release download "$TAG" --pattern "$ASSET" --dir renders
+          ls -la renders
+
+      - name: Send video to admin chat
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          VIDEO_PATH: renders/${{ github.event.inputs.asset }}
+          CAPTION: ${{ github.event.inputs.caption }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/post-reel-video.mjs
