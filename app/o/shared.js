@@ -30,7 +30,7 @@ const NEED_LABELS = {
   disability: 'інвалідність',
   autism: 'РАС',
   idp: 'ВПО',
-  veteran_family: 'діти ветеранів і загиблих',
+  veteran_family: 'діти захисників',
   de_occupied: 'з деокупованих',
   frontline: 'з прифронтових',
   oncology: 'онкохворі',
