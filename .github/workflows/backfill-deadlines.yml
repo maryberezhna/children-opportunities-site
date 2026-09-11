@@ -1,8 +1,14 @@
-name: Backfill deadlines (manual)
+name: Дозаповнення дат (щотижня)
 
 # Дата або періодичність для записів, де їх немає: LLM читає назву й опис,
 # ставить deadline / annual / ongoing, мертві чернетки закриває.
+# Було лише ручним і востаннє ганялось 16 серпня — за цей час 935 активних
+# записів лишились без дати, періоду й періодичності, тобто без жодного
+# способу закритись. Тепер щотижня, у понеділок уранці: черга дозаповнення
+# більше не накопичується мовчки (рішення Марії 11.09.2026).
 on:
+  schedule:
+    - cron: '15 3 * * 1'   # пн 03:15 UTC, до денних скрапів
   workflow_dispatch:
     inputs:
       dry_run:
@@ -40,5 +46,5 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          BATCH: ${{ github.event.inputs.batch || '120' }}
+          BATCH: ${{ github.event.inputs.batch || '250' }}
         run: python backfill_deadlines.py
