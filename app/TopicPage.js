@@ -21,10 +21,10 @@ const CHROME = {
     siteName: 'Можливості для дитини',
     locale: 'uk_UA',
     sentence: (updated, total, freeCount) =>
-      `Станом на ${updated} в каталозі Dityam — ${total} ${opportunitiesWord(total)} `
+      `Станом на ${updated} на платформі Dityam.com.ua — ${total} ${opportunitiesWord(total)} `
       + `в цій категорії, перевірених вручну`
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
-      + '. Каталог оновлюється щодня.',
+      + '. Платформа оновлюється щодня.',
     countLabel: (n) => opportunitiesWord(n),
     freeLabel: (n) => freeWord(n),
   },
@@ -34,13 +34,13 @@ const CHROME = {
     faqTitle: 'Frequently asked questions',
     home: 'Home',
     withDeadline: 'open for applications',
-    siteName: 'Dityam',
+    siteName: 'Dityam.com.ua',
     locale: 'en_US',
     sentence: (updated, total, freeCount) =>
-      `As of ${updated}, Dityam lists ${total} hand-checked `
+      `As of ${updated}, Dityam.com.ua lists ${total} hand-checked `
       + `${total === 1 ? 'opportunity' : 'opportunities'} in this category`
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
-      + '. The catalogue is updated daily.',
+      + '. The platform is updated daily.',
     countLabel: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
     freeLabel: () => 'free of charge',
   },
@@ -187,6 +187,25 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
               )}
             </div>
           </div>
+
+          {/* Фото праворуч від тексту. Розмітка та сама, що в хіро головної:
+              webp із jpg-запасним варіантом і заданими розмірами, щоб верстка
+              не стрибала, поки картинка вантажиться. Тема без поля photo
+              рендериться як раніше — правою колонкою лишається порожнеча. */}
+          {c.photo ? (
+            <div className="hero-photo">
+              <picture>
+                <source srcSet={`${c.photo.src}.webp`} type="image/webp" />
+                <img
+                  src={`${c.photo.src}.jpg`}
+                  alt={c.photo.alt}
+                  width="900"
+                  height="600"
+                  loading="eager"
+                />
+              </picture>
+            </div>
+          ) : null}
         </div>
 
         {/* Другий абзац — не прикраса: сторінка без тексту виглядає для Google
