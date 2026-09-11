@@ -31,6 +31,10 @@ jobs:
   post:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # contents: write, а не read — ассети ЧЕРНЕТКОВОГО релізу віддаються лише
+    # токену з правом запису. Читаємо ми, звісно, тільки один файл.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
