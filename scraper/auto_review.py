@@ -27,6 +27,9 @@ from datetime import date
 import anthropic
 
 from db import get_client
+# Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
+# чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
+from normalizer import missing_required
 
 logger = logging.getLogger(__name__)
 
@@ -80,16 +83,16 @@ def mechanical(row: dict) -> tuple[str, str] | None:
     if hit:
         return YELLOW, f"статусні діти: {', '.join(sorted(hit))}"
 
-    # ── Жовтий: неповні або сумнівні дані ───────────────────────────────
-    comment = (row.get("admin_comment") or "").lower()
-    if "невідомий тип" in comment:
-        return YELLOW, "LLM не визначив тип можливості"
-    if row.get("age_from") is None or row.get("age_to") is None:
-        return YELLOW, "не визначено вік"
+    # ── Жовтий: без обовʼязкового мінімуму ──────────────────────────────
+    # Дата, тип, вік, вартість і місце-або-формат (вимога Марії 11.09.2026).
+    # Без будь-чого з цього запис не публікується сам ніколи, хай би який
+    # гарний був опис: батько не зможе вирішити, чи це для його дитини, а
+    # платформа не зможе вчасно прибрати запис із сайту.
+    missing = missing_required(row)
+    if missing:
+        return YELLOW, "бракує: " + ", ".join(missing)
     if row["age_from"] < 0 or row["age_to"] > 18:
         return YELLOW, f"вік поза 0–18 ({row['age_from']}–{row['age_to']})"
-    if not row.get("cost_type"):
-        return YELLOW, "не визначено вартість"
     summary = row.get("summary") or ""
     if len(summary) < MIN_SUMMARY_LEN:
         return YELLOW, f"опис коротший за {MIN_SUMMARY_LEN} символів"

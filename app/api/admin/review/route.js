@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
+import { missingRequired } from '@/lib/required';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -34,6 +35,25 @@ export async function POST(request) {
     return Response.json({ ok: false, error: 'server' }, { status: 500 });
   }
   const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+  // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
+  // сайт (вимога Марії 11.09.2026) — і кнопка в черзі тут не виняток.
+  // Перевіряємо на сервері, а не лише в інтерфейсі: кнопка може бути
+  // застарілою, запис міг змінитись, а помилку платить родина.
+  if (spec.status === 'active') {
+    const { data: row } = await supabase
+      .from('opportunities')
+      .select('age_from, age_to, deadline, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .eq('id', id)
+      .maybeSingle();
+    const missing = row ? missingRequired(row) : [];
+    if (missing.length) {
+      return Response.json(
+        { ok: false, error: 'missing_required', missing },
+        { status: 422 },
+      );
+    }
+  }
 
   const patch = { updated_at: new Date().toISOString() };
   if (spec.status) patch.status = spec.status;

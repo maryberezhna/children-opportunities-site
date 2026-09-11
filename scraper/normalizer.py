@@ -41,6 +41,37 @@ VALID_OPP_TYPES = {
 }
 
 
+# Поля, без яких запис не публікується. Одне джерело правди: цей же перелік
+# читає `auto_review.py` (коридори модерації) і показує адмінка, щоб «чого
+# бракує» скрізь означало одне й те саме.
+REQUIRED_FIELDS = (
+    "вік", "дата, період або періодичність", "вартість", "тип",
+    "формат або місце (онлайн / офлайн / за кордоном)",
+)
+
+
+def missing_required(data: dict, age_missing: bool = None) -> list:
+    """Чого бракує запису, щоб його можна було показати людині."""
+    missing = []
+    if age_missing is None:
+        age_missing = data.get("age_from") is None or data.get("age_to") is None
+    if age_missing:
+        missing.append("вік")
+    if not data.get("deadline") and not data.get("event_end_date") \
+            and not data.get("recurrence"):
+        missing.append("дата, період або періодичність")
+    if data.get("cost_type") not in VALID_COST_TYPES:
+        missing.append("вартість")
+    if data.get("opportunity_type") not in VALID_OPP_TYPES:
+        missing.append("тип")
+    # «Де» вважається відомим, якщо є формат, місто, країна або позначка
+    # міжнародної: будь-що з цього відповідає батькові, куди йти дитині.
+    if not (data.get("format") or data.get("cities") or data.get("countries")
+            or data.get("is_international")):
+        missing.append("формат або місце (онлайн / офлайн / за кордоном)")
+    return missing
+
+
 def _sanitize(data: dict) -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
     the whole record."""
@@ -69,28 +100,8 @@ def _sanitize(data: dict) -> dict:
         except (TypeError, ValueError):
             val = default
         data[key] = max(0, min(18, val))
-    if age_missing:
-        data["status"] = "draft"
-        data["admin_comment"] = (
-            (data.get("admin_comment") or "")
-            + " auto: віку в тексті немає, 0–18 поставлено технічно — перевір,"
-              " чи це взагалі програма для дітей"
-        ).strip()
-
-    # Час життя запису. Без дедлайну, без дати завершення і без періодичності
-    # закрити запис нічим: саме так на сторінці для дітей захисників висіла
-    # програма, набір на яку завершився за місяць до того. Такий запис більше
-    # не публікується сам — іде людині (рішення Марії 11.09.2026).
     if data.get("recurrence") not in ("annual", "ongoing"):
         data["recurrence"] = None
-    if not data.get("deadline") and not data.get("event_end_date") \
-            and not data.get("recurrence"):
-        data["status"] = "draft"
-        data["admin_comment"] = (
-            (data.get("admin_comment") or "")
-            + " auto: немає ні дедлайну, ні дати завершення, ні періодичності —"
-              " закрити такий запис нічим, постав щось із трьох"
-        ).strip()
     if data["age_from"] > data["age_to"]:
         data["age_from"], data["age_to"] = data["age_to"], data["age_from"]
 
@@ -113,16 +124,29 @@ def _sanitize(data: dict) -> dict:
     # Прапорець міжнародності приходить від моделі й мусить бути булевим:
     # порожньо чи текст → False, інакше значення поламає NOT NULL у базі.
     data["is_international"] = bool(data.get("is_international"))
-    # opportunity_type is NOT NULL, тож значення поза словником мусить чимось
-    # стати — але НЕ мовчки: раніше невідомий тип тихо ставав «course» і
-    # місклассифікація була невидимою. Тепер такий запис іде чернеткою в чергу
-    # модерації з поміткою, а не в живий каталог.
+
+    # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
+    # Вимога Марії 11.09.2026: дата, тип, вік, вартість і місце-або-формат
+    # обовʼязкові однаково і для сайту, і для адмінки. Запис без будь-чого з
+    # цього марний: батько не може вирішити, чи це для його дитини, а
+    # платформа не може його вчасно закрити. Перевірка стоїть ПІСЛЯ всіх
+    # нормалізацій вище — інакше сміттєве значення (cost_type "unknown",
+    # країна "xx") зараховувалось би як заповнене поле, а потім мовчки
+    # ставало null уже після воріт.
+    missing = missing_required(data, age_missing=age_missing)
+    if missing:
+        data["status"] = "draft"
+        note = "auto: перед публікацією бракує — " + ", ".join(missing)
+        if age_missing:
+            note += "; вік 0–18 поставлено технічно, перевір, чи це для дітей"
+        data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+
+    # opportunity_type — NOT NULL, тож значення поза словником мусить чимось
+    # стати. Раніше воно тихо ставало «course» і місклассифікація була
+    # невидимою; тепер брак типу вже в переліку вище, а «course» лишається
+    # суто технічною заглушкою для бази.
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         data["opportunity_type"] = "course"
-        data["status"] = "draft"
-        data["admin_comment"] = (
-            "auto: LLM віддав невідомий тип можливості — перевір тип перед публікацією"
-        )
     return data
 
 
@@ -153,6 +177,14 @@ SYSTEM_PROMPT = """Ти аналізуєш тексти про можливос�
 confidence нижче 0.5, щоб запис пішов на перевірку людині. Вигаданий вік,
 вигаданий дедлайн чи вигадана пільгова категорія гірші за відсутній запис:
 родина витрачає сили на програму, куди її не візьмуть.
+
+ОБОВʼЯЗКОВИЙ МІНІМУМ. Щоб запис можна було показати батькам, потрібні пʼять
+речей: дата (дедлайн, дата завершення або періодичність), тип, вік, вартість
+і місце-або-формат (онлайн / офлайн / за кордоном). Шукай їх у тексті
+уважно — часто вони є, просто не поруч. Але якщо чогось справді немає,
+лишай порожнім: запис піде людині на дозаповнення. НЕ вигадуй нічого з
+цього, щоб «закрити» поле — саме так на сайт потрапила доросла програма з
+простроченим дедлайном.
 
 ТВОЇ ЗАВДАННЯ:
 1. Визначити чи це КОНКРЕТНА можливість для дитини 0-18 (НЕ агрегатор і НЕ платформа)
