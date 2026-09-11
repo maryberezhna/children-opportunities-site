@@ -317,6 +317,25 @@ def _with_trace(row: dict, note: str) -> str:
     return (f"{prev} · {note}" if prev else note)[:500]
 
 
+def _note_diagnosis(sb, row: dict, why: str, apply: bool) -> None:
+    """Записати діагноз у коментар, нічого більше не змінюючи.
+
+    Поки причина жила лише в лозі прогону, Марія бачила в адмінці просто
+    запис без дати — без жодної підказки, чому конвеєр її не знайшов.
+    Тепер поруч стоїть «сторінка не про одну можливість» або «сторінки за
+    адресою немає», і зрозуміло, що робити: правити адресу, а не шукати
+    дату, якої там немає.
+
+    Прогін щотижневий, тож той самий діагноз не дописується вдруге.
+    """
+    note = f"recheck-dates · {why}"
+    if not apply or note in (row.get("admin_comment") or ""):
+        return
+    sb.table("opportunities").update(
+        {"admin_comment": _with_trace(row, note)}
+    ).eq("id", row["id"]).execute()
+
+
 def run(apply: bool = False, limit: int = BATCH) -> dict:
     from db import get_client
     sb = get_client()
@@ -342,13 +361,16 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
         if not url:
             stats["unreachable"] += 1
             left_list.append((row, "немає посилання"))
+            _note_diagnosis(sb, row, "немає посилання", apply)
             continue
 
         page, status = fetch_text(url)
         time.sleep(DELAY)
         if not page:
+            why = f"сторінка недоступна ({status})"
             stats["unreachable"] += 1
-            left_list.append((row, f"сторінка недоступна ({status})"))
+            left_list.append((row, why))
+            _note_diagnosis(sb, row, why, apply)
             continue
 
         patch, why = decide(row, ask(llm, row, page), today)
@@ -360,6 +382,7 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
             else:
                 stats["unclear"] += 1
                 left_list.append((row, why))
+            _note_diagnosis(sb, row, why, apply)
             continue
 
         if patch.get("status") == "closed":
