@@ -21,6 +21,8 @@ Env:
   DISCOVER_REGION           — опц., перебити ротацію: назва міста або країни
                              («Дніпро», «Польща»). Потрібно, щоб закрити місто,
                              де в нас нуль, не чекаючи його дня в циклі.
+  DISCOVER_KEYWORD          — опц., перебити тему дня («діти ветеранів»).
+                             Ротація триває 161 день, а кампанія має дату.
   DRY_RUN=true              — лише вивести, нічого не писати
 """
 import os
@@ -63,7 +65,14 @@ KEYWORDS = sorted({kw for kws in KEYWORD_CATEGORIES.values() for kw in kws})
 
 def keyword_of_day() -> str:
     """Deterministic keyword-of-the-day — rotates through the whole list once
-    every len(KEYWORDS) days, no state needed."""
+    every len(KEYWORDS) days, no state needed.
+
+    DISCOVER_KEYWORD перебиває ротацію — так само, як DISCOVER_REGION перебиває
+    регіон. Потрібно, щоб закрити тему, яку не можна чекати: ротація триває
+    161 день, а кампанія має дату."""
+    override = (os.environ.get("DISCOVER_KEYWORD") or "").strip()
+    if override:
+        return override
     doy = date.today().timetuple().tm_yday
     return KEYWORDS[doy % len(KEYWORDS)]
 

@@ -9,6 +9,14 @@ on:
         description: 'Print candidates without saving drafts'
         required: false
         default: 'false'
+      keyword:
+        description: 'Тема замість теми дня (напр. «діти ветеранів»)'
+        required: false
+        default: ''
+      max_candidates:
+        description: 'Скільки кандидатів шукати (деф. 5)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -42,4 +50,6 @@ jobs:
           # Optional: override the model if web search isn't supported on the default.
           DISCOVER_MODEL: ${{ vars.DISCOVER_MODEL }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          DISCOVER_KEYWORD: ${{ github.event.inputs.keyword }}
+          DISCOVER_MAX: ${{ github.event.inputs.max_candidates }}
         run: python discover_agent.py
