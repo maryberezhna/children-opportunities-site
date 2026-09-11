@@ -11,10 +11,14 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+// format/cities/countries/is_international і event_end_date тягнемо не для
+// показу, а щоб порахувати обовʼязковий мінімум прямо в черзі: без них
+// картка не знала б, що запису бракує «де» або дати (11.09.2026).
+const REQUIRED_EXTRA = 'event_end_date, format, cities, countries, is_international';
 const DRAFT_FIELDS =
-  'id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at';
+  `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at, ${REQUIRED_EXTRA}`;
 const ACTIVE_FIELDS =
-  'id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, verified_at, admin_comment, dup_of, dup_score, created_at';
+  `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, verified_at, admin_comment, dup_of, dup_score, created_at, ${REQUIRED_EXTRA}`;
 
 export default async function AdminPage() {
   const token = process.env.ADMIN_TOKEN;

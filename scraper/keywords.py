@@ -182,6 +182,21 @@ DIASPORA_REGIONS: list[dict[str, str]] = [
         "hint": "шукай англійською: «for Ukrainian children Ireland», «free», "
                 "«summer camp», «scholarship», «youth club»",
     },
+    # Сусіди України додані 11.09.2026 на вимогу Марії. Польща, Румунія й
+    # Словаччина вже були; бракувало Угорщини й Молдови. Росії та Білорусі в
+    # ротації немає й не буде.
+    {
+        "name": "Угорщина",
+        "audience": "для українських дітей 0–18, які живуть в Угорщині",
+        "hint": "шукай угорською: «ukrán gyerekeknek», «ingyenes», «tábor», "
+                "«ösztöndíj», «foglalkozás gyerekeknek»",
+    },
+    {
+        "name": "Молдова",
+        "audience": "для українських дітей 0–18, які живуть у Молдові",
+        "hint": "шукай румунською й українською: «pentru copiii ucraineni», "
+                "«gratuit», «tabără de vară», «bursă», «pentru refugiați»",
+    },
 ]
 
 # Обласні центри й великі міста. Ротація спускається до конкретного міста, а

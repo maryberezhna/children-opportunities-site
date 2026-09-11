@@ -605,7 +605,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           </div>
         </article>
 
-        <div lang={detailsLang}>
+        <div lang={detailsLang} className={isClosed ? 'closed-dim' : undefined}>
           <Details text={detailsText} />
         </div>
 
