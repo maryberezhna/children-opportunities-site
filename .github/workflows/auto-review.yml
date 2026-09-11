@@ -1,15 +1,19 @@
 name: Auto-review черги модерації
 
-# За замовчуванням — ДАМП, не запис. Щоб було видно, що коридори роблять,
-# ще до того як їм дозволили писати в базу. Запис вмикається вручну через
-# workflow_dispatch з apply=true, коли до рішень судді набереться довіра.
+# Коридори ПИШУТЬ у базу — рішення Марії 11.09.2026. Три тижні воркфлоу
+# ходив у режимі дампу, і цього виявилось достатньо: механіка з суддею
+# сходяться, а черга росла тільки тому, що апрувити її не було кому.
+# Що саме вмикається: зелений публікує сам, червоний закриває дублі,
+# мертві лінки й протерміноване. Жовтий як був — чекає на людину, і туди
+# назавжди йдуть чутливі категорії та статусні групи дітей.
+# dry_run=true повертає старий режим дампу для одноразової перевірки.
 on:
   schedule:
     - cron: '30 6 * * *'   # після нічного скрапу (він о 06:00 UTC)
   workflow_dispatch:
     inputs:
-      apply:
-        description: 'Реально писати в базу (інакше лише дамп)'
+      dry_run:
+        description: 'Лише показати, нічого не писати'
         type: boolean
         default: false
 
@@ -33,4 +37,4 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: python auto_review.py ${{ inputs.apply && '--apply' || '' }}
+        run: python auto_review.py ${{ inputs.dry_run && '' || '--apply' }}
