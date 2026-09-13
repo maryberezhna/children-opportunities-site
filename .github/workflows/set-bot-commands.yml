@@ -1,0 +1,29 @@
+name: Bot commands menu (manual)
+
+# Реєструє список команд бота — меню «/» у чаті з ботом. Публічні команди
+# бачать усі, адмінські — лише чат TELEGRAM_ADMIN_CHAT_ID.
+# Запускати після зміни переліку в scripts/set-bot-commands.mjs.
+# Токен живе лише в секретах репозиторію, тож локально скрипт не запустити.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'set = записати, info = показати поточні'
+        required: false
+        default: 'set'
+
+jobs:
+  commands:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Set bot commands
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          ACTION: ${{ inputs.action }}
+        run: node scripts/set-bot-commands.mjs

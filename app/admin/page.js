@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import AdminList from './AdminList';
+import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
 
 export const runtime = 'nodejs';
@@ -69,11 +70,8 @@ export default async function AdminPage() {
 
   return (
     <main style={{ maxWidth: 820, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
-        <a href="/admin/messages" style={{ fontSize: 14, color: '#54617a', marginRight: 14 }}>✉️ Звернення →</a>
-        <a href="/admin/metrics" style={{ fontSize: 14, color: '#54617a' }}>📈 Метрики →</a>
-      </div>
+      <AdminNav current="queue" />
+      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
       <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
         Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
       </p>

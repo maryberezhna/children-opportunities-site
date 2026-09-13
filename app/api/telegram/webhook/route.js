@@ -114,10 +114,157 @@ async function sendNextCandidate(chatId) {
     // updated_at ASC so postponed candidates (touched now) drop to the back.
     .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {
-    await sendMessage(chatId, '✅ Черга порожня — усі кандидати опрацьовані.');
+    // Порожня черга — не глухий кут: одразу даємо, куди піти далі.
+    await sendMessage(chatId, '✅ Черга порожня — усі кандидати опрацьовані.', {
+      inline_keyboard: [[
+        { text: '📈 Метрики', callback_data: 'adm:stats' },
+        { text: '✉️ Звернення', callback_data: 'adm:msgs' },
+      ]],
+    });
     return;
   }
   await sendCandidate(chatId, data[0], Math.max(0, (count || 1) - 1));
+}
+
+// ── Адмін-меню бота ────────────────────────────────────────────────────────
+// Бот — найшвидший (з телефона часто єдиний) спосіб дістати цифри й чергу,
+// тому він показує те саме, що адмінка, і кожна відповідь веде кнопкою на
+// відповідну сторінку /admin. Одна робота — два входи, а не два різні світи.
+const ADMIN_MENU = {
+  inline_keyboard: [
+    [{ text: '🗂 Черга модерації', callback_data: 'adm:queue' }],
+    [
+      { text: '📈 Метрики', callback_data: 'adm:stats' },
+      { text: '✉️ Звернення', callback_data: 'adm:msgs' },
+    ],
+    [{ text: '🌐 Відкрити адмінку', url: `${SITE_URL}/admin` }],
+  ],
+};
+
+const PRICE_MONTH = 179;
+const PRICE_YEAR = 1490;
+
+function daysAgoIso(days) {
+  return new Date(Date.now() - days * 86400000).toISOString();
+}
+
+// Ті самі числа, що на /admin/metrics — рахуємо їх тут, а не смикаємо
+// сторінку: адмінка за кукою, а бот за chat_id, спільного входу немає.
+async function adminStats(supabase) {
+  const head = (table, filter = (q) => q) =>
+    filter(supabase.from(table).select('id', { count: 'exact', head: true }));
+  const [drafts, active, added7, closed7, msgs, sugs, waitlist, subsRes, snapsRes] =
+    await Promise.all([
+      head('opportunities', (q) => q.eq('status', 'draft')),
+      head('opportunities', (q) => q.eq('status', 'active')),
+      head('opportunities', (q) => q.gte('created_at', daysAgoIso(7))),
+      head('opportunities', (q) => q.eq('status', 'closed').gte('updated_at', daysAgoIso(7))),
+      head('contact_messages', (q) => q.eq('status', 'new')),
+      head('opportunity_suggestions', (q) => q.neq('status', 'done')),
+      head('plus_waitlist'),
+      supabase.from('digest_subscribers').select('billing_period').eq('status', 'active'),
+      supabase.from('metrics_daily').select('day, telegram_members')
+        .order('day', { ascending: false }).limit(14),
+    ]);
+
+  const subs = subsRes.data || [];
+  const yearly = subs.filter((x) => x.billing_period === 'yearly').length;
+  const mrr = Math.round((subs.length - yearly) * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+  const snaps = snapsRes.data || [];
+  const weekAgo = snaps.find((x) => x.day <= daysAgoIso(7).slice(0, 10));
+  const tg = snaps[0]?.telegram_members ?? null;
+  const tgDelta = tg != null && weekAgo?.telegram_members != null
+    ? tg - weekAgo.telegram_members : null;
+
+  return {
+    drafts: drafts.count ?? 0,
+    active: active.count ?? 0,
+    added7: added7.count ?? 0,
+    closed7: closed7.count ?? 0,
+    messages: (msgs.count ?? 0) + (sugs.count ?? 0),
+    waitlist: waitlist.count ?? 0,
+    plus: subs.length,
+    mrr,
+    tg,
+    tgDelta,
+  };
+}
+
+async function sendAdminMenu(chatId) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return;
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  let line = '';
+  try {
+    const s = await adminStats(supabase);
+    line = `\n🗂 у черзі: <b>${s.drafts}</b> · ✉️ нових звернень: <b>${s.messages}</b>\n`;
+  } catch {}
+  await sendMessage(chatId,
+    `🛠 <b>Адмінка Dityam.com.ua</b>${line}\n` +
+    'Команди: /черга · /метрики · /звернення · /меню',
+    ADMIN_MENU);
+}
+
+async function sendAdminStats(chatId) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return;
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  let s;
+  try {
+    s = await adminStats(supabase);
+  } catch {
+    await sendMessage(chatId, 'Не вдалося порахувати — спробуйте ще раз за хвилину.');
+    return;
+  }
+  const tgLine = s.tg == null
+    ? '📣 Telegram-канал: знімків ще немає'
+    : `📣 Telegram-канал: <b>${s.tg}</b>${s.tgDelta ? ` (${s.tgDelta > 0 ? '+' : ''}${s.tgDelta} за 7 днів)` : ''}`;
+  await sendMessage(chatId, [
+    '📊 <b>Стан Dityam.com.ua</b>',
+    '',
+    `✅ На сайті: <b>${s.active}</b> можливостей`,
+    `➕ За 7 днів: додано <b>${s.added7}</b>, закрито ${s.closed7}`,
+    `🗂 Черга модерації: <b>${s.drafts}</b>`,
+    `✉️ Нових звернень: <b>${s.messages}</b>`,
+    tgLine,
+    `🚀 Dityam+: ${s.waitlist} у списку очікування · ${s.plus} платних (MRR ${s.mrr} грн)`,
+  ].join('\n'), {
+    inline_keyboard: [[
+      { text: '📈 Метрики повністю', url: `${SITE_URL}/admin/metrics` },
+      { text: '🗂 Черга', callback_data: 'adm:queue' },
+    ]],
+  });
+}
+
+async function sendAdminMessages(chatId) {
+  if (!SUPABASE_URL || !SERVICE_ROLE) return;
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const [msgRes, sugRes] = await Promise.all([
+    supabase.from('contact_messages').select('name, contact, message, page, created_at')
+      .eq('status', 'new').order('created_at', { ascending: false }).limit(5),
+    supabase.from('opportunity_suggestions').select('title, url, contact, created_at')
+      .neq('status', 'done').order('created_at', { ascending: false }).limit(5),
+  ]);
+  const rows = [
+    ...(msgRes.data || []).map((m) => ({
+      when: m.created_at,
+      text: `✉️ <b>${escapeHtml(m.name || m.contact || 'без імені')}</b>` +
+            `${m.page ? ` · ${escapeHtml(m.page)}` : ''}\n${escapeHtml(String(m.message || '').slice(0, 200))}`,
+    })),
+    ...(sugRes.data || []).map((x) => ({
+      when: x.created_at,
+      text: `💡 <b>Пропозиція можливості</b>\n${escapeHtml(x.title || x.url || '')}` +
+            `${x.contact ? `\n${escapeHtml(x.contact)}` : ''}`,
+    })),
+  ].sort((a, b) => new Date(b.when) - new Date(a.when)).slice(0, 5);
+
+  if (!rows.length) {
+    await sendMessage(chatId, '✅ Нових звернень немає.', {
+      inline_keyboard: [[{ text: '✉️ Усі звернення', url: `${SITE_URL}/admin/messages` }]],
+    });
+    return;
+  }
+  await sendMessage(chatId,
+    `✉️ <b>Нові звернення</b>\n\n${rows.map((r) => r.text).join('\n\n')}`,
+    { inline_keyboard: [[{ text: '✉️ Відповісти в адмінці', url: `${SITE_URL}/admin/messages` }]] });
 }
 
 // Тап по кнопці «Хочу першим» у пості каналу: t.me/DityamComUABot?start=plus.
@@ -289,10 +436,33 @@ export async function POST(request) {
     // Dityam+ digest: /start <token> прив'язує канал, /stop відписує.
     const startArg = text.match(/^\/start\s+(\S+)/i);
     if (startArg && startArg[1].toLowerCase() === 'plus') return handlePlusWaitlist(msg);
+    // ?start=queue — кнопка «Модерувати в боті» з адмінки: відкриває бота
+    // одразу на наступному кандидаті. Для не-адміна це не спецпосилання,
+    // тож воно падає далі, у звичайну привʼязку підписки.
+    if (startArg && startArg[1].toLowerCase() === 'queue' && isAdmin(msg.from?.id, msg.chat.id)) {
+      await sendNextCandidate(msg.chat.id);
+      return new Response('ok');
+    }
     if (startArg) return handleDigestConnect(startArg[1], msg);          // /start <token> — привʼязка з вебформи
     if (/^\/stop\b/i.test(text)) return handleDigestStop(msg);
+    // Адмінські команди. Порядок важливий: «/стан» і «/старт» різняться
+    // лише однією літерою, тож черга ловиться точним переліком слів.
+    if (isAdmin(msg.from?.id, msg.chat.id)) {
+      if (/^\/(menu|меню|help|довідка|адмін)/i.test(text)) {
+        await sendAdminMenu(msg.chat.id);
+        return new Response('ok');
+      }
+      if (/^\/(stats|metrics|метрик|стан|цифри)/i.test(text)) {
+        await sendAdminStats(msg.chat.id);
+        return new Response('ok');
+      }
+      if (/^\/(messages|звернення|пошта)/i.test(text)) {
+        await sendAdminMessages(msg.chat.id);
+        return new Response('ok');
+      }
+    }
     // Адмінська черга модерації.
-    if (/^\/(start|next|moderate|черга|модерац|далі)/i.test(text)) {
+    if (/^\/(start|next|queue|moderate|черга|модерац|далі)/i.test(text)) {
       if (isAdmin(msg.from?.id, msg.chat.id)) {
         await sendNextCandidate(msg.chat.id);
       }
@@ -335,6 +505,23 @@ export async function POST(request) {
       // Surface the id so the admin can set TELEGRAM_ADMIN_CHAT_ID correctly.
       await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
     }
+    return new Response('ok');
+  }
+
+  // Кнопки адмін-меню: та сама інформація, що на сторінках /admin.
+  const adm = (cbq.data || '').match(/^adm:(menu|queue|stats|msgs)$/);
+  if (adm) {
+    const fromId = String(cbq.from?.id || '');
+    const chatId = String(cbq.message?.chat?.id || '');
+    if (!isAdmin(fromId, chatId)) {
+      await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
+      return new Response('ok');
+    }
+    await answerCallback(cbq.id, 'Готую…');
+    if (adm[1] === 'queue') await sendNextCandidate(chatId);
+    else if (adm[1] === 'stats') await sendAdminStats(chatId);
+    else if (adm[1] === 'msgs') await sendAdminMessages(chatId);
+    else await sendAdminMenu(chatId);
     return new Response('ok');
   }
 
