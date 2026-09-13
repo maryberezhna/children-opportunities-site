@@ -31,6 +31,13 @@ import * as egapStem from './sources/egap-stem.mjs';
 //     кастинги акторів — слабкий фіт для каталогу можливостей.
 //   regional-camps — домен child.com.ua не відповідає взагалі (мертвий),
 //     і скрапив він платні табори.
+//
+// Видалено 04.09.2026:
+//   fest-portal — сайт переїхав на Wix-SPA (www.fest-portal.com), стара
+//     сторінка /meropriyatiya/ віддає 404, статичного HTML зі списком подій
+//     немає (6 збоїв поспіль з 29.08). За весь час джерело дало 3 записи,
+//     всі вже closed; платні вокально-хореографічні фестивалі — слабкий фіт
+//     за пріоритетами контенту. У таблиці sources вимкнено (enabled=false).
 
 // Only mjs-unique sources — the four overlapping with the Python scraper
 // (МАН, МОН, Дія.Освіта, easy.gov) were removed to stop cross-pipeline dupes.
