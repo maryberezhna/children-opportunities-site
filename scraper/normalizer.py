@@ -31,6 +31,10 @@ class NormalizeError(Exception):
 VALID_COST_TYPES = {
     "free", "partially_free", "paid_affordable", "paid_premium", "subsidized",
 }
+# Що можна ПОКАЗАТИ людині. База ще приймає проміжні значення, але на сайті
+# вартість — лише «безкоштовно» або «платно» (рішення Марії 13.09.2026):
+# partially_free / subsidized не відповідали на питання, чи платити родині.
+PUBLISHABLE_COST_TYPES = {"free", "paid_affordable", "paid_premium"}
 VALID_OPP_TYPES = {
     "course", "workshop", "summer_school", "mentorship", "club", "camp",
     "study_program", "olympiad", "competition", "hackathon", "sport_tournament",
@@ -60,7 +64,7 @@ def missing_required(data: dict, age_missing: bool = None) -> list:
     if not data.get("deadline") and not data.get("event_end_date") \
             and not data.get("recurrence"):
         missing.append("дата, період або періодичність")
-    if data.get("cost_type") not in VALID_COST_TYPES:
+    if data.get("cost_type") not in PUBLISHABLE_COST_TYPES:
         missing.append("вартість")
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         missing.append("тип")
@@ -190,7 +194,7 @@ confidence нижче 0.5, щоб запис пішов на перевірку 
 1. Визначити чи це КОНКРЕТНА можливість для дитини 0-18 (НЕ агрегатор і НЕ платформа)
 2. Витягнути ТОЧНИЙ вік (age_from, age_to) з тексту
 3. Класифікувати opportunity_type
-4. Визначити cost_type
+4. Визначити cost_type — ЛИШЕ free або paid_affordable (правило нижче)
 5. Витягнути child_needs якщо є (ВПО, сироти, інвалідність тощо)
 6. Визначити countries — країни, де дитина ФІЗИЧНО перебуватиме під час
    участі, кодами ISO alpha-2: Україна → ua, Польща → pl, Німеччина → de.
@@ -279,8 +283,15 @@ course, olympiad, competition, club, exchange, camp, scholarship,
 allowance, grant, festival, medical_aid, psychology, rehabilitation,
 humanitarian, internship, volunteer
 
-Типи cost_type:
-free, partially_free, paid_affordable, paid_premium, subsidized
+cost_type — ЛИШЕ ДВА ЗНАЧЕННЯ:
+- free — дитина бере участь, і родина НІЧОГО не платить. Сюди ж місце,
+  повністю покрите державою, грантом, фондом чи організатором.
+- paid_affordable — без оплати з боку родини участь неможлива: вартість,
+  оргвнесок, абонемент, членський внесок, доплата за путівку. Часткова
+  оплата чи пільга лише для окремих категорій — теж paid_affordable, якщо
+  звичайна дитина платить.
+- Якщо текст про гроші не каже — null. НЕ здогадуйся з типу: гурток у
+  будинку творчості буває і платним, і безкоштовним.
 
 child_needs — познач УСІ групи, яким адресована або яких прямо стосується
 програма (не лише коли це єдина цільова група):

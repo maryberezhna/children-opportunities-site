@@ -152,9 +152,11 @@ const GIVES_OPTS = [
   ['сертифікат', 'Сертифікат', 'Certificate'],
 ];
 
+// Вартість на сайті — лише два варіанти: платить родина хоч щось чи ні
+// (рішення Марії 13.09.2026). Проміжні «з фінансуванням» / «субсидовано»
+// нічого не відповідали батькові на питання «скільки це мені коштує».
 const COST_OPTS = [
   ['free', 'Безкоштовно', 'Free'],
-  ['partial', 'З фінансуванням', 'Funded'],
   // «Платно» видиме нарівні з безкоштовним: інакше платне не можна ні
   // знайти, ні відсіяти (урок #152).
   ['paid', 'Платно', 'Paid'],
@@ -350,7 +352,6 @@ export default function OpportunitiesList({
     cost: (item) => {
       if (cost === 'all') return true;
       if (cost === 'free') return item.cost_type === 'free';
-      if (cost === 'partial') return item.cost_type === 'partially_free';
       return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
     },
     place: (item) => {
@@ -409,7 +410,6 @@ export default function OpportunitiesList({
     const costs = new Set();
     candidates('cost').forEach((item) => {
       if (item.cost_type === 'free') costs.add('free');
-      if (item.cost_type === 'partially_free') costs.add('partial');
       if (item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium') costs.add('paid');
     });
     const deadlines = new Set();

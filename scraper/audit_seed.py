@@ -63,7 +63,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from db import get_client
-from normalizer import VALID_COST_TYPES, VALID_OPP_TYPES
+from normalizer import VALID_COST_TYPES, PUBLISHABLE_COST_TYPES, VALID_OPP_TYPES
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("audit_seed")
@@ -263,7 +263,7 @@ def build_patch(row: dict, ans: dict) -> tuple[dict, str]:
         if ot in VALID_OPP_TYPES and ot != row.get("opportunity_type"):
             patch["opportunity_type"] = ot
         ct = (ans.get("cost_type") or "").strip()
-        if ct in VALID_COST_TYPES and ct != row.get("cost_type"):
+        if ct in PUBLISHABLE_COST_TYPES and ct != row.get("cost_type"):
             patch["cost_type"] = ct
         if not patch:
             return {}, "fix без змін — лишаємо як є"
