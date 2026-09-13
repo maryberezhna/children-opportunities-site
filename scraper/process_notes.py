@@ -49,7 +49,7 @@ APPLY_TOOL = {
             "age_from": {"type": "integer"},
             "age_to": {"type": "integer"},
             "cost_type": {"type": "string",
-                          "enum": ["free", "partially_free", "paid_affordable", "paid_premium"]},
+                          "enum": ["free", "paid_affordable"]},
             "price_note": {"type": "string"},
             "format": {"type": "string"},
             "cities": {"type": "array", "items": {"type": "string"}},

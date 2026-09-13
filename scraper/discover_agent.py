@@ -122,7 +122,7 @@ def _prompt(kw: str, region: dict) -> str:
         '"deadline":"YYYY-MM-DD або null","recurrence":"annual|ongoing|null",'
         '"age_from":7,"age_to":17,'
         '"opportunity_type":"course|olympiad|competition|club|camp|scholarship|grant|festival|exchange|workshop",'
-        '"cost_type":"free|partially_free|paid_affordable",'
+        '"cost_type":"free|paid_affordable",'
         '"format":"online|offline|hybrid|null","cities":["Рим"],'
         '"countries":["it"],"is_international":true}]\n'
         "\n"
@@ -130,6 +130,9 @@ def _prompt(kw: str, region: dict) -> str:
         "дата-або-періодичність і місце-або-формат. Сторінку читаєш ти —\n"
         "тож і витягай їх ти, а не лишай модератору те, що в оголошенні\n"
         "написано прямим текстом:\n"
+        "- cost_type — free, якщо родина нічого не платить (зокрема місце\n"
+        "  покрите державою чи грантом); paid_affordable — якщо без оплати\n"
+        "  участь неможлива, навіть часткової. Інших значень немає.\n"
         "- deadline — останній день ПОДАЧІ заявки. Якщо в тексті лише дати\n"
         "  проведення діапазоном — бери ПЕРШУ дату, ніколи не останню.\n"
         "- recurrence — коли конкретної дати подачі немає: annual, якщо в\n"

@@ -48,14 +48,12 @@ const COST_LABELS = {
   // рядок «Вартість» із price_note.
   uk: {
     free: 'Безкоштовно',
-    partially_free: 'З фінансуванням',
     paid_affordable: 'Платно',
     paid_premium: 'Платно',
     closed: 'Закрита подача',
   },
   en: {
     free: 'Free',
-    partially_free: 'Funded',
     paid_affordable: 'Paid',
     paid_premium: 'Paid',
     closed: 'Applications closed',
@@ -74,7 +72,6 @@ const L = {
     closedLink: 'Подивитись актуальні можливості →',
     stateAid: 'держдопомога',
     free: 'безкоштовно',
-    funded: 'з фінансуванням',
     paid: 'платно',
     topWeek: '⭐ Топ тижня',
     format: 'Формат',
@@ -101,7 +98,6 @@ const L = {
     closedLink: 'See current opportunities →',
     stateAid: 'state aid',
     free: 'free',
-    funded: 'funded',
     paid: 'paid',
     topWeek: '⭐ Pick of the week',
     format: 'Format',
@@ -236,13 +232,11 @@ const DESC_MAX = 158;
 const COST_DESC = {
   uk: {
     free: 'безкоштовно',
-    partially_free: 'з фінансуванням',
     paid_affordable: 'платно',
     paid_premium: 'платно',
   },
   en: {
     free: 'free',
-    partially_free: 'funded',
     paid_affordable: 'paid',
     paid_premium: 'paid',
   },
@@ -533,7 +527,6 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
             <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
             {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
-            {item.cost_type === 'partially_free' ? <span className="chip chip-paid">{t.funded}</span> : null}
             {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
               ? <span className="chip chip-paid">{t.paid}</span> : null}
             {needs.map((n) => (
@@ -635,7 +628,6 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                         <span className="chip chip-type">{TYPES[r.opportunity_type] || r.opportunity_type}</span>
                         <span className="chip chip-age">{ageRangeLabel(r, lang)}</span>
                         {r.cost_type === 'free' && <span className="chip chip-free">{t.free}</span>}
-                        {r.cost_type === 'partially_free' && <span className="chip chip-paid">{t.funded}</span>}
                         {(r.cost_type === 'paid_affordable' || r.cost_type === 'paid_premium')
                           && <span className="chip chip-paid">{t.paid}</span>}
                         {days !== null && days >= 0 && days <= 7 && (
