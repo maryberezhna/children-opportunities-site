@@ -211,7 +211,6 @@
 .pk-download-preview.is-icon img { width: 56px; height: 56px; display: block; }
 
 .pk-lockup { display: inline-flex; align-items: center; gap: 8px; }
-.pk-lockup .v2-logo-heart { font-size: 20px; }
 .pk-lockup .v2-logo-script { font-size: 26px; }
 
 .pk-download strong { font-size: 15px; font-weight: 600; color: var(--v2-ink); }

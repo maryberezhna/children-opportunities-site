@@ -101,7 +101,6 @@ export default function Header() {
     <header className="v2-header">
       <div className="v2-header-inner">
         <Link href={isEnglish ? '/en' : '/'} className="v2-logo" onClick={track('logo')}>
-          <span className="v2-logo-heart" aria-hidden="true">🧡</span>
           <span className="v2-logo-script">dityam.com.ua</span>
         </Link>
 
