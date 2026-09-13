@@ -25,6 +25,9 @@ import { trackConversion } from '@/lib/track';
 // фото робить сторінку живою, а «1119 можливостей» великим кеглем — це
 // головний аргумент лишитися.
 
+// «Перевірені програми, зібрані вручну» прибрано 13.09.2026 на прохання Марії.
+// Це було неправдою: записи збирають скрапери й агент-розвідник, а не люди.
+// Не повертати.
 const COPY = {
   uk: {
     parents: {
@@ -32,8 +35,7 @@ const COPY = {
       script: 'для вашої дитини',
       tail: ' в одному місці',
       sub: 'Курси, олімпіади, стипендії, табори, медична допомога та виплати '
-        + 'для дітей 0–18 років в Україні та за кордоном. Перевірені програми, '
-        + 'зібрані вручну.',
+        + 'для дітей 0–18 років в Україні та за кордоном.',
       age: '0–18',
       photoAlt: 'Усміхнені діти на дитячому майданчику',
     },
@@ -60,8 +62,7 @@ const COPY = {
       script: 'for your child',
       tail: ' in one place',
       sub: 'Courses, olympiads, scholarships, camps, medical aid and payments '
-        + 'for children aged 0–18 in Ukraine and abroad. Verified programs, '
-        + 'curated by hand.',
+        + 'for children aged 0–18 in Ukraine and abroad.',
       age: '0–18',
       photoAlt: 'Smiling children on a playground',
     },
