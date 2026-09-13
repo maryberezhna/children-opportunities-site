@@ -131,24 +131,64 @@ page_kind="listing_or_org". Якщо сторінки немає або реди
 інде — page_kind="not_found". У цих двох випадках дати не заповнюй."""
 
 
-def fetch_text(url: str) -> tuple[str | None, str]:
-    """Текст сторінки або (None, причина). Причина йде в лог і в коментар."""
+# Про живість лінка в цьому проєкті говорить ОДИН інструмент — verify-links.mjs.
+# У нього машина станів ok → suspect → dead і закриття лише після трьох невдач
+# поспіль, бо лінки воскресають; 403 і 429 він свідомо вважає живими — це
+# бот-захист, а не мертва сторінка.
+#
+# Цей скрипт раніше з однієї невдалої спроби писав «сторінка недоступна» — і
+# 13.09.2026 наставив таких діагнозів 45 записам, з яких verify-links того ж
+# ранку визнав живими 44. Вибіркова перевірка шести: чотири віддали 200 OK,
+# два — 403 (Cloudflare). Жоден не був мертвим.
+#
+# Тому тут ми більше не виносимо вироків про живість. Ми лише кажемо, чи
+# вдалося ПРОЧИТАТИ сторінку — і транзієнтну невдачу лишаємо наступному прогону.
+TRANSIENT_STATUSES = {403, 408, 425, 429, 500, 502, 503, 504}
+MISSING_STATUSES = {404, 410}
+
+
+def classify_status(code: int) -> str:
+    """"ok" | "missing" (404/410) | "transient" (усе інше, що не 2xx/3xx)."""
+    if code in MISSING_STATUSES:
+        return "missing"
+    if code >= 400:
+        return "transient"
+    return "ok"
+
+
+def fetch_text(url: str, _retry: bool = True) -> tuple[str | None, str, str]:
+    """Текст сторінки або (None, причина, вид).
+
+    Вид: "ok" | "transient" (не прочитали: бот-захист, таймаут, збій сервера)
+    | "missing" (сторінки справді немає: 404/410). Транзієнтне — не діагноз.
+    """
     try:
         with httpx.Client(timeout=20, follow_redirects=True,
                           headers={"User-Agent": UA,
                                    "Accept-Language": "uk,en;q=0.8"}) as c:
             r = c.get(url)
     except Exception as e:
-        return None, f"не відповів: {type(e).__name__}"
-    if r.status_code >= 400:
-        return None, f"HTTP {r.status_code}"
+        if _retry:
+            time.sleep(3)
+            return fetch_text(url, _retry=False)
+        return None, f"не відповів: {type(e).__name__}", "transient"
+    kind = classify_status(r.status_code)
+    if kind == "missing":
+        return None, f"HTTP {r.status_code}", "missing"
+    if kind == "transient":
+        # Одна повторна спроба: більшість таких відповідей на прогоні 13.09
+        # були тимчасовими — ті самі адреси за кілька секунд давали 200.
+        if _retry and r.status_code in TRANSIENT_STATUSES:
+            time.sleep(3)
+            return fetch_text(url, _retry=False)
+        return None, f"HTTP {r.status_code}", "transient"
     soup = BeautifulSoup(r.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
         tag.decompose()
     text = " ".join(soup.get_text(" ").split())
     if len(text) < 200:
-        return None, f"порожня сторінка ({len(text)} символів)"
-    return text[:12000], f"HTTP {r.status_code}"
+        return None, f"порожня сторінка ({len(text)} символів)", "transient"
+    return text[:12000], f"HTTP {r.status_code}", "ok"
 
 
 def ask(llm, row: dict, page: str) -> dict:
@@ -263,7 +303,10 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
     if kind == "listing_or_org":
         return {}, "сторінка не про одну можливість — це головна або перелік"
     if kind == "not_found":
-        return {}, "сторінки за адресою немає"
+        # Сторінка відповідає, але цієї можливості на ній уже немає: редирект
+        # на каталог, заглушка. Формулюємо саме так — інакше нотатка звучить
+        # як «мертвий лінк» і суперечить verify-links.
+        return {}, "за адресою більше немає цієї можливості"
 
     # Без цитати висновку немає. Це не формальність: саме цитата відрізняє
     # прочитане від вигаданого.
@@ -317,6 +360,36 @@ def _with_trace(row: dict, note: str) -> str:
     return (f"{prev} · {note}" if prev else note)[:500]
 
 
+# Помітки, які цей скрипт ставив про недоступність сторінки. Прогін 13.09.2026
+# наставив їх 45 записам, а verify-links того ж ранку визнав живими 44 — отже
+# помітка бреше й сидить у модерації як шум. Якщо сторінка зараз читається,
+# свою стару неправду прибираємо самі, без окремої разової операції.
+_STALE_UNREACHABLE = re.compile(
+    r"\s*·?\s*recheck-dates · (?:сторінка недоступна \([^)]*\)"
+    r"|сторінки за адресою немає(?: \([^)]*\))?"
+    r"|не вдалося прочитати \([^)]*\))"
+)
+
+
+def drop_stale_unreachable(comment: str | None) -> str:
+    """Прибрати з коментаря помітки про недоступність. Викликається лише тоді,
+    коли сторінку щойно вдалося прочитати — тобто помітка точно застаріла."""
+    cleaned = _STALE_UNREACHABLE.sub("", comment or "")
+    # Після вирізання можуть лишитись подвійні або крайні роздільники.
+    cleaned = re.sub(r"(?:\s*·\s*){2,}", " · ", cleaned)
+    return cleaned.strip(" ·\t\n")
+
+
+def _heal_note(sb, row: dict, apply: bool) -> None:
+    before = row.get("admin_comment") or ""
+    after = drop_stale_unreachable(before)
+    if after == before.strip(" ·\t\n"):
+        return
+    row["admin_comment"] = after
+    if apply:
+        sb.table("opportunities").update({"admin_comment": after or None}).eq("id", row["id"]).execute()
+
+
 def _note_diagnosis(sb, row: dict, why: str, apply: bool) -> None:
     """Записати діагноз у коментар, нічого більше не змінюючи.
 
@@ -343,7 +416,8 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
     today = date.today().isoformat()
 
     rows = (sb.table("opportunities")
-            .select("id, title, source, source_url, opportunity_type, admin_comment")
+            .select("id, title, source, source_url, opportunity_type, "
+                    "admin_comment, link_status")
             .eq("status", "active")
             .is_("deadline", "null")
             .is_("event_end_date", "null")
@@ -353,7 +427,7 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
 
     print(f"Активних записів без жодної дати: {len(rows)}\n")
     stats = {"closed": 0, "dated": 0, "recurring": 0, "unreachable": 0,
-             "unclear": 0, "not_an_opportunity": 0}
+             "unread": 0, "unclear": 0, "not_an_opportunity": 0}
     closed_list, dated_list, left_list, hub_list = [], [], [], []
 
     for row in rows:
@@ -364,14 +438,29 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
             _note_diagnosis(sb, row, "немає посилання", apply)
             continue
 
-        page, status = fetch_text(url)
+        page, status, kind_fetch = fetch_text(url)
         time.sleep(DELAY)
         if not page:
-            why = f"сторінка недоступна ({status})"
+            if kind_fetch == "transient":
+                # Не прочитали — це не вирок сторінці. Мовчимо й лишаємо
+                # наступному прогону; про живість відповідає verify-links.
+                stats["unread"] += 1
+                left_list.append((row, f"не вдалося прочитати ({status})"))
+                continue
+            # 404/410. Але останнє слово однаково не наше: якщо verify-links
+            # цього ранку бачив сторінку живою, суперечити йому не будемо.
+            if row.get("link_status") == "ok":
+                stats["unread"] += 1
+                left_list.append((row, f"{status}, але verify-links бачить лінк живим"))
+                continue
+            why = f"сторінки за адресою немає ({status})"
             stats["unreachable"] += 1
             left_list.append((row, why))
             _note_diagnosis(sb, row, why, apply)
             continue
+
+        # Сторінка прочиталась — знімаємо свої ж старі помітки про «недоступна».
+        _heal_note(sb, row, apply)
 
         patch, why = decide(row, ask(llm, row, page), today)
         if not patch:
@@ -413,7 +502,8 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
     dump("🔵 НЕ МОЖЛИВІСТЬ, А ОРГАНІЗАЦІЯ ЧИ ПЕРЕЛІК (нічого не міняємо)", hub_list)
 
     print(f"Разом: закрито {stats['closed']}, дат поставлено {stats['dated']}, "
-          f"періодичність {stats['recurring']}, недоступних {stats['unreachable']}, "
+          f"періодичність {stats['recurring']}, немає сторінки {stats['unreachable']}, "
+          f"не прочитано {stats['unread']}, "
           f"без відповіді {stats['unclear']}, "
           f"не можливість {stats['not_an_opportunity']}")
     if not apply:

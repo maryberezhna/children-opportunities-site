@@ -11,7 +11,9 @@ import unittest
 from datetime import date, timedelta
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from recheck_dates import decide, _valid_date  # noqa: E402
+from recheck_dates import (  # noqa: E402
+    classify_status, decide, drop_stale_unreachable, _valid_date,
+)
 
 TODAY = date.today()
 TODAY_ISO = TODAY.isoformat()
@@ -211,6 +213,59 @@ class DateSanity(unittest.TestCase):
         patch, why = decide(row(), out(recurrence="ongoing"), TODAY_ISO)
         self.assertEqual(patch["recurrence"], "ongoing")
         self.assertIn("постійна", why)
+
+
+class ClassifyStatus(unittest.TestCase):
+    """Про живість лінка в проєкті говорить verify-links.mjs, і він свідомо
+    вважає 403/429 живими — це бот-захист. Цей скрипт 13.09.2026 з однієї
+    спроби наставив 45 записам «сторінка недоступна», з яких verify-links
+    того ж ранку визнав живими 44. Тому 4xx тут більше не дорівнює «мертвий»."""
+
+    def test_bot_protection_is_not_missing(self):
+        for code in (403, 429):
+            self.assertEqual(classify_status(code), "transient")
+
+    def test_server_hiccup_is_not_missing(self):
+        for code in (500, 502, 503, 504):
+            self.assertEqual(classify_status(code), "transient")
+
+    def test_only_404_and_410_mean_missing(self):
+        self.assertEqual(classify_status(404), "missing")
+        self.assertEqual(classify_status(410), "missing")
+
+    def test_success_and_redirect_are_ok(self):
+        for code in (200, 204, 301, 302):
+            self.assertEqual(classify_status(code), "ok")
+
+
+class NotFoundWording(unittest.TestCase):
+    def test_not_found_does_not_claim_dead_link(self):
+        # Сторінка відповідає, просто можливості на ній уже немає. Нотатка не
+        # має звучати як «мертвий лінк» — інакше вона суперечить verify-links.
+        patch, why = decide(row(), out(page_kind="not_found"), TODAY_ISO)
+        self.assertEqual(patch, {})
+        self.assertNotIn("недоступна", why)
+        self.assertIn("більше немає цієї можливості", why)
+
+
+class HealStaleNotes(unittest.TestCase):
+    """Якщо сторінка читається, стара помітка «недоступна» — неправда, і вона
+    має зникнути сама. Інакше модерація тоне в хибних тривогах."""
+
+    def test_drops_lone_stale_note(self):
+        self.assertEqual(drop_stale_unreachable("recheck-dates · сторінка недоступна (HTTP 403)"), "")
+
+    def test_keeps_other_authors_notes(self):
+        self.assertEqual(
+            drop_stale_unreachable("🔎 Агент: дебати · recheck-dates · сторінка недоступна (HTTP 403)"),
+            "🔎 Агент: дебати")
+
+    def test_keeps_diagnoses_that_are_not_about_liveness(self):
+        note = "recheck-dates · сторінка не про одну можливість — це головна або перелік"
+        self.assertEqual(drop_stale_unreachable(note), note)
+
+    def test_handles_empty(self):
+        self.assertEqual(drop_stale_unreachable(None), "")
 
 
 if __name__ == "__main__":
