@@ -20,10 +20,14 @@ import {
 import OutcomeForm from './[slug]/OutcomeForm';
 import Details from './[slug]/Details';
 import OutboundCta from './[slug]/OutboundCta';
+import ShareButton from './[slug]/ShareButton';
+import { plural } from '@/lib/plural';
+import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 
 const SITE = 'https://dityam.com.ua';
+const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
 const NEED_LABELS = {
   gifted: 'обдаровані',
@@ -89,6 +93,12 @@ const L = {
     yesterday: 'вчора',
     notFound: 'Можливість не знайдена',
     siteName: 'Можливості для дитини',
+    share: 'Поділитися ↗',
+    copied: 'Посилання скопійовано',
+    apply: 'Подати заявку ↗',
+    support: 'Підтримати dityam.com.ua',
+    requirement: 'Треба',
+    daysLeft: (n) => (n === 0 ? 'сьогодні' : `${n} ${plural(n, 'день', 'дні', 'днів')}`),
   },
   en: {
     back: '← All opportunities',
@@ -115,6 +125,12 @@ const L = {
     yesterday: 'yesterday',
     notFound: 'Opportunity not found',
     siteName: 'Opportunities for your child',
+    share: 'Share ↗',
+    copied: 'Link copied',
+    apply: 'Apply ↗',
+    support: 'Support dityam.com.ua',
+    requirement: 'You need',
+    daysLeft: (n) => (n === 0 ? 'today' : `${n} ${n === 1 ? 'day' : 'days'}`),
   },
 };
 
@@ -458,6 +474,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // Для закритої можливості structured data не віддаємо: Google не має
   // показувати її як активний курс чи подію в rich results.
   const jsonLd = isClosed ? null : buildJsonLd(item, lang);
+  const today = kyivToday();
   const breadcrumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
@@ -483,7 +500,6 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
     ],
   };
 
-  const today = kyivToday();
   const needs = (item.child_needs || []).filter((n) => NEEDS[n]);
   // Мова конкретного тексту: доки перекладу для запису немає, показуємо
   // оригінал — і чесно позначаємо його як українську, щоб екранний читач не
@@ -493,6 +509,14 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   const detailsText = field(item, 'details', lang);
   const detailsLang = lang === 'en' && !item.details_en ? 'uk' : undefined;
 
+  // Мобільна верстка (≤900px, референс 6d): дедлайн окремим блоком одразу
+  // під назвою і прибита знизу панель «Подати заявку». Розмітка лежить
+  // поруч із десктопною, перемикає її home-mobile/opportunity-mobile.css.
+  const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
+  const deadlineDays = item.deadline ? daysUntil(item.deadline, today) : null;
+  const showDeadlineBlock = Boolean(item.deadline) && !isClosed;
+  const showBar = Boolean(item.source_url) && !isClosed;
+
   return (
     <>
       {jsonLd ? (
@@ -500,9 +524,15 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
       ) : null}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
 
-      <div className="container" lang={lang}>
+      <div className={`container${showBar ? ' o-has-bar' : ''}`} lang={lang}>
         <nav className="opportunity-breadcrumbs">
           <Link href={base || '/'}>{t.back}</Link>
+          <ShareButton
+            className="o-share"
+            title={field(item, 'title', lang)}
+            label={t.share}
+            copiedLabel={t.copied}
+          />
         </nav>
 
         {isClosed ? (
@@ -534,7 +564,37 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             ))}
           </div>
 
+          <div className="o-m-meta">
+            <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>
+              {TYPES[item.opportunity_type] || item.opportunity_type}
+            </span>
+            <span>{ageRangeLabel(item, lang)}</span>
+            {item.cost_type && COSTS[item.cost_type] ? (
+              <>
+                <span className="o-m-sep" aria-hidden="true">·</span>
+                <span>{COSTS[item.cost_type]}</span>
+              </>
+            ) : null}
+            {needs.map((n) => (
+              <span key={n}><span className="o-m-sep" aria-hidden="true">· </span>{NEEDS[n]}</span>
+            ))}
+          </div>
+
           <h1 className="opportunity-title" lang={titleLang}>{field(item, 'title', lang)}</h1>
+
+          {showDeadlineBlock ? (
+            <div className="o-m-deadline">
+              <div>
+                <span className="o-m-eyebrow">{t.deadline}</span>
+                <span className="o-m-date">{formatDate(item.deadline, lang)}</span>
+              </div>
+              {deadlineDays !== null && deadlineDays >= 0 ? (
+                <span className={`o-m-days${deadlineDays <= 7 ? ' is-urgent' : ''}`}>
+                  {deadlineDays <= 7 ? '⏰' : '⏳'} {t.daysLeft(deadlineDays)}
+                </span>
+              ) : null}
+            </div>
+          ) : null}
           {field(item, 'summary', lang) ? (
             <p className="opportunity-summary" lang={summaryLang}>{field(item, 'summary', lang)}</p>
           ) : null}
@@ -554,8 +614,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             )}
             {item.deadline ? (
               <>
-                <dt>{t.deadline}</dt>
-                <dd>{formatDate(item.deadline, lang)}</dd>
+                <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
+                <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>
               </>
             ) : item.recurrence ? (
               <>
@@ -575,10 +635,25 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 <dd>{COSTS[item.cost_type] || item.cost_type}</dd>
               </>
             )}
+            {item.teen_requirement ? (
+              <>
+                <dt className="o-m-only">{t.requirement}</dt>
+                <dd className="o-m-only">{item.teen_requirement}</dd>
+              </>
+            ) : null}
             {item.source && (
               <>
                 <dt>{t.source}</dt>
-                <dd>{item.source}</dd>
+                <dd>
+                  {item.source_url ? (
+                    <>
+                      <span className="o-d-only">{item.source}</span>
+                      <a className="o-m-only" href={item.source_url} target="_blank" rel="noopener noreferrer">
+                        {item.source} ↗
+                      </a>
+                    </>
+                  ) : item.source}
+                </dd>
               </>
             )}
             {verifiedLabel(item, lang) && (
@@ -664,6 +739,29 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           </section>
         )}
       </div>
+
+      {showBar ? (
+        <div className="o-m-bar">
+          <a
+            href={MONOBANK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="o-m-heart"
+            aria-label={t.support}
+          >
+            <span aria-hidden="true">🧡</span>
+          </a>
+          <OutboundCta
+            href={item.source_url}
+            title={item.title}
+            lang={lang}
+            className="o-m-apply"
+            place="detail_page_bar"
+          >
+            {t.apply}
+          </OutboundCta>
+        </div>
+      ) : null}
 
       {/* 53% сесій приземляються одразу на сторінку можливості (285 із 421
           органічних за місяць) — і донедавна жодна з них не бачила пропозиції

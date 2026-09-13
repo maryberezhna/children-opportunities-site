@@ -64,6 +64,9 @@ export default function Header() {
   const isEnglish = isEn(pathname);
   // Перемикач режиму живе лише там, де є каталог, — на головній.
   const isCatalogue = pathname === '/' || pathname === '/en';
+  // Мобільна головна (≤900px): шапка — лише лого й перемикач, «Підтримати»
+  // живе у футері (референс «Dityam — мобільна версія», 6a).
+  const headerClass = `v2-header${pathname === '/' ? ' v2-header--home' : ''}`;
   // SSR завжди малює «Батькам»: справжній режим читається з localStorage
   // після монтування, інакше React лається на розбіжність розмітки.
   const [mode, setMode] = useState('parents');
@@ -98,7 +101,7 @@ export default function Header() {
       ];
 
   return (
-    <header className="v2-header">
+    <header className={headerClass}>
       <div className="v2-header-inner">
         <Link href={isEnglish ? '/en' : '/'} className="v2-logo" onClick={track('logo')}>
           <span className="v2-logo-script">dityam.com.ua</span>

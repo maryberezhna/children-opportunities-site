@@ -64,6 +64,14 @@ async function getProgramCount() {
   }
 }
 
+// viewport-fit=cover: інакше env(safe-area-inset-bottom) на iPhone дорівнює
+// нулю, і прибита знизу панель «Подати заявку» лягала б під смужку жестів.
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
+};
+
 export async function generateMetadata() {
   const count = await getProgramCount();
   const n = count && count >= 50 ? Math.floor(count / 50) * 50 : 400;
