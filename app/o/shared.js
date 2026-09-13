@@ -514,9 +514,12 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
         {isClosed ? (
           <div className="closed-banner" role="status">
             <span className="closed-banner-icon" aria-hidden="true">🔒</span>
-            <div>
-              <strong>{t.closedTitle}</strong>{' '}
-              {ANNUAL_TYPES.has(item.opportunity_type) ? t.closedAnnual : t.closedOnce}{' '}
+            {/* Заголовок, пояснення і дія — три окремі блоки, а не один
+                абзац. Доки посилання стояло всередині речення, воно
+                читалось як його хвіст, а не як кнопка. */}
+            <div className="closed-banner-body">
+              <strong>{t.closedTitle}</strong>
+              <p>{ANNUAL_TYPES.has(item.opportunity_type) ? t.closedAnnual : t.closedOnce}</p>
               <Link href={base || '/'}>{t.closedLink}</Link>
             </div>
           </div>

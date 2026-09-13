@@ -269,30 +269,34 @@
 
 /* ---- Плашка «можливість завершилась» на архівних сторінках ----
 
-   Плашка навмисно велика й помаранчева. Попередня була бежевою смужкою на
-   бежевому тлі: людина її проминала, читала опис як актуальний і йшла
-   подаватись на закритий набір. Тут ціна помилки — змарнований вечір
-   батьків, тож попередження мусить перекривати заголовок за помітністю. */
+   Чорна з помаранчевим. Дві попередні версії програвали сторінці за
+   контрастом: бежева смужка на бежевому тлі, потім світло-помаранчева
+   картка серед таких самих теплих карток. Чорний прямокутник на
+   кремовому тлі проминути неможливо — а саме це тут і потрібно, бо ціна
+   помилки — змарнований вечір батьків на закритий набір. */
 .closed-banner {
   display: flex;
   align-items: flex-start;
   gap: 16px;
   margin: 0 0 28px;
-  padding: 22px 24px;
-  background: var(--accent-soft);
-  border: 1px solid var(--accent);
-  border-left-width: 6px;
+  padding: 24px 26px;
+  background: var(--ink);
+  border: 0;
+  border-left: 6px solid var(--accent);
   border-radius: 14px;
-  color: var(--ink-soft);
+  color: #d8d4cd;
   font-size: 16px;
   line-height: 1.55;
 }
 
+.closed-banner-body { min-width: 0; }
+.closed-banner-body p { margin: 0; }
+
 .closed-banner strong {
   display: block;
-  margin-bottom: 6px;
-  color: var(--ink);
-  font-size: 22px;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 23px;
   font-weight: 700;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -301,12 +305,10 @@
 /* Посилання на живі можливості — окремим рядком і кнопкою, а не словом
    усередині абзацу: це єдина дія, яка тут має сенс. */
 .closed-banner a {
-  /* Окремим рядком, а не inline: інакше абзац обтікає кнопку і хвіст
-     речення повисає збоку. */
   display: block;
   width: fit-content;
-  margin-top: 14px;
-  padding: 9px 16px;
+  margin-top: 16px;
+  padding: 10px 18px;
   background: var(--accent);
   border-radius: 10px;
   color: #fff;
@@ -315,12 +317,13 @@
   white-space: nowrap;
 }
 
-.closed-banner a:hover { background: var(--accent-ink, #b8430f); }
+.closed-banner a:hover { background: #fff; color: var(--ink); }
 .closed-banner-icon { font-size: 26px; line-height: 1.2; flex-shrink: 0; }
 
 @media (max-width: 560px) {
-  .closed-banner { padding: 18px; gap: 12px; font-size: 15px; }
-  .closed-banner strong { font-size: 19px; }
+  .closed-banner { padding: 20px; gap: 12px; font-size: 15px; }
+  .closed-banner strong { font-size: 20px; }
+  .closed-banner a { white-space: normal; }
 }
 
 /* Сам опис — сірим. Текст лишається читабельним (його ще можуть шукати
