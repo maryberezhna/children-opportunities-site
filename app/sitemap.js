@@ -60,7 +60,7 @@ export default async function sitemap() {
     { uk: '/refund', en: '/en/refund', changeFrequency: 'yearly', priority: 0.2 },
     { uk: '/press', en: '/en/press', changeFrequency: 'monthly', priority: 0.4 },
     { uk: '/kategorii', en: '/en/categories', changeFrequency: 'daily', priority: 0.8 },
-    { uk: '/pidbirka', en: '/en/plus', changeFrequency: 'monthly', priority: 0.5 },
+    { uk: '/plus', en: '/en/plus', changeFrequency: 'monthly', priority: 0.5 },
   ];
 
   const bilingualPages = BILINGUAL.flatMap((entry) => {

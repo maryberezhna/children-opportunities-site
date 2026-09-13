@@ -38,7 +38,7 @@ const T = {
     terms: 'Умови',
     made: "Зроблено з любов'ю в Україні 🇺🇦",
     hrefs: {
-      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/pidbirka',
+      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus',
       about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
       contacts: '/contacts', support: '/support',
       privacy: '/privacy', terms: '/terms',

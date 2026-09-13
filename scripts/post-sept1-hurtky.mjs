@@ -33,7 +33,7 @@ const text = [
   '👉 <a href="https://dityam.com.ua/bezkoshtovni-hurtky">Безкоштовні гуртки та курси</a>',
   '👉 <a href="https://dityam.com.ua">Усі можливості для дітей</a>',
   '',
-  'А хочете, щоб ми підібрали можливості саме під вашу дитину — станьте в <a href="https://dityam.com.ua/pidbirka">список очікування Dityam+</a>, першим буде знижка 🧡',
+  'А хочете, щоб ми підібрали можливості саме під вашу дитину — станьте в <a href="https://dityam.com.ua/plus">список очікування Dityam+</a>, першим буде знижка 🧡',
   '',
   'Ми також в <a href="https://www.instagram.com/dityam.com.ua">Instagram</a>',
   '',

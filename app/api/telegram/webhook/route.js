@@ -309,7 +309,7 @@ async function handleDigestConnect(token, msg) {
     .eq('unsub_token', token).eq('channel', 'telegram').select('id').maybeSingle();
   await sendMessage(msg.chat.id, data
     ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо персональну підбірку сюди раз на 2 тижні.\n\nВідписатись будь-коли — /stop'
-    : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/pidbirka 🧡');
+    : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/plus 🧡');
   return new Response('ok');
 }
 
@@ -320,7 +320,7 @@ async function handleDigestStop(msg) {
     .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
     .eq('telegram_chat_id', String(msg.chat.id)).select('id');
   await sendMessage(msg.chat.id, data && data.length
-    ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/pidbirka'
+    ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/plus'
     : 'Активної підписки не знайдено.');
   return new Response('ok');
 }

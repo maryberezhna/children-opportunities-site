@@ -110,7 +110,7 @@ export default function StickyBar() {
       </a>
 
       <a
-        href={isEnglish ? '/en/plus' : '/pidbirka'}
+        href={isEnglish ? '/en/plus' : '/plus'}
         className="sticky-btn sticky-btn-donate"
         aria-label="Dityam+ early list"
         onClick={trackEarlyList}

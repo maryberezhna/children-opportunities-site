@@ -8,8 +8,8 @@ export const metadata = {
   // Свого canonical тут не було, і сторінка успадковувала з layout адресу
   // головної — тобто казала Google, що вона дублікат головної.
   alternates: {
-    canonical: `${SITE_URL}/pidbirka`,
-    languages: { uk: `${SITE_URL}/pidbirka`, en: `${SITE_URL}/en/plus` },
+    canonical: `${SITE_URL}/plus`,
+    languages: { uk: `${SITE_URL}/plus`, en: `${SITE_URL}/en/plus` },
   },
 };
 

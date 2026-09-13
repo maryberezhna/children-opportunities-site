@@ -98,7 +98,7 @@ export default function AboutPage() {
         <p>
           Платформа — безкоштовна для родин і без реклами, назавжди. Проєкт
           незалежний: розвиватися йому допомагає підписка{' '}
-          <a href="/pidbirka">Dityam+</a> — персональна добірка можливостей під
+          <a href="/plus">Dityam+</a> — персональна добірка можливостей під
           вашу дитину (зараз відкритий список очікування). А якщо хочете просто
           підтримати — донат на{' '}
           <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer">monobank-банку</a>{' '}

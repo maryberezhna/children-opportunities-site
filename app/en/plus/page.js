@@ -1,4 +1,4 @@
-import SubscribeForm from '../../pidbirka/SubscribeForm';
+import SubscribeForm from '../../plus/SubscribeForm';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -8,7 +8,7 @@ export const metadata = {
     'Dityam+ — UAH 179/month or UAH 1,490/year: a monthly personal selection for your child, deadline reminders, help with applications. Join the list — early members get a discount.',
   alternates: {
     canonical: `${SITE_URL}/en/plus`,
-    languages: { uk: `${SITE_URL}/pidbirka`, en: `${SITE_URL}/en/plus` },
+    languages: { uk: `${SITE_URL}/plus`, en: `${SITE_URL}/en/plus` },
   },
 };
 

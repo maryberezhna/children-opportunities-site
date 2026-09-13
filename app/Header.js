@@ -22,7 +22,7 @@ const isEn = (p) => p === '/en' || p.startsWith('/en/');
 const SLUG_PAIRS = [
   ['/yak-my-pereviriaiemo', '/en/how-we-verify'],
   ['/kategorii', '/en/categories'],
-  ['/pidbirka', '/en/plus'],
+  ['/plus', '/en/plus'],
   ['/dyakuyu', '/en/thank-you'],
   ...TOPIC_LIST.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
 ];
@@ -94,7 +94,7 @@ export default function Header() {
       ]
     : [
         { href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') },
-        { href: '/pidbirka', label: 'Dityam+', active: pathname.startsWith('/pidbirka') },
+        { href: '/plus', label: 'Dityam+', active: pathname.startsWith('/plus') },
       ];
 
   return (
