@@ -66,7 +66,7 @@ async function payoffProof(supabase) {
   });
   // Заголовок під фактичний склад: «горить» лише коли справді є дедлайни
   const head = picked.some((o) => o.deadline)
-    ? 'Ось що зараз у каталозі:'
+    ? 'Ось що зараз на платформі:'
     : 'Ось що є прямо зараз:';
   return `\n<b>${head}</b>\n${lines.join('\n')}\n`;
 }
@@ -79,12 +79,13 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
   // а обіцянка, яку нічим не закрити, коштує дорожче за зайвий рядок.
   const proof = supabase ? await payoffProof(supabase) : '';
   const text = '🧡 <b>Dityam+</b>\n\n'
-    + 'Каталог показує, що існує — і він відкритий для всіх.\n'
-    + 'Dityam+ робить так, щоб ви цим скористались: відбирає ваші можливості, '
-    + 'нагадує про дедлайни і допомагає подати.\n'
+    + 'Довідник показує, що існує. Dityam+ веде дитину далі.\n'
+    + 'Ми памʼятаємо, куди ваша дитина вже подавалась і що їй підійшло, — '
+    + 'і пропонуємо не випадкові картки, а наступний крок.\n'
     + proof
     + '\n<b>Що входить:</b>\n'
     + '• Відбір під вік та інтереси — з сотень карток лишаються ваші одиниці\n'
+    + '• Нагадування про дедлайни за 7 і 2 дні\n'
     + '• Допомога із заявкою — напишіть сюди, підкажемо, що заповнювати\n'
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Telegram або email — куди вам зручніше';
@@ -180,7 +181,7 @@ export async function POST(request) {
       // за місяць, що гроші йдуть за послугу, якої вже немає.
       const cancelled = await cancelSubscription(sub);
       if (!cancelled.ok && cancelled.hadOrder) {
-        await bot.sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напиши сюди — ми скасуємо вручну сьогодні ж, гроші не спишуться.');
+        await bot.sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напишіть сюди — ми скасуємо вручну сьогодні ж, гроші не спишуться.');
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
             `🚨 <b>WayForPay REMOVE не пройшов</b>\nchat <code>${chatId}</code>, order <code>${esc(sub?.wfp_order_reference || '—')}</code>\n${esc(cancelled.reason || cancelled.error || '')}`);
@@ -222,7 +223,7 @@ export async function POST(request) {
         else await sendMainMenu(bot, chatId);                                              // є профіль → меню
       } else if (!sub?.phone) {
         await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
-        await bot.sendMessage(chatId, '📱 Спершу поділись номером телефону — на нього надійде підтвердження оплати. Тисни кнопку нижче 👇', {
+        await bot.sendMessage(chatId, '📱 Спершу поділіться номером телефону — на нього надійде підтвердження оплати. Натисніть кнопку нижче 👇', {
           keyboard: [[{ text: '📱 Поділитися номером', request_contact: true }]],
           resize_keyboard: true, one_time_keyboard: true,
         });
@@ -263,7 +264,7 @@ export async function POST(request) {
   if ((cbq.data || '').startsWith('flow:')) {
     const chatId = String(cbq.message.chat.id);
     const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
-    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Спершу оформи підписку — /start'); return new Response('ok'); }
+    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Спершу оформіть підписку — /start'); return new Response('ok'); }
     await handleFlowCallback(bot, supabase, cbq);
     return new Response('ok');
   }
@@ -272,7 +273,7 @@ export async function POST(request) {
   if ((cbq.data || '').startsWith('menu:')) {
     const chatId = String(cbq.message.chat.id);
     const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
-    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Оформи підписку — /start'); return new Response('ok'); }
+    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Оформіть підписку — /start'); return new Response('ok'); }
     await bot.answerCallback(cbq.id);
     const action = (cbq.data || '').split(':')[1];
     if (action === 'form') await beginFlow(bot, supabase, chatId, null);

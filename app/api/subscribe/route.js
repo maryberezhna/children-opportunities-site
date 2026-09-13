@@ -24,14 +24,13 @@ export async function POST(request) {
   if (channel === 'email' && !/^\S+@\S+\.\S+$/.test(email)) return Response.json({ ok: false, error: 'bad_email' }, { status: 400 });
   if (channel === 'telegram' && handle.length < 2) return Response.json({ ok: false, error: 'bad_handle' }, { status: 400 });
 
-  const gender = ['boy', 'girl', 'any'].includes(b.gender) ? b.gender : 'any';
   const cost_pref = b.cost_pref === 'free_only' ? 'free_only' : 'any';
 
   const row = {
     channel,
     email: channel === 'email' ? email : null,
     telegram_handle: channel === 'telegram' ? `@${handle}` : null,
-    age_bands, interests, gender, cost_pref,
+    age_bands, interests, cost_pref,
     status: 'pending',            // активуємо після підтвердження оплати / підключення бота
     consent_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

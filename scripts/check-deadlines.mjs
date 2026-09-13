@@ -515,7 +515,7 @@ async function sendDailyDigest(dayOverride = null) {
   // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
   // з людини рутину. Усе з діджесту лишається відкритим для всіх.
   lines.push('');
-  lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/pidbirka">Dityam+</a> відбере ваші й нагадає вчасно.');
+  lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/plus">Dityam+</a> відбере ваші й нагадає вчасно.');
 
   await postToChannel(lines, `digest (urgent=${urgent.length}, themed=${themed.length})`);
 }

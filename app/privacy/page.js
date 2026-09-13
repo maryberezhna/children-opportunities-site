@@ -27,8 +27,8 @@ export default function PrivacyPage() {
         <p>
           Сайт dityam.com.ua (далі — «Сайт») є некомерційним каталогом
           можливостей для українських дітей. Власник і адміністратор —
-          Марія Бережна, контакт:{' '}
-          <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
+          Марія Шутяк, контакт:{' '}
+          <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
         </p>
 
         <h2>2. Які дані ми збираємо</h2>
@@ -91,7 +91,7 @@ export default function PrivacyPage() {
         </ul>
         <p>
           Для реалізації прав напишіть{' '}
-          <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
+          <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
         </p>
 
         <h2>6. Зміни до політики</h2>

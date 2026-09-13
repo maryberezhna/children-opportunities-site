@@ -80,7 +80,7 @@ export async function generateMetadata() {
     'виплати ВПО діти', 'МАН конкурси', 'допомога дітям',
     'табір для підлітків', 'обмін навчання США', 'програми підліткам',
   ],
-  authors: [{ name: 'Мері Бережна' }],
+  authors: [{ name: 'Марія Шутяк' }],
   alternates: {
     canonical: 'https://dityam.com.ua',
     languages: {

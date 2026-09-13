@@ -115,9 +115,9 @@ export default async function YakPereviriaiemo() {
         </section>
 
         <p className="topic-note" style={{ marginTop: 24 }}>
-          Побачили помилку чи мертве посилання? <a href="mailto:maryberezhna@gmail.com?subject=Помилка%20на%20dityam.com.ua">Напишіть нам</a> —
+          Побачили помилку чи мертве посилання? <a href="mailto:hellodityam.com.ua@gmail.com?subject=Помилка%20на%20dityam.com.ua">Напишіть нам</a> —
           виправимо і скажемо дякую. А якщо знаєте можливість, якої в каталозі нема —{' '}
-          <a href="mailto:maryberezhna@gmail.com?subject=Додати%20можливість">пропонуйте</a>.
+          <a href="mailto:hellodityam.com.ua@gmail.com?subject=Додати%20можливість">пропонуйте</a>.
         </p>
       </div>
       <Footer />

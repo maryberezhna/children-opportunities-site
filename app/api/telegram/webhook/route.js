@@ -295,7 +295,7 @@ ${username || chatId} · з телеграм-посту`);
 
   await sendMessage(msg.chat.id, existing
     ? 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.'
-    : 'Ви в списку перших! 🧡\n\nDityam+ — це платна підписка (179 грн/міс або 1 490 грн/рік). Щомісяця: персональна добірка під вашу дитину, нагадування про дедлайни, відбір лише релевантних програм і допомога з подачею заявок — у Telegram або на email. Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших.\n\nА каталог dityam.com.ua був і лишається безкоштовним.');
+    : 'Ви в списку перших! 🧡\n\nDityam+ — платна підписка: 179 грн/міс або 1 490 грн/рік. Ми памʼятаємо, куди ваша дитина вже подавалась і що їй підійшло, — і пропонуємо не випадкові картки, а наступний крок. Плюс нагадування про дедлайни за 7 і 2 дні.\n\nЩойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.');
   return new Response('ok');
 }
 
@@ -309,7 +309,7 @@ async function handleDigestConnect(token, msg) {
     .eq('unsub_token', token).eq('channel', 'telegram').select('id').maybeSingle();
   await sendMessage(msg.chat.id, data
     ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо персональну підбірку сюди раз на 2 тижні.\n\nВідписатись будь-коли — /stop'
-    : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/pidbirka 🧡');
+    : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/plus 🧡');
   return new Response('ok');
 }
 
@@ -320,7 +320,7 @@ async function handleDigestStop(msg) {
     .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
     .eq('telegram_chat_id', String(msg.chat.id)).select('id');
   await sendMessage(msg.chat.id, data && data.length
-    ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/pidbirka'
+    ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/plus'
     : 'Активної підписки не знайдено.');
   return new Response('ok');
 }

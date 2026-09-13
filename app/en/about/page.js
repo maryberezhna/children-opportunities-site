@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import Footer from '../../Footer';
 import PressLogos from '../../PressLogos';
+import { pressStats } from '@/lib/press';
 
 export const metadata = {
-  title: 'About the project — how dityam.com.ua started',
+  title: 'About the project — Dityam.com.ua',
   description:
-    'A platform of verified opportunities for Ukrainian children aged 0–18, in Ukraine and abroad. Free, ad-free, built by one person.',
+    'Dityam.com.ua is a platform of verified opportunities for Ukrainian children aged 0–18, in Ukraine and abroad. Free for families, no sign-up, no ads. Founded by Mariia Shutiak.',
   alternates: {
     canonical: 'https://dityam.com.ua/en/about',
     languages: {
@@ -15,117 +16,177 @@ export const metadata = {
   },
 };
 
-export default function AboutPageEn() {
+export const revalidate = 3600;
+
+const EMAIL = 'hellodityam.com.ua@gmail.com';
+
+const n = (x) => x.toLocaleString('en-US');
+
+export default async function AboutPageEn() {
+  const stats = await pressStats();
+  const tiles = stats ? [
+    [stats.total, stats.total === 1 ? 'opportunity on the platform' : 'opportunities on the platform'],
+    [stats.free, 'free for families'],
+    [stats.sources, stats.sources === 1 ? 'official source' : 'official sources'],
+    [stats.cities, stats.cities === 1 ? 'city or region' : 'cities and regions'],
+  ] : [];
+
   return (
-    <>
-      <div className="container" lang="en">
-        <nav className="opportunity-breadcrumbs">
-          <Link href="/en">← All opportunities</Link>
-        </nav>
-        <article className="legal-page">
-          <h1>About the project</h1>
+    <div className="v2-page" lang="en">
+      <main className="v2-container ab-page">
+        <section className="v2-hero pk-hero">
+          <div className="v2-hero-copy">
+            <div className="v2-hero-status">
+              <span className="v2-dot" aria-hidden="true" />
+              About the project
+            </div>
+            <h1>
+              Every child should know their <span className="v2-script">options</span>
+            </h1>
+            <p className="v2-hero-sub">
+              Dityam.com.ua is a platform of verified opportunities for Ukrainian
+              children aged 0–18. Courses, olympiads, camps, scholarships, clubs,
+              medical and psychological help, state payments — in one place,
+              checked and updated every day. Free for families, no sign-up, no ads.
+            </p>
+            <div className="pk-actions">
+              <Link href="/en" className="v2-btn-dark">Browse opportunities</Link>
+              <a href={`mailto:${EMAIL}`} className="v2-btn-outline">Write to us</a>
+            </div>
+          </div>
+        </section>
 
-          <p className="lead">
-            dityam.com.ua is a platform of verified opportunities for Ukrainian
-            children aged 0–18. Courses, olympiads, camps, scholarships, clubs,
-            medical and psychological help, state payments — gathered in one
-            place, checked by hand and updated every day. Free for families, no
-            sign-up, no ads.
-          </p>
+        {tiles.length ? (
+          <section className="ab-section" aria-label="Project figures">
+            <div className="pk-stats ab-stats">
+              {tiles.map(([num, label]) => (
+                <div className="pk-stat" key={label}>
+                  <span className="pk-stat-num">{n(num)}</span>
+                  <span className="pk-stat-label">{label}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
-          <h2>Why us</h2>
-          <p>
-            I’m Masha Berezhna. I believe every Ukrainian child should know what
-            is open to them — from a free club in their own town to a scholarship
-            abroad. But opportunities are scattered across hundreds of sites and
-            channels, written in the language of application forms rather than of
-            people, and they reach the families who have time, fast internet and
-            the right contacts. So the child who wins isn’t the one who needs it
-            most — it’s the one whose parents managed to find it.
-          </p>
+        <section className="ab-story" aria-labelledby="ab-why">
+          <h2 id="ab-why">Why I do this</h2>
+          <div className="ab-story-text">
+            <p>
+              I’m Mariia Shutiak. I believe every Ukrainian child should know what
+              is open to them — from a free club in their own town to a scholarship
+              abroad.
+            </p>
+            <p>
+              But opportunities are scattered across hundreds of sites and
+              channels, written in the language of application forms rather than of
+              people, and they reach the families who have time, fast internet and
+              the right contacts. So the child who wins isn’t the one who needs it
+              most — it’s the one whose parents managed to find it.
+            </p>
+            <p className="ab-signature">
+              <span className="v2-script">Mariia</span>Shutiak, founder of Dityam.com.ua
+            </p>
+          </div>
+        </section>
 
-          <h2>Our mission</h2>
-          <p>
-            To make a child’s access to development independent of their city,
-            their family’s means, and whether their parents know how to search.
-            Finding an opportunity is only the first step, and we go further with
-            the family:
+        <section className="ab-section" aria-labelledby="ab-mission">
+          <h2 id="ab-mission">What we do for families</h2>
+          <p className="ab-intro">
+            Our mission is to make a child’s access to development independent of
+            their city, their family’s means, and whether their parents know how to
+            search. Finding an opportunity is only the first step, and we go
+            further with the family.
           </p>
-          <ul>
-            <li>
-              <strong>Show what exists at all.</strong> One place instead of a
-              hundred sources — with filters by age, city, cost and deadline.
+          <ol className="ab-cards">
+            <li className="ab-card">
+              <span className="ab-card-n">01</span>
+              <h3>Show what exists</h3>
+              <p>One place instead of a hundred sources — with filters by age, city, cost and deadline.</p>
             </li>
-            <li>
-              <strong>Help choose the right one.</strong> Not a list of four
-              hundred cards, but what suits this particular child — their age,
-              their interests and their family’s situation.
+            <li className="ab-card">
+              <span className="ab-card-n">02</span>
+              <h3>Help choose the right one</h3>
+              <p>Not a list of hundreds of cards, but what suits this particular child — their age, interests and family situation.</p>
             </li>
-            <li>
-              <strong>Make sure nothing is missed.</strong> Deadlines pass
-              quietly. We remind you early, while there is still time to apply.
+            <li className="ab-card">
+              <span className="ab-card-n">03</span>
+              <h3>Make sure nothing is missed</h3>
+              <p>Deadlines pass quietly. We remind you early, while there is still time to apply.</p>
             </li>
-            <li>
-              <strong>Support what comes after.</strong> A child’s development
-              isn’t a single class. Parents need ground under their feet too:
-              how to choose, and how to talk about it with their child.
+            <li className="ab-card">
+              <span className="ab-card-n">04</span>
+              <h3>Support what comes after</h3>
+              <p>A child’s development isn’t a single class. Parents need ground under their feet too: how to choose, and how to talk about it with their child.</p>
             </li>
+          </ol>
+        </section>
+
+        <section className="ab-section ab-focus" aria-labelledby="ab-focus">
+          <h2 id="ab-focus">Special attention to the families who have it hardest</h2>
+          <p className="ab-intro">
+            For displaced children, children of Ukraine’s defenders, children with
+            disabilities, children with cancer and orphans, the state and
+            foundations run separate programmes — but you have to look for them in
+            the same places as everyone else. Here it’s a filter of its own, and
+            children of defenders have a dedicated{' '}
+            <Link href="/en/children-of-veterans">collection</Link>.
+          </p>
+        </section>
+
+        <section className="ab-section" aria-labelledby="ab-checks">
+          <h2 id="ab-checks">How we check programmes</h2>
+          <ul className="ab-checks">
+            <li>Every opportunity links to an official source</li>
+            <li>We check every day that links are alive: dead three days in a row — the listing is closed</li>
+            <li>When a deadline passes, the listing leaves the lists, and its page stays marked as ended</li>
+            <li>Opportunities without a deadline are re-read regularly — is the intake still open?</li>
+            <li>Paid programmes are marked as paid, and free ones can be filtered separately</li>
           </ul>
-          <p>
-            We pay separate attention to the families who have it hardest:
-            displaced children, children of veterans and of the fallen, children
-            with disabilities, children with cancer, orphans. The state and
-            foundations run separate programmes for them — but you have to look
-            for those in the same places as everyone else. Here it’s a filter of
-            its own.
-          </p>
+          <p className="ab-more"><Link href="/en/how-we-verify">How we verify, in detail →</Link></p>
+        </section>
 
-          <h2>How we check programmes</h2>
-          <ul>
-            <li>Every opportunity has an official source link</li>
-            <li>We check every day that the links are alive</li>
-            <li>Opportunities without a deadline are re-read every 45 days — is the intake still open?</li>
-            <li>We only add free or affordable programmes</li>
-            <li>One-off events that have passed are hidden automatically</li>
-          </ul>
-
-          <h2>In the media</h2>
+        <section className="ab-section" aria-labelledby="ab-press">
+          <h2 id="ab-press">In the media</h2>
           <PressLogos />
-          <p>
-            All publications, project figures and materials for journalists are
-            on the <Link href="/en/press">press page</Link>.
+          <p className="ab-more">
+            <Link href="/en/press">All publications and materials for journalists →</Link>
           </p>
+        </section>
 
-          <h2>How to take part</h2>
-          <p>
-            Know a programme that isn’t here? Spotted a mistake?
-            {' '}<a href="mailto:maryberezhna@gmail.com">Write to us</a>{' '}
-            or{' '}
-            <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">
-              on Instagram
-            </a>.
-          </p>
+        <section className="v2-bottom">
+          <div className="v2-panel">
+            <h2>Take part</h2>
+            <p>
+              Know a programme that isn’t here? Spotted a mistake? Write to us —
+              we will check and fix it.
+            </p>
+            <div className="v2-panel-actions">
+              <a href={`mailto:${EMAIL}`} className="v2-btn-dark">{EMAIL}</a>
+              <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Instagram</a>
+            </div>
+          </div>
+          <div className="v2-panel">
+            <h2>Support</h2>
+            <p>
+              The platform is free for families and ad-free, for good. What helps it
+              grow is the Dityam+ subscription (the waiting list is open now), and a
+              donation pays for new sources, the domain and hosting.
+            </p>
+            <div className="v2-panel-actions">
+              <Link href="/en/plus" className="v2-btn-dark">Dityam+</Link>
+              <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Donate on monobank</a>
+            </div>
+          </div>
+        </section>
 
-          <h2>Support</h2>
-          <p>
-            The platform is free for families and ad-free, for good. The project
-            is independent: what helps it grow is the{' '}
-            <Link href="/en/plus">Dityam+</Link> subscription — a personal
-            selection of opportunities for your child (the waiting list is open
-            now). And if you simply want to help, a donation on{' '}
-            <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer">monobank</a>{' '}
-            pays for new sources, the domain and hosting.
-          </p>
-
-          <h2>Partners</h2>
-          <p>
-            The site was built with technical support from{' '}
-            <a href="https://dot-hub.club/" target="_blank" rel="noopener noreferrer">.HUB</a>{' '}
-            (HubSpot Partner).
-          </p>
-        </article>
-      </div>
+        <p className="ab-partners">
+          The site was built with technical support from{' '}
+          <a href="https://dot-hub.club/" target="_blank" rel="noopener noreferrer">.HUB</a>{' '}
+          (HubSpot Partner).
+        </p>
+      </main>
       <Footer lang="en" />
-    </>
+    </div>
   );
 }

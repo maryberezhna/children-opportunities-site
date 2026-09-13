@@ -22,7 +22,7 @@ export default function NotFound() {
         </p>
         <ul>
           <li><Link href="/">Усі можливості</Link> — каталог із фільтрами за віком і регіоном</li>
-          <li><Link href="/pidbirka">Персональна підбірка</Link> — надсилаємо те, що підходить саме вашій дитині</li>
+          <li><Link href="/plus">Dityam+</Link> — надсилаємо те, що підходить саме вашій дитині</li>
           <li><Link href="/contacts">Контакти</Link> — напишіть, якщо щось не працює</li>
         </ul>
       </article>

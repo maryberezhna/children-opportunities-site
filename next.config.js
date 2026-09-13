@@ -29,6 +29,14 @@ module.exports = {
         destination: '/dity-zakhysnykiv',
         permanent: true,
       },
+      // Сторінка Dityam+ жила під /pidbirka, хоча в меню, в англійській версії
+      // (/en/plus) і в самій назві продукту це «plus». Адреса встигла потрапити
+      // в sitemap, футер, пости в каналі й повідомлення бота — тож 301, а не 404.
+      {
+        source: '/pidbirka',
+        destination: '/plus',
+        permanent: true,
+      },
       // Календар свят видалено (1 перегляд за 60 днів, у sitemap не було).
       {
         source: '/sviata',

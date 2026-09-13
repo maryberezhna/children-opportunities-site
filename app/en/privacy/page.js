@@ -42,8 +42,8 @@ export default function PrivacyPageEn() {
           <p>
             The site dityam.com.ua (the “Site”) is a non-commercial platform of
             opportunities for Ukrainian children. Owner and administrator —
-            Mariia Berezhna, contact:{' '}
-            <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
+            Mariia Shutiak, contact:{' '}
+            <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
           </p>
 
           <h2>2. What data we collect</h2>
@@ -109,7 +109,7 @@ export default function PrivacyPageEn() {
           </ul>
           <p>
             To exercise these rights, write to{' '}
-            <a href="mailto:maryberezhna@gmail.com">maryberezhna@gmail.com</a>.
+            <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
           </p>
 
           <h2>6. Changes to this policy</h2>

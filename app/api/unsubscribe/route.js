@@ -35,7 +35,7 @@ export async function GET(request) {
       console.error('WayForPay REMOVE failed', sub.wfp_order_reference, r);
       return page(
         'Не вдалося скасувати списання',
-        'Розсилку зупинимо, але автоматично скасувати платіж не вийшло. Напишіть на maryberezhna@gmail.com — скасуємо вручну сьогодні ж, гроші не спишуться.',
+        'Розсилку зупинимо, але автоматично скасувати платіж не вийшло. Напишіть на hellodityam.com.ua@gmail.com — скасуємо вручну сьогодні ж, гроші не спишуться.',
       );
     }
   }

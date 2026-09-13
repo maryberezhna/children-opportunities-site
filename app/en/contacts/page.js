@@ -34,11 +34,11 @@ export default function ContactsPageEn() {
 
           <h2>Other ways to reach us</h2>
           <div className="contact-grid">
-            <a href="mailto:maryberezhna@gmail.com" className="contact-card">
+            <a href="mailto:hellodityam.com.ua@gmail.com" className="contact-card">
               <span className="contact-icon">✉️</span>
               <div>
                 <div className="contact-title">Email</div>
-                <div className="contact-sub">maryberezhna@gmail.com</div>
+                <div className="contact-sub">hellodityam.com.ua@gmail.com</div>
               </div>
             </a>
 

@@ -9,7 +9,7 @@ import { plural, sourcesWord, freeWord } from '@/lib/plural';
 // /press і /en/press — раніше це були дві копії, які встигали розʼїхатись.
 // Серверний компонент; єдина інтерактивність — кнопка «Скопіювати».
 
-const EMAIL = 'maryberezhna@gmail.com';
+const EMAIL = 'hellodityam.com.ua@gmail.com';
 const BRAND_KIT = '/press/dityam-brand-kit.zip';
 // Обкладинка — динамічний маршрут із живими цифрами, а не статичний
 // og-image.png: той застиг на «690 можливостей» і в прескіті брехав би.
@@ -59,7 +59,7 @@ const T = {
       ['Для кого', 'батьки, опікуни, вчителі, соціальні працівники; окремий режим «Підліткам» — для 13–18, хто подається сам'],
       ['Вік дітей', '0–18 років'],
       ['Для родин', 'безкоштовно, без реклами й без реєстрації'],
-      ['Хто робить', 'Мері Бережна, соло-проєкт'],
+      ['Хто робить', 'Марія Шутяк, соло-проєкт'],
       ['Як наповнюється', 'щоденні скрапери МОН, МАН, IREX, UNICEF, Erasmus+ та інших джерел + ручна модерація кожного запису; посилання перевіряються щоночі'],
     ],
     regions: 'Регіональні сторінки',
@@ -75,7 +75,7 @@ const T = {
 
     contactLead: 'Контакт ',
     contactScript: 'для журналістів',
-    contactText: 'Мері Бережна, засновниця. Відповідаю на запити щодо коментарів, '
+    contactText: 'Марія Шутяк, засновниця. Відповідаю на запити щодо коментарів, '
       + 'статистики та історій родин, які знайшли програму через платформу. '
       + 'Потрібні дані під конкретний зріз — за віком, регіоном чи типом '
       + 'допомоги? Напишіть, підготую.',
@@ -129,7 +129,7 @@ const T = {
       ['Who it is for', 'parents, guardians, teachers, social workers; a separate “Teens” mode for 13–18-year-olds who apply on their own'],
       ['Ages', '0–18'],
       ['For families', 'free, with no advertising and no sign-up'],
-      ['Who runs it', 'Mary Berezhna, a solo project'],
+      ['Who runs it', 'Mariia Shutiak, a solo project'],
       ['How it is filled', 'daily scrapers of the Ministry of Education, the Junior Academy of Sciences, IREX, UNICEF, Erasmus+ and other sources, plus manual review of every listing; links are checked nightly'],
     ],
     regions: 'Regional pages',
@@ -145,7 +145,7 @@ const T = {
 
     contactLead: 'Contact ',
     contactScript: 'for journalists',
-    contactText: 'Mary Berezhna, founder. I answer requests for comment, statistics '
+    contactText: 'Mariia Shutiak, founder. I answer requests for comment, statistics '
       + 'and stories of families who found a programme through the platform. Need '
       + 'figures for a particular cut — by age, region or type of help? Write, and '
       + 'I will prepare them.',

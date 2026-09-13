@@ -138,7 +138,7 @@ export default function TermsPageEn() {
             <li>Taxpayer number (RNOKPP): 3530900201</li>
             <li>Address: 16B Voskresenska St., apt. 20, Kyiv 02130, Ukraine</li>
             <li>Phone: <a href="tel:+380634763998">+380 63 476 3998</a></li>
-            <li>Email: <a href="mailto:mashaberezhna0209@gmail.com">mashaberezhna0209@gmail.com</a></li>
+            <li>Email: <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a></li>
             <li>Website: dityam.com.ua</li>
           </ul>
         </article>

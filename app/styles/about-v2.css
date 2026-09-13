@@ -1,0 +1,205 @@
+/* «Про проєкт» у новому дизайні (вересень 2026). Префікс ab-; хіро, кнопки,
+   нижні панелі й плитки цифр — спільні з головною (home-v2.css) і сторінкою
+   для медіа (press-v2.css).
+
+   Стара сторінка жила у вузькій картці юридичних сторінок: колонка ~580px,
+   дрібний сірий текст. Для історії проєкту це не читалось. Тут текст на всю
+   ширину контейнера, основний шрифт 18px і темніший за службовий. */
+
+.ab-page { padding-bottom: 24px; }
+
+/* У флекс-колонці .v2-container хіро з margin: 0 auto стискається до ширини
+   тексту й стає по центру — і лівий край заголовка відʼїжджав від усіх
+   секцій нижче. Тут хіро тягнеться на всю ширину контейнера. */
+.ab-page > .v2-hero {
+  max-width: none;
+  margin: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.ab-section { display: flex; flex-direction: column; gap: 20px; }
+
+.ab-section h2 {
+  margin: 0;
+  font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.ab-intro {
+  margin: 0;
+  max-width: 68ch;
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--v2-ink-2);
+  text-wrap: pretty;
+}
+
+.ab-intro a { color: var(--v2-accent-hover); font-weight: 600; }
+
+.ab-more { margin: 0; font-size: 16px; }
+.ab-more a { color: var(--v2-accent-hover); font-weight: 600; }
+
+/* ── Цифри ─────────────────────────────────────────────────────────────── */
+.ab-stats { grid-template-columns: repeat(4, 1fr); }
+
+/* ── Історія ───────────────────────────────────────────────────────────── */
+.ab-story {
+  display: grid;
+  grid-template-columns: minmax(200px, 0.34fr) minmax(0, 1fr);
+  gap: 32px;
+  padding: 40px;
+  border-radius: 24px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+}
+
+.ab-story h2 { position: sticky; top: 96px; align-self: start; }
+
+.ab-story-text { display: flex; flex-direction: column; gap: 18px; max-width: 68ch; }
+
+.ab-story-text p {
+  margin: 0;
+  font-size: 19px;
+  line-height: 1.65;
+  color: var(--v2-ink);
+  text-wrap: pretty;
+}
+
+.ab-signature {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--v2-ink-2);
+}
+
+.ab-signature .v2-script { font-size: 1.6em; margin-right: 0.3em; transform: rotate(-3deg); }
+
+/* ── Що робимо ─────────────────────────────────────────────────────────── */
+.ab-cards {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.ab-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 22px;
+  border-radius: 16px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+}
+
+.ab-card-n {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--v2-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.ab-card h3 { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.25; }
+.ab-card p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
+
+/* ── Окрема увага ──────────────────────────────────────────────────────── */
+.ab-focus {
+  padding: 32px 36px;
+  border-radius: 20px;
+  background: var(--v2-cream);
+  border: 1px solid var(--v2-line);
+}
+
+.ab-focus .ab-intro { color: var(--v2-ink); }
+
+/* ── Як перевіряємо ────────────────────────────────────────────────────── */
+.ab-checks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 32px;
+  max-width: 1000px;
+}
+
+.ab-checks li {
+  position: relative;
+  padding-left: 30px;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--v2-ink);
+}
+
+.ab-checks li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-weight: 700;
+  color: var(--v2-accent);
+}
+
+/* ── Про нас пишуть ────────────────────────────────────────────────────
+   Стилі смужки логотипів раніше жили лише під .legal-page — поза нею список
+   малювався голими маркерами з логотипами стовпчиком. */
+.ab-page .press-logos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.ab-page .press-logos a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 140px;
+  height: 72px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  text-decoration: none;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.ab-page .press-logos a:hover {
+  border-color: var(--v2-line-strong);
+  transform: translateY(-2px);
+}
+
+/* Нижні панелі: абзац трохи більший за стандартний на головній — тут це
+   основний текст, а не підпис до кнопки. */
+.ab-page .v2-panel p { font-size: 16.5px; }
+
+.ab-partners { margin: 0; font-size: 14px; color: var(--v2-ink-3); }
+.ab-partners a { color: inherit; }
+
+@media (max-width: 1000px) {
+  .ab-cards { grid-template-columns: repeat(2, 1fr); }
+  .ab-stats { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 760px) {
+  .ab-page .press-logos li { width: calc(50% - 6px); }
+  .ab-page .press-logos a { width: 100%; }
+  .ab-story { grid-template-columns: 1fr; gap: 16px; padding: 26px 22px; }
+  .ab-story h2 { position: static; }
+  .ab-story-text p { font-size: 17.5px; }
+  .ab-checks { grid-template-columns: 1fr; }
+  .ab-focus { padding: 24px 22px; }
+}
+
+@media (max-width: 480px) {
+  .ab-cards { grid-template-columns: 1fr; }
+}
