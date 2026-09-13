@@ -366,7 +366,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
 
       {/* ── Питання ── */}
       <section className="pl-sec pl-sec-cream">
-        <div className="pl-wrap pl-narrow">
+        <div className="pl-wrap">
           <h2 className="pl-h2">{t.faqTitle}</h2>
           <div className="pl-faq">
             {t.faq.map(([q, a]) => (
