@@ -119,9 +119,32 @@ def _prompt(kw: str, region: dict) -> str:
         + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
-        '"deadline":"YYYY-MM-DD або null","age_from":7,"age_to":17,'
+        '"deadline":"YYYY-MM-DD або null","recurrence":"annual|ongoing|null",'
+        '"age_from":7,"age_to":17,'
         '"opportunity_type":"course|olympiad|competition|club|camp|scholarship|grant|festival|exchange|workshop",'
-        '"cost_type":"free|partially_free|paid_affordable"}]\n'
+        '"cost_type":"free|partially_free|paid_affordable",'
+        '"format":"online|offline|hybrid|null","cities":["Рим"],'
+        '"countries":["it"],"is_international":true}]\n'
+        "\n"
+        "ПʼЯТЬ ПОЛІВ, БЕЗ ЯКИХ ЗАПИС НЕ ПУБЛІКУЄТЬСЯ: вік, тип, вартість,\n"
+        "дата-або-періодичність і місце-або-формат. Сторінку читаєш ти —\n"
+        "тож і витягай їх ти, а не лишай модератору те, що в оголошенні\n"
+        "написано прямим текстом:\n"
+        "- deadline — останній день ПОДАЧІ заявки. Якщо в тексті лише дати\n"
+        "  проведення діапазоном — бери ПЕРШУ дату, ніколи не останню.\n"
+        "- recurrence — коли конкретної дати подачі немає: annual, якщо в\n"
+        "  тексті сказано, що це буває щороку («щорічний конкурс», «реєстрація\n"
+        "  зазвичай у жовтні, сам конкурс — у листопаді»); ongoing, якщо набір\n"
+        "  відкритий постійно (гурток, курс, виплата).\n"
+        "- format — online (лише дистанційно), offline (лише наживо) або\n"
+        "  hybrid. Участь через школу, приїзд на місце, адреса → offline.\n"
+        "- cities — місто українською в називному («Рим», «Варшава», «Львів»).\n"
+        "- countries — де дитина ФІЗИЧНО буде під час участі, кодами ISO\n"
+        "  alpha-2: Італія → it, Польща → pl, Україна → ua. Повністю\n"
+        "  дистанційна участь → [].\n"
+        "- is_international — true, якщо організатор закордонний, учасники з\n"
+        "  різних країн або дитина їде за кордон.\n"
+        "НІЧОГО НЕ ВИГАДУЙ: чого в тексті немає — лишай null або [].\n"
         "Якщо нічого певного не знайдено — поверни []."
     )
 
@@ -224,6 +247,26 @@ def publisher(url: str) -> str:
     return host[4:] if host.startswith("www.") else host
 
 
+VALID_FORMATS = ("online", "offline", "hybrid")
+
+
+def _clean_cities(raw) -> list:
+    """Міста від моделі — списком рядків, без порожніх і без дублів.
+
+    `_sanitize()` чистить країни, вік і періодичність, але не міста: у
+    нормалізаторі вони приходять зі схеми інструмента, а тут — з вільного
+    JSON, де замість масиву легко приїде рядок «Рим, Мілан».
+    """
+    if isinstance(raw, str):
+        raw = [p for p in re.split(r"[,;/]", raw)]
+    out = []
+    for c in raw or []:
+        city = str(c).strip()[:80]
+        if city and city not in out:
+            out.append(city)
+    return out
+
+
 def to_record(c: dict, kw: str, region: dict) -> dict | None:
     title = (c.get("title") or "").strip()
     url = (c.get("url") or "").strip()
@@ -238,6 +281,16 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "opportunity_type": c.get("opportunity_type"),
         "cost_type": c.get("cost_type"),
         "deadline": c.get("deadline"),
+        # Дата-або-періодичність і місце-або-формат — два з пʼяти обовʼязкових
+        # полів. Агент їх не питав узагалі, тож КОЖЕН його драфт приїздив у
+        # чергу з «бракує: дата…, формат або місце», навіть коли в самому
+        # оголошенні написано «щорічний конкурс для італійських шкіл».
+        # Модератор дочитував це руками за моделлю, яка сторінку вже прочитала.
+        "recurrence": c.get("recurrence"),
+        "format": c.get("format") if c.get("format") in VALID_FORMATS else None,
+        "cities": _clean_cities(c.get("cities")),
+        "countries": c.get("countries"),
+        "is_international": c.get("is_international"),
         # Джерело — той, хто опублікував. Слід агента (запит і країна) іде в
         # admin_comment: модератору він потрібен, відвідувачу — ні.
         "source": publisher(url) or "інтернет",
@@ -248,6 +301,11 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "status": "draft",
     }
     rec = _sanitize(rec)
+    # «Онлайн» у cities — теж відповідь на питання «де», і фільтр міст на
+    # сайті вміє її читати. Та сама умова, що в main.py: без неї
+    # онлайн-можливість випадала з фільтра зовсім.
+    if not rec.get("cities") and rec.get("format") == "online":
+        rec["cities"] = ["Онлайн"]
     if rec["age_from"] > rec["age_to"]:
         rec["age_from"], rec["age_to"] = 0, 18
 

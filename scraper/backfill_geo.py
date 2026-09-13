@@ -17,7 +17,7 @@
 Запуск:
     python scraper/backfill_geo.py --dry-run          # показати, нічого не писати
     python scraper/backfill_geo.py --limit 40         # обережний перший прогін
-    python scraper/backfill_geo.py                    # усе активне
+    python scraper/backfill_geo.py                    # усе активне й чернетки
 """
 from __future__ import annotations
 
@@ -223,7 +223,11 @@ def main() -> int:
         page = (db.table("opportunities")
                 .select("id, title, summary, details, source, cities, format, "
                         "countries, is_international")
-                .eq("status", "active")
+                # Драфти теж: саме вони стоять у черзі модерації, і саме
+                # там порожня географія блокує публікацію («бракує: формат
+                # або місце»). Прогін лише по активних лишав чергу без
+                # розмітки — модератор дозаповнював країну руками.
+                .in_("status", ["draft", "active"])
                 .is_("canonical_slug", "null")
                 .order("id")
                 .range(start, start + 999)
