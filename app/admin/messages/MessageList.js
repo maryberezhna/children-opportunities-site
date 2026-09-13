@@ -97,7 +97,7 @@ function Message({ row, onChange }) {
             їм тут не міняємо, щоб кнопка не вдавала збережену дію. */}
         {row.readOnly && (
           <span style={{ ...metaS, alignSelf: 'center' }}>
-            з поп-апа каталогу · опрацьовується при додаванні можливості
+            з поп-апа каталогу · {row.outcome || 'ще не опрацьовано'}
           </span>
         )}
         {!row.readOnly && row.status !== 'in_progress' && (
