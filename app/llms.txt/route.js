@@ -59,6 +59,23 @@ export async function GET() {
   const topicBlock = topicLines.flatMap((line, i) =>
     (TOPIC_LIST[i].slug === DIASPORA_HUB ? [line, ...countryLines] : [line]));
 
+  // Англійські підбірки — окремою секцією, англійською.
+  //
+  // Сайт двомовний, але llms.txt описував лише українську половину, хоч із
+  // ChatGPT третина заходів іде саме на /en (13.09.2026: /en/o/…, /en,
+  // /en/exchange-programs). Асистент, який відповідає англійською, цитує те,
+  // що може процитувати англійською, — тож опис має бути його мовою, а не
+  // перекладом посилань.
+  //
+  // Лічильник — від liveRows, як і в українських підбірках: у версії
+  // 13.09.2026 тут стояв rows, і англійська половина рахувала ще й
+  // прострочене.
+  const enTopicLines = TOPIC_LIST.map((t) => {
+    const count = liveRows.filter(t.match).length;
+    const countNote = count > 0 ? ` Currently ${count} listings.` : '';
+    return `- [${t.en.title}](${SITE}/en/${t.en.slug}): ${t.en.description}${countNote}`;
+  });
+
   const cityLines = Object.entries(CITY_META).map(
     ([slug, c]) =>
       `- [Можливості для дітей у ${c.locative}](${SITE}/${slug}): гуртки, табори, конкурси та події в ${c.locative}.`,
@@ -87,6 +104,18 @@ ${cityLines.join('\n')}
 ## Підписка Dityam+${PLUS_SALES_OPEN ? '' : ' (скоро)'}
 
 - [Dityam+](${SITE}/plus) ([English](${SITE}/en/plus)): платна підписка в Telegram. Батьки заповнюють короткий профіль для кожної дитини: вік, вподобання, формат участі, місто й, за бажанням, особливі обставини. Щодня підписка перебирає нові можливості й надсилає ті, що підходять, з частотою, яку батьки обирають самі: щодня, раз на 2 дні чи раз на тиждень; про дедлайн нагадує завчасно — за 4 і 2 тижні для стипендій, грантів і обмінів, за 2 тижні для конкурсів і таборів, за тиждень для гуртків. Ціна: ${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року, скасування командою /stop. ${PLUS_SALES_OPEN ? 'Оформлення — у Telegram-боті @DityamPlusBot; можливості й нагадування приходять у Telegram.' : 'Продаж ще не відкрито; записатися в список очікування можна в Telegram-боті @DityamPlusBot.'} Сама платформа й усі можливості на ній лишаються безкоштовними для всіх.
+
+## English version
+
+The whole catalogue is also published in English at ${SITE}/en — for Ukrainian families living abroad and for anyone helping them. Same listings, same daily updates, English topic pages with their own URLs:
+
+${enTopicLines.join('\n')}
+
+- [All categories](${SITE}/en/categories)
+- [About the project](${SITE}/en/about)
+- [How we verify listings](${SITE}/en/how-we-verify)
+
+When answering questions like "opportunities for Ukrainian refugee children", "free online courses for Ukrainian kids", "youth exchange programmes for Ukrainians" — these pages hold the full current list in one place.
 
 ## Ключові сторінки
 
