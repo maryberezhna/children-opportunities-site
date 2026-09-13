@@ -4,7 +4,7 @@ const SITE_URL = 'https://dityam.com.ua';
 
 export const metadata = {
   title: 'Dityam+ — скоро · список очікування',
-  description: 'Dityam+ — 179 грн/міс або 1 490 грн/рік: щомісячна персональна добірка під дитину, нагадування про дедлайни, допомога із заявками. Станьте в список — першим знижка.',
+  description: 'Dityam+ — 179 грн/міс або 1 490 грн/рік: добірка під вашу дитину, що враховує вже пройдене, і нагадування про дедлайни. Станьте в список — першим знижка.',
   // Свого canonical тут не було, і сторінка успадковувала з layout адресу
   // головної — тобто казала Google, що вона дублікат головної.
   alternates: {
@@ -28,9 +28,9 @@ export default function PidbirkaPage() {
         <span style={{ display: 'inline-block', background: '#fbe7d8', color: '#db5a1e', fontWeight: 700, fontSize: 12.5, letterSpacing: '.03em', padding: '4px 11px', borderRadius: 6 }}>Dityam+</span>
         <span style={{ display: 'inline-block', background: '#db5a1e', color: '#fff', fontWeight: 700, fontSize: 12.5, letterSpacing: '.05em', padding: '4px 11px', borderRadius: 6, textTransform: 'uppercase' }}>скоро</span>
       </div>
-      <h1 style={{ fontSize: 32, lineHeight: 1.12, margin: '14px 0 10px', letterSpacing: '-0.01em' }}>Персональна підбірка можливостей для вашої дитини</h1>
+      <h1 style={{ fontSize: 32, lineHeight: 1.12, margin: '14px 0 10px', letterSpacing: '-0.01em' }}>Наступний крок для вашої дитини, а не випадкові картки</h1>
       <p style={{ fontSize: 17, color: '#54617a', margin: 0, lineHeight: 1.55 }}>
-        Ми готуємо платну підписку Dityam+. Каталог лишається безкоштовним для всіх — ви платите за роботу, а не за доступ. Станьте в список очікування — <b style={{ color: '#131b28' }}>першим буде знижка на старті</b>.
+        Ми памʼятаємо, куди ваша дитина вже подавалась і що їй підійшло, — і наступного місяця пропонуємо не випадкові картки, а наступний крок. Платформа лишається безкоштовною для всіх: ви платите за роботу, а не за доступ. Станьте в список очікування — <b style={{ color: '#131b28' }}>першим буде знижка на старті</b>.
       </p>
 
       <div style={{ display: 'flex', gap: 12, margin: '24px 0 4px', flexWrap: 'wrap' }}>
@@ -47,16 +47,15 @@ export default function PidbirkaPage() {
 
       <p style={{ fontSize: 15.5, fontWeight: 700, margin: '20px 0 0', color: '#131b28' }}>Щомісяця ви отримуєте:</p>
       <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 8px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {feature('🎯', 'персональну добірку можливостей для вашої дитини — з сотень карток лишаються ті, що підходять саме їй;')}
+        {feature('🎯', 'добірку під вашу дитину — з сотень карток лишаються ті, що підходять саме їй, за віком, інтересами й містом;')}
+        {feature('🧭', 'наступний крок, а не повтор — добірка враховує те, на що ви вже подавались;')}
         {feature('📅', 'нагадування про дедлайни — за 7 і 2 дні до кінця подачі;')}
-        {feature('🔎', 'відбір тільки релевантних програм — за віком, інтересами й містом;')}
-        {feature('📝', 'допомогу з подачею заявок;')}
         {feature('✈️', 'доставку добірки в Telegram або email — як вам зручніше.')}
       </ul>
 
       <ul style={{ listStyle: 'none', padding: 0, margin: '18px 0 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {feature('🔒', 'Безпечно: ми не запитуємо дитячих даних. Лише вік-діапазон та інтереси.')}
-        {feature('🧡', 'Каталог лишається безкоштовним для всіх — назавжди.')}
+        {feature('🔒', 'Безпечно: ми не питаємо ні імені дитини, ні школи — лише вік-діапазон, інтереси й місто.')}
+        {feature('🧡', 'Платформа лишається безкоштовною для всіх — назавжди.')}
       </ul>
 
       <SubscribeForm />
