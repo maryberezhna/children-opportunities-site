@@ -42,7 +42,7 @@ export default function PrivacyPageEn() {
           <p>
             The site dityam.com.ua (the “Site”) is a non-commercial platform of
             opportunities for Ukrainian children. Owner and administrator —
-            Mariia Berezhna, contact:{' '}
+            Mariia Shutiak, contact:{' '}
             <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
           </p>
 
