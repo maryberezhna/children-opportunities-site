@@ -1,0 +1,37 @@
+name: Топ-3 тижня
+
+# Обирає трійку можливостей тижня. Понеділок, 05:40 UTC (08:40 Київ) — до
+# того, як люди відкриють сайт, і після нічного скрапу, щоб у виборі вже були
+# свіжі записи.
+on:
+  schedule:
+    - cron: '40 5 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = лише показати вибір, без запису'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  pick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Обрати трійку
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/pick-weekly-top.mjs

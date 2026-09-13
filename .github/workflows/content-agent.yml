@@ -1,0 +1,41 @@
+name: Контент на тиждень
+
+# Понеділок, 06:10 UTC (09:10 Київ) — за півгодини після вибору трійки тижня,
+# щоб агент писав уже про неї. Чернетки летять в адмінчат: агент не публікує
+# нічого сам, бо пост від імені платформи не може вийти без людини.
+on:
+  schedule:
+    - cron: '10 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      count:
+        description: 'скільки постів'
+        required: false
+        default: '5'
+      dry:
+        description: 'true = лише показати в логах, без телеграму'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  write:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Написати чернетки
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+        run: node scripts/content-agent.mjs --count ${{ github.event.inputs.count || '5' }} ${{ github.event.inputs.dry == 'true' && '--dry' || '' }}
