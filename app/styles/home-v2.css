@@ -60,8 +60,6 @@
   text-decoration: none;
 }
 
-.v2-logo-heart { font-size: 22px; line-height: 1; }
-
 .v2-logo-script {
   font-family: var(--font-caveat), cursive;
   font-style: italic;
@@ -963,5 +961,4 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
    «Підтримати» не тіснилися в першому ряду. */
 @media (max-width: 340px) {
   .v2-logo-script { font-size: 23px; }
-  .v2-logo-heart { font-size: 19px; }
 }

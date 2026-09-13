@@ -297,7 +297,6 @@ export default function PressKit({ stats, lang = 'uk' }) {
                 <div className={`pk-download-preview is-${f.kind}`}>
                   {f.kind === 'kit' && (
                     <span className="pk-lockup" aria-hidden="true">
-                      <span className="v2-logo-heart">🧡</span>
                       <span className="v2-logo-script">dityam.com.ua</span>
                     </span>
                   )}
