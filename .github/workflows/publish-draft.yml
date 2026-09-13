@@ -1,0 +1,51 @@
+name: Опублікувати чернетку (manual)
+
+# Те саме, що кнопка «Додати на сайт» в адмінці, але з можливістю в тому ж
+# кроці дописати вартість. Публікує лише чернетку і лише з усіма пʼятьма
+# обовʼязковими полями (lib/required.js).
+
+on:
+  workflow_dispatch:
+    inputs:
+      opportunity_id:
+        description: 'id запису (uuid)'
+        required: true
+      cost_type:
+        description: 'free / partially_free / paid_affordable / paid_premium / subsidized — порожньо, щоб не міняти'
+        required: false
+        default: ''
+      price_note:
+        description: 'Рядок «Вартість» — порожньо, щоб не міняти'
+        required: false
+        default: ''
+      dry_run:
+        description: 'true = лише показати зміни'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - run: npm ci --ignore-scripts
+
+      - name: Publish
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPPORTUNITY_ID: ${{ github.event.inputs.opportunity_id }}
+          COST_TYPE: ${{ github.event.inputs.cost_type }}
+          PRICE_NOTE: ${{ github.event.inputs.price_note }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/publish-draft.mjs
