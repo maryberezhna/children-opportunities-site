@@ -85,14 +85,14 @@ export default function Header() {
     writeMode(m);
   };
 
+  // Пункту «Каталог» у меню немає навмисно: логотип веде рівно туди ж, а два
+  // посилання на ту саму сторінку поруч лише з'їдають місце в шапці.
   const NAV = isEnglish
     ? [
-        { href: '/en', label: 'Catalogue', active: pathname === '/en' },
         { href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') },
         { href: '/en/plus', label: 'Dityam+', active: pathname.startsWith('/en/plus') },
       ]
     : [
-        { href: '/', label: 'Каталог', active: pathname === '/' },
         { href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') },
         { href: '/pidbirka', label: 'Dityam+', active: pathname.startsWith('/pidbirka') },
       ];
