@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
 export const runtime = 'nodejs';
@@ -95,10 +96,8 @@ export default async function MetricsPage() {
 
   return (
     <main style={wrap}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-        <h1 style={{ fontSize: 24, marginBottom: 2 }}>Метрики</h1>
-        <a href="/admin" style={{ fontSize: 14, color: '#54617a' }}>← Модерація</a>
-      </div>
+      <AdminNav current="metrics" />
+      <h1 style={{ fontSize: 24, marginBottom: 2 }}>Метрики</h1>
 
       <h2 style={h2S}>🛠 Продукт</h2>
       <div style={grid}>

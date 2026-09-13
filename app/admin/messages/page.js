@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 import MessageList from './MessageList';
 
@@ -60,15 +61,10 @@ export default async function MessagesPage() {
 
   return (
     <main style={wrap}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 24, margin: 0 }}>
-          Звернення {newCount > 0 && <span style={{ color: '#e85d24' }}>· {newCount} нових</span>}
-        </h1>
-        <nav style={{ display: 'flex', gap: 14, fontSize: 14 }}>
-          <a href="/admin" style={{ color: '#54617a' }}>← Модерація</a>
-          <a href="/admin/metrics" style={{ color: '#54617a' }}>📈 Метрики</a>
-        </nav>
-      </div>
+      <AdminNav current="messages" />
+      <h1 style={{ fontSize: 24, margin: 0 }}>
+        Звернення {newCount > 0 && <span style={{ color: '#e85d24' }}>· {newCount} нових</span>}
+      </h1>
 
       <p style={{ fontSize: 13.5, color: '#8a94a6', margin: '6px 0 0' }}>
         Форма на <a href="/contacts" target="_blank" rel="noopener noreferrer">/contacts</a> та

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import AdminNav from '../../AdminNav';
 import LoginForm from '../../LoginForm';
 import EditForm from './EditForm';
 import { isoWeek } from '@/lib/week';
@@ -48,6 +49,9 @@ export default async function EditPage({ params }) {
 
   return wrap(
     <>
+      {/* Меню тут потрібне найбільше: з редагування раніше не було виходу
+          взагалі, крім кнопки «назад» у браузері. */}
+      <AdminNav current="queue" />
       <h1 style={{ fontSize: 22, marginBottom: 2 }}>Редагувати можливість</h1>
       <p style={{ color: '#54617a', fontSize: 14, marginTop: 0 }}>{opp.source || '—'} · статус: <b>{opp.status}</b></p>
       <EditForm opp={{ ...opp, currentWeek: isoWeek() }} />
