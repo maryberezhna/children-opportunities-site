@@ -90,7 +90,7 @@ export default function AboutPage() {
         <h2>Як долучитися</h2>
         <p>
           Знаєте програму, якої тут немає? Помітили помилку?
-          {' '}<a href="mailto:maryberezhna@gmail.com">Напишіть нам</a>{' '}
+          {' '}<a href="mailto:hellodityam.com.ua@gmail.com">Напишіть нам</a>{' '}
           або{' '}<a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">в Instagram</a>.
         </p>
 

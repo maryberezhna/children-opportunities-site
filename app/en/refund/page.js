@@ -50,7 +50,7 @@ export default function RefundPage() {
 
         <h2>3. How to get in touch</h2>
         <p>
-          Write to <a href="mailto:mashaberezhna0209@gmail.com">mashaberezhna0209@gmail.com</a>{' '}
+          Write to <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>{' '}
           or to the bot, giving the approximate date and amount of the payment. We
           will get back to you and handle the request.
         </p>

@@ -3,7 +3,7 @@ import { usePathname } from 'next/navigation';
 import { OPEN_SUBSCRIBE_EVENT } from './SubscribePopup';
 import { TELEGRAM_URL, INSTAGRAM_URL } from '@/lib/social';
 
-const MAIL_URL = 'mailto:maryberezhna@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
+const MAIL_URL = 'mailto:hellodityam.com.ua@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
 export default function StickyBar() {
   // Панель висить на всіх сторінках, зокрема англійських, тож адресу Dityam+

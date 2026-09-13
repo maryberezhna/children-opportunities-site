@@ -118,9 +118,9 @@ export default async function HowWeVerifyEn() {
 
         <p className="topic-note" style={{ marginTop: 24 }}>
           Spotted a mistake or a dead link?{' '}
-          <a href="mailto:maryberezhna@gmail.com?subject=Error%20on%20dityam.com.ua">Write to us</a> —
+          <a href="mailto:hellodityam.com.ua@gmail.com?subject=Error%20on%20dityam.com.ua">Write to us</a> —
           we’ll fix it and say thank you. And if you know an opportunity that isn’t here yet,{' '}
-          <a href="mailto:maryberezhna@gmail.com?subject=Add%20an%20opportunity">suggest it</a>.
+          <a href="mailto:hellodityam.com.ua@gmail.com?subject=Add%20an%20opportunity">suggest it</a>.
         </p>
       </div>
       <Footer lang="en" />

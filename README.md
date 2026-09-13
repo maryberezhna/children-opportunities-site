@@ -180,8 +180,8 @@ NEXT_PUBLIC_SUPABASE_URL=... NEXT_PUBLIC_SUPABASE_ANON_KEY=... \
 
 ## 🤝 Як допомогти
 
-- 🐛 **Знайшли помилку?** — [issue](https://github.com/maryberezhna/children-opportunities-site/issues) або [написати на email](mailto:maryberezhna@gmail.com)
-- 💡 **Знаєте можливість, якої немає?** — [форма пропозиції](mailto:maryberezhna@gmail.com?subject=Запропонувати%20можливість%20на%20dityam.com.ua)
+- 🐛 **Знайшли помилку?** — [issue](https://github.com/maryberezhna/children-opportunities-site/issues) або [написати на email](mailto:hellodityam.com.ua@gmail.com)
+- 💡 **Знаєте можливість, якої немає?** — [форма пропозиції](mailto:hellodityam.com.ua@gmail.com?subject=Запропонувати%20можливість%20на%20dityam.com.ua)
 - 💝 **Підтримати фінансово** — [monobank-банка](https://send.monobank.ua/jar/F72fDrV2c) або [Підписка Base](https://base.monobank.ua/5QKZeVxPVjZEx7)
 - ⭐ **Поставте зірочку** репозиторію — мотивує
 - 🌍 **Робите форк для іншої країни/регіону?** — напишіть, обмінятись досвідом

@@ -9,7 +9,7 @@ import { plural, sourcesWord, freeWord } from '@/lib/plural';
 // /press і /en/press — раніше це були дві копії, які встигали розʼїхатись.
 // Серверний компонент; єдина інтерактивність — кнопка «Скопіювати».
 
-const EMAIL = 'maryberezhna@gmail.com';
+const EMAIL = 'hellodityam.com.ua@gmail.com';
 const BRAND_KIT = '/press/dityam-brand-kit.zip';
 // Обкладинка — динамічний маршрут із живими цифрами, а не статичний
 // og-image.png: той застиг на «690 можливостей» і в прескіті брехав би.

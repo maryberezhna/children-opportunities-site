@@ -47,7 +47,7 @@ export default function RefundPage() {
 
         <h2>3. Як звернутися</h2>
         <p>
-          Напишіть на <a href="mailto:mashaberezhna0209@gmail.com">mashaberezhna0209@gmail.com</a>{' '}
+          Напишіть на <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>{' '}
           або в бот, вказавши приблизну дату та суму платежу. Ми звʼяжемося з вами
           й опрацюємо запит.
         </p>

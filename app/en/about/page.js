@@ -99,7 +99,7 @@ export default function AboutPageEn() {
           <h2>How to take part</h2>
           <p>
             Know a programme that isn’t here? Spotted a mistake?
-            {' '}<a href="mailto:maryberezhna@gmail.com">Write to us</a>{' '}
+            {' '}<a href="mailto:hellodityam.com.ua@gmail.com">Write to us</a>{' '}
             or{' '}
             <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">
               on Instagram
