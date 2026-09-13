@@ -172,7 +172,7 @@ def find_existing(sb, url: str) -> dict | None:
     return rows[0] if rows else None
 
 
-def process_one(sb, normalizer, s: dict, apply: bool) -> tuple[str, str]:
+def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, str]:
     """Повертає (новий статус, пояснення для дампу)."""
     url = (s.get("url") or "").strip()
     title = (s.get("title") or "").strip()
@@ -181,6 +181,15 @@ def process_one(sb, normalizer, s: dict, apply: bool) -> tuple[str, str]:
 
     if not url.startswith(("http://", "https://")):
         return "rejected", "немає посилання на сторінку можливості"
+
+    # Та сама пропозиція двічі в одній партії. Seniv Studio 12.09.2026
+    # надіслала LORELEIFEST двічі поспіль — людина не побачила підтвердження
+    # й натиснула ще раз. Без цієї перевірки вона отримала б два листи за
+    # хвилину: один «додали», другий «уже є на сайті».
+    canon = canonical_url(url)
+    if canon in seen:
+        return "duplicate", "та сама пропозиція вже опрацьована в цій партії"
+    seen.add(canon)
 
     existing = find_existing(sb, url)
     if existing:
@@ -243,8 +252,9 @@ def run(apply: bool = False, limit: int = 50) -> dict:
 
     normalizer = Normalizer()
     stats = {}
+    seen = set()
     for s in rows:
-        status, why = process_one(sb, normalizer, s, apply)
+        status, why = process_one(sb, normalizer, s, apply, seen)
         stats[status] = stats.get(status, 0) + 1
         mark = {"imported": "✅", "duplicate": "♻️", "needs_human": "🟡",
                 "rejected": "❌", "new": "⏸"}.get(status, "·")
