@@ -1,0 +1,495 @@
+/* Лендінг Dityam+ (/plus, /en/plus). Класи з префіксом pl-.
+
+   Візуальна мова — та сама, що в плашці закритої можливості й у підлітковому
+   напрямі: чорне тло з помаранчевим акцентом для хіро й фінального заклику,
+   кремові й білі секції між ними. Кольори — з токенів home-v2. */
+
+.pl {
+  --pl-black: #141414;
+  --pl-black-2: #1e1e1e;
+  --pl-black-line: #2e2e2e;
+  --pl-on-black: #f6f1e7;
+  --pl-on-black-2: #c9c2b4;
+  color: var(--v2-ink);
+  background: #fff;
+}
+
+.pl-wrap {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+.pl-narrow { max-width: 760px; }
+
+.pl a:focus-visible,
+.pl summary:focus-visible {
+  outline: 2px solid var(--v2-accent);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ── Хіро ─────────────────────────────────────────────────────────────── */
+.pl-hero {
+  background: var(--pl-black);
+  color: var(--pl-on-black);
+  padding: 72px 0 84px;
+}
+
+.pl-hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+  gap: 56px;
+  align-items: center;
+}
+
+.pl-badges { display: flex; gap: 8px; margin-bottom: 20px; }
+
+.pl-badge {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: rgba(232, 93, 36, 0.16);
+  color: #ff9a6b;
+}
+
+.pl-badge-soon {
+  background: var(--v2-accent);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.pl-h1 {
+  margin: 0 0 20px;
+  font-size: clamp(36px, 5.4vw, 62px);
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -0.028em;
+  text-wrap: balance;
+}
+
+/* Одне рукописне слово — та сама деталь, що «раз на день» у блоці Telegram
+   на головній. Більше ніде на сторінці. */
+.pl-script {
+  font-family: var(--font-caveat), 'Caveat', cursive;
+  color: var(--v2-accent);
+  font-weight: 700;
+  font-size: 1.14em;
+  line-height: 0.9;
+  letter-spacing: 0;
+}
+
+.pl-lead {
+  margin: 0 0 30px;
+  max-width: 54ch;
+  font-size: 19px;
+  line-height: 1.55;
+  color: var(--pl-on-black-2);
+}
+
+.pl-cta-row { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+
+.pl-btn {
+  display: inline-block;
+  padding: 16px 26px;
+  border-radius: 12px;
+  background: var(--v2-accent);
+  color: #fff;
+  font-size: 16.5px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.pl-btn:hover { background: var(--v2-accent-hover); }
+
+.pl-link {
+  color: var(--pl-on-black);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(246, 241, 231, 0.35);
+}
+
+.pl-link:hover { text-decoration-color: var(--v2-accent); }
+
+.pl-price-hint {
+  margin: 22px 0 0;
+  font-size: 14px;
+  color: #8f887c;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Сходинки: знизу «Школа», вгорі праворуч «Світ». DOM іде по порядку, а
+   column-reverse кладе першу сходинку вниз — читач сканує знизу вгору так
+   само, як дитина проходить шлях. */
+.pl-stairs-fig { margin: 0; }
+
+.pl-stairs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 10px;
+}
+
+.pl-stair {
+  width: 66%;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: var(--pl-black-2);
+  border: 1px solid var(--pl-black-line);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pl-stair:nth-child(2) { margin-left: 11%; }
+.pl-stair:nth-child(3) { margin-left: 22%; }
+.pl-stair:nth-child(4) {
+  margin-left: 34%;
+  background: var(--v2-accent);
+  border-color: var(--v2-accent);
+}
+
+.pl-stair-lvl {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #ff9a6b;
+}
+
+.pl-stair:nth-child(4) .pl-stair-lvl { color: rgba(255, 255, 255, 0.82); }
+
+.pl-stair-t { font-size: 16.5px; font-weight: 600; color: var(--pl-on-black); }
+.pl-stair:nth-child(4) .pl-stair-t { color: #fff; }
+
+.pl-stairs-cap {
+  margin-top: 16px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #8f887c;
+}
+
+/* ── Секції ───────────────────────────────────────────────────────────── */
+.pl-sec { padding: 88px 0; }
+.pl-sec-cream { background: var(--v2-cream); }
+
+.pl-h2 {
+  margin: 0 0 14px;
+  font-size: clamp(28px, 3.6vw, 42px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.022em;
+  text-wrap: balance;
+}
+
+.pl-sub {
+  margin: 0 0 36px;
+  max-width: 60ch;
+  font-size: 17px;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+}
+
+/* ── Контраст ─────────────────────────────────────────────────────────── */
+.pl-contrast {
+  margin-top: 32px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.pl-contrast-card { border-radius: 18px; padding: 30px 30px 26px; }
+.pl-contrast-card h3 { margin: 0 0 18px; font-size: 19px; font-weight: 700; }
+.pl-contrast-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.pl-contrast-card li { position: relative; padding-left: 28px; font-size: 16px; line-height: 1.5; }
+
+.pl-contrast-a { background: #fff; border: 1px solid var(--v2-line); }
+.pl-contrast-a h3 { color: var(--v2-ink-3); }
+.pl-contrast-a li { color: var(--v2-ink-2); }
+.pl-contrast-a li::before { content: '—'; position: absolute; left: 0; color: var(--v2-ink-3); }
+
+.pl-contrast-b { background: var(--pl-black); color: var(--pl-on-black); }
+.pl-contrast-b h3 { color: var(--v2-accent); }
+.pl-contrast-b li::before { content: '✓'; position: absolute; left: 0; color: var(--v2-accent); font-weight: 700; }
+
+/* ── Траєкторії ───────────────────────────────────────────────────────── */
+.pl-paths {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.pl-path {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 26px 22px;
+  border-radius: 18px;
+  border: 1px solid var(--v2-line);
+  background: #fff;
+}
+
+.pl-persona {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--v2-accent-hover);
+}
+
+.pl-path-title {
+  margin: 0 0 20px;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* Вертикальна лінія й точки: кожна сходинка — вузол на одному шляху. */
+.pl-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 20px;
+  border-left: 2px solid var(--v2-line);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.pl-step {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 12px;
+}
+
+.pl-step::before {
+  content: '';
+  position: absolute;
+  left: -27px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid var(--v2-accent);
+}
+
+.pl-step:last-child::before { background: var(--v2-accent); }
+
+.pl-step-lvl {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+
+.pl-step-t { font-size: 15.5px; font-weight: 600; line-height: 1.35; color: var(--v2-ink); }
+
+.pl-step-age {
+  align-self: start;
+  font-size: 13px;
+  color: var(--v2-ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.pl-why {
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--v2-line);
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--v2-ink-2);
+}
+
+/* ── Як це працює ─────────────────────────────────────────────────────── */
+.pl-how {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 20px;
+}
+
+.pl-how-item { padding: 24px; border-radius: 18px; background: #fff; border: 1px solid var(--v2-line); }
+
+.pl-how-n {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--v2-accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-how-item h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; line-height: 1.3; }
+.pl-how-item p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--v2-ink-2); }
+
+/* ── Ціна ─────────────────────────────────────────────────────────────── */
+.pl-prices {
+  margin-top: 32px;
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.pl-price {
+  position: relative;
+  padding: 24px 26px;
+  border-radius: 16px;
+  border: 1.5px solid var(--v2-line-strong);
+  background: #fff;
+}
+
+.pl-price-best { border: 2px solid var(--v2-accent); }
+
+.pl-ribbon {
+  position: absolute;
+  top: -12px;
+  right: 18px;
+  padding: 3px 11px;
+  border-radius: 999px;
+  background: var(--v2-accent);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.pl-price-amount {
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+.pl-price-amount span { font-size: 16px; font-weight: 600; color: var(--v2-ink-2); letter-spacing: 0; }
+.pl-price-note { margin-top: 4px; font-size: 14px; color: var(--v2-ink-3); }
+
+.pl-included-title { margin: 36px 0 12px; font-size: 16px; font-weight: 700; }
+
+.pl-included {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-width: 760px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 24px;
+}
+
+.pl-included li { position: relative; padding-left: 26px; font-size: 15.5px; line-height: 1.5; color: var(--v2-ink-2); }
+.pl-included li::before { content: '✓'; position: absolute; left: 0; color: var(--v2-accent); font-weight: 700; }
+
+.pl-trust {
+  list-style: none;
+  margin: 32px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pl-trust li {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--v2-cream);
+  font-size: 14px;
+  color: var(--v2-ink-2);
+}
+
+/* ── Питання ──────────────────────────────────────────────────────────── */
+.pl-faq { margin-top: 24px; }
+.pl-faq-item { border-bottom: 1px solid var(--v2-line-strong); }
+
+.pl-faq-item summary {
+  position: relative;
+  padding: 20px 40px 20px 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  cursor: pointer;
+  list-style: none;
+}
+
+.pl-faq-item summary::-webkit-details-marker { display: none; }
+
+.pl-faq-item summary::after {
+  content: '+';
+  position: absolute;
+  right: 4px;
+  top: 16px;
+  font-size: 26px;
+  font-weight: 400;
+  color: var(--v2-accent);
+  transition: transform 0.15s;
+}
+
+.pl-faq-item[open] summary::after { transform: rotate(45deg); }
+.pl-faq-item p { margin: 0 0 22px; font-size: 16px; line-height: 1.6; color: var(--v2-ink-2); }
+
+/* ── Список очікування ────────────────────────────────────────────────── */
+.pl-join {
+  padding: 88px 0 96px;
+  background: var(--pl-black);
+  color: var(--pl-on-black);
+  text-align: center;
+}
+
+.pl-join-text {
+  margin: 0 auto 32px;
+  max-width: 52ch;
+  font-size: 17.5px;
+  line-height: 1.55;
+  color: var(--pl-on-black-2);
+}
+
+.pl-form-card {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 28px 26px;
+  border-radius: 20px;
+  background: #fff;
+  color: var(--v2-ink);
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-btn, .pl-faq-item summary::after { transition: none; }
+}
+
+/* ── Вузькі екрани ────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .pl-hero { padding: 48px 0 56px; }
+  .pl-hero-grid { grid-template-columns: minmax(0, 1fr); gap: 40px; }
+  .pl-stair { width: 78%; }
+  .pl-stair:nth-child(2) { margin-left: 7%; }
+  .pl-stair:nth-child(3) { margin-left: 14%; }
+  .pl-stair:nth-child(4) { margin-left: 22%; }
+  .pl-contrast { grid-template-columns: minmax(0, 1fr); }
+  .pl-sec { padding: 64px 0; }
+}
+
+@media (max-width: 560px) {
+  .pl-wrap { padding: 0 18px; }
+  .pl-lead { font-size: 17px; }
+  .pl-prices, .pl-included { grid-template-columns: minmax(0, 1fr); }
+  .pl-contrast-card, .pl-path { padding: 22px 20px; }
+  .pl-form-card { padding: 4px 18px 20px; }
+}
