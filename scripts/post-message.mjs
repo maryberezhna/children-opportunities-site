@@ -17,6 +17,7 @@
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { resolveTokens, hasTokens } from './telegram-counters.mjs';
 
 const FILE = process.env.FILE || process.argv[2];
 const DRY = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
@@ -37,10 +38,30 @@ if (!DRY && (!TOKEN || !CHAT)) {
 // людина натиснула «запустити», і без пояснення, де саме.
 const ALLOWED = /^(b|strong|i|em|u|s|code|pre|a|blockquote|tg-spoiler)$/;
 
-const text = (await readFile(resolve(FILE), 'utf8')).trim();
-if (!text) {
+const raw = (await readFile(resolve(FILE), 'utf8')).trim();
+if (!raw) {
   console.error(`Файл ${FILE} порожній.`);
   process.exit(1);
+}
+
+// Числа в тексті не пишуться руками — вони підставляються з бази просто зараз.
+// Пост «639 безкоштовних можливостей» із обіцянкою «точне число на сьогодні»
+// був неправдою того ж дня: насправді їх було 687 (13.09.2026).
+let text = raw;
+if (hasTokens(raw)) {
+  try {
+    const r = await resolveTokens(raw, {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+      key: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
+    text = r.text;
+    console.log('Живі числа:');
+    for (const line of r.used) console.log(`  ${line}`);
+    console.log('');
+  } catch (e) {
+    console.error(`\n${e.message}`);
+    process.exit(1);
+  }
 }
 
 const bad = [...text.matchAll(/<\/?([a-zA-Z-]+)[^>]*>/g)]
