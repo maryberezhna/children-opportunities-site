@@ -30,6 +30,19 @@ export async function GET() {
     return `- [${t.title}](${SITE}/${t.slug}): ${t.description}${countNote}`;
   });
 
+  // Англійські підбірки — окремою секцією, англійською.
+  //
+  // Сайт двомовний, але llms.txt описував лише українську половину, хоч із
+  // ChatGPT третина заходів іде саме на /en (13.09.2026: /en/o/…, /en,
+  // /en/exchange-programs). Асистент, який відповідає англійською, цитує те,
+  // що може процитувати англійською, — тож опис має бути його мовою, а не
+  // перекладом посилань.
+  const enTopicLines = TOPIC_LIST.map((t) => {
+    const count = rows.filter(t.match).length;
+    const countNote = count > 0 ? ` Currently ${count} listings.` : '';
+    return `- [${t.en.title}](${SITE}/en/${t.en.slug}): ${t.en.description}${countNote}`;
+  });
+
   const cityLines = Object.entries(CITY_META).map(
     ([slug, c]) =>
       `- [Можливості для дітей у ${c.locative}](${SITE}/${slug}): гуртки, табори, конкурси та події в ${c.locative}.`,
@@ -50,6 +63,18 @@ ${topicLines.join('\n')}
 ## Міста
 
 ${cityLines.join('\n')}
+
+## English version
+
+The whole catalogue is also published in English at ${SITE}/en — for Ukrainian families living abroad and for anyone helping them. Same listings, same daily updates, English topic pages with their own URLs:
+
+${enTopicLines.join('\n')}
+
+- [All categories](${SITE}/en/categories)
+- [About the project](${SITE}/en/about)
+- [How we verify listings](${SITE}/en/how-we-verify)
+
+When answering questions like "opportunities for Ukrainian refugee children", "free online courses for Ukrainian kids", "youth exchange programmes for Ukrainians" — these pages hold the full current list in one place.
 
 ## Ключові сторінки
 

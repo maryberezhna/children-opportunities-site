@@ -369,6 +369,16 @@ function buildJsonLd(item, lang) {
   const inLanguage = lang === 'en' ? 'en' : 'uk';
   const name = field(item, 'title', lang);
   const description = field(item, 'summary', lang);
+  // Дати життя запису — у самій розмітці, а не лише в OpenGraph.
+  //
+  // Головний аргумент каталогу — що дані актуальні, але машині це ніде не
+  // було сказано: і пошук, і AI-асистенти охочіше цитують сторінку, дату
+  // якої видно. dateModified беремо з updated_at — він оновлюється і при
+  // ручній перевірці, і при перевірці дедлайнів.
+  const dates = {
+    ...(item.created_at && { datePublished: String(item.created_at).slice(0, 10) }),
+    ...(item.updated_at && { dateModified: String(item.updated_at).slice(0, 10) }),
+  };
 
   if (COURSE_TYPES.has(item.opportunity_type)) {
     return {
@@ -378,6 +388,7 @@ function buildJsonLd(item, lang) {
       description,
       url,
       inLanguage,
+      ...dates,
       provider: {
         '@type': 'Organization',
         name: item.source || 'dityam.com.ua',
@@ -410,6 +421,7 @@ function buildJsonLd(item, lang) {
       description,
       url,
       inLanguage,
+      ...dates,
       startDate: item.deadline,
       eventAttendanceMode: isOnline
         ? 'https://schema.org/OnlineEventAttendanceMode'
@@ -450,6 +462,7 @@ function buildJsonLd(item, lang) {
     description,
     url,
     inLanguage,
+    ...dates,
   };
 }
 
