@@ -21,8 +21,9 @@ def row(**kw):
     return base
 
 
-def out(verdict, evidence, price="", confidence=0.9):
-    return {"verdict": verdict, "evidence": evidence, "price": price, "confidence": confidence}
+def out(verdict, evidence, price="", confidence=0.9, page_kind="one_opportunity"):
+    return {"verdict": verdict, "evidence": evidence, "price": price,
+            "confidence": confidence, "page_kind": page_kind}
 
 
 class DecideCost(unittest.TestCase):
@@ -86,6 +87,20 @@ class DecideCost(unittest.TestCase):
     def test_ukrainian_partial_is_not_free(self):
         q = "Навчання безкоштовне для пільгових категорій, для інших — часткова оплата."
         patch, _ = decide_cost(row(), out("free", q), q)
+        self.assertEqual(patch, {})
+
+    def test_listing_page_verdict_is_rejected(self):
+        # МАН, прогін 14.09.2026: головна man.gov.ua, «участь безплатна» — під
+        # семінарами для педагогів, а не під літньою STEM-школою.
+        q = "Коли: 19 вересня - 19 жовтня 2026 участь безплатна"
+        patch, why = decide_cost(row(), out("free", q, page_kind="listing_or_org"), q)
+        self.assertEqual(patch, {})
+        self.assertIn("не про одну можливість", why)
+
+    def test_missing_page_kind_is_rejected(self):
+        q = "Навчання безкоштовне за кошти міського бюджету"
+        o = out("free", q); o.pop("page_kind")
+        patch, _ = decide_cost(row(), o, q)
         self.assertEqual(patch, {})
 
 

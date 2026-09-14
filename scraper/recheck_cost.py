@@ -76,11 +76,20 @@ TOOL = {
                                "лише для окремих категорій — теж paid. unknown — "
                                "сторінка про гроші не говорить.",
             },
+            "page_kind": {
+                "type": "string",
+                "enum": ["one_opportunity", "listing_or_org"],
+                "description": "one_opportunity — сторінка описує саме ЦЮ програму. "
+                               "listing_or_org — головна організації або перелік "
+                               "багатьох подій: слова про оплату там стосуються "
+                               "інших програм, а не нашої.",
+            },
             "evidence": {
                 "type": "string",
                 "description": "ДОСЛІВНА цитата зі сторінки мовою оригіналу, на якій "
-                               "стоїть вердикт. Не переказ. Немає цитати — порожній "
-                               "рядок і verdict=unknown.",
+                               "стоїть вердикт, і вона має стосуватися САМЕ цієї "
+                               "програми. Не переказ. Немає цитати — порожній рядок "
+                               "і verdict=unknown.",
             },
             "price": {
                 "type": "string",
@@ -89,7 +98,7 @@ TOOL = {
             },
             "confidence": {"type": "number", "description": "0.0–1.0"},
         },
-        "required": ["verdict", "evidence", "confidence"],
+        "required": ["verdict", "page_kind", "evidence", "confidence"],
         "additionalProperties": False,
     },
 }
@@ -113,6 +122,9 @@ evidence. Немає цитати — verdict="unknown" і порожній evid
 - Безкоштовний доступ до частини (прослухати курс) при платному сертифікаті:
   якщо дитина може взяти участь, нічого не заплативши, — free; платне
   доповнення впиши в price.
+- Якщо це головна сторінка організації чи перелік багатьох подій —
+  page_kind="listing_or_org": фраза «участь безплатна» під ІНШОЮ подією
+  нічого не каже про нашу програму.
 - unknown: сторінка не говорить про гроші. НЕ здогадуйся з типу програми,
   назви організації чи того, що «державні школи зазвичай безкоштовні»."""
 
@@ -149,6 +161,12 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
     verdict = out.get("verdict")
     evidence = (out.get("evidence") or "").strip()
     conf = out.get("confidence") or 0
+
+    # Головна організації чи перелік подій: «участь безплатна» там стоїть під
+    # чужими програмами. Прогін 14.09.2026 так поставив «безкоштовно» Літній
+    # STEM-школі МАН — цитата була з man.gov.ua, але про семінари для педагогів.
+    if out.get("page_kind") != "one_opportunity":
+        return {}, "сторінка не про одну можливість — це головна або перелік"
 
     if verdict not in ("free", "paid") or len(evidence) < MIN_EVIDENCE or conf < MIN_CONFIDENCE:
         return {}, "сторінка не каже, чи платить родина"
