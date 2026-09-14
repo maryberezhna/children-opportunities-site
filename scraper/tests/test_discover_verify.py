@@ -7,6 +7,7 @@
 import pathlib
 import sys
 import unittest
+from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from discover_agent import decide_verified  # noqa: E402
@@ -62,6 +63,51 @@ class DecideVerified(unittest.TestCase):
     def test_listing_page_is_rejected(self):
         ok, _ = decide_verified(out(page_kind="listing_or_org"), KOSTYUK)
         self.assertFalse(ok)
+
+
+
+class Actuality(unittest.TestCase):
+    """Контрольний прогін 14.09.2026 приніс новину 2023 року про давно минулий табір."""
+    TODAY = date(2026, 9, 14)
+    NEWS_2023 = ("16/08/2023. 50 niños ucranianos vendrán a Extremadura para olvidar la guerra "
+                 "en un campamento solidario. Niños y jóvenes de 8 a 17 años llegados de Ucrania.")
+
+    def base(self, **kw):
+        o = out(children_evidence="Niños y jóvenes de 8 a 17 años",
+                eligibility="for_ukrainians",
+                eligibility_evidence="50 niños ucranianos vendrán a Extremadura")
+        o.update(kw)
+        return o
+
+    def test_old_news_rejected_even_if_model_says_current(self):
+        ok, why = decide_verified(self.base(is_current="current", date_evidence="16/08/2023"),
+                                  self.NEWS_2023, today=self.TODAY)
+        self.assertFalse(ok)
+        self.assertIn("дата в минулому", why)
+
+    def test_past_rejected(self):
+        ok, why = decide_verified(self.base(is_current="past", date_evidence="16/08/2023"),
+                                  self.NEWS_2023, today=self.TODAY)
+        self.assertFalse(ok)
+        self.assertIn("минуло", why)
+
+    def test_date_quote_not_on_page_rejected(self):
+        ok, why = decide_verified(out(is_current="current", date_evidence="заявки до 30 жовтня 2026"),
+                                  KOSTYUK, today=self.TODAY)
+        self.assertFalse(ok)
+        self.assertIn("з датою", why)
+
+    def test_current_with_date_accepted_and_noted(self):
+        page = KOSTYUK + " Реєстрація триває до 30 жовтня 2026 року."
+        ok, why = decide_verified(out(is_current="current", date_evidence="Реєстрація триває до 30 жовтня 2026 року"),
+                                  page, today=self.TODAY)
+        self.assertTrue(ok)
+        self.assertIn("дата:", why)
+
+    def test_no_date_accepted_with_warning(self):
+        ok, why = decide_verified(out(is_current="unknown", date_evidence=""), KOSTYUK, today=self.TODAY)
+        self.assertTrue(ok)
+        self.assertIn("дату на сторінці не видно", why)
 
 
 if __name__ == "__main__":
