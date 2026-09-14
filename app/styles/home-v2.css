@@ -83,6 +83,68 @@
 .v2-nav a:hover { color: var(--v2-ink); }
 .v2-nav a.is-active { color: var(--v2-ink); }
 
+/* Підменю «Підбірки» (Header.js, 14.09.2026). Відкривається наведенням і
+   кліком; невидимий «місток» над панеллю не дає списку закритись, поки
+   курсор переходить від кнопки до пунктів. */
+.v2-nav { align-items: center; }
+.v2-nav-drop { position: relative; }
+.v2-nav-drop-btn {
+  font: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--v2-ink-2);
+  cursor: pointer;
+}
+.v2-nav-drop-btn:hover,
+.v2-nav-drop.is-open .v2-nav-drop-btn,
+.v2-nav-drop-btn.is-active { color: var(--v2-ink); }
+.v2-nav-drop-btn:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 4px; border-radius: 4px; }
+.v2-nav-caret {
+  width: 7px;
+  height: 7px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.2s;
+}
+.v2-nav-drop.is-open .v2-nav-caret { transform: translateY(1px) rotate(-135deg); }
+.v2-nav-drop-panel {
+  position: absolute;
+  top: 100%;
+  left: -12px;
+  z-index: 30;
+  min-width: 220px;
+  margin: 10px 0 0;
+  padding: 8px;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+  border-radius: 16px;
+  box-shadow: 0 16px 32px rgba(26, 26, 26, 0.08);
+}
+.v2-nav-drop-panel::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -12px;
+  height: 12px;
+}
+.v2-nav .v2-nav-drop-panel a {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  color: var(--v2-ink);
+  white-space: nowrap;
+}
+.v2-nav .v2-nav-drop-panel a:hover { background: var(--v2-cream); color: var(--v2-ink); }
+.v2-nav .v2-nav-drop-panel a[aria-current="page"] { color: var(--v2-accent-hover); }
+
 .v2-header-right {
   margin-left: auto;
   display: flex;
@@ -205,6 +267,31 @@
 
 .v2-mmenu a.is-active { color: var(--v2-accent-hover); }
 
+/* Група «Підбірки» в мобільному меню. З нею меню довше за екран телефона —
+   тому воно прокручується, а не вилазить за нижній край. */
+.v2-mmenu { max-height: calc(100vh - 64px); overflow-y: auto; }
+.v2-mmenu-group {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 0 6px;
+  border-bottom: 1px solid var(--v2-line);
+}
+.v2-mmenu-label {
+  padding: 12px 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+.v2-mmenu a.v2-mmenu-sub {
+  min-height: 44px;
+  padding-left: 12px;
+  border-bottom: 0;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
 .v2-mmenu .v2-mmenu-support {
   justify-content: center;
   min-height: 48px;
@@ -223,7 +310,8 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 @media (prefers-reduced-motion: reduce) {
   .v2-burger-lines,
   .v2-burger-lines::before,
-  .v2-burger-lines::after { transition: none; }
+  .v2-burger-lines::after,
+  .v2-nav-caret { transition: none; }
 }
 
 /* ── Хіро ──────────────────────────────────────────────────────────────── */
