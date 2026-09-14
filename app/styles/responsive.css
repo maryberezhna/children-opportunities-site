@@ -23,12 +23,12 @@
   }
 
   .hero-badge {
-    font-size: 12px;
+    font-size: 0.75rem;
     padding: 5px 12px;
   }
 
   .beta-badge {
-    font-size: 10px;
+    font-size: 0.625rem;
     padding: 4px 10px 4px 8px;
     gap: 5px;
   }
@@ -39,7 +39,7 @@
   }
 
   .hero h1 {
-    font-size: 32px;
+    font-size: 2rem;
     line-height: 1.05;
     letter-spacing: -0.025em;
     margin-bottom: 14px;
@@ -53,22 +53,22 @@
     margin: 2px 0;
   }
 
-  .hero p { font-size: 16px; line-height: 1.5; }
+  .hero p { font-size: 1rem; line-height: 1.5; }
 
   .stats { gap: 16px 28px; margin-top: 20px; }
-  .stat-num { font-size: 22px; }
-  .stat-label { font-size: 12px; }
+  .stat-num { font-size: 1.375rem; }
+  .stat-label { font-size: 0.75rem; }
 
   .support-section { padding: 24px 18px; border-radius: 20px; }
 
   .support-content { gap: 20px; }
 
-  .support-title { font-size: 20px; }
-  .support-description { font-size: 14px; }
-  .support-benefits li { font-size: 14px; }
+  .support-title { font-size: 1.25rem; }
+  .support-description { font-size: 0.875rem; }
+  .support-benefits li { font-size: 0.875rem; }
 
   .support-cta-card { padding: 20px 18px 14px; }
-  .support-price-num { font-size: 36px; }
+  .support-price-num { font-size: 2.25rem; }
   .support-cta-btn { padding: 14px 20px; }
 
   .subscribe-section {
@@ -84,9 +84,9 @@
     align-items: flex-start;
   }
 
-  .subscribe-icon { font-size: 32px; line-height: 1; }
-  .subscribe-title { font-size: 16px; line-height: 1.25; margin-bottom: 4px; }
-  .subscribe-description { font-size: 14px; line-height: 1.4; }
+  .subscribe-icon { font-size: 2rem; line-height: 1; }
+  .subscribe-title { font-size: 1rem; line-height: 1.25; margin-bottom: 4px; }
+  .subscribe-description { font-size: 0.875rem; line-height: 1.4; }
 
   .subscribe-form-wrap iframe {
     height: 440px !important;
@@ -107,7 +107,7 @@
     border: none;
     border-radius: 12px;
     font-family: inherit;
-    font-size: 15px;
+    font-size: 0.9375rem;
     font-weight: 500;
     cursor: pointer;
     box-shadow: 0 4px 14px rgba(232, 93, 36, 0.3);
@@ -122,18 +122,18 @@
   }
 
   .filters { padding: 16px; border-radius: 16px; }
-  .filter-btn { font-size: 14px; padding: 9px 15px; }
-  .chip { font-size: 13px; padding: 5px 12px; }
+  .filter-btn { font-size: 0.875rem; padding: 9px 15px; }
+  .chip { font-size: 0.8125rem; padding: 5px 12px; }
   .grid { grid-template-columns: 1fr; }
   .card { padding: 18px; }
-  .card h3 { font-size: 18px; }
-  .card-summary { font-size: 15px; }
-  .meta { font-size: 14px; }
-  .meta-label { font-size: 13px; }
-  .meta-val { font-size: 14px; }
-  .link-btn { font-size: 15px; padding: 13px 18px; }
-  .count { font-size: 15px; }
-  .sort-select { font-size: 13.5px; padding: 8px 12px; }
+  .card h3 { font-size: 1.125rem; }
+  .card-summary { font-size: 0.9375rem; }
+  .meta { font-size: 0.875rem; }
+  .meta-label { font-size: 0.8125rem; }
+  .meta-val { font-size: 0.875rem; }
+  .link-btn { font-size: 0.9375rem; padding: 13px 18px; }
+  .count { font-size: 0.9375rem; }
+  .sort-select { font-size: 0.84375rem; padding: 8px 12px; }
 
   .modal { padding: 28px 22px; }
 
@@ -155,7 +155,7 @@
   }
 
   .footer-about { max-width: 100%; }
-  .footer-social-link { font-size: 13px; padding: 8px 16px; }
+  .footer-social-link { font-size: 0.8125rem; padding: 8px 16px; }
 
   /* МОБІЛЬНИЙ STICKY BAR — показуємо */
   .sticky-bar {
@@ -189,24 +189,24 @@
     flex-direction: column;
     gap: 3px;
     padding: 8px 4px;
-    font-size: 12px;
+    font-size: 0.75rem;
     border-radius: 12px;
     min-width: 0;
     min-height: 56px;
   }
 
   .sticky-btn svg { width: 20px; height: 20px; }
-  .sticky-heart { font-size: 22px; }
+  .sticky-heart { font-size: 1.375rem; }
 }
 
 /* Маленькі мобільні */
 @media (max-width: 380px) {
-  .hero h1 { font-size: 26px; line-height: 1.2; }
-  .hero p { font-size: 15px; }
+  .hero h1 { font-size: 1.625rem; line-height: 1.2; }
+  .hero p { font-size: 0.9375rem; }
   .stats { gap: 12px 20px; }
-  .stat-num { font-size: 20px; }
-  .sticky-btn { font-size: 11px; }
-  .filter-btn { font-size: 13px; padding: 8px 13px; }
-  .card-summary { font-size: 14px; }
+  .stat-num { font-size: 1.25rem; }
+  .sticky-btn { font-size: 0.6875rem; }
+  .filter-btn { font-size: 0.8125rem; padding: 8px 13px; }
+  .card-summary { font-size: 0.875rem; }
 }
 

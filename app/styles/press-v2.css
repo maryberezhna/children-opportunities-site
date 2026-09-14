@@ -5,7 +5,7 @@
 
 /* Хіро без фото: одна колонка, заголовок трохи стриманіший за головну. */
 .pk-hero { grid-template-columns: 1fr; padding-bottom: 0; }
-.pk-hero h1 { font-size: clamp(34px, 4.6vw, 54px); }
+.pk-hero h1 { font-size: clamp(2.125rem, calc(4.6vw * var(--a11y-font-scale, 1)), 3.375rem); }
 
 .pk-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
 .pk-actions a { display: inline-flex; align-items: center; text-decoration: none; }
@@ -16,7 +16,7 @@
 .pk-panel h2 {
   margin: 0;
   font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -30,9 +30,9 @@
   gap: 8px 16px;
 }
 
-.pk-section-head > span { font-size: 13px; color: var(--v2-ink-3); }
+.pk-section-head > span { font-size: 0.8125rem; color: var(--v2-ink-3); }
 
-.pk-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--v2-ink-3); }
+.pk-note { margin: 0; font-size: 0.8125rem; line-height: 1.5; color: var(--v2-ink-3); }
 
 /* ── Цифри ─────────────────────────────────────────────────────────────── */
 .pk-stats {
@@ -52,7 +52,7 @@
 }
 
 .pk-stat-num {
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.02em;
@@ -60,7 +60,7 @@
   color: var(--v2-ink);
 }
 
-.pk-stat-label { font-size: 13px; line-height: 1.35; color: var(--v2-ink-2); }
+.pk-stat-label { font-size: 0.8125rem; line-height: 1.35; color: var(--v2-ink-2); }
 
 /* ── Публікації ────────────────────────────────────────────────────────── */
 .pk-mentions {
@@ -94,17 +94,17 @@
    написи, бо в них немає ширини — компенсуємо висотою. */
 .pk-mention-logo img.is-square { max-height: 40px; }
 
-.pk-mention-meta { font-size: 13px; color: var(--v2-ink-3); }
+.pk-mention-meta { font-size: 0.8125rem; color: var(--v2-ink-3); }
 
 .pk-mention h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   line-height: 1.4;
   color: var(--v2-ink);
 }
 
-.pk-mention-more { margin-top: auto; font-size: 13px; font-weight: 500; color: var(--v2-accent); }
+.pk-mention-more { margin-top: auto; font-size: 0.8125rem; font-weight: 500; color: var(--v2-accent); }
 
 /* ── Опис + «Коротко» ──────────────────────────────────────────────────── */
 .pk-two {
@@ -126,14 +126,14 @@
 
 .pk-quote {
   margin: 0;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--v2-ink-2);
 }
 
 .pk-copy {
   font-family: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   padding: 7px 14px;
   border-radius: 9999px;
@@ -152,7 +152,7 @@
   display: grid;
   grid-template-columns: 140px 1fr;
   gap: 10px;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.5;
 }
 
@@ -211,11 +211,11 @@
 .pk-download-preview.is-icon img { width: 56px; height: 56px; display: block; }
 
 .pk-lockup { display: inline-flex; align-items: center; gap: 8px; }
-.pk-lockup .v2-logo-script { font-size: 26px; }
+.pk-lockup .v2-logo-script { font-size: 1.625rem; }
 
-.pk-download strong { font-size: 15px; font-weight: 600; color: var(--v2-ink); }
+.pk-download strong { font-size: 0.9375rem; font-weight: 600; color: var(--v2-ink); }
 .pk-download-meta { font-weight: 400; color: var(--v2-ink-3); }
-.pk-download > span { font-size: 13px; line-height: 1.45; color: var(--v2-ink-2); }
+.pk-download > span { font-size: 0.8125rem; line-height: 1.45; color: var(--v2-ink-2); }
 .pk-download-cta { margin-top: auto; padding-top: 4px; font-weight: 500; color: var(--v2-accent) !important; }
 
 /* ── Контакт і посилання ───────────────────────────────────────────────── */
@@ -226,7 +226,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  font-size: 15px;
+  font-size: 0.9375rem;
 }
 
 .pk-links span { color: var(--v2-ink-3); }
@@ -243,9 +243,9 @@
 @media (max-width: 600px) {
   .pk-stats { grid-template-columns: 1fr 1fr; }
   .pk-stat { padding: 14px; }
-  .pk-stat-num { font-size: 26px; }
+  .pk-stat-num { font-size: 1.625rem; }
   .pk-mentions, .pk-downloads { grid-template-columns: 1fr; }
   .pk-panel { padding: 22px 18px; }
   .pk-facts > div { grid-template-columns: 1fr; gap: 2px; }
-  .pk-section h2, .pk-panel h2 { font-size: 21px; }
+  .pk-section h2, .pk-panel h2 { font-size: 1.3125rem; }
 }

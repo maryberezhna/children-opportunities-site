@@ -10,14 +10,14 @@
   align-items: center;
   gap: 10px;
   margin: 0 0 12px;
-  font-size: 21px;
+  font-size: 1.3125rem;
   font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.01em;
 }
 
 .dl-month-count {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: var(--ink-muted);
   background: var(--bg);
@@ -54,7 +54,7 @@
 }
 
 .dl-day {
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 700;
   line-height: 1;
   color: var(--accent);
@@ -62,7 +62,7 @@
 }
 
 .dl-mon {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--ink-muted);
   margin-top: 2px;
@@ -71,7 +71,7 @@
 .dl-body { min-width: 0; display: flex; flex-direction: column; gap: 7px; }
 
 .dl-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.35;
   color: var(--ink);
@@ -99,8 +99,8 @@
 }
 
 .dl-remind-text { display: block; margin-bottom: 12px; }
-.dl-remind-text strong { display: block; font-size: 17px; color: var(--ink); }
-.dl-remind-text span { display: block; font-size: 14.5px; color: var(--ink-muted); margin-top: 3px; }
+.dl-remind-text strong { display: block; font-size: 1.0625rem; color: var(--ink); }
+.dl-remind-text span { display: block; font-size: 0.90625rem; color: var(--ink-muted); margin-top: 3px; }
 
 .dl-remind-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
@@ -108,7 +108,7 @@
   flex: 1 1 240px;
   min-width: 0;
   padding: 12px 14px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink);
   background: var(--surface);
   border: 1px solid var(--border);
@@ -120,7 +120,7 @@
 .dl-remind-row button {
   flex: 0 0 auto;
   padding: 12px 24px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
   background: var(--ink);
@@ -133,16 +133,16 @@
 .dl-remind-row button:hover:not(:disabled) { background: #000; }
 .dl-remind-row button:disabled { opacity: 0.6; cursor: default; }
 
-.dl-remind-err { margin: 8px 0 0; font-size: 13.5px; color: #c0392b; }
+.dl-remind-err { margin: 8px 0 0; font-size: 0.84375rem; color: #c0392b; }
 
 .dl-remind-done strong { color: var(--ink); }
-.dl-remind-done span { display: block; font-size: 14.5px; color: var(--ink-muted); margin-top: 3px; }
+.dl-remind-done span { display: block; font-size: 0.90625rem; color: var(--ink-muted); margin-top: 3px; }
 
 @media (max-width: 640px) {
   .dl-link { gap: 12px; padding: 12px 6px; }
   .dl-date { flex-basis: 44px; }
-  .dl-day { font-size: 21px; }
-  .dl-title { font-size: 15px; }
+  .dl-day { font-size: 1.3125rem; }
+  .dl-title { font-size: 0.9375rem; }
   .dl-remind { padding: 16px; }
   .dl-remind-row button { flex: 1 1 100%; }
 }

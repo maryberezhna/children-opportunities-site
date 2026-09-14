@@ -50,7 +50,7 @@
   height: 36px;
   border-radius: 50%;
   cursor: pointer;
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--ink-muted);
   display: flex;
   align-items: center;
@@ -72,7 +72,7 @@
 }
 
 .subscribe-popup-icon {
-  font-size: 48px;
+  font-size: 3rem;
   margin-bottom: 10px;
   display: inline-block;
   animation: iconBounce 2s ease-in-out infinite;
@@ -99,7 +99,7 @@
 }
 
 .subscribe-popup-title {
-  font-size: 22px;
+  font-size: 1.375rem;
   font-weight: 500;
   color: var(--ink);
   margin-bottom: 8px;
@@ -107,7 +107,7 @@
 }
 
 .subscribe-popup-description {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--ink-soft);
   line-height: 1.5;
   margin: 0;
@@ -124,7 +124,7 @@
   color: #ffffff;
   border: none;
   border-radius: 14px;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   font-family: inherit;
   text-decoration: none;
@@ -147,7 +147,7 @@
   background: transparent;
   border: none;
   color: var(--ink-muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-family: inherit;
   padding: 12px;
   cursor: pointer;
@@ -186,11 +186,11 @@
   }
 
   .subscribe-popup-title {
-    font-size: 19px;
+    font-size: 1.1875rem;
   }
 
   .subscribe-popup-icon {
-    font-size: 40px;
+    font-size: 2.5rem;
   }
 }
 
@@ -245,7 +245,7 @@
 .tg-callout-text {
   margin: 0;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   line-height: 1.3;
 }
 
@@ -253,7 +253,7 @@
   display: block;
   color: var(--ink);
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
 }
 
 .tg-callout-text span {
@@ -286,7 +286,7 @@
 /* Розмір під підказку: вона вузька й ділить рядок із текстом та хрестиком. */
 .tg-callout-cta {
   flex-shrink: 0;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 500;
   padding: 8px 15px;
 }
@@ -298,7 +298,7 @@
   border: none;
   background: transparent;
   color: var(--ink-muted);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1;
   cursor: pointer;
   border-radius: 7px;
@@ -321,13 +321,13 @@
     gap: 8px;
     padding: 9px 8px 9px 12px;
   }
-  .tg-callout-text { font-size: 12.5px; }
-  .tg-callout-text strong { font-size: 13.5px; white-space: nowrap; }
+  .tg-callout-text { font-size: 0.78125rem; }
+  .tg-callout-text strong { font-size: 0.84375rem; white-space: nowrap; }
   .tg-callout-text span { display: none; }
-  .tg-callout-cta { padding: 7px 12px; font-size: 12.5px; }
+  .tg-callout-cta { padding: 7px 12px; font-size: 0.78125rem; }
   /* Хрестик на телефоні лишається, хоч місця й обмаль. Раніше його ховали з
      розрахунку «підказка й так зникає за 10 секунд» — але зникнення більше не
      глушить сесію, тож без хрестика підказку на телефоні не спекатись ніяк:
      Esc там немає. Тому кнопка вужча, а не відсутня. */
-  .tg-callout-close { width: 20px; height: 20px; font-size: 11px; }
+  .tg-callout-close { width: 20px; height: 20px; font-size: 0.6875rem; }
 }

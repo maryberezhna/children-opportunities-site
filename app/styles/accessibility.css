@@ -3,7 +3,7 @@
 
 /* Apply font scale to root */
 html {
-  font-size: calc(16px * var(--a11y-font-scale, 1));
+  font-size: calc(100% * var(--a11y-font-scale, 1));
 }
 
 /* Apply letter spacing globally */
