@@ -25,6 +25,8 @@
 @import "./styles/plus-landing.css";
 @import "./styles/about-v2.css";
 @import "./styles/home-sidebar.css";
+/* Шаблон підбірок (tp-*) — після home-v2, але до мобільних файлів. */
+@import "./styles/topic-v2.css";
 /* Мобільні стилі — останніми: вони перебивають десктопні правила вище. */
 @import "./styles/home-mobile.css";
 @import "./styles/opportunity-mobile.css";
