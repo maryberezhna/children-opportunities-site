@@ -49,8 +49,8 @@ const T = {
       + 'дітей 0–18 років в Україні та за кордоном. Курси, олімпіади, '
       + 'стипендії, табори, гранти, обміни, медична допомога та державні '
       + 'виплати — в одному місці, з фільтрами за віком, регіоном, вартістю '
-      + 'й особливими потребами дитини. Кожен запис перевіряється вручну і '
-      + 'має посилання на офіційне джерело. Окрема увага — дітям ВПО, дітям '
+      + 'й особливими потребами дитини. Кожен запис має посилання на офіційне '
+      + 'джерело, а посилання перевіряються щодня. Окрема увага — дітям ВПО, дітям '
       + 'захисників і захисниць та дітям з особливими потребами.',
 
     briefTitle: 'Коротко',
@@ -60,7 +60,8 @@ const T = {
       ['Вік дітей', '0–18 років'],
       ['Для родин', 'безкоштовно, без реклами й без реєстрації'],
       ['Хто робить', 'Марія Шутяк, соло-проєкт'],
-      ['Як наповнюється', 'щоденні скрапери МОН, МАН, IREX, UNICEF, Erasmus+ та інших джерел + ручна модерація кожного запису; посилання перевіряються щоночі'],
+      // Твердження про ручну перевірку прибрано 14.09.2026 на прохання Марії: записи проходять автоматичні ворота, людина дивиться лише сумнівні.
+      ['Як наповнюється', 'щоденні скрапери МОН, МАН, Erasmus+ та інших джерел; автоматична перевірка обовʼязкових полів, сумнівні записи дивиться модератор; посилання перевіряються щодня'],
     ],
     regions: 'Регіональні сторінки',
 
@@ -119,8 +120,8 @@ const T = {
       + 'aged 0–18 in Ukraine and abroad. Courses, olympiads, scholarships, camps, '
       + 'grants, exchanges, medical help and state payments — in one place, with '
       + 'filters by age, region, cost and a child’s particular needs. Every listing '
-      + 'is checked by hand and links to its official source. Particular attention '
-      + 'goes to displaced children, children of veterans and of the fallen, and '
+      + 'links to its official source, and links are checked daily. Particular attention '
+      + 'goes to displaced children, children of Ukraine’s defenders, and '
       + 'children with special needs.',
 
     briefTitle: 'In brief',
@@ -130,7 +131,7 @@ const T = {
       ['Ages', '0–18'],
       ['For families', 'free, with no advertising and no sign-up'],
       ['Who runs it', 'Mariia Shutiak, a solo project'],
-      ['How it is filled', 'daily scrapers of the Ministry of Education, the Junior Academy of Sciences, IREX, UNICEF, Erasmus+ and other sources, plus manual review of every listing; links are checked nightly'],
+      ['How it is filled', 'daily scrapers of the Ministry of Education, the Junior Academy of Sciences, Erasmus+ and other sources; automatic checks of required fields, with doubtful listings reviewed by a moderator; links are checked daily'],
     ],
     regions: 'Regional pages',
 
