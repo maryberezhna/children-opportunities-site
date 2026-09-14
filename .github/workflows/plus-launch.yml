@@ -1,0 +1,49 @@
+name: Dityam+ — launch to waitlist
+
+# Разове повідомлення про запуск Dityam+ усім зі списку очікування: Telegram —
+# від основного бота, імейл — листом із персональним посиланням у платний бот.
+# Знижка для них — перший місяць за 89 грн (рішення Марії 14.09.2026).
+#
+# ЗАПУСКАТИ ЛИШЕ ЗА РІШЕННЯМ МАРІЇ і разом із PLUS_SALES_OPEN = true у
+# lib/plus.js. Без confirm = SEND нічого не шле — лише лог, кому й що пішло б.
+# Повторний запуск із SEND напише всім ще раз.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'SEND — надіслати по-справжньому; порожньо — лише показати, кому й що'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Notify waitlist
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: mashaberezhna0209@gmail.com
+          SITE_URL: https://dityam.com.ua
+        run: |
+          if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
+            python plus_launch.py --send
+          else
+            python plus_launch.py
+          fi

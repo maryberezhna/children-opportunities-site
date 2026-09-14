@@ -3,6 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { opportunitiesWord } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
+import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
@@ -30,6 +31,9 @@ const L = {
     error: 'Перевірте email — здається, у ньому одрук.',
     fine: 'Платформа лишається безкоштовною для всіх · жодного спаму · ',
     support: 'підтримати проєкт',
+    openNote: 'Dityam+ — платна підписка: 179 грн/міс або 1 199 грн/рік. Оформлюється в Telegram-боті за кілька хвилин: питання про дитину, потім оплата.',
+    openCta: 'Оформити в Telegram',
+    openBanner: 'Оформити Dityam+',
   },
   en: {
     title: 'The platform shows everything that exists. Dityam+ sends what fits your child.',
@@ -49,6 +53,9 @@ const L = {
     error: 'Check the email — there seems to be a typo.',
     fine: 'The platform stays free for everyone · no spam · ',
     support: 'support the project',
+    openNote: 'Dityam+ is a paid subscription: UAH 179/month or UAH 1,199/year. You set it up in the Telegram bot in a few minutes: questions about your child, then payment.',
+    openCta: 'Subscribe on Telegram',
+    openBanner: 'Get Dityam+',
   },
 };
 
@@ -119,7 +126,19 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
         </div>
 
         <div className="plus-side">
-          {state === 'done' ? (
+          {PLUS_SALES_OPEN ? (
+            // Продаж відкрито (lib/plus.js) — замість списку очікування кнопка в бот.
+            <>
+              <p className="plus-wait-note">{t.openNote}</p>
+              <a
+                className="plus-open-btn"
+                href={plusBotUrl(`slot_${index}`)}
+                onClick={() => trackConversion('plus_bot_click', { event_label: `catalog_slot_${index}` })}
+              >
+                {t.openCta}
+              </a>
+            </>
+          ) : state === 'done' ? (
             <div className="plus-wait-done" role="status">
               <strong>{t.doneTitle}</strong>
               <p>{t.doneText}</p>
@@ -183,7 +202,7 @@ export function PlusBanner({ total, lang = 'uk' }) {
         className="plus-banner-btn"
         onClick={() => trackConversion('plus_banner_click', { event_label: 'home_catalog' })}
       >
-        {t.submit}
+        {PLUS_SALES_OPEN ? t.openBanner : t.submit}
       </Link>
     </section>
   );

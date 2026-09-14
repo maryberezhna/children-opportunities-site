@@ -649,6 +649,23 @@
 .plus-wait-form button:disabled { opacity: 0.6; cursor: wait; }
 .plus-wait-form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
+/* Продаж відкрито (PLUS_SALES_OPEN у lib/plus.js): та сама кнопка, але посилання в бот. */
+.plus-open-btn {
+  display: inline-block;
+  font-size: 0.90625rem;
+  font-weight: 600;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.plus-open-btn:hover { transform: translateY(-1px); }
+.plus-open-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
 .plus-wait-error {
   margin: 8px 0 0;
   font-size: 0.8125rem;
