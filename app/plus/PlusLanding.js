@@ -46,8 +46,37 @@ const L = {
     contrastBItems: [
       'Памʼятає, куди дитина вже подавалась і що їй підійшло',
       'Пропонує наступну сходинку, а не повтор',
-      'Нагадує за 7 і 2 дні до кінця подачі',
+      'Нагадує завчасно: за 2–4 тижні для стипендій і обмінів, за тиждень для гуртків',
+      'Вчиться на ваших позначках «Цікаво» і «Не цікаво»',
     ],
+
+    mockTitle: 'Ви налаштовуєте добірку одним дотиком',
+    mockSub: 'Під кожною можливістю — «👍 Цікаво» і «👎 Не цікаво». Що більше позначок, то точніше наступна добірка.',
+    mockTg: 'Так це виглядає в Telegram',
+    mockMail: 'Так це виглядає на пошті',
+    tg: {
+      title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
+      meta: 'Конкурс · 14-17 років · Безкоштовно · до 31 січня 2027',
+      text: 'Всеукраїнський конкурс наукових та інженерних проєктів для учнів 9-11 класів. 22 категорії: біохімія, біомедицина, хімія, інженерія, ML, екологія…',
+      more: 'Деталі →',
+      cal: '📅 Додати в календар',
+      toast: 'Дякуємо за зворотній зв’язок',
+    },
+    mail: {
+      fromLabel: 'Від',
+      from: 'Dityam+',
+      subjectLabel: 'Тема',
+      subject: 'Нове для вашої дитини: конкурс підприємництва',
+      hello: 'Знайшли можливість під профіль вашої дитини:',
+      title: 'NFTE Youth Entrepreneurship Challenge',
+      meta: 'Конкурс · 13-18 років · Безкоштовно · до 31 жовтня 2026',
+      text: 'Глобальний конкурс підліткового підприємництва, 47+ країн. Реєстрація команд відкрита до кінця жовтня.',
+      more: 'Деталі на dityam.com.ua →',
+      foot: 'Позначте — і наступний лист буде точнішим.',
+    },
+    yes: '👍 Цікаво',
+    no: '👎 Не цікаво',
+    mockNote: 'Кнопки «Цікаво» і «Не цікаво» вже стоять під кожним постом у нашому телеграм-каналі. У Dityam+ ваші позначки підлаштовуватимуть наступні добірки — і в Telegram, і на пошті.',
 
     pathsTitle: 'Три траєкторії з нашої бази',
     pathsSub: 'Це не вигадані приклади: усі дванадцять програм нижче зараз відкриті на платформі.',
@@ -91,7 +120,7 @@ const L = {
     how4: [
       ['Розкажіть про дитину', 'Три питання: вік, інтереси й чи показувати платне. Ні імені, ні школи.'],
       ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
-      ['Не пропускайте дедлайни', 'За 7 днів — щоб устигнути зібрати документи. За 2 дні — останній дзвінок.'],
+      ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
     ],
 
@@ -107,14 +136,14 @@ const L = {
     included: [
       'добірка під профіль дитини — вік, інтереси, місто',
       'наступний крок з урахуванням того, куди вже подавались',
-      'нагадування про дедлайни за 7 і 2 дні',
+      'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'доставка в Telegram або на email',
     ],
     trust: (total) => [
       'Не питаємо ні імені дитини, ні школи',
       'Платформа лишається безкоштовною для всіх',
       'Скасувати можна одною командою',
-      total ? `${total.toLocaleString('uk-UA')} ${opportunitiesWord(total)}, перевіряємо щодня` : 'Можливості перевіряємо щодня',
+      total ? `${total.toLocaleString('uk-UA')} ${opportunitiesWord(total)} — щодня додаємо нові й перевіряємо` : 'Щодня додаємо нові можливості й перевіряємо',
     ],
 
     faqTitle: 'Питання',
@@ -158,8 +187,37 @@ const L = {
     contrastBItems: [
       'Remembers where your child has applied and what worked',
       'Suggests the next step, not a repeat',
-      'Reminds you 7 and 2 days before applications close',
+      'Reminds you in good time: 2–4 weeks ahead for scholarships and exchanges, a week for clubs',
+      'Learns from your “Interested” and “Not interested” marks',
     ],
+
+    mockTitle: 'You tune the selection with one tap',
+    mockSub: 'Every opportunity comes with “👍 Interested” and “👎 Not interested”. The more you mark, the sharper the next selection.',
+    mockTg: 'This is how it looks on Telegram',
+    mockMail: 'This is how it looks by email',
+    tg: {
+      title: 'ISEF Ukraine — national selection for Regeneron ISEF',
+      meta: 'Competition · ages 14-17 · Free · until 31 January 2027',
+      text: 'A national science and engineering fair for students in grades 9–11. 22 categories: biochemistry, biomedicine, chemistry, engineering, ML, ecology…',
+      more: 'Details →',
+      cal: '📅 Add to calendar',
+      toast: 'Thanks for the feedback',
+    },
+    mail: {
+      fromLabel: 'From',
+      from: 'Dityam+',
+      subjectLabel: 'Subject',
+      subject: 'New for your child: an entrepreneurship competition',
+      hello: 'We found an opportunity that fits your child’s profile:',
+      title: 'NFTE Youth Entrepreneurship Challenge',
+      meta: 'Competition · ages 13-18 · Free · until 31 October 2026',
+      text: 'A global teen entrepreneurship competition in 47+ countries. Team registration is open until the end of October.',
+      more: 'Details on dityam.com.ua →',
+      foot: 'Mark it — and the next email will be sharper.',
+    },
+    yes: '👍 Interested',
+    no: '👎 Not interested',
+    mockNote: 'The “Interested” and “Not interested” buttons are already under every post in our Telegram channel. In Dityam+, your marks will shape the next selections — on Telegram and by email.',
 
     pathsTitle: 'Three paths from our database',
     pathsSub: 'These are not made-up examples: all twelve programmes below are open on the platform right now.',
@@ -203,7 +261,7 @@ const L = {
     how4: [
       ['Tell us about your child', 'Three questions: age, interests and whether to show paid options. No name, no school.'],
       ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
-      ['Never miss a deadline', '7 days before — enough time to gather documents. 2 days before — the last call.'],
+      ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
     ],
 
@@ -219,14 +277,14 @@ const L = {
     included: [
       'a selection for your child’s profile — age, interests, city',
       'the next step, based on where you have already applied',
-      'deadline reminders 7 and 2 days ahead',
+      'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'delivery on Telegram or by email',
     ],
     trust: (total) => [
       'We never ask for your child’s name or school',
       'The platform stays free for everyone',
       'Cancel with one command',
-      total ? `${total.toLocaleString('en-US')} opportunities, checked daily` : 'Opportunities checked daily',
+      total ? `${total.toLocaleString('en-US')} opportunities — new ones added and checked daily` : 'New opportunities added and checked daily',
     ],
 
     faqTitle: 'Questions',
@@ -294,6 +352,62 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
               <ul>{t.contrastBItems.map((x) => <li key={x}>{x}</li>)}</ul>
             </div>
           </div>
+
+          {/* Приклад: пост у Telegram повторює справжній формат нашого каналу
+              (scripts/post-to-telegram.mjs, варіант B) із тими самими кнопками
+              «👍 Цікаво / 👎 Не цікаво». Лист — ескіз майбутньої розсилки: кнопок
+              у пошті поки немає, як і того, щоб позначки міняли добірку. Обидва
+              записи — справжні активні можливості з бази. */}
+          <div className="pl-mock">
+            <h3 className="pl-mock-title">{t.mockTitle}</h3>
+            <p className="pl-mock-sub">{t.mockSub}</p>
+            <div className="pl-mock-grid">
+              <figure className="pl-mock-card" aria-label={t.mockTg}>
+                <figcaption className="pl-mock-label">{t.mockTg}</figcaption>
+                <div className="pl-tg">
+                  <span className="pl-tg-toast" aria-hidden="true">{t.tg.toast}</span>
+                  <div className="pl-tg-bubble">
+                    <p className="pl-tg-title">✨ {t.tg.title}</p>
+                    <p className="pl-tg-meta">{t.tg.meta}</p>
+                    <p className="pl-tg-text">{t.tg.text}</p>
+                    <p className="pl-tg-more">{t.tg.more}</p>
+                  </div>
+                  <div className="pl-tg-kb" aria-hidden="true">
+                    <span className="pl-tg-btn">{t.tg.cal}</span>
+                    <div className="pl-tg-row">
+                      <span className="pl-tg-btn is-on">{t.yes}</span>
+                      <span className="pl-tg-btn">{t.no}</span>
+                    </div>
+                  </div>
+                </div>
+              </figure>
+
+              <figure className="pl-mock-card" aria-label={t.mockMail}>
+                <figcaption className="pl-mock-label">{t.mockMail}</figcaption>
+                <div className="pl-mail">
+                  <div className="pl-mail-head">
+                    <div><span>{t.mail.fromLabel}</span>{t.mail.from}</div>
+                    <div><span>{t.mail.subjectLabel}</span><strong>{t.mail.subject}</strong></div>
+                  </div>
+                  <div className="pl-mail-body">
+                    <p className="pl-mail-hello">{t.mail.hello}</p>
+                    <div className="pl-mail-item">
+                      <p className="pl-mail-title">{t.mail.title}</p>
+                      <p className="pl-mail-meta">{t.mail.meta}</p>
+                      <p className="pl-mail-text">{t.mail.text}</p>
+                      <p className="pl-mail-more">{t.mail.more}</p>
+                      <div className="pl-mail-btns" aria-hidden="true">
+                        <span className="pl-mail-btn">{t.yes}</span>
+                        <span className="pl-mail-btn">{t.no}</span>
+                      </div>
+                    </div>
+                    <p className="pl-mail-foot">{t.mail.foot}</p>
+                  </div>
+                </div>
+              </figure>
+            </div>
+            <p className="pl-mock-note">{t.mockNote}</p>
+          </div>
         </div>
       </section>
 
@@ -340,7 +454,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
       </section>
 
       {/* ── Ціна ── */}
-      <section className="pl-sec">
+      <section className="pl-sec pl-price-sec">
         <div className="pl-wrap">
           <h2 className="pl-h2">{t.priceTitle}</h2>
           <div className="pl-prices">
@@ -365,7 +479,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
       </section>
 
       {/* ── Питання ── */}
-      <section className="pl-sec pl-sec-cream">
+      <section className="pl-sec pl-sec-cream pl-faq-sec">
         <div className="pl-wrap">
           <h2 className="pl-h2">{t.faqTitle}</h2>
           <div className="pl-faq">

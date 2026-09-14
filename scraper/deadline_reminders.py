@@ -3,9 +3,10 @@
 Люди втрачають можливості не тому, що не знали, а тому що відклали «на потім».
 Це і є та частина обіцянки «ми нагадаємо», за яку платить підписник.
 
-Щодня знаходить можливості, до подачі яких лишилось НЕ БІЛЬШЕ 7 і не більше
-2 днів, звіряє з профілем підписника (вік × інтереси × вартість) і надсилає
-коротке нагадування.
+Щодня знаходить можливості, до дедлайну яких лишилось стільки, скільки
+потрібно на заявку саме цього типу (див. WINDOWS_BY_TYPE: від 4 тижнів для
+стипендій до тижня для гуртків), звіряє з профілем підписника
+(вік × інтереси × вартість) і надсилає коротке нагадування.
 
 Вікна саме діапазони, а не точний день: у каталозі буває 5-6 дедлайнів на два
 тижні, і на «рівно сьомий день» не потрапляє майже ніщо. Можливість, додана з
@@ -23,7 +24,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
 
 Прапорці:
   --dry-run   лише друкує, кому що пішло б; нічого не шле й не пише в журнал
-  --days 7,2  які вікна перевіряти (для тесту)
+  --days 7,2  однакові вікна для всіх типів (для тесту); без прапорця — за типом
   --demo      синтетичні профілі замість реальних підписників: дає перевірити
               матчинг на живому каталозі, поки платних підписників ще немає
   --any-time  ігнорувати ворота часу (див. send_window.py): слати негайно,
@@ -54,9 +55,53 @@ from personal_digest import (
 logger = logging.getLogger("deadline_reminders")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-# 7 днів — ще встигнути зібрати документи. 2 дні — останній дзвінок.
-# Проміжних не робимо: більше нагадувань про одне й те саме читаються як спам.
-DEFAULT_WINDOWS = (7, 2)
+# Скільки заздалегідь нагадувати, залежить від того, скільки часу забирає сама
+# заявка. Раніше для всіх було 7 і 2 дні — для стипендії чи обміну з есе,
+# рекомендаціями й документами тиждень означає «вже пізно».
+#
+# Аналіз активних записів 14.09.2026, медіана днів від появи запису до
+# дедлайну: стипендії 184, обміни 266, конкурси 191, олімпіади 141, стажування
+# 173 — це відбори, до яких готуються місяцями. Курси 19, гуртки 25, воркшопи
+# 14 — там подача є формою на хвилину. Гранти — виняток: медіана лише 20 днів,
+# але заявка найважча, тож вони в першій групі, і нагадування про них піде
+# одразу, щойно запис зʼявиться.
+#
+# Останній дзвінок у кожній групі лишається. Більше трьох нагадувань про одне
+# й те саме читаються як спам.
+LONG_WINDOWS = (28, 14, 3)     # стипендії, гранти, обміни, стажування, навчальні програми
+MEDIUM_WINDOWS = (14, 3)       # конкурси, олімпіади, хакатони, табори, фестивалі, конференції
+SHORT_WINDOWS = (7, 2)         # курси, гуртки, воркшопи й усе інше
+
+WINDOWS_BY_TYPE = {
+    "scholarship": LONG_WINDOWS,
+    "grant": LONG_WINDOWS,
+    "exchange": LONG_WINDOWS,
+    "internship": LONG_WINDOWS,
+    "study_program": LONG_WINDOWS,
+    "summer_school": LONG_WINDOWS,
+    "residency": LONG_WINDOWS,
+    "competition": MEDIUM_WINDOWS,
+    "olympiad": MEDIUM_WINDOWS,
+    "hackathon": MEDIUM_WINDOWS,
+    "camp": MEDIUM_WINDOWS,
+    "festival": MEDIUM_WINDOWS,
+    "conference": MEDIUM_WINDOWS,
+}
+DEFAULT_WINDOWS = SHORT_WINDOWS
+
+
+def windows_for(opportunity_type) -> tuple:
+    """Вікна нагадувань для типу програми. Невідомий тип — короткі вікна."""
+    return WINDOWS_BY_TYPE.get(opportunity_type or "", DEFAULT_WINDOWS)
+
+
+def tightest_window(left: int, windows) -> int | None:
+    """Найтісніше вікно, у яке потрапляє залишок днів, або None.
+
+    Можливість з одним днем у запасі підпадає і під «3», і під «14» — без
+    вибору найтіснішого людина отримала б два повідомлення за один ранок."""
+    fitting = [w for w in windows if left <= w]
+    return min(fitting) if fitting else None
 MAX_ITEMS = 5
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня",
@@ -107,9 +152,13 @@ def build_text(items: list, days: int) -> str:
     else:
         when = f"через {left} {days_word(left)}"
         urgency = "🔔" if left <= 3 else "⏳"
-    head = (f"{urgency} <b>Останній дзвінок — подача закривається {when}</b>"
-            if left <= 3 else
-            f"{urgency} <b>Нагадуємо: подача закривається {when}</b>")
+    if left <= 3:
+        head = f"{urgency} <b>Останній дзвінок — подача закривається {when}</b>"
+    elif left > 7:
+        head = (f"{urgency} <b>Нагадуємо заздалегідь: подача закривається {when}</b>"
+                "\nСаме час готувати документи.")
+    else:
+        head = f"{urgency} <b>Нагадуємо: подача закривається {when}</b>"
     lines = [head, ""]
     for o in items:
         url = f"{SITE_URL}/o/{o['slug']}"
@@ -123,8 +172,9 @@ def build_text(items: list, days: int) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--days", default=",".join(map(str, DEFAULT_WINDOWS)),
-                    help="вікна нагадувань через кому, напр. 7,2")
+    ap.add_argument("--days", default="",
+                    help="однакові вікна для всіх типів через кому, напр. 7,2 "
+                         "(для тесту); без прапорця — вікна за типом програми")
     ap.add_argument("--demo", action="store_true",
                     help="синтетичні профілі — перевірка матчингу без підписників")
     ap.add_argument("--any-time", action="store_true",
@@ -136,7 +186,7 @@ def main() -> int:
     if not (args.dry_run or args.demo or args.any_time) and send_window.too_early():
         return 0
 
-    windows = [int(x) for x in str(args.days).split(",") if x.strip().isdigit()]
+    override = [int(x) for x in str(args.days).split(",") if x.strip().isdigit()]
 
     from db import get_client
     client = get_client()
@@ -161,15 +211,11 @@ def main() -> int:
     if not subs:
         return 0
 
-    if not windows:
-        logger.warning("Не задано жодного вікна — нічого робити")
-        return 0
-    windows = sorted(set(windows))          # від найтіснішого до найширшого
-
     today = date.today()
-    widest = max(windows)
+    widest = max(override) if override else max(
+        max(w) for w in (*WINDOWS_BY_TYPE.values(), DEFAULT_WINDOWS))
     opps = (client.table("opportunities")
-            .select("id, title, slug, deadline, age_from, age_to, cost_type, summary")
+            .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, opportunity_type")
             .eq("status", "active")
             .gte("deadline", today.isoformat())
             .lte("deadline", (today + timedelta(days=widest)).isoformat())
@@ -177,26 +223,26 @@ def main() -> int:
     for o in opps:
         o["_themes"] = match_themes(f"{o['title']} {o.get('summary') or ''}")
         o["_left"] = (date.fromisoformat(o["deadline"]) - today).days
-    logger.info("Можливостей у межах %d днів: %d", widest, len(opps))
+        # Одне вікно на запис на цей запуск — найтісніше з вікон його типу.
+        o["_window"] = tightest_window(
+            o["_left"], override or windows_for(o.get("opportunity_type")))
+    opps = [o for o in opps if o["_window"] is not None]
+    logger.info("Можливостей у вікнах нагадувань: %d (найширше вікно %d дн.)", len(opps), widest)
     if not opps:
         return 0
 
     sent = 0
     for sub in subs:
-        # Найтісніше вікно виграє: можливість із одним днем у запасі підпадає
-        # і під «2», і під «7» — без цього людина отримала б два повідомлення
-        # про те саме за один ранок.
-        assigned = set()
-        for days in windows:
+        # Кожен запис уже знає своє вікно (найтісніше для його типу), тож
+        # групуємо за ним: одне повідомлення на вікно, від найтерміновішого.
+        for days in sorted({o["_window"] for o in opps}):
             batch = [o for o in opps
-                     if o["id"] not in assigned
-                     and o["_left"] <= days
+                     if o["_window"] == days
                      and matches_profile(sub, o)]
             if not batch:
                 continue
             batch.sort(key=lambda o: o["_left"])
             batch = batch[:MAX_ITEMS]
-            assigned.update(o["id"] for o in batch)
 
             if args.dry_run:
                 logger.info("[dry] sub=%s вікно=%dд → %d шт", sub["id"], days, len(batch))
