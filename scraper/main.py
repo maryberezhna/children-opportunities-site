@@ -197,7 +197,7 @@ def process_pending(normalizer, sb_client, limit=500):
 
     stats = {"queued": len(queue), "processed": 0, "rejected": 0,
              "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0,
-             "out_of_time": 0}
+             "out_of_time": 0, "api_limit": 0}
     if not queue:
         return stats
 
@@ -243,6 +243,13 @@ def process_pending(normalizer, sb_client, limit=500):
             )
             consecutive_errors = 0
         except NormalizeError as e:
+            # Вичерпаний ліміт витрат — не вина сирця: спробу не списуємо й
+            # зупиняємось одразу. Черга дочекається, доки API повернеться.
+            if raw_store.is_usage_limit(e):
+                stats["api_limit"] = len(queue) - idx
+                print(f"🛑 Вичерпано ліміт витрат API — зупиняю екстракцію, спроби не "
+                      f"списую: {stats['api_limit']} записів чекають, доки API повернеться")
+                break
             raw_store.bump_attempt(sb_client, item, str(e))
             attempts = (item.get("attempts") or 0) + 1
             stats["failed" if attempts >= raw_store.MAX_ATTEMPTS else "retry"] += 1
