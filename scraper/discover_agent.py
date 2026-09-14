@@ -121,9 +121,15 @@ VERIFY_TOOL = {
                                      "description": "ДОСЛІВНА цитата про те, хто може брати участь. Немає — порожньо."},
             "kind": {"type": "string", "enum": ["unusual", "regular_club"]},
             "kind_reason": {"type": "string"},
+            "is_current": {"type": "string", "enum": ["current", "past", "unknown"],
+                           "description": "current — набір чи подія ще попереду або триває; "
+                                          "past — уже минуло; unknown — дат на сторінці немає."},
+            "date_evidence": {"type": "string",
+                              "description": "ДОСЛІВНА цитата з датою чи роком (дедлайн, дати "
+                                             "проведення, «сезон 2026/27»). Немає — порожньо."},
         },
         "required": ["page_kind", "for_children", "children_evidence", "eligibility",
-                     "eligibility_evidence", "kind"],
+                     "eligibility_evidence", "kind", "is_current", "date_evidence"],
         "additionalProperties": False,
     },
 }
@@ -144,14 +150,18 @@ VERIFY_SYSTEM = """Тобі дають сторінку, яку агент за�
    Назва («Паляниця»), мова сайту чи країна — НЕ доказ.
 4. kind: regular_club — звичайний регулярний гурток, секція чи курс поруч із
    домом; unusual — табір, турнір, експедиція, резиденція, фестиваль, програма
-   фонду, стипендія — те, чого родина сама не знайде."""
+   фонду, стипендія — те, чого родина сама не знайде.
+5. is_current: чи це ще актуально. Новина про табір, який уже відбувся, — past,
+   навіть якщо програма колись була чудова. date_evidence — цитата з датою чи
+   роком. Дата публікації новини — теж дата: стаття 2023 року без згадки про
+   новий сезон — past."""
 
 
 def _norm_text(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "")).strip().lower()
 
 
-def decide_verified(out: dict, page: str) -> tuple[bool, str]:
+def decide_verified(out: dict, page: str, today: date | None = None) -> tuple[bool, str]:
     """Чи пускати кандидата в модерацію. Чиста функція — під тести."""
     if out.get("page_kind") != "one_opportunity":
         return False, "сторінка не про одну програму"
@@ -168,8 +178,24 @@ def decide_verified(out: dict, page: str) -> tuple[bool, str]:
         return False, "цитати про участь на сторінці немає"
     if out.get("kind") == "regular_club":
         return False, "звичайний гурток, а не рідкісна можливість"
+    # Актуальність. 14.09.2026 контрольний прогін «теніс · Іспанія» приніс
+    # новину 2023 року про табір, що давно відбувся: дітей і Україну перевірка
+    # бачила, а дату — ні. Рік у цитаті звіряємо самі, не покладаючись на
+    # модель: якщо всі роки в ній уже минули — це минуле.
+    dq = (out.get("date_evidence") or "").strip()
+    if out.get("is_current") == "past":
+        return False, f"уже минуло: «{dq[:80]}»" if dq else "уже минуло"
+    if dq:
+        if _norm_text(dq)[:60] not in _norm_text(page):
+            return False, "цитати з датою на сторінці немає"
+        years = [int(y) for y in re.findall(r"\b(20\d{2})\b", dq)]
+        if years and max(years) < (today or date.today()).year:
+            return False, f"дата в минулому: «{dq[:80]}»"
     label = "для дітей з України" if el == "for_ukrainians" else "відкрито для всіх"
-    return True, f"{label}: «{ev[:140]}»"
+    # Безстрокові програми (урядовий протокол, постійний набір) дат не мають —
+    # їх не губимо, але модератор бачить, що дату треба перевірити.
+    when = f" · дата: «{dq[:80]}»" if dq else " · ⚠️ дату на сторінці не видно — перевірити"
+    return True, f"{label}: «{ev[:140]}»{when}"
 
 
 def verify_candidate(rec: dict) -> tuple[bool, str]:
