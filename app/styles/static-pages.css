@@ -225,36 +225,29 @@
   line-height: 1.55;
 }
 
-/* Тема з двома блоками («Дітям захисників»): заголовок блоку з лічильником
-   і однорядковим поясненням, що саме в нього потрапляє. */
-.topic-block { margin: 28px 0 14px; }
-.topic-block--rest { margin-top: 40px; }
+/* Позначка закріпленої картки в підбірці («Лише для дітей захисників»).
+   .v2-tag.v2-tag-pinned — щоб перебити базовий .v2-tag, який підключається пізніше. */
+.v2-tag.v2-tag-pinned { background: var(--accent-soft); color: var(--accent); }
 
-.topic-block h2 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
+/* Кінець кожної підбірки — дорога на головну (рішення Марії 14.09.2026). */
+.topic-more {
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+  max-width: 760px;
+  margin: 40px 0 8px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.topic-more h2 { margin: 0; font-size: 1.25rem; text-wrap: balance; }
+
+.topic-more p {
+  max-width: 60ch;
   margin: 0 0 6px;
-  font-size: 1.25rem;
-  text-wrap: balance;
-}
-
-.topic-block-count {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--ink-muted);
-  background: rgba(0, 0, 0, 0.05);
-  padding: 1px 8px;
-  border-radius: 999px;
-  font-variant-numeric: tabular-nums;
-}
-
-.topic-block-lede {
-  max-width: 720px;
-  margin: 0 0 16px;
-  color: var(--ink-muted);
-  font-size: 0.90625rem;
+  color: var(--ink-soft);
   line-height: 1.55;
 }
 
@@ -297,47 +290,83 @@
 /* FAQ на сторінці підбірки: видимий двійник FAQPage-схеми.
    details/summary — контент лишається в HTML для краулерів без JS. */
 .topic-faq {
-  max-width: 720px;
-  margin: 40px 0 8px;
+  max-width: 760px;
+  margin: 48px 0 8px;
 }
 
 .topic-faq h2 {
-  font-size: 1.25rem;
-  margin-bottom: 12px;
+  margin: 0 0 8px;
+  font-size: 1.375rem;
+  text-wrap: balance;
 }
 
-.topic-faq-item {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-  padding: 0;
-  margin-bottom: 8px;
-}
+/* Розділювачі замість сірих рамок і власна кнопка «+ / −» замість
+   браузерного трикутника: питання читаються як список, а не як форма. */
+.topic-faq-item { border-bottom: 1px solid var(--border); }
+.topic-faq-item:first-of-type { border-top: 1px solid var(--border); }
 
 .topic-faq-item summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 2px;
+  list-style: none;
   cursor: pointer;
-  padding: 12px 16px;
-  font-weight: 600;
   color: var(--ink);
-  font-size: 0.90625rem;
-  list-style-position: inside;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.topic-faq-item summary::-webkit-details-marker { display: none; }
+
+.topic-faq-item summary::after {
+  content: '+';
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--ink-soft);
+  font-size: 1.125rem;
+  font-weight: 400;
+  line-height: 1;
+  transition: background 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.topic-faq-item[open] summary::after {
+  content: '−';
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .topic-faq-item summary:hover { color: var(--accent); }
 
+.topic-faq-item summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+
 .topic-faq-item p {
-  padding: 0 16px 14px;
-  margin: 0;
+  max-width: 65ch;
+  margin: -4px 44px 18px 2px;
   color: var(--ink-soft);
-  font-size: 0.90625rem;
-  line-height: 1.6;
+  font-size: 0.96875rem;
+  line-height: 1.65;
 }
 
 @media (max-width: 640px) {
   .topic-chips { gap: 6px; margin-bottom: 14px; }
   .topic-chip { padding: 6px 12px; font-size: 0.78125rem; }
   .topic-note { font-size: 0.84375rem; }
-  .topic-faq-item summary, .topic-faq-item p { font-size: 0.84375rem; }
+  .topic-faq-item summary { font-size: 0.96875rem; padding: 16px 2px; }
+  .topic-faq-item p { font-size: 0.90625rem; margin-right: 0; }
+  .topic-more { padding: 20px; }
 }
 
 /* Як перекласти сайт. Раніше тут стояло одне речення «your browser's translate
