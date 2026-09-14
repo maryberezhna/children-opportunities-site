@@ -412,11 +412,17 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
               </a>
               <ShareButton label={ch.share} doneLabel={ch.shared} />
             </div>
-            <dl className="tp-facts">
-              <div><dt>{ch.factTotal}</dt><dd>{total}</dd></div>
-              <div><dt>{ch.factFree}</dt><dd>{freeCount}</dd></div>
-              <div><dt>{ch.factWeek}</dt><dd className="is-urgent">⏰ {urgentWeek}</dd></div>
-            </dl>
+            {/* Нуль не показуємо ніде (рішення Марії 14.09.2026): «⏰ 0» чи
+                «Безкоштовних 0» виглядає як порожня або зламана підбірка. */}
+            {total > 0 || freeCount > 0 || urgentWeek > 0 ? (
+              <dl className="tp-facts">
+                {total > 0 ? <div><dt>{ch.factTotal}</dt><dd>{total}</dd></div> : null}
+                {freeCount > 0 ? <div><dt>{ch.factFree}</dt><dd>{freeCount}</dd></div> : null}
+                {urgentWeek > 0 ? (
+                  <div><dt>{ch.factWeek}</dt><dd className="is-urgent">⏰ {urgentWeek}</dd></div>
+                ) : null}
+              </dl>
+            ) : null}
           </div>
 
           {hero ? (

@@ -1,8 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TOPIC_LIST } from '@/lib/topics';
+import { TOPIC_LIST, TOPIC_NAV, topicPath } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
 
@@ -79,13 +79,25 @@ export default function Header() {
   // шапці лишались лише лого й одна кнопка — до «Про проєкт», Dityam+ і
   // Telegram можна було дістатися тільки через футер унизу сторінки.
   const [menuOpen, setMenuOpen] = useState(false);
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  // Підменю «Підбірки» (14.09.2026, прохання Марії): на десктопі — випадний
+  // список біля «Про проєкт», у мобільному меню — окрема група. Відкривається
+  // наведенням і кліком; закривається Escape, кліком поза ним і переходом.
+  const [topicsOpen, setTopicsOpen] = useState(false);
+  const topicsRef = useRef(null);
+  useEffect(() => { setMenuOpen(false); setTopicsOpen(false); }, [pathname]);
   useEffect(() => {
-    if (!menuOpen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    if (!menuOpen && !topicsOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { setMenuOpen(false); setTopicsOpen(false); } };
+    const onDown = (e) => {
+      if (topicsOpen && topicsRef.current && !topicsRef.current.contains(e.target)) setTopicsOpen(false);
+    };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [menuOpen]);
+    document.addEventListener('mousedown', onDown);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.removeEventListener('mousedown', onDown);
+    };
+  }, [menuOpen, topicsOpen]);
 
   if (pathname.startsWith('/admin')) return null;
 
@@ -108,6 +120,12 @@ export default function Header() {
     ? [{ href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') }]
     : [{ href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') }];
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
+  const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
+  const topicLinks = TOPIC_NAV.map((t) => ({
+    href: topicPath(t, isEnglish ? 'en' : 'uk'),
+    label: isEnglish ? t.labelEn : t.label,
+  }));
+  const topicActive = topicLinks.some((l) => l.href === pathname);
 
   return (
     <header className={headerClass}>
@@ -117,6 +135,38 @@ export default function Header() {
         </Link>
 
         <nav className="v2-nav" aria-label={isEnglish ? 'Main navigation' : 'Головна навігація'}>
+          <div
+            ref={topicsRef}
+            className={`v2-nav-drop${topicsOpen ? ' is-open' : ''}`}
+            onMouseEnter={() => setTopicsOpen(true)}
+            onMouseLeave={() => setTopicsOpen(false)}
+          >
+            <button
+              type="button"
+              className={`v2-nav-drop-btn${topicActive ? ' is-active' : ''}`}
+              aria-expanded={topicsOpen}
+              aria-controls="v2-topics-menu"
+              onClick={() => setTopicsOpen((v) => !v)}
+            >
+              {TOPICS_LABEL}
+              <span className="v2-nav-caret" aria-hidden="true" />
+            </button>
+            {/* Посилання лишаються в HTML і при закритому списку (hidden):
+                пошуковик бачить внутрішні лінки на всі підбірки з кожної сторінки. */}
+            <ul id="v2-topics-menu" className="v2-nav-drop-panel" hidden={!topicsOpen}>
+              {topicLinks.map((l) => (
+                <li key={l.href}>
+                  <Link
+                    href={l.href}
+                    aria-current={l.href === pathname ? 'page' : undefined}
+                    onClick={() => { track(`topic:${l.label}`)(); setTopicsOpen(false); }}
+                  >
+                    {l.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -177,6 +227,20 @@ export default function Header() {
 
       {menuOpen ? (
         <nav id="v2-mobile-menu" className="v2-mmenu" aria-label={isEnglish ? 'Menu' : 'Меню'}>
+          <div className="v2-mmenu-group" role="group" aria-labelledby="v2-mmenu-topics">
+            <span id="v2-mmenu-topics" className="v2-mmenu-label">{TOPICS_LABEL}</span>
+            {topicLinks.map((l) => (
+              <Link
+                key={l.href}
+                href={l.href}
+                className={`v2-mmenu-sub${l.href === pathname ? ' is-active' : ''}`}
+                aria-current={l.href === pathname ? 'page' : undefined}
+                onClick={() => { track(`topic:${l.label}`)(); setMenuOpen(false); }}
+              >
+                {l.label}
+              </Link>
+            ))}
+          </div>
           {NAV.map((item) => (
             <Link
               key={item.href}
