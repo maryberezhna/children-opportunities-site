@@ -321,10 +321,18 @@ const FORMAT_BY_DAY = [
 
 // Ситуації для формату «situation»: починаємо з болю батьків, а не з програми.
 // Ротація по тижнях, щоб та сама ситуація не поверталась щопонеділка.
+//
+// Кожен фільтр мусить відповідати на САМУ ситуацію, а не лише на вік і ціну.
+// 14.09.2026 під «дитині 15, хоче спробувати щось своє» пішов фонд допомоги
+// онкохворим дітям: фільтр перевіряв тільки «безкоштовно» і «до 14+», а тип
+// запису — ні. Під пост пишемо «за які не треба платити», тож безкоштовність
+// перевіряється окремо для всіх ситуацій у sendDailyDigest.
 const SITUATIONS = [
   {
     text: '«Дитині 15, хоче спробувати щось своє, а грошей на гуртки зараз немає»',
-    filter: (r) => r.age_to >= 14 && r.cost_type === 'free',
+    filter: (r) => r.age_from <= 15 && r.age_to >= 15
+      && ['club', 'course', 'workshop', 'competition', 'hackathon', 'festival', 'mentorship', 'volunteer']
+        .includes(r.opportunity_type),
   },
   {
     text: '«Переїхали в іншу область, дитина ні з ким не знайома і сидить у телефоні»',
@@ -432,7 +440,10 @@ async function sendDailyDigest(dayOverride = null) {
   // --- Формат «situation»: життєва ситуація + 3 відповіді ---
   if (format === 'situation') {
     const situation = SITUATIONS[weekIndex % SITUATIONS.length];
-    const picks = shuffle(pool.filter(situation.filter)).slice(0, 3);
+    // Безкоштовність — для всіх ситуацій: рядок нижче обіцяє «за які не треба
+    // платити», а фільтри про математику, поїздки й малювання ціну не
+    // перевіряли.
+    const picks = shuffle(pool.filter((r) => r.cost_type === 'free' && situation.filter(r))).slice(0, 3);
     if (picks.length >= 2) {
       const sLines = [`<b>${situation.text}</b>`, ''];
       sLines.push(`${picks.length === 3 ? 'Три варіанти' : 'Ось варіанти'}, за які не треба платити:`);
@@ -453,7 +464,7 @@ async function sendDailyDigest(dayOverride = null) {
     const nLines = buildNumberPost(pool, weekIndex);
     if (nLines) {
       nLines.push('');
-      nLines.push('🧡 Каталог безкоштовний і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
+      nLines.push('🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
       await postToChannel(nLines, 'number');
       return;
     }
@@ -508,7 +519,7 @@ async function sendDailyDigest(dayOverride = null) {
   // дайджесту. Окремий суботній пост скасовано: він був другим за добу.
   if ((dayOverride ?? FORCE_DAY ?? today.getDay()) === 0) {
     lines.push('');
-    lines.push('🧡 Каталог безкоштовний і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
+    lines.push('🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
   }
 
   // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
