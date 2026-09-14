@@ -27,6 +27,8 @@ const C = {
 const ITEMS = [
   { key: 'queue', href: '/admin', icon: '🗂', label: 'Черга', count: 'drafts' },
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
+  // Окремо від черги: у підбірки свій дефіцит і свої джерела (14.09.2026).
+  { key: 'defenders', href: '/admin/zakhysnyky', icon: '🎗', label: 'Дітям захисників', count: 'defenders' },
   { key: 'metrics', href: '/admin/metrics', icon: '📈', label: 'Метрики' },
 ];
 
@@ -39,13 +41,15 @@ async function counts() {
     supabase.from(table).select('id', { count: 'exact', head: true }),
   );
   try {
-    const [drafts, msgs, sugs] = await Promise.all([
+    const [drafts, msgs, sugs, defenders] = await Promise.all([
       head('opportunities', (q) => q.eq('status', 'draft')),
       head('contact_messages', (q) => q.eq('status', 'new')),
       head('opportunity_suggestions', (q) => q.neq('status', 'done')),
+      head('opportunities', (q) => q.eq('status', 'draft').contains('child_needs', ['veteran_family'])),
     ]);
     return {
       drafts: drafts.count ?? 0,
+      defenders: defenders.count ?? 0,
       // Звернення з форми і пропозиції з поп-апа лежать у двох таблицях, але
       // для Марії це одна пошта — на /admin/messages вони вже злиті в один
       // список, тож і цифра має бути одна.
