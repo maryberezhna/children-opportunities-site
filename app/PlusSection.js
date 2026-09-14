@@ -6,14 +6,18 @@ import { trackConversion } from '@/lib/track';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
 // Блок їде і в український каталог, і в англійський.
+//
+// До 14.09.2026 тут стояло «памʼятаємо, куди дитина вже подавалась, і
+// пропонуємо наступний крок» і чип «памʼятає пройдене». У коді підписки
+// такого немає, тож обіцянку замінено на те, що підписка справді робить.
 const L = {
   uk: {
-    title: 'Довідник показує, що існує. Dityam+ веде дитину далі.',
-    leadHead: 'Ми памʼятаємо, куди ваша дитина вже подавалась і що їй підійшло, — і наступного місяця пропонуємо не випадкові картки з',
-    leadFallback: 'сотень',
-    leadTail: ', а наступний крок.',
+    title: 'Платформа показує все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
+    leadHead: 'Щодня ми перебираємо',
+    leadFallback: 'сотні можливостей',
+    leadTail: 'і надсилаємо в Telegram лише ті, що підходять кожній вашій дитині, — з нагадуванням про дедлайн.',
     chipsLabel: 'Переваги підписки',
-    chips: ['памʼятає пройдене', 'відбирає ваші', 'нагадує вчасно'],
+    chips: ['добирає під кожну дитину', 'лише нове', 'нагадує вчасно'],
     doneTitle: 'Ви в списку! 🧡',
     doneText: 'Напишемо першим, щойно Dityam+ буде готовий — разом із бонусом за очікування.',
     soon: 'скоро',
@@ -27,12 +31,12 @@ const L = {
     support: 'підтримати проєкт',
   },
   en: {
-    title: 'A directory shows what exists. Dityam+ takes your child further.',
-    leadHead: 'We remember what your child has already applied to and what worked — so next month you get not random cards out of',
-    leadFallback: 'hundreds',
-    leadTail: ', but the next step.',
+    title: 'The platform shows everything that exists. Dityam+ sends what fits your child.',
+    leadHead: 'Every day we go through',
+    leadFallback: 'hundreds of opportunities',
+    leadTail: 'and send to Telegram only the ones that fit each of your children — with a deadline reminder.',
     chipsLabel: 'What the subscription does',
-    chips: ['remembers what is done', 'picks yours', 'reminds in time'],
+    chips: ['matched to each child', 'only what is new', 'reminds in time'],
     doneTitle: 'You’re on the list! 🧡',
     doneText: 'We’ll write to you first the moment Dityam+ is ready — with a thank-you for waiting.',
     soon: 'soon',

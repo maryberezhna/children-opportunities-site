@@ -4,30 +4,35 @@ import { opportunitiesWord } from '@/lib/plural';
 /**
  * Лендінг Dityam+.
  *
- * Сторінка продає не доступ і не економію часу, а памʼять: підписка знає, що
- * дитина вже пройшла, і пропонує наступну сходинку. Тому головний аргумент —
- * не перелік фіч, а три траєкторії. Усі дванадцять програм у них — реальні
- * активні записи бази (звірено 13.09.2026), не приклади з голови: якщо котрусь
- * закриють, її треба замінити тут, а не лишати.
+ * Сторінка обіцяє рівно те, що робить код (звірено 14.09.2026):
+ *   профіль для кожної дитини → щоденний добір нового → нагадування про
+ *   дедлайни за вікнами типу програми → допомога із заявкою в боті → /stop.
  *
- * Продаж ще не відкритий, тож заклик — список очікування, і сторінка прямо
- * каже «скоро». Обіцянка «памʼятаємо, куди подавались» описує підписку на
- * момент запуску; до запуску форма «я подався» мусить отримати звʼязок із
- * підписником, інакше обіцянка стане неправдою.
+ * До 14.09.2026 головною тезою була «памʼять»: підписка нібито знає, куди
+ * дитина вже подавалась, і пропонує наступну сходинку. У коді цього не було —
+ * позначки «я подався» анонімні й не повʼязані з підписником. Тезу прибрано з
+ * заголовка, опису, кроків, переліку й повідомлень ботів. Повертати її можна
+ * лише разом із кодом, який це робить.
+ *
+ * Усі дванадцять програм у шляхах і обидва приклади повідомлень — активні
+ * записи бази (звірено 14.09.2026). Якщо котрусь закриють, замінити тут.
+ *
+ * SEO/GEO: власні title/description/OG у page.js, картинка-прев'ю в
+ * opengraph-image.js, JSON-LD (FAQPage + Service + BreadcrumbList) нижче.
  */
 
 const L = {
   uk: {
     soon: 'скоро',
-    h1a: 'Не пошук, а ',
-    h1script: 'траєкторія',
-    h1b: ' розвитку дитини',
-    lead: 'Ми памʼятаємо, куди ваша дитина вже подавалась і що їй підійшло, — і наступного місяця пропонуємо не випадкові картки, а наступний крок.',
+    h1a: 'Можливості для дитини ',
+    h1script: 'приходять самі',
+    h1b: ' — з нагадуванням про дедлайн',
+    lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо в Telegram лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
     priceHint: '179 грн/міс · 1 490 грн/рік · скасувати можна будь-коли',
-    stairsLabel: 'Приклад траєкторії',
-    stairsCaption: 'Реальний шлях дитини 14 років, яка любить біологію. Усі чотири програми зараз є на платформі.',
+    stairsLabel: 'Приклад шляху',
+    stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
       ['Школа', 'Олімпіади МОН'],
       ['Україна', 'Мала академія наук'],
@@ -35,51 +40,45 @@ const L = {
       ['Світ', 'Regeneron ISEF'],
     ],
 
-    contrastTitle: 'Пошукав і забув — чи наступний крок',
+    contrastTitle: 'Шукати щоразу з нуля — чи отримувати готове',
     contrastA: 'Звичайний пошук',
     contrastAItems: [
-      'Щоразу з нуля: пошуковик не знає, що дитина вже пройшла',
+      'Щоразу з нуля: пошуковик, соцмережі, чати батьків',
       'Знаходите те саме, що бачили місяць тому',
       'Про дедлайн дізнаєтесь, коли він уже минув',
     ],
     contrastB: 'Dityam+',
     contrastBItems: [
-      'Памʼятає, куди дитина вже подавалась і що їй підійшло',
-      'Пропонує наступну сходинку, а не повтор',
+      'Надсилає лише нове й лише те, що підходить кожній дитині',
+      'Можливість для кількох дітей приходить один раз, із позначкою, кому саме',
       'Нагадує завчасно: за 2–4 тижні для стипендій і обмінів, за тиждень для гуртків',
-      'Вчиться на ваших позначках «Цікаво» і «Не цікаво»',
+      'Два тижні без нового — надсилає добірку з того, що вже відкрито',
     ],
 
-    mockTitle: 'Ви налаштовуєте добірку одним дотиком',
-    mockSub: 'Під кожною можливістю — «👍 Цікаво» і «👎 Не цікаво». Що більше позначок, то точніше наступна добірка.',
-    mockTg: 'Так це виглядає в Telegram',
-    mockMail: 'Так це виглядає на пошті',
-    tg: {
-      title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
-      meta: 'Конкурс · 14-17 років · Безкоштовно · до 31 січня 2027',
-      text: 'Всеукраїнський конкурс наукових та інженерних проєктів для учнів 9-11 класів. 22 категорії: біохімія, біомедицина, хімія, інженерія, ML, екологія…',
-      more: 'Деталі →',
-      cal: '📅 Додати в календар',
-      toast: 'Дякуємо за зворотній зв’язок',
-    },
-    mail: {
-      fromLabel: 'Від',
-      from: 'Dityam+',
-      subjectLabel: 'Тема',
-      subject: 'Нове для вашої дитини: конкурс підприємництва',
-      hello: 'Знайшли можливість під профіль вашої дитини:',
-      title: 'NFTE Youth Entrepreneurship Challenge',
-      meta: 'Конкурс · 13-18 років · Безкоштовно · до 31 жовтня 2026',
-      text: 'Глобальний конкурс підліткового підприємництва, 47+ країн. Реєстрація команд відкрита до кінця жовтня.',
-      more: 'Деталі на dityam.com.ua →',
-      foot: 'Позначте — і наступний лист буде точнішим.',
-    },
-    yes: '👍 Цікаво',
-    no: '👎 Не цікаво',
-    mockNote: 'Кнопки «Цікаво» і «Не цікаво» вже стоять під кожним постом у нашому телеграм-каналі. У Dityam+ ваші позначки підлаштовуватимуть наступні добірки — і в Telegram, і на пошті.',
+    mockTitle: 'Що приходить у Telegram',
+    mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись.',
+    mocks: [
+      {
+        label: 'Нова можливість під профіль',
+        head: '🧡 Нові можливості для ваших дітей',
+        title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
+        meta: 'Конкурси/олімпіади · 14–17 р. · безкоштовно',
+        extra: 'для: Дитина 2 (15–18 р.)',
+        foot: 'Відібрано під профіль вашої дитини.',
+      },
+      {
+        label: 'Нагадування про дедлайн',
+        head: '⏳ Нагадуємо заздалегідь: подача закривається через 14 днів',
+        title: 'NFTE Youth Entrepreneurship Challenge',
+        meta: 'подача до 31 жовтня',
+        extra: 'Саме час готувати документи.',
+        foot: 'Підібрано під профіль вашої дитини.',
+      },
+    ],
+    mockNote: 'Приклади у форматі справжніх повідомлень підписки. Обидві можливості зараз є на платформі.',
 
-    pathsTitle: 'Три траєкторії з нашої бази',
-    pathsSub: 'Це не вигадані приклади: усі дванадцять програм нижче зараз відкриті на платформі.',
+    pathsTitle: 'Три шляхи з нашої бази',
+    pathsSub: 'Не вигадані приклади: усі дванадцять програм нижче є на платформі просто зараз. Підписка надішле кожну з них дитині, якій вона підходить за віком і вподобаннями.',
     paths: [
       {
         persona: 'Дитині 14, любить біологію',
@@ -119,9 +118,9 @@ const L = {
     howTitle: 'Як це працює',
     how4: [
       ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Імені, прізвища чи школи дитини не запитуємо.'],
-      ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
+      ['Отримуйте нове під профіль', 'Щодня перевіряємо нові записи й надсилаємо ті, що підходять кожній дитині. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
-      ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
+      ['Питайте про заявку', 'Не зрозуміло, що заповнювати чи які документи потрібні? Напишіть боту — відповімо там само.'],
     ],
 
     priceTitle: 'Скільки коштує',
@@ -135,9 +134,9 @@ const L = {
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
-      'наступний крок з урахуванням того, куди вже подавались',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
-      'доставка в Telegram або на email',
+      'допомога із заявкою — просто напишіть боту',
+      'усе приходить у Telegram',
     ],
     trust: (total) => [
       'Не запитуємо імені, прізвища чи школи дитини',
@@ -162,15 +161,15 @@ const L = {
 
   en: {
     soon: 'soon',
-    h1a: 'Not a search, but a ',
-    h1script: 'path',
-    h1b: ' for your child',
-    lead: 'We remember what your child has already applied to and what worked — so next month you get not random cards, but the next step.',
+    h1a: 'Opportunities for your child ',
+    h1script: 'come to you',
+    h1b: ' — with a deadline reminder',
+    lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send to Telegram only what fits, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
     priceHint: 'UAH 179/month · UAH 1,490/year · cancel any time',
     stairsLabel: 'An example path',
-    stairsCaption: 'A real path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
+    stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
       ['School', 'National olympiads'],
       ['Ukraine', 'Junior Academy of Sciences'],
@@ -178,51 +177,45 @@ const L = {
       ['World', 'Regeneron ISEF'],
     ],
 
-    contrastTitle: 'Search and forget — or the next step',
+    contrastTitle: 'Search from zero every time — or get it delivered',
     contrastA: 'A regular search',
     contrastAItems: [
-      'Starts from zero every time: a search engine does not know what your child has done',
+      'From zero every time: search engines, social media, parent chats',
       'You find the same things you saw a month ago',
       'You learn about a deadline after it has passed',
     ],
     contrastB: 'Dityam+',
     contrastBItems: [
-      'Remembers where your child has applied and what worked',
-      'Suggests the next step, not a repeat',
+      'Sends only what is new and only what fits each child',
+      'An opportunity for several children arrives once, marked with who it is for',
       'Reminds you in good time: 2–4 weeks ahead for scholarships and exchanges, a week for clubs',
-      'Learns from your “Interested” and “Not interested” marks',
+      'Two weeks with nothing new — sends a selection from what is already open',
     ],
 
-    mockTitle: 'You tune the selection with one tap',
-    mockSub: 'Every opportunity comes with “👍 Interested” and “👎 Not interested”. The more you mark, the sharper the next selection.',
-    mockTg: 'This is how it looks on Telegram',
-    mockMail: 'This is how it looks by email',
-    tg: {
-      title: 'ISEF Ukraine — national selection for Regeneron ISEF',
-      meta: 'Competition · ages 14-17 · Free · until 31 January 2027',
-      text: 'A national science and engineering fair for students in grades 9–11. 22 categories: biochemistry, biomedicine, chemistry, engineering, ML, ecology…',
-      more: 'Details →',
-      cal: '📅 Add to calendar',
-      toast: 'Thanks for the feedback',
-    },
-    mail: {
-      fromLabel: 'From',
-      from: 'Dityam+',
-      subjectLabel: 'Subject',
-      subject: 'New for your child: an entrepreneurship competition',
-      hello: 'We found an opportunity that fits your child’s profile:',
-      title: 'NFTE Youth Entrepreneurship Challenge',
-      meta: 'Competition · ages 13-18 · Free · until 31 October 2026',
-      text: 'A global teen entrepreneurship competition in 47+ countries. Team registration is open until the end of October.',
-      more: 'Details on dityam.com.ua →',
-      foot: 'Mark it — and the next email will be sharper.',
-    },
-    yes: '👍 Interested',
-    no: '👎 Not interested',
-    mockNote: 'The “Interested” and “Not interested” buttons are already under every post in our Telegram channel. In Dityam+, your marks will shape the next selections — on Telegram and by email.',
+    mockTitle: 'What arrives on Telegram',
+    mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply.',
+    mocks: [
+      {
+        label: 'A new opportunity for the profile',
+        head: '🧡 New opportunities for your children',
+        title: 'ISEF Ukraine — national selection for Regeneron ISEF',
+        meta: 'Contests & olympiads · ages 14–17 · free',
+        extra: 'for: Child 2 (15–18)',
+        foot: 'Selected for your child’s profile.',
+      },
+      {
+        label: 'A deadline reminder',
+        head: '⏳ Early reminder: applications close in 14 days',
+        title: 'NFTE Youth Entrepreneurship Challenge',
+        meta: 'apply by 31 October',
+        extra: 'Time to prepare the documents.',
+        foot: 'Selected for your child’s profile.',
+      },
+    ],
+    mockNote: 'Examples in the format of real subscription messages. Both opportunities are on the platform right now.',
 
     pathsTitle: 'Three paths from our database',
-    pathsSub: 'These are not made-up examples: all twelve programmes below are open on the platform right now.',
+    pathsSub: 'Not made-up examples: all twelve programmes below are on the platform right now. The subscription sends each of them to a child it fits by age and interests.',
     paths: [
       {
         persona: 'Age 14, loves biology',
@@ -262,9 +255,9 @@ const L = {
     howTitle: 'How it works',
     how4: [
       ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. We don’t ask for your child’s name, surname or school.'],
-      ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
+      ['Get what fits the profile', 'Every day we check new listings and send the ones that fit each child. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
-      ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
+      ['Ask about the application', 'Not sure what to fill in or which documents you need? Message the bot — we answer right there.'],
     ],
 
     priceTitle: 'Pricing',
@@ -278,9 +271,9 @@ const L = {
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
-      'the next step, based on where you have already applied',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
-      'delivery on Telegram or by email',
+      'help with applications — just message the bot',
+      'everything arrives on Telegram',
     ],
     trust: (total) => [
       'We don’t ask for your child’s name, surname or school',
@@ -304,11 +297,71 @@ const L = {
   },
 };
 
+const SITE = 'https://dityam.com.ua';
+
+// Структуровані дані. FAQPage — питання, які AI-асистенти й Google цитують
+// дослівно; Service — що це за послуга й скільки коштує; BreadcrumbList —
+// шлях «Головна › Dityam+» у видачі. Текст береться з тих самих рядків, що й
+// видимий на сторінці, тож розмітка не може розійтися з контентом.
+function jsonLd(t, lang) {
+  const en = lang === 'en';
+  const home = en ? `${SITE}/en` : SITE;
+  const url = en ? `${SITE}/en/plus` : `${SITE}/plus`;
+  const strip = (x) => String(x).replace(/\s+/g, ' ').trim();
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Service',
+        '@id': `${url}#service`,
+        name: 'Dityam+',
+        url,
+        serviceType: en
+          ? 'Personal selection of opportunities for children and deadline reminders'
+          : 'Персональна добірка можливостей для дітей і нагадування про дедлайни',
+        description: strip(t.lead),
+        provider: { '@id': `${SITE}/#org` },
+        areaServed: [{ '@type': 'Country', name: en ? 'Ukraine' : 'Україна' }],
+        audience: { '@type': 'PeopleAudience', suggestedMinAge: 0, suggestedMaxAge: 18 },
+        availableChannel: {
+          '@type': 'ServiceChannel',
+          name: 'Telegram',
+          serviceUrl: 'https://t.me/DityamPlusBot',
+        },
+        offers: [
+          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '179', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '1490', priceCurrency: 'UAH' },
+        ],
+      },
+      {
+        '@type': 'FAQPage',
+        '@id': `${url}#faq`,
+        mainEntity: t.faq.map(([q, a]) => ({
+          '@type': 'Question',
+          name: strip(q),
+          acceptedAnswer: { '@type': 'Answer', text: strip(a) },
+        })),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: en ? 'Home' : 'Головна', item: home },
+          { '@type': 'ListItem', position: 2, name: 'Dityam+', item: url },
+        ],
+      },
+    ],
+  };
+}
+
 export default function PlusLanding({ lang = 'uk', total = null }) {
   const t = L[lang] || L.uk;
 
   return (
     <main className="pl" lang={lang === 'en' ? 'en' : undefined}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(t, lang)) }}
+      />
       {/* ── Хіро: теза сторінки — сходинки, а не список фіч ── */}
       <section className="pl-hero">
         <div className="pl-wrap pl-hero-grid">
@@ -357,58 +410,29 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
             </div>
           </div>
 
-          {/* Приклад: пост у Telegram повторює справжній формат нашого каналу
-              (scripts/post-to-telegram.mjs, варіант B) із тими самими кнопками
-              «👍 Цікаво / 👎 Не цікаво». Лист — ескіз майбутньої розсилки: кнопок
-              у пошті поки немає, як і того, щоб позначки міняли добірку. Обидва
-              записи — справжні активні можливості з бази. */}
+          {/* Приклади повідомлень підписки — у форматі scraper/personal_digest.py
+              (нова можливість) і scraper/deadline_reminders.py (нагадування).
+              Лише Telegram: платний бот іншого каналу не має. Кнопок
+              «Цікаво / Не цікаво» тут немає свідомо — у підписці їх теж немає.
+              Обидва записи — активні можливості бази (звірено 14.09.2026). */}
           <div className="pl-mock">
             <h3 className="pl-mock-title">{t.mockTitle}</h3>
             <p className="pl-mock-sub">{t.mockSub}</p>
             <div className="pl-mock-grid">
-              <figure className="pl-mock-card" aria-label={t.mockTg}>
-                <figcaption className="pl-mock-label">{t.mockTg}</figcaption>
-                <div className="pl-tg">
-                  <span className="pl-tg-toast" aria-hidden="true">{t.tg.toast}</span>
-                  <div className="pl-tg-bubble">
-                    <p className="pl-tg-title">✨ {t.tg.title}</p>
-                    <p className="pl-tg-meta">{t.tg.meta}</p>
-                    <p className="pl-tg-text">{t.tg.text}</p>
-                    <p className="pl-tg-more">{t.tg.more}</p>
-                  </div>
-                  <div className="pl-tg-kb" aria-hidden="true">
-                    <span className="pl-tg-btn">{t.tg.cal}</span>
-                    <div className="pl-tg-row">
-                      <span className="pl-tg-btn is-on">{t.yes}</span>
-                      <span className="pl-tg-btn">{t.no}</span>
+              {t.mocks.map((m) => (
+                <figure key={m.label} className="pl-mock-card" aria-label={m.label}>
+                  <figcaption className="pl-mock-label">{m.label}</figcaption>
+                  <div className="pl-tg">
+                    <div className="pl-tg-bubble">
+                      <p className="pl-tg-meta">{m.head}</p>
+                      <p className="pl-tg-title">🔸 {m.title}</p>
+                      <p className="pl-tg-meta">{m.meta}</p>
+                      <p className="pl-tg-text">{m.extra}</p>
+                      <p className="pl-tg-more">{m.foot}</p>
                     </div>
                   </div>
-                </div>
-              </figure>
-
-              <figure className="pl-mock-card" aria-label={t.mockMail}>
-                <figcaption className="pl-mock-label">{t.mockMail}</figcaption>
-                <div className="pl-mail">
-                  <div className="pl-mail-head">
-                    <div><span>{t.mail.fromLabel}</span>{t.mail.from}</div>
-                    <div><span>{t.mail.subjectLabel}</span><strong>{t.mail.subject}</strong></div>
-                  </div>
-                  <div className="pl-mail-body">
-                    <p className="pl-mail-hello">{t.mail.hello}</p>
-                    <div className="pl-mail-item">
-                      <p className="pl-mail-title">{t.mail.title}</p>
-                      <p className="pl-mail-meta">{t.mail.meta}</p>
-                      <p className="pl-mail-text">{t.mail.text}</p>
-                      <p className="pl-mail-more">{t.mail.more}</p>
-                      <div className="pl-mail-btns" aria-hidden="true">
-                        <span className="pl-mail-btn">{t.yes}</span>
-                        <span className="pl-mail-btn">{t.no}</span>
-                      </div>
-                    </div>
-                    <p className="pl-mail-foot">{t.mail.foot}</p>
-                  </div>
-                </div>
-              </figure>
+                </figure>
+              ))}
             </div>
             <p className="pl-mock-note">{t.mockNote}</p>
           </div>
