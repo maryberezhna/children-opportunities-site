@@ -15,7 +15,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '20 July 2026';
+const UPDATED = '14 September 2026';
 
 export default function TermsPageEn() {
   return (
@@ -73,7 +73,7 @@ export default function TermsPageEn() {
           <h2>3. Price and payment</h2>
           <ul>
             <li><strong>Monthly subscription — UAH 179</strong> (charged every month).</li>
-            <li><strong>Annual subscription — UAH 1,490</strong> (charged every year, ≈ UAH 124/month).</li>
+            <li><strong>Annual subscription — UAH 1,199</strong> (charged every year, ≈ UAH 100/month).</li>
           </ul>
           <p>
             Payment is made online through the WayForPay payment service.
