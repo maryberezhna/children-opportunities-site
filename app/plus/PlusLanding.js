@@ -30,7 +30,7 @@ const L = {
     lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram або на імейл лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
-    priceHint: '179 грн/міс · 1 199 грн/рік · скасувати можна будь-коли',
+    priceHint: '179 грн/міс · 1 199 грн/рік',
     stairsLabel: 'Приклад шляху',
     stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
@@ -129,7 +129,6 @@ const L = {
     priceTitle: 'Скільки коштує',
     month: '179 грн',
     monthPer: ' / місяць',
-    monthNote: 'скасувати можна будь-коли',
     year: '1 199 грн',
     yearPer: ' / рік',
     yearNote: '≈ 100 грн на місяць',
@@ -170,7 +169,7 @@ const L = {
     lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits, on Telegram or by email, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
-    priceHint: 'UAH 179/month · UAH 1,199/year · cancel any time',
+    priceHint: 'UAH 179/month · UAH 1,199/year',
     stairsLabel: 'An example path',
     stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
@@ -268,7 +267,6 @@ const L = {
     priceTitle: 'Pricing',
     month: 'UAH 179',
     monthPer: ' / month',
-    monthNote: 'cancel any time',
     year: 'UAH 1,199',
     yearPer: ' / year',
     yearNote: '≈ UAH 100 a month',
@@ -499,7 +497,9 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
           <div className="pl-prices">
             <div className="pl-price">
               <div className="pl-price-amount">{t.month}<span>{t.monthPer}</span></div>
-              <div className="pl-price-note">{t.monthNote}</div>
+              {/* «Скасувати можна будь-коли» під ціною прибрано на прохання
+                  Марії 14.09.2026 — підпис показуємо, лише коли він є. */}
+              {t.monthNote ? <div className="pl-price-note">{t.monthNote}</div> : null}
             </div>
             <div className="pl-price pl-price-best">
               <span className="pl-ribbon">{t.yearRibbon}</span>
