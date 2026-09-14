@@ -1,4 +1,4 @@
-import { MENTIONS } from '@/lib/press';
+import { MENTIONS, logoClass } from '@/lib/press';
 
 // Смужка логотипів видань, що писали про проєкт. Одна розмітка на всі
 // сторінки (/press, /en/press, /about, /en/about): дві копії цього блоку
@@ -20,7 +20,7 @@ export default function PressLogos() {
               width={m.logo.width}
               height={m.logo.height}
               alt={m.outlet}
-              className={m.logo.width / m.logo.height < 1.5 ? 'is-square' : undefined}
+              className={logoClass(m.logo)}
             />
           </a>
         </li>

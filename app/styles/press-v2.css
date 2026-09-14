@@ -93,6 +93,7 @@
 /* Квадратні емблеми при спільній висоті виглядають утричі дрібнішими за
    написи, бо в них немає ширини — компенсуємо висотою. */
 .pk-mention-logo img.is-square { max-height: 40px; }
+.pk-mention-logo img.is-stacked { max-height: 38px; }
 
 .pk-mention-meta { font-size: 0.8125rem; color: var(--v2-ink-3); }
 

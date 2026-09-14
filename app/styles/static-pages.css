@@ -55,6 +55,11 @@
   max-height: 40px;
 }
 
+/* Напис у два рядки ділить висоту навпіл — теж підтягуємо. */
+.press-logos img.is-stacked {
+  max-height: 38px;
+}
+
 /* ============ ЮРИДИЧНІ / СТАТИЧНІ СТОРІНКИ ============ */
 
 .legal-page {
@@ -174,6 +179,7 @@
   .legal-page .press-logos a { width: 104px; height: 56px; }
   .press-logos img { max-width: 74px; }
   .press-logos img.is-square { max-height: 34px; }
+  .press-logos img.is-stacked { max-height: 32px; }
 }
 
 
