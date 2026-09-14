@@ -17,7 +17,6 @@ import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
   NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
 } from '@/lib/labels';
-import OutcomeForm from './[slug]/OutcomeForm';
 import Details from './[slug]/Details';
 import OutboundCta from './[slug]/OutboundCta';
 import ShareButton from './[slug]/ShareButton';
@@ -682,7 +681,6 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
         <TelegramSubscribeBlock place="detail_page" lang={lang} />
 
-        <OutcomeForm opportunityId={item.id} title={item.title} lang={lang} />
 
         {related.length > 0 && (
           <section className="opportunity-related" aria-labelledby="related-heading">
