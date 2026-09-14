@@ -76,7 +76,8 @@ export default function PrivacyPageEn() {
             </li>
             <li>
               <strong>Dityam+ subscription (@DityamPlusBot).</strong> Telegram chat
-              ID and username; your phone number if you shared it; for each child —
+              ID and username; your phone number if you shared it; your email if you
+              chose email delivery; for each child —
               age group, interests, preferred formats and, optionally, special
               circumstances (section 3); the family’s city or format (online,
               abroad) and whether to show only free opportunities; which reminders

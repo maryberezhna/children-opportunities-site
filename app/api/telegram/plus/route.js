@@ -8,7 +8,9 @@ import { createClient } from '@supabase/supabase-js';
 import {
   makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback,
 } from '@/lib/digestFlow';
-import { createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import {
+  createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR, PRICE_EARLY,
+} from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
@@ -29,7 +31,7 @@ const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
-  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, wayforpay: wayforpayConfigured });
+  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, priceEarly: PRICE_EARLY, wayforpay: wayforpayConfigured });
 }
 
 // Скасування підписки у WayForPay. hadOrder=false — платежу не було
@@ -78,6 +80,23 @@ async function payoffProof(supabase) {
   return `\n<b>${head}</b>\n${lines.join('\n')}\n`;
 }
 
+// Знижка для списку очікування (рішення Марії 14.09.2026): перший місяць за
+// PRICE_EARLY. Лише тим, хто ще жодного разу не платив (немає
+// wfp_order_reference), і лише якщо людина є в plus_waitlist — за chat_id
+// (записалась через @DityamComUABot; у приватному чаті chat_id однаковий для
+// обох ботів, бо це id користувача), за посиланням w_<id> з листа про запуск
+// (воно дописує chat_id у рядок списку) або за імейлом.
+async function isEarlyBird(supabase, sub) {
+  if (!supabase || !sub || sub.wfp_order_reference) return false;
+  const inList = async (col, val) => {
+    const { count } = await supabase.from('plus_waitlist')
+      .select('id', { count: 'exact', head: true }).eq(col, val);
+    return (count || 0) > 0;
+  };
+  if (sub.telegram_chat_id && await inList('telegram_chat_id', String(sub.telegram_chat_id))) return true;
+  return Boolean(sub.email) && inList('email', String(sub.email).toLowerCase());
+}
+
 async function sendPayOffer(bot, sub, chatId, supabase) {
   // «Ви» — як на сайті. Раніше тут було «ти», і людина бачила два різні
   // тони в одному продукті.
@@ -98,11 +117,20 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Усе приходить сюди, у Telegram';
   if (wayforpayConfigured && sub) {
-    const [m, y] = await Promise.all([createInvoice(sub, 'monthly'), createInvoice(sub, 'yearly')]);
+    const early = await isEarlyBird(supabase, sub);
+    const [m, y] = await Promise.all([createInvoice(sub, 'monthly', { early }), createInvoice(sub, 'yearly')]);
     const rows = [];
-    if (m.url) rows.push([{ text: `Оформити за ${PRICE} грн/міс`, url: m.url }]);
+    if (m.url) {
+      rows.push([{
+        text: early ? `Перший місяць за ${PRICE_EARLY} грн, далі ${PRICE} грн/міс` : `Оформити за ${PRICE} грн/міс`,
+        url: m.url,
+      }]);
+    }
     if (y.url) rows.push([{ text: `Рік за ${PRICE_YEAR} грн — вигідніше`, url: y.url }]);
-    if (rows.length) { await bot.sendMessage(chatId, text, { inline_keyboard: rows }); return; }
+    const offer = early
+      ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.`
+      : text;
+    if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
 }
@@ -114,6 +142,7 @@ async function sendMainMenu(bot, chatId) {
       [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
       [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
+      [{ text: '📬 Куди надсилати', callback_data: 'menu:channel' }],
       [{ text: '⭐ Деталі підписки', callback_data: 'menu:sub' }],
       [{ text: '📝 Питання в підтримку', callback_data: 'menu:support' }],
     ],
@@ -185,7 +214,26 @@ async function continueStart(bot, supabase, sub, chatId, handle) {
   else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
 }
 
-const labels = (options, values) => (values || [])
+// Куди надсилати можливості й нагадування. До 14.09.2026 бот завжди ставив
+// channel='telegram', хоча personal_digest і deadline_reminders уміють слати
+// листом, а /plus обіцяє «у Telegram або на імейл».
+async function askChannel(bot, chatId) {
+  await bot.sendMessage(chatId, '📬 <b>Куди надсилати можливості й нагадування?</b>\nОплата, меню й допомога в будь-якому разі лишаються тут, у боті.', {
+    inline_keyboard: [
+      [{ text: '✈️ Сюди, у Telegram', callback_data: 'chan:telegram' }],
+      [{ text: '📧 На імейл', callback_data: 'chan:email' }],
+    ],
+  });
+}
+
+// Після вибору каналу: підписника повертаємо в меню, решту — до телефону й оплати.
+async function afterChannel(bot, supabase, sub, chatId) {
+  if (sub.status === 'active') { await bot.sendMessage(chatId, 'Готово ✅ Меню — /start'); return; }
+  if (!sub.phone) await askPhone(bot, supabase, sub, chatId);
+  else await sendPayOffer(bot, sub, chatId, supabase);
+}
+
+const labels =(options, values) => (values || [])
   .map((v) => (options.find((o) => o[0] === v) || [null, v])[1]).join(', ') || '—';
 const PLACE_LABELS = [[PLACE_ONLINE, 'онлайн'], [PLACE_ABROAD, 'за кордоном'], [PLACE_OTHER, 'мого міста немає']];
 
@@ -201,6 +249,7 @@ function subDetails(sub, kids) {
   });
   lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
+  lines.push(`Куди надсилаємо: ${sub.channel === 'email' && sub.email ? `імейл ${esc(sub.email)}` : 'Telegram'}`);
   lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
   return lines.join('\n');
 }
@@ -266,6 +315,16 @@ export async function POST(request) {
       // вже створеного рядка, інакше нижче створився б дубль, а зібраний на
       // сайті профіль (вік, інтереси) загубився б.
       const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
+
+      // Посилання з листа про запуск: /start w_<id рядка plus_waitlist>. Людина
+      // записалась у список імейлом, тож її chat_id там порожній. Привʼязуємо
+      // чат до запису — за ним бот дає знижку для перших (isEarlyBird).
+      if (startArg?.startsWith('w_')) {
+        await supabase.from('plus_waitlist')
+          .update({ telegram_chat_id: chatId, telegram_username: handle })
+          .eq('id', startArg.slice(2)).is('telegram_chat_id', null);
+      }
+
       if (!sub && startArg) {
         const { data: linked } = await supabase.from('digest_subscribers')
           .update({ telegram_chat_id: chatId, telegram_handle: handle, updated_at: new Date().toISOString() })
@@ -296,9 +355,29 @@ export async function POST(request) {
       return new Response('ok');
     }
 
-    // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
     if (!text.startsWith('/')) {
-      const { data: sub } = await supabase.from('digest_subscribers').select('status, telegram_handle').eq('telegram_chat_id', chatId).maybeSingle();
+      const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+
+      // Після «📧 На імейл» наступне повідомлення — адреса.
+      if (sub?.flow_step === 'email') {
+        const email = text.toLowerCase();
+        if (email.length > 200 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          await bot.sendMessage(chatId, 'Здається, в адресі одрук. Напишіть імейл ще раз, наприклад name@gmail.com.');
+          return new Response('ok');
+        }
+        const { error } = await supabase.from('digest_subscribers')
+          .update({ email, channel: 'email', flow_step: null, updated_at: new Date().toISOString() })
+          .eq('id', sub.id);
+        if (error) {
+          await bot.sendMessage(chatId, 'Не вдалося зберегти цей імейл — можливо, він уже привʼязаний до іншої підписки. Спробуйте інший або напишіть на hellodityam.com.ua@gmail.com.');
+          return new Response('ok');
+        }
+        await bot.sendMessage(chatId, `✅ Надсилатимемо можливості й нагадування на <b>${esc(email)}</b>.`);
+        await afterChannel(bot, supabase, { ...sub, email, channel: 'email' }, chatId);
+        return new Response('ok');
+      }
+
+      // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
       if (sub?.status === 'active') {
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде підписнику від @DityamPlusBot.</i>`);
@@ -327,6 +406,25 @@ export async function POST(request) {
     return new Response('ok');
   }
 
+  // «Куди надсилати»: Telegram одразу веде далі, імейл — чекає адресу текстом.
+  if ((cbq.data || '').startsWith('chan:')) {
+    const chatId = String(cbq.message.chat.id);
+    await bot.answerCallback(cbq.id);
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    if (!sub) { await bot.sendMessage(chatId, 'Почніть з /start'); return new Response('ok'); }
+    const now = new Date().toISOString();
+    if (cbq.data === 'chan:email') {
+      await supabase.from('digest_subscribers').update({ flow_step: 'email', updated_at: now }).eq('id', sub.id);
+      await bot.editMessage(chatId, cbq.message.message_id, '📬 Куди надсилати: <b>на імейл</b>');
+      await bot.sendMessage(chatId, '📧 Напишіть адресу імейлу одним повідомленням.');
+    } else {
+      await supabase.from('digest_subscribers').update({ channel: 'telegram', flow_step: null, updated_at: now }).eq('id', sub.id);
+      await bot.editMessage(chatId, cbq.message.message_id, '📬 Куди надсилати: <b>сюди, у Telegram</b> ✅');
+      await afterChannel(bot, supabase, { ...sub, channel: 'telegram' }, chatId);
+    }
+    return new Response('ok');
+  }
+
   // Анкету тепер проходять і до оплати, тож статус тут не перевіряємо.
   // Що далі після останнього питання — вирішуємо за статусом.
   if ((cbq.data || '').startsWith('flow:')) {
@@ -338,8 +436,7 @@ export async function POST(request) {
         await finishFlow(bot, chatId, { active: true });
       } else if (sub) {
         await finishFlow(bot, chatId, { active: false });
-        if (!sub.phone) await askPhone(bot, supabase, sub, chatId);
-        else await sendPayOffer(bot, sub, chatId, supabase);
+        await askChannel(bot, chatId);                 // далі телефон і оплата — у afterChannel
       }
     }
     return new Response('ok');
@@ -356,6 +453,7 @@ export async function POST(request) {
     else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
     else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
+    else if (action === 'channel') await askChannel(bot, chatId);
     else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — підкажемо, що і як заповнювати.');
     return new Response('ok');
   }

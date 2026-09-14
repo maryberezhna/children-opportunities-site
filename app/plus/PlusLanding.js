@@ -1,5 +1,6 @@
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
+import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
 import { opportunitiesWord } from '@/lib/plural';
 
 /**
@@ -356,6 +357,24 @@ const L = {
   },
 };
 
+// Коли продаж відкрито (PLUS_SALES_OPEN у lib/plus.js), ці рядки замінюють
+// «скоро» й список очікування. faqWhen стає на місце другого питання —
+// «Коли можна підписатися?» (індекс 1 в обох мовах).
+const OPEN = {
+  uk: {
+    cta: 'Оформити в Telegram',
+    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, вибір — надсилати в Telegram чи на імейл, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць за 89 грн.'],
+    joinTitle: 'Оформити Dityam+',
+    joinText: 'Кілька хвилин у Telegram-боті: питання про дитину, потім оплата. Останні можливості під профіль — у меню бота одразу після оплати.',
+  },
+  en: {
+    cta: 'Subscribe on Telegram',
+    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, a choice of Telegram or email delivery, then payment through WayForPay. People from the waiting list get their first month for UAH 89.'],
+    joinTitle: 'Get Dityam+',
+    joinText: 'A few minutes in the Telegram bot: questions about your child, then payment. The latest matching opportunities are in the bot menu right after payment.',
+  },
+};
+
 const SITE = 'https://dityam.com.ua';
 
 // Структуровані дані. FAQPage — питання, які AI-асистенти й Google цитують
@@ -413,7 +432,11 @@ function jsonLd(t, lang) {
 }
 
 export default function PlusLanding({ lang = 'uk', total = null }) {
-  const t = L[lang] || L.uk;
+  const base = L[lang] || L.uk;
+  const open = PLUS_SALES_OPEN ? (OPEN[lang] || OPEN.uk) : null;
+  const t = open
+    ? { ...base, ...open, faq: base.faq.map((item, i) => (i === 1 ? open.faqWhen : item)) }
+    : base;
 
   return (
     <main className="pl" lang={lang === 'en' ? 'en' : undefined}>
@@ -427,14 +450,14 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
           <div className="pl-hero-copy">
             <div className="pl-badges">
               <span className="pl-badge">Dityam+</span>
-              <span className="pl-badge pl-badge-soon">{t.soon}</span>
+              {!PLUS_SALES_OPEN && <span className="pl-badge pl-badge-soon">{t.soon}</span>}
             </div>
             <h1 className="pl-h1">
               {t.h1a}<span className="pl-script">{t.h1script}</span>{t.h1b}
             </h1>
             <p className="pl-lead">{t.lead}</p>
             <div className="pl-cta-row">
-              <a href="#join" className="pl-btn">{t.cta}</a>
+              <a href={PLUS_SALES_OPEN ? plusBotUrl(`plus_${lang}`) : '#join'} className="pl-btn">{t.cta}</a>
               <a href="#how" className="pl-link">{t.how}</a>
             </div>
             <p className="pl-price-hint">{t.priceHint}</p>

@@ -1,5 +1,6 @@
 import PlusLanding from './PlusLanding';
 import { supabase, publicOpportunities } from '@/lib/supabase';
+import { PLUS_SALES_OPEN } from '@/lib/plus';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -13,7 +14,7 @@ export const revalidate = 3600;
 // сторінка брала прев'ю головної, і в Telegram посилання на Dityam+
 // виглядало як «Усі можливості для дитини». Жодної обіцянки, якої немає в коді.
 const TITLE = 'Dityam+: можливості для дитини й нагадування про дедлайни';
-const DESCRIPTION = 'Підписка Dityam+: щодня добираємо можливості для кожної дитини за віком, вподобаннями й містом і нагадуємо про дедлайни. 179 грн/міс. Скоро.';
+const DESCRIPTION = `Підписка Dityam+: щодня добираємо можливості для кожної дитини за віком, вподобаннями й містом і нагадуємо про дедлайни. 179 грн/міс.${PLUS_SALES_OPEN ? '' : ' Скоро.'}`;
 
 export const metadata = {
   title: { absolute: TITLE },

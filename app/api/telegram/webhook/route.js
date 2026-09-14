@@ -3,6 +3,7 @@ import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
 import { removeRecurring } from '@/lib/wayforpay';
 import { makeBot } from '@/lib/digestFlow';
+import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -278,6 +279,15 @@ async function handlePlusWaitlist(msg) {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const chatId = String(msg.chat.id);
   const username = msg.from?.username ? `@${msg.from.username}` : null;
+
+  // Продаж відкрито (lib/plus.js): старі пости «Хочу першим» ведуть уже не в
+  // список очікування, а до оформлення в платному боті.
+  if (PLUS_SALES_OPEN) {
+    await sendMessage(msg.chat.id,
+      '🧡 Dityam+ уже працює! Оформлення — у боті @DityamPlusBot: кілька питань про дитину, потім оплата.',
+      { inline_keyboard: [[{ text: '🚀 Оформити Dityam+', url: plusBotUrl('waitlist_post') }]] });
+    return new Response('ok');
+  }
 
   const { data: existing } = await supabase.from('plus_waitlist')
     .select('id').eq('telegram_chat_id', chatId).maybeSingle();

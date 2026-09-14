@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
 
 /**
  * Продаж Dityam+ на паузі — сторінка лише додає в список очікування.
@@ -23,6 +24,8 @@ const L = {
     submit: 'Дізнатися першим',
     error: 'Перевірте email — здається, у ньому одрук.',
     fine: 'Жодного спаму: один лист про запуск і знижку для перших.',
+    openCta: '✈️ Оформити Dityam+ у Telegram',
+    openFine: 'Спершу кілька питань про дитину, потім оплата — усе в боті, за кілька хвилин.',
   },
   en: {
     doneTitle: 'You are on the list! 🧡',
@@ -35,6 +38,8 @@ const L = {
     submit: 'Tell me first',
     error: 'Check the email — there seems to be a typo.',
     fine: 'No spam: one message about the launch and the early-bird discount.',
+    openCta: '✈️ Get Dityam+ on Telegram',
+    openFine: 'A few questions about your child first, then payment — all in the bot, in a few minutes.',
   },
 };
 
@@ -42,6 +47,27 @@ export default function SubscribeForm({ lang = 'uk' }) {
   const t = L[lang] || L.uk;
   const [email, setEmail] = useState('');
   const [state, setState] = useState('idle'); // idle | sending | done | error
+
+  // Продаж відкрито (lib/plus.js) — замість списку очікування одна кнопка в бот.
+  if (PLUS_SALES_OPEN) {
+    return (
+      <div style={{ marginTop: 26 }}>
+        <a
+          href={plusBotUrl(`form_${lang}`)}
+          style={{
+            display: 'block', textAlign: 'center', padding: '15px 20px',
+            borderRadius: 12, background: '#229ED9', color: '#fff',
+            fontSize: 16, fontWeight: 700, textDecoration: 'none',
+          }}
+        >
+          {t.openCta}
+        </a>
+        <p style={{ margin: '14px 0 0', fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
+          {t.openFine}
+        </p>
+      </div>
+    );
+  }
 
   async function submit(e) {
     e.preventDefault();
