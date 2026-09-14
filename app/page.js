@@ -68,6 +68,7 @@ export default async function Home() {
           today={today}
           modeAware
           mobileLayout
+          sidebarLayout
         />
 
         {/* Тихий рядок підбірок: найсильніше внутрішнє посилання на

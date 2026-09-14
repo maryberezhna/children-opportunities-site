@@ -49,6 +49,7 @@ const UI = {
     searchTeens: 'FLEX, стажування, НМТ…',
     mSearchParents: 'Табір, FLEX, ВПО…',
     mSearchTeens: 'FLEX, стажування, НМТ…',
+    sideSearchTeens: 'FLEX, стажування…',
     filters: 'Фільтри',
     mTopWeek: '⏰ Встигніть цього тижня',
     mTopSoon: '⏰ Найближчі дедлайни',
@@ -60,6 +61,8 @@ const UI = {
     remove: 'Зняти фільтр',
     years: 'років',
     close: 'Закрити фільтри',
+    resetFilters: 'Скинути фільтри',
+    sortLong: 'спочатку — з найближчим дедлайном',
     show: (n) => (n ? `Показати ${n} ${opportunitiesWord(n)}` : 'Нічого не знайдено'),
     ageShort: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
     f: { format: 'Формат', place: 'Де', source: 'Джерело',
@@ -89,6 +92,7 @@ const UI = {
     searchTeens: 'FLEX, internships…',
     mSearchParents: 'Camp, FLEX, IDP…',
     mSearchTeens: 'FLEX, internships…',
+    sideSearchTeens: 'FLEX, internships…',
     filters: 'Filters',
     mTopWeek: '⏰ Make it this week',
     mTopSoon: '⏰ Closing soonest',
@@ -100,6 +104,8 @@ const UI = {
     remove: 'Remove filter',
     years: 'y.o.',
     close: 'Close filters',
+    resetFilters: 'Reset filters',
+    sortLong: 'closest deadline first',
     show: (n) => (n ? `Show ${n} ${n === 1 ? 'opportunity' : 'opportunities'}` : 'Nothing found'),
     ageShort: (a, b) => (a === b ? `age ${a}` : `${a}–${b} y.o.`),
     f: { format: 'Format', place: 'Where', source: 'Source',
@@ -292,9 +298,50 @@ function buildPredicates(s, { teens, todayIso, searchIndex }) {
 
 const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
 
+// Лічильники біля кожної опції: скільки лишиться, якщо обрати її при решті
+// обраних. Спільні для мобільної шторки (рахує на чернетці) і бічної панелі
+// десктопа (рахує на застосованому стані) — щоб цифри не розходились.
+function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
+  const ctx = { teens, todayIso, searchIndex };
+  const dp = buildPredicates(s, ctx);
+  const passOthers = (skip) =>
+    liveItems.filter((item) => FACETS.every((k) => k === skip || dp[k](item)));
+  const countOpts = (facet, values) => {
+    const base = passOthers(facet);
+    const out = { all: base.length };
+    for (const v of values) {
+      const p = buildPredicates({ ...s, [facet]: v }, ctx)[facet];
+      out[v] = base.filter(p).length;
+    }
+    return out;
+  };
+  const places = new Set();
+  passOthers('place').forEach((item) => {
+    (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+    if (goesAbroad(item)) places.add('abroad');
+    if (teens && isOnline(item)) places.add('online');
+  });
+  const placeOpts = [];
+  if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
+  if (places.has('online')) placeOpts.push(['online', t.online, t.online]);
+  [...places].filter((p) => p !== 'abroad' && p !== 'online')
+    .sort((a, b) => a.localeCompare(b, 'uk'))
+    .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
+  return {
+    total: liveItems.filter((item) => FACETS.every((k) => dp[k](item))).length,
+    type: countOpts('type', TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value)),
+    age: countOpts('age', AGE_OPTS[teens ? 'teens' : 'parents'].map((o) => o[0])),
+    deadline: countOpts('deadline', DEADLINE_OPTS.map((o) => o[0])),
+    need: countOpts('need', (teens ? GIVES_OPTS : NEED_OPTS).map((o) => o[0])),
+    cost: countOpts('cost', COST_OPTS.map((o) => o[0])),
+    placeOpts,
+    place: countOpts('place', placeOpts.map((o) => o[0])),
+  };
+}
+
 export default function OpportunitiesList({
   opportunities, presetCity, promoProps = null, lang = 'uk', today, modeAware = false,
-  mobileLayout = false,
+  mobileLayout = false, sidebarLayout = false,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
@@ -800,44 +847,25 @@ export default function OpportunitiesList({
   // Лічильники в шторці рахуються на чернетці: скільки лишиться, якщо
   // обрати цей чип при решті обраних. Нульові опції ховаємо — мертвий чип
   // гірший за відсутній.
-  const sheet = useMemo(() => {
-    if (!draft) return null;
-    const ctx = { teens, todayIso, searchIndex };
-    const dp = buildPredicates(draft, ctx);
-    const passOthers = (skip) =>
-      liveItems.filter((item) => FACETS.every((k) => k === skip || dp[k](item)));
-    const countOpts = (facet, values) => {
-      const base = passOthers(facet);
-      const out = { all: base.length };
-      for (const v of values) {
-        const p = buildPredicates({ ...draft, [facet]: v }, ctx)[facet];
-        out[v] = base.filter(p).length;
-      }
-      return out;
-    };
-    const places = new Set();
-    passOthers('place').forEach((item) => {
-      (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
-      if (goesAbroad(item)) places.add('abroad');
-      if (teens && isOnline(item)) places.add('online');
-    });
-    const placeOpts = [];
-    if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
-    if (places.has('online')) placeOpts.push(['online', t.online, t.online]);
-    [...places].filter((p) => p !== 'abroad' && p !== 'online')
-      .sort((a, b) => a.localeCompare(b, 'uk'))
-      .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
-    return {
-      total: liveItems.filter((item) => FACETS.every((k) => dp[k](item))).length,
-      type: countOpts('type', TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value)),
-      age: countOpts('age', AGE_OPTS[teens ? 'teens' : 'parents'].map((o) => o[0])),
-      deadline: countOpts('deadline', DEADLINE_OPTS.map((o) => o[0])),
-      need: countOpts('need', (teens ? GIVES_OPTS : NEED_OPTS).map((o) => o[0])),
-      cost: countOpts('cost', COST_OPTS.map((o) => o[0])),
-      placeOpts,
-      place: countOpts('place', placeOpts.map((o) => o[0])),
-    };
-  }, [draft, liveItems, teens, todayIso, searchIndex, t.abroad, t.online]);
+  const sheet = useMemo(
+    () => (draft ? facetCounts(draft, { teens, todayIso, searchIndex, liveItems, t }) : null),
+    // t змінюється лише з мовою, а мова в межах сторінки стала.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [draft, liveItems, teens, todayIso, searchIndex],
+  );
+
+  // Бічна панель десктопа (≥1100px) рахує те саме, але на застосованих
+  // фільтрах: там кожен клік одразу змінює список.
+  const side = useMemo(
+    () => (sidebarLayout
+      ? facetCounts(
+        { type, age, deadline, need, cost, place, query },
+        { teens, todayIso, searchIndex, liveItems, t },
+      )
+      : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex],
+  );
 
   const sheetGroup = (key, title, allLabel, opts) => {
     const counts = sheet[key];
@@ -893,6 +921,96 @@ export default function OpportunitiesList({
       clear: () => setPlace(presetCity || 'all'),
     },
   ].filter(Boolean);
+
+  // Бічна панель десктопа (≥1100px, референс «Dityam — головна з боковими
+  // фільтрами»): ті самі фільтри, що в рядку пігулок і селектах, але списками
+  // з лічильниками, і клік застосовується одразу. На цій ширині рядок
+  // .v2-filters ховає CSS, нижче 1100px — навпаки, ховається панель.
+  const sideSetters = { type: setType, age: setAge, deadline: setDeadline, need: setNeed, cost: setCost };
+  const sideApplied = { type, age, deadline, need, cost };
+  const sideGroup = (key, title, allLabel, opts) => {
+    const counts = side[key];
+    const cur = sideApplied[key];
+    const set = sideSetters[key];
+    // Нульові опції ховаємо, як і в шторці: мертвий пункт гірший за відсутній.
+    const visible = opts.filter(([v]) => counts[v] > 0 || cur === v);
+    if (!visible.length) return null;
+    return (
+      <div className="v2-side-group" role="group" aria-labelledby={`v2-side-${key}`}>
+        <span id={`v2-side-${key}`} className="v2-side-title">{title}</span>
+        <div className="v2-side-list">
+          <button
+            type="button"
+            className={`v2-side-item${cur === 'all' ? ' is-on' : ''}`}
+            aria-pressed={cur === 'all'}
+            onClick={() => set('all')}
+          >
+            <span>{allLabel}</span>
+          </button>
+          {visible.map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              className={`v2-side-item${cur === v ? ' is-on' : ''}`}
+              aria-pressed={cur === v}
+              onClick={() => set(cur === v ? 'all' : v)}
+            >
+              <span>{label}</span>
+              <span className="v2-side-n">{counts[v]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const renderSide = () => (
+    <aside className="v2-side" aria-label={t.filters}>
+      <label className="v2-side-search">
+        <span aria-hidden="true">🔍</span>
+        <input
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          // Поле вузьке (220px) — довгий десктопний плейсхолдер обрізався б.
+          placeholder={teens ? t.sideSearchTeens : t.mSearchParents}
+          aria-label={isEn ? 'Search' : 'Пошук'}
+        />
+      </label>
+      {sideGroup('type', t.typeGroup, t.all,
+        TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
+      {sideGroup('age', teens ? t.sel.grade : t.sel.age, t.all,
+        ageList.map((o) => [o[0], optLabel(o)]))}
+      {sideGroup('deadline', t.sel.deadline, t.all,
+        DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]))}
+      {sideGroup('need', teens ? t.sel.gives : t.sel.need, teens ? t.all : t.allKids,
+        needList.map((o) => [o[0], optLabel(o)]))}
+      {/* Вартість і «Де» в референсі немає, але на сайті вони є: без них
+          платне не відсіяти (урок #152), а закордон — пріоритет контенту.
+          Міст десятки — тому «Де» селектом, а не списком. */}
+      {sideGroup('cost', t.sel.cost, t.anyCost,
+        COST_OPTS.map((o) => [o[0], optLabel(o)]))}
+      {!presetCity && placeList.length ? (
+        <div className="v2-side-group">
+          <label htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
+          <select
+            id="v2-side-place"
+            className="v2-select v2-side-select"
+            value={place}
+            onChange={(e) => setPlace(e.target.value)}
+          >
+            <option value="all">{t.all}</option>
+            {placeList.map((o) => (
+              <option key={o[0]} value={o[0]}>{isEn ? o[2] : o[1]}</option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+      {hasActive ? (
+        <button type="button" className="v2-side-reset" onClick={reset}>{t.resetFilters}</button>
+      ) : null}
+    </aside>
+  );
 
   const searchInput = (extra = {}) => (
     <input
@@ -1049,83 +1167,98 @@ export default function OpportunitiesList({
         </div>
       </section>
 
-      {topCards.length === 3 ? (
-        <section className="v2-top" aria-label={t.topTitle}>
-          <div className="v2-top-head">
-            <h2>{t.topTitle}</h2>
-          </div>
-          <div className="v2-grid">
-            {topCards.map(renderCard)}
-          </div>
-        </section>
-      ) : null}
+      {/* Обгортки потрібні лише бічній панелі (сітка «панель | колонка»).
+          Нижче 1100px вони display: contents — діти поводяться як прямі
+          нащадки контейнера, і решта верстки їх не помічає. */}
+      <Wrap on={sidebarLayout} className="v2-catalog">
+        {sidebarLayout ? renderSide() : null}
+        <Wrap on={sidebarLayout} className="v2-catalog-main">
+          {topCards.length === 3 ? (
+            <section className="v2-top" aria-label={t.topTitle}>
+              <div className="v2-top-head">
+                <h2>{t.topTitle}</h2>
+              </div>
+              <div className="v2-grid">
+                {topCards.map(renderCard)}
+              </div>
+            </section>
+          ) : null}
 
-      {mobileLayout && topCards.length === 3 ? (
-        <section className="m-top" aria-labelledby="m-top-title">
-          <div className="m-top-head">
-            {/* «Цього тижня» — лише коли всі три справді закриваються за 7
-                днів; інакше заголовок обіцяв би те, чого в стрічці немає. */}
-            <h2 id="m-top-title">
-              {topCards.every((c) => daysUntil(c.deadline, todayIso) <= 7) ? t.mTopWeek : t.mTopSoon}
-            </h2>
-            <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
-          </div>
-          <div
-            className="m-top-strip"
-            onScroll={(e) => {
-              const i = Math.round(e.currentTarget.scrollLeft / 272);
-              setTopIndex(Math.min(2, Math.max(0, i)));
-            }}
-          >
-            {topCards.map(renderTopCard)}
-          </div>
-        </section>
-      ) : null}
+          {mobileLayout && topCards.length === 3 ? (
+            <section className="m-top" aria-labelledby="m-top-title">
+              <div className="m-top-head">
+                {/* «Цього тижня» — лише коли всі три справді закриваються за 7
+                    днів; інакше заголовок обіцяв би те, чого в стрічці немає. */}
+                <h2 id="m-top-title">
+                  {topCards.every((c) => daysUntil(c.deadline, todayIso) <= 7) ? t.mTopWeek : t.mTopSoon}
+                </h2>
+                <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
+              </div>
+              <div
+                className="m-top-strip"
+                onScroll={(e) => {
+                  const i = Math.round(e.currentTarget.scrollLeft / 272);
+                  setTopIndex(Math.min(2, Math.max(0, i)));
+                }}
+              >
+                {topCards.map(renderTopCard)}
+              </div>
+            </section>
+          ) : null}
 
-      {mobileLayout && activeChips.length ? (
-        <div className="m-active">
-          {activeChips.map((c) => (
-            <button
-              key={c.key}
-              type="button"
-              className="m-active-chip"
-              aria-label={`${t.remove}: ${c.label}`}
-              onClick={c.clear}
-            >
-              {c.label}
-              <span className="m-active-x" aria-hidden="true">✕</span>
-            </button>
-          ))}
-          <button type="button" className="m-active-reset" onClick={reset}>{t.reset}</button>
-        </div>
-      ) : null}
+          {mobileLayout && activeChips.length ? (
+            <div className="m-active">
+              {activeChips.map((c) => (
+                <button
+                  key={c.key}
+                  type="button"
+                  className="m-active-chip"
+                  aria-label={`${t.remove}: ${c.label}`}
+                  onClick={c.clear}
+                >
+                  {c.label}
+                  <span className="m-active-x" aria-hidden="true">✕</span>
+                </button>
+              ))}
+              <button type="button" className="m-active-reset" onClick={reset}>{t.reset}</button>
+            </div>
+          ) : null}
 
-      {mobileLayout ? (
-        <div className="m-count" aria-live="polite" ref={countRef}>
-          <span><strong>{count}</strong> {t.countWord(count)}</span>
-          <span className="m-count-hint">{t.sortHint}</span>
-        </div>
-      ) : null}
+          {mobileLayout ? (
+            <div className="m-count" aria-live="polite" ref={countRef}>
+              <span><strong>{count}</strong> {t.countWord(count)}</span>
+              <span className="m-count-hint">{t.sortHint}</span>
+            </div>
+          ) : null}
 
-      {shown.length ? (
-        <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
-          {shown.map(renderCard)}
-        </section>
-      ) : (
-        <div className="v2-empty">
-          <span style={{ fontSize: 32 }} aria-hidden="true">🔍</span>
-          <h3>{t.nothingTitle}</h3>
-          <p>{t.nothingText}</p>
-        </div>
-      )}
+          {sidebarLayout ? (
+            <div className="v2-side-count" aria-live="polite">
+              <span><strong>{count}</strong> {t.countWord(count)}</span>
+              <span className="v2-side-count-hint">{t.sortLong}</span>
+            </div>
+          ) : null}
 
-      {stream.length > limit ? (
-        <div className="v2-more-row">
-          <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + pageSize.current)}>
-            {t.showMore}
-          </button>
-        </div>
-      ) : null}
+          {shown.length ? (
+            <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
+              {shown.map(renderCard)}
+            </section>
+          ) : (
+            <div className="v2-empty">
+              <span style={{ fontSize: 32 }} aria-hidden="true">🔍</span>
+              <h3>{t.nothingTitle}</h3>
+              <p>{t.nothingText}</p>
+            </div>
+          )}
+
+          {stream.length > limit ? (
+            <div className="v2-more-row">
+              <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + pageSize.current)}>
+                {t.showMore}
+              </button>
+            </div>
+          ) : null}
+        </Wrap>
+      </Wrap>
 
       {promoProps ? <PlusSection {...promoProps} lang={lang} /> : null}
 
@@ -1194,6 +1327,12 @@ export default function OpportunitiesList({
       ) : null}
     </>
   );
+}
+
+// Обгортка, яка є лише коли потрібна: без неї розмітка лишається рівно
+// такою, як на сторінках міст і тем.
+function Wrap({ on, className, children }) {
+  return on ? <div className={className}>{children}</div> : children;
 }
 
 function FieldRow({ k, v }) {
