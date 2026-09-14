@@ -255,7 +255,7 @@ const anyOf = (vals, test) => vals.length === 0 || vals.some(test);
 // Предикати фільтрів як чиста функція стану: той самий код рахує і
 // застосовані фільтри, і чернетку в мобільній шторці — інакше «Показати N»
 // у шторці могло б розійтися з тим, що покаже список.
-function buildPredicates(s, { teens, todayIso, searchIndex }) {
+function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
   const tokens = queryTokens(s.query);
   return {
     type: (item) => anyOf(s.type, (v) => {
@@ -295,8 +295,10 @@ function buildPredicates(s, { teens, todayIso, searchIndex }) {
       if (v === 'online') return isOnline(item);
       const cities = item.cities || [];
       if (cities.includes(v)) return true;
-      // «Вся Україна» просвічує крізь вибір конкретного міста.
-      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v);
+      // «Вся Україна» просвічує крізь вибір УКРАЇНСЬКОГО міста. Для закордонного
+      // (Malmö) — ні: там показувало 142 = 1 свій запис + 141 «Вся Україна».
+      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v)
+        && (!domestic || domestic.has(v));
     }),
     query: (item) => {
       if (!tokens.length) return true;
@@ -311,8 +313,8 @@ const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
 // Лічильники біля кожної опції: скільки лишиться, якщо обрати її при решті
 // обраних. Спільні для мобільної шторки (рахує на чернетці) і бічної панелі
 // десктопа (рахує на застосованому стані) — щоб цифри не розходились.
-function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
-  const ctx = { teens, todayIso, searchIndex };
+function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }) {
+  const ctx = { teens, todayIso, searchIndex, domestic };
   const dp = buildPredicates(s, ctx);
   const passOthers = (skip) =>
     liveItems.filter((item) => FACETS.every((k) => k === skip || dp[k](item)));
@@ -493,12 +495,23 @@ export default function OpportunitiesList({
     [opportunities, todayIso, teens],
   );
 
+  // Міста, що трапляються хоч в одному НЕзакордонному записі, — українські.
+  // Лише до них у фільтрі «Де» додаються записи «Вся Україна».
+  const domestic = useMemo(() => {
+    const set = new Set();
+    opportunities.forEach((o) => {
+      if (goesAbroad(o)) return;
+      (o.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) set.add(c); });
+    });
+    return set;
+  }, [opportunities]);
+
   const predicates = useMemo(
     () => buildPredicates(
       { type, age, deadline, need, cost, place, query },
-      { teens, todayIso, searchIndex },
+      { teens, todayIso, searchIndex, domestic },
     ),
-    [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex],
+    [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex, domestic],
   );
 
   // На сторінці міста саме місто — не фільтр людини, а рамка сторінки.
@@ -906,10 +919,10 @@ export default function OpportunitiesList({
   // обрати цей чип при решті обраних. Нульові опції ховаємо — мертвий чип
   // гірший за відсутній.
   const sheet = useMemo(
-    () => (draft ? facetCounts(draft, { teens, todayIso, searchIndex, liveItems, t }) : null),
+    () => (draft ? facetCounts(draft, { teens, todayIso, searchIndex, domestic, liveItems, t }) : null),
     // t змінюється лише з мовою, а мова в межах сторінки стала.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [draft, liveItems, teens, todayIso, searchIndex],
+    [draft, liveItems, teens, todayIso, searchIndex, domestic],
   );
 
   // Бічна панель десктопа (≥1100px) рахує те саме, але на застосованих
@@ -918,11 +931,11 @@ export default function OpportunitiesList({
     () => (sidebarLayout
       ? facetCounts(
         { type, age, deadline, need, cost, place, query },
-        { teens, todayIso, searchIndex, liveItems, t },
+        { teens, todayIso, searchIndex, domestic, liveItems, t },
       )
       : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex],
+    [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex, domestic],
   );
 
   const sheetGroup = (key, title, allLabel, opts) => {
@@ -960,6 +973,51 @@ export default function OpportunitiesList({
             </button>
           ))}
         </div>
+      </div>
+    );
+  };
+
+  // «Де» в шторці — рідний випадний список телефона, а не чипи: міст
+  // десятки, і стіна чипів вимагала довго гортати (Марія 14.09.2026).
+  // Обрані місця — знімними чипами над списком; у пункті — скільки дасть.
+  const sheetPlace = () => {
+    const counts = sheet.place;
+    const chosen = draft.place.filter((v) => v !== presetCity);
+    const opts = sheet.placeOpts.filter((o) => !draft.place.includes(o[0]) && counts[o[0]] > 0);
+    if (!opts.length && !chosen.length) return null;
+    return (
+      <div className="m-group" role="group" aria-labelledby="m-group-place" key="place">
+        <h3 id="m-group-place">{t.sel.where}</h3>
+        {chosen.length ? (
+          <div className="m-group-chips">
+            {chosen.map((v) => (
+              <button
+                key={v}
+                type="button"
+                className="m-chip is-on"
+                aria-label={`${t.remove}: ${placeLabel(v)}`}
+                onClick={() => setDraft({ ...draft, place: draft.place.filter((x) => x !== v) })}
+              >
+                {placeLabel(v)}<span className="m-chip-x" aria-hidden="true">✕</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+        {opts.length ? (
+          <select
+            className="m-select"
+            value=""
+            aria-label={t.sel.where}
+            onChange={(e) => {
+              if (e.target.value) setDraft({ ...draft, place: toggle(draft.place, e.target.value) });
+            }}
+          >
+            <option value="">{chosen.length ? t.addPlace : t.pickPlace}</option>
+            {opts.map((o) => (
+              <option key={o[0]} value={o[0]}>{`${isEn ? o[2] : o[1]} · ${counts[o[0]]}`}</option>
+            ))}
+          </select>
+        ) : null}
       </div>
     );
   };
@@ -1401,8 +1459,7 @@ export default function OpportunitiesList({
                   знаходиме, як і безкоштовне (урок #152). */}
               {sheetGroup('cost', t.sel.cost, t.anyCost,
                 COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-              {!presetCity ? sheetGroup('place', t.sel.where, t.all,
-                sheet.placeOpts.map((o) => [o[0], isEn ? o[2] : o[1]])) : null}
+              {!presetCity ? sheetPlace() : null}
             </div>
 
             <div className="m-sheet-foot">
