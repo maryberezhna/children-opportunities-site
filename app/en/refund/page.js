@@ -3,8 +3,8 @@ import Link from 'next/link';
 const SITE_URL = 'https://dityam.com.ua';
 
 export const metadata = {
-  title: 'Refunds',
-  description: 'Terms and procedure for refunds and cancelling a Dityam+ subscription.',
+  title: 'Cancellation and refunds',
+  description: 'How to cancel a Dityam+ subscription and when money is returned: paid periods are not refunded; mistaken or duplicated charges are.',
   alternates: {
     canonical: `${SITE_URL}/en/refund`,
     languages: { uk: `${SITE_URL}/refund`, en: `${SITE_URL}/en/refund` },
@@ -14,7 +14,7 @@ export const metadata = {
 
 // Дата збігається з українською сторінкою свідомо: це той самий документ,
 // і розбіжність у датах читалась би як дві різні редакції умов.
-const UPDATED = '20 July 2026';
+const UPDATED = '14 September 2026';
 
 export default function RefundPage() {
   return (
@@ -23,51 +23,52 @@ export default function RefundPage() {
         <Link href="/en">← All opportunities</Link>
       </nav>
       <article className="legal-page">
-        <h1>Refunds</h1>
+        <h1>Cancellation and refunds</h1>
         <p className="meta-line">Last updated: {UPDATED}</p>
+
+        <p className="legal-note">
+          This is a translation for convenience. The{' '}
+          <Link href="/refund">Ukrainian version</Link> is the legally binding
+          one; if the two ever differ, the Ukrainian text prevails.
+        </p>
 
         <h2>1. Cancelling a subscription</h2>
         <p>
           You can cancel your Dityam+ subscription <strong>at any time</strong> with the{' '}
           <code>/stop</code> command in the{' '}
           <a href="https://t.me/DityamPlusBot" target="_blank" rel="noopener noreferrer">@DityamPlusBot</a>{' '}
-          bot. After cancelling, <strong>no further recurring charges are made</strong>,
-          and access continues until the end of the period already paid for.
+          bot. The bot stops the recurring payment first and then the subscription,
+          so <strong>there is no next charge</strong>.
         </p>
 
         <h2>2. Refunds</h2>
         <p>
-          The service is digital and is delivered immediately after payment, so the
-          fee for the current paid period <strong>is not refundable</strong>. To avoid
-          being charged again, cancel with <code>/stop</code> — no further payments
-          will be taken.
+          The service is digital and is delivered immediately after payment, so{' '}
+          <strong>fees for a paid period are not refunded</strong> — for either the
+          monthly or the annual plan, including after cancellation.
         </p>
-        <ul>
-          <li><strong>Incorrect or duplicated transactions</strong> are refunded in
-            full, within up to 14 banking days of your request (the actual time
-            depends on your issuing bank).</li>
-        </ul>
+        <p>
+          The exception is <strong>mistaken or duplicated charges</strong>: these are
+          refunded in full within up to 14 banking days of your request (the actual
+          time depends on the bank that issued your card).
+        </p>
 
-        <h2>3. How to get in touch</h2>
+        <h2>3. Reporting a mistaken charge</h2>
         <p>
           Write to <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>{' '}
-          or to the bot, giving the approximate date and amount of the payment. We
-          will get back to you and handle the request.
+          or to the bot, giving the approximate date and amount of the payment.
         </p>
 
-        <h2>4. Cancelling a transaction</h2>
+        <h2>4. Unfinished payments</h2>
         <p>
-          Before a charge is actually taken, an unfinished transaction can simply be
-          left unconfirmed — no money is withdrawn. If the charge has already gone
-          through, the refund procedure described above applies.
+          No money is taken until a payment is confirmed — an unfinished transaction
+          can simply be left unconfirmed.
         </p>
 
-        <h2>Company details</h2>
+        <h2>Seller details</h2>
         <p>
           Individual entrepreneur Mariia Oleksandrivna Shutiak, tax number (RNOKPP)
-          3530900201. The full details are on the{' '}
-          <Link href="/en/contacts">Contacts</Link> page and in the{' '}
-          <Link href="/en/terms">Public offer</Link>.
+          3530900201. Full details are in the <Link href="/en/terms">Public offer</Link>.
         </p>
       </article>
     </div>

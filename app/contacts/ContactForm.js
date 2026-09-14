@@ -25,7 +25,7 @@ const L = {
     errSend: 'Не вдалося надіслати. Спробуйте ще раз або напишіть на hellodityam.com.ua@gmail.com.',
     sending: 'Надсилаємо…',
     submit: 'Надіслати',
-    privacy: 'Ми не передаємо ваші контакти третім сторонам і не надсилаємо реклами.',
+    privacy: 'Контакт потрібен лише, щоб відповісти вам. Реклами не надсилаємо. Як обробляємо дані — у політиці конфіденційності.',
   },
   en: {
     doneTitle: 'Thank you, your message arrived!',
@@ -44,7 +44,7 @@ const L = {
     errSend: 'Could not send. Please try again, or write to hellodityam.com.ua@gmail.com.',
     sending: 'Sending…',
     submit: 'Send',
-    privacy: 'We don’t pass your contacts to third parties and we don’t send advertising.',
+    privacy: 'We only use your contact to reply to you. We don’t send advertising. How we handle data is in the privacy policy.',
   },
 };
 
