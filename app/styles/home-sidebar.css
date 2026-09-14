@@ -1,0 +1,199 @@
+/* Бічні фільтри головної на десктопі (≥1100px, референс «Dityam — головна з
+   боковими фільтрами»). Нижче 1100px панелі немає: обгортки розчиняються
+   (display: contents), тож на 901–1099px лишається рядок фільтрів, а на
+   ≤900px — мобільна верстка з home-mobile.css, обидві без змін. */
+
+.v2-catalog,
+.v2-catalog-main { display: contents; }
+
+.v2-side,
+.v2-side-count { display: none; }
+
+@media (min-width: 1100px) {
+  .v2-home .v2-filters { display: none; }
+
+  .v2-home .v2-catalog {
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    gap: 48px;
+    align-items: start;
+  }
+
+  .v2-home .v2-catalog-main {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    min-width: 0;
+  }
+
+  /* Колонка вужча за контейнер — без цього третя картка топу падала б
+     окремим рядом. */
+  .v2-home .v2-top .v2-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+  /* У картці завширшки 252px повний опис розтягував топ на 11 рядків. */
+  .v2-home .v2-top .v2-card-summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── Панель ───────────────────────────────────────────────────────────── */
+  .v2-home .v2-side {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    background: var(--v2-cream);
+    border-radius: 16px;
+    padding: 20px;
+    position: sticky;
+    top: 76px;
+    max-height: calc(100vh - 92px);
+    overflow: auto;
+    box-sizing: border-box;
+  }
+
+  /* Панель прокручується всередині, і flex стискав би пошук і кнопку
+     нижче їхньої висоти. */
+  .v2-home .v2-side > * { flex-shrink: 0; }
+
+  .v2-home .v2-side-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 12px;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 10px;
+    font-size: 15px;
+    color: var(--v2-ink-3);
+  }
+
+  .v2-home .v2-side-search:focus-within { border-color: var(--v2-ink); }
+
+  .v2-home .v2-side-search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--v2-ink);
+  }
+
+  .v2-home .v2-side-search input::placeholder { color: #b8b3a6; }
+
+  /* ── Групи ────────────────────────────────────────────────────────────── */
+  .v2-home .v2-side-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .v2-home .v2-side-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--v2-ink-3);
+  }
+
+  .v2-home .v2-side-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  /* Пункт виступає на 10px в обидва боки: текст стоїть на лінії із
+     заголовком, а підсвітка має поля. */
+  .v2-home .v2-side-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    min-height: 36px;
+    padding: 6px 10px;
+    margin: 0 -10px;
+    width: calc(100% + 20px);
+    box-sizing: border-box;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 400;
+    line-height: 1.3;
+    color: var(--v2-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: background 200ms;
+  }
+
+  .v2-home .v2-side-item:hover { background: #ffffff; }
+
+  .v2-home .v2-side-item:focus-visible {
+    outline: 2px solid var(--v2-ink);
+    outline-offset: -2px;
+  }
+
+  .v2-home .v2-side-item.is-on {
+    background: var(--v2-ink);
+    color: #ffffff;
+    font-weight: 700;
+  }
+
+  .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-accent); }
+
+  .v2-home .v2-side-n {
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--v2-ink-3);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
+
+  .v2-home .v2-side-select {
+    width: 100%;
+    height: 44px;
+    padding-left: 12px;
+    font-size: 15px;
+    font-weight: 400;
+  }
+
+  .v2-home .v2-side-reset {
+    align-self: flex-start;
+    height: 40px;
+    padding: 0 18px;
+    box-sizing: border-box;
+    border: 1px solid var(--v2-ink);
+    border-radius: 9999px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--v2-ink);
+    cursor: pointer;
+  }
+
+  .v2-home .v2-side-reset:hover { background: #ffffff; }
+
+  /* ── Лічильник над стрічкою ───────────────────────────────────────────── */
+  .v2-home .v2-side-count {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    padding: 0 4px;
+    font-size: 15px;
+    color: var(--v2-ink-2);
+  }
+
+  .v2-home .v2-side-count strong { color: var(--v2-ink); }
+  .v2-home .v2-side-count-hint { font-size: 13px; color: var(--v2-ink-3); }
+}
