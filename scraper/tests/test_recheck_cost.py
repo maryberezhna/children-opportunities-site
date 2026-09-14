@@ -152,5 +152,29 @@ class SearchOtherSources(unittest.TestCase):
         self.assertIn("нічого", why)
 
 
+
+class GuardsFromSearchRun(unittest.TestCase):
+    """Помилки пробного прогону з пошуком, 14.09.2026."""
+
+    def test_budget_institution_is_not_free(self):
+        q = "Центр юних техніків є комунальною, бюджетною, неприбутковою установою"
+        patch, why = decide_cost(row(title="Клуб юних техніків Кварц"), out("free", q), q)
+        self.assertEqual(patch, {})
+        self.assertIn("здогад", why)
+
+    def test_explicit_free_in_other_language_is_accepted(self):
+        q = "Die Teilnahme ist kostenlos für alle Kinder aus der Ukraine"
+        patch, _ = decide_cost(row(), out("free", q), q)
+        self.assertEqual(patch, {"cost_type": "free"})
+
+    def test_generic_erasmus_match_is_not_enough(self):
+        page = "Scambio giovanile Erasmus in Grecia. Quota di 40 euro per il tesseramento."
+        self.assertFalse(page_mentions_title('Молодіжний обмін Erasmus+ "O-live T.R.E.E.S." в Греції', page))
+
+    def test_two_distinctive_words_match(self):
+        page = "Молодіжний обмін O-live у Греції: внесок 40 євро"
+        self.assertTrue(page_mentions_title('Молодіжний обмін Erasmus+ "O-live T.R.E.E.S." в Греції', page))
+
+
 if __name__ == "__main__":
     unittest.main()
