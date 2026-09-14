@@ -118,7 +118,7 @@ const L = {
 
     howTitle: 'Як це працює',
     how4: [
-      ['Розкажіть про вподобання дитини', 'Три питання: вік, інтереси й чи показувати платне. Персональних даних дитини не запитуємо.'],
+      ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Імені, прізвища чи школи дитини не запитуємо.'],
       ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
@@ -134,13 +134,13 @@ const L = {
     yearRibbon: 'вигідніше на 31%',
     includedTitle: 'У підписку входить',
     included: [
-      'добірка під профіль дитини — вік, інтереси, місто',
+      'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'наступний крок з урахуванням того, куди вже подавались',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'доставка в Telegram або на email',
     ],
     trust: (total) => [
-      'Не запитуємо персональних даних дитини й не передаємо їх третім особам',
+      'Не запитуємо імені, прізвища чи школи дитини',
       'Платформа лишається безкоштовною для всіх',
       'Скасувати можна одною командою',
       total ? `${total.toLocaleString('uk-UA')} ${opportunitiesWord(total)} — щодня додаємо нові й перевіряємо` : 'Щодня додаємо нові можливості й перевіряємо',
@@ -148,10 +148,12 @@ const L = {
 
     faqTitle: 'Питання',
     faq: [
-      ['Чим підписка відрізняється від безкоштовної платформи?', 'Усі можливості на Dityam.com.ua відкриті для всіх і такими лишаться. Підписка не відкриває доступ — вона стежить за профілем вашої дитини, пропонує наступний крок і нагадує про дедлайни.'],
-      ['Коли запуск?', 'Ми саме дороблюємо Dityam+. Усім, хто в списку, напишемо першими — зі знижкою на старті.'],
-      ['А якщо під мою дитину нічого не знайдеться?', 'Мовчати місяцями не будемо: запропонуємо розширити профіль — наприклад, додати інтерес чи сусідній вік.'],
-      ['Як скасувати?', 'Командою /stop у боті. Спершу зупиняємо автоматичне списання, потім підписку — більше нічого не спишеться.'],
+      ['Навіщо платити, якщо всі можливості й так безкоштовні?', 'Платформа безкоштовна й такою лишиться: підписка нічого не ховає. Ви платите за зекономлений час. Щодня ми перебираємо понад тисячу записів і надсилаємо лише те, що підходить віку, вподобанням і місту вашої дитини. А про дедлайн нагадуємо, поки ще встигаєте зібрати документи: за 4 тижні для стипендій і обмінів, за 2 — для конкурсів, за тиждень — для гуртків.'],
+      ['Коли можна підписатися?', 'Dityam+ ще не продається — дороблюємо. Хто стане в список зараз, дізнається про старт першим і отримає знижку для перших. Список ні до чого не зобовʼязує й нічого не списує.'],
+      ['А якщо під мою дитину нічого не знайдеться?', 'Скажемо прямо, а не мовчатимемо. Коли нового немає два тижні, надішлемо добірку з того, що вже відкрито. А якщо під профіль немає зовсім нічого, запропонуємо його розширити: додати вподобання, сусідній вік чи онлайн-формат.'],
+      ['А якщо в мене двоє чи більше дітей?', 'Заведіть профіль для кожної дитини в одній підписці. Можливість, що підходить кільком, прийде один раз — із позначкою, кому саме. Місця в добірці діляться між дітьми по черзі, тож ніхто не лишиться без свого.'],
+      ['Чи безпечно розповідати про дитину?', 'Імені, прізвища, школи чи дати народження ми не питаємо. Для добору потрібні лише віковий діапазон, вподобання, формат і місто. Особливі обставини, як-от статус ВПО чи інвалідність, — тільки якщо самі захочете: так покажемо програми з окремим набором саме для таких дітей.'],
+      ['Як скасувати?', 'Одною командою /stop у боті — без листів у підтримку й пояснень. Спершу зупиняємо автоматичне списання, потім саму підписку, тож наступного платежу не буде. Якщо гроші списало помилково чи двічі, повернемо повністю.'],
     ],
 
     joinTitle: 'Станьте першими',
@@ -259,7 +261,7 @@ const L = {
 
     howTitle: 'How it works',
     how4: [
-      ['Tell us what your child enjoys', 'Three questions: age, interests and whether to show paid options. We don’t ask for your child’s personal data.'],
+      ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. We don’t ask for your child’s name, surname or school.'],
       ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
@@ -275,13 +277,13 @@ const L = {
     yearRibbon: '31% cheaper',
     includedTitle: 'The subscription includes',
     included: [
-      'a selection for your child’s profile — age, interests, city',
+      'a selection for each child’s profile — age, likes, format, city',
       'the next step, based on where you have already applied',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'delivery on Telegram or by email',
     ],
     trust: (total) => [
-      'We don’t collect your child’s personal data or share it with third parties',
+      'We don’t ask for your child’s name, surname or school',
       'The platform stays free for everyone',
       'Cancel with one command',
       total ? `${total.toLocaleString('en-US')} opportunities — new ones added and checked daily` : 'New opportunities added and checked daily',
@@ -289,10 +291,12 @@ const L = {
 
     faqTitle: 'Questions',
     faq: [
-      ['How is the subscription different from the free platform?', 'Every opportunity on Dityam.com.ua is open to everyone and will stay that way. The subscription does not unlock access — it follows your child’s profile, suggests the next step and reminds you about deadlines.'],
-      ['When does it launch?', 'We are finishing Dityam+ now. Everyone on the list hears from us first — with a launch discount.'],
-      ['What if nothing fits my child?', 'We will not go quiet for months: we will suggest widening the profile — for example, adding an interest or a neighbouring age.'],
-      ['How do I cancel?', 'Send /stop to the bot. We stop the recurring payment first, then the subscription — nothing more is charged.'],
+      ['Why pay if every opportunity is free anyway?', 'The platform is free and will stay that way: the subscription hides nothing. You pay for the time you save. Every day we go through more than a thousand listings and send only what fits your child’s age, interests and city. And we remind you about a deadline while there is still time to gather documents: 4 weeks ahead for scholarships and exchanges, 2 for competitions, a week for clubs.'],
+      ['When can I subscribe?', 'Dityam+ is not on sale yet — we are finishing it. Join the list now and you hear about the launch first, with an early-bird discount. The list commits you to nothing and charges nothing.'],
+      ['What if nothing fits my child?', 'We will tell you plainly instead of going quiet. If nothing new appears for two weeks, we send a selection from what is already open. If nothing fits the profile at all, we suggest widening it: another interest, a neighbouring age or the online format.'],
+      ['What if I have two or more children?', 'Set up a profile for each child in one subscription. An opportunity that fits several of them arrives once, marked with who it is for. Slots in each selection are shared between the children in turn, so nobody misses out.'],
+      ['Is it safe to tell you about my child?', 'We never ask for your child’s name, surname, school or date of birth. Matching needs only an age range, interests, format and city. Special circumstances, such as displacement or disability, only if you choose to share them: that way we can show programmes with a separate intake for those children.'],
+      ['How do I cancel?', 'One command, /stop, in the bot — no emails to support, no explanations. We stop the recurring payment first, then the subscription, so there is no next charge. If money was taken by mistake or twice, we refund it in full.'],
     ],
 
     joinTitle: 'Be the first',

@@ -1,8 +1,9 @@
 """personal_digest.py — Dityam+ персональна підбірка раз на 2 тижні.
 
 Для кожного активного платного підписника (`digest_subscribers`) добирає активні
-можливості під його профіль (вік-діапазон × інтереси × вартість) і шле підбірку в
-його канал — Telegram або email.
+можливості під профіль родини — окремо під кожну дитину (plus_children: вік,
+вподобання, формат, особливі обставини) з урахуванням спільних для родини
+місця й вартості — і шле підбірку в його канал, Telegram або email.
 
 Модель: каталог відкритий для всіх і нічого не ховає. Dityam+ — це послуга:
 відбір під профіль дитини, нагадування про дедлайни, допомога із заявкою.
@@ -34,6 +35,7 @@ from email.mime.text import MIMEText
 
 import httpx
 
+import plus_profile
 import send_window
 
 logger = logging.getLogger("personal_digest")
@@ -136,24 +138,19 @@ def notify_empty_profile(client, sub: dict) -> None:
         logger.info("sub %s — надіслано нагадування про порожній профіль", sub["id"])
 
 
-def pick_for(sub: dict, opps: list, since=None) -> list:
-    """Можливості під профіль. since (datetime) — брати лише новіші за цей момент."""
-    interests = set(sub.get("interests") or [])
-    bands = sub.get("age_bands") or []
-    free_only = sub.get("cost_pref") == "free_only"
-    out = []
-    for o in opps:
-        if since and (o["_created"] is None or o["_created"] <= since):
-            continue
-        if free_only and o.get("cost_type") != "free":
-            continue
-        if not age_overlaps(o["age_from"], o["age_to"], bands):
-            continue
-        if interests and not (interests & o["_themes"]):
-            continue
-        out.append(o)
-    out.sort(key=lambda o: o.get("created_at") or "", reverse=True)
-    return out[:MAX_ITEMS]
+def pick_for(sub: dict, opps: list, since=None, children=None) -> list:
+    """Можливості під профіль родини. since (datetime) — лише новіші за цей момент.
+
+    З 14.09.2026 профіль — окремо на кожну дитину (plus_profile.py). Кожен
+    запис повертається один раз; якщо дітей кілька, у полі "_for" — кому саме.
+    Місця в добірці діляться між дітьми по черзі."""
+    kids = children if children is not None else plus_profile.children_of(sub, [])
+    fresh = [o for o in opps
+             if not (since and (o["_created"] is None or o["_created"] <= since))]
+    fresh.sort(key=lambda o: o.get("created_at") or "", reverse=True)
+    matches = plus_profile.match_family(sub, kids, fresh)
+    picked = plus_profile.pick_fair(matches, kids, MAX_ITEMS)
+    return [dict(m["o"], _for=plus_profile.for_line(m, len(kids))) for m in picked]
 
 
 def _meta(o) -> str:
@@ -174,6 +171,8 @@ def build_telegram(sub, items, revival: bool = False) -> str:
         url = f"{SITE_URL}/o/{o['slug']}"
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
         lines.append(html.escape(_meta(o)))
+        if o.get("_for"):
+            lines.append(f"<i>{html.escape(o['_for'])}</i>")
         lines.append("")
     lines.append("<i>Відібрано під профіль вашої дитини. Каталог відкритий для всіх на dityam.com.ua</i>")
     lines.append("Відписатись — /stop")
@@ -187,7 +186,9 @@ def build_email(sub, items, revival: bool = False) -> str:
         rows.append(
             f'<tr><td style="padding:14px 0;border-bottom:1px solid #eee">'
             f'<a href="{html.escape(url)}" style="color:#131b28;font-size:16px;font-weight:700;text-decoration:none">{html.escape(o["title"])}</a>'
-            f'<div style="color:#54617a;font-size:13px;margin-top:4px">{html.escape(_meta(o))}</div></td></tr>'
+            f'<div style="color:#54617a;font-size:13px;margin-top:4px">{html.escape(_meta(o))}</div>'
+            + (f'<div style="color:#8a94a6;font-size:12px;margin-top:2px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
+            + '</td></tr>'
         )
     unsub = f"{SITE_URL}/api/unsubscribe?t={sub['unsub_token']}"
     return (
@@ -249,9 +250,19 @@ def main():
     from db import get_client
     client = get_client()
 
-    opps = client.table("opportunities").select(
-        "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline"
-    ).eq("status", "active").execute().data or []
+    # Сторінками: PostgREST віддає щонайбільше 1000 рядків, а активних записів
+    # уже понад тисячу. Без цього дайджест мовчки не бачив частину бази.
+    # Злиті дублі (canonical_slug) відсіюємо так само, як сайт.
+    opps = []
+    for start in range(0, 20000, 1000):
+        page = client.table("opportunities").select(
+            "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
+            "opportunity_type, format, cities, countries, is_international, child_needs"
+        ).eq("status", "active").is_("canonical_slug", "null") \
+            .order("id").range(start, start + 999).execute().data or []
+        opps.extend(page)
+        if len(page) < 1000:
+            break
 
     # Дедлайн «сьогодні» або «завтра» — це не можливість, а привід засмутитись:
     # поки підписник прочитає підбірку й збере документи, подача вже закриється.
@@ -274,11 +285,21 @@ def main():
         subs = [{
             "id": "demo", "channel": "telegram", "telegram_chat_id": None,
             "email": None, "unsub_token": "demo",
-            "age_bands": ["7-10", "11-14"], "interests": ["stem", "arts", "contests"],
+            "age_bands": [], "interests": [], "places": [],
             "cost_pref": "free_only", "last_sent_at": None,
         }]
+        # Демо-родина з двома дітьми — щоб бачити, як ділиться добірка.
+        child_rows = [
+            {"subscriber_id": "demo", "position": 1, "age_bands": ["7-10"],
+             "likes": ["stem", "arts"], "formats": [], "needs": []},
+            {"subscriber_id": "demo", "position": 2, "age_bands": ["15-18"],
+             "likes": [], "formats": ["contests", "grants"], "needs": []},
+        ]
     else:
         subs = client.table("digest_subscribers").select("*").eq("status", "active").execute().data or []
+        ids = [s["id"] for s in subs]
+        child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
+                      .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
 
     sent = 0
@@ -286,7 +307,8 @@ def main():
         # Шлемо лише можливості, що зʼявились після останнього сповіщення.
         # --force / --demo ігнорують новизну (для тесту).
         since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
-        items = pick_for(sub, opps, since)
+        kids = plus_profile.children_of(sub, child_rows)
+        items = pick_for(sub, opps, since, kids)
 
         # Немає НОВИХ збігів — ще не привід мовчати місяцями. У каталозі лише
         # кілька десятків записів з відкритою подачею, решта — довідкові
@@ -294,7 +316,7 @@ def main():
         # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
         revival = False
         if not items and not (args.dry_run or args.demo):
-            all_matches = pick_for(sub, opps, None)
+            all_matches = pick_for(sub, opps, None, kids)
             if not all_matches:
                 # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
                 # обмаль) — тут доречна не добірка, а пропозиція розширити фільтри.
