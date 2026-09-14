@@ -71,7 +71,10 @@ const L = {
         ['Приходить нове', 'Лише те, що підходить профілю дитини'],
         ['Тиснете «Цікаво»', 'Або «Не цікаво» — одним дотиком'],
         ['Додаєте в календар', 'Дедлайн уже не загубиться'],
-        ['Нагадуємо завчасно', 'За 14 днів до кінця подачі'],
+        // Вікна з scraper/deadline_reminders.py: стипендії й обміни — 28/14/3,
+        // конкурси й табори — 14/3, гуртки й курси — 7/2. У прикладі 14 днів
+        // лише тому, що ISEF Ukraine — конкурс.
+        ['Нагадуємо завчасно', 'Стипендії — за 4 тижні, конкурси — за 2, гуртки — за тиждень'],
       ],
       digestHead: '🧡 Нові можливості для вашої дитини',
       title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
@@ -235,7 +238,7 @@ const L = {
         ['A new match arrives', 'Only what fits your child’s profile'],
         ['You tap “Interested”', 'Or “Not interested” — one tap'],
         ['You add it to your calendar', 'The deadline won’t get lost'],
-        ['We remind you early', '14 days before applications close'],
+        ['We remind you early', 'Scholarships 4 weeks ahead, contests 2 weeks, clubs 1 week'],
       ],
       digestHead: '🧡 New opportunities for your child',
       title: 'ISEF Ukraine — National Selection for Regeneron ISEF',
