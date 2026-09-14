@@ -57,18 +57,19 @@
   border-radius: 24px;
   padding: 24px;
   display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 1fr);
-  gap: 40px;
-  align-items: stretch;
+  /* 14.09.2026, рішення Марії: фото — на всю ширину хіро, а не колонкою
+   * праворуч. У колонці горизонтальний кадр обрізався до вузької смуги, і
+   * дітям на фото «Дітям захисників» зрізало обличчя. */
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
 }
-.tp-hero.tp-hero-solo { grid-template-columns: minmax(0, 1fr); }
 .tp-hero-copy {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding: 24px 0 24px 32px;
+  padding: 8px 32px 24px;
 }
-.tp-hero-solo .tp-hero-copy { padding-right: 32px; }
+.tp-hero-solo .tp-hero-copy { padding-top: 24px; }
 .tp-eyebrow {
   font-size: 13px;
   font-weight: 700;
@@ -138,7 +139,11 @@
 
 .tp-hero-photo {
   position: relative;
-  min-height: 380px;
+  order: -1;
+  width: 100%;
+  /* 2:1 при кадрі 3:2 — обрізається лише по ~12% згори й знизу, обличчя
+   * лишаються в кадрі. Точку фокуса задає heroImage.position. */
+  aspect-ratio: 2 / 1;
   border-radius: 16px;
   overflow: hidden;
 }
@@ -149,7 +154,7 @@
   width: 100%;
   height: 100%;
 }
-.tp-hero-photo img { object-fit: cover; display: block; }
+.tp-hero-photo img { object-fit: cover; object-position: center; display: block; }
 
 /* ── Список ── */
 .tp-list { display: flex; flex-direction: column; gap: 20px; }
@@ -370,9 +375,9 @@
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }
-  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
+  .tp-hero { padding: 20px; gap: 20px; }
   .tp-hero-copy, .tp-hero-solo .tp-hero-copy { padding: 0; }
-  .tp-hero-photo { order: -1; min-height: 0; height: 220px; }
+  .tp-hero-photo { aspect-ratio: auto; height: 220px; }
   .tp-h1 { font-size: 34px; }
   .tp-facts { gap: 12px 24px; }
   .tp-grid { grid-template-columns: minmax(0, 1fr); }

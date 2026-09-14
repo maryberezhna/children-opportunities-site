@@ -423,7 +423,15 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
             <div className="tp-hero-photo">
               <picture>
                 <source srcSet={`${hero.src}.webp`} type="image/webp" />
-                <img src={`${hero.src}.jpg`} alt={hero.alt} width="900" height="600" loading="eager" fetchPriority="high" />
+                <img
+                  src={`${hero.src}.jpg`}
+                  alt={hero.alt}
+                  width="900"
+                  height="600"
+                  loading="eager"
+                  fetchPriority="high"
+                  style={hero.position ? { objectPosition: hero.position } : undefined}
+                />
               </picture>
             </div>
           ) : null}
