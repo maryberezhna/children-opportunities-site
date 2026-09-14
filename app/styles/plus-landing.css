@@ -228,6 +228,7 @@
 
 .pl-mock-title {
   margin: 0 0 8px;
+  line-height: 1.2;
   font-size: clamp(1.375rem, 2.6vw, 1.75rem);
   font-weight: 700;
   letter-spacing: -0.015em;
@@ -308,10 +309,11 @@
 
 .pl-tg-btn.is-on { background: #ffffff; box-shadow: inset 0 0 0 2px var(--v2-accent); color: var(--v2-ink); }
 
+/* Тост стоїть над бульбашкою по центру, як у Telegram, і не перекриває
+   назву поста. */
 .pl-tg-toast {
-  position: absolute;
-  top: 10px;
-  right: 12px;
+  display: table;
+  margin: 0 auto 10px;
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(20, 20, 20, 0.82);
@@ -580,7 +582,8 @@
 /* ── Питання ──────────────────────────────────────────────────────────── */
 /* Вузько — лише самі питання, а не секція: інакше лівий край «Питань»
    зʼїжджав відносно решти заголовків сторінки. */
-.pl-faq { margin-top: 24px; max-width: 760px; }
+.pl-faq-sec .pl-h2 { text-align: center; }
+.pl-faq { margin: 24px auto 0; max-width: 760px; }
 .pl-faq-item { border-bottom: 1px solid var(--v2-line-strong); }
 
 .pl-faq-item summary {

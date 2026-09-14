@@ -365,6 +365,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
               <figure className="pl-mock-card" aria-label={t.mockTg}>
                 <figcaption className="pl-mock-label">{t.mockTg}</figcaption>
                 <div className="pl-tg">
+                  <span className="pl-tg-toast" aria-hidden="true">{t.tg.toast}</span>
                   <div className="pl-tg-bubble">
                     <p className="pl-tg-title">✨ {t.tg.title}</p>
                     <p className="pl-tg-meta">{t.tg.meta}</p>
@@ -378,7 +379,6 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
                       <span className="pl-tg-btn">{t.no}</span>
                     </div>
                   </div>
-                  <span className="pl-tg-toast" aria-hidden="true">{t.tg.toast}</span>
                 </div>
               </figure>
 
@@ -479,7 +479,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
       </section>
 
       {/* ── Питання ── */}
-      <section className="pl-sec pl-sec-cream">
+      <section className="pl-sec pl-sec-cream pl-faq-sec">
         <div className="pl-wrap">
           <h2 className="pl-h2">{t.faqTitle}</h2>
           <div className="pl-faq">
