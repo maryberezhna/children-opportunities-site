@@ -4,16 +4,21 @@ import { trackOpportunityClick } from '@/lib/track';
 // Головна кнопка сторінки можливості жила серверним <a> без жодного
 // відстеження: найцінніший клік на найкращих сторінках не рахувався ніде, і
 // 302 `opportunity_click` за місяць були лише зі списків.
-export default function OutboundCta({ href, title, lang = 'uk' }) {
+//
+// place розрізняє кнопку в тексті сторінки й прибиту панель на телефоні —
+// щоб бачити, котра з них працює.
+export default function OutboundCta({
+  href, title, lang = 'uk', className = 'opportunity-cta', place = 'detail_page', children,
+}) {
   return (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="opportunity-cta"
-      onClick={() => trackOpportunityClick(title, 'detail_page')}
+      className={className}
+      onClick={() => trackOpportunityClick(title, place)}
     >
-      {lang === 'en' ? 'Go to the official site ↗' : 'Перейти до офіційного сайту ↗'}
+      {children || (lang === 'en' ? 'Go to the official site ↗' : 'Перейти до офіційного сайту ↗')}
     </a>
   );
 }

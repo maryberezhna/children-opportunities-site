@@ -53,7 +53,7 @@ export default async function Home() {
   };
 
   return (
-    <div className="v2-page">
+    <div className="v2-page v2-home">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
@@ -67,6 +67,7 @@ export default async function Home() {
           promoProps={{ total }}
           today={today}
           modeAware
+          mobileLayout
         />
 
         {/* Тихий рядок підбірок: найсильніше внутрішнє посилання на

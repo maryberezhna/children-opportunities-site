@@ -24,3 +24,6 @@
 @import "./styles/press-v2.css";
 @import "./styles/plus-landing.css";
 @import "./styles/about-v2.css";
+/* Мобільні стилі — останніми: вони перебивають десктопні правила вище. */
+@import "./styles/home-mobile.css";
+@import "./styles/opportunity-mobile.css";

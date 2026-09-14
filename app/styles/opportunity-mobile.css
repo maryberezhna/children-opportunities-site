@@ -1,0 +1,219 @@
+/* Сторінка можливості на телефоні (≤900px) — референс «Dityam — мобільна
+   версія», екран 6d. Дедлайн — окремим блоком під назвою, дія — прибитою
+   панеллю під пальцем. Десктоп цей файл не змінює: мобільні блоки поза
+   медіазапитом сховані. */
+
+.o-m-meta,
+.o-m-deadline,
+.o-m-only,
+.o-m-bar,
+.o-share { display: none; }
+
+@media (max-width: 900px) {
+  /* Рядок «← Усі можливості / Поділитися ↗» на всю ширину екрана. */
+  .opportunity-breadcrumbs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 calc(50% - 50vw) 20px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--v2-line);
+  }
+
+  .opportunity-breadcrumbs a,
+  .o-share {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--v2-ink-2);
+  }
+
+  .o-share {
+    padding: 0 0 0 12px;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-weight: 400;
+    cursor: pointer;
+  }
+
+  .opportunity-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    max-width: none;
+    margin-bottom: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+  }
+
+  .opportunity-chips { display: none; }
+
+  .o-m-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    font-size: 13px;
+    color: var(--v2-ink-2);
+  }
+
+  .o-m-meta .v2-tag { font-weight: 600; }
+  .o-m-sep { color: #b8b3a6; }
+
+  .opportunity-title {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .o-m-deadline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--v2-cream);
+  }
+
+  .o-m-deadline > div { display: flex; flex-direction: column; gap: 2px; }
+
+  .o-m-eyebrow {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--v2-ink-3);
+  }
+
+  .o-m-date { font-size: 17px; font-weight: 700; color: var(--v2-ink); }
+
+  /* Помаранчевий — лише коли горить (≤7 днів), як і в списку. */
+  .o-m-days {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    color: var(--v2-ink-2);
+  }
+
+  .o-m-days.is-urgent { color: var(--v2-accent); }
+
+  .opportunity-summary {
+    margin: 0;
+    font-size: 16px;
+    line-height: 1.55;
+    color: var(--v2-ink);
+  }
+
+  .opportunity-meta {
+    grid-template-columns: auto 1fr;
+    gap: 10px 16px;
+    margin: 0;
+    padding: 14px 0 0;
+    background: none;
+    border-radius: 0;
+    border-top: 1px solid var(--v2-line);
+    font-size: 15px;
+    line-height: 1.45;
+  }
+
+  .opportunity-meta dt { margin-top: 0; font-size: 15px; color: var(--v2-ink-3); }
+  .opportunity-meta dd { margin: 0; font-size: 15px; font-weight: 400; }
+
+  /* Дедлайн уже є блоком під назвою — у переліку не дублюємо. */
+  .o-dl-deadline,
+  .o-d-only { display: none; }
+
+  .o-m-only { display: revert; }
+  /* Посилання в рядку переліку: зона дотику 40px без зміни висоти рядка. */
+  .opportunity-meta a.o-m-only {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    margin: -10px 0;
+    color: var(--v2-accent);
+    text-decoration: none;
+  }
+
+  /* Коли є нижня панель, кнопка в тексті зайва — лишається «Додати в
+     календар». Відступ знизу = висота панелі + safe-area. */
+  .o-has-bar .opportunity-actions .opportunity-cta { display: none; }
+  .o-has-bar { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+
+  .o-m-bar {
+    display: flex;
+    gap: 10px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    padding: 12px 20px max(28px, calc(12px + env(safe-area-inset-bottom, 0px)));
+    background: #ffffff;
+    border-top: 1px solid var(--v2-line);
+  }
+
+  .o-m-heart {
+    flex: 0 0 52px;
+    height: 52px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 14px;
+    background: #ffffff;
+    font-size: 20px;
+    text-decoration: none;
+  }
+
+  .o-m-bar .o-m-apply {
+    flex: 1;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    border-radius: 14px;
+    background: var(--v2-accent);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .o-m-bar .o-m-apply:active { background: var(--v2-accent-hover); }
+
+  /* «Підтримати» переїхало в панель (🧡) — у шапці не дублюємо. Плаваючі
+     кнопки піднімаємо над панеллю, щоб не перекривали «Подати заявку». */
+  body:has(.o-m-bar) .v2-support-btn { display: none; }
+
+  body:has(.o-m-bar) .a11y-trigger,
+  body:has(.o-m-bar) .telegram-fab {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
+  }
+
+  body:has(.o-m-bar) .tg-callout { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+
+  /* Підказка Telegram: хрестик 11px і кнопка 34px — до 12px і 40px. */
+  .tg-callout-close { position: relative; font-size: 12px; }
+  .tg-callout-close::after { content: ''; position: absolute; inset: -10px; }
+  .tg-callout-cta { min-height: 40px; box-sizing: border-box; }
+
+  /* «Схожі можливості» розпирали сторінку до 434px (і на проді теж): рядок
+     чипів не переносився, а колонка 1fr не стискається нижче вмісту. Через
+     це прибита панель виїжджала за правий край. */
+  .opportunity-related-list { grid-template-columns: minmax(0, 1fr); }
+  .opportunity-related-list > li,
+  .opportunity-related-list .card { min-width: 0; }
+  .opportunity-related-list .chips { flex-wrap: wrap; }
+}

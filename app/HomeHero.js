@@ -125,7 +125,7 @@ export default function HomeHero({ stats: parentStats, teenStats, lang = 'uk' })
           {t.live}
         </div>
         <h1>
-          {c.lead} <span className="v2-script">{c.script}</span>{c.tail}
+          {c.lead} <span className="v2-script">{c.script}</span><span className="v2-hero-tail">{c.tail}</span>
         </h1>
         <p className="v2-hero-sub">{c.sub}</p>
 

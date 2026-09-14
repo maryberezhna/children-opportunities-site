@@ -1,15 +1,16 @@
 'use client';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PlusSection from './PlusSection';
 import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent } from '@/lib/labels';
-import { cityLabel } from '@/lib/labels';
+import { cityLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { trackOpportunityClick } from '@/lib/track';
+import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 
 // Каталог, версія редизайну (вересень 2026, референс «Dityam — новий дизайн
@@ -48,6 +49,21 @@ const UI = {
     noDeadline: 'без дедлайну',
     searchParents: 'FLEX, програмування, допомога ВПО…',
     searchTeens: 'FLEX, стажування, НМТ…',
+    mSearchParents: 'Табір, FLEX, ВПО…',
+    mSearchTeens: 'FLEX, стажування, НМТ…',
+    filters: 'Фільтри',
+    mTopWeek: '⏰ Встигніть цього тижня',
+    mTopSoon: '⏰ Найближчі дедлайни',
+    swipe: 'листайте →',
+    sortHint: 'за дедлайном ↓',
+    typeGroup: 'Тип',
+    allKids: 'Усі діти',
+    resetAll: 'Скинути все',
+    remove: 'Зняти фільтр',
+    years: 'років',
+    close: 'Закрити фільтри',
+    show: (n) => (n ? `Показати ${n} ${opportunitiesWord(n)}` : 'Нічого не знайдено'),
+    ageShort: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
     f: { format: 'Формат', place: 'Де', source: 'Джерело',
       benefit: 'Отримаєш', requirement: 'Треба', deadline: 'Дедлайн' },
     sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
@@ -75,6 +91,21 @@ const UI = {
     noDeadline: 'no deadline',
     searchParents: 'FLEX, coding, IDP aid…',
     searchTeens: 'FLEX, internships…',
+    mSearchParents: 'Camp, FLEX, IDP…',
+    mSearchTeens: 'FLEX, internships…',
+    filters: 'Filters',
+    mTopWeek: '⏰ Make it this week',
+    mTopSoon: '⏰ Closing soonest',
+    swipe: 'swipe →',
+    sortHint: 'by deadline ↓',
+    typeGroup: 'Type',
+    allKids: 'All children',
+    resetAll: 'Reset all',
+    remove: 'Remove filter',
+    years: 'y.o.',
+    close: 'Close filters',
+    show: (n) => (n ? `Show ${n} ${n === 1 ? 'opportunity' : 'opportunities'}` : 'Nothing found'),
+    ageShort: (a, b) => (a === b ? `age ${a}` : `${a}–${b} y.o.`),
     f: { format: 'Format', place: 'Where', source: 'Source',
       benefit: 'You get', requirement: 'You need', deadline: 'Deadline' },
     sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
@@ -168,22 +199,6 @@ const DEADLINE_OPTS = [
   ['none', 'Без дедлайну', 'No deadline'],
 ];
 
-// Кольори чипа типу (bg / текст) — палітра референсу, ключі — наші
-// opportunity_type. Все, чого немає в мапі, отримує кремовий.
-const TAG_COLORS = {
-  club: ['#fde8c7', '#8a5a0a'], internship: ['#fde8c7', '#8a5a0a'],
-  course: ['#fef7e0', '#8a5a0a'], workshop: ['#fef7e0', '#8a5a0a'],
-  camp: ['#e8f4f2', '#0a5348'], hackathon: ['#e8f4f2', '#0a5348'],
-  summer_school: ['#e8f4f2', '#0a5348'],
-  olympiad: ['#ede8f8', '#4c3d8c'], exchange: ['#ede8f8', '#4c3d8c'],
-  study_program: ['#ede8f8', '#4c3d8c'],
-  competition: ['#fde8ef', '#8a1a3a'], volunteer: ['#fde8ef', '#8a1a3a'],
-  festival: ['#fde8ef', '#8a1a3a'], sport_tournament: ['#fde8ef', '#8a1a3a'],
-  allowance: ['#e4f2d6', '#2d5814'], support_payment: ['#e4f2d6', '#2d5814'],
-  medical_aid: ['#e4f2d6', '#2d5814'], scholarship: ['#e4f2d6', '#2d5814'],
-  grant: ['#e4f2d6', '#2d5814'], humanitarian: ['#e4f2d6', '#2d5814'],
-};
-
 const DL_COLORS = {
   urgent: ['#fde3e3', '#991b1b'],
   soon: ['#fef2d4', '#78350f'],
@@ -222,8 +237,68 @@ function ageMatches(item, value) {
 
 const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
 
+// Предикати фільтрів як чиста функція стану: той самий код рахує і
+// застосовані фільтри, і чернетку в мобільній шторці — інакше «Показати N»
+// у шторці могло б розійтися з тим, що покаже список.
+function buildPredicates(s, { teens, todayIso, searchIndex }) {
+  const tokens = queryTokens(s.query);
+  return {
+    type: (item) => {
+      if (s.type === 'all') return true;
+      if (s.type === 'online') return isOnline(item);
+      if (s.type === 'payments') {
+        return item.opportunity_type === 'allowance'
+          || item.opportunity_type === 'support_payment'
+          || item.aid_type === 'cash';
+      }
+      if (s.type === 'classes') return CLASSES_TYPES.includes(item.opportunity_type);
+      return item.opportunity_type === s.type;
+    },
+    age: (item) => s.age === 'all' || ageMatches(item, s.age),
+    deadline: (item) => {
+      if (s.deadline === 'all') return true;
+      const days = daysUntil(item.deadline, todayIso);
+      if (s.deadline === 'none') return days === null;
+      if (s.deadline === 'week') return days !== null && days >= 0 && days <= 7;
+      if (s.deadline === 'month') return days !== null && days >= 0 && days <= 31;
+      return true;
+    },
+    need: (item) => {
+      if (s.need === 'all') return true;
+      if (teens) {
+        if ((item.teen_tags || []).includes(s.need)) return true;
+        // «Поїздка» працює і до розмітки: закордон видно з географії.
+        return s.need === 'поїздка' && goesAbroad(item);
+      }
+      return (item.child_needs || []).includes(s.need);
+    },
+    cost: (item) => {
+      if (s.cost === 'all') return true;
+      if (s.cost === 'free') return item.cost_type === 'free';
+      return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
+    },
+    place: (item) => {
+      if (s.place === 'all') return true;
+      if (s.place === 'abroad') return goesAbroad(item);
+      if (s.place === 'online') return isOnline(item);
+      const cities = item.cities || [];
+      if (cities.includes(s.place)) return true;
+      // «Вся Україна» просвічує крізь вибір конкретного міста.
+      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(s.place);
+    },
+    query: (item) => {
+      if (!tokens.length) return true;
+      const hay = searchIndex.get(item.id);
+      return Boolean(hay) && matchesQuery(tokens, hay);
+    },
+  };
+}
+
+const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
+
 export default function OpportunitiesList({
   opportunities, presetCity, promoProps = null, lang = 'uk', today, modeAware = false,
+  mobileLayout = false,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
@@ -232,12 +307,23 @@ export default function OpportunitiesList({
   // Режим «Батькам / Підліткам» вмикається лише там, де в шапці є
   // перемикач (головна). На сторінках міст і тем каталог завжди
   // батьківський — там своя обіцянка в заголовку сторінки.
+  const pageSize = useRef(6);
   const [mode, setMode] = useState('parents');
+  // Зміна режиму скидає фільтри: у батьків і підлітків різні словники. Але
+  // лише коли людина сама клацнула перемикач — раніше скидання жило в
+  // ефекті на [mode] і спрацьовувало ще й при монтуванні, одразу після
+  // читання URL, тож посилання ?type=camp&age=7-11 відкривало нефільтрований
+  // список.
   useEffect(() => {
     if (!modeAware) return undefined;
     setMode(readMode());
-    return onModeChange(setMode);
-  }, [modeAware]);
+    return onModeChange((m) => {
+      setMode(m);
+      setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
+      setCost('all'); setQuery(''); setLimit(pageSize.current);
+      if (!presetCity) setPlace('all');
+    });
+  }, [modeAware, presetCity]);
   const teens = mode === 'teens';
 
   const [type, setType] = useState('all');
@@ -249,6 +335,37 @@ export default function OpportunitiesList({
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(6);
   const [hydrated, setHydrated] = useState(false);
+
+  // Мобільна верстка головної (≤900px, референс «Dityam — мобільна версія»,
+  // екрани 6a–6c). Розмітка рендериться поруч із десктопною і вмикається
+  // медіазапитом у home-mobile.css — так SSR віддає правильний вигляд одразу,
+  // без стрибка після гідрації.
+  //
+  // compact: пошук у хіро пішов за верх екрана → зверху виїжджає компактна
+  // шапка з тим самим полем пошуку, а липкий рядок фільтрів сідає під неї.
+  const bandRef = useRef(null);
+  const [compact, setCompact] = useState(false);
+  const [topIndex, setTopIndex] = useState(0);
+  const chipsRowRef = useRef(null);
+  // Шторка фільтрів (6c): поки відкрита, зміни живуть у чернетці й до
+  // списку не доходять — застосовуються лише кнопкою «Показати N».
+  // null = шторка закрита.
+  const [draft, setDraft] = useState(null);
+  const sheetOpen = draft !== null;
+  const sheetRef = useRef(null);
+  const sheetBodyRef = useRef(null);
+  const filtersBtnRef = useRef(null);
+  const countRef = useRef(null);
+  const drag = useRef(null);
+  useEffect(() => {
+    const el = bandRef.current;
+    if (!mobileLayout || !el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(([e]) => {
+      setCompact(!e.isIntersecting && e.boundingClientRect.top < 0);
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [mobileLayout]);
 
   // Читання фільтрів з URL — щоб відфільтрований вигляд можна було шерити.
   // Старі мультизначення (?type=a,b) читаємо по першому токену.
@@ -287,14 +404,6 @@ export default function OpportunitiesList({
     return () => clearTimeout(timer);
   }, [hydrated, type, age, deadline, need, cost, place, query, presetCity]);
 
-  // Зміна режиму скидає фільтри: у батьків і підлітків різні словники.
-  useEffect(() => {
-    if (!modeAware) return;
-    setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
-    setCost('all'); setQuery(''); setLimit(6);
-    if (!presetCity) setPlace('all');
-  }, [mode, modeAware, presetCity]);
-
   // Пошуковий індекс: рахується раз на набір записів (див. lib/search).
   const searchIndex = useMemo(() => {
     const m = new Map();
@@ -319,59 +428,13 @@ export default function OpportunitiesList({
     [opportunities, todayIso, teens],
   );
 
-  const predicates = useMemo(() => ({
-    type: (item) => {
-      if (type === 'all') return true;
-      if (type === 'online') return isOnline(item);
-      if (type === 'payments') {
-        return item.opportunity_type === 'allowance'
-          || item.opportunity_type === 'support_payment'
-          || item.aid_type === 'cash';
-      }
-      if (type === 'classes') return CLASSES_TYPES.includes(item.opportunity_type);
-      return item.opportunity_type === type;
-    },
-    age: (item) => age === 'all' || ageMatches(item, age),
-    deadline: (item) => {
-      if (deadline === 'all') return true;
-      const days = daysUntil(item.deadline, todayIso);
-      if (deadline === 'none') return days === null;
-      if (deadline === 'week') return days !== null && days >= 0 && days <= 7;
-      if (deadline === 'month') return days !== null && days >= 0 && days <= 31;
-      return true;
-    },
-    need: (item) => {
-      if (need === 'all') return true;
-      if (teens) {
-        if ((item.teen_tags || []).includes(need)) return true;
-        // «Поїздка» працює і до розмітки: закордон видно з географії.
-        return need === 'поїздка' && goesAbroad(item);
-      }
-      return (item.child_needs || []).includes(need);
-    },
-    cost: (item) => {
-      if (cost === 'all') return true;
-      if (cost === 'free') return item.cost_type === 'free';
-      return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
-    },
-    place: (item) => {
-      if (place === 'all') return true;
-      if (place === 'abroad') return goesAbroad(item);
-      if (place === 'online') return isOnline(item);
-      const cities = item.cities || [];
-      if (cities.includes(place)) return true;
-      // «Вся Україна» просвічує крізь вибір конкретного міста.
-      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(place);
-    },
-    query: (item) => {
-      const tokens = queryTokens(query);
-      if (!tokens.length) return true;
-      const hay = searchIndex.get(item.id);
-      return Boolean(hay) && matchesQuery(tokens, hay);
-    },
-  }), [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex]);
-
-  const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
+  const predicates = useMemo(
+    () => buildPredicates(
+      { type, age, deadline, need, cost, place, query },
+      { teens, todayIso, searchIndex },
+    ),
+    [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex],
+  );
 
   const hasActive = type !== 'all' || age !== 'all' || deadline !== 'all'
     || need !== 'all' || cost !== 'all' || Boolean(query.trim())
@@ -467,11 +530,34 @@ export default function OpportunitiesList({
     [filtered, topCards, topIds],
   );
 
-  useEffect(() => { setLimit(6); }, [type, age, deadline, need, cost, place, query]);
+  useEffect(() => { setLimit(pageSize.current); }, [type, age, deadline, need, cost, place, query]);
+
+  // Обраний тип (зі шторки чи з URL) може стояти за правим краєм рядка —
+  // підкручуємо рядок, щоб активний чип було видно.
+  useEffect(() => {
+    const row = chipsRowRef.current;
+    if (!row) return;
+    const on = row.querySelector('.m-chip.is-on:not(.m-filters-btn)');
+    if (!on) return;
+    if (on.offsetLeft + on.offsetWidth > row.scrollLeft + row.clientWidth
+      || on.offsetLeft < row.scrollLeft) {
+      row.scrollTo({ left: on.offsetLeft - 20, behavior: 'smooth' });
+    }
+  }, [type, teens]);
+
+  // На телефоні підвантажуємо по 10 (референс 6a): картка-рядок утричі
+  // нижча за десктопну. Ефект стоїть після скидання ліміту — спрацьовує
+  // останнім.
+  useEffect(() => {
+    if (mobileLayout && window.matchMedia('(max-width: 900px)').matches) {
+      pageSize.current = 10;
+      setLimit(10);
+    }
+  }, [mobileLayout]);
 
   const reset = () => {
     setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
-    setCost('all'); setQuery(''); setLimit(6);
+    setCost('all'); setQuery(''); setLimit(pageSize.current);
     setPlace(presetCity || 'all');
   };
 
@@ -494,6 +580,11 @@ export default function OpportunitiesList({
     return { text: t.until(formatDeadline(item.deadline, lang)), kind: 'calm' };
   };
 
+  const ageText = (item) => (
+    Number.isFinite(item.age_from) && Number.isFinite(item.age_to)
+      ? t.ageShort(item.age_from, item.age_to) : null
+  );
+
   const placeText = (item) => {
     if (goesAbroad(item)) return t.abroad.replace('🌍 ', '');
     const real = (item.cities || []).filter((c) => !PSEUDO_CITIES.has(c));
@@ -504,7 +595,7 @@ export default function OpportunitiesList({
   };
 
   const renderCard = (item) => {
-    const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || ['#f7f1e6', '#4a4a4a'];
+    const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
     const dl = dlChip(item);
     const [dlBg, dlFg] = (teens ? DL_COLORS_TEENS : DL_COLORS)[dl.kind];
     const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
@@ -526,12 +617,26 @@ export default function OpportunitiesList({
           : [t.f.source, item.source || null],
       ];
 
+    const age = ageText(item);
+    const fmt = mobileLayout
+      ? [formatLabel(item.format, lang), placeText(item)].filter(Boolean).join(' · ')
+      : '';
+
     return (
       <article key={item.id} className="v2-card">
         <div className="v2-card-tags">
           <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
           <span className="v2-tag" style={{ background: dlBg, color: dlFg }}>{dl.text}</span>
         </div>
+        {/* Мобільний рядок (6a): тип → дедлайн → вік. Дедлайн помаранчевий
+            лише коли горить (≤7 днів), інакше спокійний сірий. */}
+        {mobileLayout ? (
+          <div className="v2-card-meta">
+            <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
+            <span className={`v2-card-meta-dl${dl.kind === 'urgent' ? ' is-urgent' : ''}`}>{dl.text}</span>
+            {age ? <><span className="v2-card-meta-sep" aria-hidden="true">·</span><span>{age}</span></> : null}
+          </div>
+        ) : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <h3>
             <Link
@@ -547,6 +652,7 @@ export default function OpportunitiesList({
             </p>
           ) : null}
         </div>
+        {fmt ? <div className="v2-card-fmt">{fmt}</div> : null}
         <dl>
           {fields.filter(([, v]) => v).map(([k, v]) => (
             <FieldRow key={k} k={k} v={v} />
@@ -562,6 +668,34 @@ export default function OpportunitiesList({
           >
             {t.details}
           </a>
+        ) : null}
+      </article>
+    );
+  };
+
+  // Велика картка горизонтальної стрічки (6a): дедлайн — найбільший текст.
+  const renderTopCard = (item) => {
+    const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
+    const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
+      || item.opportunity_type;
+    const age = ageText(item);
+    return (
+      <article key={item.id} className="m-top-card">
+        <div className="m-top-row">
+          <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
+          {age ? <span className="m-top-age">{age}</span> : null}
+        </div>
+        <span className="m-top-dl">{dlChip(item).text}</span>
+        <h3>
+          <Link
+            href={`${isEn ? '/en' : ''}/o/${item.slug}`}
+            lang={isEn && !item.title_en ? 'uk' : undefined}
+          >
+            {enField(item, 'title')}
+          </Link>
+        </h3>
+        {enField(item, 'summary') ? (
+          <p lang={isEn && !item.summary_en ? 'uk' : undefined}>{enField(item, 'summary')}</p>
         ) : null}
       </article>
     );
@@ -589,8 +723,257 @@ export default function OpportunitiesList({
   const count = stream.length + (hasActive ? 0 : topCards.length);
   const shown = stream.slice(0, limit);
 
+  // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
+  // рядку. Тип видно чипом у самому рядку, пошук — у полі.
+  const sheetActive = [
+    age !== 'all', deadline !== 'all', need !== 'all', cost !== 'all',
+    presetCity ? place !== presetCity : place !== 'all',
+  ].filter(Boolean).length;
+
+  const closeSheet = () => {
+    setDraft(null);
+    filtersBtnRef.current?.focus();
+  };
+
+  const applyDraft = () => {
+    setType(draft.type); setAge(draft.age); setDeadline(draft.deadline);
+    setNeed(draft.need); setCost(draft.cost); setPlace(draft.place);
+    setDraft(null);
+    // Результат має бути видно одразу: якщо початок списку схований під
+    // липкими рядками або далеко внизу — підкручуємо до лічильника.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = countRef.current;
+      if (!el) return;
+      const top = el.getBoundingClientRect().top;
+      if (top < 130 || top > window.innerHeight * 0.6) {
+        window.scrollTo({ top: top + window.scrollY - 130, behavior: 'smooth' });
+      }
+    }));
+  };
+
+  // Відкрита шторка: сторінка під нею не скролиться, Esc закриває без
+  // застосування, фокус переходить у діалог. Якщо вікно розширили до
+  // десктопа — шторку закриваємо, бо там її не видно.
+  useEffect(() => {
+    if (!sheetOpen) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    sheetRef.current?.focus();
+    const onKey = (e) => { if (e.key === 'Escape') closeSheet(); };
+    const mq = window.matchMedia('(max-width: 900px)');
+    const onMq = () => { if (!mq.matches) setDraft(null); };
+    window.addEventListener('keydown', onKey);
+    mq.addEventListener?.('change', onMq);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+      mq.removeEventListener?.('change', onMq);
+    };
+    // closeSheet лише ставить стан і фокус — свіжа копія не потрібна.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetOpen]);
+
+  // Свайп униз закриває. Тягнути можна за шапку шторки або за вміст, коли
+  // він прокручений до верху, — інакше жест належить прокрутці.
+  const onSheetTouchStart = (e) => {
+    const body = sheetBodyRef.current;
+    if (body && body.contains(e.target) && body.scrollTop > 0) {
+      drag.current = null;
+      return;
+    }
+    drag.current = { y: e.touches[0].clientY, dy: 0 };
+  };
+  const onSheetTouchMove = (e) => {
+    const d = drag.current;
+    const el = sheetRef.current;
+    if (!d || !el) return;
+    d.dy = Math.max(0, e.touches[0].clientY - d.y);
+    el.classList.add('is-dragging');
+    el.style.transform = d.dy ? `translateY(${d.dy}px)` : '';
+  };
+  const onSheetTouchEnd = () => {
+    const d = drag.current;
+    const el = sheetRef.current;
+    drag.current = null;
+    if (!el) return;
+    el.classList.remove('is-dragging');
+    if (d && d.dy > 90) closeSheet();
+    else el.style.transform = '';
+  };
+
+  // Лічильники в шторці рахуються на чернетці: скільки лишиться, якщо
+  // обрати цей чип при решті обраних. Нульові опції ховаємо — мертвий чип
+  // гірший за відсутній.
+  const sheet = useMemo(() => {
+    if (!draft) return null;
+    const ctx = { teens, todayIso, searchIndex };
+    const dp = buildPredicates(draft, ctx);
+    const passOthers = (skip) =>
+      liveItems.filter((item) => FACETS.every((k) => k === skip || dp[k](item)));
+    const countOpts = (facet, values) => {
+      const base = passOthers(facet);
+      const out = { all: base.length };
+      for (const v of values) {
+        const p = buildPredicates({ ...draft, [facet]: v }, ctx)[facet];
+        out[v] = base.filter(p).length;
+      }
+      return out;
+    };
+    const places = new Set();
+    passOthers('place').forEach((item) => {
+      (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+      if (goesAbroad(item)) places.add('abroad');
+      if (teens && isOnline(item)) places.add('online');
+    });
+    const placeOpts = [];
+    if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
+    if (places.has('online')) placeOpts.push(['online', t.online, t.online]);
+    [...places].filter((p) => p !== 'abroad' && p !== 'online')
+      .sort((a, b) => a.localeCompare(b, 'uk'))
+      .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
+    return {
+      total: liveItems.filter((item) => FACETS.every((k) => dp[k](item))).length,
+      type: countOpts('type', TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value)),
+      age: countOpts('age', AGE_OPTS[teens ? 'teens' : 'parents'].map((o) => o[0])),
+      deadline: countOpts('deadline', DEADLINE_OPTS.map((o) => o[0])),
+      need: countOpts('need', (teens ? GIVES_OPTS : NEED_OPTS).map((o) => o[0])),
+      cost: countOpts('cost', COST_OPTS.map((o) => o[0])),
+      placeOpts,
+      place: countOpts('place', placeOpts.map((o) => o[0])),
+    };
+  }, [draft, liveItems, teens, todayIso, searchIndex, t.abroad, t.online]);
+
+  const sheetGroup = (key, title, allLabel, opts) => {
+    const counts = sheet[key];
+    const visible = opts.filter(([v]) => counts[v] > 0 || draft[key] === v);
+    if (!visible.length) return null;
+    const pick = (v) => setDraft({ ...draft, [key]: v });
+    return (
+      <div className="m-group" role="group" aria-labelledby={`m-group-${key}`} key={key}>
+        <h3 id={`m-group-${key}`}>{title}</h3>
+        <div className="m-group-chips">
+          <button
+            type="button"
+            className={`m-chip${draft[key] === 'all' ? ' is-on' : ''}`}
+            aria-pressed={draft[key] === 'all'}
+            onClick={() => pick('all')}
+          >
+            {allLabel}<span className="m-chip-n">{counts.all}</span>
+          </button>
+          {visible.map(([v, label]) => (
+            <button
+              key={v}
+              type="button"
+              className={`m-chip${draft[key] === v ? ' is-on' : ''}`}
+              aria-pressed={draft[key] === v}
+              onClick={() => pick(draft[key] === v ? 'all' : v)}
+            >
+              {label}<span className="m-chip-n">{counts[v]}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Знімні чипи над списком (6b): лише те, що налаштовується в шторці.
+  const labelOf = (list, v) => {
+    const o = list.find((x) => x[0] === v);
+    return o ? optLabel(o) : v;
+  };
+  const activeChips = [
+    age !== 'all' && {
+      key: 'age',
+      label: teens ? labelOf(ageList, age) : `${labelOf(ageList, age)} ${t.years}`,
+      clear: () => setAge('all'),
+    },
+    deadline !== 'all' && { key: 'deadline', label: labelOf(DEADLINE_OPTS, deadline), clear: () => setDeadline('all') },
+    need !== 'all' && { key: 'need', label: labelOf(needList, need), clear: () => setNeed('all') },
+    cost !== 'all' && { key: 'cost', label: labelOf(COST_OPTS, cost), clear: () => setCost('all') },
+    (presetCity ? place !== presetCity : place !== 'all') && {
+      key: 'place',
+      label: place === 'abroad' ? t.abroad : place === 'online' ? t.online
+        : (isEn ? cityLabel(place, 'en') : place),
+      clear: () => setPlace(presetCity || 'all'),
+    },
+  ].filter(Boolean);
+
+  const searchInput = (extra = {}) => (
+    <input
+      type="search"
+      enterKeyHint="search"
+      value={query}
+      onChange={(e) => setQuery(e.target.value)}
+      placeholder={teens ? t.mSearchTeens : t.mSearchParents}
+      aria-label={isEn ? 'Search' : 'Пошук'}
+      {...extra}
+    />
+  );
+
   return (
     <>
+      {mobileLayout ? (
+        <>
+          <div className="m-band" ref={bandRef}>
+            <label className="m-search">
+              <span className="m-search-icon" aria-hidden="true">🔍</span>
+              {searchInput()}
+            </label>
+          </div>
+
+          <div className={`m-compact${compact ? ' is-on' : ''}`} aria-hidden={compact ? undefined : 'true'}>
+            <a
+              href={isEn ? '/en' : '/'}
+              className="m-compact-logo"
+              tabIndex={compact ? undefined : -1}
+              onClick={(e) => { e.preventDefault(); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+            >
+              dityam.com.ua
+            </a>
+            <label className="m-search m-search--compact">
+              <span className="m-search-icon" aria-hidden="true">🔍</span>
+              {searchInput({ tabIndex: compact ? undefined : -1 })}
+            </label>
+          </div>
+
+          <div className={`m-bar${compact ? ' is-compact' : ''}`}>
+            <div className="m-chips" role="group" aria-label={t.filters} ref={chipsRowRef}>
+              <button
+                type="button"
+                className={`m-chip m-filters-btn${sheetActive ? ' is-on' : ''}`}
+                aria-haspopup="dialog"
+                aria-expanded={sheetOpen}
+                ref={filtersBtnRef}
+                onClick={() => setDraft({ type, age, deadline, need, cost, place, query })}
+              >
+                <span aria-hidden="true">⚙︎</span>
+                {t.filters}
+                {sheetActive ? <span className="m-count-dot">{sheetActive}</span> : null}
+              </button>
+              <button
+                type="button"
+                className={`m-chip${type === 'all' ? ' is-on' : ''}`}
+                aria-pressed={type === 'all'}
+                onClick={() => setType('all')}
+              >
+                {t.all}
+              </button>
+              {chips.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  className={`m-chip${type === c.value ? ' is-on' : ''}`}
+                  aria-pressed={type === c.value}
+                  onClick={() => setType(type === c.value ? 'all' : c.value)}
+                >
+                  {isEn ? c.en : c.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : null}
+
       <section className="v2-filters" aria-label={isEn ? 'Filters' : 'Фільтри'}>
         <div className="v2-chips">
           <button
@@ -683,8 +1066,55 @@ export default function OpportunitiesList({
         </section>
       ) : null}
 
+      {mobileLayout && topCards.length === 3 ? (
+        <section className="m-top" aria-labelledby="m-top-title">
+          <div className="m-top-head">
+            {/* «Цього тижня» — лише коли всі три справді закриваються за 7
+                днів; інакше заголовок обіцяв би те, чого в стрічці немає. */}
+            <h2 id="m-top-title">
+              {topCards.every((c) => daysUntil(c.deadline, todayIso) <= 7) ? t.mTopWeek : t.mTopSoon}
+            </h2>
+            <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
+          </div>
+          <div
+            className="m-top-strip"
+            onScroll={(e) => {
+              const i = Math.round(e.currentTarget.scrollLeft / 272);
+              setTopIndex(Math.min(2, Math.max(0, i)));
+            }}
+          >
+            {topCards.map(renderTopCard)}
+          </div>
+        </section>
+      ) : null}
+
+      {mobileLayout && activeChips.length ? (
+        <div className="m-active">
+          {activeChips.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className="m-active-chip"
+              aria-label={`${t.remove}: ${c.label}`}
+              onClick={c.clear}
+            >
+              {c.label}
+              <span className="m-active-x" aria-hidden="true">✕</span>
+            </button>
+          ))}
+          <button type="button" className="m-active-reset" onClick={reset}>{t.reset}</button>
+        </div>
+      ) : null}
+
+      {mobileLayout ? (
+        <div className="m-count" aria-live="polite" ref={countRef}>
+          <span><strong>{count}</strong> {t.countWord(count)}</span>
+          <span className="m-count-hint">{t.sortHint}</span>
+        </div>
+      ) : null}
+
       {shown.length ? (
-        <section className="v2-grid">
+        <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
           {shown.map(renderCard)}
         </section>
       ) : (
@@ -697,13 +1127,77 @@ export default function OpportunitiesList({
 
       {stream.length > limit ? (
         <div className="v2-more-row">
-          <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + 6)}>
+          <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + pageSize.current)}>
             {t.showMore}
           </button>
         </div>
       ) : null}
 
       {promoProps ? <PlusSection {...promoProps} lang={lang} /> : null}
+
+      {mobileLayout && sheet ? (
+        <div className="m-sheet-root">
+          <div className="m-sheet-overlay" onClick={closeSheet} aria-hidden="true" />
+          <div
+            className="m-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="m-sheet-title"
+            tabIndex={-1}
+            ref={sheetRef}
+            onTouchStart={onSheetTouchStart}
+            onTouchMove={onSheetTouchMove}
+            onTouchEnd={onSheetTouchEnd}
+            onTouchCancel={onSheetTouchEnd}
+          >
+            <div className="m-sheet-head">
+              <button type="button" className="m-sheet-handle" aria-label={t.close} onClick={closeSheet} />
+              <div className="m-sheet-title-row">
+                <h2 id="m-sheet-title" className="m-sheet-title">{t.filters}</h2>
+                <button
+                  type="button"
+                  className="m-sheet-reset"
+                  onClick={() => setDraft({
+                    type: 'all', age: 'all', deadline: 'all', need: 'all', cost: 'all',
+                    place: presetCity || 'all', query: draft.query,
+                  })}
+                >
+                  {t.resetAll}
+                </button>
+              </div>
+            </div>
+
+            <div className="m-sheet-body" ref={sheetBodyRef}>
+              {sheetGroup('type', t.typeGroup, t.all,
+                TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
+              {sheetGroup('age', teens ? t.sel.grade : t.sel.age, t.all,
+                ageList.map((o) => [o[0], optLabel(o)]))}
+              {sheetGroup('deadline', t.sel.deadline, t.all,
+                DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]))}
+              {sheetGroup('need', teens ? t.sel.gives : t.sel.need, teens ? t.all : t.allKids,
+                needList.map((o) => [o[0], optLabel(o)]))}
+              {/* Вартість — чипами «Безкоштовно / Платно», а не тумблером
+                  «Тільки безкоштовні» з референсу: платне має бути так само
+                  знаходиме, як і безкоштовне (урок #152). */}
+              {sheetGroup('cost', t.sel.cost, t.anyCost,
+                COST_OPTS.map((o) => [o[0], optLabel(o)]))}
+              {!presetCity ? sheetGroup('place', t.sel.where, t.all,
+                sheet.placeOpts.map((o) => [o[0], isEn ? o[2] : o[1]])) : null}
+            </div>
+
+            <div className="m-sheet-foot">
+              <button
+                type="button"
+                className="m-sheet-apply"
+                disabled={!sheet.total}
+                onClick={applyDraft}
+              >
+                {t.show(sheet.total)}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </>
   );
 }

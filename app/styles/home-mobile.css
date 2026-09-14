@@ -1,0 +1,721 @@
+/* Мобільна головна (≤900px) — референс «Dityam — мобільна версія», екрани
+   6a–6d (design_handoff_dityam_mobile). Десктоп цей файл не чіпає: усі
+   мобільні блоки (префікс m-) поза медіазапитом сховані, а десктопні
+   ховаються лише всередині .v2-home, тобто тільки на головній.
+
+   Мета екрана: перший результат списку до ~600px від верху, фільтри одним
+   пальцем, картка читається за 3 секунди. Тапи ≥40px, текст ≥12px. */
+
+.m-band,
+.m-compact,
+.m-bar,
+.m-top,
+.m-active,
+.m-count,
+.m-sheet-root,
+.v2-card-meta,
+.v2-card-fmt { display: none; }
+
+@media (max-width: 900px) {
+  /* ── Шапка: лише лого й перемикач, фон — крем хіро ─────────────────── */
+  .v2-header--home {
+    position: static;
+    background: var(--v2-cream);
+    border-bottom: 0;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .v2-header--home .v2-header-inner {
+    padding: 12px 20px 10px;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  .v2-header--home .v2-logo-heart,
+  .v2-header--home .v2-nav,
+  .v2-header--home .v2-support-btn { display: none; }
+
+  .v2-header--home .v2-logo-script { font-size: 26px; }
+  .v2-header--home .v2-header-right { display: flex; margin-left: auto; }
+  .v2-header--home .v2-mode { order: 0; flex-basis: auto; padding: 2px; }
+
+  .v2-header--home .v2-mode button {
+    position: relative;
+    flex: none;
+    font-size: 13px;
+    padding: 7px 12px;
+  }
+
+  /* Пігулка перемикача за референсом ~31px заввишки — зона дотику
+     добудована невидимо до 40px. */
+  .v2-header--home .v2-mode button::after {
+    content: '';
+    position: absolute;
+    inset: -5px 0;
+  }
+
+  /* ── Хіро: заголовок і пошук, без фото, підзаголовка й цифр ─────────── */
+  .v2-home { background: #ffffff; }
+  .v2-home .v2-hero-band { background: var(--v2-cream); }
+  html[data-mode="teens"] .v2-home .v2-hero-band { background: #141414; }
+
+  .v2-home .v2-hero {
+    padding: 14px 20px 0;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .v2-home .v2-hero-copy { gap: 12px; }
+
+  .v2-home .v2-hero-status,
+  .v2-home .v2-hero-sub,
+  .v2-home .v2-stats,
+  .v2-home .hero-press,
+  .v2-home .v2-hero-photo,
+  .v2-home .v2-hero-tail { display: none; }
+
+  .v2-home .v2-hero h1 {
+    font-size: 28px;
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+  }
+
+  /* Підлітковий лінк «Їдеш за кордон?» лишається — це відстежувана дія
+     (teen_abroad_click). На телефоні — одним рядком без рамки: у рамці він
+     переносився на два рядки й відсував перший результат за 600px. */
+  .v2-home .v2-hero-cta,
+  html[data-mode="teens"] .v2-home .v2-hero-cta,
+  html[data-mode="teens"] .v2-home .v2-hero-cta:hover {
+    align-self: stretch;
+    min-height: 40px;
+    margin: -8px 0 -6px;
+    padding: 0;
+    gap: 6px;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 14px;
+    transform: none;
+  }
+
+  .v2-home .v2-hero-cta > span:first-child {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Зони дотику ≥40px там, де текстові посилання нижчі ──────────────── */
+  .v2-logo { position: relative; }
+  .v2-logo::after { content: ''; position: absolute; inset: -8px 0; }
+
+  .v2-home .v2-topics { gap: 0 14px; }
+
+  .v2-home .v2-topics a,
+  .v2-home .v2-panel-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .v2-footer-col,
+  .v2-footer-follow { gap: 0; }
+
+  .v2-footer-col a,
+  .v2-footer-col button,
+  .v2-footer-social a,
+  .v2-footer-bottom a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+  }
+
+  .v2-footer-social { gap: 0 36px; }
+
+  /* Бейджі Dityam+ були 11.5px — на телефоні нічого дрібніше 12px. */
+  .v2-home .plus-badge,
+  .v2-home .plus-soon { font-size: 12px; }
+
+  /* ── Контейнер: ритм задають самі блоки ─────────────────────────────── */
+  .v2-home .v2-container { padding: 0 20px; gap: 0; }
+  html[data-mode="teens"] .v2-home .v2-hero-band + .v2-container { padding-top: 0; }
+  .v2-home .v2-filters,
+  .v2-home .v2-top { display: none; }
+
+  .v2-home .v2-container > :not([class^="m-"]):not(.v2-filters):not(.v2-top):not(.v2-grid):not(.v2-empty):not(.v2-more-row) {
+    margin-top: 40px;
+  }
+
+  /* ── Пошук у кремовій смузі під заголовком ──────────────────────────── */
+  .m-band {
+    display: block;
+    margin: 0 -20px;
+    padding: 12px 20px 16px;
+    background: var(--v2-cream);
+  }
+
+  html[data-mode="teens"] .m-band { background: #141414; }
+
+  .m-search {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 48px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    background: #ffffff;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 12px;
+  }
+
+  .m-search:focus-within { border-color: var(--v2-ink); }
+  .m-search-icon { font-size: 16px; color: var(--v2-ink-3); line-height: 1; }
+
+  .m-search input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-family: inherit;
+    /* 16px, а не менше: iOS збільшує сторінку при фокусі на дрібнішому полі. */
+    font-size: 16px;
+    color: var(--v2-ink);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .m-search input::placeholder { color: #b8b3a6; }
+
+  /* ── Компактна шапка після скролу (6b) ──────────────────────────────── */
+  .m-compact {
+    display: flex;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 21;
+    align-items: center;
+    gap: 10px;
+    height: 61px;
+    padding: 0 20px;
+    box-sizing: border-box;
+    background: rgba(255, 255, 255, 0.96);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--v2-line);
+    box-shadow: 0 4px 16px rgba(26, 26, 26, 0.05);
+    transform: translateY(-100%);
+    visibility: hidden;
+    transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1), visibility 0s linear 200ms;
+  }
+
+  .m-compact.is-on {
+    transform: none;
+    visibility: visible;
+    transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  .m-compact-logo {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    font-family: var(--font-caveat), cursive;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1;
+    color: var(--v2-accent);
+    text-decoration: none;
+    transform: rotate(-2deg);
+  }
+
+  .m-search--compact {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    gap: 8px;
+    background: var(--v2-cream);
+    border: 0;
+    border-radius: 10px;
+  }
+
+  .m-search--compact .m-search-icon { font-size: 14px; }
+
+  /* ── Липкий рядок: «Фільтри» + категорії скролом (6a) ───────────────── */
+  .m-bar {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    margin: 0 -20px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--v2-line);
+    transition: top 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  .m-bar.is-compact { top: 61px; }
+
+  .m-chips {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 10px 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-padding-left: 20px;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .m-chips::-webkit-scrollbar { display: none; }
+  /* padding-right у скрол-контейнері браузери ігнорують — хвіст розпіркою. */
+  .m-chips::after { content: ''; flex: 0 0 12px; }
+
+  .m-chip {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 40px;
+    padding: 0 14px;
+    box-sizing: border-box;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 9999px;
+    background: #ffffff;
+    color: var(--v2-ink);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 200ms cubic-bezier(0.2, 0.9, 0.3, 1), color 200ms, border-color 200ms;
+  }
+
+  .m-chip.is-on {
+    background: var(--v2-ink);
+    border-color: var(--v2-ink);
+    color: #ffffff;
+  }
+
+  .m-filters-btn { font-weight: 600; border-color: var(--v2-ink); }
+
+  .m-count-dot {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    box-sizing: border-box;
+    border-radius: 9999px;
+    background: var(--v2-accent);
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  /* ── «Встигніть цього тижня»: три картки скролом зі snap (6a) ──────── */
+  .m-top { display: block; padding-top: 16px; }
+
+  .m-top-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .m-top-head h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .m-top-head span {
+    font-size: 13px;
+    color: var(--v2-ink-3);
+    white-space: nowrap;
+  }
+
+  .m-top-strip {
+    display: flex;
+    gap: 12px;
+    margin: 0 -20px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-left: 20px;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .m-top-strip::-webkit-scrollbar { display: none; }
+  .m-top-strip::after { content: ''; flex: 0 0 8px; }
+
+  .m-top-card {
+    position: relative;
+    flex: 0 0 260px;
+    box-sizing: border-box;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 18px;
+    border-radius: 16px;
+    background: var(--v2-cream);
+  }
+
+  .m-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .m-top-row .v2-tag { font-weight: 600; }
+  .m-top-age { font-size: 13px; color: var(--v2-ink-2); white-space: nowrap; }
+
+  .m-top-dl {
+    font-size: 26px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--v2-accent);
+  }
+
+  .m-top-card h3 {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .m-top-card h3 a { color: var(--v2-ink); text-decoration: none; }
+
+  /* Уся картка — посилання (h3 не позиціонований, тож його overflow
+     розтягнуту зону не обрізає). */
+  .m-top-card h3 a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+  }
+
+  .m-top-card p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--v2-ink-2);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  html[data-mode="teens"] .m-top-card { background: #1a1a1a; }
+  html[data-mode="teens"] .m-top-card h3 a { color: #f7f1e6; }
+  html[data-mode="teens"] .m-top-card p { color: #c9c3b6; }
+  html[data-mode="teens"] .m-top-age { color: #a9a396; }
+
+  /* ── Лічильник над списком ──────────────────────────────────────────── */
+  .m-count {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 20px 0 12px;
+    font-size: 15px;
+    color: var(--v2-ink-2);
+  }
+
+  .m-count strong { color: var(--v2-ink); }
+  .m-count-hint { font-size: 13px; color: var(--v2-ink-3); white-space: nowrap; }
+
+  /* ── Список замість сітки: картка-рядок без рамки (6a/6b) ───────────── */
+  .v2-home .v2-list { display: flex; flex-direction: column; gap: 0; }
+
+  .v2-home .v2-list .v2-card {
+    position: relative;
+    gap: 6px;
+    padding: 14px 0;
+    background: none;
+    border: 0;
+    border-top: 1px solid var(--v2-line);
+    border-radius: 0;
+    transition: none;
+  }
+
+  .v2-home .v2-list .v2-card:hover { transform: none; box-shadow: none; }
+
+  .v2-home .v2-list .v2-card-tags,
+  .v2-home .v2-list .v2-card dl,
+  .v2-home .v2-list .v2-card-more { display: none; }
+
+  .v2-home .v2-list .v2-card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    overflow: hidden;
+    font-size: 13px;
+    color: var(--v2-ink-2);
+    white-space: nowrap;
+  }
+
+  .v2-card-meta .v2-tag { flex-shrink: 0; font-weight: 600; padding: 3px 8px; }
+  .v2-card-meta-dl { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+  .v2-card-meta-dl.is-urgent { color: var(--v2-accent); }
+  .v2-card-meta-sep { color: #b8b3a6; }
+
+  .v2-home .v2-list .v2-card h3 { font-size: 18px; line-height: 1.3; }
+  .v2-home .v2-list .v2-card h3 a::after { content: ''; position: absolute; inset: 0; }
+  .v2-home .v2-list .v2-card h3 a:hover { color: inherit; }
+
+  .v2-home .v2-list .v2-card-summary {
+    font-size: 15px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .v2-home .v2-list .v2-card-fmt {
+    display: block;
+    font-size: 13px;
+    color: var(--v2-ink-3);
+  }
+
+  .v2-home .v2-more-row { margin-top: 8px; }
+
+  .v2-home .v2-more-btn {
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  /* ── Знімні чипи активних фільтрів (6b) ─────────────────────────────── */
+  .m-active {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 6px;
+    padding-top: 14px;
+  }
+
+  .m-active-chip,
+  .m-active-reset {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    box-sizing: border-box;
+    border: 0;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .m-active-chip {
+    gap: 6px;
+    padding: 0 6px 0 12px;
+    border-radius: 9999px;
+    background: var(--v2-cream);
+    color: var(--v2-ink);
+  }
+
+  /* Чип за референсом 32px — зона дотику добудована до 40px. */
+  .m-active-chip::after,
+  .m-active-reset::after {
+    content: '';
+    position: absolute;
+    inset: -4px 0;
+  }
+
+  .m-active-x {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--v2-line);
+    font-size: 12px;
+    line-height: 1;
+  }
+
+  .m-active-reset {
+    margin-left: auto;
+    padding: 0 0 0 8px;
+    background: none;
+    color: var(--v2-accent);
+  }
+
+  .m-active + .m-count { padding-top: 10px; }
+
+  /* ── Шторка фільтрів (6c) ───────────────────────────────────────────── */
+  .m-sheet-root {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+  }
+
+  .m-sheet-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 26, 26, 0.45);
+    animation: m-fade 200ms ease-out;
+  }
+
+  .m-sheet {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    max-height: 88vh;
+    max-height: 88dvh;
+    background: #ffffff;
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -8px 32px rgba(26, 26, 26, 0.12);
+    outline: none;
+    animation: m-sheet-up 260ms cubic-bezier(0.2, 0.9, 0.3, 1);
+    transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  .m-sheet.is-dragging { transition: none; }
+
+  .m-sheet-head { flex-shrink: 0; padding: 0 20px; }
+
+  /* Ручка — ще й кнопка «Закрити»: видима смужка 40×4, зона дотику 40px. */
+  .m-sheet-handle {
+    display: block;
+    position: relative;
+    width: 72px;
+    height: 24px;
+    margin: 0 auto;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+  }
+
+  .m-sheet-handle::before {
+    content: '';
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    top: 10px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--v2-line-strong);
+  }
+
+  .m-sheet-handle::after {
+    content: '';
+    position: absolute;
+    inset: -8px 0;
+  }
+
+  .m-sheet-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .m-sheet-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+
+  .m-sheet-reset {
+    min-height: 40px;
+    padding: 0 0 0 12px;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--v2-accent);
+    cursor: pointer;
+  }
+
+  .m-sheet-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 20px 20px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .m-group { display: flex; flex-direction: column; gap: 10px; }
+  .m-group h3 { margin: 0; font-size: 15px; font-weight: 700; }
+  .m-group-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  .m-chip-n { font-size: 12px; font-weight: 500; color: var(--v2-ink-3); }
+  .m-chip.is-on .m-chip-n { color: #b8b3a6; }
+
+  /* Кнопка прибита знизу шторки: вміст над нею скролиться окремо. */
+  .m-sheet-foot {
+    flex-shrink: 0;
+    padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+    background: #ffffff;
+    border-top: 1px solid var(--v2-line);
+  }
+
+  .m-sheet-apply {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 52px;
+    border: 0;
+    border-radius: 14px;
+    background: var(--v2-accent);
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .m-sheet-apply:active { background: var(--v2-accent-hover); }
+
+  .m-sheet-apply:disabled {
+    background: var(--v2-line);
+    color: var(--v2-ink-2);
+    cursor: default;
+  }
+
+  @keyframes m-sheet-up { from { transform: translateY(100%); } }
+  @keyframes m-fade { from { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .m-sheet,
+    .m-sheet-overlay { animation: none; }
+  }
+}
