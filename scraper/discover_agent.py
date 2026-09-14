@@ -40,11 +40,13 @@ from urllib.parse import urlparse
 
 from canonical import canonical_url
 from db import get_client, record_crawl_result
+import anthropic
 import hubs
 from keywords import (
     DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
 )
 from normalizer import _sanitize
+from recheck_dates import fetch_text
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
@@ -91,6 +93,103 @@ RARE_FOCUS = (
 
 def _regions() -> list[dict]:
     return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
+
+
+# ── Перевірка кандидата сторінкою (лише «рідкісне за кордоном») ─────────────
+#
+# Слово моделі з вебпошуку — ще не факт. Перший прогін 14.09.2026 запропонував
+# «дитячий хор Palianycia для українських дітей у Празі»: на palianycia.cz не
+# було ні слова про дітей, ні про Україну — лише концерти й назва. Тому
+# кандидат іде в модерацію, тільки якщо агент САМ відкрив сторінку і на ній
+# дослівно видно: це для дітей, і діти з України можуть брати участь.
+VERIFY = RARE and (os.environ.get("DISCOVER_VERIFY") or "true") != "false"
+VERIFY_MODEL = os.environ.get("DISCOVER_VERIFY_MODEL") or "claude-haiku-4-5-20251001"
+MIN_QUOTE = 12
+
+VERIFY_TOOL = {
+    "name": "verify",
+    "description": "Що сторінка каже про програму: для кого вона і чи можуть подаватися діти з України",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "page_kind": {"type": "string", "enum": ["one_opportunity", "listing_or_org", "not_found"]},
+            "for_children": {"type": "boolean"},
+            "children_evidence": {"type": "string",
+                                  "description": "ДОСЛІВНА цитата: вік, класи, «для дітей». Немає — порожньо."},
+            "eligibility": {"type": "string", "enum": ["for_ukrainians", "open_to_all", "not_stated"]},
+            "eligibility_evidence": {"type": "string",
+                                     "description": "ДОСЛІВНА цитата про те, хто може брати участь. Немає — порожньо."},
+            "kind": {"type": "string", "enum": ["unusual", "regular_club"]},
+            "kind_reason": {"type": "string"},
+        },
+        "required": ["page_kind", "for_children", "children_evidence", "eligibility",
+                     "eligibility_evidence", "kind"],
+        "additionalProperties": False,
+    },
+}
+
+VERIFY_SYSTEM = """Тобі дають сторінку, яку агент запропонував як рідкісну можливість
+за кордоном для дітей з України. Перевір її ЛИШЕ за текстом сторінки.
+
+ГОЛОВНЕ ПРАВИЛО: НІЧОГО НЕ ВИГАДУЙ. Кожна відповідь — з дослівною цитатою мовою
+оригіналу. Немає цитати — for_children=false або eligibility="not_stated".
+
+1. page_kind: one_opportunity — сторінка описує одну конкретну програму;
+   listing_or_org — головна організації чи перелік; not_found — сторінки немає.
+2. for_children: програма для дітей чи підлітків до 18 років. children_evidence —
+   цитата з віком, класами або словами «для дітей».
+3. eligibility: for_ukrainians — прямо для дітей з України чи біженців;
+   open_to_all — у тексті ЯВНО сказано, що участь відкрита для всіх, будь-якого
+   походження чи для міжнародних учасників; not_stated — про це не сказано.
+   Назва («Паляниця»), мова сайту чи країна — НЕ доказ.
+4. kind: regular_club — звичайний регулярний гурток, секція чи курс поруч із
+   домом; unusual — табір, турнір, експедиція, резиденція, фестиваль, програма
+   фонду, стипендія — те, чого родина сама не знайде."""
+
+
+def _norm_text(s: str) -> str:
+    return re.sub(r"\s+", " ", (s or "")).strip().lower()
+
+
+def decide_verified(out: dict, page: str) -> tuple[bool, str]:
+    """Чи пускати кандидата в модерацію. Чиста функція — під тести."""
+    if out.get("page_kind") != "one_opportunity":
+        return False, "сторінка не про одну програму"
+    ch = (out.get("children_evidence") or "").strip()
+    if not out.get("for_children") or len(ch) < MIN_QUOTE:
+        return False, "на сторінці не видно, що це для дітей"
+    if _norm_text(ch)[:60] not in _norm_text(page):
+        return False, "цитати про дітей на сторінці немає"
+    el = out.get("eligibility")
+    ev = (out.get("eligibility_evidence") or "").strip()
+    if el not in ("for_ukrainians", "open_to_all") or len(ev) < MIN_QUOTE:
+        return False, "не видно, що діти з України можуть брати участь"
+    if _norm_text(ev)[:60] not in _norm_text(page):
+        return False, "цитати про участь на сторінці немає"
+    if out.get("kind") == "regular_club":
+        return False, "звичайний гурток, а не рідкісна можливість"
+    label = "для дітей з України" if el == "for_ukrainians" else "відкрито для всіх"
+    return True, f"{label}: «{ev[:140]}»"
+
+
+def verify_candidate(rec: dict) -> tuple[bool, str]:
+    page, status, _kind = fetch_text(rec["source_url"])
+    if not page:
+        return False, f"сторінка не відкривається ({status})"
+    try:
+        llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        resp = llm.messages.create(
+            model=VERIFY_MODEL, max_tokens=700, system=VERIFY_SYSTEM,
+            tools=[VERIFY_TOOL], tool_choice={"type": "tool", "name": "verify"},
+            messages=[{"role": "user", "content":
+                       f"Кандидат: «{rec['title']}»\nАдреса: {rec['source_url']}\n\n"
+                       f"Текст сторінки:\n{page}"}],
+        )
+        block = next((b for b in resp.content if b.type == "tool_use"), None)
+        out = block.input if block else {}
+    except Exception as e:
+        return False, f"перевірка впала: {type(e).__name__}"
+    return decide_verified(out, page)
 
 
 def keyword_of_day() -> str:
@@ -454,6 +553,7 @@ def main() -> int:
     hub_domains = hubs.hub_domains(hubs.prime(client))
 
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
+    unverified = 0
     for c in candidates:
         rec = to_record(c, kw, region)
         if not rec:
@@ -484,6 +584,15 @@ def main() -> int:
             rec["dup_score"] = round(score, 3)
             flagged += 1
 
+        if VERIFY:
+            ok, why = verify_candidate(rec)
+            if not ok:
+                unverified += 1
+                logger.info("  ✗ не підтверджено сторінкою (%s): %s", why, rec["title"][:55])
+                continue
+            rec["admin_comment"] = f"{rec['admin_comment']} · {why}"[:500]
+            logger.info("  ✓ підтверджено: %s", why[:120])
+
         if DRY_RUN:
             tag = f"  ⚠ схоже на {best_slug} ({score:.0%})" if rec.get("dup_of") else ""
             logger.info("  [DRY] %s → %s%s", rec["title"][:60], rec["source_url"], tag)
@@ -512,6 +621,9 @@ def main() -> int:
         except Exception as e:
             logger.error("  ✗ insert failed for '%s': %s", rec["title"][:50], e)
             skipped += 1
+
+    if VERIFY:
+        logger.info("Не пройшли перевірку сторінкою: %d", unverified)
 
     # Здоров'я агента в тому ж реєстрі, що й у решти джерел. Без цього
     # рядок discover-agent мав checks_count=0 і порожній last_success_at:
