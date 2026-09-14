@@ -272,13 +272,17 @@
     outline-offset: -2px;
   }
 
+  /* Батькам — помаранчевий, підліткам — чорний (див. .v2-chip.is-on). */
   .v2-home .v2-side-item.is-on {
-    background: var(--v2-ink);
+    background: var(--v2-accent-hover);
     color: #ffffff;
     font-weight: 700;
   }
 
-  .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-accent); }
+  html[data-mode="teens"] .v2-home .v2-side-item.is-on { background: var(--v2-ink); }
+
+  .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-ink); }
+  html[data-mode="teens"] .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-accent); }
 
   .v2-home .v2-side-n {
     font-size: 13px;
@@ -287,7 +291,8 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
+  .v2-home .v2-side-item.is-on .v2-side-n { color: rgba(255, 255, 255, 0.82); }
+  html[data-mode="teens"] .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
 
   .v2-home .v2-side-select {
     width: 100%;

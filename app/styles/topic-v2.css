@@ -201,9 +201,10 @@
   gap: 6px;
 }
 .tp-pill:hover { border-color: #1a1a1a; }
-.tp-pill.is-on { background: #1a1a1a; color: #ffffff; border-color: #1a1a1a; }
+/* Підбірки батьківські — активний фільтр помаранчевий, як на головній. */
+.tp-pill.is-on { background: #d14c15; color: #ffffff; border-color: #d14c15; }
 .tp-pill-n { font-size: 12px; color: #8a8a8a; }
-.tp-pill.is-on .tp-pill-n { color: #d4cfc1; }
+.tp-pill.is-on .tp-pill-n { color: rgba(255, 255, 255, 0.82); }
 .tp-sort { font-size: 14px; color: #8a8a8a; white-space: nowrap; }
 
 .tp-grid {

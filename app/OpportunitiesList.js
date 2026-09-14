@@ -17,8 +17,9 @@ import { readMode, onModeChange } from '@/lib/mode';
 // головної»). Один компонент обслуговує головну, /en і сторінки міст/тем.
 //
 // Що змінилось проти старої версії:
-// - фільтри стали одновибірними: ряд пігулок «Тип» + чотири селекти + пошук —
-//   замість девʼяти розкривних мультифільтрів;
+// - замість девʼяти розкривних мультифільтрів — ряд пігулок «Тип», селекти й
+//   пошук; з 14.09.2026 (рішення Марії) тип, вік, особлива потреба / що дає і
+//   місце знову мультивибірні — див. MULTI нижче;
 // - зʼявився режим «Підліткам» (перемикач у шапці): свої пігулки, вік
 //   класами, фільтр «Що дає» по teen_tags і поля картки «Отримаєш / Треба»;
 // - «Топ тижня» — три найближчі дедлайни автоматично, а не кураторська
@@ -70,6 +71,7 @@ const UI = {
     sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
     all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном', online: '💻 Онлайн',
+    pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
     countWord: (n) => opportunitiesWord(n),
   },
   en: {
@@ -113,6 +115,7 @@ const UI = {
     sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
     all: 'All', anyCost: 'Any', abroad: '🌍 Abroad', online: '💻 Online',
+    pickPlace: 'Anywhere', addPlace: '+ Add another place',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
   },
 };
@@ -239,24 +242,33 @@ function ageMatches(item, value) {
 
 const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
 
+// Мультивибір (рішення Марії 14.09.2026): тип, вік, особлива потреба / що дає
+// і місце — масиви; усередині групи «або», між групами «і»; порожній масив —
+// «усі». Дедлайн і вартість лишились одновибірними: їхні варіанти
+// перекриваються («цього тижня» вже входить у «цього місяця»).
+const MULTI = ['type', 'age', 'need', 'place'];
+const isAll = (v) => (Array.isArray(v) ? v.length === 0 : v === 'all');
+const has = (v, x) => (Array.isArray(v) ? v.includes(x) : v === x);
+const toggle = (arr, x) => (arr.includes(x) ? arr.filter((v) => v !== x) : [...arr, x]);
+const anyOf = (vals, test) => vals.length === 0 || vals.some(test);
+
 // Предикати фільтрів як чиста функція стану: той самий код рахує і
 // застосовані фільтри, і чернетку в мобільній шторці — інакше «Показати N»
 // у шторці могло б розійтися з тим, що покаже список.
 function buildPredicates(s, { teens, todayIso, searchIndex }) {
   const tokens = queryTokens(s.query);
   return {
-    type: (item) => {
-      if (s.type === 'all') return true;
-      if (s.type === 'online') return isOnline(item);
-      if (s.type === 'payments') {
+    type: (item) => anyOf(s.type, (v) => {
+      if (v === 'online') return isOnline(item);
+      if (v === 'payments') {
         return item.opportunity_type === 'allowance'
           || item.opportunity_type === 'support_payment'
           || item.aid_type === 'cash';
       }
-      if (s.type === 'classes') return CLASSES_TYPES.includes(item.opportunity_type);
-      return item.opportunity_type === s.type;
-    },
-    age: (item) => s.age === 'all' || ageMatches(item, s.age),
+      if (v === 'classes') return CLASSES_TYPES.includes(item.opportunity_type);
+      return item.opportunity_type === v;
+    }),
+    age: (item) => anyOf(s.age, (v) => ageMatches(item, v)),
     deadline: (item) => {
       if (s.deadline === 'all') return true;
       const days = daysUntil(item.deadline, todayIso);
@@ -265,29 +277,27 @@ function buildPredicates(s, { teens, todayIso, searchIndex }) {
       if (s.deadline === 'month') return days !== null && days >= 0 && days <= 31;
       return true;
     },
-    need: (item) => {
-      if (s.need === 'all') return true;
+    need: (item) => anyOf(s.need, (v) => {
       if (teens) {
-        if ((item.teen_tags || []).includes(s.need)) return true;
+        if ((item.teen_tags || []).includes(v)) return true;
         // «Поїздка» працює і до розмітки: закордон видно з географії.
-        return s.need === 'поїздка' && goesAbroad(item);
+        return v === 'поїздка' && goesAbroad(item);
       }
-      return (item.child_needs || []).includes(s.need);
-    },
+      return (item.child_needs || []).includes(v);
+    }),
     cost: (item) => {
       if (s.cost === 'all') return true;
       if (s.cost === 'free') return item.cost_type === 'free';
       return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
     },
-    place: (item) => {
-      if (s.place === 'all') return true;
-      if (s.place === 'abroad') return goesAbroad(item);
-      if (s.place === 'online') return isOnline(item);
+    place: (item) => anyOf(s.place, (v) => {
+      if (v === 'abroad') return goesAbroad(item);
+      if (v === 'online') return isOnline(item);
       const cities = item.cities || [];
-      if (cities.includes(s.place)) return true;
+      if (cities.includes(v)) return true;
       // «Вся Україна» просвічує крізь вибір конкретного міста.
-      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(s.place);
-    },
+      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v);
+    }),
     query: (item) => {
       if (!tokens.length) return true;
       const hay = searchIndex.get(item.id);
@@ -310,7 +320,8 @@ function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
     const base = passOthers(facet);
     const out = { all: base.length };
     for (const v of values) {
-      const p = buildPredicates({ ...s, [facet]: v }, ctx)[facet];
+      // Для мультигрупи число — скільки дасть сама ця опція при решті фільтрів.
+      const p = buildPredicates({ ...s, [facet]: MULTI.includes(facet) ? [v] : v }, ctx)[facet];
       out[v] = base.filter(p).length;
     }
     return out;
@@ -369,19 +380,19 @@ export default function OpportunitiesList({
     setMode(readMode());
     return onModeChange((m) => {
       setMode(m);
-      setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
+      setType([]); setAge([]); setDeadline('all'); setNeed([]);
       setCost('all'); setQuery(''); setLimit(pageSize.current);
-      if (!presetCity) setPlace('all');
+      if (!presetCity) setPlace([]);
     });
   }, [modeAware, presetCity]);
   const teens = mode === 'teens';
 
-  const [type, setType] = useState('all');
-  const [age, setAge] = useState('all');
+  const [type, setType] = useState([]);
+  const [age, setAge] = useState([]);
   const [deadline, setDeadline] = useState('all');
-  const [need, setNeed] = useState('all');
+  const [need, setNeed] = useState([]);
   const [cost, setCost] = useState('all');
-  const [place, setPlace] = useState(presetCity || 'all');
+  const [place, setPlace] = useState(presetCity ? [presetCity] : []);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(initialLimit);
   const [hydrated, setHydrated] = useState(false);
@@ -418,18 +429,21 @@ export default function OpportunitiesList({
   }, [mobileLayout]);
 
   // Читання фільтрів з URL — щоб відфільтрований вигляд можна було шерити.
-  // Старі мультизначення (?type=a,b) читаємо по першому токену.
+  // Мультигрупи — кілька значень через кому (?type=camp,club); дедлайн і
+  // вартість беруть перше значення.
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
-    const one = (key) => (p.get(key) || '').split(',').filter(Boolean)[0];
-    const setters = { type: setType, age: setAge, deadline: setDeadline,
-      need: setNeed, cost: setCost };
-    for (const [key, setter] of Object.entries(setters)) {
-      const v = one(key);
+    const list = (key) => [...new Set((p.get(key) || '').split(',').map((x) => x.trim()).filter(Boolean))];
+    for (const [key, setter] of Object.entries({ type: setType, age: setAge, need: setNeed })) {
+      const v = list(key);
+      if (v.length) setter(v);
+    }
+    for (const [key, setter] of Object.entries({ deadline: setDeadline, cost: setCost })) {
+      const v = list(key)[0];
       if (v) setter(v);
     }
-    const city = one('city');
-    if (city) setPlace(city === 'Міжнародні' ? 'abroad' : city);
+    const cities = list('city').map((c) => (c === 'Міжнародні' ? 'abroad' : c));
+    if (cities.length) setPlace(cities);
     const q = p.get('q');
     if (q) setQuery(q);
     setHydrated(true);
@@ -443,9 +457,10 @@ export default function OpportunitiesList({
       const next = new URLSearchParams();
       if (keep === 'teens') next.set('for', 'teens');
       const write = (key, v, def = 'all') => { if (v !== def) next.set(key, v); };
-      write('type', type); write('age', age); write('deadline', deadline);
-      write('need', need); write('cost', cost);
-      if (!(presetCity && place === presetCity)) write('city', place);
+      const writeList = (key, v) => { if (v.length) next.set(key, v.join(',')); };
+      writeList('type', type); writeList('age', age); write('deadline', deadline);
+      writeList('need', need); write('cost', cost);
+      if (!(presetCity && place.length === 1 && place[0] === presetCity)) writeList('city', place);
       if (query.trim()) next.set('q', query.trim());
       const qs = next.toString();
       window.history.replaceState(null, '',
@@ -486,9 +501,12 @@ export default function OpportunitiesList({
     [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex],
   );
 
-  const hasActive = type !== 'all' || age !== 'all' || deadline !== 'all'
-    || need !== 'all' || cost !== 'all' || Boolean(query.trim())
-    || (presetCity ? place !== presetCity : place !== 'all');
+  // На сторінці міста саме місто — не фільтр людини, а рамка сторінки.
+  const placeActive = presetCity
+    ? !(place.length === 1 && place[0] === presetCity)
+    : place.length > 0;
+  const hasActive = type.length > 0 || age.length > 0 || deadline !== 'all'
+    || need.length > 0 || cost !== 'all' || Boolean(query.trim()) || placeActive;
 
   // Доступні опції: рахуємо на тому, що проходить усі ІНШІ фільтри, — мертва
   // опція гірша за відсутню (у 3 роки стипендій не буває).
@@ -612,9 +630,9 @@ export default function OpportunitiesList({
   }, [mobileLayout]);
 
   const reset = () => {
-    setType('all'); setAge('all'); setDeadline('all'); setNeed('all');
+    setType([]); setAge([]); setDeadline('all'); setNeed([]);
     setCost('all'); setQuery(''); setLimit(pageSize.current);
-    setPlace(presetCity || 'all');
+    setPlace(presetCity ? [presetCity] : []);
   };
 
   const enField = (item, field) => (isEn && item[`${field}_en`]) || item[field] || '';
@@ -784,11 +802,11 @@ export default function OpportunitiesList({
   };
 
   const chips = TYPE_CHIPS[teens ? 'teens' : 'parents']
-    .filter((c) => available.chips.has(c.value) || type === c.value);
+    .filter((c) => available.chips.has(c.value) || type.includes(c.value));
 
   const optLabel = (o) => (isEn && o[2] ? o[2] : o[1]);
   const selectOpts = (list, availableSet, current) =>
-    list.filter(([value]) => availableSet.has(value) || current === value);
+    list.filter(([value]) => availableSet.has(value) || has(current, value));
 
   const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
   const needList = teens ? GIVES_OPTS : NEED_OPTS;
@@ -796,8 +814,8 @@ export default function OpportunitiesList({
     const cities = [...available.places].filter((p) => p !== 'abroad' && p !== 'online')
       .sort((a, b) => a.localeCompare(b, 'uk'));
     const out = [];
-    if (available.places.has('abroad') || place === 'abroad') out.push(['abroad', t.abroad, t.abroad]);
-    if (available.places.has('online') || place === 'online') out.push(['online', t.online, t.online]);
+    if (available.places.has('abroad') || place.includes('abroad')) out.push(['abroad', t.abroad, t.abroad]);
+    if (available.places.has('online') || place.includes('online')) out.push(['online', t.online, t.online]);
     for (const c of cities) out.push([c, c, cityLabel(c, 'en')]);
     return out;
   }, [available.places, place, t.abroad, t.online]);
@@ -809,10 +827,9 @@ export default function OpportunitiesList({
 
   // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
   // рядку. Тип видно чипом у самому рядку, пошук — у полі.
-  const sheetActive = [
-    age !== 'all', deadline !== 'all', need !== 'all', cost !== 'all',
-    presetCity ? place !== presetCity : place !== 'all',
-  ].filter(Boolean).length;
+  const sheetActive = age.length + need.length
+    + (deadline !== 'all' ? 1 : 0) + (cost !== 'all' ? 1 : 0)
+    + place.filter((v) => v !== presetCity).length;
 
   const closeSheet = () => {
     setDraft(null);
@@ -910,18 +927,24 @@ export default function OpportunitiesList({
 
   const sheetGroup = (key, title, allLabel, opts) => {
     const counts = sheet[key];
-    const visible = opts.filter(([v]) => counts[v] > 0 || draft[key] === v);
+    const cur = draft[key];
+    const multi = MULTI.includes(key);
+    const visible = opts.filter(([v]) => counts[v] > 0 || has(cur, v));
     if (!visible.length) return null;
-    const pick = (v) => setDraft({ ...draft, [key]: v });
+    const pickAll = () => setDraft({ ...draft, [key]: multi ? [] : 'all' });
+    const pick = (v) => setDraft({
+      ...draft,
+      [key]: multi ? toggle(cur, v) : (cur === v ? 'all' : v),
+    });
     return (
       <div className="m-group" role="group" aria-labelledby={`m-group-${key}`} key={key}>
         <h3 id={`m-group-${key}`}>{title}</h3>
         <div className="m-group-chips">
           <button
             type="button"
-            className={`m-chip${draft[key] === 'all' ? ' is-on' : ''}`}
-            aria-pressed={draft[key] === 'all'}
-            onClick={() => pick('all')}
+            className={`m-chip${isAll(cur) ? ' is-on' : ''}`}
+            aria-pressed={isAll(cur)}
+            onClick={pickAll}
           >
             {allLabel}<span className="m-chip-n">{counts.all}</span>
           </button>
@@ -929,9 +952,9 @@ export default function OpportunitiesList({
             <button
               key={v}
               type="button"
-              className={`m-chip${draft[key] === v ? ' is-on' : ''}`}
-              aria-pressed={draft[key] === v}
-              onClick={() => pick(draft[key] === v ? 'all' : v)}
+              className={`m-chip${has(cur, v) ? ' is-on' : ''}`}
+              aria-pressed={has(cur, v)}
+              onClick={() => pick(v)}
             >
               {label}<span className="m-chip-n">{counts[v]}</span>
             </button>
@@ -946,21 +969,23 @@ export default function OpportunitiesList({
     const o = list.find((x) => x[0] === v);
     return o ? optLabel(o) : v;
   };
+  const placeLabel = (v) => (v === 'abroad' ? t.abroad : v === 'online' ? t.online
+    : (isEn ? cityLabel(v, 'en') : v));
+  // Мультигрупи — по чипу на кожне обране значення, щоб зняти можна було одне.
   const activeChips = [
-    age !== 'all' && {
-      key: 'age',
-      label: teens ? labelOf(ageList, age) : `${labelOf(ageList, age)} ${t.years}`,
-      clear: () => setAge('all'),
-    },
+    ...age.map((v) => ({
+      key: `age-${v}`,
+      label: teens ? labelOf(ageList, v) : `${labelOf(ageList, v)} ${t.years}`,
+      clear: () => setAge(age.filter((x) => x !== v)),
+    })),
     deadline !== 'all' && { key: 'deadline', label: labelOf(DEADLINE_OPTS, deadline), clear: () => setDeadline('all') },
-    need !== 'all' && { key: 'need', label: labelOf(needList, need), clear: () => setNeed('all') },
+    ...need.map((v) => ({ key: `need-${v}`, label: labelOf(needList, v), clear: () => setNeed(need.filter((x) => x !== v)) })),
     cost !== 'all' && { key: 'cost', label: labelOf(COST_OPTS, cost), clear: () => setCost('all') },
-    (presetCity ? place !== presetCity : place !== 'all') && {
-      key: 'place',
-      label: place === 'abroad' ? t.abroad : place === 'online' ? t.online
-        : (isEn ? cityLabel(place, 'en') : place),
-      clear: () => setPlace(presetCity || 'all'),
-    },
+    ...place.filter((v) => v !== presetCity).map((v) => ({
+      key: `place-${v}`,
+      label: placeLabel(v),
+      clear: () => setPlace(place.filter((x) => x !== v)),
+    })),
   ].filter(Boolean);
 
   // Бічна панель десктопа (≥1100px, референс «Dityam — головна з боковими
@@ -973,8 +998,9 @@ export default function OpportunitiesList({
     const counts = side[key];
     const cur = sideApplied[key];
     const set = sideSetters[key];
+    const multi = MULTI.includes(key);
     // Нульові опції ховаємо, як і в шторці: мертвий пункт гірший за відсутній.
-    const visible = opts.filter(([v]) => counts[v] > 0 || cur === v);
+    const visible = opts.filter(([v]) => counts[v] > 0 || has(cur, v));
     if (!visible.length) return null;
     return (
       <div className="v2-side-group" role="group" aria-labelledby={`v2-side-${key}`}>
@@ -982,9 +1008,9 @@ export default function OpportunitiesList({
         <div className="v2-side-list">
           <button
             type="button"
-            className={`v2-side-item${cur === 'all' ? ' is-on' : ''}`}
-            aria-pressed={cur === 'all'}
-            onClick={() => set('all')}
+            className={`v2-side-item${isAll(cur) ? ' is-on' : ''}`}
+            aria-pressed={isAll(cur)}
+            onClick={() => set(multi ? [] : 'all')}
           >
             <span>{allLabel}</span>
           </button>
@@ -992,9 +1018,9 @@ export default function OpportunitiesList({
             <button
               key={v}
               type="button"
-              className={`v2-side-item${cur === v ? ' is-on' : ''}`}
-              aria-pressed={cur === v}
-              onClick={() => set(cur === v ? 'all' : v)}
+              className={`v2-side-item${has(cur, v) ? ' is-on' : ''}`}
+              aria-pressed={has(cur, v)}
+              onClick={() => set(multi ? toggle(cur, v) : (cur === v ? 'all' : v))}
             >
               <span>{label}</span>
               <span className="v2-side-n">{counts[v]}</span>
@@ -1031,17 +1057,35 @@ export default function OpportunitiesList({
           Міст десятки — тому «Де» селектом, а не списком. */}
       {sideGroup('cost', t.sel.cost, t.anyCost,
         COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-      {!presetCity && placeList.length ? (
-        <div className="v2-side-group">
-          <label htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
+      {/* «Де» — обрані місця списком (клік знімає), селект нижче додає ще
+          одне: міст десятки, повний список був би довшим за екран. */}
+      {!presetCity && (placeList.length || place.length) ? (
+        <div className="v2-side-group" role="group" aria-labelledby="v2-side-place-title">
+          <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
+          {place.length ? (
+            <div className="v2-side-list">
+              {place.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className="v2-side-item is-on"
+                  aria-label={`${t.remove}: ${placeLabel(v)}`}
+                  onClick={() => setPlace(place.filter((x) => x !== v))}
+                >
+                  <span>{placeLabel(v)}</span>
+                  <span className="v2-side-n" aria-hidden="true">✕</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
           <select
             id="v2-side-place"
             className="v2-select v2-side-select"
-            value={place}
-            onChange={(e) => setPlace(e.target.value)}
+            value=""
+            onChange={(e) => { if (e.target.value) setPlace(toggle(place, e.target.value)); }}
           >
-            <option value="all">{t.all}</option>
-            {placeList.map((o) => (
+            <option value="">{place.length ? t.addPlace : t.pickPlace}</option>
+            {placeList.filter((o) => !place.includes(o[0])).map((o) => (
               <option key={o[0]} value={o[0]}>{isEn ? o[2] : o[1]}</option>
             ))}
           </select>
@@ -1107,9 +1151,9 @@ export default function OpportunitiesList({
               </button>
               <button
                 type="button"
-                className={`m-chip${type === 'all' ? ' is-on' : ''}`}
-                aria-pressed={type === 'all'}
-                onClick={() => setType('all')}
+                className={`m-chip${type.length === 0 ? ' is-on' : ''}`}
+                aria-pressed={type.length === 0}
+                onClick={() => setType([])}
               >
                 {t.all}
               </button>
@@ -1117,9 +1161,9 @@ export default function OpportunitiesList({
                 <button
                   key={c.value}
                   type="button"
-                  className={`m-chip${type === c.value ? ' is-on' : ''}`}
-                  aria-pressed={type === c.value}
-                  onClick={() => setType(type === c.value ? 'all' : c.value)}
+                  className={`m-chip${type.includes(c.value) ? ' is-on' : ''}`}
+                  aria-pressed={type.includes(c.value)}
+                  onClick={() => setType(toggle(type, c.value))}
                 >
                   {isEn ? c.en : c.label}
                 </button>
@@ -1133,8 +1177,9 @@ export default function OpportunitiesList({
         <div className="v2-chips">
           <button
             type="button"
-            className={`v2-chip${type === 'all' ? ' is-on' : ''}`}
-            onClick={() => setType('all')}
+            className={`v2-chip${type.length === 0 ? ' is-on' : ''}`}
+            aria-pressed={type.length === 0}
+            onClick={() => setType([])}
           >
             {t.all}
           </button>
@@ -1142,8 +1187,9 @@ export default function OpportunitiesList({
             <button
               key={c.value}
               type="button"
-              className={`v2-chip${type === c.value ? ' is-on' : ''}`}
-              onClick={() => setType(type === c.value ? 'all' : c.value)}
+              className={`v2-chip${type.includes(c.value) ? ' is-on' : ''}`}
+              aria-pressed={type.includes(c.value)}
+              onClick={() => setType(toggle(type, c.value))}
             >
               {isEn ? c.en : c.label}
             </button>
@@ -1151,11 +1197,13 @@ export default function OpportunitiesList({
         </div>
 
         <div className="v2-selects">
+          {/* Селекти на 901–1099px лишились на одне значення; мультивибір —
+              у бічній панелі й шторці. Показуємо перше обране. */}
           <Select
             label={teens ? t.sel.grade : t.sel.age}
             allLabel={t.all}
-            value={age}
-            onChange={setAge}
+            value={age[0] || 'all'}
+            onChange={(v) => setAge(v === 'all' ? [] : [v])}
             options={selectOpts(ageList, available.ages, age).map((o) => [o[0], optLabel(o)])}
           />
           <Select
@@ -1168,8 +1216,8 @@ export default function OpportunitiesList({
           <Select
             label={teens ? t.sel.gives : t.sel.need}
             allLabel={t.all}
-            value={need}
-            onChange={setNeed}
+            value={need[0] || 'all'}
+            onChange={(v) => setNeed(v === 'all' ? [] : [v])}
             options={selectOpts(needList, available.needs, need).map((o) => [o[0], optLabel(o)])}
           />
           <Select
@@ -1183,8 +1231,8 @@ export default function OpportunitiesList({
             <Select
               label={t.sel.where}
               allLabel={t.all}
-              value={place}
-              onChange={setPlace}
+              value={place[0] || 'all'}
+              onChange={(v) => setPlace(v === 'all' ? [] : [v])}
               options={placeList.map((o) => [o[0], isEn ? o[2] : o[1]])}
             />
           ) : null}
@@ -1330,8 +1378,8 @@ export default function OpportunitiesList({
                   type="button"
                   className="m-sheet-reset"
                   onClick={() => setDraft({
-                    type: 'all', age: 'all', deadline: 'all', need: 'all', cost: 'all',
-                    place: presetCity || 'all', query: draft.query,
+                    type: [], age: [], deadline: 'all', need: [], cost: 'all',
+                    place: presetCity ? [presetCity] : [], query: draft.query,
                   })}
                 >
                   {t.resetAll}
