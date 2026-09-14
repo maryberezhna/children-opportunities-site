@@ -26,6 +26,10 @@ class RareLists(unittest.TestCase):
         self.assertNotIn("Україна", names)
         self.assertTrue({"Іспанія", "США і Канада", "Світ"} <= names)
 
+    def test_audience_is_children_living_in_ukraine(self):
+        for reg in keywords.RARE_ABROAD_REGIONS:
+            self.assertIn("живуть в Україні", reg["audience"])
+
     def test_themes_are_unusual_not_clubs(self):
         self.assertIn("тенісний табір для українських дітей", keywords.RARE_ABROAD_KEYWORDS)
         for w in keywords.RARE_ABROAD_KEYWORDS:
