@@ -13,24 +13,24 @@ const CONNECT_KEY = 'dityam_connect_token';
 const L = {
   uk: {
     paidTitle: 'Оплата пройшла. Дякуємо 🧡',
-    paidLead: 'Підписка активна. Поверніться в бот — там ми поставимо кілька питань про дитину й одразу почнемо надсилати підбірку.',
+    paidLead: 'Підписка активна. Поверніться в бот — там уже чекає підтвердження, а можливості під профіль дитини почнуть приходити одразу.',
     paidCta: 'Відкрити бот',
     savedTitle: 'Профіль збережено',
     savedLead: (<>Лишився один крок: відкрийте бот і натисніть <b>Почати</b>. Там оформимо підписку — і підбірка приходитиме саме під вашу дитину.</>),
     warn: (<>Якщо бот не впізнає вас — напишіть у ньому <b>/start</b>, і ми звʼяжемо профіль вручну.</>),
     savedCta: (bot) => `Відкрити @${bot}`,
-    back: '← Повернутись до каталогу',
+    back: '← Повернутись до всіх можливостей',
     home: '/',
   },
   en: {
     paidTitle: 'Payment received. Thank you 🧡',
-    paidLead: 'Your subscription is active. Head back to the bot — we will ask a few questions about your child and start sending the selection right away.',
+    paidLead: 'Your subscription is active. Head back to the bot — the confirmation is waiting there, and opportunities matching your child’s profile will start arriving right away.',
     paidCta: 'Open the bot',
     savedTitle: 'Profile saved',
     savedLead: (<>One step left: open the bot and press <b>Start</b>. We will set up the subscription there — and the selection will arrive tailored to your child.</>),
     warn: (<>If the bot does not recognise you, send it <b>/start</b> and we will link the profile by hand.</>),
     savedCta: (bot) => `Open @${bot}`,
-    back: '← Back to the catalogue',
+    back: '← Back to all opportunities',
     home: '/en',
   },
 };

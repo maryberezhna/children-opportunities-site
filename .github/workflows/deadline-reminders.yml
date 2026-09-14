@@ -34,9 +34,9 @@ on:
         required: false
         default: 'false'
       days:
-        description: 'вікна через кому (деф. 7,2)'
+        description: 'однакові вікна для всіх типів через кому, напр. 7,2 — лише для тесту; порожньо = за типом програми'
         required: false
-        default: '7,2'
+        default: ''
       any_time:
         description: 'true = слати негайно, не чекати вікна 9:00 Київ'
         required: false
@@ -64,6 +64,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Шлемо з платного бота — підписник оформлює Dityam+ саме в ньому.
+          # Основний лишається запасним (див. send_telegram у personal_digest.py).
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: mashaberezhna0209@gmail.com
@@ -72,8 +75,14 @@ jobs:
           # про розклад вище. 0 вимкнув би ворота повністю.
           SEND_AFTER_HOUR: '9'
         run: |
-          DAYS="${{ github.event.inputs.days }}"
-          [ -z "$DAYS" ] && DAYS="7,2"
+          # Порожньо — вікна за типом програми (стипендії й обміни за 28/14/3
+          # дні, конкурси за 14/3, гуртки за 7/2). До 14.09.2026 тут стояв
+          # запасний «7,2», і запуск за розкладом, де inputs порожні, примусово
+          # слав усім «за тиждень і за два дні» — обіцянка на /plus не діяла.
+          DAYS_ARG=""
+          if [ -n "${{ github.event.inputs.days }}" ]; then
+            DAYS_ARG="--days ${{ github.event.inputs.days }}"
+          fi
           # Ручний запуск за замовчуванням шле одразу: людина натиснула
           # кнопку свідомо, змушувати її чекати ранку безглуздо.
           ANY=""
@@ -82,9 +91,9 @@ jobs:
             ANY="--any-time"
           fi
           if [ "${{ github.event.inputs.demo }}" = "true" ]; then
-            python deadline_reminders.py --demo --days "$DAYS"
+            python deadline_reminders.py --demo $DAYS_ARG
           elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            python deadline_reminders.py --dry-run --days "$DAYS"
+            python deadline_reminders.py --dry-run $DAYS_ARG
           else
-            python deadline_reminders.py --days "$DAYS" $ANY
+            python deadline_reminders.py $DAYS_ARG $ANY
           fi

@@ -1,16 +1,16 @@
-"""personal_digest.py — Dityam+ персональна підбірка раз на 2 тижні.
+"""personal_digest.py — Dityam+: нові можливості під профіль дитини (щодня).
 
 Для кожного активного платного підписника (`digest_subscribers`) добирає активні
 можливості під профіль родини — окремо під кожну дитину (plus_children: вік,
 вподобання, формат, особливі обставини) з урахуванням спільних для родини
 місця й вартості — і шле підбірку в його канал, Telegram або email.
 
-Модель: каталог відкритий для всіх і нічого не ховає. Dityam+ — це послуга:
+Модель: платформа відкрита для всіх і нічого не ховає. Dityam+ — це послуга:
 відбір під профіль дитини, нагадування про дедлайни, допомога із заявкою.
 Підписник платить за зняту з нього роботу, а не за доступ.
 
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
-     GMAIL_FROM, GMAIL_APP_PASSWORD, SITE_URL (optional).
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_PLUS_BOT_TOKEN (TELEGRAM_BOT_TOKEN —
+     запасний), GMAIL_FROM, GMAIL_APP_PASSWORD, SITE_URL (optional).
 
 Прапорці:
   --dry-run   нічого не шле й не оновлює last_sent_at — лише друкує, кому що пішло б
@@ -42,7 +42,13 @@ logger = logging.getLogger("personal_digest")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
-BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+# Підписник оформлює Dityam+ у платному боті @DityamPlusBot, тож писати йому
+# треба звідти: Telegram не дає боту першим написати людині, яка його не
+# запускала. До 14.09.2026 добірки й нагадування йшли з основного бота і до
+# підписників платного просто не доходили. Основний лишається запасним — для
+# тих, хто колись привʼязав канал через нього (/start <token> у webhook).
+PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
+MAIN_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 GMAIL_FROM = os.environ.get("GMAIL_FROM", "mashaberezhna0209@gmail.com")
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 MAX_ITEMS = 8             # максимум можливостей в одному сповіщенні
@@ -174,7 +180,7 @@ def build_telegram(sub, items, revival: bool = False) -> str:
         if o.get("_for"):
             lines.append(f"<i>{html.escape(o['_for'])}</i>")
         lines.append("")
-    lines.append("<i>Відібрано під профіль вашої дитини. Каталог відкритий для всіх на dityam.com.ua</i>")
+    lines.append("<i>Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на dityam.com.ua</i>")
     lines.append("Відписатись — /stop")
     return "\n".join(lines)
 
@@ -197,22 +203,41 @@ def build_email(sub, items, revival: bool = False) -> str:
         f'<h1 style="font-size:22px;margin:6px 0 4px">{"Добірка під вашу дитину" if revival else "Нові можливості для вашої дитини"}</h1>'
         f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
         f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
-        f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Повний каталог — відкритий для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
+        f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
         f'<a href="{html.escape(unsub)}" style="color:#8a94a6">Відписатись</a>.</p></div>'
     )
 
 
+# Відповіді Telegram, після яких є сенс спробувати інший бот: цей бот людині
+# писати не може, бо вона його не запускала. «bot was blocked by the user» сюди
+# свідомо не входить — людина сама заблокувала платний бот, і дописувати їй з
+# основного було б нахабством.
+_TRY_NEXT_BOT = ("chat not found", "can't initiate conversation")
+
+
 def send_telegram(chat_id, text) -> bool:
-    if not BOT_TOKEN:
-        logger.warning("TELEGRAM_BOT_TOKEN not set")
+    tokens = [t for t in (PLUS_BOT_TOKEN, MAIN_BOT_TOKEN) if t]
+    if not tokens:
+        logger.warning("TELEGRAM_PLUS_BOT_TOKEN not set")
         return False
-    r = httpx.post(f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage", json={
-        "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True,
-    }, timeout=20)
-    ok = r.status_code == 200 and r.json().get("ok")
-    if not ok:
-        logger.warning("TG send failed for %s: %s", chat_id, r.text[:200])
-    return bool(ok)
+    detail = ""
+    for i, token in enumerate(tokens):
+        r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
+            "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True,
+        }, timeout=20)
+        try:
+            body = r.json()
+        except ValueError:
+            body = {}
+        if r.status_code == 200 and body.get("ok"):
+            if i:
+                logger.info("chat %s — надіслано запасним (основним) ботом", chat_id)
+            return True
+        detail = r.text[:200]
+        if not any(s in str(body.get("description", "")).lower() for s in _TRY_NEXT_BOT):
+            break
+    logger.warning("TG send failed for %s: %s", chat_id, detail)
+    return False
 
 
 def send_email(to_addr, html_body, subject="🧡 Нові можливості для вашої дитини — Dityam+") -> bool:

@@ -33,24 +33,27 @@ export async function POST(request) {
     const now = new Date().toISOString();
 
     if (b.transactionStatus === 'Approved') {
-      // orderReference зберігаємо обовʼязково — без нього неможливо скасувати
-      // рекурентне списання, коли людина відпишеться.
-      const patch = {
-        status: 'active',
-        plan: 'premium',
-        wfp_order_reference: b.orderReference,
-        billing_period: Number(b.amount) >= PRICE_YEAR ? 'yearly' : 'monthly',
-        updated_at: now,
-      };
-      // Оплата = прийняття оферти. У бот-потоці згода інакше ніде не фіксується:
-      // рядок створює /start, а він її не питає.
       const { data: existing } = await supabase.from('digest_subscribers')
-        .select('consent_at').eq('unsub_token', token).maybeSingle();
+        .select('consent_at, status, wfp_order_reference').eq('unsub_token', token).maybeSingle();
+      // Щомісячне (щорічне) списання приходить тим самим колбеком. Тоді це
+      // продовження, а не нова підписка: номер ПЕРШОГО замовлення не
+      // перезаписуємо — саме за ним WayForPay скасовує регулярне списання
+      // (REMOVE у /stop), — і не шлемо щоразу «Оплата пройшла, профіль готовий».
+      const renewal = existing?.status === 'active' && Boolean(existing?.wfp_order_reference);
+      const patch = { status: 'active', plan: 'premium', updated_at: now };
+      if (!renewal) {
+        // orderReference зберігаємо обовʼязково — без нього неможливо скасувати
+        // рекурентне списання, коли людина відпишеться.
+        patch.wfp_order_reference = b.orderReference;
+        patch.billing_period = Number(b.amount) >= PRICE_YEAR ? 'yearly' : 'monthly';
+      }
+      // Оплата = прийняття оферти. Бот питає згоду перед анкетою, але рядок,
+      // створений до 14.09.2026, міг її не мати.
       if (!existing?.consent_at) patch.consent_at = now;
 
       const { data: sub } = await supabase.from('digest_subscribers')
         .update(patch).eq('unsub_token', token).select('*').maybeSingle();
-      if (sub?.telegram_chat_id && PLUS_TOKEN) {
+      if (sub?.telegram_chat_id && PLUS_TOKEN && !renewal) {
         const bot = makeBot(PLUS_TOKEN);
         // З 14.09.2026 анкету проходять до оплати. Тому після оплати профіль
         // зазвичай уже є — і перепитувати його було б дивно.
