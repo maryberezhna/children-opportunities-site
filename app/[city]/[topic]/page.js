@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import { TOPICS, TOPIC_LIST } from '@/lib/topics';
 import {
@@ -27,9 +27,10 @@ const COMBO_FIELDS = 'title, cost_type, aid_type, opportunity_type, cities';
 
 async function getAllRows(fields) {
   if (!supabase) return [];
-  const { data, error } = await fetchAllRows(() =>
-    publicOpportunities(fields).order('created_at', { ascending: false }).order('id'));
-  return error || !data ? [] : data;
+  // Порожній результат тут ще й прибрав би всі сторінки «місто × тема» з
+  // білду — тому помилка кидається.
+  return rowsOrThrow(await fetchAllRows(() =>
+    publicOpportunities(fields).order('created_at', { ascending: false }).order('id')), 'city-topic');
 }
 
 /**

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_LIST, topicPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday, daysUntil } from '@/lib/dates';
@@ -190,12 +190,15 @@ export function topicMetadata(topic, lang = 'uk') {
   };
 }
 
-async function getRows(lang) {
+// Збій бази кидає помилку, а не віддає порожню підбірку (#263): під час ISR
+// лишається попередня добра версія сторінки, під час збірки падає деплой.
+// fetchAllRows кешує однакову вибірку на 60 с, тож підбірки на одній мові
+// тягнуть каталог один раз.
+async function getRows(lang, slug) {
   if (!supabase) return [];
-  const { data, error } = await fetchAllRows(() =>
+  return rowsOrThrow(await fetchAllRows(() =>
     publicOpportunities(lang === 'en' ? CARD_FIELDS_EN : CARD_FIELDS)
-      .order('created_at', { ascending: false }).order('id'));
-  return error || !data ? [] : data;
+      .order('created_at', { ascending: false }).order('id')), `topic ${slug} ${lang}`);
 }
 
 /** Найближчий дедлайн угорі, без дедлайну — вкінці; закріплені — першими. */
@@ -280,7 +283,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   const isEn = lang === 'en';
   const todayIso = kyivToday();
 
-  const rows = await getRows(lang);
+  const rows = await getRows(lang, topic.slug);
   const liveRows = rows.filter((o) => isLive(o, todayIso));
   const matched = liveRows.filter(topic.match);
 
