@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
+import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
+import { ageRangeLabel } from './o/shared';
 import OpportunitiesList from './OpportunitiesList';
 import StickyBar from './StickyBar';
 import SubscribePopup from './SubscribePopup';
@@ -27,6 +29,7 @@ const CHROME = {
       + '. Платформа оновлюється щодня.',
     countLabel: (n) => opportunitiesWord(n),
     freeLabel: (n) => freeWord(n),
+    freeChip: 'Безкоштовно',
   },
   en: {
     back: '← All opportunities',
@@ -43,6 +46,7 @@ const CHROME = {
       + '. The platform is updated daily.',
     countLabel: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
     freeLabel: () => 'free of charge',
+    freeChip: 'Free',
   },
 };
 
@@ -97,6 +101,11 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
     const d = new Date(o.deadline);
     return !isNaN(d) && d >= new Date(new Date().toDateString());
   }).length;
+
+  const TYPES = lang === 'en' ? TYPE_LABELS_EN : TYPE_LABELS;
+  const exclusive = c.blocks && topic.exclusive ? opportunities.filter(topic.exclusive) : [];
+  const exclusiveSlugs = new Set(exclusive.map((o) => o.slug));
+  const rest = exclusive.length ? opportunities.filter((o) => !exclusiveSlugs.has(o.slug)) : opportunities;
 
   const nav = { slug: topic.slug, slugEn: topic.en.slug };
   const url = `${SITE_URL}${topicPath(nav, lang)}`;
@@ -220,8 +229,60 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           ))}
         </nav>
 
+        {/* Тема з поділом (зараз лише «Дітям захисників»): блок «лише для»
+            простими картками над каталогом, решта — звичайним каталогом із
+            фільтрами. Два каталоги на сторінці не ставимо: у нього фіксовані
+            id і власний стан фільтрів. */}
+        {c.blocks && (
+          <section className="topic-block" aria-labelledby="topic-exclusive-title">
+            <h2 id="topic-exclusive-title">
+              {c.blocks.exclusive}
+              <span className="topic-block-count">{exclusive.length}</span>
+            </h2>
+            <p className="topic-block-lede">{c.blocks.exclusiveLede}</p>
+            <ul className="opportunity-related-list">
+              {exclusive.map((o) => {
+                const summary = (lang === 'en' && o.summary_en) || o.summary;
+                return (
+                  <li key={o.slug}>
+                    <Link href={`${lang === 'en' ? '/en' : ''}/o/${o.slug}`} className="card" style={{ textDecoration: 'none' }}>
+                      <div className="chips">
+                        <span className="chip chip-type">{TYPES[o.opportunity_type] || o.opportunity_type}</span>
+                        <span className="chip chip-age">{ageRangeLabel(o, lang)}</span>
+                        {o.cost_type === 'free' && <span className="chip chip-free">{ch.freeChip}</span>}
+                      </div>
+                      <h3
+                        className="card-title-link"
+                        lang={lang === 'en' && !o.title_en ? 'uk' : undefined}
+                        style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.35, color: 'var(--ink)' }}
+                      >
+                        {(lang === 'en' && o.title_en) || o.title}
+                      </h3>
+                      {summary && (
+                        <p className="card-summary">
+                          {summary.length > 160 ? `${summary.slice(0, 160)}…` : summary}
+                        </p>
+                      )}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
+
+        {c.blocks && (
+          <div className="topic-block topic-block--rest">
+            <h2>
+              {c.blocks.rest}
+              <span className="topic-block-count">{rest.length}</span>
+            </h2>
+            <p className="topic-block-lede">{c.blocks.restLede}</p>
+          </div>
+        )}
+
         <OpportunitiesList
-          opportunities={opportunities}
+          opportunities={rest}
           promoProps={{ total }}
           lang={lang}
         />
