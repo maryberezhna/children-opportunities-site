@@ -50,6 +50,17 @@ MIN_CONFIDENCE = 0.6
 PAID_VALUES = {"paid_affordable", "paid_premium"}
 IN_BETWEEN = ["partially_free", "subsidized"]
 
+# Слова, з якими цитата про «безкоштовно» насправді каже «комусь доведеться
+# платити». Прогін 13.09.2026 поставив UWC «безкоштовно» за цитатою «the offer
+# may be fully or partially funded» — а часткове фінансування за нашим
+# правилом означає «платно». Такий вердикт не приймаємо: безкоштовне має бути
+# безкоштовним для всіх.
+PARTIAL_MARKERS = re.compile(
+    r"partial|partly|discount|reduced|subsidi|scholarship|depending on (?:demonstrated )?need"
+    r"|частков|знижк|пільг|залежно від|стипенді|субсиді|доплат",
+    re.IGNORECASE,
+)
+
 TOOL = {
     "name": "read_cost",
     "description": "Що сторінка каже про те, чи платить родина за участь дитини",
@@ -94,7 +105,8 @@ evidence. Немає цитати — verdict="unknown" і порожній evid
 Як вирішувати:
 - free: «безкоштовно», «навчання безоплатне», «участь безкоштовна», «за кошти
   бюджету», «грант покриває проживання й дорогу» — і на сторінці НЕМАЄ суми,
-  яку платить родина.
+  яку платить родина. «Fully or partially funded», «часткова стипендія»,
+  «знижка залежно від доходу» — це НЕ free: частина родин платить.
 - paid: названо вартість, оргвнесок, абонемент, членський внесок, доплату,
   «батьківську плату», платний курс чи платну участь. Знижка, розстрочка,
   стипендія лише для частини учасників — усе одно paid.
@@ -149,6 +161,8 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
     patch: dict = {}
 
     if verdict == "free":
+        if PARTIAL_MARKERS.search(evidence):
+            return {}, "безкоштовно не для всіх (часткове фінансування чи пільга) — у модерацію"
         if current != "free":
             patch["cost_type"] = "free"
         why = "безкоштовно"

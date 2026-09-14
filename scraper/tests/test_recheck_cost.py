@@ -75,6 +75,19 @@ class DecideCost(unittest.TestCase):
         self.assertEqual(patch, {})
         self.assertIn("без змін", why)
 
+    def test_partially_funded_is_not_free(self):
+        # UWC, прогін 13.09.2026: «may be fully or partially funded» — модель
+        # сказала free, але частина родин платить.
+        q = "Depending on demonstrated need, the offer may be fully or partially funded."
+        patch, why = decide_cost(row(cost_type=None), out("free", q), q)
+        self.assertEqual(patch, {})
+        self.assertIn("не для всіх", why)
+
+    def test_ukrainian_partial_is_not_free(self):
+        q = "Навчання безкоштовне для пільгових категорій, для інших — часткова оплата."
+        patch, _ = decide_cost(row(), out("free", q), q)
+        self.assertEqual(patch, {})
+
 
 if __name__ == "__main__":
     unittest.main()
