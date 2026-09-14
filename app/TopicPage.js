@@ -57,7 +57,7 @@ const CHROME = {
       + '. Платформа оновлюється щодня.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
     promoTitle: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
-    promoText: (n) => `Щодня перебираємо ${n} ${opportunitiesWord(n)} цієї підбірки й надсилаємо в Telegram лише ті, `
+    promoText: (n) => `Щодня перебираємо ${n} ${opportunitiesWord(n)} цієї підбірки й надсилаємо вам у Telegram або на імейл лише ті, `
       + 'що підходять вашій дитині за віком, вподобаннями й містом, — з нагадуванням про дедлайн завчасно.',
     promoCta: 'Дізнатися першим',
     cards: {
@@ -97,7 +97,7 @@ const CHROME = {
       + '. The platform is updated daily.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
     promoTitle: 'Here we show everything that exists. Dityam+ sends what fits your child.',
-    promoText: (n) => `Every day we go through ${n} ${n === 1 ? 'opportunity' : 'opportunities'} in this collection and send to Telegram `
+    promoText: (n) => `Every day we go through ${n} ${n === 1 ? 'opportunity' : 'opportunities'} in this collection and send you, on Telegram or by email, `
       + 'only the ones that fit your child by age, interests and city — with a deadline reminder in good time.',
     promoCta: 'Tell me first',
     cards: {

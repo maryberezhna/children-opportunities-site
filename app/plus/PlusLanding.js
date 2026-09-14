@@ -30,7 +30,7 @@ const L = {
     lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram або на імейл лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
-    priceHint: '179 грн/міс · 1 199 грн/рік · скасувати можна будь-коли',
+    priceHint: '179 грн/міс · 1 199 грн/рік',
     stairsLabel: 'Приклад шляху',
     stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
@@ -56,7 +56,7 @@ const L = {
       'Відмічайте «Цікаво» чи «Не цікаво», беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
     ],
 
-    mockTitle: 'Що приходить у Telegram',
+    mockTitle: 'Що приходить у Telegram або на імейл',
     mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись.',
     mocks: [
       {
@@ -95,7 +95,7 @@ const L = {
         why: 'Кожна сходинка має сенс лише тому, що пройдена попередня.',
       },
       {
-        persona: 'Підлітку 14, хоче свою справу',
+        persona: 'Дитині 14, хоче свою справу',
         title: 'Від інкубатора до глобального конкурсу',
         steps: [
           ['Інкубатор', 'Youthquake від Дія.Бізнес', '13–18'],
@@ -129,17 +129,17 @@ const L = {
     priceTitle: 'Скільки коштує',
     month: '179 грн',
     monthPer: ' / місяць',
-    monthNote: 'скасувати можна будь-коли',
     year: '1 199 грн',
     yearPer: ' / рік',
     yearNote: '≈ 100 грн на місяць',
-    yearRibbon: 'вигідніше на 31%',
+    // 1 199 грн проти 12 × 179 = 2 148 грн → на 44% менше. Міняючи ціну — перерахувати.
+    yearRibbon: 'вигідніше на 44%',
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'допомога із заявкою — просто напишіть боту',
-      'усе приходить у Telegram',
+      'усе приходить у Telegram або на імейл',
     ],
     trust: (total) => [
       'Не запитуємо імені, прізвища чи школи дитини',
@@ -170,7 +170,7 @@ const L = {
     lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits, on Telegram or by email, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
-    priceHint: 'UAH 179/month · UAH 1,199/year · cancel any time',
+    priceHint: 'UAH 179/month · UAH 1,199/year',
     stairsLabel: 'An example path',
     stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
@@ -196,7 +196,7 @@ const L = {
       'Mark “Interested” or “Not interested”, join partner giveaways and get partner discounts',
     ],
 
-    mockTitle: 'What arrives on Telegram',
+    mockTitle: 'What arrives on Telegram or by email',
     mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply.',
     mocks: [
       {
@@ -268,17 +268,16 @@ const L = {
     priceTitle: 'Pricing',
     month: 'UAH 179',
     monthPer: ' / month',
-    monthNote: 'cancel any time',
     year: 'UAH 1,199',
     yearPer: ' / year',
     yearNote: '≈ UAH 100 a month',
-    yearRibbon: '31% cheaper',
+    yearRibbon: '44% cheaper',
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'help with applications — just message the bot',
-      'everything arrives on Telegram',
+      'everything arrives on Telegram or by email',
     ],
     trust: (total) => [
       'We don’t ask for your child’s name, surname or school',
@@ -499,7 +498,9 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
           <div className="pl-prices">
             <div className="pl-price">
               <div className="pl-price-amount">{t.month}<span>{t.monthPer}</span></div>
-              <div className="pl-price-note">{t.monthNote}</div>
+              {/* «Скасувати можна будь-коли» під ціною прибрано на прохання
+                  Марії 14.09.2026 — підпис показуємо, лише коли він є. */}
+              {t.monthNote ? <div className="pl-price-note">{t.monthNote}</div> : null}
             </div>
             <div className="pl-price pl-price-best">
               <span className="pl-ribbon">{t.yearRibbon}</span>
