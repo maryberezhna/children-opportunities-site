@@ -1,0 +1,38 @@
+name: Увімкнути LLM-воркфлоу після ліміту API
+
+# 14.09.2026 вичерпано місячний ліміт витрат Anthropic API: «You will regain
+# access on 2026-10-01 at 00:00 UTC». Підняти ліміт не вийшло, тож воркфлоу,
+# які без моделі щодня падають вхолосту, вимкнено до 1 жовтня (рішення Марії).
+#
+# Цей воркфлоу вмикає їх назад сам, щоб про це не треба було пам'ятати.
+# Скрап, автомодерація й пропозиції від людей НЕ вимикались: частина їхньої
+# роботи йде без моделі, а сирі знахідки чекають у черзі (див. raw_store).
+#
+# GitHub cron запізнюється на кілька годин — для «увімкнути 1 жовтня» це
+# неважливо. Можна запустити й вручну, якщо ліміт піднімуть раніше.
+on:
+  schedule:
+    - cron: '0 1 1 10 *'   # 1 жовтня, 01:00 UTC — година після відновлення доступу
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  enable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Увімкнути
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          for wf in discover.yml discover-sources.yml discover-rare.yml process-notes.yml \
+                    backfill-deadlines.yml content-agent.yml recheck-dates.yml translate-en.yml; do
+            if gh workflow enable "$wf" --repo "$REPO"; then
+              echo "✓ $wf"
+            else
+              echo "✗ $wf — не вдалося, увімкнути вручну"
+            fi
+          done
