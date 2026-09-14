@@ -49,10 +49,11 @@ const L = {
     ],
     contrastB: 'Dityam+',
     contrastBItems: [
-      'Надсилає лише нове й лише те, що підходить кожній дитині',
+      'Надсилає лише нове й лише те, що підходить вашій дитині',
       'Можливість для кількох дітей приходить один раз, із позначкою, кому саме',
       'Нагадує завчасно: за 2–4 тижні для стипендій і обмінів, за тиждень для гуртків',
-      'Два тижні без нового — надсилає добірку з того, що вже відкрито',
+      'Додавайте можливість до календаря в один клік',
+      'Відмічайте «Цікаво» чи «Не цікаво», беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
     ],
 
     mockTitle: 'Що приходить у Telegram',
@@ -188,10 +189,11 @@ const L = {
     ],
     contrastB: 'Dityam+',
     contrastBItems: [
-      'Sends only what is new and only what fits each child',
+      'Sends only what is new and only what fits your child',
       'An opportunity for several children arrives once, marked with who it is for',
       'Reminds you in good time: 2–4 weeks ahead for scholarships and exchanges, a week for clubs',
-      'Two weeks with nothing new — sends a selection from what is already open',
+      'Add an opportunity to your calendar in one click',
+      'Mark “Interested” or “Not interested”, join partner giveaways and get partner discounts',
     ],
 
     mockTitle: 'What arrives on Telegram',
@@ -416,7 +418,8 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
           {/* Приклади повідомлень підписки — у форматі scraper/personal_digest.py
               (нова можливість) і scraper/deadline_reminders.py (нагадування).
               Лише Telegram: платний бот іншого каналу не має. Кнопок
-              «Цікаво / Не цікаво» тут немає свідомо — у підписці їх теж немає.
+              «Цікаво / Не цікаво» в макетах немає свідомо — у нинішніх
+              повідомленнях їх ще немає, хоч список переваг вище їх обіцяє.
               Обидва записи — активні можливості бази (звірено 14.09.2026). */}
           <div className="pl-mock">
             <h3 className="pl-mock-title">{t.mockTitle}</h3>
