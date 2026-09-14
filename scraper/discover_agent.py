@@ -469,7 +469,9 @@ def main() -> int:
             existing.append((rec["slug"], _norm_title(rec["title"])))
             if cu:
                 existing_cus.add(cu)
-                existing_domains.add(dom)
+                # Щойно доданий сайт-цілком теж має блокувати повтор у цій же партії.
+                if hubs.is_site_root(cu):
+                    site_domains.add(dom)
             logger.info("  ✅ draft%s: %s",
                         f" ⚠дубль~{int(score*100)}%" if rec.get("dup_of") else "",
                         rec["title"][:65])
