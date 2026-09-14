@@ -444,7 +444,10 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
 
       {/* ── Три траєкторії: реальні записи бази ── */}
       <section className="pl-sec">
-        <div className="pl-wrap">
+        {/* Ширше за решту сторінки: у 1120px три картки мали по ~340px, і назви
+            програм ламались на два-три рядки (Марія 14.09.2026: «щоб приклади
+            більше місця зайняли»). */}
+        <div className="pl-wrap pl-wrap-wide">
           <h2 className="pl-h2">{t.pathsTitle}</h2>
           <p className="pl-sub">{t.pathsSub}</p>
           <div className="pl-paths">
