@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
+import { removeRecurring } from '@/lib/wayforpay';
+import { makeBot } from '@/lib/digestFlow';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -8,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const PLUS_TOKEN = process.env.TELEGRAM_PLUS_BOT_TOKEN;   // відповіді підписникам Dityam+
 const SECRET = process.env.TELEGRAM_WEBHOOK_SECRET;
 const GA4_MEASUREMENT_ID = process.env.GA4_MEASUREMENT_ID || 'G-KPLE8LGH91';
 const GA4_API_SECRET = process.env.GA4_API_SECRET;
@@ -308,7 +311,7 @@ async function handleDigestConnect(token, msg) {
     .update({ telegram_chat_id: String(msg.chat.id), updated_at: new Date().toISOString() })
     .eq('unsub_token', token).eq('channel', 'telegram').select('id').maybeSingle();
   await sendMessage(msg.chat.id, data
-    ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо персональну підбірку сюди раз на 2 тижні.\n\nВідписатись будь-коли — /stop'
+    ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо сюди можливості під профіль дитини, щойно вони зʼявляються.\n\nВідписатись — /stop'
     : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/plus 🧡');
   return new Response('ok');
 }
@@ -316,9 +319,30 @@ async function handleDigestConnect(token, msg) {
 async function handleDigestStop(msg) {
   if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const chatId = String(msg.chat.id);
+
+  // Сама зміна статусу списання не зупиняє: WayForPay про неї не знає. До
+  // 14.09.2026 /stop тут лише ставив «unsubscribed», і картку списували далі —
+  // а кожна добірка закінчується «Відписатись — /stop». Тому спершу REMOVE,
+  // як у платному боті (app/api/telegram/plus/route.js), і лише потім статус.
+  const { data: subs } = await supabase.from('digest_subscribers')
+    .select('id, status, wfp_order_reference').eq('telegram_chat_id', chatId);
+  for (const s of subs || []) {
+    if (!s.wfp_order_reference || !['active', 'paused'].includes(s.status)) continue;
+    const r = await removeRecurring(s.wfp_order_reference);
+    if (!r.ok) {
+      await sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напишіть у @DityamPlusBot — скасуємо вручну сьогодні ж, гроші не спишуться.');
+      if (ADMIN_CHAT_ID) {
+        await sendMessage(ADMIN_CHAT_ID,
+          `🚨 <b>WayForPay REMOVE не пройшов</b> (основний бот)\nchat <code>${chatId}</code>, order <code>${escapeHtml(s.wfp_order_reference)}</code>\n${escapeHtml(r.reason || r.error || '')}`);
+      }
+      return new Response('ok');
+    }
+  }
+
   const { data } = await supabase.from('digest_subscribers')
-    .update({ status: 'unsubscribed', updated_at: new Date().toISOString() })
-    .eq('telegram_chat_id', String(msg.chat.id)).select('id');
+    .update({ status: 'unsubscribed', plan: 'free', updated_at: new Date().toISOString() })
+    .eq('telegram_chat_id', chatId).select('id');
   await sendMessage(msg.chat.id, data && data.length
     ? 'Відписано ✅ Більше не надсилатимемо підбірку. Повернутись — dityam.com.ua/plus'
     : 'Активної підписки не знайдено.');
@@ -466,6 +490,25 @@ export async function POST(request) {
       if (isAdmin(msg.from?.id, msg.chat.id)) {
         await sendNextCandidate(msg.chat.id);
       }
+      return new Response('ok');
+    }
+
+    // Відповідь адміна реплаєм на «📝 Питання підписника Dityam+» іде
+    // підписнику від імені платного бота. Без цього на питання не було як
+    // відповісти: людина пише в @DityamPlusBot, а сповіщення приходить сюди.
+    const quoted = msg.reply_to_message?.text || '';
+    if (quoted.startsWith('📝 Питання підписника Dityam+') && isAdmin(msg.from?.id, msg.chat.id)) {
+      // Перший рядок: «📝 Питання підписника Dityam+ @handle 123456789:».
+      const target = quoted.split('\n')[0].match(/(-?\d+):\s*$/)?.[1];
+      if (!target || !PLUS_TOKEN) {
+        await sendMessage(msg.chat.id, '⚠️ Не вдалося визначити, кому відповісти, — напишіть підписнику вручну.');
+        return new Response('ok');
+      }
+      const res = await makeBot(PLUS_TOKEN).sendMessage(target, `💬 <b>Відповідь Dityam+</b>\n\n${escapeHtml(text)}`);
+      const sent = res?.ok ? (await res.json().catch(() => ({}))).ok : false;
+      await sendMessage(msg.chat.id, sent
+        ? '✅ Відповідь надіслано підписнику.'
+        : '⚠️ Telegram не прийняв відповідь — можливо, підписник заблокував @DityamPlusBot.');
       return new Response('ok');
     }
 

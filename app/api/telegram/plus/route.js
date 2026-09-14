@@ -161,6 +161,30 @@ async function askPhone(bot, supabase, sub, chatId) {
   });
 }
 
+async function askConsent(bot, chatId) {
+  await bot.sendMessage(chatId,
+    '🧡 <b>Вітаємо в Dityam+</b>\n\n'
+    + 'Далі кілька питань про дитину: вік, вподобання, формат і, за бажанням, особливі обставини. '
+    + 'Відповіді потрібні лише для того, щоб добирати можливості.\n\n'
+    + `Натискаючи «Погоджуюсь», ви приймаєте <a href="${SITE_URL}/terms">Публічну оферту</a> `
+    + `і даєте згоду на обробку даних згідно з <a href="${SITE_URL}/privacy">Політикою конфіденційності</a>.`,
+    { inline_keyboard: [[{ text: '✅ Погоджуюсь', callback_data: 'consent:yes' }]] });
+}
+
+// Куди вести людину після /start або після згоди. Згода — до першого питання
+// про дитину: анкета збирає й чутливі дані (інвалідність, онкозахворювання,
+// сирітство). До 14.09.2026 згоду фіксували лише наприкінці анкети або при
+// оплаті, а оферту й політику конфіденційності бот не показував узагалі.
+async function continueStart(bot, supabase, sub, chatId, handle) {
+  if (!sub) return;
+  if (!sub.consent_at) { await askConsent(bot, chatId); return; }
+  const profiled = await hasProfile(supabase, sub);
+  if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
+  else if (sub.status === 'active') await sendMainMenu(bot, chatId);  // є профіль і підписка → меню
+  else if (!sub.phone) await askPhone(bot, supabase, sub, chatId);    // анкета є → телефон
+  else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
+}
+
 const labels = (options, values) => (values || [])
   .map((v) => (options.find((o) => o[0] === v) || [null, v])[1]).join(', ') || '—';
 const PLACE_LABELS = [[PLACE_ONLINE, 'онлайн'], [PLACE_ABROAD, 'за кордоном'], [PLACE_OTHER, 'мого міста немає']];
@@ -256,11 +280,7 @@ export async function POST(request) {
           .select('*').single();
         sub = ins;
       }
-      const profiled = sub ? await hasProfile(supabase, sub) : false;
-      if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
-      else if (sub.status === 'active') await sendMainMenu(bot, chatId);  // є профіль і підписка → меню
-      else if (!sub.phone) await askPhone(bot, supabase, sub, chatId);    // анкета є → телефон
-      else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
+      await continueStart(bot, supabase, sub, chatId, handle);
       return new Response('ok');
     }
 
@@ -281,7 +301,7 @@ export async function POST(request) {
       const { data: sub } = await supabase.from('digest_subscribers').select('status, telegram_handle').eq('telegram_chat_id', chatId).maybeSingle();
       if (sub?.status === 'active') {
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}`);
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде підписнику від @DityamPlusBot.</i>`);
         }
         await bot.sendMessage(chatId, '📝 Отримали. Відповімо тут найближчим часом 🧡');
       }
@@ -291,6 +311,21 @@ export async function POST(request) {
 
   const cbq = update?.callback_query;
   if (!cbq) return new Response('ok');
+
+  // «✅ Погоджуюсь» — фіксуємо згоду й ведемо далі тим самим шляхом, що /start.
+  if (cbq.data === 'consent:yes') {
+    const chatId = String(cbq.message.chat.id);
+    await bot.answerCallback(cbq.id);
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    if (!sub) { await bot.sendMessage(chatId, 'Почніть з /start'); return new Response('ok'); }
+    const consentAt = sub.consent_at || new Date().toISOString();
+    if (!sub.consent_at) {
+      await supabase.from('digest_subscribers').update({ consent_at: consentAt, updated_at: consentAt }).eq('id', sub.id);
+    }
+    await bot.editMessage(chatId, cbq.message.message_id, '✅ Оферту й політику конфіденційності прийнято.');
+    await continueStart(bot, supabase, { ...sub, consent_at: consentAt }, chatId, null);
+    return new Response('ok');
+  }
 
   // Анкету тепер проходять і до оплати, тож статус тут не перевіряємо.
   // Що далі після останнього питання — вирішуємо за статусом.

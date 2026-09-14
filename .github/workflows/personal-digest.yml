@@ -49,6 +49,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Шлемо з платного бота — підписник оформлює Dityam+ саме в ньому.
+          # Основний лишається запасним (див. send_telegram у personal_digest.py).
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: mashaberezhna0209@gmail.com

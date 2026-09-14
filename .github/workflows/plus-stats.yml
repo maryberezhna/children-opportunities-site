@@ -29,7 +29,8 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
-          WAYFORPAY_AMOUNT: '79'
+          # Ціни не задаємо: скрипт бере ті самі запасні 179 / 1 199, що й
+          # lib/wayforpay.js. Тут стояло '79', і дохід у звіті був занижений.
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             node scripts/plus-stats.mjs --dry-run
