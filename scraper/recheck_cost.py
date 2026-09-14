@@ -54,6 +54,17 @@ MIN_CONFIDENCE = 0.6
 PAID_VALUES = {"paid_affordable", "paid_premium"}
 IN_BETWEEN = ["partially_free", "subsidized"]
 
+# «Безкоштовно» лише тоді, коли цитата прямо це каже. 14.09.2026 гурток
+# «Кварц» отримав free за «комунальна, бюджетна, неприбуткова установа» — але
+# бюджетна установа ще не означає безкоштовних занять. Це здогад, не цитата.
+FREE_MARKERS = re.compile(
+    r"безкоштовн|безоплатн|безплатн|без оплати|не потрібно платити|не сплачу"
+    r"|за кошти (?:бюджету|держави|гранту|фонду|організатор)|повністю (?:покрива|фінансу|оплачу)"
+    r"|\bfree\b|free of charge|no cost|no fee|fully (?:funded|covered|paid)"
+    r"|kostenlos|gratis|gratuit|zdarma|zadarmo|bezpłatn|darmow|ingyenes|gratuito",
+    re.IGNORECASE,
+)
+
 # Пошук в інших джерелах — лише для записів, по яких власна сторінка нічого не
 # дала (рішення Марії 14.09.2026). Вебпошук є не на кожній моделі: той самий
 # вибір, що в discover_agent.py.
@@ -196,6 +207,8 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
     if verdict == "free":
         if PARTIAL_MARKERS.search(evidence):
             return {}, "безкоштовно не для всіх (часткове фінансування чи пільга) — у модерацію"
+        if not FREE_MARKERS.search(evidence):
+            return {}, "цитата прямо не каже «безкоштовно» — здогад, не приймаю"
         if current != "free":
             patch["cost_type"] = "free"
         why = "безкоштовно"
@@ -213,9 +226,16 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
     return patch, f"{why}: «{evidence[:140]}»"
 
 
+# Загальники, які є на будь-якій сторінці довідника чи програм обміну: збіг за
+# ними нічого не каже. 14.09.2026 обмін «O-live T.R.E.E.S.» отримав «платно» за
+# внеском із італійської сторінки про ІНШИЙ обмін — спільним було лише «Erasmus».
 _STOP = {"для", "дітей", "дитячий", "дитяча", "дитячі", "гурток", "студія", "клуб",
          "школа", "центр", "україни", "український", "українська", "курси", "курс",
-         "програма", "the", "and", "for", "with", "course", "courses", "program"}
+         "програма", "the", "and", "for", "with", "course", "courses", "program",
+         "erasmus", "молодіжний", "молодіжні", "обмін", "обміни", "exchange", "youth",
+         "олімпіада", "olympiad", "конкурс", "міжнародний", "міжнародна",
+         "international", "табір", "camp", "summer", "літня", "school", "academy",
+         "україна", "ukraine", "світова", "online", "онлайн"}
 
 
 def title_tokens(title: str) -> list[str]:
@@ -227,8 +247,12 @@ def title_tokens(title: str) -> list[str]:
 def page_mentions_title(title: str, page: str) -> bool:
     """Чи сторінка взагалі про цю програму: хоч одне характерне слово назви."""
     low = (page or "").lower()
-    toks = title_tokens(title)
-    return bool(toks) and any(t in low for t in toks)
+    toks = sorted(set(title_tokens(title)))
+    if not toks:
+        return False
+    # Дві характерні ознаки, якщо назва їх має: одне слово збігається випадково.
+    need = 2 if len(toks) >= 2 else 1
+    return sum(1 for t in toks if t in low) >= need
 
 
 def extract_json_object(text: str) -> dict:
