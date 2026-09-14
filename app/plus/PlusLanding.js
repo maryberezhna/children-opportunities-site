@@ -118,7 +118,7 @@ const L = {
 
     howTitle: 'Як це працює',
     how4: [
-      ['Розкажіть про дитину', 'Три питання: вік, інтереси й чи показувати платне. Ні імені, ні школи.'],
+      ['Розкажіть про вподобання дитини', 'Три питання: вік, інтереси й чи показувати платне. Ні імені, ні школи.'],
       ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
@@ -259,7 +259,7 @@ const L = {
 
     howTitle: 'How it works',
     how4: [
-      ['Tell us about your child', 'Three questions: age, interests and whether to show paid options. No name, no school.'],
+      ['Tell us what your child enjoys', 'Three questions: age, interests and whether to show paid options. No name, no school.'],
       ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
