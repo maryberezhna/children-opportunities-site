@@ -172,7 +172,10 @@ def ask(llm, row: dict, page: str) -> dict:
         return block.input if block else {}
     except Exception as e:
         logger.error("LLM впав на «%s»: %s", row.get("title"), e)
-        return {}
+        _stop_if_limit(e)
+        # None, а не {}: порожня відповідь означала б «сторінка мовчить», і в
+        # модерацію пішов би хибний діагноз (14.09.2026 — дев'ять записів).
+        return None
 
 
 def _norm(s: str) -> str:
@@ -313,10 +316,11 @@ def search_other_sources(row: dict) -> dict:
                                 "content-type": "application/json"})
     except Exception as e:
         logger.error("Пошук впав на «%s»: %s", row.get("title"), e)
-        return {}
+        return None
     if r.status_code != 200:
         logger.error("Пошук HTTP %s на «%s»: %s", r.status_code, row.get("title"), r.text[:300])
-        return {}
+        _stop_if_limit(r.text)
+        return None
     text = "".join(b.get("text", "") for b in r.json().get("content", [])
                    if b.get("type") == "text")
     return extract_json_object(text)
@@ -335,6 +339,57 @@ def decide_from_search(row: dict, out: dict, page: str | None) -> tuple[dict, st
     patch, why = decide_cost(row, out, page)
     host = urlparse(url).netloc.replace("www.", "")
     return patch, f"{why} · джерело: {host} {url}"
+
+
+class UsageLimitReached(SystemExit):
+    """Вичерпано ліміт витрат API — далі кожен запис дав би лише хибний діагноз."""
+
+
+def _stop_if_limit(err) -> None:
+    # 14.09.2026 о 09:14:54 API почав відповідати «You have reached your specified
+    # API usage limits» — а скрипт ішов далі й писав у модерацію «сторінка не каже,
+    # чи платить родина» дев'яти записам, яких модель навіть не бачила.
+    if "usage limit" in str(err).lower():
+        logger.error("Вичерпано ліміт витрат API — зупиняю прогін, щоб не писати хибних діагнозів.")
+        raise UsageLimitReached(2)
+
+
+# Діагнози, які з'являються, коли модель «нічого не сказала». Якщо насправді впав
+# API, вони хибні — їх можна зняти за списком id, без жодного виклику моделі.
+_API_FAILURE_NOTES = re.compile(
+    r"\s*·?\s*recheck-cost · (?:сторінка не каже, чи платить родина"
+    r"|в інших джерелах про оплату нічого)"
+)
+
+
+def strip_api_failure_notes(comment: str | None) -> str:
+    cleaned = _API_FAILURE_NOTES.sub("", comment or "")
+    cleaned = re.sub(r"(?:\s*·\s*){2,}", " · ", cleaned)
+    return cleaned.strip(" ·\t\n")
+
+
+def clear_notes(ids: list[str], apply: bool) -> int:
+    """Зняти хибні діагнози з перелічених записів. Модель не потрібна."""
+    from db import get_client
+    sb = get_client()
+    changed = 0
+    for oid in ids:
+        rows = sb.table("opportunities").select("id, title, admin_comment").eq("id", oid).execute().data or []
+        if not rows:
+            print(f"   · {oid} — не знайдено")
+            continue
+        row = rows[0]
+        before = (row.get("admin_comment") or "").strip(" ·\t\n")
+        after = strip_api_failure_notes(before)
+        if after == before:
+            print(f"   · {row['title'][:52]} — хибних діагнозів немає")
+            continue
+        changed += 1
+        print(f"   · {row['title'][:52]} — знято")
+        if apply:
+            sb.table("opportunities").update({"admin_comment": after or None}).eq("id", oid).execute()
+    print(f"\nЗнято з {changed} записів." + ("" if apply else " Це дамп — нічого не записано."))
+    return changed
 
 
 def _with_trace(row: dict, note: str) -> str:
@@ -393,10 +448,17 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
             _note(sb, row, f"сторінки немає ({status}) — вартість не перевірити", apply)
             continue
 
-        patch, why = decide_cost(row, ask(llm, row, page), page)
+        answer = ask(llm, row, page)
+        if answer is None:
+            stats["unread"] += 1
+            continue
+        patch, why = decide_cost(row, answer, page)
         # Власна сторінка мовчить або це перелік — шукаємо в інших джерелах.
         if search and not patch and why in SEARCHABLE_WHY:
             found = search_other_sources(row)
+            if found is None:
+                stats["unread"] += 1
+                continue
             src_url = (found.get("url") or "").strip()
             src_page = fetch_text(src_url)[0] if src_url.startswith("http") else None
             time.sleep(DELAY)
@@ -459,5 +521,10 @@ if __name__ == "__main__":
     p.add_argument("--limit", type=int, default=BATCH)
     p.add_argument("--search", action="store_true",
                    help="якщо власна сторінка мовчить — шукати в інших джерелах")
+    p.add_argument("--clear-notes", default="",
+                   help="id через кому: зняти хибні діагнози, що з'явились через падіння API")
     args = p.parse_args()
-    run(apply=args.apply, scope=args.scope, limit=args.limit, search=args.search)
+    if args.clear_notes:
+        clear_notes([x.strip() for x in args.clear_notes.split(",") if x.strip()], apply=args.apply)
+    else:
+        run(apply=args.apply, scope=args.scope, limit=args.limit, search=args.search)

@@ -11,6 +11,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from recheck_cost import (  # noqa: E402
     decide_cost, decide_from_search, extract_json_object, page_mentions_title,
+    UsageLimitReached, _stop_if_limit, strip_api_failure_notes,
 )
 
 PAGE_FREE = "Гурток працює щосереди. Навчання безкоштовне за кошти міського бюджету."
@@ -174,6 +175,30 @@ class GuardsFromSearchRun(unittest.TestCase):
     def test_two_distinctive_words_match(self):
         page = "Молодіжний обмін O-live у Греції: внесок 40 євро"
         self.assertTrue(page_mentions_title('Молодіжний обмін Erasmus+ "O-live T.R.E.E.S." в Греції', page))
+
+
+
+class ApiFailures(unittest.TestCase):
+    """14.09.2026: вичерпаний ліміт API дав дев'ять хибних діагнозів у модерації."""
+
+    def test_usage_limit_stops_the_run(self):
+        msg = ("{'type': 'error', 'error': {'type': 'invalid_request_error', 'message': "
+               "'You have reached your specified API usage limits.'}}")
+        with self.assertRaises(UsageLimitReached):
+            _stop_if_limit(msg)
+
+    def test_other_errors_do_not_stop(self):
+        _stop_if_limit("overloaded_error")  # не кидає
+
+    def test_false_notes_are_stripped_but_real_ones_kept(self):
+        c = ("💡 пропозиція · recheck-cost · безкоштовно не для всіх (часткове фінансування чи пільга) — у модерацію"
+             " · recheck-cost · в інших джерелах про оплату нічого"
+             " · recheck-cost · сторінка не каже, чи платить родина")
+        self.assertEqual(strip_api_failure_notes(c),
+                         "💡 пропозиція · recheck-cost · безкоштовно не для всіх (часткове фінансування чи пільга) — у модерацію")
+
+    def test_nothing_to_strip(self):
+        self.assertEqual(strip_api_failure_notes("recheck-cost · платно: «$75»"), "recheck-cost · платно: «$75»")
 
 
 if __name__ == "__main__":
