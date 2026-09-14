@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { kyivToday } from '@/lib/dates';
 import { audienceStats } from '@/lib/audience';
 import OpportunitiesList from './OpportunitiesList';
@@ -20,14 +20,9 @@ async function getOpportunities() {
     console.warn('Supabase not configured — returning empty opportunities list');
     return [];
   }
-  const { data, error } = await fetchAllRows(() =>
-    publicOpportunities().order('created_at', { ascending: false }).order('id'));
-
-  if (error) {
-    console.error('Supabase error:', error);
-    return [];
-  }
-  return data || [];
+  // Помилка бази кидається, а не стає порожнім списком (див. rowsOrThrow).
+  return rowsOrThrow(await fetchAllRows(() =>
+    publicOpportunities().order('created_at', { ascending: false }).order('id')), 'home');
 }
 
 export default async function Home() {

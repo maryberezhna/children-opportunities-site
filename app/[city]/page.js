@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
 import { TOPIC_LIST } from '@/lib/topics';
 import { MIN_LOCAL, localTopicCount } from '@/lib/city-topics';
@@ -44,9 +44,8 @@ export async function generateMetadata({ params }) {
 
 async function getCityOpportunities(cityName) {
   if (!supabase) return [];
-  const { data, error } = await fetchAllRows(() =>
-    publicOpportunities().order('created_at', { ascending: false }).order('id'));
-  if (error || !data) return [];
+  const data = rowsOrThrow(await fetchAllRows(() =>
+    publicOpportunities().order('created_at', { ascending: false }).order('id')), `city ${cityName}`);
   return data.filter((o) => {
     const cities = o.cities || [];
     return cities.includes(cityName) || cities.includes('Вся Україна');
