@@ -694,6 +694,27 @@
   .m-group h3 { margin: 0; font-size: 15px; font-weight: 700; }
   .m-group-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 
+  /* «Де» — рідний селект телефона: 48px заввишки, 16px, щоб iOS не
+     збільшував сторінку при фокусі. */
+  .m-select {
+    width: 100%;
+    height: 48px;
+    padding: 0 40px 0 14px;
+    box-sizing: border-box;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 12px;
+    background: #ffffff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 14px center;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--v2-ink);
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .m-select:focus-visible { outline: 2px solid var(--v2-ink); outline-offset: 2px; }
+
+  .m-chip-x { margin-left: 6px; font-size: 12px; opacity: 0.85; }
+
   .m-chip-n { font-size: 12px; font-weight: 500; color: var(--v2-ink-3); }
   .m-chip.is-on .m-chip-n { color: rgba(255, 255, 255, 0.82); }
   html[data-mode="teens"] .m-chip.is-on .m-chip-n { color: #b8b3a6; }

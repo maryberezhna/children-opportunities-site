@@ -72,6 +72,7 @@ const UI = {
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
     all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном', online: '💻 Онлайн',
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
+    ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
     countWord: (n) => opportunitiesWord(n),
   },
   en: {
@@ -116,6 +117,7 @@ const UI = {
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
     all: 'All', anyCost: 'Any', abroad: '🌍 Abroad', online: '💻 Online',
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
+    ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
   },
 };
@@ -255,7 +257,7 @@ const anyOf = (vals, test) => vals.length === 0 || vals.some(test);
 // Предикати фільтрів як чиста функція стану: той самий код рахує і
 // застосовані фільтри, і чернетку в мобільній шторці — інакше «Показати N»
 // у шторці могло б розійтися з тим, що покаже список.
-function buildPredicates(s, { teens, todayIso, searchIndex }) {
+function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
   const tokens = queryTokens(s.query);
   return {
     type: (item) => anyOf(s.type, (v) => {
@@ -292,11 +294,15 @@ function buildPredicates(s, { teens, todayIso, searchIndex }) {
     },
     place: (item) => anyOf(s.place, (v) => {
       if (v === 'abroad') return goesAbroad(item);
+      // «Україна» — усе, куди не треба їхати за кордон (дзеркало «За кордоном»).
+      if (v === 'ukraine') return !goesAbroad(item);
       if (v === 'online') return isOnline(item);
       const cities = item.cities || [];
       if (cities.includes(v)) return true;
-      // «Вся Україна» просвічує крізь вибір конкретного міста.
-      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v);
+      // «Вся Україна» просвічує крізь вибір УКРАЇНСЬКОГО міста. Для закордонного
+      // (Malmö) — ні: там показувало 142 = 1 свій запис + 141 «Вся Україна».
+      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v)
+        && (!domestic || domestic.has(v));
     }),
     query: (item) => {
       if (!tokens.length) return true;
@@ -311,8 +317,8 @@ const FACETS = ['type', 'age', 'deadline', 'need', 'cost', 'place', 'query'];
 // Лічильники біля кожної опції: скільки лишиться, якщо обрати її при решті
 // обраних. Спільні для мобільної шторки (рахує на чернетці) і бічної панелі
 // десктопа (рахує на застосованому стані) — щоб цифри не розходились.
-function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
-  const ctx = { teens, todayIso, searchIndex };
+function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }) {
+  const ctx = { teens, todayIso, searchIndex, domestic };
   const dp = buildPredicates(s, ctx);
   const passOthers = (skip) =>
     liveItems.filter((item) => FACETS.every((k) => k === skip || dp[k](item)));
@@ -334,7 +340,10 @@ function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
   });
   const placeOpts = [];
   if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
-  if (places.has('online')) placeOpts.push(['online', t.online, t.online]);
+  // «Україна» й «Онлайн» мобільна шторка показує поруч із «За кордоном» в обох
+  // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
+  placeOpts.push(['ukraine', t.ukraine, t.ukraine]);
+  placeOpts.push(['online', t.online, t.online]);
   [...places].filter((p) => p !== 'abroad' && p !== 'online')
     .sort((a, b) => a.localeCompare(b, 'uk'))
     .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
@@ -493,12 +502,23 @@ export default function OpportunitiesList({
     [opportunities, todayIso, teens],
   );
 
+  // Міста, що трапляються хоч в одному НЕзакордонному записі, — українські.
+  // Лише до них у фільтрі «Де» додаються записи «Вся Україна».
+  const domestic = useMemo(() => {
+    const set = new Set();
+    opportunities.forEach((o) => {
+      if (goesAbroad(o)) return;
+      (o.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) set.add(c); });
+    });
+    return set;
+  }, [opportunities]);
+
   const predicates = useMemo(
     () => buildPredicates(
       { type, age, deadline, need, cost, place, query },
-      { teens, todayIso, searchIndex },
+      { teens, todayIso, searchIndex, domestic },
     ),
-    [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex],
+    [type, age, deadline, need, cost, place, query, teens, todayIso, searchIndex, domestic],
   );
 
   // На сторінці міста саме місто — не фільтр людини, а рамка сторінки.
@@ -906,10 +926,10 @@ export default function OpportunitiesList({
   // обрати цей чип при решті обраних. Нульові опції ховаємо — мертвий чип
   // гірший за відсутній.
   const sheet = useMemo(
-    () => (draft ? facetCounts(draft, { teens, todayIso, searchIndex, liveItems, t }) : null),
+    () => (draft ? facetCounts(draft, { teens, todayIso, searchIndex, domestic, liveItems, t }) : null),
     // t змінюється лише з мовою, а мова в межах сторінки стала.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [draft, liveItems, teens, todayIso, searchIndex],
+    [draft, liveItems, teens, todayIso, searchIndex, domestic],
   );
 
   // Бічна панель десктопа (≥1100px) рахує те саме, але на застосованих
@@ -918,11 +938,11 @@ export default function OpportunitiesList({
     () => (sidebarLayout
       ? facetCounts(
         { type, age, deadline, need, cost, place, query },
-        { teens, todayIso, searchIndex, liveItems, t },
+        { teens, todayIso, searchIndex, domestic, liveItems, t },
       )
       : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex],
+    [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex, domestic],
   );
 
   const sheetGroup = (key, title, allLabel, opts) => {
@@ -964,12 +984,70 @@ export default function OpportunitiesList({
     );
   };
 
+  // «Де» в шторці (Марія 14.09.2026): три чипи — «За кордоном», «Україна»,
+  // «Онлайн», — а місто окремо рідним випадним списком телефона: міст
+  // десятки, і стіна чипів вимагала довго гортати. Обрані міста — знімними
+  // чипами; у пункті списку — скільки дасть.
+  const PLACE_KINDS = ['abroad', 'ukraine', 'online'];
+  const sheetPlace = () => {
+    const counts = sheet.place;
+    const togglePlace = (v) => setDraft({ ...draft, place: toggle(draft.place, v) });
+    const kinds = PLACE_KINDS.filter((v) => counts[v] > 0 || draft.place.includes(v));
+    const chosenCities = draft.place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v));
+    const cityOpts = sheet.placeOpts.filter((o) => !PLACE_KINDS.includes(o[0])
+      && !draft.place.includes(o[0]) && counts[o[0]] > 0);
+    if (!kinds.length && !cityOpts.length && !chosenCities.length) return null;
+    return (
+      <div className="m-group" role="group" aria-labelledby="m-group-place" key="place">
+        <h3 id="m-group-place">{t.sel.where}</h3>
+        <div className="m-group-chips">
+          {kinds.map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`m-chip${draft.place.includes(v) ? ' is-on' : ''}`}
+              aria-pressed={draft.place.includes(v)}
+              onClick={() => togglePlace(v)}
+            >
+              {placeLabel(v)}<span className="m-chip-n">{counts[v]}</span>
+            </button>
+          ))}
+          {chosenCities.map((v) => (
+            <button
+              key={v}
+              type="button"
+              className="m-chip is-on"
+              aria-label={`${t.remove}: ${placeLabel(v)}`}
+              onClick={() => togglePlace(v)}
+            >
+              {placeLabel(v)}<span className="m-chip-x" aria-hidden="true">✕</span>
+            </button>
+          ))}
+        </div>
+        {cityOpts.length ? (
+          <select
+            className="m-select"
+            value=""
+            aria-label={t.pickCity}
+            onChange={(e) => { if (e.target.value) togglePlace(e.target.value); }}
+          >
+            <option value="">{chosenCities.length ? t.addCity : t.pickCity}</option>
+            {cityOpts.map((o) => (
+              <option key={o[0]} value={o[0]}>{`${isEn ? o[2] : o[1]} · ${counts[o[0]]}`}</option>
+            ))}
+          </select>
+        ) : null}
+      </div>
+    );
+  };
+
   // Знімні чипи над списком (6b): лише те, що налаштовується в шторці.
   const labelOf = (list, v) => {
     const o = list.find((x) => x[0] === v);
     return o ? optLabel(o) : v;
   };
   const placeLabel = (v) => (v === 'abroad' ? t.abroad : v === 'online' ? t.online
+    : v === 'ukraine' ? t.ukraine
     : (isEn ? cityLabel(v, 'en') : v));
   // Мультигрупи — по чипу на кожне обране значення, щоб зняти можна було одне.
   const activeChips = [
@@ -1401,8 +1479,7 @@ export default function OpportunitiesList({
                   знаходиме, як і безкоштовне (урок #152). */}
               {sheetGroup('cost', t.sel.cost, t.anyCost,
                 COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-              {!presetCity ? sheetGroup('place', t.sel.where, t.all,
-                sheet.placeOpts.map((o) => [o[0], isEn ? o[2] : o[1]])) : null}
+              {!presetCity ? sheetPlace() : null}
             </div>
 
             <div className="m-sheet-foot">
