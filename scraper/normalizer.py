@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 import anthropic
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 from slugify import slugify
 
 import hubs
@@ -494,7 +495,7 @@ def _snap_year_to_now(date_iso: str, today_iso: str) -> str | None:
 
 class Normalizer:
     def __init__(self):
-        self.client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        self.client = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.model = "claude-haiku-4-5-20251001"
         # Помилки API збираємо, щоб денний звіт показав їх окремим блоком.
         # Без цього «0 збережено» два тижні виглядало як норма, поки насправді

@@ -35,6 +35,8 @@ import time
 from datetime import date, timedelta
 
 import anthropic
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import httpx
 from bs4 import BeautifulSoup
 
@@ -426,7 +428,7 @@ def _note_diagnosis(sb, row: dict, why: str, apply: bool) -> None:
 def run(apply: bool = False, limit: int = BATCH) -> dict:
     from db import get_client
     sb = get_client()
-    llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     today = date.today().isoformat()
 
     rows = (sb.table("opportunities")

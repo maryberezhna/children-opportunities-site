@@ -21,6 +21,8 @@ import os
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 logger = logging.getLogger(__name__)
 
 MODEL = os.environ.get("DEDUP_JUDGE_MODEL", "claude-haiku-4-5-20251001")
@@ -86,7 +88,7 @@ def run_sweep(sb_client, max_pairs: int = MAX_PAIRS_PER_RUN) -> dict:
     дедуплікація не сміє завалити нічний скрап."""
     stats = {"candidates": 0, "merged": 0, "distinct": 0, "errors": 0}
     try:
-        llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         pairs = (sb_client.rpc("find_dup_candidates",
                                {"sim_threshold": 0.35, "max_pairs": max_pairs})
                  .execute().data or [])

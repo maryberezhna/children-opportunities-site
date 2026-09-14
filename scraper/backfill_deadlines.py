@@ -24,6 +24,8 @@ from datetime import date
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 logger = logging.getLogger("backfill_deadlines")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -90,7 +92,7 @@ def main() -> int:
     if not rows:
         return 0
 
-    llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     today = date.today().isoformat()
     n_deadline = n_annual = n_ongoing = n_closed = n_skip = 0
 

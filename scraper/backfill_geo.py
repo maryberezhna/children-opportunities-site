@@ -30,6 +30,8 @@ import time
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 from db import get_client
 from normalizer import VALID_COUNTRIES
 
@@ -213,7 +215,7 @@ def main() -> int:
         return 1
 
     db = get_client()
-    ai = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # PostgREST віддає до 1000 рядків, а активних уже більше — гортаємо
     # сторінками, як у backfill_teen.py, інакше хвіст мовчки лишиться без

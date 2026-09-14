@@ -14,6 +14,8 @@ from pathlib import Path
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 PROJECT_ROOT = Path(__file__).parent
 
 SYSTEM_PROMPT = """You are a senior Python developer working on the dityam.com.ua \
@@ -197,7 +199,7 @@ TOOL_FNS = {
 # ── agent loop ────────────────────────────────────────────────────────────────
 
 def run_agent(task: str) -> None:
-    client = anthropic.Anthropic()
+    client = api_guard.client()
     messages: list = [{"role": "user", "content": task}]
 
     print(f"\n🤖  Dev Agent\n📋  {task}\n{'─' * 60}")

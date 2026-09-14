@@ -37,6 +37,8 @@ import json
 from urllib.parse import urlparse
 
 import anthropic
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import httpx
 
 from recheck_dates import fetch_text
@@ -319,6 +321,7 @@ def search_other_sources(row: dict) -> dict:
         return None
     if r.status_code != 200:
         logger.error("Пошук HTTP %s на «%s»: %s", r.status_code, row.get("title"), r.text[:300])
+        api_guard.note(r.status_code, r.text[:400])
         _stop_if_limit(r.text)
         return None
     text = "".join(b.get("text", "") for b in r.json().get("content", [])
@@ -420,7 +423,7 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
         search: bool = False) -> dict:
     from db import get_client
     sb = get_client()
-    llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     rows = select_rows(sb, scope, limit)
     print(f"Записів до перегляду ({scope}): {len(rows)}\n")
