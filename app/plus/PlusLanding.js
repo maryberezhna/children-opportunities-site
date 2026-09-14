@@ -80,6 +80,8 @@ const L = {
 
     pathsTitle: 'Три траєкторії з нашої бази',
     pathsSub: 'Це не вигадані приклади: усі дванадцять програм нижче зараз відкриті на платформі.',
+    // Усі межі віку в траєкторіях закінчуються на 16–18 → «років».
+    ages: (a) => `${a} років`,
     paths: [
       {
         persona: 'Дитині 14, любить біологію',
@@ -221,6 +223,7 @@ const L = {
 
     pathsTitle: 'Three paths from our database',
     pathsSub: 'These are not made-up examples: all twelve programmes below are open on the platform right now.',
+    ages: (a) => `ages ${a}`,
     paths: [
       {
         persona: 'Age 14, loves biology',
@@ -424,9 +427,11 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
                 <ol className="pl-steps">
                   {p.steps.map(([lvl, name, age]) => (
                     <li key={name} className="pl-step">
-                      <span className="pl-step-lvl">{lvl}</span>
+                      <span className="pl-step-meta">
+                        <span className="pl-step-lvl">{lvl}</span>
+                        <span className="pl-step-age">{t.ages(age)}</span>
+                      </span>
                       <span className="pl-step-t">{name}</span>
-                      <span className="pl-step-age">{age}</span>
                     </li>
                   ))}
                 </ol>
