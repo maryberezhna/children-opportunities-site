@@ -13,6 +13,7 @@ from datetime import date, timedelta
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from recheck_dates import (  # noqa: E402
     classify_status, decide, drop_stale_unreachable, _valid_date,
+    UsageLimitReached, stop_if_usage_limit,
 )
 
 TODAY = date.today()
@@ -266,6 +267,16 @@ class HealStaleNotes(unittest.TestCase):
 
     def test_handles_empty(self):
         self.assertEqual(drop_stale_unreachable(None), "")
+
+
+
+class ApiUsageLimit(unittest.TestCase):
+    def test_usage_limit_stops_the_run(self):
+        with self.assertRaises(UsageLimitReached):
+            stop_if_usage_limit("You have reached your specified API usage limits.")
+
+    def test_other_errors_do_not_stop(self):
+        stop_if_usage_limit("overloaded_error")
 
 
 if __name__ == "__main__":
