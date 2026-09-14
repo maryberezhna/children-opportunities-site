@@ -155,6 +155,8 @@ export default function TopicCards({
 
   return (
     <section className="tp-list" aria-label={labels.listLabel}>
+      {/* Невидимий h2: картки — h3, і без h2 над ними ламався порядок заголовків. */}
+      <h2 className="sr-only">{labels.listLabel}</h2>
       <div className="tp-toolbar">
         {subfilters.length >= 2 ? (
           <div className="tp-pills" role="group" aria-label={labels.filterLabel}>

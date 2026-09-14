@@ -120,7 +120,7 @@
   gap: 10px;
   width: 100%;
   padding: 16px 20px;
-  background: #229ED9;
+  background: #1a73a3; /* #229ed9 з білим — 3:1 */
   color: #ffffff;
   border: none;
   border-radius: 14px;
@@ -270,7 +270,7 @@
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  background: #229ed9;
+  background: #1a73a3;
   color: #fff;
   text-decoration: none;
   white-space: nowrap;

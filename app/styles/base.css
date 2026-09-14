@@ -9,7 +9,7 @@
   --surface: #ffffff;
   --ink: #1a1a1a;
   --ink-soft: #555;
-  --ink-muted: #8a8a8a;
+  --ink-muted: #6b6b6b; /* було #8a8a8a — 3,5:1, нижче WCAG AA */
   --border: #e8e3d6;
   --border-hover: #d4cfc1;
   --accent: #e85d24;

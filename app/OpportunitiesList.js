@@ -209,7 +209,7 @@ const DEADLINE_OPTS = [
 const DL_COLORS = {
   urgent: ['#fde3e3', '#991b1b'],
   soon: ['#fef2d4', '#78350f'],
-  calm: ['#f7f1e6', '#8a8a8a'],
+  calm: ['#f7f1e6', '#6b6b6b'],
   event: ['#e5eefc', '#1b4a8f'],
 };
 

@@ -9,7 +9,7 @@ import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
  * Стара анкета профілю (вік/інтереси/канал) повернеться разом із запуском.
  */
 const C = {
-  ink: '#131b28', muted: '#54617a', line: '#d3dbe9', orange: '#db5a1e',
+  ink: '#131b28', muted: '#54617a', line: '#d3dbe9', orange: '#c8501a',
 };
 
 const L = {
@@ -56,7 +56,7 @@ export default function SubscribeForm({ lang = 'uk' }) {
           href={plusBotUrl(`form_${lang}`)}
           style={{
             display: 'block', textAlign: 'center', padding: '15px 20px',
-            borderRadius: 12, background: '#229ED9', color: '#fff',
+            borderRadius: 12, background: '#1a73a3', color: '#fff',
             fontSize: 16, fontWeight: 700, textDecoration: 'none',
           }}
         >
@@ -111,7 +111,7 @@ export default function SubscribeForm({ lang = 'uk' }) {
         href="https://t.me/DityamComUABot?start=plus"
         style={{
           display: 'block', textAlign: 'center', padding: '15px 20px',
-          borderRadius: 12, background: '#229ED9', color: '#fff',
+          borderRadius: 12, background: '#1a73a3', color: '#fff',
           fontSize: 16, fontWeight: 700, textDecoration: 'none',
         }}
       >
@@ -133,7 +133,7 @@ export default function SubscribeForm({ lang = 'uk' }) {
           aria-label={t.emailAria}
           autoComplete="email"
           style={{
-            flex: '1 1 220px', minWidth: 0, fontSize: 15, padding: '13px 15px',
+            flex: '1 1 220px', minWidth: 0, fontSize: 16, padding: '13px 15px',
             borderRadius: 12, border: `1px solid ${C.line}`, fontFamily: 'inherit',
           }}
         />

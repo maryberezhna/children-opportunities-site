@@ -304,8 +304,8 @@
 
   /* Батькам — помаранчевий, підліткам — чорний (див. .v2-chip.is-on). */
   .m-chip.is-on {
-    background: var(--v2-accent-hover);
-    border-color: var(--v2-accent-hover);
+    background: var(--v2-accent-strong);
+    border-color: var(--v2-accent-strong);
     color: #ffffff;
   }
 
@@ -318,7 +318,7 @@
      помаранчевій кнопці зник би — інвертуємо. */
   html:not([data-mode="teens"]) .m-filters-btn.is-on .m-count-dot {
     background: #ffffff;
-    color: var(--v2-accent-hover);
+    color: var(--v2-accent-strong);
   }
 
   .m-filters-btn { font-weight: 600; border-color: var(--v2-ink); }
@@ -332,7 +332,7 @@
     padding: 0 5px;
     box-sizing: border-box;
     border-radius: 9999px;
-    background: var(--v2-accent);
+    background: var(--v2-accent-strong);
     color: #ffffff;
     font-size: 12px;
     font-weight: 700;
@@ -405,7 +405,7 @@
     font-weight: 800;
     line-height: 1;
     letter-spacing: -0.03em;
-    color: var(--v2-accent);
+    color: var(--v2-accent-strong);
   }
 
   .m-top-card h3 {
@@ -494,7 +494,7 @@
 
   .v2-card-meta .v2-tag { flex-shrink: 0; font-weight: 600; padding: 3px 8px; }
   .v2-card-meta-dl { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
-  .v2-card-meta-dl.is-urgent { color: var(--v2-accent); }
+  .v2-card-meta-dl.is-urgent { color: var(--v2-accent-strong); }
   .v2-card-meta-sep { color: #b8b3a6; }
 
   .v2-home .v2-list .v2-card h3 { font-size: 18px; line-height: 1.3; }
@@ -581,7 +581,7 @@
     margin-left: auto;
     padding: 0 0 0 8px;
     background: none;
-    color: var(--v2-accent);
+    color: var(--v2-accent-strong);
   }
 
   .m-active + .m-count { padding-top: 10px; }
@@ -674,7 +674,7 @@
     font-family: inherit;
     font-size: 14px;
     font-weight: 500;
-    color: var(--v2-accent);
+    color: var(--v2-accent-strong);
     cursor: pointer;
   }
 
@@ -716,7 +716,7 @@
   .m-chip-x { margin-left: 6px; font-size: 12px; opacity: 0.85; }
 
   .m-chip-n { font-size: 12px; font-weight: 500; color: var(--v2-ink-3); }
-  .m-chip.is-on .m-chip-n { color: rgba(255, 255, 255, 0.82); }
+  .m-chip.is-on .m-chip-n { color: #ffffff; }
   html[data-mode="teens"] .m-chip.is-on .m-chip-n { color: #b8b3a6; }
 
   /* Кнопка прибита знизу шторки: вміст над нею скролиться окремо. */
@@ -735,7 +735,7 @@
     height: 52px;
     border: 0;
     border-radius: 14px;
-    background: var(--v2-accent);
+    background: var(--v2-accent-strong);
     color: #ffffff;
     font-family: inherit;
     font-size: 16px;

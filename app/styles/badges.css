@@ -12,7 +12,7 @@
 .city-back-link {
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   text-decoration: none;
 }
 .city-back-link:hover { text-decoration: underline; }
@@ -42,7 +42,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.8125rem;
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   background: var(--accent-soft);
   padding: 6px 14px;
   border-radius: 100px;

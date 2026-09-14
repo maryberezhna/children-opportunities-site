@@ -105,7 +105,7 @@
     color: var(--v2-ink-2);
   }
 
-  .o-m-days.is-urgent { color: var(--v2-accent); }
+  .o-m-days.is-urgent { color: var(--v2-accent-strong); }
 
   .opportunity-summary {
     margin: 0;
@@ -140,7 +140,7 @@
     align-items: center;
     min-height: 40px;
     margin: -10px 0;
-    color: var(--v2-accent);
+    color: var(--v2-accent-strong);
     text-decoration: none;
   }
 
@@ -184,7 +184,7 @@
     justify-content: center;
     padding: 0 16px;
     border-radius: 14px;
-    background: var(--v2-accent);
+    background: var(--v2-accent-strong);
     color: #ffffff;
     font-size: 16px;
     font-weight: 600;
@@ -202,11 +202,13 @@
     bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 
-  body:has(.o-m-bar) .tg-callout { bottom: calc(110px + env(safe-area-inset-bottom, 0px)); }
+  /* Поверх панелі «Подати заявку» підказка Telegram забирала ще 5% екрана
+     (разом закріплене — 23%). Там, де є панель, її не показуємо. */
+  body:has(.o-m-bar) .tg-callout { display: none; }
 
   /* Підказка Telegram: хрестик 11px і кнопка 34px — до 12px і 40px. */
   .tg-callout-close { position: relative; font-size: 12px; }
-  .tg-callout-close::after { content: ''; position: absolute; inset: -10px; }
+  .tg-callout-close::after { content: ''; position: absolute; inset: -12px; } /* 20 + 24 = 44px */
   .tg-callout-cta { min-height: 40px; box-sizing: border-box; }
 
   /* «Схожі можливості» розпирали сторінку до 434px (і на проді теж): рядок

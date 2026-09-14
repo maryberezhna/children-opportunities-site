@@ -96,7 +96,7 @@
   font-size: 1rem;
   font-weight: 700;
   color: #fff;
-  background: #e85d24;
+  background: var(--v2-accent-strong);
   border: 0;
   border-radius: 999px;
   padding: 13px 34px;
@@ -159,7 +159,7 @@
   font: inherit;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #e85d24;
+  color: var(--v2-accent-strong);
   background: transparent;
   border: 1.5px solid #e85d24;
   border-radius: 999px;

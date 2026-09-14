@@ -59,8 +59,10 @@ export function Analytics() {
           ${ADS_ID ? `gtag('config', '${ADS_ID}');` : ''}
         `}
       </Script>
+      {/* lazyOnload: Hotjar не потрібен для першого екрана, а це ~30 КБ JS,
+          що змагався за головний потік із самою сторінкою (Lighthouse 14.09.2026). */}
       {HOTJAR_ID ? (
-        <Script id="hotjar" strategy="afterInteractive">
+        <Script id="hotjar" strategy="lazyOnload">
           {`
             if (!window.__dityamNoAnalytics) {
               (function(h,o,t,j,a,r){

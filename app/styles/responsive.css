@@ -102,7 +102,7 @@
     justify-content: center;
     width: 100%;
     padding: 14px 20px;
-    background: var(--accent);
+    background: var(--v2-accent-strong);
     color: white;
     border: none;
     border-radius: 12px;

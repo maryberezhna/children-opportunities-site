@@ -218,9 +218,10 @@ export default function AccessibilityPanel() {
 
           {/* Large cursor */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">{t.cursor}</span>
+            <span className="a11y-label" id="a11y-cursor-label">{t.cursor}</span>
             <button
               role="switch"
+              aria-labelledby="a11y-cursor-label"
               aria-checked={settings.largeCursor}
               className={`a11y-switch${settings.largeCursor ? ' on' : ''}`}
               onClick={() => update({ largeCursor: !settings.largeCursor })}
@@ -231,9 +232,10 @@ export default function AccessibilityPanel() {
 
           {/* Reading line */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">{t.readingLine}</span>
+            <span className="a11y-label" id="a11y-reading-label">{t.readingLine}</span>
             <button
               role="switch"
+              aria-labelledby="a11y-reading-label"
               aria-checked={settings.readingLine}
               className={`a11y-switch${settings.readingLine ? ' on' : ''}`}
               onClick={() => update({ readingLine: !settings.readingLine })}
@@ -244,9 +246,10 @@ export default function AccessibilityPanel() {
 
           {/* Underline links */}
           <div className="a11y-row a11y-row--toggle">
-            <span className="a11y-label">{t.underline}</span>
+            <span className="a11y-label" id="a11y-underline-label">{t.underline}</span>
             <button
               role="switch"
+              aria-labelledby="a11y-underline-label"
               aria-checked={settings.underlineLinks}
               className={`a11y-switch${settings.underlineLinks ? ' on' : ''}`}
               onClick={() => update({ underlineLinks: !settings.underlineLinks })}
