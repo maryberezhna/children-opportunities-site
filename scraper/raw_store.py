@@ -20,6 +20,17 @@ logger = logging.getLogger(__name__)
 MAX_ATTEMPTS = 5
 
 
+def is_usage_limit(error) -> bool:
+    """Чи це вичерпаний ліміт витрат API, а не проблема самого сирця.
+
+    14.09.2026 API відповів «You have reached your specified API usage limits.
+    You will regain access on 2026-10-01». Екстракція зупинялась після п'яти
+    збоїв поспіль, але кожного разу списувала спробу п'яти найстарішим сирцям:
+    за два з половиною тижні близько 60 знахідок стали б failed назавжди —
+    хоча з ними все гаразд, просто API був недоступний."""
+    return "usage limit" in str(error).lower()
+
+
 def _clean(value):
     """Прибирає символи, яких Postgres не приймає в text.
 
