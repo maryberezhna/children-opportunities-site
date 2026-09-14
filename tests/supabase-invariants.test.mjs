@@ -29,9 +29,47 @@ test('fetchAllRows пробрасывает помилку, не ковтає', 
   const boom = { message: 'boom' };
   const { data, error } = await fetchAllRows(() => ({
     range: () => Promise.resolve({ data: null, error: boom }),
-  }));
+  }), { delayMs: 0 });
   assert.equal(data, null);
   assert.equal(error, boom);
+});
+
+// Білдер із URL, як у postgrest-js: за ним fetchAllRows кешує вибірку.
+const urlQuery = (url, respond) => () => ({
+  method: 'GET',
+  url: new URL(url),
+  range: respond,
+});
+
+test('однакова вибірка з кількох сторінок одночасно — один запит', async () => {
+  let calls = 0;
+  const q = urlQuery('https://x.test/rest/v1/opportunities?cache=dedupe', () => {
+    calls += 1;
+    return Promise.resolve({ data: [{ id: 1 }], error: null, status: 200 });
+  });
+  const [a, b] = await Promise.all([fetchAllRows(q), fetchAllRows(q)]);
+  const c = await fetchAllRows(q);
+  assert.equal(calls, 1);
+  assert.deepEqual(a.data, [{ id: 1 }]);
+  // Кожна сторінка отримує свою копію: зміна однієї не чіпає іншу.
+  a.data[0].id = 99;
+  assert.equal(b.data[0].id, 1);
+  assert.equal(c.data[0].id, 1);
+});
+
+test('помилка не кешується — наступний виклик питає базу знову', async () => {
+  let calls = 0;
+  const q = urlQuery('https://x.test/rest/v1/opportunities?cache=error', () => {
+    calls += 1;
+    return Promise.resolve(calls === 1
+      ? { data: null, error: { message: 'HTTP 400' }, status: 400 }
+      : { data: [{ id: 2 }], error: null, status: 200 });
+  });
+  const first = await fetchAllRows(q);
+  assert.equal(first.error.message, 'HTTP 400');
+  const second = await fetchAllRows(q);
+  assert.deepEqual(second.data, [{ id: 2 }]);
+  assert.equal(calls, 2);
 });
 
 // Інцидент 14.09.2026: шлюз Supabase кілька хвилин відповідав 502/504, і
