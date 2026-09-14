@@ -30,7 +30,7 @@ const L = {
     lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram або на імейл лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
-    priceHint: '179 грн/міс · 1 490 грн/рік · скасувати можна будь-коли',
+    priceHint: '179 грн/міс · 1 199 грн/рік · скасувати можна будь-коли',
     stairsLabel: 'Приклад шляху',
     stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
@@ -129,9 +129,9 @@ const L = {
     month: '179 грн',
     monthPer: ' / місяць',
     monthNote: 'скасувати можна будь-коли',
-    year: '1 490 грн',
+    year: '1 199 грн',
     yearPer: ' / рік',
-    yearNote: '≈ 124 грн на місяць',
+    yearNote: '≈ 100 грн на місяць',
     yearRibbon: 'вигідніше на 31%',
     includedTitle: 'У підписку входить',
     included: [
@@ -169,7 +169,7 @@ const L = {
     lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits, on Telegram or by email, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
-    priceHint: 'UAH 179/month · UAH 1,490/year · cancel any time',
+    priceHint: 'UAH 179/month · UAH 1,199/year · cancel any time',
     stairsLabel: 'An example path',
     stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
@@ -267,9 +267,9 @@ const L = {
     month: 'UAH 179',
     monthPer: ' / month',
     monthNote: 'cancel any time',
-    year: 'UAH 1,490',
+    year: 'UAH 1,199',
     yearPer: ' / year',
-    yearNote: '≈ UAH 124 a month',
+    yearNote: '≈ UAH 100 a month',
     yearRibbon: '31% cheaper',
     includedTitle: 'The subscription includes',
     included: [
@@ -333,7 +333,7 @@ function jsonLd(t, lang) {
         },
         offers: [
           { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '179', priceCurrency: 'UAH' },
-          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '1490', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '1199', priceCurrency: 'UAH' },
         ],
       },
       {

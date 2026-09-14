@@ -11,7 +11,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '20 липня 2026';
+const UPDATED = '14 вересня 2026';
 
 export default function TermsPage() {
   return (
@@ -56,7 +56,7 @@ export default function TermsPage() {
         <h2>3. Вартість і способи оплати</h2>
         <ul>
           <li><strong>Місячна підписка — 179 грн</strong> (регулярне списання щомісяця).</li>
-          <li><strong>Річна підписка — 1 490 грн</strong> (регулярне списання щороку, ≈ 124 грн/місяць).</li>
+          <li><strong>Річна підписка — 1 199 грн</strong> (регулярне списання щороку, ≈ 100 грн/місяць).</li>
         </ul>
         <p>
           Оплата здійснюється онлайн через платіжний сервіс WayForPay. Доступні
