@@ -508,9 +508,16 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 
 .v2-chip:hover { transform: translateY(-1px); }
 
+/* Активний фільтр: батькам — помаранчевий, підліткам — чорний (рішення Марії
+   14.09.2026). Відтінок #d14c15, а не #e85d24: білий текст на ньому ≈4,4:1. */
 .v2-chip.is-on {
-  background: var(--v2-ink);
+  background: var(--v2-accent-hover);
   color: #ffffff;
+  border-color: var(--v2-accent-hover);
+}
+
+html[data-mode="teens"] .v2-chip.is-on {
+  background: var(--v2-ink);
   border-color: var(--v2-ink);
 }
 
