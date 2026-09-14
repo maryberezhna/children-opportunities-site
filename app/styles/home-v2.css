@@ -389,6 +389,8 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 
 .hero-press .press-logos img { max-height: 17px; max-width: 80px; }
 .hero-press .press-logos img.is-square { max-height: 28px; }
+/* Напис у два рядки (Happy Monday): при 17px кожен рядок був ~8px. */
+.hero-press .press-logos img.is-stacked { max-height: 30px; }
 
 /* ── Фільтри ───────────────────────────────────────────────────────────── */
 .v2-filters {

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Footer from './Footer';
 import CopyButton from './CopyButton';
 import { CITY_META } from '@/lib/cities';
-import { MENTIONS } from '@/lib/press';
+import { MENTIONS, logoClass } from '@/lib/press';
 import { plural, sourcesWord, freeWord } from '@/lib/plural';
 
 // Сторінка «Для медіа» в новому дизайні (вересень 2026). Одна розмітка на
@@ -246,7 +246,7 @@ export default function PressKit({ stats, lang = 'uk' }) {
                     width={m.logo.width}
                     height={m.logo.height}
                     alt={outletName(m, lang)}
-                    className={m.logo.width / m.logo.height < 1.5 ? 'is-square' : undefined}
+                    className={logoClass(m.logo)}
                   />
                 </div>
                 <div className="pk-mention-meta">
