@@ -19,7 +19,11 @@
 @media (max-width: 900px) {
   /* ── Шапка: лише лого й перемикач, фон — крем хіро ─────────────────── */
   .v2-header--home {
-    position: static;
+    /* relative, а не static: від шапки відраховується панель меню.
+       z-index вище за липкий рядок фільтрів (.m-bar, 20) — інакше той
+       перекриває нижню частину відкритого меню. */
+    position: relative;
+    z-index: 22;
     background: var(--v2-cream);
     border-bottom: 0;
     backdrop-filter: none;
@@ -27,16 +31,17 @@
   }
 
   .v2-header--home .v2-header-inner {
-    padding: 12px 20px 10px;
+    padding: 12px 16px 10px;
     flex-wrap: nowrap;
-    gap: 12px;
+    gap: 8px;
   }
 
   .v2-header--home .v2-logo-heart,
   .v2-header--home .v2-nav,
   .v2-header--home .v2-support-btn { display: none; }
 
-  .v2-header--home .v2-logo-script { font-size: 26px; }
+  .v2-header--home .v2-logo-script { font-size: 23px; }
+  .v2-header--home .v2-burger { display: inline-flex; }
   .v2-header--home .v2-header-right { display: flex; margin-left: auto; }
   .v2-header--home .v2-mode { order: 0; flex-basis: auto; padding: 2px; }
 
@@ -44,7 +49,7 @@
     position: relative;
     flex: none;
     font-size: 13px;
-    padding: 7px 12px;
+    padding: 7px 10px;
   }
 
   /* Пігулка перемикача за референсом ~31px заввишки — зона дотику
@@ -718,4 +723,12 @@
     .m-sheet,
     .m-sheet-overlay { animation: none; }
   }
+}
+
+/* Головна на 360px: лого, перемикач «Батькам / Підліткам» і кнопка меню
+   мусять стати в один ряд, інакше перший результат зʼїде нижче. */
+@media (max-width: 380px) {
+  .v2-header--home .v2-logo-script { font-size: 21px; }
+  .v2-header--home .v2-mode button { font-size: 12px; padding: 6px 8px; }
+  .v2-header--home .v2-burger { width: 36px; height: 36px; }
 }
