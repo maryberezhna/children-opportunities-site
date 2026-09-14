@@ -132,7 +132,8 @@ const L = {
     year: '1 199 грн',
     yearPer: ' / рік',
     yearNote: '≈ 100 грн на місяць',
-    yearRibbon: 'вигідніше на 31%',
+    // 1 199 грн проти 12 × 179 = 2 148 грн → на 44% менше. Міняючи ціну — перерахувати.
+    yearRibbon: 'вигідніше на 44%',
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
@@ -270,7 +271,7 @@ const L = {
     year: 'UAH 1,199',
     yearPer: ' / year',
     yearNote: '≈ UAH 100 a month',
-    yearRibbon: '31% cheaper',
+    yearRibbon: '44% cheaper',
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
