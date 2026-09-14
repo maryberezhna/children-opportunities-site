@@ -110,5 +110,39 @@ class Actuality(unittest.TestCase):
         self.assertIn("дату на сторінці не видно", why)
 
 
+
+class ReachableFromUkraine(unittest.TestCase):
+    """Уточнення Марії 14.09.2026: можливість має бути доступна дитині, яка живе в Україні."""
+    DARUJEME = ("Darujeme kroužky dětem. Rodiny ukrajinských uprchlíků s dětmi ve věku 3–18 let, "
+                "které pobývají v ČR na základě víza za účelem strpění, mohou žádat o příspěvek.")
+
+    def test_residents_only_is_rejected(self):
+        o = out(children_evidence="s dětmi ve věku 3–18 let", eligibility="for_ukrainians",
+                eligibility_evidence="Rodiny ukrajinských uprchlíků s dětmi ve věku 3–18 let",
+                kind="unusual", residency="residents_only",
+                residency_evidence="které pobývají v ČR na základě víza za účelem strpění")
+        ok, why = decide_verified(o, self.DARUJEME, today=date(2026, 9, 14))
+        self.assertFalse(ok)
+        self.assertIn("треба жити в країні", why)
+
+    def test_open_from_ukraine_with_quote_is_accepted(self):
+        page = KOSTYUK + " Діти приїдуть з різних міст України, дорогу оплачує фонд."
+        o = out(residency="open_from_ukraine", residency_evidence="Діти приїдуть з різних міст України")
+        ok, why = decide_verified(o, page, today=date(2026, 9, 14))
+        self.assertTrue(ok)
+        self.assertIn("з України:", why)
+
+    def test_invented_residency_quote_is_rejected(self):
+        o = out(residency="open_from_ukraine", residency_evidence="Приймаємо заявки з будь-якої країни світу")
+        ok, why = decide_verified(o, KOSTYUK, today=date(2026, 9, 14))
+        self.assertFalse(ok)
+        self.assertIn("з України", why)
+
+    def test_unknown_residency_goes_to_moderation_with_flag(self):
+        ok, why = decide_verified(out(residency="unknown", residency_evidence=""), KOSTYUK, today=date(2026, 9, 14))
+        self.assertTrue(ok)
+        self.assertIn("не видно, чи можна скористатися з України", why)
+
+
 if __name__ == "__main__":
     unittest.main()

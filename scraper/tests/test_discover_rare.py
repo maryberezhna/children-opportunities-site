@@ -26,6 +26,10 @@ class RareLists(unittest.TestCase):
         self.assertNotIn("Україна", names)
         self.assertTrue({"Іспанія", "США і Канада", "Світ"} <= names)
 
+    def test_audience_is_children_living_in_ukraine(self):
+        for reg in keywords.RARE_ABROAD_REGIONS:
+            self.assertIn("живуть в Україні", reg["audience"])
+
     def test_themes_are_unusual_not_clubs(self):
         self.assertIn("тенісний табір для українських дітей", keywords.RARE_ABROAD_KEYWORDS)
         for w in keywords.RARE_ABROAD_KEYWORDS:
@@ -46,7 +50,11 @@ class RareProfile(unittest.TestCase):
         da = _reload("discover_agent", DISCOVER_PROFILE="rare_abroad")
         p = da._prompt("тенісний табір для українських дітей", keywords.RARE_ABROAD_REGIONS[0])
         self.assertIn("Марти Костюк", p)
-        self.assertIn("можуть подаватися діти з України", p)
+        self.assertIn("ЖИВЕ В УКРАЇНІ", p)
+        self.assertIn("вимагає проживати в цій країні", p)
+        # Загальний блок основного агента з «для дітей з України/біженців» тут
+        # пускав би діаспорні програми — у цьому профілі його немає.
+        self.assertNotIn("біженців, або відкрита для всіх", p)
 
     def test_default_profile_unchanged(self):
         da = _reload("discover_agent")

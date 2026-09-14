@@ -428,22 +428,34 @@ RARE_ABROAD_KEYWORDS: list[str] = [
 
 # Лише закордон. Діаспорні країни — ті самі, що в основній ротації; плюс
 # ширші регіони, де рідкісне трапляється частіше, ніж у сусідів.
-RARE_ABROAD_REGIONS: list[dict[str, str]] = DIASPORA_REGIONS + [
+# Уточнення Марії 14.09.2026: «нам треба шукати можливості, якими могли б
+# скористатися діти з України в інших країнах, а для тієї можливості треба жити
+# в Чехії» — про доплату на гуртки для біженців у Чехії. Тож аудиторія тут —
+# дитина, яка ЖИВЕ В УКРАЇНІ й може поїхати або подати заявку звідти, а не
+# діаспора (у DIASPORA_REGIONS audience саме про тих, хто вже живе в країні).
+def _from_ukraine(name: str) -> str:
+    return (f"для дітей 0–18, які живуть в Україні й можуть поїхати сюди ({name}) "
+            f"або подати заявку з України")
+
+
+RARE_ABROAD_REGIONS: list[dict[str, str]] = [
+    {**r, "audience": _from_ukraine(r["name"])} for r in DIASPORA_REGIONS
+] + [
     {
         "name": "США і Канада",
-        "audience": "для дітей 0–18 з України, які живуть у США чи Канаді або можуть туди поїхати",
+        "audience": _from_ukraine("США і Канада"),
         "hint": "шукай англійською: «for Ukrainian children», «open to international "
                 "students», «scholarship», «summer program for high school students»",
     },
     {
         "name": "Швейцарія й Австрія",
-        "audience": "для дітей 0–18 з України, які живуть у Швейцарії чи Австрії або можуть туди поїхати",
+        "audience": _from_ukraine("Швейцарія й Австрія"),
         "hint": "шукай німецькою, французькою й англійською: «für ukrainische Kinder», "
                 "«pour enfants ukrainiens», «kostenlos», «Stiftung»",
     },
     {
         "name": "Світ",
-        "audience": "для дітей 0–18 з України, будь-де у світі",
+        "audience": "для дітей 0–18, які живуть в Україні: програми в будь-якій країні, куди можна поїхати або подати заявку з України",
         "hint": "шукай англійською і мовою країни організатора: «for Ukrainian children», "
                 "«open to applicants from any country», «international youth programme»",
     },
