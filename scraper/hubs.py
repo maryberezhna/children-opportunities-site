@@ -72,3 +72,34 @@ def is_hub(url: str) -> bool:
         return False
     trimmed = url.rstrip("/")
     return any(trimmed.startswith(p) for p in prefixes())
+
+
+def _host(url: str) -> str:
+    from urllib.parse import urlparse
+    netloc = urlparse(url or "").netloc.lower()
+    return netloc[4:] if netloc.startswith("www.") else netloc
+
+
+def is_site_root(url: str) -> bool:
+    """Адреса — це сам сайт, а не сторінка на ньому: шлях порожній або «/»."""
+    from urllib.parse import urlparse
+    return bool(url) and urlparse(url).path.strip("/") == ""
+
+
+def site_root_domains(urls) -> set[str]:
+    """Домени, які вже є в базі ЯК ОДНА МОЖЛИВІСТЬ ЦІЛКОМ (запис указує на
+    корінь сайту). Лише такий домен означає «цей сайт уже є».
+
+    Навіщо. Розвідник відкидав кандидата, якщо в базі був будь-який запис із
+    того самого домену. На порталі це вбиває нові можливості: 11.09.2026 з
+    восьми знахідок у Кривому Розі п'ять — музичні школи №12 і №14, програми
+    Музею Захисників — пішли в смітник лише тому, що лежать на
+    spilkuisia.kr.gov.ua. Нова сторінка на знайомому порталі тепер іде далі, на
+    звичайний дедуп за назвою."""
+    return {_host(u) for u in urls if u and is_site_root(u)}
+
+
+def hub_domains(prefixes_: tuple[str, ...] | None = None) -> set[str]:
+    """Домени з переліку хабів — для них правило «сайт уже є» не діє взагалі."""
+    return {_host(p) for p in (prefixes_ if prefixes_ is not None else prefixes()) if p}
+

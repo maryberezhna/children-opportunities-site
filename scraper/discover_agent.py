@@ -40,7 +40,8 @@ from urllib.parse import urlparse
 
 from canonical import canonical_url
 from db import get_client, record_crawl_result
-from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
+import hubs
+from keywords import DISCOVER_KEYWORDS, REGION_ROTATION
 from normalizer import _sanitize
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -60,19 +61,16 @@ DRY_RUN = os.environ.get("DRY_RUN") == "true"
 DUP_SKIP = float(os.environ.get("DUP_SKIP") or "0.80")
 DUP_TAG = float(os.environ.get("DUP_TAG") or "0.60")
 
-# Specific, meaningful search terms (the 12 themes, flattened). Generic signal
-# words from keywords.ALL_KEYWORDS are intentionally excluded — they make poor
-# stand-alone search queries.
-KEYWORDS = sorted({kw for kws in KEYWORD_CATEGORIES.values() for kw in kws})
+# Лише пріоритетні теми, категорії чергуються щодня — див. keywords.DISCOVER_KEYWORDS.
+KEYWORDS = DISCOVER_KEYWORDS
 
 
 def keyword_of_day() -> str:
-    """Deterministic keyword-of-the-day — rotates through the whole list once
-    every len(KEYWORDS) days, no state needed.
+    """Слово дня — детермінована ротація по KEYWORDS, без стану.
 
     DISCOVER_KEYWORD перебиває ротацію — так само, як DISCOVER_REGION перебиває
-    регіон. Потрібно, щоб закрити тему, яку не можна чекати: ротація триває
-    161 день, а кампанія має дату."""
+    регіон. Потрібно, щоб закрити тему, яку не можна чекати: кампанія має дату,
+    а ротація — ні."""
     override = (os.environ.get("DISCOVER_KEYWORD") or "").strip()
     if override:
         return override
@@ -405,19 +403,21 @@ def main() -> int:
 
     # URL-дедуп: назва кандидата може бути якою завгодно, але сайт, що вже є в
     # каталозі, НЕ сміє пропонуватися як новий (кейс liouba-lorrukraine.fr —
-    # запис існував з квітня, а дедуп по назві його не бачив). Домени-хаби
-    # (портали з багатьма окремими можливостями) виключаємо через dedup_hub_urls.
-    existing_cus, existing_domains = set(), set()
+    # запис існував з квітня, а дедуп по назві його не бачив).
+    #
+    # «Сайт уже є» — лише коли в базі запис про сайт ЦІЛКОМ (корінь домену).
+    # Раніше тут вистачало будь-якого запису з домену, а хаби читались із
+    # колонки `url`, якої в dedup_hub_urls немає (там url_prefix): виняток тихо
+    # ковтався, список хабів завжди був порожній, і портал на кшталт
+    # spilkuisia.kr.gov.ua відкидав усі нові можливості (11.09.2026: 5 із 8).
+    existing_cus, existing_urls = set(), []
     for r in rows:
         cu = r.get("canonical_url") or (canonical_url(r["source_url"]) if r.get("source_url") else "")
         if cu:
             existing_cus.add(cu)
-            existing_domains.add(_domain(cu))
-    try:
-        hub_rows = client.table("dedup_hub_urls").select("url").execute().data or []
-    except Exception:
-        hub_rows = []
-    hub_domains = {_domain(h["url"]) for h in hub_rows if h.get("url")}
+            existing_urls.append(cu)
+    site_domains = hubs.site_root_domains(existing_urls)
+    hub_domains = hubs.hub_domains(hubs.prime(client))
 
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     for c in candidates:
@@ -432,9 +432,9 @@ def main() -> int:
             dup_skipped += 1
             logger.info("  ⏭ URL уже в каталозі — не пропоную: %s", cu)
             continue
-        if dom and dom in existing_domains and dom not in hub_domains:
+        if dom and dom in site_domains and dom not in hub_domains:
             dup_skipped += 1
-            logger.info("  ⏭ домен уже в каталозі (%s) — не пропоную: %s",
+            logger.info("  ⏭ сайт уже в каталозі як одна можливість (%s) — не пропоную: %s",
                         dom, rec["title"][:55])
             continue
 
