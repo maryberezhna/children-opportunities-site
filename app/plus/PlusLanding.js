@@ -1,4 +1,5 @@
 import SubscribeForm from './SubscribeForm';
+import PlusFlowDemo from './PlusFlowDemo';
 import { opportunitiesWord } from '@/lib/plural';
 
 /**
@@ -7,6 +8,9 @@ import { opportunitiesWord } from '@/lib/plural';
  * Сторінка обіцяє рівно те, що робить код (звірено 14.09.2026):
  *   профіль для кожної дитини → щоденний добір нового → нагадування про
  *   дедлайни за вікнами типу програми → допомога із заявкою в боті → /stop.
+ * Виняток — кнопки «Цікаво / Не цікаво» і «Додати в календар» у переліку й
+ * прикладі повідомлень: їх обіцяно наперед (Марія 14.09.2026), примітка під
+ * прикладом так і каже.
  *
  * До 14.09.2026 головною тезою була «памʼять»: підписка нібито знає, куди
  * дитина вже подавалась, і пропонує наступну сходинку. У коді цього не було —
@@ -57,26 +61,50 @@ const L = {
     ],
 
     mockTitle: 'Що приходить у Telegram або на імейл',
-    mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись.',
-    mocks: [
-      {
-        label: 'Нова можливість під профіль',
-        head: '🧡 Нові можливості для ваших дітей',
-        title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
-        meta: 'Конкурси/олімпіади · 14–17 р. · безкоштовно',
-        extra: 'для: Дитина 2 (15–18 р.)',
-        foot: 'Відібрано під профіль вашої дитини.',
+    mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись. Під кожною можливістю — «Цікаво», «Не цікаво» і «Додати в календар».',
+    flow: {
+      channelLabel: 'Канал',
+      tabs: { tg: 'Telegram', mail: 'Імейл' },
+      play: 'Відтворити',
+      pause: 'Пауза',
+      steps: [
+        ['Приходить нове', 'Лише те, що підходить профілю дитини'],
+        ['Тиснете «Цікаво»', 'Або «Не цікаво» — одним дотиком'],
+        ['Додаєте в календар', 'Дедлайн уже не загубиться'],
+        ['Нагадуємо завчасно', 'За 14 днів до кінця подачі'],
+      ],
+      digestHead: '🧡 Нові можливості для вашої дитини',
+      title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
+      meta: 'Конкурси/олімпіади · 14–17 р. · безкоштовно',
+      forWho: 'для: Дитина 2 (15–18 р.)',
+      digestFoot: 'Відібрано під профіль вашої дитини.',
+      cal: '📅 Додати в календар',
+      yes: '👍 Цікаво',
+      no: '👎 Не цікаво',
+      toast: 'Дякуємо за відповідь',
+      calApp: 'Календар',
+      calMonth: 'січ',
+      calDay: '31',
+      calTitle: 'ISEF Ukraine — кінець подачі',
+      calWhen: '31 січня 2027 · весь день',
+      calSaved: 'Подію додано',
+      remindDate: '17 січня',
+      remindHead: '⏳ Нагадуємо заздалегідь: подача закривається через 14 днів',
+      remindSub: 'Саме час готувати документи.',
+      remindMeta: 'подача до 31 січня',
+      remindFoot: 'Підібрано під профіль вашої дитини.',
+      mail: {
+        fromLabel: 'Від',
+        from: 'Dityam.com.ua',
+        subjLabel: 'Тема',
+        subjDigest: '🧡 Нові можливості для вашої дитини — Dityam+',
+        subjRemind: '⏳ Нагадування про дедлайн — Dityam+',
+        brand: 'DITYAM+',
+        h: 'Нові можливості для вашої дитини',
+        lead: 'Підібрано під вік та інтереси дитини.',
       },
-      {
-        label: 'Нагадування про дедлайн',
-        head: '⏳ Нагадуємо заздалегідь: подача закривається через 14 днів',
-        title: 'NFTE Youth Entrepreneurship Challenge',
-        meta: 'подача до 31 жовтня',
-        extra: 'Саме час готувати документи.',
-        foot: 'Підібрано під профіль вашої дитини.',
-      },
-    ],
-    mockNote: 'Приклади у форматі справжніх повідомлень підписки. Обидві можливості зараз є на платформі.',
+    },
+    mockNote: 'Приклад на справжній можливості з платформи. Кнопки «Цікаво / Не цікаво» і «Додати в календар» додамо в повідомлення до запуску Dityam+.',
 
     pathsTitle: 'Три шляхи з нашої бази',
     pathsSub: 'Не вигадані приклади: усі дванадцять програм нижче є на платформі просто зараз. Підписка надішле кожну з них дитині, якій вона підходить за віком і вподобаннями.',
@@ -197,26 +225,50 @@ const L = {
     ],
 
     mockTitle: 'What arrives on Telegram or by email',
-    mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply.',
-    mocks: [
-      {
-        label: 'A new opportunity for the profile',
-        head: '🧡 New opportunities for your children',
-        title: 'ISEF Ukraine — national selection for Regeneron ISEF',
-        meta: 'Contests & olympiads · ages 14–17 · free',
-        extra: 'for: Child 2 (15–18)',
-        foot: 'Selected for your child’s profile.',
+    mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply. Every opportunity comes with “Interested”, “Not interested” and “Add to calendar”.',
+    flow: {
+      channelLabel: 'Channel',
+      tabs: { tg: 'Telegram', mail: 'Email' },
+      play: 'Play',
+      pause: 'Pause',
+      steps: [
+        ['A new match arrives', 'Only what fits your child’s profile'],
+        ['You tap “Interested”', 'Or “Not interested” — one tap'],
+        ['You add it to your calendar', 'The deadline won’t get lost'],
+        ['We remind you early', '14 days before applications close'],
+      ],
+      digestHead: '🧡 New opportunities for your child',
+      title: 'ISEF Ukraine — National Selection for Regeneron ISEF',
+      meta: 'Contests & olympiads · ages 14–17 · free',
+      forWho: 'for: Child 2 (15–18)',
+      digestFoot: 'Selected for your child’s profile.',
+      cal: '📅 Add to calendar',
+      yes: '👍 Interested',
+      no: '👎 Not interested',
+      toast: 'Thanks for your answer',
+      calApp: 'Calendar',
+      calMonth: 'Jan',
+      calDay: '31',
+      calTitle: 'ISEF Ukraine — applications close',
+      calWhen: '31 January 2027 · all day',
+      calSaved: 'Event added',
+      remindDate: '17 January',
+      remindHead: '⏳ Early reminder: applications close in 14 days',
+      remindSub: 'Time to prepare the documents.',
+      remindMeta: 'apply by 31 January',
+      remindFoot: 'Selected for your child’s profile.',
+      mail: {
+        fromLabel: 'From',
+        from: 'Dityam.com.ua',
+        subjLabel: 'Subject',
+        subjDigest: '🧡 New opportunities for your child — Dityam+',
+        subjRemind: '⏳ Deadline reminder — Dityam+',
+        brand: 'DITYAM+',
+        h: 'New opportunities for your child',
+        lead: 'Selected for your child’s age and interests.',
       },
-      {
-        label: 'A deadline reminder',
-        head: '⏳ Early reminder: applications close in 14 days',
-        title: 'NFTE Youth Entrepreneurship Challenge',
-        meta: 'apply by 31 October',
-        extra: 'Time to prepare the documents.',
-        foot: 'Selected for your child’s profile.',
-      },
-    ],
-    mockNote: 'Examples in the format of real subscription messages. Both opportunities are on the platform right now.',
+    },
+    mockNote: 'An example built on a real opportunity from the platform. The “Interested / Not interested” and “Add to calendar” buttons will be added to the messages before Dityam+ launches.',
 
     pathsTitle: 'Three paths from our database',
     pathsSub: 'Not made-up examples: all twelve programmes below are on the platform right now. The subscription sends each of them to a child it fits by age and interests.',
@@ -414,31 +466,18 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
             </div>
           </div>
 
-          {/* Приклади повідомлень підписки — у форматі scraper/personal_digest.py
-              (нова можливість) і scraper/deadline_reminders.py (нагадування).
-              Лише Telegram: платний бот іншого каналу не має. Кнопок
-              «Цікаво / Не цікаво» в макетах немає свідомо — у нинішніх
-              повідомленнях їх ще немає, хоч список переваг вище їх обіцяє.
-              Обидва записи — активні можливості бази (звірено 14.09.2026). */}
+          {/* Флоу підписки на одній можливості: дайджест → «Цікаво» → календар →
+              нагадування. Формат повідомлень — scraper/personal_digest.py
+              (build_telegram, build_email) і scraper/deadline_reminders.py.
+              ISEF Ukraine звірено з базою 14.09.2026: 14–17, безкоштовно,
+              конкурс (нагадування за 14 і 3 дні), подача до 31.01.2027.
+              Кнопок «Цікаво / Не цікаво» і «Додати в календар» у справжніх
+              повідомленнях ще немає — сторінка обіцяє їх наперед (Марія
+              14.09.2026), і примітка під прикладом каже це прямо. */}
           <div className="pl-mock">
             <h3 className="pl-mock-title">{t.mockTitle}</h3>
             <p className="pl-mock-sub">{t.mockSub}</p>
-            <div className="pl-mock-grid">
-              {t.mocks.map((m) => (
-                <figure key={m.label} className="pl-mock-card" aria-label={m.label}>
-                  <figcaption className="pl-mock-label">{m.label}</figcaption>
-                  <div className="pl-tg">
-                    <div className="pl-tg-bubble">
-                      <p className="pl-tg-meta">{m.head}</p>
-                      <p className="pl-tg-title">🔸 {m.title}</p>
-                      <p className="pl-tg-meta">{m.meta}</p>
-                      <p className="pl-tg-text">{m.extra}</p>
-                      <p className="pl-tg-more">{m.foot}</p>
-                    </div>
-                  </div>
-                </figure>
-              ))}
-            </div>
+            <PlusFlowDemo f={t.flow} />
             <p className="pl-mock-note">{t.mockNote}</p>
           </div>
         </div>
