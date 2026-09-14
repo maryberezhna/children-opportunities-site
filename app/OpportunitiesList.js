@@ -30,14 +30,12 @@ const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
 const UI = {
   uk: {
     found: 'Знайдено',
-    hint: 'спочатку — з найближчим дедлайном',
     reset: 'Скинути',
     nothingTitle: 'Нічого не знайдено',
     nothingText: 'Спробуйте інший фільтр.',
     showMore: 'Показати ще',
     details: 'Детальніше ↗',
     topTitle: '⏰ Топ тижня',
-    topSub: 'три дедлайни, які закриваються найближчими днями',
     annual: '🔄 щорічно',
     open: 'набір відкритий',
     today: 'сьогодні',
@@ -57,14 +55,12 @@ const UI = {
   },
   en: {
     found: 'Found',
-    hint: 'closest deadline first',
     reset: 'Reset',
     nothingTitle: 'Nothing found',
     nothingText: 'Try a different filter.',
     showMore: 'Show more',
     details: 'Details ↗',
     topTitle: '⏰ Top this week',
-    topSub: 'three deadlines closing soonest',
     annual: '🔄 every year',
     open: 'enrolment open',
     today: 'today',
@@ -667,7 +663,6 @@ export default function OpportunitiesList({
 
         <div className="v2-found">
           <span>{t.found} <strong>{count}</strong> {t.countWord(count)}</span>
-          <span className="v2-found-hint">{t.hint}</span>
         </div>
       </section>
 
@@ -675,7 +670,6 @@ export default function OpportunitiesList({
         <section className="v2-top" aria-label={t.topTitle}>
           <div className="v2-top-head">
             <h2>{t.topTitle}</h2>
-            <span>{t.topSub}</span>
           </div>
           <div className="v2-grid">
             {topCards.map(renderCard)}
