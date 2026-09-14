@@ -76,6 +76,18 @@ class RequiredBeforePublish(unittest.TestCase):
             row[key] = val
             self.assertEqual(missing_required(row), [], key)
 
+    def test_payment_needs_no_date(self):
+        # Рішення Марії 14.09.2026: строк подання виплат громад часто ніде
+        # не вказаний. Решта полів для виплати лишаються обовʼязковими.
+        for otype in ("allowance", "support_payment"):
+            self.assertEqual(missing_required(self._full(deadline=None, opportunity_type=otype)), [], otype)
+        self.assertEqual(
+            missing_required(self._full(deadline=None, opportunity_type="scholarship")),
+            ["дата, період або періодичність"])
+        self.assertEqual(
+            missing_required(self._full(deadline=None, opportunity_type="allowance", age_to=None)),
+            ["вік"])
+
     def test_place_closed_by_any_of_four(self):
         nowhere = dict(format=None, cities=[], countries=[], is_international=False)
         for key, val in (("format", "online"), ("cities", ["Київ"]),

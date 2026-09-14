@@ -51,6 +51,19 @@ test('дату закриває будь-що з трьох', () => {
   assert.deepEqual(missingRequired(full({ ...bare, recurrence: 'ongoing' })), []);
 });
 
+test('виплаті дата не обовʼязкова, решті — так', () => {
+  // Рішення Марії 14.09.2026: строк подання виплат громад часто ніде не
+  // вказаний. Решта полів для виплати лишаються обовʼязковими.
+  const bare = { deadline: null, event_end_date: null, recurrence: null };
+  assert.deepEqual(missingRequired(full({ ...bare, opportunity_type: 'allowance' })), []);
+  assert.deepEqual(missingRequired(full({ ...bare, opportunity_type: 'support_payment' })), []);
+  assert.deepEqual(missingRequired(full({ ...bare, opportunity_type: 'scholarship' })), [DATE]);
+  assert.deepEqual(
+    missingRequired(full({ ...bare, opportunity_type: 'allowance', age_to: null })),
+    [AGE],
+  );
+});
+
 test('місце закриває будь-що з чотирьох', () => {
   const nowhere = { format: null, cities: [], countries: [], is_international: false };
   assert.deepEqual(missingRequired(full({ ...nowhere, format: 'online' })), []);

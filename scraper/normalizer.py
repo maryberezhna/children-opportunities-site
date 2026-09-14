@@ -54,6 +54,13 @@ REQUIRED_FIELDS = (
     "формат або місце (онлайн / офлайн / за кордоном)",
 )
 
+# Виплатам дата не обовʼязкова (рішення Марії 14.09.2026: «якщо виплата —
+# пропусти термін, якщо неможливо знайти»). Громади платять дітям захисників
+# за програмою на роки вперед, і сторінка ради часто взагалі не каже про
+# строк подання — через це корисна виплата висіла в чернетках. Дзеркало в
+# lib/required.js.
+PAYMENT_TYPES = {"allowance", "support_payment"}
+
 
 def missing_required(data: dict, age_missing: bool = None) -> list:
     """Чого бракує запису, щоб його можна було показати людині."""
@@ -63,7 +70,8 @@ def missing_required(data: dict, age_missing: bool = None) -> list:
     if age_missing:
         missing.append("вік")
     if not data.get("deadline") and not data.get("event_end_date") \
-            and not data.get("recurrence"):
+            and not data.get("recurrence") \
+            and data.get("opportunity_type") not in PAYMENT_TYPES:
         missing.append("дата, період або періодичність")
     if data.get("cost_type") not in PUBLISHABLE_COST_TYPES:
         missing.append("вартість")
