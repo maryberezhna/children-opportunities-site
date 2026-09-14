@@ -56,7 +56,7 @@ const L = {
       'Відмічайте «Цікаво» чи «Не цікаво», беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
     ],
 
-    mockTitle: 'Що приходить у Telegram',
+    mockTitle: 'Що приходить у Telegram або на імейл',
     mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись.',
     mocks: [
       {
@@ -138,7 +138,7 @@ const L = {
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'допомога із заявкою — просто напишіть боту',
-      'усе приходить у Telegram',
+      'усе приходить у Telegram або на імейл',
     ],
     trust: (total) => [
       'Не запитуємо імені, прізвища чи школи дитини',
@@ -195,7 +195,7 @@ const L = {
       'Mark “Interested” or “Not interested”, join partner giveaways and get partner discounts',
     ],
 
-    mockTitle: 'What arrives on Telegram',
+    mockTitle: 'What arrives on Telegram or by email',
     mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply.',
     mocks: [
       {
@@ -276,7 +276,7 @@ const L = {
       'a selection for each child’s profile — age, likes, format, city',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'help with applications — just message the bot',
-      'everything arrives on Telegram',
+      'everything arrives on Telegram or by email',
     ],
     trust: (total) => [
       'We don’t ask for your child’s name, surname or school',
