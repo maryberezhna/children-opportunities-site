@@ -305,7 +305,11 @@ def _extract_json_array(text: str):
 def search_candidates(kw: str, region: dict) -> list[dict]:
     body = {
         "model": MODEL,
-        "max_tokens": 5000,
+        # Вебпошук кладе результати в контекст, а відповідь моделі — це ще й
+        # summary для кожного кандидата. 5000–6000 токенів не вистачало: у 2 з 13
+        # прогонів (11.09 і 14.09.2026) відповідь обрізалась до JSON, і агент
+        # «знаходив» 0 замість 8 — хоча пошук відпрацював.
+        "max_tokens": 16000,
         # No user_location — the web_search tool rejects country code "UA"
         # ("Country code UA is not supported"). Ukraine focus comes from the
         # prompt text instead.
@@ -321,7 +325,7 @@ def search_candidates(kw: str, region: dict) -> list[dict]:
                 "content-type": "application/json",
             },
             json=body,
-            timeout=180,
+            timeout=300,
         )
     except Exception as e:
         logger.error("Request failed: %s", e)
