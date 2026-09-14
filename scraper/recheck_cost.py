@@ -33,7 +33,11 @@ import os
 import re
 import time
 
+import json
+from urllib.parse import urlparse
+
 import anthropic
+import httpx
 
 from recheck_dates import fetch_text
 
@@ -49,6 +53,17 @@ MIN_CONFIDENCE = 0.6
 # CHECK-обмеження таблиці; на сайті обидва платні підписані «Платно».
 PAID_VALUES = {"paid_affordable", "paid_premium"}
 IN_BETWEEN = ["partially_free", "subsidized"]
+
+# Пошук в інших джерелах — лише для записів, по яких власна сторінка нічого не
+# дала (рішення Марії 14.09.2026). Вебпошук є не на кожній моделі: той самий
+# вибір, що в discover_agent.py.
+SEARCH_MODEL = os.environ.get("SEARCH_MODEL") or "claude-sonnet-5"
+SEARCH_MAX_USES = 4
+# Причини, з якими варто шукати далі: сторінка мовчить або це перелік.
+SEARCHABLE_WHY = (
+    "сторінка не каже, чи платить родина",
+    "сторінка не про одну можливість — це головна або перелік",
+)
 
 # Слова, з якими цитата про «безкоштовно» насправді каже «комусь доведеться
 # платити». Прогін 13.09.2026 поставив UWC «безкоштовно» за цитатою «the offer
@@ -198,6 +213,106 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
     return patch, f"{why}: «{evidence[:140]}»"
 
 
+_STOP = {"для", "дітей", "дитячий", "дитяча", "дитячі", "гурток", "студія", "клуб",
+         "школа", "центр", "україни", "український", "українська", "курси", "курс",
+         "програма", "the", "and", "for", "with", "course", "courses", "program"}
+
+
+def title_tokens(title: str) -> list[str]:
+    """Характерні слова назви: без загальників («гурток», «клуб»), від 4 літер."""
+    words = re.findall(r"[\wЀ-ӿ'’-]+", (title or "").lower())
+    return [w for w in words if len(w) >= 4 and w not in _STOP]
+
+
+def page_mentions_title(title: str, page: str) -> bool:
+    """Чи сторінка взагалі про цю програму: хоч одне характерне слово назви."""
+    low = (page or "").lower()
+    toks = title_tokens(title)
+    return bool(toks) and any(t in low for t in toks)
+
+
+def extract_json_object(text: str) -> dict:
+    """Перший JSON-обʼєкт у тексті моделі (вона інколи обгортає його словами)."""
+    start = (text or "").find("{")
+    while start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        obj = json.loads(text[start:i + 1])
+                        return obj if isinstance(obj, dict) else {}
+                    except ValueError:
+                        break
+        start = text.find("{", start + 1)
+    return {}
+
+
+SEARCH_PROMPT = """Знайди в інтернеті, чи платить родина за участь дитини в цій програмі.
+
+Програма: «{title}»
+Місто / формат: {place}
+Сторінка, де ми її знайшли (про гроші там нічого): {url}
+
+Шукай сайт самої організації, сторінку гуртка, положення, умови вступу, новину.
+ГОЛОВНЕ ПРАВИЛО: НІЧОГО НЕ ВИГАДУЙ. Відповідь — лише з ДОСЛІВНОЮ цитатою зі
+сторінки, яка описує САМЕ цю програму, і з адресою цієї сторінки. Не знайшов —
+verdict="unknown". Здогадка «державні гуртки зазвичай безкоштовні» — це unknown.
+
+free — родина нічого не платить. paid — без оплати участь неможлива, навіть
+часткової; «частково фінансується», пільга для частини — теж paid.
+
+Поверни ЛИШЕ JSON-обʼєкт, без пояснень:
+{{"verdict": "free|paid|unknown", "page_kind": "one_opportunity|listing_or_org",
+  "evidence": "дослівна цитата", "url": "адреса сторінки з цитатою",
+  "price": "сума дослівно або порожньо", "confidence": 0.0}}"""
+
+
+def search_other_sources(row: dict) -> dict:
+    """Запит до моделі з вебпошуком. Повертає її JSON або {}."""
+    place = ", ".join(row.get("cities") or []) or (row.get("format") or "невідомо")
+    body = {
+        "model": SEARCH_MODEL,
+        "max_tokens": 1500,
+        "tools": [{"type": "web_search_20250305", "name": "web_search",
+                   "max_uses": SEARCH_MAX_USES}],
+        "messages": [{"role": "user", "content": SEARCH_PROMPT.format(
+            title=row["title"], place=place, url=row.get("source_url") or "—")}],
+    }
+    try:
+        r = httpx.post("https://api.anthropic.com/v1/messages", timeout=180, json=body,
+                       headers={"x-api-key": os.environ["ANTHROPIC_API_KEY"],
+                                "anthropic-version": "2023-06-01",
+                                "content-type": "application/json"})
+    except Exception as e:
+        logger.error("Пошук впав на «%s»: %s", row.get("title"), e)
+        return {}
+    if r.status_code != 200:
+        logger.error("Пошук HTTP %s на «%s»: %s", r.status_code, row.get("title"), r.text[:300])
+        return {}
+    text = "".join(b.get("text", "") for b in r.json().get("content", [])
+                   if b.get("type") == "text")
+    return extract_json_object(text)
+
+
+def decide_from_search(row: dict, out: dict, page: str | None) -> tuple[dict, str]:
+    """Вердикт з іншого джерела. Ті самі правила, що й для власної сторінки, плюс:
+    сторінку ми відкрили самі, і вона мусить згадувати саме цю програму."""
+    url = (out.get("url") or "").strip()
+    if out.get("verdict") not in ("free", "paid") or not url.startswith("http"):
+        return {}, "в інших джерелах про оплату нічого"
+    if not page:
+        return {}, f"джерело не відкривається ({url})"
+    if not page_mentions_title(row.get("title"), page):
+        return {}, f"джерело не про цю програму ({url})"
+    patch, why = decide_cost(row, out, page)
+    host = urlparse(url).netloc.replace("www.", "")
+    return patch, f"{why} · джерело: {host} {url}"
+
+
 def _with_trace(row: dict, note: str) -> str:
     prev = (row.get("admin_comment") or "").strip()
     return (f"{prev} · {note}" if prev else note)[:500]
@@ -215,14 +330,15 @@ def _note(sb, row: dict, why: str, apply: bool) -> None:
 def select_rows(sb, scope: str, limit: int) -> list:
     q = (sb.table("opportunities")
          .select("id, title, source_url, opportunity_type, cost_type, price_note, "
-                 "admin_comment, link_status")
+                 "admin_comment, link_status, cities, format")
          .eq("status", "active"))
     if scope == "in_between":
         q = q.or_("cost_type.in.(partially_free,subsidized),cost_type.is.null")
     return q.order("updated_at").limit(limit).execute().data or []
 
 
-def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH) -> dict:
+def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
+        search: bool = False) -> dict:
     from db import get_client
     sb = get_client()
     llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -231,7 +347,7 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH) -> d
     print(f"Записів до перегляду ({scope}): {len(rows)}\n")
 
     stats = {"to_free": 0, "to_paid": 0, "price_added": 0, "unchanged": 0,
-             "unclear": 0, "unread": 0, "missing": 0}
+             "unclear": 0, "unread": 0, "missing": 0, "searched": 0}
     lists = {"free": [], "paid": [], "flip": [], "unclear": []}
 
     for row in rows:
@@ -254,6 +370,14 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH) -> d
             continue
 
         patch, why = decide_cost(row, ask(llm, row, page), page)
+        # Власна сторінка мовчить або це перелік — шукаємо в інших джерелах.
+        if search and not patch and why in SEARCHABLE_WHY:
+            found = search_other_sources(row)
+            src_url = (found.get("url") or "").strip()
+            src_page = fetch_text(src_url)[0] if src_url.startswith("http") else None
+            time.sleep(DELAY)
+            patch, why = decide_from_search(row, found, src_page)
+            stats["searched"] += 1
         if not patch:
             if why.endswith("без змін"):
                 stats["unchanged"] += 1
@@ -297,7 +421,7 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH) -> d
     print(f"\nРазом: → безкоштовно {stats['to_free']}, → платно {stats['to_paid']}, "
           f"ціну дописано {stats['price_added']}, без змін {stats['unchanged']}, "
           f"незрозуміло {stats['unclear']}, сторінки немає {stats['missing']}, "
-          f"не прочитано {stats['unread']}")
+          f"не прочитано {stats['unread']}, шукали в інших джерелах {stats['searched']}")
     if not apply:
         print("\nЦе дамп. Нічого не записано. Щоб застосувати: --apply")
     return stats
@@ -309,5 +433,7 @@ if __name__ == "__main__":
     p.add_argument("--apply", action="store_true", help="реально писати в базу")
     p.add_argument("--scope", choices=["in_between", "all"], default="in_between")
     p.add_argument("--limit", type=int, default=BATCH)
+    p.add_argument("--search", action="store_true",
+                   help="якщо власна сторінка мовчить — шукати в інших джерелах")
     args = p.parse_args()
-    run(apply=args.apply, scope=args.scope, limit=args.limit)
+    run(apply=args.apply, scope=args.scope, limit=args.limit, search=args.search)

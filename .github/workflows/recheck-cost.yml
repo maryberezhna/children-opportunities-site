@@ -17,6 +17,10 @@ on:
         description: 'in_between = лише проміжні й порожні; all = уся активна база'
         required: false
         default: 'in_between'
+      search:
+        description: 'true = якщо власна сторінка мовчить, шукати в інших джерелах'
+        required: false
+        default: 'false'
       batch:
         description: 'скільки записів за прогін'
         required: false
@@ -48,6 +52,7 @@ jobs:
           BATCH: ${{ github.event.inputs.batch || '150' }}
         run: |
           ARGS="--scope ${{ github.event.inputs.scope || 'in_between' }} --limit ${{ github.event.inputs.batch || '150' }}"
+          if [ "${{ github.event.inputs.search }}" = "true" ]; then ARGS="$ARGS --search"; fi
           if [ "${{ github.event.inputs.apply }}" = "true" ]; then
             python recheck_cost.py --apply $ARGS
           else

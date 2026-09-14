@@ -9,7 +9,9 @@ import sys
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from recheck_cost import decide_cost  # noqa: E402
+from recheck_cost import (  # noqa: E402
+    decide_cost, decide_from_search, extract_json_object, page_mentions_title,
+)
 
 PAGE_FREE = "Гурток працює щосереди. Навчання безкоштовне за кошти міського бюджету."
 PAGE_PAID = "Вартість участі: 1600 грн за одну пісню. Заявки до 26 вересня."
@@ -102,6 +104,52 @@ class DecideCost(unittest.TestCase):
         o = out("free", q); o.pop("page_kind")
         patch, _ = decide_cost(row(), o, q)
         self.assertEqual(patch, {})
+
+
+
+class SearchOtherSources(unittest.TestCase):
+    def test_json_object_is_extracted_from_prose(self):
+        text = 'Ось що знайшов: {"verdict": "paid", "url": "https://x.ua"} — все.'
+        self.assertEqual(extract_json_object(text)["verdict"], "paid")
+
+    def test_no_json_gives_empty(self):
+        self.assertEqual(extract_json_object("нічого не знайшов"), {})
+
+    def test_page_must_mention_the_programme(self):
+        self.assertTrue(page_mentions_title("Клуб боксу РІНГ", "Секція боксу «Рінг»: абонемент 600 грн"))
+        self.assertFalse(page_mentions_title("Клуб боксу РІНГ", "Секція плавання: абонемент 600 грн"))
+
+    def test_generic_words_do_not_count(self):
+        # «гурток» і «дітей» є на будь-якій сторінці довідника — це не збіг.
+        self.assertFalse(page_mentions_title("Гурток для дітей", "Інший гурток для дітей, оплата 300 грн"))
+
+    def test_verdict_from_other_page_is_accepted_with_source(self):
+        page = "Школа танцю WAY UP DANCE, Черкаси. Вартість заняття 150 грн."
+        o = {"verdict": "paid", "page_kind": "one_opportunity", "evidence": "Вартість заняття 150 грн",
+             "url": "https://wayup.ck.ua/", "price": "150 грн", "confidence": 0.9}
+        patch, why = decide_from_search(row(title="WAY UP DANCE"), o, page)
+        self.assertEqual(patch["cost_type"], "paid_affordable")
+        self.assertIn("джерело: wayup.ck.ua", why)
+
+    def test_other_page_about_different_programme_is_rejected(self):
+        page = "Студія живопису «Акварель». Вартість заняття 150 грн."
+        o = {"verdict": "paid", "page_kind": "one_opportunity", "evidence": "Вартість заняття 150 грн",
+             "url": "https://akvarel.ua/", "confidence": 0.9}
+        patch, why = decide_from_search(row(title="WAY UP DANCE"), o, page)
+        self.assertEqual(patch, {})
+        self.assertIn("не про цю програму", why)
+
+    def test_unopenable_source_is_rejected(self):
+        o = {"verdict": "free", "page_kind": "one_opportunity", "evidence": "Участь безкоштовна",
+             "url": "https://dead.example/", "confidence": 0.9}
+        patch, why = decide_from_search(row(title="WAY UP DANCE"), o, None)
+        self.assertEqual(patch, {})
+        self.assertIn("не відкривається", why)
+
+    def test_unknown_from_search_changes_nothing(self):
+        patch, why = decide_from_search(row(), {"verdict": "unknown"}, "будь-що")
+        self.assertEqual(patch, {})
+        self.assertIn("нічого", why)
 
 
 if __name__ == "__main__":
