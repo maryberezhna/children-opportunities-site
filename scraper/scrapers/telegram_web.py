@@ -31,15 +31,17 @@ CONCURRENCY = 4
 # редіректять із /s/ (прев'ю вимкнене) або неактивні, тут не тримаємо. Джерела,
 # уже покриті окремими скраперами (Prometheus, MAN, easy.gov), не дублюємо.
 # (handle без '@', людяна назва джерела).
+# Прибрано 14.09.2026 за звітом source_report.py (30 днів, сирих → на сайті):
+# @grantovyphishky 201 → 4, @houseofeurope 28 → 0, @grants_ukraine 15 → 0,
+# @unicompass 12 → 0, @osvitanova 10 → 0. Здебільшого гранти для дорослих і ГО.
+# Кожна сира знахідка — окремий виклик моделі, а 14.09 вичерпано ліміт API.
+# House of Europe лишається власним скрапером сайту.
 CHANNELS: list[tuple[str, str]] = [
-    ("grants_ukraine", "Гранти Україна"),
     ("grantoteka", "Грантотека"),
     ("youth_ukraine", "Молодь України"),
     ("olymp_ua", "Олімпіади України"),
-    ("osvitanova", "Освіта Нова"),
     ("novashkola", "Нова школа"),
     ("naurok", "На Урок"),
-    ("houseofeurope", "House of Europe"),
     ("unicef_ukraine", "UNICEF Ukraine"),
     ("mozhlyvosti_ua", "Можливості UA"),
     ("Mozhlyvosti", "Можливості"),
@@ -47,8 +49,6 @@ CHANNELS: list[tuple[str, str]] = [
     # як джерела»): перевірені на живість і релевантність 0–18. Перекіс у
     # студентське відсіює нормалізатор.
     ("tviyspace", "Твій космос можливостей"),
-    ("unicompass", "UniCompass"),
-    ("grantovyphishky", "Грантові фішки"),
     ("news_from_united_youth", "United Youth"),
     # Додано 18.08.2026: знайдений хендл із тієї ж добірки @husenytsiaa.
     # Студентський перекіс (як unicompass) — нормалізатор відсіює 18+.

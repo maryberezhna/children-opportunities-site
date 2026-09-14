@@ -26,9 +26,10 @@ CONCURRENCY = 4
 
 # Feeds verified live and carrying child/youth opportunities. Prometheus has its
 # own dedicated scraper, so it is intentionally not duplicated here.
+# Прибрано 14.09.2026 за звітом source_report.py (30 днів, сирих → на сайті):
+# «Громадський простір» (prostir.ua) 137 → 2 — сектор ГО, не діти;
+# «Освіта.ua» 90 → 1 — новини освіти, а не можливості.
 FEEDS: list[tuple[str, str]] = [
-    ("Громадський простір", "https://www.prostir.ua/feed/"),
-    ("Освіта.ua", "https://osvita.ua/rss/"),
     ("Освіторія", "https://osvitoria.media/feed/"),
     # Додано 18.08.2026 (Notion-таска «Telegram-канали як джерела»): TG-канал
     # Unistudy мертвий з 03.2022, натомість сайт має живий WordPress-RSS.
