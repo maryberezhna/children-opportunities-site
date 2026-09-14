@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { CATEGORY_GROUPS, categoryHref } from '@/lib/categories';
 import Footer from '../../Footer';
 
@@ -19,8 +19,7 @@ export const metadata = {
 
 async function getActive() {
   if (!supabase) return [];
-  const { data } = await fetchAllRows(() => publicOpportunities().order('id'));
-  return data || [];
+  return rowsOrThrow(await fetchAllRows(() => publicOpportunities().order('id')), 'en categories');
 }
 
 export default async function CategoriesPage() {
