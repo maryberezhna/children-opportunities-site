@@ -1,5 +1,7 @@
+const { PHASE_PRODUCTION_BUILD } = require('next/constants');
+
 /** @type {import('next').NextConfig} */
-module.exports = {
+const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
@@ -45,4 +47,22 @@ module.exports = {
       },
     ];
   },
+};
+
+// Локальна збірка ходить у РОБОЧУ базу: ~1080 сторінок — тисячі запитів за
+// кілька хвилин. 14.09.2026 такі збірки (зокрема від паралельних сесій
+// Claude) поклали API Supabase, і сайт показував «0 можливостей». Тому поза
+// Vercel (він сам виставляє VERCEL=1) збірка зупиняється ще до першого
+// запиту. Якщо вона справді потрібна — свідомо: ALLOW_LOCAL_BUILD=1 npm run build.
+// dev-сервер і `next start` це не зачіпає.
+module.exports = (phase) => {
+  if (phase === PHASE_PRODUCTION_BUILD && !process.env.VERCEL && !process.env.ALLOW_LOCAL_BUILD) {
+    console.error(
+      '\n⛔ Локальну збірку зупинено: вона робить тисячі запитів до робочої бази Supabase.\n'
+      + '   Перевіряйте через `npm test`, `npx next dev` і preview-збірку Vercel у PR.\n'
+      + '   Якщо збірка справді потрібна: ALLOW_LOCAL_BUILD=1 npm run build\n',
+    );
+    process.exit(1);
+  }
+  return nextConfig;
 };
