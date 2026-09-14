@@ -215,6 +215,11 @@
   color: #ffffff;
 }
 
+/* Кнопка Dityam+ і так стоїть у шапці — у меню її дублюємо лише там, де
+   шапкову сховано: мобільна головна й сторінка можливості з нижньою панеллю. */
+.v2-header:not(.v2-header--home) .v2-mmenu .v2-mmenu-support { display: none; }
+body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
+
 @media (prefers-reduced-motion: reduce) {
   .v2-burger-lines,
   .v2-burger-lines::before,

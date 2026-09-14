@@ -8,7 +8,7 @@ import { readMode, writeMode, onModeChange } from '@/lib/mode';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
 // навігації, перемикач «Батькам / Підліткам» на сторінках каталогу і одна
-// помаранчева CTA «Підтримати». Пошук з шапки переїхав у фільтри каталогу,
+// помаранчева CTA — з 14.09.2026 це Dityam+, а не «Підтримати». Пошук з шапки переїхав у фільтри каталогу,
 // перемикач мови — прибраний свідомо (EN-сторінки живуть за прямими URL і
 // в sitemap; банер LangSuggest лишається для неукраїнських браузерів).
 
@@ -64,8 +64,8 @@ export default function Header() {
   const isEnglish = isEn(pathname);
   // Перемикач режиму живе лише там, де є каталог, — на головній.
   const isCatalogue = pathname === '/' || pathname === '/en';
-  // Мобільна головна (≤900px): шапка — лише лого й перемикач, «Підтримати»
-  // живе у футері (референс «Dityam — мобільна версія», 6a).
+  // Мобільна головна (≤900px): шапка — лого, перемикач і меню; Dityam+ та
+  // «Підтримати» — у меню (референс «Dityam — мобільна версія», 6a).
   const headerClass = `v2-header${pathname === '/' ? ' v2-header--home' : ''}`;
   // SSR завжди малює «Батькам»: справжній режим читається з localStorage
   // після монтування, інакше React лається на розбіжність розмітки.
@@ -102,15 +102,12 @@ export default function Header() {
 
   // Пункту «Каталог» у меню немає навмисно: логотип веде рівно туди ж, а два
   // посилання на ту саму сторінку поруч лише з'їдають місце в шапці.
+  // Dityam+ теж не в переліку: це помаранчева кнопка праворуч (замість
+  // «Підтримати», яка переїхала в мобільне меню й футер).
   const NAV = isEnglish
-    ? [
-        { href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') },
-        { href: '/en/plus', label: 'Dityam+', active: pathname.startsWith('/en/plus') },
-      ]
-    : [
-        { href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') },
-        { href: '/plus', label: 'Dityam+', active: pathname.startsWith('/plus') },
-      ];
+    ? [{ href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') }]
+    : [{ href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') }];
+  const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
 
   return (
     <header className={headerClass}>
@@ -154,15 +151,14 @@ export default function Header() {
               </button>
             </div>
           ) : null}
-          <a
-            href={MONOBANK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={PLUS_HREF}
             className="v2-support-btn"
-            onClick={track('support')}
+            aria-current={pathname.startsWith(PLUS_HREF) ? 'page' : undefined}
+            onClick={track('Dityam+')}
           >
-            🧡 {isEnglish ? 'Support' : 'Підтримати'}
-          </a>
+            Dityam+
+          </Link>
         </div>
 
         <button
@@ -203,11 +199,17 @@ export default function Header() {
             href={MONOBANK_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="v2-mmenu-support"
             onClick={() => { track('support')(); setMenuOpen(false); }}
           >
             🧡 {isEnglish ? 'Support' : 'Підтримати'}
           </a>
+          <Link
+            href={PLUS_HREF}
+            className="v2-mmenu-support"
+            onClick={() => { track('Dityam+')(); setMenuOpen(false); }}
+          >
+            Dityam+
+          </Link>
         </nav>
       ) : null}
     </header>

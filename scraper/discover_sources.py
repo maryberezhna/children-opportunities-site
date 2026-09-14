@@ -158,7 +158,11 @@ def _extract_json_array(text: str):
 def search(theme: str) -> list[dict]:
     body = {
         "model": MODEL,
-        "max_tokens": 6000,
+        # Вебпошук кладе результати в контекст, а відповідь моделі — це ще й
+        # summary для кожного кандидата. 5000–6000 токенів не вистачало: у 2 з 13
+        # прогонів (11.09 і 14.09.2026) відповідь обрізалась до JSON, і агент
+        # «знаходив» 0 замість 8 — хоча пошук відпрацював.
+        "max_tokens": 16000,
         "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}],
         "messages": [{"role": "user",
                       "content": PROMPT.format(theme=theme, max_n=MAX_CANDIDATES)}],
@@ -172,7 +176,7 @@ def search(theme: str) -> list[dict]:
                 "content-type": "application/json",
             },
             json=body,
-            timeout=240,
+            timeout=300,
         )
     except Exception as e:
         logger.error("Запит не вдався: %s", e)
@@ -190,6 +194,10 @@ def search(theme: str) -> list[dict]:
                    if b.get("type") == "text")
     used = data.get("usage", {}).get("server_tool_use", {}).get("web_search_requests")
     logger.info("  веб-пошуків використано: %s", used)
+    stop = data.get("stop_reason")
+    if stop in ("max_tokens", "pause_turn"):
+        # Без цього обрізана відповідь виглядала як «нічого не знайшли».
+        logger.warning("  stop_reason=%s — відповідь обірвалась, кандидати можуть бути неповні.", stop)
     parsed = _extract_json_array(text)
     if parsed is None:
         logger.info("  JSON не виділено. Початок відповіді: %s",
