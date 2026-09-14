@@ -16,14 +16,14 @@
 }
 
 .contact-label {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #131b28;
 }
 
 .contact-req {
   font-weight: 500;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: #a3aab8;
 }
 
@@ -32,7 +32,7 @@
 .contact-textarea {
   width: 100%;
   font: inherit;
-  font-size: 16px; /* < 16px змушує iOS зумити сторінку на фокусі */
+  font-size: 1rem; /* < 16px змушує iOS зумити сторінку на фокусі */
   color: #131b28;
   background: #f5f2ea;
   border: 1px solid transparent;
@@ -79,7 +79,7 @@
 
 .contact-hint {
   margin: -10px 0 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.45;
   color: #6b7688;
 }
@@ -93,7 +93,7 @@
 .contact-submit {
   justify-self: start;
   font: inherit;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
   color: #fff;
   background: #e85d24;
@@ -116,14 +116,14 @@
 
 .contact-error {
   margin: -6px 0 0;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.45;
   color: #b3372e;
 }
 
 .contact-privacy {
   margin: -8px 0 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #9aa1af;
 }
 
@@ -137,19 +137,19 @@
 }
 
 .contact-form-done-icon {
-  font-size: 40px;
+  font-size: 2.5rem;
   line-height: 1;
 }
 
 .contact-form-done h3 {
   margin: 12px 0 6px;
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 
 .contact-form-done p {
   margin: 0 auto;
   max-width: 46ch;
-  font-size: 15.5px;
+  font-size: 0.96875rem;
   line-height: 1.55;
   color: #54617a;
 }
@@ -157,7 +157,7 @@
 .contact-form-again {
   margin-top: 16px;
   font: inherit;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: #e85d24;
   background: transparent;

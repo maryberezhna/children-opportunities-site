@@ -13,14 +13,14 @@
   border-radius: 50%;
   background: var(--green-1);
   color: #2e7d4f;
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 700;
 }
 
-.thanks h1 { font-size: 27px; letter-spacing: -0.01em; margin: 0 0 12px; }
+.thanks h1 { font-size: 1.6875rem; letter-spacing: -0.01em; margin: 0 0 12px; }
 
 .thanks-lead {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.6;
   color: var(--ink-soft);
   margin: 0 0 24px;
@@ -33,17 +33,17 @@
   border-radius: 999px;
   background: var(--ink);
   color: #fff;
-  font-size: 15.5px;
+  font-size: 0.96875rem;
   font-weight: 600;
   text-decoration: none;
 }
 
 .thanks-warn {
   margin: 18px 0 0;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   color: var(--ink-muted);
 }
 
-.thanks-back { margin-top: 34px; font-size: 14px; }
+.thanks-back { margin-top: 34px; font-size: 0.875rem; }
 .thanks-back a { color: var(--ink-muted); text-decoration: none; }
 .thanks-back a:hover { color: var(--accent); }

@@ -37,7 +37,7 @@
   color: var(--ink-soft);
   text-decoration: none;
   border-radius: 100px;
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   border: 1px solid var(--border);
   transition: all 0.2s;
@@ -132,7 +132,7 @@
 }
 
 .footer-action-heart {
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1;
   animation: heartbeat 1.8s ease-in-out infinite;
 }
@@ -176,13 +176,13 @@
 }
 
 .footer-logo {
-  font-size: 32px;
+  font-size: 2rem;
   line-height: 1;
   filter: drop-shadow(0 2px 6px rgba(232, 93, 36, 0.25));
 }
 
 .footer-brand-name {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 500;
   color: var(--ink);
   line-height: 1.2;
@@ -192,13 +192,13 @@
 }
 
 .footer-brand-tag {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--ink-muted);
   margin-top: 2px;
 }
 
 .footer-about {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-soft);
   line-height: 1.55;
   margin: 0;
@@ -216,7 +216,7 @@
   color: white;
   text-decoration: none;
   border-radius: 100px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   transition: all 0.2s;
 }
@@ -229,7 +229,7 @@
 .footer-social-link svg { flex-shrink: 0; }
 
 .footer-title {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--ink-muted);
   text-transform: uppercase;
@@ -241,7 +241,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--ink-soft);
   text-decoration: none;
   padding: 4px 0;
@@ -253,7 +253,7 @@
 .footer-link:hover { color: var(--accent); }
 
 .footer-link-icon {
-  font-size: 15px;
+  font-size: 0.9375rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -262,7 +262,7 @@
 }
 
 .footer-note {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--ink-muted);
   font-style: italic;
   margin: 4px 0 0;
@@ -275,7 +275,7 @@
   text-align: center;
 }
 
-.footer-copy { font-size: 13px; color: var(--ink-muted); }
+.footer-copy { font-size: 0.8125rem; color: var(--ink-muted); }
 
 
 /* Перелінковка на міські сторінки. Були сиротами — лише в sitemap, без жодного
@@ -292,12 +292,12 @@
 }
 
 .footer-cities-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-muted);
 }
 
 .footer-city-link {
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--ink-soft);
   text-decoration: none;
   padding: 4px 10px;
@@ -322,7 +322,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   color: var(--ink-soft);
   margin-top: 10px;
 }

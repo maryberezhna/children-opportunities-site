@@ -30,7 +30,7 @@
   background: var(--bg);
   color: var(--ink-soft);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   white-space: nowrap;
   transition: border-color 0.15s, color 0.15s;
@@ -49,7 +49,7 @@
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 11px; font-weight: 700; line-height: 1;
+  font-size: 0.6875rem; font-weight: 700; line-height: 1;
 }
 
 .fm-caret {
@@ -95,12 +95,12 @@
   background: var(--accent-soft);
   color: var(--accent);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 0.8125rem;
   cursor: pointer;
 }
 
 .chip-active:hover { background: var(--accent); color: #fff; }
-.chip-x { font-size: 15px; line-height: 1; opacity: 0.7; }
+.chip-x { font-size: 0.9375rem; line-height: 1; opacity: 0.7; }
 
 .filters-reset {
   margin-left: auto;
@@ -113,7 +113,7 @@
   background: transparent;
   color: var(--ink-muted);
   font-family: inherit;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   cursor: pointer;
 }
 
@@ -128,12 +128,12 @@
   border-radius: 999px;
   background: var(--ink-muted);
   color: #fff;
-  font-size: 11px; font-weight: 700; line-height: 1;
+  font-size: 0.6875rem; font-weight: 700; line-height: 1;
 }
 
 @media (max-width: 640px) {
   .filters { padding: 10px; }
-  .fm-btn { padding: 8px 12px; font-size: 13.5px; }
+  .fm-btn { padding: 8px 12px; font-size: 0.84375rem; }
   /* Панель прилипає до лівого краю екрана, а не до кнопки: біля правого краю
      вона інакше вилазила б за межі вікна. */
   .search-wrap { flex: 1 1 100%; }
@@ -142,7 +142,7 @@
 .filter-btn {
   display: inline-flex;
   align-items: center;
-  font-size: 14px;
+  font-size: 0.875rem;
   padding: 8px 16px;
   border-radius: 100px;
   background: var(--bg);
@@ -197,7 +197,7 @@
   padding: 9px 14px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  font-size: 14px;
+  font-size: 0.875rem;
   font-family: inherit;
   background: var(--bg);
   transition: border-color 0.15s;
@@ -211,7 +211,7 @@
 
 /* Рядок «Знайдено N» з'являється лише з активними фільтрами — між панеллю
    і картками, тому відступ знизу тримає він сам. */
-.count { font-size: 15px; color: var(--ink-soft); font-weight: 500; margin-bottom: 16px; }
+.count { font-size: 0.9375rem; color: var(--ink-soft); font-weight: 500; margin-bottom: 16px; }
 .count strong { color: var(--ink); font-weight: 500; }
 
 /* Сортування стоїть у панелі поруч із випадайками, тому і вдягнене як вони —
@@ -223,7 +223,7 @@
   background: var(--bg);
   color: var(--ink-soft);
   font-family: inherit;
-  font-size: 14px;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }

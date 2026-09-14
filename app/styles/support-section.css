@@ -67,7 +67,7 @@
 .support-text { min-width: 0; }
 
 .support-title {
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 600;
   color: var(--ink);
   margin-bottom: 10px;
@@ -76,7 +76,7 @@
 }
 
 .support-description {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-soft);
   line-height: 1.55;
   margin: 0;
@@ -106,7 +106,7 @@
 }
 
 .support-big-heart {
-  font-size: 46px;
+  font-size: 2.875rem;
   display: inline-block;
   animation: heart-beat-big 1.6s ease-in-out infinite;
   filter: drop-shadow(0 4px 12px rgba(232, 93, 36, 0.3));
@@ -122,14 +122,14 @@
 
 .support-sparkle {
   position: absolute;
-  font-size: 16px;
+  font-size: 1rem;
   animation: sparkle 2s ease-in-out infinite;
   pointer-events: none;
 }
 
 .support-sparkle-1 { top: -4px; right: -6px; animation-delay: 0s; }
-.support-sparkle-2 { bottom: 0; left: -8px; font-size: 13px; animation-delay: 0.5s; }
-.support-sparkle-3 { top: 20%; left: -12px; font-size: 11px; animation-delay: 1s; }
+.support-sparkle-2 { bottom: 0; left: -8px; font-size: 0.8125rem; animation-delay: 0.5s; }
+.support-sparkle-3 { top: 20%; left: -12px; font-size: 0.6875rem; animation-delay: 1s; }
 
 @keyframes sparkle {
   0%, 100% { opacity: 0; transform: scale(0.5) rotate(0); }
@@ -144,7 +144,7 @@
 }
 
 .support-price-num {
-  font-size: 42px;
+  font-size: 2.625rem;
   font-weight: 700;
   line-height: 1;
   color: var(--ink);
@@ -152,7 +152,7 @@
 }
 
 .support-price-per {
-  font-size: 15px;
+  font-size: 0.9375rem;
   color: var(--ink-muted);
 }
 
@@ -168,7 +168,7 @@
   border: none;
   border-radius: 14px;
   font-family: inherit;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
@@ -196,7 +196,7 @@
 .support-cta-note {
   display: block;
   margin-top: 10px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.4;
   color: var(--ink-muted);
 }
@@ -214,7 +214,7 @@
   background: #fbe7d8;
   color: #db5a1e;
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   letter-spacing: 0.03em;
   padding: 4px 11px;
   border-radius: 6px;
@@ -234,12 +234,12 @@
 }
 
 .support-donate-label {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-muted);
 }
 
 .support-donate-link {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--ink-soft);
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -264,7 +264,7 @@
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.45;
   color: var(--ink-soft);
 }
@@ -328,14 +328,14 @@
   border-radius: 6px;
   background: var(--accent);
   color: #fff;
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
 }
 
 .plus-title {
   margin: 0;
-  font-size: 20px;
+  font-size: 1.25rem;
   line-height: 1.2;
   letter-spacing: -0.01em;
   color: var(--ink);
@@ -343,7 +343,7 @@
 
 .plus-lead {
   margin: 8px 0 12px;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.5;
   color: var(--ink-soft);
 }
@@ -355,7 +355,7 @@
   border: 1px solid rgba(232, 93, 36, 0.25);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.85);
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   color: var(--ink-soft);
   white-space: nowrap;
 }
@@ -374,7 +374,7 @@
 
 .plus-card-eyebrow {
   display: block;
-  font-size: 10.5px;
+  font-size: 0.65625rem;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -384,7 +384,7 @@
 
 .plus-card-title {
   display: block;
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.35;
   color: var(--ink);
   font-weight: 500;
@@ -394,7 +394,7 @@
   white-space: nowrap;
 }
 
-.plus-card-meta { display: block; font-size: 12px; color: var(--ink-muted); }
+.plus-card-meta { display: block; font-size: 0.75rem; color: var(--ink-muted); }
 .plus-card-meta b { color: #2e7d4f; font-weight: 600; }
 
 .plus-buy { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
@@ -406,7 +406,7 @@
   border-radius: 999px;
   background: var(--ink);
   color: #fff;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   font-weight: 600;
   text-decoration: none;
   box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
@@ -430,7 +430,7 @@
   border-radius: 999px;
   background: var(--surface);
   color: var(--ink);
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 500;
   text-decoration: none;
   white-space: nowrap;
@@ -451,14 +451,14 @@
   white-space: nowrap;
 }
 
-.plus-fine { margin: 0; font-size: 12px; line-height: 1.5; color: var(--ink-muted); }
+.plus-fine { margin: 0; font-size: 0.75rem; line-height: 1.5; color: var(--ink-muted); }
 .plus-fine a { color: var(--ink-soft); text-decoration: underline; text-underline-offset: 3px; }
 .plus-fine a:hover { color: var(--accent); }
 
 @media (max-width: 860px) {
   .plus-section { padding: 18px 16px; }
   .plus-inner { grid-template-columns: 1fr; gap: 14px; }
-  .plus-title { font-size: 18px; }
+  .plus-title { font-size: 1.125rem; }
   /* Чипи на телефоні дублюють суть ліда і зʼїдають два рядки */
   .plus-chips { display: none; }
   .plus-lead { margin-bottom: 0; }
@@ -483,7 +483,7 @@
 }
 
 .suggest-kicker {
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -492,7 +492,7 @@
 }
 
 .suggest-card h2 {
-  font-size: 21px;
+  font-size: 1.3125rem;
   font-weight: 600;
   line-height: 1.25;
   margin: 0 0 10px;
@@ -501,14 +501,14 @@
 
 .suggest-card p {
   margin: 0 0 20px;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.55;
   color: rgba(255, 255, 255, 0.75);
 }
 
 .suggest-cta {
   font: inherit;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   padding: 13px 22px;
   border: none;
@@ -528,12 +528,12 @@
 
 /* Форма в модалці */
 .suggest-modal { text-align: left; max-width: 480px; }
-.suggest-modal h2 { font-size: 21px; margin: 0 0 6px; }
-.suggest-sub { font-size: 14px; color: var(--ink-soft); margin: 0 0 18px; }
+.suggest-modal h2 { font-size: 1.3125rem; margin: 0 0 6px; }
+.suggest-sub { font-size: 0.875rem; color: var(--ink-soft); margin: 0 0 18px; }
 
 .suggest-label {
   display: block;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 500;
   margin-bottom: 14px;
 }
@@ -550,7 +550,7 @@
   border-radius: 10px;
   background: var(--bg);
   font: inherit;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   resize: vertical;
 }
 
@@ -570,7 +570,7 @@
 }
 
 .suggest-error {
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   color: #b3402a;
   margin: 0 0 12px;
 }
@@ -578,7 +578,7 @@
 .suggest-submit { width: 100%; margin-top: 4px; }
 
 .suggest-done { text-align: center; padding: 8px 0; }
-.suggest-done p { color: var(--ink-soft); font-size: 14.5px; margin: 0 0 18px; }
+.suggest-done p { color: var(--ink-soft); font-size: 0.90625rem; margin: 0 0 18px; }
 .suggest-done .suggest-cta { width: auto; }
 
 @media (max-width: 640px) {
@@ -589,7 +589,7 @@
 /* Продаж на паузі: замість кнопок оплати — email-форма «дізнатися першим». */
 .plus-wait-note {
   margin: 0 0 12px;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.5;
   color: var(--ink-soft);
 }
@@ -601,7 +601,7 @@
   border-radius: 999px;
   background: var(--accent);
   color: #fff;
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
@@ -622,7 +622,7 @@
   border-radius: 999px;
   background: var(--surface);
   font: inherit;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
 }
 
 .plus-wait-form input:focus {
@@ -633,7 +633,7 @@
 .plus-wait-form button {
   flex-shrink: 0;
   font: inherit;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   font-weight: 600;
   padding: 12px 22px;
   border: none;
@@ -651,14 +651,14 @@
 
 .plus-wait-error {
   margin: 8px 0 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #b3402a;
 }
 
-.plus-wait-done strong { font-size: 16.5px; }
+.plus-wait-done strong { font-size: 1.03125rem; }
 .plus-wait-done p {
   margin: 6px 0 0;
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   color: var(--ink-soft);
   line-height: 1.5;
 }

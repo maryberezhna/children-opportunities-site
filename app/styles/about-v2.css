@@ -23,7 +23,7 @@
 .ab-section h2 {
   margin: 0;
   font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
-  font-size: clamp(26px, 3vw, 34px);
+  font-size: clamp(1.625rem, calc(3vw * var(--a11y-font-scale, 1)), 2.125rem);
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
@@ -33,7 +33,7 @@
 .ab-intro {
   margin: 0;
   max-width: 68ch;
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1.6;
   color: var(--v2-ink-2);
   text-wrap: pretty;
@@ -41,7 +41,7 @@
 
 .ab-intro a { color: var(--v2-accent-hover); font-weight: 600; }
 
-.ab-more { margin: 0; font-size: 16px; }
+.ab-more { margin: 0; font-size: 1rem; }
 .ab-more a { color: var(--v2-accent-hover); font-weight: 600; }
 
 /* ── Цифри ─────────────────────────────────────────────────────────────── */
@@ -64,7 +64,7 @@
 
 .ab-story-text p {
   margin: 0;
-  font-size: 19px;
+  font-size: 1.1875rem;
   line-height: 1.65;
   color: var(--v2-ink);
   text-wrap: pretty;
@@ -72,7 +72,7 @@
 
 .ab-signature {
   margin-top: 6px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 600;
   color: var(--v2-ink-2);
 }
@@ -100,15 +100,15 @@
 }
 
 .ab-card-n {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   color: var(--v2-accent);
   font-variant-numeric: tabular-nums;
 }
 
-.ab-card h3 { margin: 0; font-size: 19px; font-weight: 700; line-height: 1.25; }
-.ab-card p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
+.ab-card h3 { margin: 0; font-size: 1.1875rem; font-weight: 700; line-height: 1.25; }
+.ab-card p { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--v2-ink-2); }
 
 /* ── Окрема увага ──────────────────────────────────────────────────────── */
 .ab-focus {
@@ -134,7 +134,7 @@
 .ab-checks li {
   position: relative;
   padding-left: 30px;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.55;
   color: var(--v2-ink);
 }
@@ -180,9 +180,9 @@
 
 /* Нижні панелі: абзац трохи більший за стандартний на головній — тут це
    основний текст, а не підпис до кнопки. */
-.ab-page .v2-panel p { font-size: 16.5px; }
+.ab-page .v2-panel p { font-size: 1.03125rem; }
 
-.ab-partners { margin: 0; font-size: 14px; color: var(--v2-ink-3); }
+.ab-partners { margin: 0; font-size: 0.875rem; color: var(--v2-ink-3); }
 .ab-partners a { color: inherit; }
 
 @media (max-width: 1000px) {
@@ -195,7 +195,7 @@
   .ab-page .press-logos a { width: 100%; }
   .ab-story { grid-template-columns: 1fr; gap: 16px; padding: 26px 22px; }
   .ab-story h2 { position: static; }
-  .ab-story-text p { font-size: 17.5px; }
+  .ab-story-text p { font-size: 1.09375rem; }
   .ab-checks { grid-template-columns: 1fr; }
   .ab-focus { padding: 24px 22px; }
 }

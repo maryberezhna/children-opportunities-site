@@ -10,7 +10,7 @@
 }
 
 .city-back-link {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--accent);
   text-decoration: none;
@@ -24,7 +24,7 @@
   margin-bottom: 32px;
 }
 .city-nav-link {
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 5px 14px;
   border-radius: 100px;
   border: 1.5px solid var(--border);
@@ -41,7 +41,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--accent);
   background: var(--accent-soft);
   padding: 6px 14px;
@@ -68,7 +68,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: white;
   background: linear-gradient(135deg, #e85d24 0%, #ff7a3a 50%, #f09433 100%);
@@ -120,7 +120,7 @@
 
 .footer-beta {
   display: inline-block;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   color: white;
   background: linear-gradient(135deg, #e85d24 0%, #ff7a3a 100%);
@@ -168,7 +168,7 @@
 }
 
 .hero h1 {
-  font-size: clamp(34px, 5.5vw, 56px);
+  font-size: clamp(2.125rem, calc(5.5vw * var(--a11y-font-scale, 1)), 3.5rem);
   font-weight: 700;
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -191,7 +191,7 @@
 
 .hero p {
   color: var(--ink-soft);
-  font-size: 17px;
+  font-size: 1.0625rem;
   max-width: 620px;
   line-height: 1.55;
 }
@@ -204,8 +204,8 @@
 }
 
 .stat { display: flex; align-items: baseline; gap: 8px; }
-.stat-num { font-size: 28px; font-weight: 500; color: var(--ink); }
-.stat-label { font-size: 13px; color: var(--ink-muted); }
+.stat-num { font-size: 1.75rem; font-weight: 500; color: var(--ink); }
+.stat-label { font-size: 0.8125rem; color: var(--ink-muted); }
 
 
 /* Чип події: спокійний синій замість тривожного помаранчевого дедлайну —

@@ -49,7 +49,7 @@
   display: inline-block;
   padding: 5px 12px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   background: rgba(232, 93, 36, 0.16);
@@ -65,7 +65,7 @@
 
 .pl-h1 {
   margin: 0 0 20px;
-  font-size: clamp(36px, 5.4vw, 62px);
+  font-size: clamp(2.25rem, calc(5.4vw * var(--a11y-font-scale, 1)), 3.875rem);
   font-weight: 700;
   line-height: 1.04;
   letter-spacing: -0.028em;
@@ -86,7 +86,7 @@
 .pl-lead {
   margin: 0 0 30px;
   max-width: 54ch;
-  font-size: 19px;
+  font-size: 1.1875rem;
   line-height: 1.55;
   color: var(--pl-on-black-2);
 }
@@ -99,7 +99,7 @@
   border-radius: 12px;
   background: var(--v2-accent);
   color: #fff;
-  font-size: 16.5px;
+  font-size: 1.03125rem;
   font-weight: 700;
   text-decoration: none;
   transition: background 0.15s;
@@ -109,7 +109,7 @@
 
 .pl-link {
   color: var(--pl-on-black);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 500;
   text-decoration: underline;
   text-underline-offset: 4px;
@@ -120,7 +120,7 @@
 
 .pl-price-hint {
   margin: 22px 0 0;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: #8f887c;
   font-variant-numeric: tabular-nums;
 }
@@ -159,7 +159,7 @@
 }
 
 .pl-stair-lvl {
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -168,12 +168,12 @@
 
 .pl-stair:nth-child(4) .pl-stair-lvl { color: rgba(255, 255, 255, 0.82); }
 
-.pl-stair-t { font-size: 16.5px; font-weight: 600; color: var(--pl-on-black); }
+.pl-stair-t { font-size: 1.03125rem; font-weight: 600; color: var(--pl-on-black); }
 .pl-stair:nth-child(4) .pl-stair-t { color: #fff; }
 
 .pl-stairs-cap {
   margin-top: 16px;
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   line-height: 1.5;
   color: #8f887c;
 }
@@ -184,7 +184,7 @@
 
 .pl-h2 {
   margin: 0 0 14px;
-  font-size: clamp(28px, 3.6vw, 42px);
+  font-size: clamp(1.75rem, calc(3.6vw * var(--a11y-font-scale, 1)), 2.625rem);
   font-weight: 700;
   line-height: 1.1;
   letter-spacing: -0.022em;
@@ -194,7 +194,7 @@
 .pl-sub {
   margin: 0 0 36px;
   max-width: 60ch;
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.55;
   color: var(--v2-ink-2);
 }
@@ -208,9 +208,9 @@
 }
 
 .pl-contrast-card { border-radius: 18px; padding: 30px 30px 26px; }
-.pl-contrast-card h3 { margin: 0 0 18px; font-size: 19px; font-weight: 700; }
+.pl-contrast-card h3 { margin: 0 0 18px; font-size: 1.1875rem; font-weight: 700; }
 .pl-contrast-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
-.pl-contrast-card li { position: relative; padding-left: 28px; font-size: 16px; line-height: 1.5; }
+.pl-contrast-card li { position: relative; padding-left: 28px; font-size: 1rem; line-height: 1.5; }
 
 .pl-contrast-a { background: #fff; border: 1px solid var(--v2-line); }
 .pl-contrast-a h3 { color: var(--v2-ink-3); }
@@ -239,7 +239,7 @@
 
 .pl-persona {
   margin: 0 0 8px;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -248,7 +248,7 @@
 
 .pl-path-title {
   margin: 0 0 20px;
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.01em;
@@ -290,18 +290,18 @@
 
 .pl-step-lvl {
   grid-column: 1 / -1;
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--v2-ink-3);
 }
 
-.pl-step-t { font-size: 15.5px; font-weight: 600; line-height: 1.35; color: var(--v2-ink); }
+.pl-step-t { font-size: 0.96875rem; font-weight: 600; line-height: 1.35; color: var(--v2-ink); }
 
 .pl-step-age {
   align-self: start;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--v2-ink-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -311,7 +311,7 @@
   margin: 22px 0 0;
   padding-top: 16px;
   border-top: 1px solid var(--v2-line);
-  font-size: 14.5px;
+  font-size: 0.90625rem;
   line-height: 1.5;
   color: var(--v2-ink-2);
 }
@@ -331,15 +331,15 @@
 .pl-how-n {
   display: block;
   margin-bottom: 14px;
-  font-size: 40px;
+  font-size: 2.5rem;
   font-weight: 700;
   line-height: 1;
   color: var(--v2-accent);
   font-variant-numeric: tabular-nums;
 }
 
-.pl-how-item h3 { margin: 0 0 8px; font-size: 18px; font-weight: 700; line-height: 1.3; }
-.pl-how-item p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--v2-ink-2); }
+.pl-how-item h3 { margin: 0 0 8px; font-size: 1.125rem; font-weight: 700; line-height: 1.3; }
+.pl-how-item p { margin: 0; font-size: 0.9375rem; line-height: 1.55; color: var(--v2-ink-2); }
 
 /* ── Ціна ─────────────────────────────────────────────────────────────── */
 .pl-prices {
@@ -368,21 +368,21 @@
   border-radius: 999px;
   background: var(--v2-accent);
   color: #fff;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 700;
 }
 
 .pl-price-amount {
-  font-size: 38px;
+  font-size: 2.375rem;
   font-weight: 800;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
-.pl-price-amount span { font-size: 16px; font-weight: 600; color: var(--v2-ink-2); letter-spacing: 0; }
-.pl-price-note { margin-top: 4px; font-size: 14px; color: var(--v2-ink-3); }
+.pl-price-amount span { font-size: 1rem; font-weight: 600; color: var(--v2-ink-2); letter-spacing: 0; }
+.pl-price-note { margin-top: 4px; font-size: 0.875rem; color: var(--v2-ink-3); }
 
-.pl-included-title { margin: 36px 0 12px; font-size: 16px; font-weight: 700; }
+.pl-included-title { margin: 36px 0 12px; font-size: 1rem; font-weight: 700; }
 
 .pl-included {
   list-style: none;
@@ -394,7 +394,7 @@
   gap: 10px 24px;
 }
 
-.pl-included li { position: relative; padding-left: 26px; font-size: 15.5px; line-height: 1.5; color: var(--v2-ink-2); }
+.pl-included li { position: relative; padding-left: 26px; font-size: 0.96875rem; line-height: 1.5; color: var(--v2-ink-2); }
 .pl-included li::before { content: '✓'; position: absolute; left: 0; color: var(--v2-accent); font-weight: 700; }
 
 .pl-trust {
@@ -410,7 +410,7 @@
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--v2-cream);
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--v2-ink-2);
 }
 
@@ -423,7 +423,7 @@
 .pl-faq-item summary {
   position: relative;
   padding: 20px 40px 20px 0;
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 600;
   line-height: 1.35;
   cursor: pointer;
@@ -437,14 +437,14 @@
   position: absolute;
   right: 4px;
   top: 16px;
-  font-size: 26px;
+  font-size: 1.625rem;
   font-weight: 400;
   color: var(--v2-accent);
   transition: transform 0.15s;
 }
 
 .pl-faq-item[open] summary::after { transform: rotate(45deg); }
-.pl-faq-item p { margin: 0 0 22px; font-size: 16px; line-height: 1.6; color: var(--v2-ink-2); }
+.pl-faq-item p { margin: 0 0 22px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
 
 /* ── Список очікування ────────────────────────────────────────────────── */
 .pl-join {
@@ -457,7 +457,7 @@
 .pl-join-text {
   margin: 0 auto 32px;
   max-width: 52ch;
-  font-size: 17.5px;
+  font-size: 1.09375rem;
   line-height: 1.55;
   color: var(--pl-on-black-2);
 }
@@ -490,7 +490,7 @@
 
 @media (max-width: 560px) {
   .pl-wrap { padding: 0 18px; }
-  .pl-lead { font-size: 17px; }
+  .pl-lead { font-size: 1.0625rem; }
   .pl-prices, .pl-included { grid-template-columns: minmax(0, 1fr); }
   .pl-contrast-card, .pl-path { padding: 22px 20px; }
   .pl-form-card { padding: 4px 18px 20px; }
