@@ -50,12 +50,15 @@ logger = logging.getLogger(__name__)
 # Default to sonnet-5 (supports web search, cheaper than opus); override with
 # DISCOVER_MODEL=claude-opus-4-8 if needed.
 MODEL = os.environ.get("DISCOVER_MODEL") or "claude-sonnet-5"
-MAX_CANDIDATES = int(os.environ.get("DISCOVER_MAX", "5"))
+# Воркфлоу за розкладом передає незаповнені inputs порожнім рядком, а
+# os.environ.get("X", "5") на "" дефолту не бере: int("") упав 11–13.09.2026,
+# і агент три дні не шукав нічого. Тому скрізь `or` — він ловить і "".
+MAX_CANDIDATES = int(os.environ.get("DISCOVER_MAX") or "5")
 DRY_RUN = os.environ.get("DRY_RUN") == "true"
 # Duplicate control: ≥ DUP_SKIP title match → drop the candidate entirely;
 # DUP_TAG..DUP_SKIP → keep but flag as a possible duplicate of the match.
-DUP_SKIP = float(os.environ.get("DUP_SKIP", "0.80"))
-DUP_TAG = float(os.environ.get("DUP_TAG", "0.60"))
+DUP_SKIP = float(os.environ.get("DUP_SKIP") or "0.80")
+DUP_TAG = float(os.environ.get("DUP_TAG") or "0.60")
 
 # Specific, meaningful search terms (the 12 themes, flattened). Generic signal
 # words from keywords.ALL_KEYWORDS are intentionally excluded — they make poor
