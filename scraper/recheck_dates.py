@@ -209,7 +209,21 @@ def ask(llm, row: dict, page: str) -> dict:
         return block.input if block else {}
     except Exception as e:
         logger.error("LLM впав на «%s»: %s", row.get("title"), e)
-        return {}
+        stop_if_usage_limit(e)
+        # None, а не {}: порожня відповідь дорівнювала «сторінка про строки не
+        # говорить», і в модерацію йшов хибний діагноз (так recheck_cost
+        # 14.09.2026 наставив їх дев'яти записам, коли вичерпався ліміт API).
+        return None
+
+
+class UsageLimitReached(SystemExit):
+    """Вичерпано ліміт витрат API — далі кожен запис дав би лише хибний діагноз."""
+
+
+def stop_if_usage_limit(err) -> None:
+    if "usage limit" in str(err).lower():
+        logger.error("Вичерпано ліміт витрат API — зупиняю прогін, щоб не писати хибних діагнозів.")
+        raise UsageLimitReached(2)
 
 
 def _valid_date(v) -> str | None:
@@ -462,7 +476,12 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
         # Сторінка прочиталась — знімаємо свої ж старі помітки про «недоступна».
         _heal_note(sb, row, apply)
 
-        patch, why = decide(row, ask(llm, row, page), today)
+        answer = ask(llm, row, page)
+        if answer is None:
+            stats["unread"] += 1
+            left_list.append((row, "модель не відповіла — спробуємо наступного разу"))
+            continue
+        patch, why = decide(row, answer, today)
         if not patch:
             if why.startswith("сторінка не про одну можливість") or \
                     why.startswith("сторінки за адресою немає"):
