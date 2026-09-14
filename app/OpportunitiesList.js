@@ -1,7 +1,7 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import PlusSection from './PlusSection';
+import PlusSection, { PlusBanner } from './PlusSection';
 import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent } from '@/lib/labels';
 import { cityLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
@@ -62,7 +62,7 @@ const UI = {
     years: 'років',
     close: 'Закрити фільтри',
     resetFilters: 'Скинути фільтри',
-    sortLong: 'спочатку — з найближчим дедлайном',
+    sortLong: 'за дедлайном, найближчі спочатку',
     show: (n) => (n ? `Показати ${n} ${opportunitiesWord(n)}` : 'Нічого не знайдено'),
     ageShort: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
     f: { format: 'Формат', place: 'Де', source: 'Джерело',
@@ -105,7 +105,7 @@ const UI = {
     years: 'y.o.',
     close: 'Close filters',
     resetFilters: 'Reset filters',
-    sortLong: 'closest deadline first',
+    sortLong: 'by deadline, soonest first',
     show: (n) => (n ? `Show ${n} ${n === 1 ? 'opportunity' : 'opportunities'}` : 'Nothing found'),
     ageShort: (a, b) => (a === b ? `age ${a}` : `${a}–${b} y.o.`),
     f: { format: 'Format', place: 'Where', source: 'Source',
@@ -661,9 +661,25 @@ export default function OpportunitiesList({
       ];
 
     const age = ageText(item);
-    const fmt = mobileLayout
-      ? [formatLabel(item.format, lang), placeText(item)].filter(Boolean).join(' · ')
+    // Set: в онлайн-записів формат і «місто» однакові — без «Онлайн · Онлайн».
+    const fmt = mobileLayout || sidebarLayout
+      ? [...new Set([formatLabel(item.format, lang), placeText(item)].filter(Boolean))].join(' · ')
       : '';
+    // Десктопна картка головної: далека дата без року — «до 20 жовт».
+    const dlHead = dl.kind === 'calm' && daysUntil(item.deadline, todayIso) > 30
+      ? t.until(formatDeadline(item.deadline, lang).replace(` ${todayIso.slice(0, 4)}`, ''))
+      : dl.text;
+    const moreLink = item.source_url ? (
+      <a
+        href={item.source_url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="v2-card-more"
+        onClick={() => trackOpportunityClick(item.title, 'list')}
+      >
+        {t.details}
+      </a>
+    ) : null;
 
     return (
       <article key={item.id} className="v2-card">
@@ -678,6 +694,15 @@ export default function OpportunitiesList({
             <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
             <span className={`v2-card-meta-dl${dl.kind === 'urgent' ? ' is-urgent' : ''}`}>{dl.text}</span>
             {age ? <><span className="v2-card-meta-sep" aria-hidden="true">·</span><span>{age}</span></> : null}
+          </div>
+        ) : null}
+        {/* Десктоп головної (≥1100px, поруч із бічною панеллю): тип кольором
+            і вік ліворуч, дедлайн праворуч; поля dl ховаються. */}
+        {sidebarLayout ? (
+          <div className="v2-card-head">
+            <span className="v2-card-type" style={{ color: tagFg }}>{typeLabel}</span>
+            {age ? <><span className="v2-card-dot" aria-hidden="true">·</span><span className="v2-card-age">{age}</span></> : null}
+            <span className={`v2-card-dl is-${dl.kind}`}>{dlHead}</span>
           </div>
         ) : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -701,16 +726,15 @@ export default function OpportunitiesList({
             <FieldRow key={k} k={k} v={v} />
           ))}
         </dl>
-        {item.source_url ? (
-          <a
-            href={item.source_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="v2-card-more"
-            onClick={() => trackOpportunityClick(item.title, 'list')}
-          >
-            {t.details}
-          </a>
+        {moreLink}
+        {sidebarLayout ? (
+          <div className="v2-card-foot">
+            <span>
+              {age ? <span className="v2-card-foot-age">{`${age} · `}</span> : null}
+              {fmt}
+            </span>
+            {moreLink}
+          </div>
         ) : null}
       </article>
     );
@@ -1257,6 +1281,10 @@ export default function OpportunitiesList({
               </button>
             </div>
           ) : null}
+
+          {/* Dityam+ у колонці каталогу — лише ≥1100px; нижче лишається
+              звичайний PlusSection після каталогу. */}
+          {sidebarLayout && promoProps ? <PlusBanner {...promoProps} lang={lang} /> : null}
         </Wrap>
       </Wrap>
 
