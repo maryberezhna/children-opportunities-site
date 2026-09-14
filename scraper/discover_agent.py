@@ -41,6 +41,7 @@ from urllib.parse import urlparse
 from canonical import canonical_url
 from db import get_client, record_crawl_result
 import anthropic
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import hubs
 from keywords import (
     DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
@@ -234,7 +235,7 @@ def verify_candidate(rec: dict) -> tuple[bool, str]:
     if not page:
         return False, f"сторінка не відкривається ({status})"
     try:
-        llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+        llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         resp = llm.messages.create(
             model=VERIFY_MODEL, max_tokens=700, system=VERIFY_SYSTEM,
             tools=[VERIFY_TOOL], tool_choice={"type": "tool", "name": "verify"},
@@ -399,6 +400,7 @@ def search_candidates(kw: str, region: dict) -> list[dict]:
             detail = r.json().get("error", {}).get("message", detail)
         except Exception:
             pass
+        api_guard.note(r.status_code, detail)
         logger.error("Anthropic API HTTP %s: %s", r.status_code, detail)
         return []
 

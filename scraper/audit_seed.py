@@ -59,6 +59,8 @@ import sys
 import time
 
 import anthropic
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import httpx
 from bs4 import BeautifulSoup
 
@@ -284,7 +286,7 @@ def main() -> int:
         return 1
 
     db = get_client()
-    ai = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # verified_at — запис, який дивився модератор: його правки чужі, не чіпаємо.
     # canonical_slug — уже склеєний дубль, він і так не показується.

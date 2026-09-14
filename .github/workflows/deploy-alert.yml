@@ -1,6 +1,12 @@
 # Сітка №2: алерт у Telegram, коли деплой main падає (01.09.2026 між
 # поломкою і виявленням минуло пів дня — виявили випадково). Vercel шле
 # commit status; фільтруємо лише main і лише сам деплой, не коментарі.
+#
+# 14.09.2026: з 02.09 цей файл був невалідним YAML — два рядки тексту
+# повідомлення стояли без відступу й обривали блок `run: |`. GitHub відкидав
+# файл, алерт жодного разу не спрацював, а кожен пуш давав червоний запуск
+# без завдань. Текст тепер збирається в оболонці зі змінних середовища — так
+# і відступ не ламається, і повідомлення коміту не підставляється в команду.
 name: deploy-alert
 on:
   status
@@ -16,10 +22,12 @@ jobs:
         env:
           TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          DESCRIPTION: ${{ github.event.description }}
+          TARGET_URL: ${{ github.event.target_url }}
+          COMMIT_MESSAGE: ${{ github.event.commit.commit.message }}
         run: |
+          text="$(printf '🔴 Деплой main упав: %s\n%s\nКоміт: %s' "$DESCRIPTION" "$TARGET_URL" "$COMMIT_MESSAGE")"
           curl -s "https://api.telegram.org/bot${TOKEN}/sendMessage" \
             --data-urlencode chat_id="${CHAT}" \
-            --data-urlencode text="🔴 Деплой main упав: ${{ github.event.description }}
-${{ github.event.target_url }}
-Коміт: ${{ github.event.commit.commit.message }}" >/dev/null
+            --data-urlencode text="${text}" >/dev/null
           echo "alert sent"

@@ -22,6 +22,8 @@ import urllib.request
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 logger = logging.getLogger("process_notes")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -121,7 +123,7 @@ def main() -> int:
         logger.info("Нотаток немає — виходжу.")
         return 0
 
-    llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     done = 0
 
     for o in rows:

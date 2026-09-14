@@ -44,6 +44,8 @@ from urllib.parse import urlparse
 
 import httpx
 
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
+
 from db import get_client
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -199,6 +201,7 @@ def search(theme: str) -> list[dict]:
             detail = r.json().get("error", {}).get("message", detail)
         except Exception:
             pass
+        api_guard.note(r.status_code, detail)
         logger.error("Anthropic API HTTP %s: %s", r.status_code, detail)
         return []
     data = r.json()
@@ -317,6 +320,10 @@ def score(client_key: str, cand: dict, probe_status: str) -> tuple[int, str]:
                                 "anthropic-version": "2023-06-01",
                                 "content-type": "application/json"},
                        json=body, timeout=90)
+        # Оцінювач ковтає будь-яку помилку й ставить 0 — для ліміту чи оплати
+        # це ховало б, що конвеєр стоїть. Запобіжник робить запуск червоним.
+        if r.status_code >= 400:
+            api_guard.note(r.status_code, r.text[:400])
         r.raise_for_status()
         for block in r.json().get("content", []):
             if block.get("type") == "tool_use":

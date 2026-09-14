@@ -28,6 +28,8 @@ from datetime import datetime, timezone
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 logger = logging.getLogger("translate_en")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -174,7 +176,7 @@ def main() -> int:
         logger.info("Нема чого перекладати — усе свіже.")
         return 0
 
-    llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     done = failed = 0
 
     def work(row):

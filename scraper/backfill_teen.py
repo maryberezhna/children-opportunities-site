@@ -22,6 +22,8 @@ import time
 
 import anthropic
 
+
+import api_guard  # відмова через ліміт/оплату робить запуск червоним
 from db import get_client
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -170,7 +172,7 @@ def main() -> int:
         return 1
 
     db = get_client()
-    ai = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+    ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # PostgREST віддає до 1000 рядків — сторінкуємо, як усюди.
     rows, start = [], 0
