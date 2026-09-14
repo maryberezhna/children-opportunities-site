@@ -72,6 +72,7 @@ const UI = {
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
     all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном', online: '💻 Онлайн',
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
+    ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
     countWord: (n) => opportunitiesWord(n),
   },
   en: {
@@ -116,6 +117,7 @@ const UI = {
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
     all: 'All', anyCost: 'Any', abroad: '🌍 Abroad', online: '💻 Online',
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
+    ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
   },
 };
@@ -292,6 +294,8 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
     },
     place: (item) => anyOf(s.place, (v) => {
       if (v === 'abroad') return goesAbroad(item);
+      // «Україна» — усе, куди не треба їхати за кордон (дзеркало «За кордоном»).
+      if (v === 'ukraine') return !goesAbroad(item);
       if (v === 'online') return isOnline(item);
       const cities = item.cities || [];
       if (cities.includes(v)) return true;
@@ -336,7 +340,10 @@ function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }
   });
   const placeOpts = [];
   if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
-  if (places.has('online')) placeOpts.push(['online', t.online, t.online]);
+  // «Україна» й «Онлайн» мобільна шторка показує поруч із «За кордоном» в обох
+  // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
+  placeOpts.push(['ukraine', t.ukraine, t.ukraine]);
+  placeOpts.push(['online', t.online, t.online]);
   [...places].filter((p) => p !== 'abroad' && p !== 'online')
     .sort((a, b) => a.localeCompare(b, 'uk'))
     .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
@@ -977,43 +984,55 @@ export default function OpportunitiesList({
     );
   };
 
-  // «Де» в шторці — рідний випадний список телефона, а не чипи: міст
-  // десятки, і стіна чипів вимагала довго гортати (Марія 14.09.2026).
-  // Обрані місця — знімними чипами над списком; у пункті — скільки дасть.
+  // «Де» в шторці (Марія 14.09.2026): три чипи — «За кордоном», «Україна»,
+  // «Онлайн», — а місто окремо рідним випадним списком телефона: міст
+  // десятки, і стіна чипів вимагала довго гортати. Обрані міста — знімними
+  // чипами; у пункті списку — скільки дасть.
+  const PLACE_KINDS = ['abroad', 'ukraine', 'online'];
   const sheetPlace = () => {
     const counts = sheet.place;
-    const chosen = draft.place.filter((v) => v !== presetCity);
-    const opts = sheet.placeOpts.filter((o) => !draft.place.includes(o[0]) && counts[o[0]] > 0);
-    if (!opts.length && !chosen.length) return null;
+    const togglePlace = (v) => setDraft({ ...draft, place: toggle(draft.place, v) });
+    const kinds = PLACE_KINDS.filter((v) => counts[v] > 0 || draft.place.includes(v));
+    const chosenCities = draft.place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v));
+    const cityOpts = sheet.placeOpts.filter((o) => !PLACE_KINDS.includes(o[0])
+      && !draft.place.includes(o[0]) && counts[o[0]] > 0);
+    if (!kinds.length && !cityOpts.length && !chosenCities.length) return null;
     return (
       <div className="m-group" role="group" aria-labelledby="m-group-place" key="place">
         <h3 id="m-group-place">{t.sel.where}</h3>
-        {chosen.length ? (
-          <div className="m-group-chips">
-            {chosen.map((v) => (
-              <button
-                key={v}
-                type="button"
-                className="m-chip is-on"
-                aria-label={`${t.remove}: ${placeLabel(v)}`}
-                onClick={() => setDraft({ ...draft, place: draft.place.filter((x) => x !== v) })}
-              >
-                {placeLabel(v)}<span className="m-chip-x" aria-hidden="true">✕</span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-        {opts.length ? (
+        <div className="m-group-chips">
+          {kinds.map((v) => (
+            <button
+              key={v}
+              type="button"
+              className={`m-chip${draft.place.includes(v) ? ' is-on' : ''}`}
+              aria-pressed={draft.place.includes(v)}
+              onClick={() => togglePlace(v)}
+            >
+              {placeLabel(v)}<span className="m-chip-n">{counts[v]}</span>
+            </button>
+          ))}
+          {chosenCities.map((v) => (
+            <button
+              key={v}
+              type="button"
+              className="m-chip is-on"
+              aria-label={`${t.remove}: ${placeLabel(v)}`}
+              onClick={() => togglePlace(v)}
+            >
+              {placeLabel(v)}<span className="m-chip-x" aria-hidden="true">✕</span>
+            </button>
+          ))}
+        </div>
+        {cityOpts.length ? (
           <select
             className="m-select"
             value=""
-            aria-label={t.sel.where}
-            onChange={(e) => {
-              if (e.target.value) setDraft({ ...draft, place: toggle(draft.place, e.target.value) });
-            }}
+            aria-label={t.pickCity}
+            onChange={(e) => { if (e.target.value) togglePlace(e.target.value); }}
           >
-            <option value="">{chosen.length ? t.addPlace : t.pickPlace}</option>
-            {opts.map((o) => (
+            <option value="">{chosenCities.length ? t.addCity : t.pickCity}</option>
+            {cityOpts.map((o) => (
               <option key={o[0]} value={o[0]}>{`${isEn ? o[2] : o[1]} · ${counts[o[0]]}`}</option>
             ))}
           </select>
@@ -1028,6 +1047,7 @@ export default function OpportunitiesList({
     return o ? optLabel(o) : v;
   };
   const placeLabel = (v) => (v === 'abroad' ? t.abroad : v === 'online' ? t.online
+    : v === 'ukraine' ? t.ukraine
     : (isEn ? cityLabel(v, 'en') : v));
   // Мультигрупи — по чипу на кожне обране значення, щоб зняти можна було одне.
   const activeChips = [
