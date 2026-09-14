@@ -40,7 +40,10 @@ from urllib.parse import urlparse
 
 from canonical import canonical_url
 from db import get_client, record_crawl_result
-from keywords import KEYWORD_CATEGORIES, REGION_ROTATION
+import hubs
+from keywords import (
+    DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
+)
 from normalizer import _sanitize
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -60,24 +63,48 @@ DRY_RUN = os.environ.get("DRY_RUN") == "true"
 DUP_SKIP = float(os.environ.get("DUP_SKIP") or "0.80")
 DUP_TAG = float(os.environ.get("DUP_TAG") or "0.60")
 
-# Specific, meaningful search terms (the 12 themes, flattened). Generic signal
-# words from keywords.ALL_KEYWORDS are intentionally excluded — they make poor
-# stand-alone search queries.
-KEYWORDS = sorted({kw for kws in KEYWORD_CATEGORIES.values() for kw in kws})
+# Лише пріоритетні теми, категорії чергуються щодня — див. keywords.DISCOVER_KEYWORDS.
+KEYWORDS = DISCOVER_KEYWORDS
+
+# Профіль «рідкісне за кордоном» (discover-rare.yml): свої теми, лише закордонні
+# регіони й окремий фокус у промпті. Решта конвеєра — та сама: дедуп, п'ять
+# обовʼязкових полів, лише чернетки на модерацію.
+PROFILE = (os.environ.get("DISCOVER_PROFILE") or "").strip()
+RARE = PROFILE == "rare_abroad"
+
+RARE_FOCUS = (
+    "\nЦЕЙ ПОШУК — ПРО РІДКІСНЕ Й НЕЗВИЧНЕ. Шукай те, про що батьки самі не "
+    "дізнаються: програми фондів відомих людей і клубів (зразок — безкоштовний "
+    "тенісний табір Фонду Марти Костюк в Іспанії для українських дітей), "
+    "спортивні, мистецькі й наукові табори, експедиції, турніри, резиденції, "
+    "реабілітаційний відпочинок.\n"
+    "Бери ЛИШЕ якщо з тексту видно одне з двох: програма прямо для дітей з "
+    "України, АБО в умовах явно сказано, що можуть подаватися діти з України чи "
+    "з будь-якої країни. Якщо умов участі не видно — не бери.\n"
+    "НЕ бери: звичайні гуртки й мовні курси, олімпіади й конкурси лише для "
+    "громадян цієї країни, комерційні табори без жодної ознаки відкритості для "
+    "українських дітей.\n"
+    "Вік — будь-який у межах 0–18; у summary одним реченням поясни, що саме "
+    "незвичне і хто може подаватися.\n"
+)
+
+
+def _regions() -> list[dict]:
+    return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
 
 
 def keyword_of_day() -> str:
-    """Deterministic keyword-of-the-day — rotates through the whole list once
-    every len(KEYWORDS) days, no state needed.
+    """Слово дня — детермінована ротація по KEYWORDS, без стану.
 
     DISCOVER_KEYWORD перебиває ротацію — так само, як DISCOVER_REGION перебиває
-    регіон. Потрібно, щоб закрити тему, яку не можна чекати: ротація триває
-    161 день, а кампанія має дату."""
+    регіон. Потрібно, щоб закрити тему, яку не можна чекати: кампанія має дату,
+    а ротація — ні."""
     override = (os.environ.get("DISCOVER_KEYWORD") or "").strip()
     if override:
         return override
+    pool = RARE_ABROAD_KEYWORDS if RARE else KEYWORDS
     doy = date.today().timetuple().tm_yday
-    return KEYWORDS[doy % len(KEYWORDS)]
+    return pool[doy % len(pool)]
 
 
 def region_of_day() -> dict:
@@ -89,16 +116,17 @@ def region_of_day() -> dict:
     """
     forced = (os.environ.get("DISCOVER_REGION") or "").strip()
     if forced:
-        for r in REGION_ROTATION:
+        for r in _regions():
             if r["name"].casefold() == forced.casefold():
                 logger.info(f"Регіон задано вручну: {r['name']}")
                 return r
-        known = ", ".join(sorted({r["name"] for r in REGION_ROTATION}))
+        known = ", ".join(sorted({r["name"] for r in _regions()}))
         raise SystemExit(
             f"DISCOVER_REGION={forced!r} — такого регіону немає.\nДоступні: {known}"
         )
     doy = date.today().timetuple().tm_yday
-    return REGION_ROTATION[doy % len(REGION_ROTATION)]
+    regions = _regions()
+    return regions[doy % len(regions)]
 
 
 def _prompt(kw: str, region: dict) -> str:
@@ -119,6 +147,7 @@ def _prompt(kw: str, region: dict) -> str:
            f"\nТему «{kw}» сприймай як загальний напрям, а не буквальний запит: "
            f"шукай місцевий відповідник. Українських реалій (ДЮСШ, МАН, НУШ, "
            f"позашкілля) в цій країні немає — там свої формати.\n")
+        + (RARE_FOCUS if RARE else "")
         + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
@@ -300,8 +329,9 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         # Джерело — той, хто опублікував. Слід агента (запит і країна) іде в
         # admin_comment: модератору він потрібен, відвідувачу — ні.
         "source": publisher(url) or "інтернет",
-        "admin_comment": f"🔎 Агент: {kw}" if region["name"] == "Україна"
-                         else f"🔎 Агент: {kw} · {region['name']}",
+        "admin_comment": (f"🌍 Рідкісне за кордоном: {kw} · {region['name']}" if RARE
+                          else f"🔎 Агент: {kw}" if region["name"] == "Україна"
+                          else f"🔎 Агент: {kw} · {region['name']}"),
         "source_url": url,
         "canonical_url": canonical_url(url),
         "status": "draft",
@@ -383,6 +413,8 @@ def notify_new(added: int, kw: str) -> None:
 def main() -> int:
     kw = keyword_of_day()
     region = region_of_day()
+    if RARE:
+        logger.info("🌍 Профіль: рідкісне за кордоном")
     logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
                 kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
 
@@ -405,19 +437,21 @@ def main() -> int:
 
     # URL-дедуп: назва кандидата може бути якою завгодно, але сайт, що вже є в
     # каталозі, НЕ сміє пропонуватися як новий (кейс liouba-lorrukraine.fr —
-    # запис існував з квітня, а дедуп по назві його не бачив). Домени-хаби
-    # (портали з багатьма окремими можливостями) виключаємо через dedup_hub_urls.
-    existing_cus, existing_domains = set(), set()
+    # запис існував з квітня, а дедуп по назві його не бачив).
+    #
+    # «Сайт уже є» — лише коли в базі запис про сайт ЦІЛКОМ (корінь домену).
+    # Раніше тут вистачало будь-якого запису з домену, а хаби читались із
+    # колонки `url`, якої в dedup_hub_urls немає (там url_prefix): виняток тихо
+    # ковтався, список хабів завжди був порожній, і портал на кшталт
+    # spilkuisia.kr.gov.ua відкидав усі нові можливості (11.09.2026: 5 із 8).
+    existing_cus, existing_urls = set(), []
     for r in rows:
         cu = r.get("canonical_url") or (canonical_url(r["source_url"]) if r.get("source_url") else "")
         if cu:
             existing_cus.add(cu)
-            existing_domains.add(_domain(cu))
-    try:
-        hub_rows = client.table("dedup_hub_urls").select("url").execute().data or []
-    except Exception:
-        hub_rows = []
-    hub_domains = {_domain(h["url"]) for h in hub_rows if h.get("url")}
+            existing_urls.append(cu)
+    site_domains = hubs.site_root_domains(existing_urls)
+    hub_domains = hubs.hub_domains(hubs.prime(client))
 
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     for c in candidates:
@@ -432,9 +466,9 @@ def main() -> int:
             dup_skipped += 1
             logger.info("  ⏭ URL уже в каталозі — не пропоную: %s", cu)
             continue
-        if dom and dom in existing_domains and dom not in hub_domains:
+        if dom and dom in site_domains and dom not in hub_domains:
             dup_skipped += 1
-            logger.info("  ⏭ домен уже в каталозі (%s) — не пропоную: %s",
+            logger.info("  ⏭ сайт уже в каталозі як одна можливість (%s) — не пропоную: %s",
                         dom, rec["title"][:55])
             continue
 
@@ -469,7 +503,9 @@ def main() -> int:
             existing.append((rec["slug"], _norm_title(rec["title"])))
             if cu:
                 existing_cus.add(cu)
-                existing_domains.add(dom)
+                # Щойно доданий сайт-цілком теж має блокувати повтор у цій же партії.
+                if hubs.is_site_root(cu):
+                    site_domains.add(dom)
             logger.info("  ✅ draft%s: %s",
                         f" ⚠дубль~{int(score*100)}%" if rec.get("dup_of") else "",
                         rec["title"][:65])

@@ -75,6 +75,18 @@ export default function Header() {
     return onModeChange(setMode);
   }, []);
 
+  // Меню на телефоні. На вузьких екранах навігацію сховано (.v2-nav), і в
+  // шапці лишались лише лого й одна кнопка — до «Про проєкт», Dityam+ і
+  // Telegram можна було дістатися тільки через футер унизу сторінки.
+  const [menuOpen, setMenuOpen] = useState(false);
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
+
   if (pathname.startsWith('/admin')) return null;
 
   const track = (label) => () => {
@@ -152,7 +164,52 @@ export default function Header() {
             🧡 {isEnglish ? 'Support' : 'Підтримати'}
           </a>
         </div>
+
+        <button
+          type="button"
+          className="v2-burger"
+          aria-expanded={menuOpen}
+          aria-controls="v2-mobile-menu"
+          aria-label={isEnglish
+            ? (menuOpen ? 'Close menu' : 'Open menu')
+            : (menuOpen ? 'Закрити меню' : 'Відкрити меню')}
+          onClick={() => setMenuOpen((v) => !v)}
+        >
+          <span aria-hidden="true" className={menuOpen ? 'v2-burger-lines is-open' : 'v2-burger-lines'} />
+        </button>
       </div>
+
+      {menuOpen ? (
+        <nav id="v2-mobile-menu" className="v2-mmenu" aria-label={isEnglish ? 'Menu' : 'Меню'}>
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={item.active ? 'is-active' : undefined}
+              onClick={() => { track(item.label)(); setMenuOpen(false); }}
+            >
+              {item.label}
+            </Link>
+          ))}
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => { track('telegram')(); setMenuOpen(false); }}
+          >
+            Telegram
+          </a>
+          <a
+            href={MONOBANK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="v2-mmenu-support"
+            onClick={() => { track('support')(); setMenuOpen(false); }}
+          >
+            🧡 {isEnglish ? 'Support' : 'Підтримати'}
+          </a>
+        </nav>
+      ) : null}
     </header>
   );
 }

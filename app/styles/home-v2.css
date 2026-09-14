@@ -134,6 +134,93 @@
 
 .v2-support-btn:hover { background: var(--v2-accent-hover); }
 
+/* ── Меню на телефоні (див. Header.js) ─────────────────────────────────
+   На широких екранах кнопки й панелі немає: там навігація в самій шапці. */
+.v2-burger {
+  display: none;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 12px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.v2-burger:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 2px; }
+
+.v2-burger-lines,
+.v2-burger-lines::before,
+.v2-burger-lines::after {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--v2-ink);
+  transition: transform 0.2s, background 0.2s;
+}
+
+.v2-burger-lines { position: relative; }
+
+.v2-burger-lines::before,
+.v2-burger-lines::after {
+  content: '';
+  position: absolute;
+  left: 0;
+}
+
+.v2-burger-lines::before { top: -6px; }
+.v2-burger-lines::after { top: 6px; }
+.v2-burger-lines.is-open { background: transparent; }
+.v2-burger-lines.is-open::before { top: 0; transform: rotate(45deg); }
+.v2-burger-lines.is-open::after { top: 0; transform: rotate(-45deg); }
+
+.v2-mmenu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 20px 20px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--v2-line);
+  box-shadow: 0 16px 32px rgba(26, 26, 26, 0.08);
+}
+
+.v2-mmenu a {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  border-bottom: 1px solid var(--v2-line);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--v2-ink);
+  text-decoration: none;
+}
+
+.v2-mmenu a.is-active { color: var(--v2-accent-hover); }
+
+.v2-mmenu .v2-mmenu-support {
+  justify-content: center;
+  min-height: 48px;
+  margin-top: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--v2-accent);
+  color: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-burger-lines,
+  .v2-burger-lines::before,
+  .v2-burger-lines::after { transition: none; }
+}
+
 /* ── Хіро ──────────────────────────────────────────────────────────────── */
 /* Текст ліворуч, фото праворуч. Ширина правої колонки обмежена з обох
    боків, щоб заголовок не з'їжджав у вузький стовпчик на середніх екранах. */
@@ -938,6 +1025,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   .v2-nav { display: none; }
   .v2-header-right { display: contents; }
   .v2-support-btn { margin-left: auto; padding: 8px 13px; }
+  .v2-burger { display: inline-flex; }
   .v2-mode { order: 10; flex-basis: 100%; }
   .v2-mode button { flex: 1; padding: 6px 12px; font-size: 0.8125rem; }
   /* На телефоні фото йде під текст і стає нижчою смугою: повний овал
@@ -961,4 +1049,10 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
    «Підтримати» не тіснилися в першому ряду. */
 @media (max-width: 340px) {
   .v2-logo-script { font-size: 1.4375rem; }
+}
+
+/* Лого, «Підтримати» й кнопка меню в одному ряду на 360px. */
+@media (max-width: 380px) {
+  .v2-header-inner { gap: 8px; }
+  .v2-support-btn { padding: 7px 10px; font-size: 0.8125rem; }
 }

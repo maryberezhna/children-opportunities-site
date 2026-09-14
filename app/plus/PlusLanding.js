@@ -118,7 +118,7 @@ const L = {
 
     howTitle: 'Як це працює',
     how4: [
-      ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Ні імені, ні школи.'],
+      ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Імені, прізвища чи школи дитини не запитуємо.'],
       ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
@@ -140,7 +140,7 @@ const L = {
       'доставка в Telegram або на email',
     ],
     trust: (total) => [
-      'Не питаємо ні імені дитини, ні школи',
+      'Не запитуємо імені, прізвища чи школи дитини',
       'Платформа лишається безкоштовною для всіх',
       'Скасувати можна одною командою',
       total ? `${total.toLocaleString('uk-UA')} ${opportunitiesWord(total)} — щодня додаємо нові й перевіряємо` : 'Щодня додаємо нові можливості й перевіряємо',
@@ -260,7 +260,7 @@ const L = {
 
     howTitle: 'How it works',
     how4: [
-      ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. No name, no school.'],
+      ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. We don’t ask for your child’s name, surname or school.'],
       ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
@@ -282,7 +282,7 @@ const L = {
       'delivery on Telegram or by email',
     ],
     trust: (total) => [
-      'We never ask for your child’s name or school',
+      'We don’t ask for your child’s name, surname or school',
       'The platform stays free for everyone',
       'Cancel with one command',
       total ? `${total.toLocaleString('en-US')} opportunities — new ones added and checked daily` : 'New opportunities added and checked daily',
