@@ -7,7 +7,10 @@
 .v2-catalog-main { display: contents; }
 
 .v2-side,
-.v2-side-count { display: none; }
+.v2-side-count,
+.v2-card-head,
+.v2-card-foot,
+.plus-banner { display: none; }
 
 @media (min-width: 1100px) {
   .v2-home .v2-filters { display: none; }
@@ -26,17 +29,145 @@
     min-width: 0;
   }
 
-  /* Колонка вужча за контейнер — без цього третя картка топу падала б
-     окремим рядом. */
+  /* Топ — три картки в ряд; стрічка — дві (макет Марії 14.09.2026). На
+     1360px контейнері auto-fill дав би стрічці три колонки. */
   .v2-home .v2-top .v2-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .v2-home .v2-catalog-main > .v2-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  /* У картці завширшки 252px повний опис розтягував топ на 11 рядків. */
-  .v2-home .v2-top .v2-card-summary {
+  /* У батьківському режимі топ без кремової підкладки — кремові самі
+     картки. Підлітковий чорний блок лишається як був. */
+  html:not([data-mode="teens"]) .v2-home .v2-top { background: transparent; padding: 0; }
+  .v2-home .v2-top .v2-card { background: #f4efe4; border-color: transparent; }
+
+  /* ── Картка ───────────────────────────────────────────────────────────── */
+  .v2-home .v2-card { padding: 24px 28px; gap: 12px; }
+
+  .v2-home .v2-card-tags,
+  .v2-home .v2-card dl,
+  .v2-home .v2-card > .v2-card-more { display: none; }
+
+  .v2-home .v2-card-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--v2-ink-2);
+    white-space: nowrap;
+  }
+
+  .v2-home .v2-card-type { font-weight: 700; }
+  .v2-home .v2-card-dot { color: #b8b3a6; }
+
+  .v2-home .v2-card-dl {
+    margin-left: auto;
+    color: var(--v2-ink-2);
+  }
+
+  .v2-home .v2-card-dl.is-urgent { color: var(--v2-accent); font-weight: 700; }
+
+  .v2-home .v2-card h3 {
+    font-size: 20px;
+    font-weight: 800;
+    line-height: 1.3;
+  }
+
+  .v2-home .v2-card-summary {
+    font-size: 15px;
+    line-height: 1.55;
     display: -webkit-box;
-    -webkit-line-clamp: 4;
+    -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
+
+  .v2-home .v2-card-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;
+    padding-top: 6px;
+    font-size: 14px;
+    color: var(--v2-ink-3);
+  }
+
+  .v2-home .v2-card-foot .v2-card-more {
+    margin-top: 0;
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  /* У стрічці вік стоїть угорі, у топі — внизу поруч із форматом, а
+     «Детальніше» там не потрібне: картка сама веде на сторінку. */
+  .v2-home .v2-card-foot-age { display: none; }
+  .v2-home .v2-top .v2-card-foot-age { display: inline; }
+  .v2-home .v2-top .v2-card-dot,
+  .v2-home .v2-top .v2-card-age,
+  .v2-home .v2-top .v2-card-foot .v2-card-more { display: none; }
+
+  /* PlusSection після каталогу на цій ширині замінює банер у колонці. */
+  .v2-home .plus-section { display: none; }
+
+  .v2-home .plus-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+    padding: 32px 40px;
+    border-radius: 20px;
+    background: var(--v2-ink);
+    color: #ffffff;
+  }
+
+  .v2-home .plus-banner-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 680px;
+  }
+
+  .v2-home .plus-banner-badge {
+    align-self: flex-start;
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: var(--v2-accent);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .v2-home .plus-banner-title {
+    margin: 0;
+    font-size: 24px;
+    font-weight: 800;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: #ffffff;
+  }
+
+  .v2-home .plus-banner-lead {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.55;
+    color: #c9c3b6;
+  }
+
+  .v2-home .plus-banner-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    height: 52px;
+    padding: 0 28px;
+    border-radius: 9999px;
+    background: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--v2-ink);
+    text-decoration: none;
+  }
+
+  .v2-home .plus-banner-btn:hover { background: var(--v2-cream); color: var(--v2-ink); }
 
   /* ── Панель ───────────────────────────────────────────────────────────── */
   .v2-home .v2-side {
@@ -189,11 +320,17 @@
     justify-content: space-between;
     align-items: baseline;
     gap: 16px;
-    padding: 0 4px;
-    font-size: 15px;
-    color: var(--v2-ink-2);
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--v2-line);
+    color: var(--v2-ink);
   }
 
-  .v2-home .v2-side-count strong { color: var(--v2-ink); }
-  .v2-home .v2-side-count-hint { font-size: 13px; color: var(--v2-ink-3); }
+  .v2-home .v2-side-count > span:first-child {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  .v2-home .v2-side-count strong { font-weight: inherit; }
+  .v2-home .v2-side-count-hint { font-size: 14px; color: var(--v2-ink-3); }
 }

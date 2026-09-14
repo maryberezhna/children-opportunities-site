@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { opportunitiesWord } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
 
@@ -15,7 +16,7 @@ const L = {
     title: 'Платформа показує все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
     leadHead: 'Щодня ми перебираємо',
     leadFallback: 'сотні можливостей',
-    leadTail: 'і надсилаємо в Telegram лише ті, що підходять кожній вашій дитині, — з нагадуванням про дедлайн.',
+    leadTail: 'і надсилаємо вам у Telegram або на імейл лише ті, що підходять кожній вашій дитині, — з нагадуванням про дедлайн.',
     chipsLabel: 'Переваги підписки',
     chips: ['добирає під кожну дитину', 'лише нове', 'нагадує вчасно'],
     doneTitle: 'Ви в списку! 🧡',
@@ -34,7 +35,7 @@ const L = {
     title: 'The platform shows everything that exists. Dityam+ sends what fits your child.',
     leadHead: 'Every day we go through',
     leadFallback: 'hundreds of opportunities',
-    leadTail: 'and send to Telegram only the ones that fit each of your children — with a deadline reminder.',
+    leadTail: 'and send you only the ones that fit each of your children, on Telegram or by email — with a deadline reminder.',
     chipsLabel: 'What the subscription does',
     chips: ['matched to each child', 'only what is new', 'reminds in time'],
     doneTitle: 'You’re on the list! 🧡',
@@ -153,6 +154,37 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
           </p>
         </div>
       </div>
+    </section>
+  );
+}
+
+/**
+ * Той самий Dityam+ чорним банером у колонці каталогу головної (≥1100px,
+ * поруч із бічними фільтрами). Замість форми — кнопка на /plus: там список
+ * очікування з повним поясненням. Текст — той самий, що в PlusSection.
+ */
+export function PlusBanner({ total, lang = 'uk' }) {
+  const t = L[lang] || L.uk;
+  return (
+    <section className="plus-banner" aria-labelledby="plus-banner-title">
+      <div className="plus-banner-copy">
+        <span className="plus-banner-badge">Dityam+</span>
+        <h2 id="plus-banner-title" className="plus-banner-title">{t.title}</h2>
+        <p className="plus-banner-lead">
+          {t.leadHead}{' '}
+          {total
+            ? `${total} ${lang === 'en' ? 'opportunities' : opportunitiesWord(total)}`
+            : t.leadFallback}{' '}
+          {t.leadTail}
+        </p>
+      </div>
+      <Link
+        href={lang === 'en' ? '/en/plus' : '/plus'}
+        className="plus-banner-btn"
+        onClick={() => trackConversion('plus_banner_click', { event_label: 'home_catalog' })}
+      >
+        {t.submit}
+      </Link>
     </section>
   );
 }
