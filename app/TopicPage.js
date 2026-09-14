@@ -1,69 +1,167 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
-import { TOPIC_NAV, topicPath } from '@/lib/topics';
+import { TOPIC_LIST, topicPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import OpportunitiesList from './OpportunitiesList';
+import { kyivToday, daysUntil } from '@/lib/dates';
+import { isLive } from '@/lib/audience';
+import { isEvent } from '@/lib/labels';
+import TopicCards from './topic/TopicCards';
+import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
 import SubscribePopup from './SubscribePopup';
 import SupportPopup from './SupportPopup';
 import Footer from './Footer';
 
-const SITE_URL = 'https://dityam.com.ua';
+/**
+ * Шаблон сторінки підбірки (/za-kordon, /konkursy і решта, uk і en).
+ *
+ * Вересень 2026 — за макетом ~/Downloads/design_handoff_dityam_pidbirka:
+ * кремовий хіро з фото, підфільтри з лічильниками, картки у дві колонки з
+ * промо Dityam+ після четвертої, «Важливо знати», «Часті питання», «Інші
+ * підбірки». Увесь контент — з lib/topics.js (heading, intro, note, faq,
+ * heroImage, related, showPromo, subfilters) і з живої бази (лічильники,
+ * картки). Тут лише рамка: підписи кнопок і заголовків блоків.
+ *
+ * GEO/SEO: title без хвоста шаблону layout, власні OG і Twitter з фото
+ * підбірки, видимі хлібні крихти, речення з числами й датою, яке асистенти
+ * цитують дослівно, і один JSON-LD @graph: CollectionPage + ItemList +
+ * BreadcrumbList + FAQPage.
+ *
+ * Міські підбірки (/[city]/[topic]) мають власну розмітку й цей шаблон не
+ * використовують.
+ */
 
-/** Тексти обрамлення сторінки. Контент теми живе в lib/topics.js. */
+const SITE_URL = 'https://dityam.com.ua';
+const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
+
 const CHROME = {
   uk: {
-    back: '← Всі можливості',
-    otherTopics: 'Інші підбірки',
-    faqTitle: 'Часті питання',
-    moreTitle: 'Більше можливостей — на головній',
-    moreText: 'Тут лише одна підбірка. На головній — усі можливості для дітей і підлітків, з фільтрами за віком, дедлайном, вартістю й містом.',
-    moreCta: 'Усі можливості →',
     home: 'Головна',
-    withDeadline: 'з відкритою подачею',
-    siteName: 'Можливості для дитини',
-    locale: 'uk_UA',
+    eyebrow: (d) => `Підбірка · оновлено ${d}`,
+    telegram: 'Отримувати нові в Telegram',
+    share: 'Поділитися підбіркою',
+    shared: 'Посилання скопійовано',
+    factTotal: 'Можливостей',
+    factFree: 'Безкоштовних',
+    factWeek: 'Закриваються цього тижня',
+    noteTitle: ['Важливо', 'знати'],
+    faqTitle: ['Часті', 'питання'],
+    relatedTitle: ['Інші', 'підбірки'],
+    feedback: (a) => <>Побачили помилку або знаєте, чого тут бракує, — {a}.</>,
+    feedbackLink: 'напишіть у Telegram',
+    homeLink: 'Усі можливості — на головній →',
     sentence: (updated, total, freeCount) =>
       `Станом на ${updated} на платформі Dityam.com.ua — ${total} ${opportunitiesWord(total)} `
-      // Твердження про ручну перевірку прибрано 14.09.2026 на прохання Марії: записи проходять автоматичні ворота, людина дивиться лише сумнівні.
-      + `в цій категорії`
+      + `у цій підбірці`
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
-    countLabel: (n) => opportunitiesWord(n),
-    freeLabel: (n) => freeWord(n),
-    freeChip: 'Безкоштовно',
+    count: (n) => `${n} ${opportunitiesWord(n)}`,
+    promoTitle: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
+    promoText: (n) => `Щодня перебираємо ${n} ${opportunitiesWord(n)} цієї підбірки й надсилаємо в Telegram лише ті, `
+      + 'що підходять вашій дитині за віком, вподобаннями й містом, — з нагадуванням про дедлайн завчасно.',
+    promoCta: 'Дізнатися першим',
+    cards: {
+      all: 'Усі',
+      sort: 'за дедлайном, найближчі спочатку',
+      details: 'Детальніше ↗',
+      emptyTitle: 'Нічого не знайдено',
+      emptyText: 'Спробуйте інший фільтр.',
+      listLabel: 'Можливості підбірки',
+      filterLabel: 'Фільтр за типом',
+    },
+    // Рядок, а не функція: функцію сервер не може передати в клієнтський компонент.
+    more: 'Показати ще {n}',
+    siteName: 'Dityam.com.ua',
+    locale: 'uk_UA',
+    dateLocale: 'uk-UA',
   },
   en: {
-    back: '← All opportunities',
-    otherTopics: 'Other collections',
-    faqTitle: 'Frequently asked questions',
-    moreTitle: 'More opportunities on the home page',
-    moreText: 'This page is one collection. The home page lists every opportunity for children and teens, with filters by age, deadline, cost and city.',
-    moreCta: 'All opportunities →',
     home: 'Home',
-    withDeadline: 'open for applications',
-    siteName: 'Dityam.com.ua',
-    locale: 'en_US',
+    eyebrow: (d) => `Collection · updated ${d}`,
+    telegram: 'Get new ones on Telegram',
+    share: 'Share this collection',
+    shared: 'Link copied',
+    factTotal: 'Opportunities',
+    factFree: 'Free',
+    factWeek: 'Closing this week',
+    noteTitle: ['Good to', 'know'],
+    faqTitle: ['Frequently asked', 'questions'],
+    relatedTitle: ['Other', 'collections'],
+    feedback: (a) => <>Spotted a mistake or know what is missing here? {a}.</>,
+    feedbackLink: 'Write to us on Telegram',
+    homeLink: 'All opportunities on the home page →',
     sentence: (updated, total, freeCount) =>
       `As of ${updated}, Dityam.com.ua lists ${total} `
-      + `${total === 1 ? 'opportunity' : 'opportunities'} in this category`
+      + `${total === 1 ? 'opportunity' : 'opportunities'} in this collection`
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
-    countLabel: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
-    freeLabel: () => 'free of charge',
-    freeChip: 'Free',
+    count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
+    promoTitle: 'Here we show everything that exists. Dityam+ sends what fits your child.',
+    promoText: (n) => `Every day we go through ${n} ${n === 1 ? 'opportunity' : 'opportunities'} in this collection and send to Telegram `
+      + 'only the ones that fit your child by age, interests and city — with a deadline reminder in good time.',
+    promoCta: 'Tell me first',
+    cards: {
+      all: 'All',
+      sort: 'by deadline, soonest first',
+      details: 'Details ↗',
+      emptyTitle: 'Nothing found',
+      emptyText: 'Try a different filter.',
+      listLabel: 'Opportunities in this collection',
+      filterLabel: 'Filter by type',
+    },
+    more: 'Show {n} more',
+    siteName: 'Dityam.com.ua',
+    locale: 'en_GB',
+    dateLocale: 'en-GB',
   },
 };
 
+// Підписи підфільтрів — множина типу. Сам набір пігулок рахується з карток
+// підбірки (див. buildSubfilters), тож для кожної теми він свій і живий.
+const SUB_LABELS = {
+  uk: {
+    exchange: 'Обміни', scholarship: 'Стипендії', camp: 'Табори', summer_school: 'Літні школи',
+    olympiad: 'Олімпіади', competition: 'Конкурси', club: 'Гуртки', course: 'Курси',
+    workshop: 'Майстер-класи', grant: 'Гранти', internship: 'Стажування',
+    study_program: 'Навчальні програми', festival: 'Фестивалі', hackathon: 'Хакатони',
+    allowance: 'Виплати', medical_aid: 'Мед. допомога', psychology: 'Психологія',
+    rehabilitation: 'Реабілітація', conference: 'Конференції', volunteer: 'Волонтерство',
+    mentorship: 'Менторство', award: 'Премії', sport_tournament: 'Турніри',
+    residency: 'Резиденції', educational_material: 'Матеріали', humanitarian: 'Гум. допомога',
+    legal_aid: 'Правова допомога', excursion: 'Екскурсії',
+  },
+  en: {
+    exchange: 'Exchanges', scholarship: 'Scholarships', camp: 'Camps', summer_school: 'Summer schools',
+    olympiad: 'Olympiads', competition: 'Competitions', club: 'Clubs', course: 'Courses',
+    workshop: 'Workshops', grant: 'Grants', internship: 'Internships',
+    study_program: 'Study programmes', festival: 'Festivals', hackathon: 'Hackathons',
+    allowance: 'Payments', medical_aid: 'Medical aid', psychology: 'Psychological support',
+    rehabilitation: 'Rehabilitation', conference: 'Conferences', volunteer: 'Volunteering',
+    mentorship: 'Mentorship', award: 'Awards', sport_tournament: 'Tournaments',
+    residency: 'Residencies', educational_material: 'Materials', humanitarian: 'Humanitarian aid',
+    legal_aid: 'Legal aid', excursion: 'Excursions',
+  },
+};
+// Соціальні виплати й виплати батькам шукають як одне.
+const SUB_GROUP = { support_payment: 'allowance' };
+
 /** Контент теми потрібною мовою: англійський лежить у topic.en. */
 const content = (topic, lang) => (lang === 'en' ? topic.en : topic);
+
+const heroImageOf = (topic, lang) => content(topic, lang).heroImage || null;
 
 export function topicMetadata(topic, lang = 'uk') {
   const c = content(topic, lang);
   const ch = CHROME[lang] || CHROME.uk;
   const url = `${SITE_URL}${topicPath({ slug: topic.slug, slugEn: topic.en.slug }, lang)}`;
+  const hero = heroImageOf(topic, lang);
+  const image = hero
+    ? { url: `${hero.src}.jpg`, width: 900, height: 600, alt: hero.alt }
+    : { url: '/og-image.png', width: 1200, height: 630, alt: c.title };
   return {
-    title: c.title,
+    // absolute: шаблон layout дописує «| Можливості для дитини», і заголовок
+    // підбірки розтягувався до 90 символів, яких Google однаково не покаже.
+    title: { absolute: c.title },
     description: c.description,
     alternates: {
       canonical: url,
@@ -81,86 +179,209 @@ export function topicMetadata(topic, lang = 'uk') {
       siteName: ch.siteName,
       title: c.title,
       description: c.description,
-      images: [{ url: '/og-image.png', width: 1200, height: 630, alt: c.title }],
+      images: [image],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: c.title,
+      description: c.description,
+      images: [image.url],
     },
   };
 }
 
-async function getTopicOpportunities(topic, lang) {
+// Збій бази кидає помилку, а не віддає порожню підбірку (#263): під час ISR
+// лишається попередня добра версія сторінки, під час збірки падає деплой.
+// fetchAllRows кешує однакову вибірку на 60 с, тож підбірки на одній мові
+// тягнуть каталог один раз.
+async function getRows(lang, slug) {
   if (!supabase) return [];
-  const data = rowsOrThrow(await fetchAllRows(() =>
+  return rowsOrThrow(await fetchAllRows(() =>
     publicOpportunities(lang === 'en' ? CARD_FIELDS_EN : CARD_FIELDS)
-      .order('created_at', { ascending: false }).order('id')), `topic ${topic.slug}`);
-  return data.filter(topic.match);
+      .order('created_at', { ascending: false }).order('id')), `topic ${slug} ${lang}`);
 }
+
+/** Найближчий дедлайн угорі, без дедлайну — вкінці; закріплені — першими. */
+function sortByDeadline(items, todayIso, pinned) {
+  const rank = (o) => {
+    const d = daysUntil(o.deadline, todayIso);
+    return d === null || d < 0 ? Number.POSITIVE_INFINITY : d;
+  };
+  return [...items].sort((a, b) => {
+    const pa = pinned.has(a.id) ? 0 : 1;
+    const pb = pinned.has(b.id) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    const ra = rank(a);
+    const rb = rank(b);
+    if (ra === rb) return 0;
+    return ra < rb ? -1 : 1;
+  });
+}
+
+/**
+ * Підфільтри. Тема може задати свої (topic.subfilters: [{ key, label,
+ * labelEn, types }]); інакше — з типів, що реально є в підбірці: щонайменше
+ * два записи, до пʼяти пігулок, найбільші спочатку. Менше двох пігулок —
+ * рядок не показуємо: фільтр з одного варіанта нічого не фільтрує.
+ */
+function buildSubfilters(topic, items, lang) {
+  if (topic.subfilters?.length) {
+    return topic.subfilters
+      .map((s) => ({
+        key: s.key,
+        label: lang === 'en' ? (s.labelEn || s.label) : s.label,
+        types: s.types,
+        count: items.filter((o) => s.types.includes(o.opportunity_type)).length,
+      }))
+      .filter((s) => s.count > 0);
+  }
+  const labels = SUB_LABELS[lang] || SUB_LABELS.uk;
+  const groups = new Map();
+  for (const o of items) {
+    const key = SUB_GROUP[o.opportunity_type] || o.opportunity_type;
+    if (!labels[key]) continue;
+    if (!groups.has(key)) groups.set(key, new Set());
+    groups.get(key).add(o.opportunity_type);
+  }
+  return [...groups.entries()]
+    .map(([key, types]) => ({
+      key,
+      label: labels[key],
+      types: [...types],
+      count: items.filter((o) => types.has(o.opportunity_type)).length,
+    }))
+    .filter((s) => s.count >= 2)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+}
+
+/** Інші підбірки: з topic.related, а без нього — найбільші за кількістю. */
+function buildRelated(topic, liveRows) {
+  const others = TOPIC_LIST.filter((t) => t.slug !== topic.slug)
+    .map((t) => ({ topic: t, count: liveRows.filter(t.match).length }));
+  if (topic.related?.length) {
+    return topic.related
+      .map((slug) => others.find((o) => o.topic.slug === slug))
+      .filter(Boolean)
+      .slice(0, 4);
+  }
+  return others.sort((a, b) => b.count - a.count).slice(0, 4);
+}
+
+// Картці в браузері треба небагато — не тягнемо зайвих полів у HTML.
+const slim = (o) => ({
+  id: o.id, slug: o.slug, title: o.title, title_en: o.title_en || null,
+  summary: o.summary, summary_en: o.summary_en || null, source: o.source,
+  opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to,
+  deadline: o.deadline, cities: o.cities, countries: o.countries || null,
+  is_international: o.is_international || false, format: o.format,
+});
 
 export default async function TopicPage({ topic, lang = 'uk' }) {
   const c = content(topic, lang);
   const ch = CHROME[lang] || CHROME.uk;
-  const opportunities = await getTopicOpportunities(topic, lang);
-  const total = opportunities.length;
-  const freeCount = opportunities.filter((o) => o.cost_type === 'free').length;
-  const withDeadline = opportunities.filter((o) => {
-    if (!o.deadline) return false;
-    const d = new Date(o.deadline);
-    return !isNaN(d) && d >= new Date(new Date().toDateString());
+  const isEn = lang === 'en';
+  const todayIso = kyivToday();
+
+  const rows = await getRows(lang, topic.slug);
+  const liveRows = rows.filter((o) => isLive(o, todayIso));
+  const matched = liveRows.filter(topic.match);
+
+  // «Лише для» — закріплені нагорі з позначкою (зараз лише «Дітям захисників»).
+  const pinned = new Set(
+    c.pinnedLabel && topic.exclusive ? matched.filter(topic.exclusive).map((o) => o.id) : [],
+  );
+  const items = sortByDeadline(matched, todayIso, pinned);
+
+  const total = items.length;
+  const freeCount = items.filter((o) => o.cost_type === 'free').length;
+  const urgentWeek = items.filter((o) => {
+    if (isEvent(o)) return false;
+    const d = daysUntil(o.deadline, todayIso);
+    return d !== null && d >= 0 && d <= 7;
   }).length;
 
-  // «Лише для» — закріплені нагорі єдиного списку з позначкою (зараз лише
-  // «Дітям захисників»). Раніше це був окремий блок над каталогом.
-  const pinnedIds = c.pinnedLabel && topic.exclusive ? opportunities.filter(topic.exclusive).map((o) => o.id) : [];
+  const subfilters = buildSubfilters(topic, items, lang);
+  const related = buildRelated(topic, liveRows);
+  const hero = heroImageOf(topic, lang);
+  const heading = c.heading || { lead: c.h1.join(' '), script: '', tail: '' };
+  const crumb = isEn ? topic.navEn : topic.nav;
 
   const nav = { slug: topic.slug, slugEn: topic.en.slug };
-  const url = `${SITE_URL}${topicPath(nav, lang)}`;
-  const base = lang === 'en' ? `${SITE_URL}/en` : SITE_URL;
+  const path = topicPath(nav, lang);
+  const url = `${SITE_URL}${path}`;
+  const homePath = isEn ? '/en' : '/';
+  const base = isEn ? `${SITE_URL}/en` : SITE_URL;
 
-  // ItemList — щоб Google бачив підбірку списком, а не просто текстом.
-  // BreadcrumbList — щоб у видачі був шлях «Головна › Тема», а не голий URL.
-  // FAQPage — питання-відповіді, які generative engines (Perplexity, ChatGPT,
-  // AI Overviews) цитують дослівно з посиланням на джерело.
-  const ld = [
-    {
-      '@context': 'https://schema.org',
-      '@type': 'ItemList',
-      name: c.h1.join(' '),
-      numberOfItems: total,
-      itemListElement: opportunities.slice(0, 100).map((o, i) => ({
-        '@type': 'ListItem',
-        position: i + 1,
-        url: `${base}/o/${o.slug}`,
-        name: (lang === 'en' && o.title_en) || o.title,
-      })),
-    },
-    {
-      '@context': 'https://schema.org',
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: ch.home, item: base },
-        { '@type': 'ListItem', position: 2, name: lang === 'en' ? topic.navEn : topic.nav, item: url },
-      ],
-    },
-  ];
-
-  if (c.faq?.length) {
-    ld.push({
-      '@context': 'https://schema.org',
-      '@type': 'FAQPage',
-      mainEntity: c.faq.map((f) => ({
-        '@type': 'Question',
-        name: f.q,
-        acceptedAnswer: { '@type': 'Answer', text: f.a },
-      })),
-    });
-  }
-
-  // Самодостатнє речення з числами й датою — саме такий формат AI-двигуни
-  // цитують як відповідь на категорійний запит. Дата чесна: сторінка
-  // перегенеровується (revalidate), а каталог справді оновлюється щодня.
-  const updatedLabel = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'uk-UA', {
-    day: 'numeric', month: 'long', year: 'numeric',
+  const updatedLabel = new Intl.DateTimeFormat(ch.dateLocale, {
+    timeZone: 'Europe/Kyiv', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
+  const sentence = ch.sentence(updatedLabel, total, freeCount);
+  const h1Text = `${heading.lead}${heading.script ? ` ${heading.script}` : ''}${heading.tail || ''}`;
 
-  const others = TOPIC_NAV.filter((t) => t.slug !== topic.slug);
+  const promo = topic.showPromo === false ? null : {
+    title: ch.promoTitle,
+    text: ch.promoText(total),
+    cta: ch.promoCta,
+    href: isEn ? '/en/plus' : '/plus',
+  };
+
+  // Один @graph: CollectionPage — що це за сторінка й коли оновлена;
+  // ItemList — сама підбірка в тому ж порядку, що на екрані; BreadcrumbList —
+  // шлях у видачі; FAQPage — відповіді, які AI-асистенти цитують дослівно.
+  const ld = {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'CollectionPage',
+        '@id': `${url}#page`,
+        url,
+        name: h1Text,
+        headline: c.title,
+        description: c.description,
+        inLanguage: isEn ? 'en' : 'uk',
+        dateModified: todayIso,
+        isPartOf: { '@id': `${SITE_URL}/#website` },
+        ...(hero ? { primaryImageOfPage: { '@type': 'ImageObject', url: `${SITE_URL}${hero.src}.jpg` } } : {}),
+        mainEntity: { '@id': `${url}#list` },
+        breadcrumb: { '@id': `${url}#breadcrumb` },
+      },
+      {
+        '@type': 'ItemList',
+        '@id': `${url}#list`,
+        name: h1Text,
+        numberOfItems: total,
+        itemListOrder: 'https://schema.org/ItemListOrderAscending',
+        itemListElement: items.slice(0, 100).map((o, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          url: `${base}/o/${o.slug}`,
+          name: (isEn && o.title_en) || o.title,
+        })),
+      },
+      {
+        '@type': 'BreadcrumbList',
+        '@id': `${url}#breadcrumb`,
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: ch.home, item: base },
+          { '@type': 'ListItem', position: 2, name: crumb, item: url },
+        ],
+      },
+      ...(c.faq?.length ? [{
+        '@type': 'FAQPage',
+        '@id': `${url}#faq`,
+        mainEntity: c.faq.map((f) => ({
+          '@type': 'Question',
+          name: f.q,
+          acceptedAnswer: { '@type': 'Answer', text: f.a },
+        })),
+      }] : []),
+    ],
+  };
+
+  const titled = ([plain, script]) => (
+    <>{plain} <span className="tp-script">{script}</span></>
+  );
 
   return (
     <>
@@ -169,101 +390,99 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
       />
 
-      <div className="container" lang={lang === 'en' ? 'en' : undefined}>
-        <div className="hero">
-          <div className="hero-copy">
-            <div className="hero-badges">
-              <Link href={lang === 'en' ? '/en' : '/'} className="city-back-link">{ch.back}</Link>
-            </div>
-            <h1>
-              {c.h1[0]}
-              <br />
-              <span className="accent">{c.h1[1]}</span>
+      <main className="tp-main" lang={isEn ? 'en' : undefined}>
+        <nav className="tp-crumbs" aria-label={isEn ? 'Breadcrumbs' : 'Навігація'}>
+          <Link href={homePath}>{ch.home}</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{crumb}</span>
+        </nav>
+
+        <section className={`tp-hero${hero ? '' : ' tp-hero-solo'}`} aria-labelledby="tp-title">
+          <div className="tp-hero-copy">
+            <span className="tp-eyebrow">{ch.eyebrow(updatedLabel)}</span>
+            <h1 id="tp-title" className="tp-h1">
+              {heading.lead}
+              {heading.script ? <>{' '}<span className="tp-script">{heading.script}</span></> : null}
+              {heading.tail || null}
             </h1>
-            <p>{c.intro}</p>
-            <p>{ch.sentence(updatedLabel, total, freeCount)}</p>
-            <div className="stats">
-              <div className="stat">
-                <span className="stat-num">{total}</span>
-                <span className="stat-label">{ch.countLabel(total)}</span>
-              </div>
-              <div className="stat">
-                <span className="stat-num">{freeCount}</span>
-                <span className="stat-label">{ch.freeLabel(freeCount)}</span>
-              </div>
-              {withDeadline > 0 && (
-                <div className="stat">
-                  <span className="stat-num">{withDeadline}</span>
-                  <span className="stat-label">{ch.withDeadline}</span>
-                </div>
-              )}
+            <p className="tp-intro">{c.intro}</p>
+            <div className="tp-actions">
+              <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
+                {ch.telegram}
+              </a>
+              <ShareButton label={ch.share} doneLabel={ch.shared} />
             </div>
+            <dl className="tp-facts">
+              <div><dt>{ch.factTotal}</dt><dd>{total}</dd></div>
+              <div><dt>{ch.factFree}</dt><dd>{freeCount}</dd></div>
+              <div><dt>{ch.factWeek}</dt><dd className="is-urgent">⏰ {urgentWeek}</dd></div>
+            </dl>
           </div>
 
-          {/* Фото праворуч від тексту. Розмітка та сама, що в хіро головної:
-              webp із jpg-запасним варіантом і заданими розмірами, щоб верстка
-              не стрибала, поки картинка вантажиться. Тема без поля photo
-              рендериться як раніше — правою колонкою лишається порожнеча. */}
-          {c.photo ? (
-            <div className="hero-photo">
+          {hero ? (
+            <div className="tp-hero-photo">
               <picture>
-                <source srcSet={`${c.photo.src}.webp`} type="image/webp" />
-                <img
-                  src={`${c.photo.src}.jpg`}
-                  alt={c.photo.alt}
-                  width="900"
-                  height="600"
-                  loading="eager"
-                />
+                <source srcSet={`${hero.src}.webp`} type="image/webp" />
+                <img src={`${hero.src}.jpg`} alt={hero.alt} width="900" height="600" loading="eager" fetchPriority="high" />
               </picture>
             </div>
           ) : null}
-        </div>
-
-        {/* Другий абзац — не прикраса: сторінка без тексту виглядає для Google
-            як список посилань, а такі в категорійній видачі не ранжуються. */}
-        <p className="topic-note">{c.note}</p>
-
-        <nav className="city-nav" aria-label={ch.otherTopics}>
-          {others.map((t) => (
-            <Link key={t.slug} href={topicPath(t, lang)} className="city-nav-link">
-              {lang === 'en' ? t.labelEn : t.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Один список (рішення Марії 14.09.2026): замість двох блоків — «лише
-            для» закріплені нагорі з позначкою, решта йде тим самим каталогом. */}
-        <OpportunitiesList
-          opportunities={opportunities}
-          promoProps={{ total }}
-          lang={lang}
-          pinnedIds={pinnedIds}
-          pinnedLabel={c.pinnedLabel}
-          initialLimit={24}
-        />
-
-        {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026):
-            тут одна тема, а на головній — усе. */}
-        <section className="topic-more" aria-labelledby="topic-more-title">
-          <h2 id="topic-more-title">{ch.moreTitle}</h2>
-          <p>{ch.moreText}</p>
-          <Link href={lang === 'en' ? '/en' : '/'} className="link-btn">{ch.moreCta}</Link>
         </section>
 
-        {c.faq?.length > 0 && (
-          <section className="topic-faq" aria-labelledby="topic-faq-title">
-            <h2 id="topic-faq-title">{ch.faqTitle}</h2>
-            {c.faq.map((f) => (
-              <details key={f.q} className="topic-faq-item">
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
-              </details>
-            ))}
-          </section>
-        )}
+        <TopicCards
+          items={items.map(slim)}
+          subfilters={subfilters}
+          todayIso={todayIso}
+          lang={lang}
+          pinnedIds={[...pinned]}
+          pinnedLabel={c.pinnedLabel || null}
+          promo={promo}
+          labels={{ ...ch.cards, more: ch.more }}
+        />
 
-      </div>
+        {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
+        <p className="tp-home-link"><Link href={homePath}>{ch.homeLink}</Link></p>
+
+        <section className="tp-note" aria-labelledby="tp-note-title">
+          <h2 id="tp-note-title" className="tp-h2">{titled(ch.noteTitle)}</h2>
+          <div className="tp-note-body">
+            <p className="tp-note-text">{c.note}</p>
+            <p className="tp-note-meta">{sentence}</p>
+            <p className="tp-note-meta">
+              {ch.feedback(<a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer">{ch.feedbackLink}</a>)}
+            </p>
+          </div>
+        </section>
+
+        {c.faq?.length ? (
+          <section className="tp-faq" aria-labelledby="tp-faq-title">
+            <h2 id="tp-faq-title" className="tp-h2">{titled(ch.faqTitle)}</h2>
+            <div className="tp-faq-list">
+              {c.faq.map((f) => (
+                <div key={f.q} className="tp-faq-item">
+                  <h3>{f.q}</h3>
+                  <p>{f.a}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {related.length ? (
+          <section className="tp-related" aria-labelledby="tp-related-title">
+            <h2 id="tp-related-title" className="tp-h2">{titled(ch.relatedTitle)}</h2>
+            <div className="tp-related-grid">
+              {related.map(({ topic: t, count }) => (
+                <Link key={t.slug} href={topicPath({ slug: t.slug, slugEn: t.en.slug }, lang)} className="tp-related-card">
+                  <span className="tp-related-title">{isEn ? t.navEn : t.nav}</span>
+                  <span className="tp-related-n">{ch.count(count)}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null}
+      </main>
+
       <Footer lang={lang} />
 
       <SupportPopup />
