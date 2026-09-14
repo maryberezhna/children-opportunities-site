@@ -41,7 +41,9 @@ from urllib.parse import urlparse
 from canonical import canonical_url
 from db import get_client, record_crawl_result
 import hubs
-from keywords import DISCOVER_KEYWORDS, REGION_ROTATION
+from keywords import (
+    DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
+)
 from normalizer import _sanitize
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -64,6 +66,32 @@ DUP_TAG = float(os.environ.get("DUP_TAG") or "0.60")
 # Лише пріоритетні теми, категорії чергуються щодня — див. keywords.DISCOVER_KEYWORDS.
 KEYWORDS = DISCOVER_KEYWORDS
 
+# Профіль «рідкісне за кордоном» (discover-rare.yml): свої теми, лише закордонні
+# регіони й окремий фокус у промпті. Решта конвеєра — та сама: дедуп, п'ять
+# обовʼязкових полів, лише чернетки на модерацію.
+PROFILE = (os.environ.get("DISCOVER_PROFILE") or "").strip()
+RARE = PROFILE == "rare_abroad"
+
+RARE_FOCUS = (
+    "\nЦЕЙ ПОШУК — ПРО РІДКІСНЕ Й НЕЗВИЧНЕ. Шукай те, про що батьки самі не "
+    "дізнаються: програми фондів відомих людей і клубів (зразок — безкоштовний "
+    "тенісний табір Фонду Марти Костюк в Іспанії для українських дітей), "
+    "спортивні, мистецькі й наукові табори, експедиції, турніри, резиденції, "
+    "реабілітаційний відпочинок.\n"
+    "Бери ЛИШЕ якщо з тексту видно одне з двох: програма прямо для дітей з "
+    "України, АБО в умовах явно сказано, що можуть подаватися діти з України чи "
+    "з будь-якої країни. Якщо умов участі не видно — не бери.\n"
+    "НЕ бери: звичайні гуртки й мовні курси, олімпіади й конкурси лише для "
+    "громадян цієї країни, комерційні табори без жодної ознаки відкритості для "
+    "українських дітей.\n"
+    "Вік — будь-який у межах 0–18; у summary одним реченням поясни, що саме "
+    "незвичне і хто може подаватися.\n"
+)
+
+
+def _regions() -> list[dict]:
+    return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
+
 
 def keyword_of_day() -> str:
     """Слово дня — детермінована ротація по KEYWORDS, без стану.
@@ -74,8 +102,9 @@ def keyword_of_day() -> str:
     override = (os.environ.get("DISCOVER_KEYWORD") or "").strip()
     if override:
         return override
+    pool = RARE_ABROAD_KEYWORDS if RARE else KEYWORDS
     doy = date.today().timetuple().tm_yday
-    return KEYWORDS[doy % len(KEYWORDS)]
+    return pool[doy % len(pool)]
 
 
 def region_of_day() -> dict:
@@ -87,16 +116,17 @@ def region_of_day() -> dict:
     """
     forced = (os.environ.get("DISCOVER_REGION") or "").strip()
     if forced:
-        for r in REGION_ROTATION:
+        for r in _regions():
             if r["name"].casefold() == forced.casefold():
                 logger.info(f"Регіон задано вручну: {r['name']}")
                 return r
-        known = ", ".join(sorted({r["name"] for r in REGION_ROTATION}))
+        known = ", ".join(sorted({r["name"] for r in _regions()}))
         raise SystemExit(
             f"DISCOVER_REGION={forced!r} — такого регіону немає.\nДоступні: {known}"
         )
     doy = date.today().timetuple().tm_yday
-    return REGION_ROTATION[doy % len(REGION_ROTATION)]
+    regions = _regions()
+    return regions[doy % len(regions)]
 
 
 def _prompt(kw: str, region: dict) -> str:
@@ -117,6 +147,7 @@ def _prompt(kw: str, region: dict) -> str:
            f"\nТему «{kw}» сприймай як загальний напрям, а не буквальний запит: "
            f"шукай місцевий відповідник. Українських реалій (ДЮСШ, МАН, НУШ, "
            f"позашкілля) в цій країні немає — там свої формати.\n")
+        + (RARE_FOCUS if RARE else "")
         + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
@@ -298,8 +329,9 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         # Джерело — той, хто опублікував. Слід агента (запит і країна) іде в
         # admin_comment: модератору він потрібен, відвідувачу — ні.
         "source": publisher(url) or "інтернет",
-        "admin_comment": f"🔎 Агент: {kw}" if region["name"] == "Україна"
-                         else f"🔎 Агент: {kw} · {region['name']}",
+        "admin_comment": (f"🌍 Рідкісне за кордоном: {kw} · {region['name']}" if RARE
+                          else f"🔎 Агент: {kw}" if region["name"] == "Україна"
+                          else f"🔎 Агент: {kw} · {region['name']}"),
         "source_url": url,
         "canonical_url": canonical_url(url),
         "status": "draft",
@@ -381,6 +413,8 @@ def notify_new(added: int, kw: str) -> None:
 def main() -> int:
     kw = keyword_of_day()
     region = region_of_day()
+    if RARE:
+        logger.info("🌍 Профіль: рідкісне за кордоном")
     logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
                 kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
 
