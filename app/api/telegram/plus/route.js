@@ -1,10 +1,19 @@
 // Вебхук окремого платного бота @DityamPlusBot.
-// Модель «спочатку оплата, потім форма»: /start → якщо не оплачено, пропонуємо
-// оплату (WayForPay); після успішної оплати відкривається діалогова форма профілю.
+//
+// З 14.09.2026 порядок «спершу анкета, потім оплата»: /start → анкета про
+// дітей → телефон → оплата. Раніше номер телефону просили першим кроком, ще
+// до того, як людина побачила хоч якусь користь. Після оплати, якщо анкету
+// вже пройдено, одразу меню, а не повторна анкета.
 import { createClient } from '@supabase/supabase-js';
-import { makeBot, beginFlow, handleFlowCallback } from '@/lib/digestFlow';
+import {
+  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback,
+} from '@/lib/digestFlow';
 import { createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
+import {
+  childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
+  NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
+} from '@/lib/plusProfile';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -17,8 +26,6 @@ const MAIN_TOKEN = process.env.TELEGRAM_BOT_TOKEN;         // для спові�
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
-const AGE_RANGES = { '0-3': [0, 3], '4-6': [4, 6], '7-10': [7, 10], '11-14': [11, 14], '15-18': [15, 18] };
-const ageOverlap = (from, to, bands) => !bands?.length || bands.some((b) => AGE_RANGES[b] && from <= AGE_RANGES[b][1] && to >= AGE_RANGES[b][0]);
 
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
@@ -84,7 +91,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + 'і пропонуємо не випадкові картки, а наступний крок.\n'
     + proof
     + '\n<b>Що входить:</b>\n'
-    + '• Відбір під вік та інтереси — з сотень карток лишаються ваші одиниці\n'
+    + '• Відбір під кожну дитину: вік, вподобання, формат і місто\n'
     + '• Нагадування про дедлайни завчасно — за 2–4 тижні для стипендій і обмінів\n'
     + '• Допомога із заявкою — напишіть сюди, підкажемо, що заповнювати\n'
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
@@ -103,44 +110,74 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
 async function sendMainMenu(bot, chatId) {
   await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
     inline_keyboard: [
-      [{ text: '🔎 Останні можливості для дитини', callback_data: 'menu:latest' }],
-      [{ text: '✏️ Оновити форму (що цікаво)', callback_data: 'menu:form' }],
+      [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
+      [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
+      [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
       [{ text: '⭐ Деталі підписки', callback_data: 'menu:sub' }],
       [{ text: '📝 Питання в підтримку', callback_data: 'menu:support' }],
     ],
   });
 }
 
-// Останні можливості під профіль дитини (on-demand, топ-5).
+async function loadKids(supabase, sub) {
+  const { data } = await supabase.from('plus_children').select('*').eq('subscriber_id', sub.id);
+  return childrenOf(sub, data || []);
+}
+
+async function hasProfile(supabase, sub) {
+  const { count } = await supabase.from('plus_children')
+    .select('id', { count: 'exact', head: true }).eq('subscriber_id', sub.id);
+  return (count || 0) > 0 || (sub.age_bands || []).length > 0;
+}
+
+// Останні можливості під профіль дітей (на вимогу, топ-5). Якщо дітей кілька,
+// місця діляться по черзі, а біля кожної можливості видно, кому вона.
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
-    .select('title, slug, age_from, age_to, cost_type, summary, created_at')
+    .select('title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs')
     .eq('status', 'active').is('canonical_slug', null)
-    .order('created_at', { ascending: false }).limit(200);
-  const interests = new Set(sub.interests || []);
-  const freeOnly = sub.cost_pref === 'free_only';
-  const matched = (opps || []).filter((o) => {
-    if (freeOnly && o.cost_type !== 'free') return false;
-    if (!ageOverlap(o.age_from, o.age_to, sub.age_bands)) return false;
-    if (interests.size) {
-      const t = matchThemes(`${o.title} ${o.summary || ''}`);
-      if (!t.some((x) => interests.has(x))) return false;
-    }
-    return true;
-  }).slice(0, 5);
-  if (!matched.length) {
-    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — щойно зʼявиться, напишемо першими. Можна розширити інтереси через «✏️ Оновити форму».');
+    .order('created_at', { ascending: false }).limit(300);
+  const kids = await loadKids(supabase, sub);
+  const themesOf = (o) => new Set(matchThemes(`${o.title} ${o.summary || ''}`));
+  const picked = pickFair(matchFamily(sub, kids, opps || [], themesOf), kids, 5);
+  if (!picked.length) {
+    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — щойно зʼявиться, напишемо першими. Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».');
     return;
   }
-  const lines = ['🔎 <b>Останні можливості під вашу дитину</b>', ''];
-  for (const o of matched) lines.push(`🔸 <a href="${SITE_URL}/o/${o.slug}">${esc(o.title)}</a>`);
+  const lines = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>', ''];
+  for (const m of picked) {
+    lines.push(`🔸 <a href="${SITE_URL}/o/${m.o.slug}">${esc(m.o.title)}</a>`);
+    if (kids.length > 1) lines.push(`<i>для: ${esc(m.kids.map((k) => childLabel(k, kids.length)).join(', '))}</i>`);
+  }
   await bot.sendMessage(chatId, lines.join('\n'));
 }
 
-function subDetails(sub) {
-  const ages = (sub.age_bands || []).length ? sub.age_bands.join(', ') : '—';
-  const int = (sub.interests || []).length ? sub.interests.join(', ') : '—';
-  return `⭐ <b>Ваша підписка Dityam+</b>\nСтатус: активна ✅\nВік дитини: ${esc(ages)}\nІнтереси: ${esc(int)}\n\nЗмінити профіль — «✏️ Оновити форму». Скасувати підписку — /stop.`;
+async function askPhone(bot, supabase, sub, chatId) {
+  await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
+  await bot.sendMessage(chatId, '📱 Поділіться номером телефону — на нього надійде підтвердження оплати. Натисніть кнопку нижче 👇', {
+    keyboard: [[{ text: '📱 Поділитися номером', request_contact: true }]],
+    resize_keyboard: true, one_time_keyboard: true,
+  });
+}
+
+const labels = (options, values) => (values || [])
+  .map((v) => (options.find((o) => o[0] === v) || [null, v])[1]).join(', ') || '—';
+const PLACE_LABELS = [[PLACE_ONLINE, 'онлайн'], [PLACE_ABROAD, 'за кордоном'], [PLACE_OTHER, 'мого міста немає']];
+
+function subDetails(sub, kids) {
+  const lines = ['⭐ <b>Ваша підписка Dityam+</b>', 'Статус: активна ✅', ''];
+  kids.forEach((k, i) => {
+    lines.push(`<b>${kids.length > 1 ? esc(childLabel(k, kids.length)) : 'Дитина'}</b>`);
+    lines.push(`Вік: ${esc(labels(AGE_OPTIONS, k.age_bands))}`);
+    lines.push(`Подобається: ${esc(labels(LIKE_OPTIONS, k.likes))}`);
+    lines.push(`Формат: ${esc(labels(FORMAT_OPTIONS, k.formats))}`);
+    if ((k.needs || []).length) lines.push(`Обставини: ${esc(labels(NEED_OPTIONS, k.needs))}`);
+    if (i < kids.length - 1) lines.push('');
+  });
+  lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
+  lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
+  lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
+  return lines.join('\n');
 }
 
 export async function POST(request) {
@@ -218,18 +255,11 @@ export async function POST(request) {
           .select('*').single();
         sub = ins;
       }
-      if (sub?.status === 'active') {
-        if (!(sub.age_bands || []).length) await beginFlow(bot, supabase, chatId, handle); // ще без профілю → форма
-        else await sendMainMenu(bot, chatId);                                              // є профіль → меню
-      } else if (!sub?.phone) {
-        await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
-        await bot.sendMessage(chatId, '📱 Спершу поділіться номером телефону — на нього надійде підтвердження оплати. Натисніть кнопку нижче 👇', {
-          keyboard: [[{ text: '📱 Поділитися номером', request_contact: true }]],
-          resize_keyboard: true, one_time_keyboard: true,
-        });
-      } else {
-        await sendPayOffer(bot, sub, chatId, supabase);        // телефон є → оплата
-      }
+      const profiled = sub ? await hasProfile(supabase, sub) : false;
+      if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
+      else if (sub.status === 'active') await sendMainMenu(bot, chatId);  // є профіль і підписка → меню
+      else if (!sub.phone) await askPhone(bot, supabase, sub, chatId);    // анкета є → телефон
+      else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
       return new Response('ok');
     }
 
@@ -240,7 +270,7 @@ export async function POST(request) {
           ? '📝 <b>Допомога із заявкою</b>\nНапишіть питання прямо сюди — підкажемо, що і як заповнювати.'
           : 'Допомога із заявкою доступна підписникам Dityam+. Оформити — /start 🧡');
       } else {
-        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити або змінити профіль дитини\n/support — допомога із заявкою\n/stop — відписатися');
+        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити підписку або змінити профіль дітей\n/support — допомога із заявкою\n/stop — відписатися');
       }
       return new Response('ok');
     }
@@ -261,11 +291,21 @@ export async function POST(request) {
   const cbq = update?.callback_query;
   if (!cbq) return new Response('ok');
 
+  // Анкету тепер проходять і до оплати, тож статус тут не перевіряємо.
+  // Що далі після останнього питання — вирішуємо за статусом.
   if ((cbq.data || '').startsWith('flow:')) {
     const chatId = String(cbq.message.chat.id);
-    const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
-    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Спершу оформіть підписку — /start'); return new Response('ok'); }
-    await handleFlowCallback(bot, supabase, cbq);
+    const { finished } = await handleFlowCallback(bot, supabase, cbq);
+    if (finished) {
+      const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+      if (sub?.status === 'active') {
+        await finishFlow(bot, chatId, { active: true });
+      } else if (sub) {
+        await finishFlow(bot, chatId, { active: false });
+        if (!sub.phone) await askPhone(bot, supabase, sub, chatId);
+        else await sendPayOffer(bot, sub, chatId, supabase);
+      }
+    }
     return new Response('ok');
   }
 
@@ -277,8 +317,9 @@ export async function POST(request) {
     await bot.answerCallback(cbq.id);
     const action = (cbq.data || '').split(':')[1];
     if (action === 'form') await beginFlow(bot, supabase, chatId, null);
+    else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
-    else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub));
+    else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
     else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — підкажемо, що і як заповнювати.');
     return new Response('ok');
   }

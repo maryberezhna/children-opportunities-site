@@ -1,7 +1,7 @@
 // Службовий колбек WayForPay: підтверджує оплату й керує статусом підписки.
 // Approved → active + запуск форми в боті; Declined/Expired/... → paused.
 import { createClient } from '@supabase/supabase-js';
-import { makeBot, beginFlow } from '@/lib/digestFlow';
+import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import { verifyCallback, acceptResponse, tokenFromOrderRef, PRICE_YEAR } from '@/lib/wayforpay';
 
 export const runtime = 'nodejs';
@@ -52,8 +52,17 @@ export async function POST(request) {
         .update(patch).eq('unsub_token', token).select('*').maybeSingle();
       if (sub?.telegram_chat_id && PLUS_TOKEN) {
         const bot = makeBot(PLUS_TOKEN);
-        await bot.sendMessage(sub.telegram_chat_id, '✅ Оплата пройшла — дякуємо! 🧡 Тепер налаштуймо профіль дитини:');
-        await beginFlow(bot, supabase, sub.telegram_chat_id, null);
+        // З 14.09.2026 анкету проходять до оплати. Тому після оплати профіль
+        // зазвичай уже є — і перепитувати його було б дивно.
+        const { count } = await supabase.from('plus_children')
+          .select('id', { count: 'exact', head: true }).eq('subscriber_id', sub.id);
+        if ((count || 0) > 0 || (sub.age_bands || []).length) {
+          await bot.sendMessage(sub.telegram_chat_id, '✅ Оплата пройшла — дякуємо! 🧡');
+          await finishFlow(bot, sub.telegram_chat_id, { active: true });
+        } else {
+          await bot.sendMessage(sub.telegram_chat_id, '✅ Оплата пройшла — дякуємо! 🧡 Тепер налаштуймо профіль дітей:');
+          await beginFlow(bot, supabase, sub.telegram_chat_id, null);
+        }
       }
     } else if (FAILED.includes(b.transactionStatus)) {
       // План знижуємо разом зі статусом, інакше в базі лишається paused+premium

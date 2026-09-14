@@ -13,15 +13,18 @@ const DRY = process.argv.includes('--dry-run');
 
 if (!SUPABASE_URL || !KEY) { console.error('Missing Supabase env'); process.exit(1); }
 
-async function fetchRows() {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/digest_subscribers?select=status,channel,age_bands,created_at`, {
+async function fetchRows(path) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: { apikey: KEY, Authorization: `Bearer ${KEY}` },
   });
   if (!r.ok) { console.error('Supabase error', r.status, await r.text()); process.exit(1); }
   return r.json();
 }
 
-const rows = await fetchRows();
+const rows = await fetchRows('digest_subscribers?select=id,status,channel,age_bands,billing_period,created_at');
+// З 14.09.2026 профіль — окремо на кожну дитину.
+const kids = await fetchRows('plus_children?select=subscriber_id');
+const withKids = new Set(kids.map((k) => k.subscriber_id));
 const now = Date.now();
 const DAY = 86400000;
 const cnt = (f) => rows.filter(f).length;
@@ -30,7 +33,8 @@ const active = cnt((r) => r.status === 'active');
 const pending = cnt((r) => r.status === 'pending');
 const paused = cnt((r) => r.status === 'paused');
 const unsub = cnt((r) => r.status === 'unsubscribed');
-const filled = cnt((r) => (r.age_bands || []).length > 0);
+const filled = cnt((r) => withKids.has(r.id) || (r.age_bands || []).length > 0);
+const multiKid = [...withKids].filter((id) => kids.filter((k) => k.subscriber_id === id).length > 1).length;
 const new7 = cnt((r) => now - new Date(r.created_at).getTime() <= 7 * DAY);
 const newActive7 = cnt((r) => r.status === 'active' && now - new Date(r.created_at).getTime() <= 7 * DAY);
 // Річні підписники платять PRICE_YEAR раз на рік — рахувати їх по місячній
@@ -50,7 +54,8 @@ const msg = [
   `🚫 Відписались: <b>${unsub}</b>`,
   '',
   `🆕 За 7 днів: <b>${new7}</b> нових (з них оплатили: <b>${newActive7}</b>)`,
-  `📋 Заповнили профіль дитини: <b>${filled}</b>`,
+  `📋 Заповнили профіль: <b>${filled}</b>`,
+  `👧 Дітей у профілях: <b>${kids.length}</b> (родин із кількома дітьми: <b>${multiKid}</b>)`,
   '',
   `💰 Орієнтовний дохід/міс: <b>~${mrr} грн</b> <i>(${monthly} міс × ${PRICE} + ${yearly} річних)</i>`,
 ].join('\n');

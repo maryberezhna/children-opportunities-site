@@ -5,8 +5,9 @@
 
 Щодня знаходить можливості, до дедлайну яких лишилось стільки, скільки
 потрібно на заявку саме цього типу (див. WINDOWS_BY_TYPE: від 4 тижнів для
-стипендій до тижня для гуртків), звіряє з профілем підписника
-(вік × інтереси × вартість) і надсилає коротке нагадування.
+стипендій до тижня для гуртків), звіряє з профілем родини
+(кожна дитина окремо: вік × вподобання × формат × обставини; для родини —
+місце й вартість) і надсилає коротке нагадування.
 
 Вікна саме діапазони, а не точний день: у каталозі буває 5-6 дедлайнів на два
 тижні, і на «рівно сьомий день» не потрапляє майже ніщо. Можливість, додана з
@@ -43,6 +44,7 @@ import sys
 
 from datetime import date, timedelta
 
+import plus_profile
 import send_window
 from personal_digest import (
     SITE_URL,
@@ -130,15 +132,11 @@ def human_date(iso: str) -> str:
     return f"{d.day} {MONTHS_GEN[d.month - 1]}"
 
 
-def matches_profile(sub: dict, o: dict) -> bool:
-    if sub.get("cost_pref") == "free_only" and o.get("cost_type") != "free":
-        return False
-    if not age_overlaps(o["age_from"], o["age_to"], sub.get("age_bands") or []):
-        return False
-    interests = set(sub.get("interests") or [])
-    if interests and not (interests & o["_themes"]):
-        return False
-    return True
+def family_matches(sub: dict, kids: list, opps: list) -> list:
+    """Записи, що підходять хоч одній дитині родини (plus_profile.py). Кожен
+    повертається копією з полем "_for" — кому саме, якщо дітей кілька."""
+    return [dict(m["o"], _for=plus_profile.for_line(m, len(kids)))
+            for m in plus_profile.match_family(sub, kids, opps)]
 
 
 def build_text(items: list, days: int) -> str:
@@ -164,6 +162,8 @@ def build_text(items: list, days: int) -> str:
         url = f"{SITE_URL}/o/{o['slug']}"
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
         lines.append(f"подача до {human_date(o['deadline'])}")
+        if o.get("_for"):
+            lines.append(f"<i>{html.escape(o['_for'])}</i>")
         lines.append("")
     lines.append("<i>Підібрано під профіль вашої дитини.</i>")
     return "\n".join(lines)
@@ -204,10 +204,14 @@ def main() -> int:
              "age_bands": [], "interests": [], "cost_pref": "any"},
         ]
         logger.info("DEMO: %d синтетичних профілів", len(subs))
+        child_rows = []
     else:
         subs = (client.table("digest_subscribers").select("*")
                 .eq("status", "active").execute().data or [])
         logger.info("Активних підписників: %d", len(subs))
+        ids = [s["id"] for s in subs]
+        child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
+                      .execute().data or []) if ids else []
     if not subs:
         return 0
 
@@ -215,8 +219,10 @@ def main() -> int:
     widest = max(override) if override else max(
         max(w) for w in (*WINDOWS_BY_TYPE.values(), DEFAULT_WINDOWS))
     opps = (client.table("opportunities")
-            .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, opportunity_type")
+            .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, "
+                    "opportunity_type, format, cities, countries, is_international, child_needs")
             .eq("status", "active")
+            .is_("canonical_slug", "null")
             .gte("deadline", today.isoformat())
             .lte("deadline", (today + timedelta(days=widest)).isoformat())
             .execute().data or [])
@@ -233,12 +239,14 @@ def main() -> int:
 
     sent = 0
     for sub in subs:
+        # Одне нагадування на родину, навіть якщо запис підходить кільком
+        # дітям: у журналі пара «підписник × можливість × вікно», а не дитина.
+        kids = plus_profile.children_of(sub, child_rows)
+        fitting = family_matches(sub, kids, opps)
         # Кожен запис уже знає своє вікно (найтісніше для його типу), тож
         # групуємо за ним: одне повідомлення на вікно, від найтерміновішого.
         for days in sorted({o["_window"] for o in opps}):
-            batch = [o for o in opps
-                     if o["_window"] == days
-                     and matches_profile(sub, o)]
+            batch = [o for o in fitting if o["_window"] == days]
             if not batch:
                 continue
             batch.sort(key=lambda o: o["_left"])

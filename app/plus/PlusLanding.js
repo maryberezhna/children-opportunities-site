@@ -118,7 +118,7 @@ const L = {
 
     howTitle: 'Як це працює',
     how4: [
-      ['Розкажіть про вподобання дитини', 'Три питання: вік, інтереси й чи показувати платне. Ні імені, ні школи.'],
+      ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Ні імені, ні школи.'],
       ['Отримуйте нове під профіль', 'Щойно зʼявляється можливість, що підходить, — надсилаємо. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       ['Позначайте, куди подались', 'І наступна добірка враховує пройдене: не повтор, а сходинка вище.'],
@@ -134,7 +134,7 @@ const L = {
     yearRibbon: 'вигідніше на 31%',
     includedTitle: 'У підписку входить',
     included: [
-      'добірка під профіль дитини — вік, інтереси, місто',
+      'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'наступний крок з урахуванням того, куди вже подавались',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'доставка в Telegram або на email',
@@ -150,6 +150,7 @@ const L = {
     faq: [
       ['Чим підписка відрізняється від безкоштовної платформи?', 'Усі можливості на Dityam.com.ua відкриті для всіх і такими лишаться. Підписка не відкриває доступ — вона стежить за профілем вашої дитини, пропонує наступний крок і нагадує про дедлайни.'],
       ['Коли запуск?', 'Ми саме дороблюємо Dityam+. Усім, хто в списку, напишемо першими — зі знижкою на старті.'],
+      ['А якщо в мене двоє чи більше дітей?', 'У підписці можна завести профіль для кожної дитини. Можливість, що підходить кільком, прийде один раз — із позначкою, кому саме. Місця в добірці діляться між дітьми по черзі.'],
       ['А якщо під мою дитину нічого не знайдеться?', 'Мовчати місяцями не будемо: запропонуємо розширити профіль — наприклад, додати інтерес чи сусідній вік.'],
       ['Як скасувати?', 'Командою /stop у боті. Спершу зупиняємо автоматичне списання, потім підписку — більше нічого не спишеться.'],
     ],
@@ -259,7 +260,7 @@ const L = {
 
     howTitle: 'How it works',
     how4: [
-      ['Tell us what your child enjoys', 'Three questions: age, interests and whether to show paid options. No name, no school.'],
+      ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. No name, no school.'],
       ['Get what fits the profile', 'The moment a matching opportunity appears, we send it. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Mark where you applied', 'And the next selection takes it into account: not a repeat, but a step up.'],
@@ -275,7 +276,7 @@ const L = {
     yearRibbon: '31% cheaper',
     includedTitle: 'The subscription includes',
     included: [
-      'a selection for your child’s profile — age, interests, city',
+      'a selection for each child’s profile — age, likes, format, city',
       'the next step, based on where you have already applied',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'delivery on Telegram or by email',
@@ -291,6 +292,7 @@ const L = {
     faq: [
       ['How is the subscription different from the free platform?', 'Every opportunity on Dityam.com.ua is open to everyone and will stay that way. The subscription does not unlock access — it follows your child’s profile, suggests the next step and reminds you about deadlines.'],
       ['When does it launch?', 'We are finishing Dityam+ now. Everyone on the list hears from us first — with a launch discount.'],
+      ['What if I have two or more children?', 'The subscription lets you set up a profile for each child. An opportunity that fits several of them arrives once, marked with who it is for. Slots in each selection are shared between the children in turn.'],
       ['What if nothing fits my child?', 'We will not go quiet for months: we will suggest widening the profile — for example, adding an interest or a neighbouring age.'],
       ['How do I cancel?', 'Send /stop to the bot. We stop the recurring payment first, then the subscription — nothing more is charged.'],
     ],
