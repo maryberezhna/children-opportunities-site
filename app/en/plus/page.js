@@ -8,7 +8,7 @@ export const revalidate = 3600;
 export const metadata = {
   title: 'Dityam+ — a development path for your child · coming soon',
   description:
-    'Dityam+ remembers where your child has already applied and suggests the next step, not random cards. Deadline reminders 7 and 2 days ahead. UAH 179/month or UAH 1,490/year. Join the list — early members get a discount.',
+    'Dityam+ remembers where your child has already applied and suggests the next step, not random cards. Deadline reminders in good time — 2–4 weeks ahead for scholarships and exchanges, a week for clubs. UAH 179/month or UAH 1,490/year. Join the list — early members get a discount.',
   alternates: {
     canonical: `${SITE_URL}/en/plus`,
     languages: { uk: `${SITE_URL}/plus`, en: `${SITE_URL}/en/plus` },

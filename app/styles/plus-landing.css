@@ -221,6 +221,161 @@
 .pl-contrast-b h3 { color: var(--v2-accent); }
 .pl-contrast-b li::before { content: '✓'; position: absolute; left: 0; color: var(--v2-accent); font-weight: 700; }
 
+/* ── Приклад: Telegram і пошта ─────────────────────────────────────────
+   Не скриншоти, а розмітка: текст лишається читабельним для пошуку й
+   перекладається разом зі сторінкою. Кнопки неклікабельні — це ілюстрація. */
+.pl-mock { margin-top: 48px; }
+
+.pl-mock-title {
+  margin: 0 0 8px;
+  font-size: clamp(1.375rem, 2.6vw, 1.75rem);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+
+.pl-mock-sub {
+  margin: 0 0 24px;
+  max-width: 62ch;
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+}
+
+.pl-mock-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+.pl-mock-card {
+  margin: 0;
+  padding: 20px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid var(--v2-line);
+}
+
+.pl-mock-label {
+  margin-bottom: 14px;
+  font-size: 0.7812rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+
+/* Telegram: кремово-зелене тло чату, біла бульбашка, напівпрозорі кнопки
+   під нею — як виглядає пост нашого каналу у світлій темі. */
+.pl-tg {
+  position: relative;
+  padding: 18px 16px 16px;
+  border-radius: 14px;
+  background: #dde6d3;
+}
+
+.pl-tg-bubble {
+  max-width: 94%;
+  padding: 12px 14px 10px;
+  border-radius: 14px 14px 14px 4px;
+  background: #ffffff;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
+  font-size: 0.9062rem;
+  line-height: 1.45;
+  color: #141414;
+}
+
+.pl-tg-bubble p { margin: 0; }
+.pl-tg-title { font-weight: 700; }
+.pl-tg-meta { margin-top: 2px !important; }
+.pl-tg-text { margin-top: 10px !important; }
+.pl-tg-more { margin-top: 10px !important; color: #2a7ab8; }
+
+.pl-tg-kb { max-width: 94%; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
+.pl-tg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+
+.pl-tg-btn {
+  display: block;
+  padding: 9px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+  color: #1d5f93;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.pl-tg-btn.is-on { background: #ffffff; box-shadow: inset 0 0 0 2px var(--v2-accent); color: var(--v2-ink); }
+
+.pl-tg-toast {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.82);
+  color: #ffffff;
+  font-size: 0.7812rem;
+}
+
+/* Лист: шапка «Від / Тема», у тілі — одна картка можливості з кнопками. */
+.pl-mail { border: 1px solid var(--v2-line); border-radius: 14px; overflow: hidden; }
+
+.pl-mail-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  background: #f6f4ef;
+  border-bottom: 1px solid var(--v2-line);
+  font-size: 0.8438rem;
+  color: var(--v2-ink);
+}
+
+.pl-mail-head span { display: inline-block; min-width: 44px; color: var(--v2-ink-3); }
+
+.pl-mail-body { padding: 16px; }
+.pl-mail-body p { margin: 0; }
+.pl-mail-hello { font-size: 0.9375rem; color: var(--v2-ink); }
+
+.pl-mail-item {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-line);
+}
+
+.pl-mail-title { font-size: 1rem; font-weight: 700; color: var(--v2-ink); }
+.pl-mail-meta { margin-top: 3px !important; font-size: 0.8438rem; color: var(--v2-ink-3); }
+.pl-mail-text { margin-top: 8px !important; font-size: 0.9062rem; line-height: 1.5; color: var(--v2-ink-2); }
+.pl-mail-more { margin-top: 8px !important; font-size: 0.9062rem; font-weight: 600; color: var(--v2-accent-hover); }
+
+.pl-mail-btns { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+.pl-mail-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--v2-line-strong);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--v2-ink);
+}
+
+.pl-mail-foot { margin-top: 12px !important; font-size: 0.8438rem; color: var(--v2-ink-3); }
+
+.pl-mock-note {
+  margin: 18px 0 0;
+  max-width: 72ch;
+  font-size: 0.9062rem;
+  line-height: 1.55;
+  color: var(--v2-ink-3);
+}
+
+@media (max-width: 900px) {
+  .pl-mock-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
 /* ── Траєкторії ───────────────────────────────────────────────────────── */
 .pl-paths {
   display: grid;
@@ -342,8 +497,12 @@
 .pl-how-item p { margin: 0; font-size: 0.9375rem; line-height: 1.55; color: var(--v2-ink-2); }
 
 /* ── Ціна ─────────────────────────────────────────────────────────────── */
+/* Секція ціни — вузька колонка по центру: картки, перелік і плашки довіри
+   стоять на одній осі, а не притиснуті ліворуч із порожнечею праворуч. */
+.pl-price-sec .pl-h2 { text-align: center; }
+
 .pl-prices {
-  margin-top: 32px;
+  margin: 32px auto 0;
   max-width: 760px;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -382,11 +541,11 @@
 .pl-price-amount span { font-size: 1rem; font-weight: 600; color: var(--v2-ink-2); letter-spacing: 0; }
 .pl-price-note { margin-top: 4px; font-size: 0.875rem; color: var(--v2-ink-3); }
 
-.pl-included-title { margin: 36px 0 12px; font-size: 1rem; font-weight: 700; }
+.pl-included-title { margin: 36px auto 12px; max-width: 760px; font-size: 1rem; font-weight: 700; }
 
 .pl-included {
   list-style: none;
-  margin: 0;
+  margin: 0 auto;
   padding: 0;
   max-width: 760px;
   display: grid;
@@ -399,14 +558,18 @@
 
 .pl-trust {
   list-style: none;
-  margin: 32px 0 0;
+  margin: 32px auto 0;
   padding: 0;
+  max-width: 760px;
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 10px;
 }
 
 .pl-trust li {
+  max-width: 100%;
+  text-align: center;
   padding: 8px 14px;
   border-radius: 999px;
   background: var(--v2-cream);
