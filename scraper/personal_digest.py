@@ -215,12 +215,12 @@ def send_telegram(chat_id, text) -> bool:
     return bool(ok)
 
 
-def send_email(to_addr, html_body) -> bool:
+def send_email(to_addr, html_body, subject="🧡 Нові можливості для вашої дитини — Dityam+") -> bool:
     if not GMAIL_APP_PASSWORD:
         logger.warning("GMAIL_APP_PASSWORD not set")
         return False
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "🧡 Нові можливості для вашої дитини — Dityam+"
+    msg["Subject"] = subject
     msg["From"] = f"Dityam.com.ua <{GMAIL_FROM}>"
     msg["To"] = to_addr
     msg.attach(MIMEText("Відкрий лист у HTML, щоб побачити підбірку. dityam.com.ua", "plain", "utf-8"))

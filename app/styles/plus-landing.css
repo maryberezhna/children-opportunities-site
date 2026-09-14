@@ -24,6 +24,7 @@
 .pl-wrap-wide { max-width: 1360px; }
 
 .pl a:focus-visible,
+.pl button:focus-visible,
 .pl summary:focus-visible {
   outline: 2px solid var(--v2-accent);
   outline-offset: 3px;
@@ -244,29 +245,228 @@
   color: var(--v2-ink-2);
 }
 
-.pl-mock-grid {
+/* Флоу підписки (PlusFlowDemo): кроки ліворуч, «екран» праворуч; на
+   вузьких — перемикач, екран, а кроки під ним. */
+.pl-fd {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 20px;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  grid-template-areas: 'bar screen' 'steps screen';
+  grid-template-rows: auto 1fr;
+  gap: 16px 28px;
   align-items: start;
 }
 
-.pl-mock-card {
-  margin: 0;
-  padding: 20px;
-  border-radius: 18px;
-  background: #ffffff;
+.pl-fd-bar { grid-area: bar; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.pl-fd-tabs {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: #fff;
   border: 1px solid var(--v2-line);
 }
 
-.pl-mock-label {
-  margin-bottom: 14px;
-  font-size: 0.7812rem;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--v2-ink-3);
+.pl-fd-tab {
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--v2-ink-2);
+  cursor: pointer;
 }
+
+.pl-fd-tab.is-on { background: var(--pl-black); color: var(--pl-on-black); }
+
+.pl-fd-play {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px solid var(--v2-line-strong);
+  background: #fff;
+  color: var(--v2-ink);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.pl-fd-steps { grid-area: steps; list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.pl-fd-step {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--v2-line);
+  background: #fff;
+  font: inherit;
+  text-align: left;
+  color: var(--v2-ink);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pl-fd-step.is-on { border-color: var(--v2-accent); box-shadow: 0 6px 18px rgba(20, 20, 20, 0.07); }
+
+.pl-fd-num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--v2-cream);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--v2-ink-2);
+}
+
+.pl-fd-step.is-on .pl-fd-num,
+.pl-fd-step.is-done .pl-fd-num { background: var(--v2-accent); color: #fff; }
+
+.pl-fd-step-t { display: flex; flex-direction: column; gap: 2px; }
+.pl-fd-step-t strong { font-size: 1rem; font-weight: 700; }
+.pl-fd-step-t span { font-size: 0.9062rem; line-height: 1.45; color: var(--v2-ink-3); }
+
+.pl-fd-prog {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background: var(--v2-accent);
+  transform-origin: left;
+  transition: transform 60ms linear;
+}
+
+.pl-fd-screen {
+  grid-area: screen;
+  position: relative;
+  overflow: hidden;
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid var(--v2-line);
+  background: #fff;
+}
+
+.pl-fd-chat { min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; }
+.pl-fd-mail { min-height: 430px; }
+
+.pl-fd-msg { animation: pl-fd-in 0.45s ease both; }
+
+@keyframes pl-fd-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+.pl-fd-link { color: #1d5f93; }
+
+.pl-fd-date {
+  display: table;
+  margin: 0 auto 10px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: rgba(20, 20, 20, 0.22);
+  color: #fff;
+  font-size: 0.7812rem;
+  font-weight: 600;
+}
+
+.pl-fd-toast {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  right: 0;
+  z-index: 2;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  animation: pl-fd-toast 2.6s ease 0.5s both;
+}
+
+/* У листі тост не має перекривати «Від / Тема». */
+.pl-fd-toast-mail { top: auto; bottom: 28px; }
+
+@keyframes pl-fd-toast {
+  0% { opacity: 0; transform: translateY(-6px); }
+  15%, 80% { opacity: 1; transform: none; }
+  100% { opacity: 0; }
+}
+
+.pl-fd-brand { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.04em; color: #db5a1e; }
+.pl-fd-mail-h { margin-top: 6px !important; font-size: 1.1875rem; font-weight: 700; line-height: 1.3; color: var(--v2-ink); }
+.pl-fd-gap { margin-top: 14px !important; }
+
+/* Натискання: кнопка світиться із затримкою, наче палець дотягнувся. */
+.pl-tg-btn,
+.pl-mail-btn { position: relative; transition: background 0.2s 0.35s, box-shadow 0.2s 0.35s, border-color 0.2s 0.35s; }
+
+.is-tap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  animation: pl-fd-tap 1s ease-out 0.3s 2;
+}
+
+@keyframes pl-fd-tap {
+  from { box-shadow: 0 0 0 0 rgba(232, 93, 36, 0.5); }
+  to { box-shadow: 0 0 0 12px rgba(232, 93, 36, 0); }
+}
+
+/* Календар виїжджає знизу поверх повідомлення. */
+.pl-fd-cal {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  align-items: flex-end;
+  padding: 16px;
+  background: rgba(20, 20, 20, 0);
+  pointer-events: none;
+  transition: background 0.3s;
+}
+
+.pl-fd-cal.is-open { background: rgba(20, 20, 20, 0.28); }
+
+.pl-fd-cal-card {
+  width: 100%;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 30px rgba(20, 20, 20, 0.18);
+  transform: translateY(125%);
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s;
+}
+
+.pl-fd-cal.is-open .pl-fd-cal-card { transform: none; }
+.pl-fd-cal-card p { margin: 0; }
+
+.pl-fd-cal-app { font-size: 0.7812rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--v2-ink-3); }
+.pl-fd-cal-row { margin-top: 12px; display: flex; gap: 14px; align-items: center; }
+
+.pl-fd-cal-date {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 56px;
+  padding: 6px 0 8px;
+  border-radius: 12px;
+  border: 1px solid var(--v2-line);
+}
+
+.pl-fd-cal-date span { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--v2-accent); }
+.pl-fd-cal-date strong { font-size: 1.5rem; line-height: 1.1; color: var(--v2-ink); }
+.pl-fd-cal-info { display: flex; flex-direction: column; gap: 2px; }
+.pl-fd-cal-info strong { font-size: 1rem; color: var(--v2-ink); }
+.pl-fd-cal-info span { font-size: 0.875rem; color: var(--v2-ink-3); }
+.pl-fd-cal-ok { margin-top: 12px !important; font-size: 0.875rem; font-weight: 600; color: #2f7d4f; }
 
 /* Telegram: кремово-зелене тло чату, біла бульбашка, напівпрозорі кнопки
    під нею — як виглядає пост нашого каналу у світлій темі. */
@@ -340,7 +540,6 @@
 
 .pl-mail-body { padding: 16px; }
 .pl-mail-body p { margin: 0; }
-.pl-mail-hello { font-size: 0.9375rem; color: var(--v2-ink); }
 
 .pl-mail-item {
   margin-top: 12px;
@@ -352,7 +551,7 @@
 .pl-mail-title { font-size: 1rem; font-weight: 700; color: var(--v2-ink); }
 .pl-mail-meta { margin-top: 3px !important; font-size: 0.8438rem; color: var(--v2-ink-3); }
 .pl-mail-text { margin-top: 8px !important; font-size: 0.9062rem; line-height: 1.5; color: var(--v2-ink-2); }
-.pl-mail-more { margin-top: 8px !important; font-size: 0.9062rem; font-weight: 600; color: var(--v2-accent-hover); }
+.pl-mail-btn.is-on { border-color: var(--v2-accent); background: #fff4ee; }
 
 .pl-mail-btns { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -376,7 +575,25 @@
 }
 
 @media (max-width: 900px) {
-  .pl-mock-grid { grid-template-columns: minmax(0, 1fr); }
+  .pl-fd {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'bar' 'screen' 'steps';
+    grid-template-rows: auto;
+  }
+  .pl-fd-chat { min-height: 360px; }
+  .pl-fd-mail { min-height: 400px; }
+}
+
+@media (max-width: 520px) {
+  .pl-fd-screen { padding: 10px; }
+  .pl-fd-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .pl-fd-step { flex-direction: column; gap: 8px; padding: 12px; }
+  .pl-fd-step-t span { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pl-fd *,
+  .pl-fd *::after { animation: none !important; transition: none !important; }
 }
 
 /* ── Траєкторії ───────────────────────────────────────────────────────── */

@@ -279,7 +279,9 @@ def main() -> int:
             if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
                 ok = send_telegram(sub["telegram_chat_id"], text)
             elif sub["channel"] == "email" and sub.get("email"):
-                ok = send_email(sub["email"], text.replace("\n", "<br>"))
+                # Без власної теми лист-нагадування приходив як «Нові можливості».
+                ok = send_email(sub["email"], text.replace("\n", "<br>"),
+                                subject="⏳ Нагадування про дедлайн — Dityam+")
             if ok:
                 sent += 1
                 logger.info("sub %s — нагадування -%dд про %d можливостей",
