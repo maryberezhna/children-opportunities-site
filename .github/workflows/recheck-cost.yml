@@ -21,6 +21,10 @@ on:
         description: 'true = якщо власна сторінка мовчить, шукати в інших джерелах'
         required: false
         default: 'false'
+      clear_notes:
+        description: 'id через кому — лише зняти хибні діагнози після падіння API (модель не потрібна)'
+        required: false
+        default: ''
       batch:
         description: 'скільки записів за прогін'
         required: false
@@ -53,6 +57,7 @@ jobs:
         run: |
           ARGS="--scope ${{ github.event.inputs.scope || 'in_between' }} --limit ${{ github.event.inputs.batch || '150' }}"
           if [ "${{ github.event.inputs.search }}" = "true" ]; then ARGS="$ARGS --search"; fi
+          if [ -n "${{ github.event.inputs.clear_notes }}" ]; then ARGS="--clear-notes ${{ github.event.inputs.clear_notes }}"; fi
           if [ "${{ github.event.inputs.apply }}" = "true" ]; then
             python recheck_cost.py --apply $ARGS
           else
