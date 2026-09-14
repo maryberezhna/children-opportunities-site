@@ -802,7 +802,9 @@ export default function OpportunitiesList({
     return out;
   }, [available.places, place, t.abroad, t.online]);
 
-  const count = stream.length + (hasActive ? 0 : topCards.length);
+  // Топ віднімається від стрічки лише з трьома картками — тоді й додаємо його
+  // назад. Інакше одна-дві картки топу вже є в стрічці й рахувались двічі.
+  const count = stream.length + (topCards.length === 3 ? topCards.length : 0);
   const shown = stream.slice(0, limit);
 
   // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
