@@ -14,13 +14,14 @@ const L = {
   uk: {
     aria: 'Telegram-канал Dityam',
     title: 'Щоб не шукати вручну',
-    desc: 'Нові можливості для дітей виходять щодня в Telegram — з датами й дедлайнами. Кожну перевіряємо руками перед публікацією.',
+    // Твердження про ручну перевірку прибрано 14.09.2026 на прохання Марії: записи проходять автоматичні ворота, людина дивиться лише сумнівні.
+    desc: 'Нові можливості для дітей виходять щодня в Telegram — з датами, дедлайнами й посиланням на організатора.',
     cta: 'Долучитися до каналу',
   },
   en: {
     aria: 'Dityam Telegram channel',
     title: 'So you don’t have to keep looking',
-    desc: 'New opportunities for children go out on Telegram every day — with dates and deadlines. Each one is checked by hand before it’s published. Posts are in Ukrainian.',
+    desc: 'New opportunities for children go out on Telegram every day — with dates, deadlines and a link to the organiser. Posts are in Ukrainian.',
     cta: 'Join the channel',
   },
 };

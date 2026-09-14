@@ -22,7 +22,8 @@ const CHROME = {
     locale: 'uk_UA',
     sentence: (updated, total, freeCount) =>
       `Станом на ${updated} на платформі Dityam.com.ua — ${total} ${opportunitiesWord(total)} `
-      + `в цій категорії, перевірених вручну`
+      // Твердження про ручну перевірку прибрано 14.09.2026 на прохання Марії: записи проходять автоматичні ворота, людина дивиться лише сумнівні.
+      + `в цій категорії`
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
     countLabel: (n) => opportunitiesWord(n),
@@ -37,7 +38,7 @@ const CHROME = {
     siteName: 'Dityam.com.ua',
     locale: 'en_US',
     sentence: (updated, total, freeCount) =>
-      `As of ${updated}, Dityam.com.ua lists ${total} hand-checked `
+      `As of ${updated}, Dityam.com.ua lists ${total} `
       + `${total === 1 ? 'opportunity' : 'opportunities'} in this category`
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
