@@ -24,7 +24,7 @@
 }
 
 .v2-container {
-  max-width: 1200px;
+  max-width: var(--v2-max-w);
   margin: 0 auto;
   padding: 0 32px;
   display: flex;
@@ -44,7 +44,7 @@
 }
 
 .v2-header-inner {
-  max-width: 1200px;
+  max-width: var(--v2-max-w);
   margin: 0 auto;
   padding: 12px 32px;
   display: flex;
@@ -230,7 +230,7 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 /* Текст ліворуч, фото праворуч. Ширина правої колонки обмежена з обох
    боків, щоб заголовок не з'їжджав у вузький стовпчик на середніх екранах. */
 .v2-hero {
-  max-width: 1200px;
+  max-width: var(--v2-max-w);
   margin: 0 auto;
   padding: 56px 32px 40px;
   display: grid;
@@ -751,7 +751,7 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 .container + .v2-footer { margin-top: 32px; }
 
 .v2-footer-inner {
-  max-width: 1200px;
+  max-width: var(--v2-max-w);
   margin: 0 auto;
   padding: 88px 32px 48px;
   display: flex;
