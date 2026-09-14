@@ -8,7 +8,7 @@ const L = {
   uk: {
     done: 'Дякуємо, що поділились 💛 Такі історії допомагають нам показати, що платформа справді працює.',
     title: 'Подавались на цю можливість?',
-    sub: 'Розкажіть — це анонімно. Ми не питаємо ні імені дитини, ні віку, ні школи.',
+    sub: 'Розкажіть — це анонімно: персональних даних дитини не запитуємо.',
     applied: 'Я подався / подалась',
     accepted: 'Нас взяли 🎉',
     storyLabel: 'Кілька слів про досвід (необовʼязково)',
@@ -24,7 +24,7 @@ const L = {
   en: {
     done: 'Thank you for sharing 💛 Stories like this help us show that the platform really works.',
     title: 'Did you apply for this?',
-    sub: 'Tell us — it’s anonymous. We don’t ask for the child’s name, age or school.',
+    sub: 'Tell us — it’s anonymous: we don’t ask for your child’s personal data.',
     applied: 'I applied',
     accepted: 'We got in 🎉',
     storyLabel: 'A few words about it (optional)',
