@@ -225,6 +225,39 @@
   line-height: 1.55;
 }
 
+/* Тема з двома блоками («Дітям захисників»): заголовок блоку з лічильником
+   і однорядковим поясненням, що саме в нього потрапляє. */
+.topic-block { margin: 28px 0 14px; }
+.topic-block--rest { margin-top: 40px; }
+
+.topic-block h2 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  text-wrap: balance;
+}
+
+.topic-block-count {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-variant-numeric: tabular-nums;
+}
+
+.topic-block-lede {
+  max-width: 720px;
+  margin: 0 0 16px;
+  color: var(--ink-muted);
+  font-size: 0.90625rem;
+  line-height: 1.55;
+}
+
 /* Хаб категорій /kategorii: групи чіпів із живими лічильниками. */
 .category-group { margin: 26px 0 4px; }
 
