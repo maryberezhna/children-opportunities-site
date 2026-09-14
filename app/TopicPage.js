@@ -241,6 +241,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           lang={lang}
           pinnedIds={pinnedIds}
           pinnedLabel={c.pinnedLabel}
+          initialLimit={24}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026):

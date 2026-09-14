@@ -186,6 +186,7 @@ export default async function CityTopicPage({ params }) {
           opportunities={opportunities}
           presetCity={cityData.ua}
           today={kyivToday()}
+          initialLimit={24}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}

@@ -344,6 +344,9 @@ export default function OpportunitiesList({
   // Закріплені підбіркою картки (напр. «Лише для дітей захисників»): першими
   // в списку й з позначкою. Без цих параметрів список поводиться як раніше.
   pinnedIds = null, pinnedLabel = null,
+  // Скільки карток видно одразу. На головній 6 і «Показати ще»; підбірка —
+  // одна сторінка з можливостями, тож там більше (рішення Марії 14.09.2026).
+  initialLimit = 6,
   mobileLayout = false, sidebarLayout = false,
 }) {
   const todayIso = today || kyivToday();
@@ -354,7 +357,7 @@ export default function OpportunitiesList({
   // Режим «Батькам / Підліткам» вмикається лише там, де в шапці є
   // перемикач (головна). На сторінках міст і тем каталог завжди
   // батьківський — там своя обіцянка в заголовку сторінки.
-  const pageSize = useRef(6);
+  const pageSize = useRef(initialLimit);
   const [mode, setMode] = useState('parents');
   // Зміна режиму скидає фільтри: у батьків і підлітків різні словники. Але
   // лише коли людина сама клацнула перемикач — раніше скидання жило в
@@ -380,7 +383,7 @@ export default function OpportunitiesList({
   const [cost, setCost] = useState('all');
   const [place, setPlace] = useState(presetCity || 'all');
   const [query, setQuery] = useState('');
-  const [limit, setLimit] = useState(6);
+  const [limit, setLimit] = useState(initialLimit);
   const [hydrated, setHydrated] = useState(false);
 
   // Мобільна верстка головної (≤900px, референс «Dityam — мобільна версія»,
@@ -576,7 +579,10 @@ export default function OpportunitiesList({
 
   const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
   const stream = useMemo(
-    () => (topCards.length ? filtered.filter((c) => !topIds.has(c.id)) : filtered),
+    // Прибираємо зі стрічки лише тоді, коли блок топу справді показано (він
+    // рендериться тільки з трьома картками). Раніше з одним-двома живими
+    // дедлайнами ці картки зникали звідусіль: «Знайдено 11», а видно 10.
+    () => (topCards.length === 3 ? filtered.filter((c) => !topIds.has(c.id)) : filtered),
     [filtered, topCards, topIds],
   );
 
