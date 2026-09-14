@@ -341,16 +341,23 @@ function facetCounts(s, { teens, todayIso, searchIndex, liveItems, t }) {
 
 export default function OpportunitiesList({
   opportunities, presetCity, promoProps = null, lang = 'uk', today, modeAware = false,
+  // Закріплені підбіркою картки (напр. «Лише для дітей захисників»): першими
+  // в списку й з позначкою. Без цих параметрів список поводиться як раніше.
+  pinnedIds = null, pinnedLabel = null,
+  // Скільки карток видно одразу. На головній 6 і «Показати ще»; підбірка —
+  // одна сторінка з можливостями, тож там більше (рішення Марії 14.09.2026).
+  initialLimit = 6,
   mobileLayout = false, sidebarLayout = false,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
   const isEn = lang === 'en';
+  const pinned = useMemo(() => new Set(pinnedIds || []), [pinnedIds]);
 
   // Режим «Батькам / Підліткам» вмикається лише там, де в шапці є
   // перемикач (головна). На сторінках міст і тем каталог завжди
   // батьківський — там своя обіцянка в заголовку сторінки.
-  const pageSize = useRef(6);
+  const pageSize = useRef(initialLimit);
   const [mode, setMode] = useState('parents');
   // Зміна режиму скидає фільтри: у батьків і підлітків різні словники. Але
   // лише коли людина сама клацнула перемикач — раніше скидання жило в
@@ -376,7 +383,7 @@ export default function OpportunitiesList({
   const [cost, setCost] = useState('all');
   const [place, setPlace] = useState(presetCity || 'all');
   const [query, setQuery] = useState('');
-  const [limit, setLimit] = useState(6);
+  const [limit, setLimit] = useState(initialLimit);
   const [hydrated, setHydrated] = useState(false);
 
   // Мобільна верстка головної (≤900px, референс «Dityam — мобільна версія»,
@@ -545,6 +552,9 @@ export default function OpportunitiesList({
     const list = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
     // Найближчий дедлайн угорі; без дедлайну — вкінці, свіжіші перші.
     return list.sort((a, b) => {
+      const pa = pinned.has(a.id) ? 0 : 1;
+      const pb = pinned.has(b.id) ? 0 : 1;
+      if (pa !== pb) return pa - pb;
       const da = daysUntil(a.deadline, todayIso);
       const db = daysUntil(b.deadline, todayIso);
       const ra = da === null || da < 0 ? 9999 : da;
@@ -552,7 +562,7 @@ export default function OpportunitiesList({
       if (ra !== rb) return ra - rb;
       return (b.created_at || '').localeCompare(a.created_at || '');
     });
-  }, [liveItems, predicates, todayIso]);
+  }, [liveItems, predicates, todayIso, pinned]);
 
   // Топ тижня: три найближчі живі дедлайни. Показується без активних
   // фільтрів і виключається з основної стрічки, щоб не дублювався.
@@ -569,7 +579,10 @@ export default function OpportunitiesList({
 
   const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
   const stream = useMemo(
-    () => (topCards.length ? filtered.filter((c) => !topIds.has(c.id)) : filtered),
+    // Прибираємо зі стрічки лише тоді, коли блок топу справді показано (він
+    // рендериться тільки з трьома картками). Раніше з одним-двома живими
+    // дедлайнами ці картки зникали звідусіль: «Знайдено 11», а видно 10.
+    () => (topCards.length === 3 ? filtered.filter((c) => !topIds.has(c.id)) : filtered),
     [filtered, topCards, topIds],
   );
 
@@ -686,12 +699,14 @@ export default function OpportunitiesList({
         <div className="v2-card-tags">
           <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
           <span className="v2-tag" style={{ background: dlBg, color: dlFg }}>{dl.text}</span>
+          {pinnedLabel && pinned.has(item.id) ? <span className="v2-tag v2-tag-pinned">{pinnedLabel}</span> : null}
         </div>
         {/* Мобільний рядок (6a): тип → дедлайн → вік. Дедлайн помаранчевий
             лише коли горить (≤7 днів), інакше спокійний сірий. */}
         {mobileLayout ? (
           <div className="v2-card-meta">
             <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
+            {pinnedLabel && pinned.has(item.id) ? <span className="v2-tag v2-tag-pinned">{pinnedLabel}</span> : null}
             <span className={`v2-card-meta-dl${dl.kind === 'urgent' ? ' is-urgent' : ''}`}>{dl.text}</span>
             {age ? <><span className="v2-card-meta-sep" aria-hidden="true">·</span><span>{age}</span></> : null}
           </div>

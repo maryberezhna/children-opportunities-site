@@ -186,7 +186,15 @@ export default async function CityTopicPage({ params }) {
           opportunities={opportunities}
           presetCity={cityData.ua}
           today={kyivToday()}
+          initialLimit={24}
         />
+
+        {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
+        <section className="topic-more" aria-labelledby="topic-more-title">
+          <h2 id="topic-more-title">Більше можливостей — на головній</h2>
+          <p>Тут лише одна підбірка. На головній — усі можливості для дітей і підлітків, з фільтрами за віком, дедлайном, вартістю й містом.</p>
+          <Link href="/" className="link-btn">Усі можливості →</Link>
+        </section>
       </div>
       <Footer />
 
