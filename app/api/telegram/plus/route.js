@@ -16,6 +16,7 @@ import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
 } from '@/lib/plusProfile';
+import { PLUS_SALES_OPEN } from '@/lib/plus';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,8 +84,9 @@ async function payoffProof(supabase) {
 // Знижка для списку очікування (рішення Марії 14.09.2026): перший місяць за
 // PRICE_EARLY. Лише тим, хто ще жодного разу не платив (немає
 // wfp_order_reference), і лише якщо людина є в plus_waitlist за chat_id
-// (записалась через @DityamComUABot; у приватному чаті chat_id однаковий для
-// обох ботів, бо це id користувача). Імейлом у список більше не записуємо
+// (з 15.09.2026 записуються тут, у @DityamPlusBot, раніше — через
+// @DityamComUABot; у приватному чаті chat_id однаковий для обох ботів, бо це
+// id користувача). Імейлом у список більше не записуємо
 // (15.09.2026), тож і шукати за ним нема чого.
 async function isEarlyBird(supabase, sub) {
   if (!supabase || !sub || sub.wfp_order_reference || !sub.telegram_chat_id) return false;
@@ -238,6 +240,38 @@ function subDetails(sub, kids) {
   return lines.join('\n');
 }
 
+// Список очікування Dityam+ — у цьому боті, а не в основному (15.09.2026):
+// основний бот зветься «Dityam Адмінка 🛠», і людина, що хотіла дізнатись про
+// Dityam+, отримувала відповідь від «адмінки». source = 'plus_bot:<звідки>' —
+// за ним plus_launch.py знає, яким ботом писати про запуск.
+const fmtPrice = (n) => Number(n).toLocaleString('uk-UA');
+const WAITLIST_WELCOME = () => `Ви в списку перших! 🧡
+
+Dityam+ — платна підписка: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_YEAR)} грн/рік. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
+
+Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`;
+
+async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
+  const from = String(startArg).replace(/^waitlist_?/i, '') || 'site';
+  const { data: existing } = await supabase.from('plus_waitlist')
+    .select('id').eq('telegram_chat_id', chatId).maybeSingle();
+  if (existing) {
+    await bot.sendMessage(chatId, 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.');
+    return;
+  }
+  await supabase.from('plus_waitlist').insert({
+    telegram_chat_id: chatId,
+    telegram_username: handle,
+    source: `plus_bot:${from}`,
+  });
+  // Сповіщення адміну — з основного бота, у ваш адмінський чат; людина його не бачить.
+  if (MAIN_TOKEN && ADMIN_CHAT_ID) {
+    await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+      `🚀 <b>Dityam+ — новий у списку очікування</b>\n${esc(handle || chatId)} · через бот Dityam+ · ${esc(from)}`);
+  }
+  await bot.sendMessage(chatId, WAITLIST_WELCOME());
+}
+
 export async function POST(request) {
   if (!SECRET) return new Response('secret not configured', { status: 500 });
   if (request.headers.get('x-telegram-bot-api-secret-token') !== SECRET) return new Response('forbidden', { status: 403 });
@@ -293,12 +327,22 @@ export async function POST(request) {
     }
 
     if (/^\/start\b/i.test(text)) {
+      const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
+
+      // Кнопки «Хочу першим» на сайті й у каналі: ?start=waitlist[_звідки].
+      // Поки продаж закритий, людина лише стає в список — без анкети, оплати й
+      // рядка в digest_subscribers. Коли продаж відкрито, та сама кнопка веде
+      // далі звичайним шляхом /start.
+      if (!PLUS_SALES_OPEN && /^waitlist/i.test(startArg || '')) {
+        await joinWaitlist(bot, supabase, chatId, handle, startArg);
+        return new Response('ok');
+      }
+
       let { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
 
       // Deep-link із форми на сайті: /start <unsub_token>. Привʼязуємо чат до
       // вже створеного рядка, інакше нижче створився б дубль, а зібраний на
       // сайті профіль (вік, інтереси) загубився б.
-      const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
 
       if (!sub && startArg) {
         const { data: linked } = await supabase.from('digest_subscribers')

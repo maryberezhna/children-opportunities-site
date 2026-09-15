@@ -1,7 +1,8 @@
 name: Dityam+ — launch to waitlist
 
 # Разове повідомлення про запуск Dityam+ усім зі списку очікування, хто
-# записався через Telegram, — від основного бота. Тих, хто записався імейлом до
+# записався через Telegram, — від того бота, через якого людина записалась
+# (з 15.09.2026 — @DityamPlusBot, раніше — основний). Тих, хто записався імейлом до
 # 15.09.2026, скрипт лише рахує: листів Dityam+ не шле (рішення Марії).
 # Знижка для них — перший місяць за 89 грн (рішення Марії 14.09.2026).
 #
@@ -39,6 +40,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
         run: |
           if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
             python plus_launch.py --send

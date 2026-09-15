@@ -1,6 +1,7 @@
 // Разовий анонс Dityam+ у канал: збираємо список очікування одним тапом.
-// Кнопка веде в бота (t.me/DityamComUABot?start=plus) — бот зберігає chat_id
-// у plus_waitlist. Це свідомо не email-форма: набирати пошту в месенджері
+// Кнопка веде в платний бот (t.me/DityamPlusBot?start=waitlist_post) — бот
+// зберігає chat_id у plus_waitlist. До 15.09.2026 вела в основний бот, але той
+// зветься «Dityam Адмінка 🛠» і не має відповідати стороннім людям. Це свідомо не email-форма: набирати пошту в месенджері
 // незручно, а chat_id — прямий канал, куди й прийде повідомлення про запуск.
 //
 // Запуск: workflow "Plus announcement (Telegram)" (workflow_dispatch).
@@ -33,7 +34,7 @@ const payload = {
   disable_web_page_preview: true,
   reply_markup: {
     inline_keyboard: [[
-      { text: '🚀 Хочу першим', url: 'https://t.me/DityamComUABot?start=plus' },
+      { text: '🚀 Хочу першим', url: 'https://t.me/DityamPlusBot?start=waitlist_post' },
     ]],
   },
 };

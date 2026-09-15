@@ -271,44 +271,21 @@ async function sendAdminMessages(chatId) {
     { inline_keyboard: [[{ text: '✉️ Відповісти в адмінці', url: `${SITE_URL}/admin/messages` }]] });
 }
 
-// Тап по кнопці «Хочу першим» у пості каналу: t.me/DityamComUABot?start=plus.
-// Зберігаємо chat_id у список очікування — це прямий канал, цінніший за email:
-// коли Dityam+ запуститься, напишемо людині сюди.
+// Старі пости «Хочу першим» у каналі ведуть сюди: t.me/DityamComUABot?start=plus.
+// З 15.09.2026 список очікування живе в @DityamPlusBot (joinWaitlist у
+// app/api/telegram/plus): цей бот зветься «Dityam Адмінка 🛠», і стороння
+// людина не має отримувати від нього тексти про Dityam+. Тут — лише один рядок
+// із кнопкою туди; нічого не записуємо. Та сама кнопка після відкриття продажу
+// веде вже до оформлення.
 async function handlePlusWaitlist(msg) {
-  if (!SUPABASE_URL || !SERVICE_ROLE) return new Response('ok');
-  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
-  const chatId = String(msg.chat.id);
-  const username = msg.from?.username ? `@${msg.from.username}` : null;
-
-  // Продаж відкрито (lib/plus.js): старі пости «Хочу першим» ведуть уже не в
-  // список очікування, а до оформлення в платному боті.
-  if (PLUS_SALES_OPEN) {
-    await sendMessage(msg.chat.id,
-      '🧡 Dityam+ уже працює! Оформлення — у боті @DityamPlusBot: кілька питань про дитину, потім оплата.',
-      { inline_keyboard: [[{ text: '🚀 Оформити Dityam+', url: plusBotUrl('waitlist_post') }]] });
-    return new Response('ok');
-  }
-
-  const { data: existing } = await supabase.from('plus_waitlist')
-    .select('id').eq('telegram_chat_id', chatId).maybeSingle();
-
-  if (!existing) {
-    await supabase.from('plus_waitlist').insert({
-      telegram_chat_id: chatId,
-      telegram_username: username,
-      source: 'telegram_post',
-    });
-    // Сповіщення адміну — лише про нових, повторні тапи не шумлять.
-    if (ADMIN_CHAT_ID) {
-      await sendMessage(ADMIN_CHAT_ID,
-        `🚀 <b>Dityam+ — новий у списку очікування</b>
-${username || chatId} · з телеграм-посту`);
-    }
-  }
-
-  await sendMessage(msg.chat.id, existing
-    ? 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.'
-    : 'Ви в списку перших! 🧡\n\nDityam+ — платна підписка: 179 грн/міс або 1 199 грн/рік. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.\n\nЩойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.');
+  await sendMessage(msg.chat.id,
+    PLUS_SALES_OPEN
+      ? '🧡 Dityam+ уже працює — оформлення в боті @DityamPlusBot 👇'
+      : '🧡 Список перших Dityam+ — у боті @DityamPlusBot. Один тап 👇',
+    { inline_keyboard: [[{
+      text: PLUS_SALES_OPEN ? '🚀 Оформити Dityam+' : '🚀 Хочу першим',
+      url: plusBotUrl('waitlist_post'),
+    }]] });
   return new Response('ok');
 }
 
