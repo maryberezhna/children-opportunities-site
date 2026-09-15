@@ -159,12 +159,42 @@ def pick_for(sub: dict, opps: list, since=None, children=None) -> list:
     return [dict(m["o"], _for=plus_profile.for_line(m, len(kids))) for m in picked]
 
 
+MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня",
+              "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
+SUMMARY_CHARS = 220       # скільки опису показувати в листі
+
+
+def _deadline(o) -> str:
+    """«до 30 жовтня» (рік — лише якщо не поточний). Сира ISO-дата в листі
+    для батьків читалась би як помилка."""
+    try:
+        y, m, d = (int(x) for x in str(o.get("deadline") or "")[:10].split("-"))
+    except ValueError:
+        return ""
+    year = f" {y}" if y != datetime.now(timezone.utc).year else ""
+    return f"до {d} {MONTHS_GEN[m - 1]}{year}"
+
+
 def _meta(o) -> str:
     bits = [THEME_LABEL.get(next(iter(o["_themes"]), ""), "") or "Можливість"]
     bits.append(f"{o['age_from']}–{o['age_to']} р.")
     if o.get("cost_type") == "free":
         bits.append("безкоштовно")
+    # Дедлайн — те, заради чого читають добірку; /plus обіцяє його в повідомленні.
+    deadline = _deadline(o)
+    if deadline:
+        bits.append(deadline)
     return " · ".join(b for b in bits if b)
+
+
+def short_summary(o) -> str:
+    """Опис для листа: до SUMMARY_CHARS символів, обрізаний по слову. До
+    15.09.2026 опису в листі не було зовсім — лише назва, тип і вік."""
+    text = " ".join(str(o.get("summary") or "").split())
+    if len(text) <= SUMMARY_CHARS:
+        return text
+    cut = text[:SUMMARY_CHARS].rsplit(" ", 1)[0].rstrip(" ,.;:—-")
+    return f"{cut}…"
 
 
 PLUS_BOT = "DityamPlusBot"
@@ -267,7 +297,8 @@ def build_email(sub, items, revival: bool = False) -> str:
             f'<tr><td style="padding:14px 0;border-bottom:1px solid #eee">'
             f'<a href="{html.escape(url)}" style="color:#131b28;font-size:16px;font-weight:700;text-decoration:none">{html.escape(o["title"])}</a>'
             f'<div style="color:#54617a;font-size:13px;margin-top:4px">{html.escape(_meta(o))}</div>'
-            + (f'<div style="color:#6b6b6b;font-size:12px;margin-top:2px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
+            + (f'<div style="color:#131b28;font-size:14px;line-height:1.5;margin-top:6px">{html.escape(short_summary(o))}</div>' if short_summary(o) else "")
+            + (f'<div style="color:#6b6b6b;font-size:12px;margin-top:4px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
             + f'<div style="margin-top:10px">{"".join(actions)}</div>'
             + '</td></tr>'
         )
