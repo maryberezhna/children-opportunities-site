@@ -1,0 +1,49 @@
+name: Telegram — видалити пост у каналі (manual)
+
+# Видаляє повідомлення в каналі за номером (Bot API deleteMessage). Токен бота
+# живе лише в секретах GitHub, тож прибрати застарілий пост можна тільки так.
+#
+# Номер поста — останнє число в посиланні t.me/dityam_com_ua/<номер>. Кілька
+# номерів — через пробіл. Без confirm = DELETE нічого не видаляє, лише показує,
+# що саме видалив би.
+#
+# Перше використання — 15.09.2026: анонс «Dityam+ — скоро» від 15.08.2026 вів у
+# «Dityam Адмінка 🛠» і обіцяв застаріле (нагадування «за тиждень і за два дні»,
+# допомогу із заявкою). Рішення Марії: «ВИДАЛИ».
+on:
+  workflow_dispatch:
+    inputs:
+      message_ids:
+        description: 'Номери постів через пробіл (t.me/dityam_com_ua/<номер>)'
+        required: true
+      confirm:
+        description: 'DELETE — видалити по-справжньому; порожньо — лише показати'
+        required: false
+        default: ''
+
+jobs:
+  delete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Delete
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          IDS: ${{ github.event.inputs.message_ids }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          fail=0
+          for id in $IDS; do
+            case "$id" in ''|*[!0-9]*) echo "✗ «$id» — не номер"; fail=1; continue;; esac
+            echo "── пост $id: https://t.me/dityam_com_ua/$id"
+            if [ "$CONFIRM" != "DELETE" ]; then
+              echo "   [dry] не видаляю — запустіть із confirm = DELETE"
+              continue
+            fi
+            resp=$(curl -s "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/deleteMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" --data-urlencode "message_id=${id}")
+            echo "   $resp"
+            echo "$resp" | grep -q '"ok":true' || fail=1
+          done
+          exit $fail
