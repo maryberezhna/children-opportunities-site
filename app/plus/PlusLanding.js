@@ -33,7 +33,7 @@ const L = {
     h1a: 'Можливості для дитини ',
     h1script: 'приходять самі',
     h1b: ' — з нагадуванням про дедлайн',
-    lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram або на імейл лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
+    lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
     priceHint: '179 грн/міс · 1 199 грн/рік',
@@ -64,11 +64,9 @@ const L = {
       'Відмічайте «Цікаво» чи «Не цікаво», а з жовтня — беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
     ],
 
-    mockTitle: 'Що приходить у Telegram або на імейл',
+    mockTitle: 'Що приходить у Telegram',
     mockSub: 'Назва, вік, вартість, дедлайн і посилання на деталі — достатньо, щоб за хвилину вирішити, чи подаватись. Під кожною можливістю — «Цікаво», «Не цікаво» і «Додати в календар».',
     flow: {
-      channelLabel: 'Канал',
-      tabs: { tg: 'Telegram', mail: 'Імейл' },
       play: 'Відтворити',
       pause: 'Пауза',
       steps: [
@@ -100,16 +98,6 @@ const L = {
       remindSub: 'Саме час готувати документи.',
       remindMeta: 'подача до 31 січня',
       remindFoot: 'Підібрано під профіль вашої дитини.',
-      mail: {
-        fromLabel: 'Від',
-        from: 'Dityam.com.ua',
-        subjLabel: 'Тема',
-        subjDigest: '🧡 Нові можливості для вашої дитини — Dityam+',
-        subjRemind: '⏳ Нагадування про дедлайн — Dityam+',
-        brand: 'DITYAM+',
-        h: 'Нові можливості для вашої дитини',
-        lead: 'Підібрано під вік та інтереси дитини.',
-      },
     },
     mockNote: 'Приклад на справжній можливості з платформи.',
 
@@ -174,7 +162,7 @@ const L = {
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
       'допомога із заявкою — просто напишіть боту',
-      'усе приходить у Telegram або на імейл',
+      'усе приходить у Telegram',
     ],
     trust: (total) => [
       'Не запитуємо імені, прізвища чи школи дитини',
@@ -194,7 +182,7 @@ const L = {
     ],
 
     joinTitle: 'Станьте першими',
-    joinText: 'Dityam+ ще не продається. Залиште контакт — напишемо в день запуску, і для перших буде знижка.',
+    joinText: 'Dityam+ ще не продається. Станьте в список у Telegram — напишемо в день запуску, і для перших буде знижка.',
   },
 
   en: {
@@ -202,7 +190,7 @@ const L = {
     h1a: 'Opportunities for your child ',
     h1script: 'come to you',
     h1b: ' — with a deadline reminder',
-    lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits, on Telegram or by email, and we remind you about the deadline while there is still time to apply.',
+    lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits on Telegram, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
     priceHint: 'UAH 179/month · UAH 1,199/year',
@@ -231,11 +219,9 @@ const L = {
       'Mark “Interested” or “Not interested”, and from October join partner giveaways and get partner discounts',
     ],
 
-    mockTitle: 'What arrives on Telegram or by email',
+    mockTitle: 'What arrives on Telegram',
     mockSub: 'Title, age, cost, deadline and a link to the details — enough to decide in a minute whether to apply. Every opportunity comes with “Interested”, “Not interested” and “Add to calendar”.',
     flow: {
-      channelLabel: 'Channel',
-      tabs: { tg: 'Telegram', mail: 'Email' },
       play: 'Play',
       pause: 'Pause',
       steps: [
@@ -264,16 +250,6 @@ const L = {
       remindSub: 'Time to prepare the documents.',
       remindMeta: 'apply by 31 January',
       remindFoot: 'Selected for your child’s profile.',
-      mail: {
-        fromLabel: 'From',
-        from: 'Dityam.com.ua',
-        subjLabel: 'Subject',
-        subjDigest: '🧡 New opportunities for your child — Dityam+',
-        subjRemind: '⏳ Deadline reminder — Dityam+',
-        brand: 'DITYAM+',
-        h: 'New opportunities for your child',
-        lead: 'Selected for your child’s age and interests.',
-      },
     },
     mockNote: 'An example built on a real opportunity from the platform.',
 
@@ -336,7 +312,7 @@ const L = {
       'a selection for each child’s profile — age, likes, format, city',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
       'help with applications — just message the bot',
-      'everything arrives on Telegram or by email',
+      'everything arrives on Telegram',
     ],
     trust: (total) => [
       'We don’t ask for your child’s name, surname or school',
@@ -356,7 +332,7 @@ const L = {
     ],
 
     joinTitle: 'Be the first',
-    joinText: 'Dityam+ is not on sale yet. Leave a contact — we will write on launch day, with a discount for early members.',
+    joinText: 'Dityam+ is not on sale yet. Join the list on Telegram — we will write on launch day, with a discount for early members.',
   },
 };
 
@@ -366,13 +342,13 @@ const L = {
 const OPEN = {
   uk: {
     cta: 'Оформити в Telegram',
-    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, вибір — надсилати в Telegram чи на імейл, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць за 89 грн.'],
+    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць за 89 грн.'],
     joinTitle: 'Оформити Dityam+',
     joinText: 'Кілька хвилин у Telegram-боті: питання про дитину, потім оплата. Останні можливості під профіль — у меню бота одразу після оплати.',
   },
   en: {
     cta: 'Subscribe on Telegram',
-    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, a choice of Telegram or email delivery, then payment through WayForPay. People from the waiting list get their first month for UAH 89.'],
+    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, then payment through WayForPay. People from the waiting list get their first month for UAH 89.'],
     joinTitle: 'Get Dityam+',
     joinText: 'A few minutes in the Telegram bot: questions about your child, then payment. The latest matching opportunities are in the bot menu right after payment.',
   },
@@ -497,13 +473,12 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
 
           {/* Флоу підписки на одній можливості: дайджест → «Цікаво» → календар →
               нагадування. Формат повідомлень — scraper/personal_digest.py
-              (build_telegram, build_email) і scraper/deadline_reminders.py.
+              (build_telegram) і scraper/deadline_reminders.py.
               ISEF Ukraine звірено з базою 14.09.2026: 14–17, безкоштовно,
               конкурс (нагадування за 14 і 3 дні), подача до 31.01.2027.
               Кнопки «Цікаво / Не цікаво» і «Додати в календар» є і в
-              справжніх повідомленнях з 15.09.2026: у листі — посилання
-              (/api/plus/feedback, /events/<slug>/add), у Telegram — кнопки
-              під добіркою (pfb: у /api/telegram/plus). Календар — лише для
+              справжніх повідомленнях з 15.09.2026 — кнопки під добіркою в
+              Telegram (pfb: у /api/telegram/plus). Календар — лише для
               записів із дедлайном. */}
           <div className="pl-mock">
             <h3 className="pl-mock-title">{t.mockTitle}</h3>

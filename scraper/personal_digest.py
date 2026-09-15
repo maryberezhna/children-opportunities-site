@@ -3,15 +3,17 @@
 Для кожного активного платного підписника (`digest_subscribers`) добирає активні
 можливості під профіль родини — окремо під кожну дитину (plus_children: вік,
 вподобання, формат, особливі обставини) з урахуванням спільних для родини
-місця й вартості — і шле підбірку в його канал, Telegram або email.
+місця й вартості — і шле підбірку в Telegram.
+
+Імейл прибрано повністю 15.09.2026 (рішення Марії): Gmail відбивав автоматичні
+листи без DKIM-підпису домену, а жоден підписник доставку листом не обрав.
 
 Модель: платформа відкрита для всіх і нічого не ховає. Dityam+ — це послуга:
 відбір під профіль дитини, нагадування про дедлайни, допомога із заявкою.
 Підписник платить за зняту з нього роботу, а не за доступ.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_PLUS_BOT_TOKEN (TELEGRAM_BOT_TOKEN —
-     запасний), RESEND_API_KEY (є — листи йдуть через Resend із dityam.com.ua;
-     нема — GMAIL_FROM і GMAIL_APP_PASSWORD), SITE_URL (optional).
+     запасний), SITE_URL (optional).
 
 Прапорці:
   --dry-run   нічого не шле й не оновлює last_sent_at — лише друкує, кому що пішло б
@@ -28,12 +30,8 @@ import argparse
 import html
 import logging
 import os
-import smtplib
 import sys
-import time
 from datetime import datetime, timedelta, timezone
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 import httpx
 
@@ -51,8 +49,6 @@ SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
 # тих, хто колись привʼязав канал через нього (/start <token> у webhook).
 PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
 MAIN_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-GMAIL_FROM = os.environ.get("GMAIL_FROM", "mashaberezhna0209@gmail.com")
-GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 MAX_ITEMS = 8             # максимум можливостей в одному сповіщенні
 MIN_LEAD_DAYS = int(os.environ.get("MIN_LEAD_DAYS", "3"))  # мінімум днів до дедлайну
 
@@ -133,12 +129,7 @@ def notify_empty_profile(client, sub: dict) -> None:
         "Хочете отримувати більше — розширте інтереси або віковий діапазон: "
         "надішліть /start і оновіть форму."
     )
-    ok = False
-    if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
-        ok = send_telegram(sub["telegram_chat_id"], text)
-    elif sub["channel"] == "email" and sub.get("email"):
-        # send_email віддає тіло як HTML — переноси рядків там не працюють.
-        ok = send_email(sub["email"], text.replace("\n", "<br>"))
+    ok = bool(sub.get("telegram_chat_id")) and send_telegram(sub["telegram_chat_id"], text)
     if ok:
         client.table("digest_subscribers").update(
             {"last_empty_notice_at": datetime.now(timezone.utc).isoformat()}
@@ -163,12 +154,11 @@ def pick_for(sub: dict, opps: list, since=None, children=None) -> list:
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня",
               "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
-SUMMARY_CHARS = 220       # скільки опису показувати в листі
 
 
 def _deadline(o) -> str:
-    """«до 30 жовтня» (рік — лише якщо не поточний). Сира ISO-дата в листі
-    для батьків читалась би як помилка."""
+    """«до 30 жовтня» (рік — лише якщо не поточний). Сира ISO-дата в
+    повідомленні для батьків читалась би як помилка."""
     try:
         y, m, d = (int(x) for x in str(o.get("deadline") or "")[:10].split("-"))
     except ValueError:
@@ -189,43 +179,10 @@ def _meta(o) -> str:
     return " · ".join(b for b in bits if b)
 
 
-def short_summary(o) -> str:
-    """Опис для листа: до SUMMARY_CHARS символів, обрізаний по слову. До
-    15.09.2026 опису в листі не було зовсім — лише назва, тип і вік."""
-    text = " ".join(str(o.get("summary") or "").split())
-    if len(text) <= SUMMARY_CHARS:
-        return text
-    cut = text[:SUMMARY_CHARS].rsplit(" ", 1)[0].rstrip(" ,.;:—-")
-    return f"{cut}…"
-
-
-PLUS_BOT = "DityamPlusBot"
-
-
-def feedback_url(sub, o, value: str) -> str:
-    """«👍 Цікаво / 👎 Не цікаво» з листа. Сторінка на сайті сама відправляє
-    POST — сканери посилань у поштових сервісах відкривають лише GET і голос
-    не ставлять (app/api/plus/feedback/route.js)."""
-    return f"{SITE_URL}/api/plus/feedback?t={sub['unsub_token']}&o={o['id']}&v={value}"
-
-
 def calendar_url(o):
     """«Додати в календар» — лише коли є дедлайн: без дати подію немає куди
     поставити, і /api/events/<slug>/ics без неї відповідає 422."""
     return f"{SITE_URL}/events/{o['slug']}/add" if o.get("deadline") else None
-
-
-def email_footer(sub) -> str:
-    """Керування підпискою з листа (прохання Марії 15.09.2026). Профіль і
-    підписка живуть у @DityamPlusBot, тож посилання відкривають бот одразу на
-    потрібному кроці: start=edit — анкета, start=sub — деталі підписки й /stop."""
-    unsub = f"{SITE_URL}/api/unsubscribe?t={sub['unsub_token']}"
-    return (
-        '<p style="font-size:13px;margin-top:20px;line-height:1.9">'
-        f'<a href="https://t.me/{PLUS_BOT}?start=edit" style="color:#1e4fd6">✏️ Редагувати інтереси</a> · '
-        f'<a href="https://t.me/{PLUS_BOT}?start=sub" style="color:#1e4fd6">⭐ Керувати підпискою</a> · '
-        f'<a href="{html.escape(unsub)}" style="color:#6b6b6b">Відписатись</a></p>'
-    )
 
 
 def telegram_keyboard(items) -> dict:
@@ -247,7 +204,7 @@ def telegram_keyboard(items) -> dict:
 def load_disliked(client, subs) -> dict:
     """«👎 Не цікаво» → цю можливість підписнику більше не надсилаємо ні в
     добірках, ні в нагадуваннях. Позначки лежать в opportunity_feedback за
-    Telegram-id — і з кнопок у Telegram, і з листа. Повертає {chat_id: {id}}."""
+    Telegram-id — з кнопок під добіркою. Повертає {chat_id: {id}}."""
     chats = sorted({str(s["telegram_chat_id"]) for s in subs if s.get("telegram_chat_id")})
     if not chats:
         return {}
@@ -278,41 +235,6 @@ def build_telegram(sub, items, revival: bool = False) -> str:
     lines.append("<i>Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на dityam.com.ua</i>")
     lines.append("Змінити профіль — /start · Відписатись — /stop")
     return "\n".join(lines)
-
-
-EMAIL_BUTTON = ("display:inline-block;margin:0 6px 6px 0;padding:6px 12px;border:1px solid #d4cfc1;"
-                "border-radius:9999px;color:#131b28;font-size:13px;text-decoration:none")
-
-
-def build_email(sub, items, revival: bool = False) -> str:
-    rows = []
-    for o in items:
-        url = f"{SITE_URL}/o/{o['slug']}"
-        actions = [
-            f'<a href="{html.escape(feedback_url(sub, o, "yes"))}" style="{EMAIL_BUTTON}">👍 Цікаво</a>',
-            f'<a href="{html.escape(feedback_url(sub, o, "no"))}" style="{EMAIL_BUTTON}">👎 Не цікаво</a>',
-        ]
-        cal = calendar_url(o)
-        if cal:
-            actions.append(f'<a href="{html.escape(cal)}" style="{EMAIL_BUTTON}">📅 Додати в календар</a>')
-        rows.append(
-            f'<tr><td style="padding:14px 0;border-bottom:1px solid #eee">'
-            f'<a href="{html.escape(url)}" style="color:#131b28;font-size:16px;font-weight:700;text-decoration:none">{html.escape(o["title"])}</a>'
-            f'<div style="color:#54617a;font-size:13px;margin-top:4px">{html.escape(_meta(o))}</div>'
-            + (f'<div style="color:#131b28;font-size:14px;line-height:1.5;margin-top:6px">{html.escape(short_summary(o))}</div>' if short_summary(o) else "")
-            + (f'<div style="color:#6b6b6b;font-size:12px;margin-top:4px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
-            + f'<div style="margin-top:10px">{"".join(actions)}</div>'
-            + '</td></tr>'
-        )
-    return (
-        f'<div style="max-width:560px;margin:0 auto;font-family:system-ui,Arial,sans-serif;color:#131b28">'
-        f'<div style="font-size:12px;color:#c8501a;font-weight:700;letter-spacing:.04em">DITYAM+</div>'
-        f'<h1 style="font-size:22px;margin:6px 0 4px">{"Добірка під вашу дитину" if revival else "Нові можливості для вашої дитини"}</h1>'
-        f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
-        f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
-        f'<p style="color:#6b6b6b;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>.</p>'
-        f'{email_footer(sub)}</div>'
-    )
 
 
 # Відповіді Telegram, після яких є сенс спробувати інший бот: цей бот людині
@@ -348,65 +270,6 @@ def send_telegram(chat_id, text, reply_markup=None) -> bool:
     return False
 
 
-RESEND_URL = "https://api.resend.com/emails"
-# Відправник — адреса на домені, підтвердженому в Resend (скринька за нею не
-# потрібна); відповіді людей ідуть у пошту проєкту.
-RESEND_FROM = os.environ.get("RESEND_FROM", "Dityam.com.ua <hello@dityam.com.ua>")
-REPLY_TO = "hellodityam.com.ua@gmail.com"
-PLAIN_TEXT = "Відкрий лист у HTML, щоб побачити підбірку. dityam.com.ua"
-
-
-def _send_resend(api_key, to_addr, html_body, subject) -> bool:
-    payload = {
-        "from": RESEND_FROM, "to": [to_addr], "subject": subject,
-        "html": html_body, "text": PLAIN_TEXT, "reply_to": REPLY_TO,
-    }
-    for attempt in range(3):
-        try:
-            r = httpx.post(RESEND_URL, json=payload, timeout=20,
-                           headers={"Authorization": f"Bearer {api_key}"})
-        except Exception as e:
-            logger.warning("Resend send failed for %s: %s", to_addr, e)
-            return False
-        # Resend пускає лише кілька запитів на секунду — на 429 чекаємо й
-        # пробуємо ще, щоб розсилка списку очікування не губила листи.
-        if r.status_code == 429 and attempt < 2:
-            time.sleep(1)
-            continue
-        if r.status_code < 300:
-            return True
-        logger.warning("Resend send failed for %s: %s %s", to_addr, r.status_code, r.text[:200])
-        return False
-    return False
-
-
-def send_email(to_addr, html_body, subject="🧡 Нові можливості для вашої дитини — Dityam+") -> bool:
-    # Gmail відбиває автоматичні HTML-листи зі звичайної gmail.com: «550 5.7.30
-    # DKIM authentication didn't pass» (15.09.2026 не дійшов жоден пробний лист
-    # із пошти проєкту). Підписати лист DKIM можна лише доменом відправника,
-    # тож щойно є ключ Resend — шлемо з dityam.com.ua; без ключа — Gmail.
-    api_key = os.environ.get("RESEND_API_KEY", "")
-    if api_key:
-        return _send_resend(api_key, to_addr, html_body, subject)
-    if not GMAIL_APP_PASSWORD:
-        logger.warning("GMAIL_APP_PASSWORD not set")
-        return False
-    msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject
-    msg["From"] = f"Dityam.com.ua <{GMAIL_FROM}>"
-    msg["To"] = to_addr
-    msg.attach(MIMEText(PLAIN_TEXT, "plain", "utf-8"))
-    msg.attach(MIMEText(html_body, "html", "utf-8"))
-    try:
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-            smtp.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
-            smtp.sendmail(GMAIL_FROM, [to_addr], msg.as_string())
-        return True
-    except Exception as e:
-        logger.warning("Email send failed for %s: %s", to_addr, e)
-        return False
-
-
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -414,13 +277,9 @@ def main():
     ap.add_argument("--demo", action="store_true")
     ap.add_argument("--any-time", action="store_true",
                     help="не зважати на ворота часу (ручний запуск, тест)")
-    # Пробний лист перед запуском Dityam+ (15.09.2026): демо-родина, справжній
-    # шаблон і справжня пошта — але таблицю підписників не читаємо й не змінюємо.
-    ap.add_argument("--test-to", metavar="EMAIL",
-                    help="надіслати пробну добірку демо-родини на цю адресу")
     args = ap.parse_args()
 
-    if not (args.dry_run or args.demo or args.any_time or args.test_to) and send_window.too_early():
+    if not (args.dry_run or args.demo or args.any_time) and send_window.too_early():
         return 0
 
     from db import get_client
@@ -457,10 +316,10 @@ def main():
         len(opps), dropped, MIN_LEAD_DAYS,
     )
 
-    if args.demo or args.test_to:
+    if args.demo:
         subs = [{
-            "id": "demo", "channel": "email" if args.test_to else "telegram", "telegram_chat_id": None,
-            "email": args.test_to, "unsub_token": "demo",
+            "id": "demo", "channel": "telegram", "telegram_chat_id": None,
+            "unsub_token": "demo",
             "age_bands": [], "interests": [], "places": [],
             "cost_pref": "free_only", "last_sent_at": None,
         }]
@@ -477,13 +336,13 @@ def main():
         child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
                       .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
-    disliked = {} if (args.demo or args.test_to) else load_disliked(client, subs)
+    disliked = {} if args.demo else load_disliked(client, subs)
 
     sent = 0
     for sub in subs:
         # Шлемо лише можливості, що зʼявились після останнього сповіщення.
-        # --force / --demo / --test-to ігнорують новизну (для тесту).
-        since = None if (args.force or args.demo or args.test_to) else parse_ts(sub.get("last_sent_at"))
+        # --force / --demo ігнорують новизну (для тесту).
+        since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
         kids = plus_profile.children_of(sub, child_rows)
         # «👎 Не цікаво» — цю можливість підписнику більше не пропонуємо.
         skip = disliked.get(str(sub.get("telegram_chat_id")), set())
@@ -495,7 +354,7 @@ def main():
         # (курси, держпослуги), і вони не «нові» вже давно. Підписник платить,
         # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
         revival = False
-        if not items and not (args.dry_run or args.demo or args.test_to):
+        if not items and not (args.dry_run or args.demo):
             all_matches = pick_for(sub, pool, None, kids)
             if not all_matches:
                 # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
@@ -516,25 +375,13 @@ def main():
             logger.info("[dry] sub=%s ch=%s → %d items: %s", sub["id"], sub["channel"], len(items), titles)
             continue
 
-        ok = False
-        if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
-            ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival),
-                               reply_markup=telegram_keyboard(items))
-        elif sub["channel"] == "email" and sub.get("email"):
-            if args.test_to:
-                ok = send_email(sub["email"], build_email(sub, items, revival),
-                                subject="[Тест] 🧡 Нові можливості для вашої дитини — Dityam+")
-            else:
-                ok = send_email(sub["email"], build_email(sub, items, revival))
-        else:
-            logger.info("sub %s — channel not connected yet, skip", sub["id"])
+        if not sub.get("telegram_chat_id"):
+            logger.info("sub %s — Telegram not connected yet, skip", sub["id"])
             continue
+        ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival),
+                           reply_markup=telegram_keyboard(items))
 
-        if ok and args.test_to:
-            # Демо-підписника в базі немає — last_sent_at не чіпаємо.
-            logger.info("Пробну добірку (%d можливостей) надіслано на %s", len(items), sub["email"])
-            sent += 1
-        elif ok:
+        if ok:
             client.table("digest_subscribers").update(
                 {"last_sent_at": datetime.now(timezone.utc).isoformat()}
             ).eq("id", sub["id"]).execute()

@@ -1,9 +1,8 @@
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import { opportunitiesWord } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
-import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
@@ -17,18 +16,13 @@ const L = {
     title: 'Платформа показує все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
     leadHead: 'Щодня ми перебираємо',
     leadFallback: 'сотні можливостей',
-    leadTail: 'і надсилаємо вам у Telegram або на імейл лише ті, що підходять кожній вашій дитині, — з нагадуванням про дедлайн.',
+    leadTail: 'і надсилаємо вам у Telegram лише ті, що підходять кожній вашій дитині, — з нагадуванням про дедлайн.',
     chipsLabel: 'Переваги підписки',
     chips: ['добирає під кожну дитину', 'лише нове', 'нагадує вчасно'],
-    doneTitle: 'Ви в списку! 🧡',
-    doneText: 'Напишемо першим, щойно Dityam+ буде готовий — разом із бонусом за очікування.',
     soon: 'скоро',
-    waitNote: 'Ми саме дороблюємо Dityam+ — платну підписку (179 грн/міс або 1 199 грн/рік). Залиште email — дізнаєтесь про запуск першими й отримаєте знижку на старті.',
-    emailPlaceholder: 'ваш@email.com',
-    emailAria: 'Email для списку очікування',
-    sending: 'Хвилинку…',
+    waitNote: 'Ми саме дороблюємо Dityam+ — платну підписку (179 грн/міс або 1 199 грн/рік). Станьте в список у Telegram — дізнаєтесь про запуск першими й отримаєте знижку на старті.',
+    waitCta: 'Стати в список у Telegram',
     submit: 'Дізнатися першим',
-    error: 'Перевірте email — здається, у ньому одрук.',
     fine: 'Платформа лишається безкоштовною для всіх · жодного спаму · ',
     support: 'підтримати проєкт',
     openNote: 'Dityam+ — платна підписка: 179 грн/міс або 1 199 грн/рік. Оформлюється в Telegram-боті за кілька хвилин: питання про дитину, потім оплата.',
@@ -39,18 +33,13 @@ const L = {
     title: 'The platform shows everything that exists. Dityam+ sends what fits your child.',
     leadHead: 'Every day we go through',
     leadFallback: 'hundreds of opportunities',
-    leadTail: 'and send you only the ones that fit each of your children, on Telegram or by email — with a deadline reminder.',
+    leadTail: 'and send you on Telegram only the ones that fit each of your children — with a deadline reminder.',
     chipsLabel: 'What the subscription does',
     chips: ['matched to each child', 'only what is new', 'reminds in time'],
-    doneTitle: 'You’re on the list! 🧡',
-    doneText: 'We’ll write to you first the moment Dityam+ is ready — with a thank-you for waiting.',
     soon: 'soon',
-    waitNote: 'We’re still building Dityam+, a paid subscription (UAH 179/month or UAH 1,199/year). Leave your email to hear about the launch first and get a discount at the start.',
-    emailPlaceholder: 'your@email.com',
-    emailAria: 'Email for the waiting list',
-    sending: 'One moment…',
+    waitNote: 'We’re still building Dityam+, a paid subscription (UAH 179/month or UAH 1,199/year). Join the list on Telegram to hear about the launch first and get a discount at the start.',
+    waitCta: 'Join the list on Telegram',
     submit: 'Tell me first',
-    error: 'Check the email — there seems to be a typo.',
     fine: 'The platform stays free for everyone · no spam · ',
     support: 'support the project',
     openNote: 'Dityam+ is a paid subscription: UAH 179/month or UAH 1,199/year. You set it up in the Telegram bot in a few minutes: questions about your child, then payment.',
@@ -64,42 +53,17 @@ const L = {
  * повторюється кілька разів на сторінці, а плаваюче сердечко з модалкою —
  * рівно одне.
  *
- * Продаж на паузі, поки продукт дороблюється: замість кнопок оплати —
- * лист очікування. Email летить у plus_waitlist + сповіщенням у бот.
+ * Продаж на паузі, поки продукт дороблюється: замість кнопок оплати — список
+ * очікування в основному боті. До 15.09.2026 тут була форма з імейлом; листів
+ * Dityam+ більше не шле (рішення Марії), тож і пошту не просимо.
  * `index` іде в аналітику — видно, який повтор блоку приводить людей.
  */
 export default function PlusSection({ total, index = 0, lang = 'uk' }) {
   const t = L[lang] || L.uk;
-  const [email, setEmail] = useState('');
-  const [state, setState] = useState('idle'); // idle | sending | done | error
 
   const trackMonobank = () => {
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'monobank_click');
-    }
-  };
-
-  const submit = async (e) => {
-    e.preventDefault();
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) {
-      setState('error');
-      return;
-    }
-    setState('sending');
-    try {
-      const res = await fetch('/api/waitlist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), source: `catalog_slot_${index}` }),
-      });
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'server');
-      setState('done');
-      trackConversion('plus_waitlist_submit', {
-        event_label: `catalog_slot_${index}`,
-      });
-    } catch (err) {
-      setState('error');
     }
   };
 
@@ -138,33 +102,19 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
                 {t.openCta}
               </a>
             </>
-          ) : state === 'done' ? (
-            <div className="plus-wait-done" role="status">
-              <strong>{t.doneTitle}</strong>
-              <p>{t.doneText}</p>
-            </div>
           ) : (
             <>
               <p className="plus-wait-note">
                 <span className="plus-soon">{t.soon}</span>
                 {t.waitNote}
               </p>
-              <form className="plus-wait-form" onSubmit={submit}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => { setEmail(e.target.value); if (state === 'error') setState('idle'); }}
-                  placeholder={t.emailPlaceholder}
-                  aria-label={t.emailAria}
-                  autoComplete="email"
-                />
-                <button type="submit" disabled={state === 'sending'}>
-                  {state === 'sending' ? t.sending : t.submit}
-                </button>
-              </form>
-              {state === 'error' && (
-                <p className="plus-wait-error">{t.error}</p>
-              )}
+              <a
+                className="plus-open-btn"
+                href={PLUS_WAITLIST_URL}
+                onClick={() => trackConversion('plus_waitlist_tg_click', { event_label: `catalog_slot_${index}` })}
+              >
+                {t.waitCta}
+              </a>
             </>
           )}
           <p className="plus-fine">
@@ -179,8 +129,8 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
 
 /**
  * Той самий Dityam+ чорним банером у колонці каталогу головної (≥1100px,
- * поруч із бічними фільтрами). Замість форми — кнопка на /plus: там список
- * очікування з повним поясненням. Текст — той самий, що в PlusSection.
+ * поруч із бічними фільтрами). Замість кнопки в бот — кнопка на /plus: там
+ * повне пояснення. Текст — той самий, що в PlusSection.
  */
 export function PlusBanner({ total, lang = 'uk' }) {
   const t = L[lang] || L.uk;
