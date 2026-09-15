@@ -5,9 +5,11 @@
 замовчуванням нічого не шле — лише показує, кому й що пішло б; по-справжньому
 надсилає тільки з confirm = SEND.
 
-Кому й як: тим, хто записався через Telegram (@DityamComUABot ?start=plus), —
-повідомлення від основного бота, бо саме його людина запускала; платний бот
-написати їй першим не може. Кнопка веде в @DityamPlusBot.
+Кому й як: кожному — від того бота, якого людина сама запускала, бо інший бот
+написати їй першим не може. З 15.09.2026 у список записуються в @DityamPlusBot
+(source 'plus_bot:…') — їм пише він. Хто записався раніше через основний бот
+@DityamComUABot (source 'telegram_post'), тим пише основний. Кнопка веде в
+@DityamPlusBot.
 
 Хто записався імейлом на сайті до 15.09.2026, повідомлення не отримає: листів
 Dityam+ більше не шле (рішення Марії 15.09.2026). Скрипт лише рахує таких людей.
@@ -19,7 +21,7 @@ Dityam+ більше не шле (рішення Марії 15.09.2026). Скр�
 Повторний запуск надішле ще раз: у plus_waitlist немає позначки «вже писали».
 Тому це ручний воркфлоу з підтвердженням, а не розклад.
 
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN.
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN, TELEGRAM_PLUS_BOT_TOKEN.
 """
 import argparse
 import logging
@@ -33,6 +35,7 @@ logger = logging.getLogger("plus_launch")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 MAIN_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
 PLUS_BOT = "DityamPlusBot"
 EARLY_PRICE = 89
 PRICE = 179
@@ -54,8 +57,13 @@ def telegram_text() -> str:
     )
 
 
-def send_telegram_launch(chat_id: str) -> bool:
-    r = httpx.post(f"https://api.telegram.org/bot{MAIN_BOT_TOKEN}/sendMessage", json={
+def via_plus_bot(row: dict) -> bool:
+    """Записалась у @DityamPlusBot (з 15.09.2026) — писати треба ним."""
+    return str(row.get("source") or "").startswith("plus_bot")
+
+
+def send_telegram_launch(chat_id: str, token: str) -> bool:
+    r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
         "chat_id": chat_id,
         "text": telegram_text(),
         "parse_mode": "HTML",
@@ -90,7 +98,8 @@ def main() -> int:
     from db import get_client
     rows = load_waitlist(get_client())
     tg = [r for r in rows if r.get("telegram_chat_id")]
-    logger.info("У списку очікування: %d (Telegram %d)", len(rows), len(tg))
+    logger.info("У списку очікування: %d (Telegram %d: через Dityam+ %d, через основний бот %d)",
+                len(rows), len(tg), sum(via_plus_bot(r) for r in tg), sum(not via_plus_bot(r) for r in tg))
     if len(rows) > len(tg):
         # Записались імейлом до 15.09.2026. Листів Dityam+ не шле — адреси
         # видно в адмінці (/admin/plus), написати можна вручну.
@@ -102,13 +111,17 @@ def main() -> int:
         logger.info("[dry] Нічого не надіслано. Щоб надіслати — confirm = SEND.")
         return 0
 
-    if tg and not MAIN_BOT_TOKEN:
+    if any(not via_plus_bot(r) for r in tg) and not MAIN_BOT_TOKEN:
         logger.error("TELEGRAM_BOT_TOKEN не задано")
+        return 1
+    if any(via_plus_bot(r) for r in tg) and not PLUS_BOT_TOKEN:
+        logger.error("TELEGRAM_PLUS_BOT_TOKEN не задано")
         return 1
 
     sent_tg = 0
     for r in tg:
-        sent_tg += send_telegram_launch(r["telegram_chat_id"])
+        token = PLUS_BOT_TOKEN if via_plus_bot(r) else MAIN_BOT_TOKEN
+        sent_tg += send_telegram_launch(r["telegram_chat_id"], token)
         time.sleep(0.05)          # ліміт Telegram — ~30 повідомлень на секунду
     logger.info("Готово. Telegram: %d/%d", sent_tg, len(tg))
     return 0

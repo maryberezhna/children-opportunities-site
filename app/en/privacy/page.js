@@ -58,8 +58,8 @@ export default function PrivacyPageEn() {
             </li>
             <li>
               <strong>Dityam+ waitlist.</strong> You can join only through the
-              @DityamComUABot Telegram bot (see below) — so we can tell you about the
-              launch. Emails left on the site before 15 September 2026 are kept until
+              @DityamPlusBot Telegram bot: we keep your Telegram chat ID and username
+              so we can tell you about the launch. Emails left on the site before 15 September 2026 are kept until
               you ask us to delete them; we send no emails to them.
             </li>
             <li>
@@ -73,7 +73,8 @@ export default function PrivacyPageEn() {
             </li>
             <li>
               <strong>@DityamComUABot and the channel.</strong> Your Telegram chat ID
-              and username if you signed up through the bot; your “Interested / Not
+              and username if you joined the waitlist through this bot before
+              15 September 2026; your “Interested / Not
               interested” marks together with your Telegram account ID.
             </li>
             <li>
