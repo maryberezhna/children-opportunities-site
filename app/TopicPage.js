@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
-import { TOPIC_LIST, topicPath } from '@/lib/topics';
+import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday, daysUntil } from '@/lib/dates';
 import { isLive } from '@/lib/audience';
@@ -37,6 +37,7 @@ const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 const CHROME = {
   uk: {
     home: 'Головна',
+    collections: 'Підбірки',
     eyebrow: (d) => `Підбірка · оновлено ${d}`,
     telegram: 'Отримувати нові в Telegram',
     share: 'Поділитися підбіркою',
@@ -77,6 +78,7 @@ const CHROME = {
   },
   en: {
     home: 'Home',
+    collections: 'Collections',
     eyebrow: (d) => `Collection · updated ${d}`,
     telegram: 'Get new ones on Telegram',
     share: 'Share this collection',
@@ -364,7 +366,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         '@id': `${url}#breadcrumb`,
         itemListElement: [
           { '@type': 'ListItem', position: 1, name: ch.home, item: base },
-          { '@type': 'ListItem', position: 2, name: crumb, item: url },
+          { '@type': 'ListItem', position: 2, name: ch.collections, item: `${SITE_URL}${collectionsPath(lang)}` },
+          { '@type': 'ListItem', position: 3, name: crumb, item: url },
         ],
       },
       ...(c.faq?.length ? [{
@@ -393,6 +396,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
       <main className="tp-main" lang={isEn ? 'en' : undefined}>
         <nav className="tp-crumbs" aria-label={isEn ? 'Breadcrumbs' : 'Навігація'}>
           <Link href={homePath}>{ch.home}</Link>
+          <span aria-hidden="true">/</span>
+          <Link href={collectionsPath(lang)}>{ch.collections}</Link>
           <span aria-hidden="true">/</span>
           <span aria-current="page">{crumb}</span>
         </nav>
