@@ -394,7 +394,7 @@ async function sendDailyDigest(dayOverride = null) {
   // either with no deadline or with deadline in the future.
   const { data: poolData, error: poolErr } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at, source, child_needs')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at, telegram_posted_at, source, child_needs')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .or(`deadline.is.null,deadline.gte.${minLeadIso}`);
@@ -432,7 +432,9 @@ async function sendDailyDigest(dayOverride = null) {
     const hero = urgent[0] || themed[0];
     if (hero) {
       const heroLines = buildStoryPost(hero, theme);
-      await postToChannel(heroLines, `story (${hero.slug})`);
+      const fresh = freshPicks(pool, [hero.id], 1);
+      if (fresh.length > 0) heroLines.push('', ...newBlock(fresh));
+      if (await postToChannel(heroLines, `story (${hero.slug})`)) await markPosted(fresh);
       return;
     }
   }
@@ -454,7 +456,9 @@ async function sendDailyDigest(dayOverride = null) {
       });
       sLines.push('');
       sLines.push(`👉 Ще ${freeCountForPost(pool)} безкоштовних — на <a href="https://dityam.com.ua">dityam.com.ua</a>`);
-      await postToChannel(sLines, 'situation');
+      const fresh = freshPicks(pool, picks.map((r) => r.id), 1);
+      if (fresh.length > 0) sLines.push('', ...newBlock(fresh));
+      if (await postToChannel(sLines, 'situation')) await markPosted(fresh);
       return;
     }
   }
@@ -463,9 +467,11 @@ async function sendDailyDigest(dayOverride = null) {
   if (format === 'number') {
     const nLines = buildNumberPost(pool, weekIndex);
     if (nLines) {
+      const fresh = freshPicks(pool, [], 1);
+      if (fresh.length > 0) nLines.push('', ...newBlock(fresh));
       nLines.push('');
       nLines.push('🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
-      await postToChannel(nLines, 'number');
+      if (await postToChannel(nLines, 'number')) await markPosted(fresh);
       return;
     }
   }
@@ -491,26 +497,15 @@ async function sendDailyDigest(dayOverride = null) {
     });
     lines.push('');
   }
-  // Секція «нові»: раніше окремі картки слав telegram-bot (до 8 повідомлень
-  // на день). Тепер новинки живуть тут, одним рядком кожна — канал має рівно
-  // один пост на добу. У суботу цю секцію не додаємо: тема дня і так «нові».
-  if ((dayOverride ?? FORCE_DAY ?? today.getDay()) !== 6) {
-    const dayAgo = new Date(Date.now() - 36 * 3600 * 1000).toISOString();
-    const fresh = pool
-      .filter((r) => (r.created_at || '') >= dayAgo)
-      .filter((r) => !themed.some((t) => t.id === r.id))
-      .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
-      .slice(0, 3);
-    if (fresh.length > 0) {
-      lines.push(`🆕 <b>Щойно додали</b>`);
-      lines.push('');
-      fresh.forEach((r, i) => {
-        lines.push(formatLine(r, i));
-        if (i < fresh.length - 1) lines.push('');
-      });
-      lines.push('');
-    }
-  }
+  // Блок «Нова можливість»: раніше окремі картки слав telegram-bot (до 8
+  // повідомлень на день). Тепер новинки йдуть у щоденний пост — канал має
+  // рівно один пост на добу. Коли тема дня сама «нові на сайті», блок її не
+  // дублює, а позначку «вже в каналі» отримують записи теми.
+  // Одна, а не три: дайджест із шести записів уже близько 3 600 символів, а
+  // Telegram не приймає повідомлення довше 4 096 — пост того дня просто не вийде.
+  const newestTheme = theme.sortBy === 'created_at_desc';
+  const fresh = newestTheme ? [] : freshPicks(pool, themed.map((r) => r.id), 1);
+  if (fresh.length > 0) lines.push(...newBlock(fresh), '');
 
   const moreUrl = theme.link || 'https://dityam.com.ua';
   lines.push(`🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>${moreUrl !== 'https://dityam.com.ua' ? ` · <a href="${moreUrl}">добірка дня</a>` : ''}`);
@@ -528,15 +523,16 @@ async function sendDailyDigest(dayOverride = null) {
   lines.push('');
   lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/plus">Dityam+</a> відбере ваші й нагадає вчасно.');
 
-  await postToChannel(lines, `digest (urgent=${urgent.length}, themed=${themed.length})`);
+  const label = `digest (urgent=${urgent.length}, themed=${themed.length}, new=${fresh.length})`;
+  if (await postToChannel(lines, label)) await markPosted(newestTheme ? themed : fresh);
 }
 
-/** Відправка в канал. Один шлях для всіх форматів поста. */
+/** Відправка в канал. Один шлях для всіх форматів поста. true — пост пішов. */
 async function postToChannel(lines, label) {
   const text = lines.join('\n');
   if (DRY_RUN || PREVIEW) {
     console.log(`\n--- ПОСТ [${label}] ---\n${text}\n--- /ПОСТ ---`);
-    return;
+    return false;
   }
   try {
     const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -550,11 +546,15 @@ async function postToChannel(lines, label) {
       }),
     });
     const json = await res.json();
-    if (json.ok) console.log(`📨 Пост надіслано — ${label}.`);
-    else console.error(`Telegram error: ${json.description}`);
+    if (json.ok) {
+      console.log(`📨 Пост надіслано — ${label}.`);
+      return true;
+    }
+    console.error(`Telegram error: ${json.description}`);
   } catch (e) {
     console.error(`Telegram send failed: ${e.message}`);
   }
+  return false;
 }
 
 /** Формат «story»: одна можливість розгорнуто. */
@@ -639,6 +639,40 @@ function freeCountForPost(pool) {
   return pool.filter((r) => r.cost_type === 'free').length;
 }
 
+/**
+ * «Нова можливість»: найсвіжіші записи, яких у каналі ще не було.
+ * Позначка telegram_posted_at ставиться лише після того, як пост пішов, тож
+ * та сама можливість не вийде «новою» двічі, а запис, доданий між двома
+ * запусками, не загубиться, хоч розклад GitHub і зсуває запуск на години.
+ * Три дні — межа «нового»: давніше додане вже не новина.
+ */
+function freshPicks(pool, excludeIds, limit) {
+  const since = new Date(Date.now() - 3 * 86400000).toISOString();
+  return pool
+    .filter((r) => !r.telegram_posted_at && (r.created_at || '') >= since && !excludeIds.includes(r.id))
+    .sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+    .slice(0, limit);
+}
+
+/** Блок «🆕 Нова можливість» — дописується в пост будь-якого формату. */
+function newBlock(items) {
+  const lines = [`🆕 <b>${items.length === 1 ? 'Нова можливість' : 'Нові можливості'}</b>`, ''];
+  items.forEach((r, i) => {
+    lines.push(formatLine(r, items.length === 1 ? null : i));
+    if (i < items.length - 1) lines.push('');
+  });
+  return lines;
+}
+
+async function markPosted(items) {
+  if (items.length === 0) return;
+  const { error } = await supabase
+    .from('opportunities')
+    .update({ telegram_posted_at: new Date().toISOString() })
+    .in('id', items.map((r) => r.id));
+  if (error) console.error(`telegram_posted_at не збережено: ${error.message}`);
+}
+
 function ageLabel(r) {
   if (r.age_from == null || r.age_to == null) return null;
   if (r.age_from === 0 && r.age_to >= 17) return '0–18 років';
@@ -704,19 +738,21 @@ function formatLine(r, index) {
   else if (r.cost_type === 'paid_premium') meta.push('💳 Преміум');
   else if (r.cost_type === 'subsidized') meta.push('💳 Субсидовано');
 
-  const prefix = `${(index ?? 0) + 1}.`;
-  const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
-  if (meta.length) lines.push(`   ${meta.join(' · ')}`);
+  // index = null — одна можливість без номера й відступу (блок «Нова можливість»).
+  const prefix = index == null ? '' : `${index + 1}. `;
+  const indent = index == null ? '' : '   ';
+  const lines = [`${prefix}<a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
+  if (meta.length) lines.push(`${indent}${meta.join(' · ')}`);
 
   // Рядок дати: «Коли» для подій, «Дедлайн» для подачі.
-  const whenLineText = whenLine(r, '   ');
+  const whenLineText = whenLine(r, indent);
   if (whenLineText) lines.push(whenLineText);
 
   // Full description (up to 500 chars, same as individual post)
   if (r.summary) {
     const s = r.summary.replace(/\s+/g, ' ').trim();
     const sum = s.length > 500 ? `${s.slice(0, 500)}…` : s;
-    lines.push(`   <i>${escapeHtml(sum)}</i>`);
+    lines.push(`${indent}<i>${escapeHtml(sum)}</i>`);
   }
 
   return lines.join('\n');
