@@ -630,12 +630,15 @@
   text-wrap: balance;
 }
 
-/* Вертикальна лінія й точки: кожна сходинка — вузол на одному шляху. */
+/* Вертикальна лінія й точки: кожна сходинка — вузол на одному шляху.
+   Лінія — псевдоелемент, а не border-left: так її можна «протягнути» вниз
+   анімацією. Відступ 28px = колишні 26px + 2px рамки, тож точки стоять
+   рівно там, де й стояли. */
 .pl-steps {
+  position: relative;
   list-style: none;
   margin: 0;
-  padding: 0 0 0 26px;
-  border-left: 2px solid var(--v2-line);
+  padding: 0 0 0 28px;
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -712,6 +715,52 @@
   line-height: 1.6;
   color: var(--v2-ink-2);
 }
+
+.pl-steps::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--v2-line);
+  transform-origin: top;
+}
+
+/* ── Поява шляхів (PlusPathsReveal) ──
+   Персона й назва → лінія тягнеться вниз → сходинки по черзі (~1 с кожна)
+   → підсумок; уся картка ≈ 5 с. Сусідні картки стартують зі зсувом 0,2 с.
+   Прихований стан — лише під .is-armed: без JS і з reduced motion (компонент
+   тоді клас не ставить) усе видно одразу. */
+.pl-paths.is-armed .pl-path { --d: calc(var(--p, 0) * 0.2s); }
+
+.pl-paths.is-armed .pl-persona,
+.pl-paths.is-armed .pl-path-title,
+.pl-paths.is-armed .pl-step,
+.pl-paths.is-armed .pl-why {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.pl-paths.is-armed .pl-steps::before { transform: scaleY(0); }
+.pl-paths.is-armed .pl-step::before { transform: scale(0); }
+
+.pl-paths.is-armed .pl-path.is-in .pl-persona { animation: pl-rise 0.5s ease var(--d) forwards; }
+.pl-paths.is-armed .pl-path.is-in .pl-path-title { animation: pl-rise 0.5s ease calc(var(--d) + 0.15s) forwards; }
+.pl-paths.is-armed .pl-path.is-in .pl-steps::before {
+  animation: pl-draw 3.8s cubic-bezier(0.45, 0, 0.3, 1) calc(var(--d) + 0.4s) forwards;
+}
+.pl-paths.is-armed .pl-path.is-in .pl-step {
+  animation: pl-rise 0.6s ease calc(var(--d) + 0.5s + var(--i, 0) * 0.95s) forwards;
+}
+.pl-paths.is-armed .pl-path.is-in .pl-step::before {
+  animation: pl-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1) calc(var(--d) + 0.5s + var(--i, 0) * 0.95s) forwards;
+}
+.pl-paths.is-armed .pl-path.is-in .pl-why { animation: pl-rise 0.6s ease calc(var(--d) + 4.2s) forwards; }
+
+@keyframes pl-rise { to { opacity: 1; transform: none; } }
+@keyframes pl-draw { to { transform: scaleY(1); } }
+@keyframes pl-pop { to { transform: scale(1); } }
 
 /* ── Як це працює ─────────────────────────────────────────────────────── */
 .pl-how {

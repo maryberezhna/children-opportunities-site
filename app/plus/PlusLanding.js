@@ -1,5 +1,6 @@
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
+import PlusPathsReveal from './PlusPathsReveal';
 import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
 import { opportunitiesWord } from '@/lib/plural';
 
@@ -517,14 +518,16 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
         <div className="pl-wrap pl-wrap-wide">
           <h2 className="pl-h2">{t.pathsTitle}</h2>
           <p className="pl-sub">{t.pathsSub}</p>
-          <div className="pl-paths">
-            {t.paths.map((p) => (
-              <article key={p.title} className="pl-path">
+          {/* --p і --i — номер шляху й сходинки для затримок анімації
+              (plus-landing.css, «Поява шляхів»). */}
+          <PlusPathsReveal className="pl-paths">
+            {t.paths.map((p, pi) => (
+              <article key={p.title} className="pl-path" style={{ '--p': pi }}>
                 <p className="pl-persona">{p.persona}</p>
                 <h3 className="pl-path-title">{p.title}</h3>
                 <ol className="pl-steps">
-                  {p.steps.map(([lvl, name, age]) => (
-                    <li key={name} className="pl-step">
+                  {p.steps.map(([lvl, name, age], i) => (
+                    <li key={name} className="pl-step" style={{ '--i': i }}>
                       <span className="pl-step-meta">
                         <span className="pl-step-lvl">{lvl}</span>
                         <span className="pl-step-age">{t.ages(age)}</span>
@@ -536,7 +539,7 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
                 <p className="pl-why">{p.why}</p>
               </article>
             ))}
-          </div>
+          </PlusPathsReveal>
         </div>
       </section>
 
