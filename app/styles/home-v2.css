@@ -438,53 +438,6 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 
 .v2-stat-label { font-size: 0.8125rem; color: var(--v2-ink-3); }
 
-/* «Про нас пишуть» у хіро — за референсом сесії-колеги (#180): логотипи
-   знебарвлені й пригашені, повний колір повертається на ховері. */
-.hero-press {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  margin-top: 4px;
-}
-
-.hero-press-label {
-  font-size: 0.8125rem;
-  color: var(--v2-ink-3);
-  text-decoration: none;
-}
-
-.hero-press-label:hover { color: var(--v2-ink-2); text-decoration: underline; }
-
-.hero-press .press-logos {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-}
-
-.hero-press .press-logos a {
-  display: flex;
-  align-items: center;
-  opacity: 0.55;
-  filter: grayscale(1);
-  transition: opacity 0.2s, filter 0.2s;
-}
-
-.hero-press .press-logos a:hover,
-.hero-press .press-logos a:focus-visible {
-  opacity: 1;
-  filter: none;
-}
-
-.hero-press .press-logos img { max-height: 17px; max-width: 80px; }
-.hero-press .press-logos img.is-square { max-height: 28px; }
-/* Напис у два рядки (Happy Monday): при 17px кожен рядок був ~8px. */
-.hero-press .press-logos img.is-stacked { max-height: 30px; }
-
 /* ── Фільтри ───────────────────────────────────────────────────────────── */
 .v2-filters {
   display: flex;
@@ -1094,19 +1047,7 @@ html[data-mode="teens"] .v2-hero-cta:hover { background: rgba(232, 93, 36, 0.26)
 html[data-mode="teens"] .v2-hero-status,
 html[data-mode="teens"] .v2-hero-sub { color: #c9c3b6; }
 html[data-mode="teens"] .v2-stat-num { color: #f7f1e6; }
-html[data-mode="teens"] .v2-stat-label,
-html[data-mode="teens"] .hero-press-label { color: #8f897c; }
-html[data-mode="teens"] .hero-press-label:hover { color: #c9c3b6; }
-/* Логотипи видань на чорному: монохромні світлі, без повернення кольору. */
-html[data-mode="teens"] .hero-press .press-logos a {
-  filter: grayscale(1) invert(1) brightness(1.4);
-  opacity: 0.6;
-}
-html[data-mode="teens"] .hero-press .press-logos a:hover,
-html[data-mode="teens"] .hero-press .press-logos a:focus-visible {
-  filter: grayscale(1) invert(1) brightness(1.7);
-  opacity: 1;
-}
+html[data-mode="teens"] .v2-stat-label { color: #8f897c; }
 /* Фото: замість теплої плями — рівне кремове кільце. */
 html[data-mode="teens"] .v2-hero-photo::before { inset: -12px; background: #f7f1e6; }
 

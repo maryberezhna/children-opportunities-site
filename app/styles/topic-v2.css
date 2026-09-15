@@ -388,6 +388,10 @@
 .tp-related-title { font-size: 17px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
 .tp-related-n { font-size: 14px; color: #6b6b6b; }
 
+/* ── Сторінка «Підбірки» (app/CollectionsHub.js) ── */
+.tp-hub-head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.tp-hub-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }

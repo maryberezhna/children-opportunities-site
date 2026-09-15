@@ -55,6 +55,8 @@ Dityam.com.ua — агрегатор, а не організатор: кожна
 
 ## Тематичні підбірки
 
+Усі підбірки на одній сторінці з живими лічильниками: ${SITE}/pidbirky (English: ${SITE}/en/collections).
+
 ${topicLines.join('\n')}
 
 ## Міста

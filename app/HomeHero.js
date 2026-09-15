@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import PressLogos from './PressLogos';
 import { readMode, onModeChange } from '@/lib/mode';
 import { opportunitiesWord, sourcesWord, freeWord } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
@@ -53,7 +52,6 @@ const COPY = {
       linkHref: '/za-kordon',
     },
     live: 'Безкоштовно і оновлюється щодня',
-    press: 'Про нас пишуть:',
     years: 'років',
   },
   en: {
@@ -79,7 +77,6 @@ const COPY = {
       linkHref: '/en/abroad',
     },
     live: 'Free and updated daily',
-    press: 'Featured in:',
     years: 'years',
   },
 };
@@ -156,14 +153,8 @@ export default function HomeHero({ stats: parentStats, teenStats, lang = 'uk' })
           </Link>
         ) : null}
 
-        {/* Медіазгадки — одразу в хіро: довіру будують там, де людина
-            вирішує, лишатися чи ні. Компонент спільний із /press і /about. */}
-        <div className="hero-press">
-          <Link href={isEn ? '/en/press' : '/press'} className="hero-press-label">
-            {t.press}
-          </Link>
-          <PressLogos />
-        </div>
+        {/* Логотипи медіа («Про нас пишуть») прибрано з хіро 15.09.2026 на
+            прохання Марії. Вони лишаються на /press і /about. */}
       </div>
 
       {/* Праворуч від тексту — жива фотографія замість порожнечі. webp із

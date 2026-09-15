@@ -169,7 +169,7 @@ export default async function AboutPageEn() {
           <div className="v2-panel">
             <h2>Support</h2>
             <p>
-              The platform is free for families and ad-free, for good. What helps it
+              The platform is free for families, for good. What helps it
               grow is the Dityam+ subscription (the waiting list is open now), and a
               donation pays for new sources, the domain and hosting.
             </p>
