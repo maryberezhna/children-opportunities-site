@@ -15,7 +15,7 @@ export async function POST(request) {
     return Response.json({ ok: false }, { status: 403 });
   }
 
-  const { id, status, note } = await request.json().catch(() => ({}));
+  const { id, status, note, kind } = await request.json().catch(() => ({}));
   if (!id || !STATUSES.has(status)) {
     return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
   }
@@ -24,6 +24,17 @@ export async function POST(request) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return Response.json({ ok: false, error: 'server' }, { status: 500 });
   const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+  // Пропозиції з поп-апа (opportunity_suggestions): «опрацьовано» — done,
+  // «повернути» — needs_human, а не new. Статус new бере в роботу
+  // scraper/process_suggestions.py, і пропозиція пішла б на обробку вдруге.
+  if (kind === 'suggestion') {
+    const next = status === 'done' ? 'done' : status === 'new' ? 'needs_human' : null;
+    if (!next) return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
+    const { error: sugErr } = await supabase.from('opportunity_suggestions').update({ status: next }).eq('id', id);
+    if (sugErr) return Response.json({ ok: false, error: 'server' }, { status: 500 });
+    return Response.json({ ok: true });
+  }
 
   const patch = { status, handled_at: status === 'new' ? null : new Date().toISOString() };
   if (typeof note === 'string') patch.admin_note = note.trim().slice(0, 2000) || null;

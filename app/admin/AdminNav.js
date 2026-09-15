@@ -19,16 +19,20 @@ import { createClient } from '@supabase/supabase-js';
 export const BOT_URL = 'https://t.me/DityamComUABot';
 export const BOT_QUEUE_URL = `${BOT_URL}?start=queue`;
 
+// Контраст як на сайті: білий текст на #c8501a (4,7:1), сірий #6b6b6b.
+// Брендовий #e85d24 і #8a95a9 не проходили WCAG AA.
 const C = {
-  ink: '#131b28', ink2: '#54617a', ink3: '#8a95a9',
-  border: '#e2e8f2', bg: '#f7f9fc', accent: '#e85d24', link: '#1e4fd6',
+  ink: '#131b28', ink2: '#54617a', ink3: '#6b6b6b',
+  border: '#e2e8f2', bg: '#f7f9fc', accent: '#c8501a', link: '#1e4fd6',
 };
 
 const ITEMS = [
   { key: 'queue', href: '/admin', icon: '🗂', label: 'Черга', count: 'drafts' },
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
   // Окремо від черги: у підбірки свій дефіцит і свої джерела (14.09.2026).
-  { key: 'defenders', href: '/admin/zakhysnyky', icon: '🎗', label: 'Дітям захисників', count: 'defenders' },
+  // Без лічильника: ці чернетки вже рахуються в «Черзі», і та сама робота
+  // виглядала вдвічі більшою (34 + 11 при 34 чернетках, 15.09.2026).
+  { key: 'defenders', href: '/admin/zakhysnyky', icon: '🎗', label: 'Дітям захисників' },
   { key: 'metrics', href: '/admin/metrics', icon: '📈', label: 'Метрики' },
 ];
 
@@ -41,15 +45,16 @@ async function counts() {
     supabase.from(table).select('id', { count: 'exact', head: true }),
   );
   try {
-    const [drafts, msgs, sugs, defenders] = await Promise.all([
+    const [drafts, msgs, sugs] = await Promise.all([
       head('opportunities', (q) => q.eq('status', 'draft')),
       head('contact_messages', (q) => q.eq('status', 'new')),
-      head('opportunity_suggestions', (q) => q.neq('status', 'done')),
-      head('opportunities', (q) => q.eq('status', 'draft').contains('child_needs', ['veteran_family'])),
+      // Лише ті пропозиції, що чекають на людину. Було «все, крім done», а
+      // process_suggestions.py ставить imported / duplicate, не done: число
+      // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
+      head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human'])),
     ]);
     return {
       drafts: drafts.count ?? 0,
-      defenders: defenders.count ?? 0,
       // Звернення з форми і пропозиції з поп-апа лежать у двох таблицях, але
       // для Марії це одна пошта — на /admin/messages вони вже злиті в один
       // список, тож і цифра має бути одна.

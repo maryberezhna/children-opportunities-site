@@ -60,11 +60,13 @@ export default async function MessagesPage() {
     message: [s.title, s.comment].filter(Boolean).join('\n\n'),
     url: s.url,
     page: 'поп-ап у каталозі',
-    status: s.status === 'new' ? 'new' : 'done',
+    // needs_human — теж «нове»: скрипт не впорався, і рішення за людиною. До
+    // 15.09.2026 такі пропозиції показувались опрацьованими.
+    status: ['new', 'needs_human'].includes(s.status) ? 'new' : 'done',
     outcome: OUTCOME[s.status] || null,
     admin_note: null,
     created_at: s.created_at,
-    readOnly: true,
+    kind: 'suggestion',
   }));
 
   const rows = [...(msgRes.data || []), ...suggestions]
@@ -82,10 +84,10 @@ export default async function MessagesPage() {
     <main style={wrap}>
       <AdminNav current="messages" />
       <h1 style={{ fontSize: 24, margin: 0 }}>
-        Звернення {newCount > 0 && <span style={{ color: '#e85d24' }}>· {newCount} нових</span>}
+        Звернення {newCount > 0 && <span style={{ color: '#c8501a' }}>· {newCount} нових</span>}
       </h1>
 
-      <p style={{ fontSize: 13.5, color: '#8a94a6', margin: '6px 0 0' }}>
+      <p style={{ fontSize: 13.5, color: '#6b6b6b', margin: '6px 0 0' }}>
         Форма на <a href="/contacts" target="_blank" rel="noopener noreferrer">/contacts</a> та
         пропозиції з поп-апа каталогу. Про кожне нове звернення бот пише в адмін-чат.
       </p>

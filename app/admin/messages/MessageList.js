@@ -15,7 +15,7 @@ const box = {
   background: '#fff',
   marginBottom: 10,
 };
-const metaS = { fontSize: 12.5, color: '#8a94a6' };
+const metaS = { fontSize: 12.5, color: '#6b6b6b' };
 const btnS = {
   font: 'inherit',
   fontSize: 13,
@@ -44,7 +44,7 @@ function Message({ row, onChange }) {
       const res = await fetch('/api/admin/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: row.id, status, note: withNote ? note : undefined }),
+        body: JSON.stringify({ id: row.id, kind: row.kind, status, note: withNote ? note : undefined }),
       });
       if (res.ok) onChange(row.id, { status, admin_note: withNote ? note : row.admin_note });
     } finally {
@@ -53,7 +53,7 @@ function Message({ row, onChange }) {
   };
 
   return (
-    <div style={{ ...box, borderLeft: `4px solid ${row.status === 'new' ? '#e85d24' : '#e3e8f0'}` }}>
+    <div style={{ ...box, borderLeft: `4px solid ${row.status === 'new' ? '#c8501a' : '#e3e8f0'}` }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <strong style={{ fontSize: 15 }}>{t.emoji} {t.label}</strong>
         <span style={metaS}>{STATUS_LABEL[row.status]} · {fmt(row.created_at)}</span>
@@ -93,19 +93,19 @@ function Message({ row, onChange }) {
       )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {/* Пропозиції з поп-апа живуть в opportunity_suggestions — статуси
-            їм тут не міняємо, щоб кнопка не вдавала збережену дію. */}
-        {row.readOnly && (
+        {/* Пропозиції з поп-апа живуть в opportunity_suggestions: у них немає
+            нотаток і стану «в роботі», тож лише «опрацьовано» / «повернути». */}
+        {row.kind === 'suggestion' && (
           <span style={{ ...metaS, alignSelf: 'center' }}>
-            з поп-апа каталогу · {row.outcome || 'ще не опрацьовано'}
+            з поп-апа · {row.outcome || 'ще не опрацьовано'}
           </span>
         )}
-        {!row.readOnly && row.status !== 'in_progress' && (
+        {row.kind !== 'suggestion' && row.status !== 'in_progress' && (
           <button type="button" style={btnS} disabled={busy} onClick={() => setStatus('in_progress')}>
             ⏳ В роботу
           </button>
         )}
-        {!row.readOnly && row.status !== 'done' && (
+        {row.status !== 'done' && (
           <button
             type="button"
             style={{ ...btnS, borderColor: '#15803d', color: '#15803d' }}
@@ -115,12 +115,12 @@ function Message({ row, onChange }) {
             ✅ Опрацьовано
           </button>
         )}
-        {!row.readOnly && row.status !== 'new' && (
+        {row.status !== 'new' && (
           <button type="button" style={btnS} disabled={busy} onClick={() => setStatus('new')}>
             ↩︎ Повернути в нові
           </button>
         )}
-        {!row.readOnly && (
+        {row.kind !== 'suggestion' && (
           <button type="button" style={btnS} onClick={() => setNoteOpen((v) => !v)}>
             📝 {noteOpen ? 'Сховати нотатку' : 'Нотатка'}
           </button>
