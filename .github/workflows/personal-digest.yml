@@ -26,6 +26,10 @@ on:
         description: 'true = слати негайно, не чекати вікна 10:00 Київ'
         required: false
         default: 'true'
+      test_email:
+        description: 'Пробна добірка демо-родини на цю адресу (підписникам нічого не йде)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -53,17 +57,24 @@ jobs:
           # Основний лишається запасним (див. send_telegram у personal_digest.py).
           TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: mashaberezhna0209@gmail.com
+          # Пошта проєкту, щойно заведено її пароль застосунку (секрет
+          # DITYAM_GMAIL_APP_PASSWORD); доти — особиста, як і раніше.
+          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD && 'hellodityam.com.ua@gmail.com' || 'mashaberezhna0209@gmail.com' }}
           SITE_URL: https://dityam.com.ua
           SEND_AFTER_HOUR: '10'
+          # Адреса йде через env, а не підставляється в скрипт: так вона не
+          # може стати частиною shell-команди.
+          TEST_EMAIL: ${{ github.event.inputs.test_email }}
         run: |
           ANY=""
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
              && [ "${{ github.event.inputs.any_time }}" != "false" ]; then
             ANY="--any-time"
           fi
-          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+          if [ -n "$TEST_EMAIL" ]; then
+            python personal_digest.py --test-to "$TEST_EMAIL"
+          elif [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
             python personal_digest.py --dry-run
           else
             python personal_digest.py $ANY
