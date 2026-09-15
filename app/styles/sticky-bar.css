@@ -155,7 +155,7 @@
 .sticky-btn-donate:visited,
 .sticky-btn-donate:focus,
 .sticky-btn-donate:active {
-  background: var(--accent);
+  background: var(--v2-accent-strong); /* білий на #e85d24 — лише 3,5:1 */
   color: #ffffff !important;
   border-color: transparent;
 }
