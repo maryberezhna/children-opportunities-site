@@ -60,19 +60,19 @@
   border-radius: 24px;
   padding: 24px;
   display: grid;
-  /* 14.09.2026, рішення Марії: фото — як на головній. Текст ліворуч, фото
-   * праворуч в овалі, вертикально по центру. Фото на всю ширину з'їдало
-   * весь перший екран, а колонка на всю висоту хіро обрізала дітям обличчя.
-   * Того ж дня: «тексту менше, фото більше» — колонка фото до 540px (кадр
-   * 900×600, тож на ретині ще чітко), а не 400px як на головній. */
-  grid-template-columns: minmax(0, 1fr) clamp(320px, 40vw, 540px);
+  /* 15.09.2026, варіант 4b з pidbirka.dc.html (блок data-d="hero"): фото —
+   * прямокутник на всю висоту правої колонки, а цифри підбірки — одна біла
+   * картка поверх фото замість рядка фактів під кнопками. До того (14.09)
+   * фото стояло в овалі, як на головній. */
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 40px;
-  align-items: center;
+  align-items: stretch;
 }
 .tp-hero.tp-hero-solo { grid-template-columns: minmax(0, 1fr); }
 .tp-hero-copy {
   display: flex;
   flex-direction: column;
+  justify-content: center;
   gap: 18px;
   padding: 24px 0 24px 32px;
 }
@@ -125,49 +125,43 @@
 .tp-main .tp-btn-white { background: #ffffff; color: #1a1a1a; border: 1px solid #ffffff; padding: 0 22px; }
 .tp-main .tp-btn-white:hover { color: #1a1a1a; background: #f7f1e6; }
 
-.tp-facts {
-  margin: 0;
-  margin-top: auto;
-  display: flex;
-  gap: 32px;
-  flex-wrap: wrap;
-  padding-top: 20px;
-  border-top: 1px solid #d4cfc1;
-}
-.tp-facts div { display: flex; flex-direction: column; gap: 2px; }
-.tp-facts dt { font-size: 13px; color: #6b6b6b; }
-.tp-facts dd {
-  margin: 0;
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-.tp-facts dd.is-urgent { color: var(--v2-accent-strong); }
-
-/* Фото — рівно як на головній (.v2-hero-photo у home-v2.css): овал у теплій
- * рамці, другий овал зі зсувом угору-ліворуч. Пропорція 3:2 збігається з
- * кадром, тож фото не обрізається, лише кути овалу. Точку фокуса задає
- * heroImage.position. Колір рамки — токен головної --v2-frame. */
-.tp-hero-photo { position: relative; margin: 26px 10px 2px 26px; }
-.tp-hero-photo::before {
-  content: '';
-  position: absolute;
-  inset: -26px -10px -2px -26px;
-  border-radius: 50%;
-  background: var(--v2-frame, #f0ddd0);
-}
-.tp-hero-photo picture { display: block; }
-.tp-hero-photo img {
+/* Фото на всю висоту колонки, без овалу. Точку фокуса задає heroImage.position. */
+.tp-hero-photo {
   position: relative;
+  min-height: 440px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+.tp-hero-photo picture { position: absolute; inset: 0; display: block; }
+.tp-hero-photo img {
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 3 / 2;
+  height: 100%;
   object-fit: cover;
   object-position: center;
-  border-radius: 50%;
 }
+
+/* Цифри підбірки: біла картка знизу-ліворуч поверх фото. */
+.tp-hero-count {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  max-width: calc(100% - 32px);
+  box-sizing: border-box;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.94);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.tp-hero-count-n { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: #1a1a1a; }
+.tp-hero-count-t { font-size: 15px; font-weight: 500; color: #4a4a4a; }
+/* Підбірка без фото: та сама картка просто під кнопками. */
+.tp-hero-count.is-inline { position: static; align-self: flex-start; background: #ffffff; }
 
 /* ── Список ── */
 .tp-list { display: flex; flex-direction: column; gap: 20px; }
@@ -330,7 +324,6 @@
 .tp-empty h3 { margin: 0; font-size: 20px; font-weight: 700; }
 .tp-empty p { margin: 0; font-size: 15px; color: #4a4a4a; }
 
-.tp-more-row { display: flex; justify-content: center; }
 .tp-home-link { margin: 0; font-size: 15px; font-weight: 600; }
 
 /* ── Важливо знати і Часті питання: заголовок ліворуч ── */
@@ -395,19 +388,24 @@
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }
-  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 28px; }
+  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
   .tp-hero-copy, .tp-hero-solo .tp-hero-copy { padding: 0; }
-  /* Як на мобільній головній: фото під текстом, скруглений прямокутник. */
-  .tp-hero-photo { margin: 10px 4px 0 10px; }
-  .tp-hero-photo::before { border-radius: 28px; inset: -10px -4px 0 -10px; }
-  .tp-hero-photo img { aspect-ratio: 16 / 10; border-radius: 24px; }
+  /* Фото зверху, 220px; картка з цифрою лишається поверх нього. */
+  .tp-hero-photo { order: -1; min-height: 0; height: 220px; }
+  /* Картка в один рядок, щоб не закривала пів фото висотою 220. */
+  .tp-hero-count { left: 12px; bottom: 12px; max-width: calc(100% - 24px); padding: 10px 14px; gap: 6px; }
+  .tp-hero-count-n { font-size: 22px; }
+  .tp-hero-count-t { font-size: 14px; white-space: nowrap; }
   .tp-h1 { font-size: 34px; }
-  .tp-facts { gap: 12px 24px; }
   .tp-grid { grid-template-columns: minmax(0, 1fr); }
   .tp-promo { padding: 22px 20px; }
   .tp-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tp-note, .tp-faq { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .tp-note { padding: 24px 20px; }
+}
+/* На найвужчих екранах підпис картки може перенестись, аби не вилізти за фото. */
+@media (max-width: 359px) {
+  .tp-hero-count-t { white-space: normal; }
 }
 
 @media (prefers-reduced-motion: reduce) {

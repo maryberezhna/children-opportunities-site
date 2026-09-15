@@ -10,7 +10,10 @@ import { plural } from '@/lib/plural';
  * Картки підбірки за макетом design_handoff_dityam_pidbirka (README, п. 4–5):
  * підфільтри-пігулки з лічильниками, сітка 2 колонки, після 4-ї картки —
  * промо Dityam+ на всю ширину. Сортування робить сервер (найближчий дедлайн
- * угорі, без дедлайну — вкінці), тут лише фільтр і «Показати ще».
+ * угорі, без дедлайну — вкінці), тут лише фільтр.
+ *
+ * «Показати ще» прибрано 15.09.2026 на прохання Марії: підбірка показує всі
+ * свої можливості одразу, нічого не ховаючи за кнопкою.
  */
 
 // Кольори тегів — рівно ті, що в README макета. Інші типи — колір тексту.
@@ -89,10 +92,9 @@ function placeText(item, lang) {
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  promo = null, labels, pageSize = 24,
+  promo = null, labels,
 }) {
   const [sub, setSub] = useState('all');
-  const [limit, setLimit] = useState(pageSize);
   const isEn = lang === 'en';
   const t = TEXT[lang] || TEXT.uk;
   const pinned = useMemo(() => new Set(pinnedIds), [pinnedIds]);
@@ -103,9 +105,9 @@ export default function TopicCards({
     return active ? items.filter((o) => active.types.includes(o.opportunity_type)) : items;
   }, [items, subfilters, sub]);
 
-  const visible = filtered.slice(0, limit);
+  const visible = filtered;
 
-  const choose = (key) => { setSub(key); setLimit(pageSize); };
+  const choose = (key) => setSub(key);
 
   const card = (item) => {
     const dl = deadlineChip(item, todayIso, lang);
@@ -185,14 +187,6 @@ export default function TopicCards({
           <p>{labels.emptyText}</p>
         </div>
       )}
-
-      {filtered.length > limit ? (
-        <div className="tp-more-row">
-          <button type="button" className="tp-btn tp-btn-outline" onClick={() => setLimit((n) => n + pageSize)}>
-            {labels.more.replace('{n}', String(filtered.length - limit))}
-          </button>
-        </div>
-      ) : null}
     </section>
   );
 }

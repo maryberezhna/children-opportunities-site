@@ -4,7 +4,6 @@ import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday, daysUntil } from '@/lib/dates';
 import { isLive } from '@/lib/audience';
-import { isEvent } from '@/lib/labels';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -42,9 +41,7 @@ const CHROME = {
     telegram: 'Отримувати нові в Telegram',
     share: 'Поділитися підбіркою',
     shared: 'Посилання скопійовано',
-    factTotal: 'Можливостей',
-    factFree: 'Безкоштовних',
-    factWeek: 'Закриваються цього тижня',
+    heroCount: (total, free) => opportunitiesWord(total) + (free > 0 ? ` · ${free} ${freeWord(free)}` : ''),
     noteTitle: ['Важливо', 'знати'],
     faqTitle: ['Часті', 'питання'],
     relatedTitle: ['Інші', 'підбірки'],
@@ -70,8 +67,6 @@ const CHROME = {
       listLabel: 'Можливості підбірки',
       filterLabel: 'Фільтр за типом',
     },
-    // Рядок, а не функція: функцію сервер не може передати в клієнтський компонент.
-    more: 'Показати ще {n}',
     siteName: 'Dityam.com.ua',
     locale: 'uk_UA',
     dateLocale: 'uk-UA',
@@ -83,9 +78,7 @@ const CHROME = {
     telegram: 'Get new ones on Telegram',
     share: 'Share this collection',
     shared: 'Link copied',
-    factTotal: 'Opportunities',
-    factFree: 'Free',
-    factWeek: 'Closing this week',
+    heroCount: (total, free) => (total === 1 ? 'opportunity' : 'opportunities') + (free > 0 ? ` · ${free} free` : ''),
     noteTitle: ['Good to', 'know'],
     faqTitle: ['Frequently asked', 'questions'],
     relatedTitle: ['Other', 'collections'],
@@ -111,7 +104,6 @@ const CHROME = {
       listLabel: 'Opportunities in this collection',
       filterLabel: 'Filter by type',
     },
-    more: 'Show {n} more',
     siteName: 'Dityam.com.ua',
     locale: 'en_GB',
     dateLocale: 'en-GB',
@@ -297,11 +289,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
   const total = items.length;
   const freeCount = items.filter((o) => o.cost_type === 'free').length;
-  const urgentWeek = items.filter((o) => {
-    if (isEvent(o)) return false;
-    const d = daysUntil(o.deadline, todayIso);
-    return d !== null && d >= 0 && d <= 7;
-  }).length;
 
   const subfilters = buildSubfilters(topic, items, lang);
   const related = buildRelated(topic, liveRows);
@@ -319,6 +306,16 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
     timeZone: 'Europe/Kyiv', day: 'numeric', month: 'long', year: 'numeric',
   }).format(new Date());
   const sentence = ch.sentence(updatedLabel, total, freeCount);
+
+  // Картка «28 можливостей · 25 безкоштовних» поверх фото хіро (варіант 4b).
+  // Нуль не показуємо ніде (рішення Марії 14.09.2026): порожня цифра виглядає
+  // як зламана підбірка.
+  const heroCount = (inline) => (total > 0 ? (
+    <p className={`tp-hero-count${inline ? ' is-inline' : ''}`}>
+      <span className="tp-hero-count-n">{total}</span>
+      <span className="tp-hero-count-t">{ch.heroCount(total, freeCount)}</span>
+    </p>
+  ) : null);
   const h1Text = `${heading.lead}${heading.script ? ` ${heading.script}` : ''}${heading.tail || ''}`;
 
   const promo = topic.showPromo === false ? null : {
@@ -417,17 +414,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
               </a>
               <ShareButton label={ch.share} doneLabel={ch.shared} />
             </div>
-            {/* Нуль не показуємо ніде (рішення Марії 14.09.2026): «⏰ 0» чи
-                «Безкоштовних 0» виглядає як порожня або зламана підбірка. */}
-            {total > 0 || freeCount > 0 || urgentWeek > 0 ? (
-              <dl className="tp-facts">
-                {total > 0 ? <div><dt>{ch.factTotal}</dt><dd>{total}</dd></div> : null}
-                {freeCount > 0 ? <div><dt>{ch.factFree}</dt><dd>{freeCount}</dd></div> : null}
-                {urgentWeek > 0 ? (
-                  <div><dt>{ch.factWeek}</dt><dd className="is-urgent">⏰ {urgentWeek}</dd></div>
-                ) : null}
-              </dl>
-            ) : null}
+            {hero ? null : heroCount(true)}
           </div>
 
           {hero ? (
@@ -444,6 +431,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                   style={hero.position ? { objectPosition: hero.position } : undefined}
                 />
               </picture>
+              {heroCount(false)}
             </div>
           ) : null}
         </section>
@@ -456,7 +444,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           pinnedIds={[...pinned]}
           pinnedLabel={c.pinnedLabel || null}
           promo={promo}
-          labels={{ ...ch.cards, more: ch.more }}
+          labels={ch.cards}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
