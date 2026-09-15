@@ -21,8 +21,8 @@ digest_reminders_sent ПЕРЕД відправкою. UNIQUE ловить по�
 тож двічі те саме не прийде.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_PLUS_BOT_TOKEN (TELEGRAM_BOT_TOKEN —
-     запасний, див. send_telegram у personal_digest), GMAIL_FROM,
-     GMAIL_APP_PASSWORD, SITE_URL (опційно).
+     запасний, див. send_telegram у personal_digest), RESEND_API_KEY (є — листи
+     через Resend; нема — GMAIL_FROM і GMAIL_APP_PASSWORD), SITE_URL (опційно).
 
 Прапорці:
   --dry-run   лише друкує, кому що пішло б; нічого не шле й не пише в журнал
