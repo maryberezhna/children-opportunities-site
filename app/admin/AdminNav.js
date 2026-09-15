@@ -26,15 +26,15 @@ const C = {
   border: '#e2e8f2', bg: '#f7f9fc', accent: '#c8501a', link: '#1e4fd6',
 };
 
+// Пункти — за справами, а не за таблицями (15.09.2026). «Дітям захисників»
+// вийшла з меню: це частина черги, і на «Сьогодні» є окремий рядок із
+// переходом на /admin/zakhysnyky.
 const ITEMS = [
+  { key: 'today', href: '/admin/today', icon: '☀️', label: 'Сьогодні' },
   { key: 'queue', href: '/admin', icon: '🗂', label: 'Черга', count: 'drafts' },
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
   // Підписники, оформлення, оплати й список очікування (15.09.2026).
   { key: 'plus', href: '/admin/plus', icon: '💎', label: 'Dityam+' },
-  // Окремо від черги: у підбірки свій дефіцит і свої джерела (14.09.2026).
-  // Без лічильника: ці чернетки вже рахуються в «Черзі», і та сама робота
-  // виглядала вдвічі більшою (34 + 11 при 34 чернетках, 15.09.2026).
-  { key: 'defenders', href: '/admin/zakhysnyky', icon: '🎗', label: 'Дітям захисників' },
   { key: 'metrics', href: '/admin/metrics', icon: '📈', label: 'Метрики' },
 ];
 
@@ -84,11 +84,11 @@ export default async function AdminNav({ current }) {
 
   return (
     <nav style={{
-      display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap',
-      padding: '10px 12px', marginBottom: 18,
+      display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap',
+      padding: '8px 10px', marginBottom: 18,
       background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12,
     }}>
-      <a href="/admin" style={{
+      <a href="/admin/today" style={{
         fontSize: 13, fontWeight: 800, color: C.ink, textDecoration: 'none',
         letterSpacing: '-0.01em', marginRight: 4,
       }}>Dityam.com.ua</a>
@@ -98,7 +98,7 @@ export default async function AdminNav({ current }) {
         return (
           <a key={it.key} href={it.href} style={{
             display: 'inline-flex', alignItems: 'center',
-            padding: '7px 13px', borderRadius: 9, fontSize: 14, fontWeight: 600,
+            padding: '6px 11px', borderRadius: 9, fontSize: 14, fontWeight: 600,
             textDecoration: 'none', border: `1px solid ${on ? C.ink : C.border}`,
             background: on ? C.ink : '#fff', color: on ? '#fff' : C.ink2,
           }}>
@@ -112,10 +112,10 @@ export default async function AdminNav({ current }) {
           модерувати з телефона швидше в ньому, ніж у браузері. */}
       <a href={BOT_QUEUE_URL} target="_blank" rel="noopener noreferrer" style={{
         display: 'inline-flex', alignItems: 'center', gap: 6,
-        padding: '7px 13px', borderRadius: 9, fontSize: 14, fontWeight: 600,
+        padding: '6px 11px', borderRadius: 9, fontSize: 14, fontWeight: 600,
         textDecoration: 'none', border: `1px solid ${C.border}`,
         background: '#fff', color: C.link, marginLeft: 'auto',
-      }}>🤖 Модерувати в боті ↗</a>
+      }} title="Модерувати в Telegram-боті">🤖 Бот ↗</a>
 
       <a href="/" target="_blank" rel="noopener noreferrer" style={{
         fontSize: 13, color: C.ink3, textDecoration: 'none', padding: '7px 4px',
