@@ -30,9 +30,11 @@ import { createClient } from '@supabase/supabase-js';
 import { opportunitiesWord } from '../lib/plural.js';
 // Спільне з сайтом визначення події — щоб бот і картка не розходились.
 import { isEvent } from '../lib/labels.js';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
+import { resolveTokens } from './telegram-counters.mjs';
 
 const ANNUAL_TYPES = new Set([
   'olympiad', 'competition', 'exchange', 'scholarship',
@@ -79,10 +81,9 @@ const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 const NOTIFY = process.env.NOTIFY === 'true' || process.argv.includes('--notify');
 const DRY_RUN = process.env.DRY_RUN === 'true' || process.argv.includes('--dry-run');
 // PREVIEW=true — зібрати пости й надрукувати, нічого не шлючи і не змінюючи
-// в базі. FORCE_DAY=0..6 — показати формат конкретного дня тижня (для вичитки).
+// в базі. PREVIEW_DAYS — на скільки днів уперед показати план (типово 14).
 const PREVIEW = process.env.PREVIEW === 'true';
-const FORCE_DAY = process.env.FORCE_DAY != null && process.env.FORCE_DAY !== ''
-  ? Number(process.env.FORCE_DAY) : null;
+const PREVIEW_DAYS = Number(process.env.PREVIEW_DAYS || 14);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
@@ -256,71 +257,32 @@ const reportLines = [
 ];
 await writeFile(join(outDir, `deadline-report-${stamp}.txt`), reportLines.join('\n'), 'utf8');
 
-// Sun=0, Mon=1, ..., Sat=6 — index matches Date#getDay().
-// Declared before sendDailyDigest's invocation so the const is initialized
+// Declared before sendDailyDigest's invocation so the consts are initialized
 // (TDZ would throw otherwise — JS hoists `const` declarations but keeps them
 // uninitialized until execution reaches the declaration line).
-const THEMES = [
-  { // Sunday
-    heading: '🧸 Сьогодні — для малюків (0-6 років)',
-    description: 'Розвивальні заняття, гуртки, медична та соціальна допомога для найменших.',
-    filter: (r) => r.age_from <= 6 && r.age_to <= 8,
-    link: 'https://dityam.com.ua/?age=0-3,4-6',
-  },
-  { // Monday
-    heading: '📚 Сьогодні — для школярів (7-11 років)',
-    description: 'Курси, гуртки, олімпіади та конкурси для дітей молодшої школи.',
-    filter: (r) => r.age_from <= 11 && r.age_to >= 7,
-    link: 'https://dityam.com.ua/?age=7-11',
-  },
-  { // Tuesday
-    heading: '🎒 Сьогодні — для підлітків (12-17 років)',
-    description: 'Стажування, обміни, гранти, конкурси та літні програми для старшокласників.',
-    filter: (r) => r.age_to >= 12 && r.age_from <= 17,
-    link: 'https://dityam.com.ua/?age=12-14,15-17',
-  },
-  { // Wednesday
-    heading: '🎁 Сьогодні — безкоштовні можливості',
-    description: 'Програми без жодних витрат — для всіх дітей від 0 до 18 років.',
-    filter: (r) => r.cost_type === 'free',
-    link: 'https://dityam.com.ua/?cost=free',
-  },
-  { // Thursday
-    heading: '🌍 Сьогодні — можливості за кордоном',
-    description: 'Міжнародні обміни, навчання за кордоном та стипендії для українських дітей.',
-    filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
-    link: 'https://dityam.com.ua/?type=exchange,study_abroad,scholarship',
-  },
-  { // Friday
-    heading: '🎨 Сьогодні — творчість, STEM та конкурси',
-    description: 'Курси, гуртки, олімпіади та конкурси для тих, хто любить творити й досліджувати.',
-    filter: (r) => ['course', 'competition', 'club', 'olympiad'].includes(r.opportunity_type),
-    link: 'https://dityam.com.ua/?type=course,competition,club,olympiad',
-  },
-  { // Saturday
-    heading: '⭐ Сьогодні — нові на сайті',
-    description: 'Свіжі надходження — програми, щойно додані на платформу.',
-    filter: () => true,
-    sortBy: 'created_at_desc',
-    link: 'https://dityam.com.ua/?sort=recent',
-  },
-];
-
-// Формат поста за днем тижня. Сім однакових дайджестів на тиждень читати
-// нудно, тож ритм міняється: історія → дайджест → ситуація → цифра.
-// 0=Нд ... 6=Сб. Затверджено 19.08.2026.
-const FORMAT_BY_DAY = [
-  'number',    // Нд — цифра дня + рядок про підтримку
-  'situation', // Пн — життєва ситуація
-  'story',     // Вт — одна можливість глибоко
-  'digest',    // Ср — класичний дайджест
-  'story',     // Чт — одна можливість глибоко
-  'digest',    // Пт — класичний дайджест
-  'digest',    // Сб — дайджест із темою «нові на сайті»
-];
+//
+// Тема дня — з плану каналу (scripts/channel-plan.mjs), а не з дня тижня.
+// Можливість, що вже виходила в каналі, не повторюється REPEAT_DAYS днів:
+// за 20 постів до 16.09.2026 шість можливостей вийшли двічі, майже всі —
+// у «Дедлайн наближається» в сусідні дні.
+const REPEAT_DAYS = 30;
+const repeatCutoff = new Date(Date.now() - REPEAT_DAYS * 86400000).toISOString();
+// Превʼю нічого не пише в базу, тож «уже показане» тримаємо в памʼяті —
+// інакше превʼю на 14 днів показувало б ті самі можливості щодня.
+const shownInPreview = new Set();
+const SUPPORT_LINE = '🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.';
+// Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
+// заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
+// з людини рутину. Усе з поста лишається відкритим для всіх.
+const PLUS_LINE = '⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/plus">Dityam+</a> відбере ваші й нагадає вчасно.';
+// Теги, які Telegram приймає в parse_mode=HTML (як у post-message.mjs).
+const ALLOWED_TAGS = /^(b|strong|i|em|u|s|code|pre|a|blockquote|tg-spoiler)$/;
+const POOL_COLUMNS = 'id, slug, title, summary, details, source, opportunity_type, age_from, age_to, '
+  + 'cost_type, deadline, event_end_date, created_at, telegram_posted_at, child_needs, cities, '
+  + 'countries, is_international, format, aid_type';
 
 // Ситуації для формату «situation»: починаємо з болю батьків, а не з програми.
-// Ротація по тижнях, щоб та сама ситуація не поверталась щопонеділка.
+// Яка ситуація в який день — у плані каналу.
 //
 // Кожен фільтр мусить відповідати на САМУ ситуацію, а не лише на вік і ціну.
 // 14.09.2026 під «дитині 15, хоче спробувати щось своє» пішов фонд допомоги
@@ -360,21 +322,15 @@ const SITUATIONS = [
   },
 ];
 
-// Shown once every ~3 weeks (21-day cycle) instead of the weekday theme.
-const PAID_THEME = {
-  heading: '💳 Сьогодні — платні можливості',
-  description: 'Курси, гуртки, табори та програми з оплатою — обрані найцікавіші для дітей 0–18.',
-  filter: (r) => r.cost_type && !['free', 'closed'].includes(r.cost_type),
-  link: 'https://dityam.com.ua/?cost=partially_free',
-};
-
 // --- Optional: notify Telegram with daily digest ---
 if (PREVIEW) {
-  // Вичитка: показуємо пости на всі сім днів тижня за один прогін.
-  const DAYS = ['Неділя', 'Понеділок', 'Вівторок', 'Середа', 'Четвер', "П'ятниця", 'Субота'];
-  for (let d = 0; d < 7; d += 1) {
-    console.log(`\n${'='.repeat(64)}\n${DAYS[d].toUpperCase()} — формат «${FORMAT_BY_DAY[d]}»\n${'='.repeat(64)}`);
-    const shown = await sendDailyDigest(d);
+  // Вичитка: пости на PREVIEW_DAYS днів уперед за планом, нічого не шлючи.
+  const start = kyivIso();
+  for (let i = 0; i < PREVIEW_DAYS; i += 1) {
+    const date = addDays(start, i);
+    const entry = planEntryFor(date);
+    console.log(`\n${'='.repeat(64)}\n${date} — день ${entry.index + 1} плану: «${entry.key}» (${entry.kind})\n${'='.repeat(64)}`);
+    const shown = await sendDailyDigest(date);
     await sendNewOpportunityPost(shown);
   }
 } else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
@@ -382,140 +338,156 @@ if (PREVIEW) {
   await sendNewOpportunityPost(shown);
 }
 
-/** Щоденний пост. Повертає id можливостей, які в нього потрапили. */
-async function sendDailyDigest(dayOverride = null) {
-  // Section A: truly urgent — deadline MIN_LEAD_DAYS..7 days. Top 3.
-  // Було 0..3, тобто в «терміново» потрапляли й ті, що спливають сьогодні.
-  // Піднявши нижню межу, довелось підняти й верхню: інакше в секцію
-  // проходили б лише записи рівно з трьома днями і вона б порожніла.
-  const urgent = dueSoon
-    .filter(isPublishable)
-    .filter((r) => r.daysLeft >= MIN_LEAD_DAYS && r.daysLeft <= 7)
-    .slice(0, 3);
+/** Щоденний пост за планом каналу. Повертає id можливостей, які в нього потрапили. */
+async function sendDailyDigest(dateIso = kyivIso()) {
+  const entry = planEntryFor(dateIso);
 
-  // Section B: themed pool — fetch all active opportunities (not closed),
-  // either with no deadline or with deadline in the future.
-  const { data: poolData, error: poolErr } = await supabase
-    .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at, source, child_needs')
-    .eq('status', 'active')
-    .is('canonical_slug', null)
-    .or(`deadline.is.null,deadline.gte.${minLeadIso}`);
-  if (poolErr) {
-    console.error(`Pool fetch failed: ${poolErr.message}`);
-    return [];
-  }
-  const pool = (poolData || []).filter((r) => !urgent.some((u) => u.id === r.id));
-
-  // Once every ~3 weeks (a 21-day cycle) swap the weekday theme for a paid
-  // collection, so the channel isn't only free opportunities.
-  const dayOfYear = Math.floor(
-    (Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
-      - Date.UTC(today.getUTCFullYear(), 0, 1)) / 86400000);
-  const theme = dayOfYear % 21 === 0 ? PAID_THEME : THEMES[dayOverride ?? FORCE_DAY ?? today.getDay()];
-  let themed = pool.filter(theme.filter);
-  if (theme.sortBy === 'created_at_desc') {
-    themed.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
-  } else {
-    themed = shuffle(themed);
-  }
-  themed = themed.slice(0, 3);
-
-  if (urgent.length === 0 && themed.length === 0) {
-    console.log('Nothing to post — both sections empty.');
-    return [];
-  }
-
-  const weekday = dayOverride ?? FORCE_DAY ?? today.getDay();
-  const format = FORMAT_BY_DAY[weekday];
-  const weekIndex = Math.floor(dayOfYear / 7);
-
-  // --- Формат «story»: одна можливість глибоко ---
-  if (format === 'story') {
-    const hero = urgent[0] || themed[0];
-    if (hero) {
-      const heroLines = buildStoryPost(hero, theme);
-      await postToChannel(heroLines, `story (${hero.slug})`);
-      return [hero.id];
+  // Посторінково: PostgREST віддає максимум 1000 рядків, а відкритих записів
+  // уже понад тисячу — без цього частина тихо не потрапляла б у добір.
+  const rows = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error: poolErr } = await supabase
+      .from('opportunities')
+      .select(POOL_COLUMNS)
+      .eq('status', 'active')
+      .is('canonical_slug', null)
+      .or(`deadline.is.null,deadline.gte.${minLeadIso}`)
+      .order('id')
+      .range(from, from + 999);
+    if (poolErr) {
+      console.error(`Pool fetch failed: ${poolErr.message}`);
+      return [];
     }
+    rows.push(...(page || []));
+    if (!page || page.length < 1000) break;
   }
 
-  // --- Формат «situation»: життєва ситуація + 3 відповіді ---
-  if (format === 'situation') {
-    const situation = SITUATIONS[weekIndex % SITUATIONS.length];
+  // Дні до дедлайну рахуємо від дати поста: у превʼю це дні наперед.
+  const dayMs = Date.parse(`${dateIso}T00:00:00Z`);
+  const pool = rows
+    .map((r) => ({
+      ...r,
+      daysLeft: r.deadline ? Math.round((Date.parse(`${r.deadline}T00:00:00Z`) - dayMs) / 86400000) : null,
+    }))
+    .filter((r) => r.daysLeft == null || r.daysLeft >= MIN_LEAD_DAYS);
+  const eligible = pool.filter((r) => !shownInPreview.has(r.id)
+    && !(r.telegram_posted_at && r.telegram_posted_at >= repeatCutoff));
+
+  let built = await buildPlannedPost(entry, pool, eligible);
+  if (!built) {
+    console.log(`План «${entry.key}»: не вистачило записів — запасна тема «${FALLBACK_TOPIC.key}».`);
+    built = await buildPlannedPost(FALLBACK_TOPIC, pool, eligible);
+  }
+  if (!built) {
+    console.log('Nothing to post — навіть запасна тема порожня.');
+    return [];
+  }
+  const sent = await postToChannel(built.lines, `${entry.key}: ${built.label}`);
+  if (sent || PREVIEW) await markPosted(built.items);
+  return built.items.map((r) => r.id);
+}
+
+/**
+ * Пост за записом плану. null — якщо для теми не набралось записів
+ * (тоді виходить запасна тема) або готовий файл не пройшов перевірку.
+ */
+async function buildPlannedPost(entry, pool, eligible) {
+  if (entry.kind === 'digest') {
+    const items = pickItems(eligible, entry.match, 3);
+    if (items.length < 2) return null;
+    const lines = [`<b>${entry.heading}</b>`];
+    if (entry.description) lines.push(`<i>${entry.description}</i>`);
+    lines.push('');
+    items.forEach((r, i) => {
+      lines.push(formatLine(r, i));
+      if (i < items.length - 1) lines.push('');
+    });
+    lines.push('', `👉 Більше — <a href="${entry.link}">на dityam.com.ua</a>`, '', PLUS_LINE);
+    return { lines, items, label: `digest ${items.length}` };
+  }
+
+  if (entry.kind === 'story') {
+    const [hero] = pickItems(eligible, entry.match, 1);
+    if (!hero) return null;
+    return { lines: [entry.heading, '', ...buildStoryPost(hero, entry.link)], items: [hero], label: `story ${hero.slug}` };
+  }
+
+  if (entry.kind === 'deadlines') {
+    const items = eligible
+      .filter((r) => r.daysLeft != null && r.daysLeft <= 14)
+      .sort((a, b) => a.daysLeft - b.daysLeft)
+      .slice(0, 5);
+    if (items.length < 2) return null;
+    const lines = [`<b>${entry.heading}</b>`, `<i>${entry.description}</i>`, ''];
+    items.forEach((r, i) => {
+      lines.push(formatLine(r, i));
+      if (i < items.length - 1) lines.push('');
+    });
+    lines.push('', `👉 Усі дедлайни — <a href="${entry.link}">на dityam.com.ua</a>`, '', PLUS_LINE);
+    return { lines, items, label: `deadlines ${items.length}` };
+  }
+
+  if (entry.kind === 'situation') {
+    const situation = SITUATIONS[entry.situation];
     // Безкоштовність — для всіх ситуацій: рядок нижче обіцяє «за які не треба
     // платити», а фільтри про математику, поїздки й малювання ціну не
     // перевіряли.
-    const picks = shuffle(pool.filter((r) => r.cost_type === 'free' && situation.filter(r))).slice(0, 3);
-    if (picks.length >= 2) {
-      const sLines = [`<b>${situation.text}</b>`, ''];
-      sLines.push(`${picks.length === 3 ? 'Три варіанти' : 'Ось варіанти'}, за які не треба платити:`);
-      sLines.push('');
-      picks.forEach((r, i) => {
-        sLines.push(formatLine(r, i));
-        if (i < picks.length - 1) sLines.push('');
-      });
-      sLines.push('');
-      sLines.push(`👉 Ще ${freeCountForPost(pool)} безкоштовних — на <a href="https://dityam.com.ua">dityam.com.ua</a>`);
-      await postToChannel(sLines, 'situation');
-      return picks.map((r) => r.id);
+    const picks = shuffle(eligible.filter((r) => r.cost_type === 'free' && situation.filter(r))).slice(0, 3);
+    if (picks.length < 2) return null;
+    const lines = [`<b>${situation.text}</b>`, ''];
+    lines.push(`${picks.length === 3 ? 'Три варіанти' : 'Ось варіанти'}, за які не треба платити:`);
+    lines.push('');
+    picks.forEach((r, i) => {
+      lines.push(formatLine(r, i));
+      if (i < picks.length - 1) lines.push('');
+    });
+    lines.push('', `👉 Ще ${freeCountForPost(pool)} безкоштовних — на <a href="https://dityam.com.ua">dityam.com.ua</a>`);
+    return { lines, items: picks, label: 'situation' };
+  }
+
+  if (entry.kind === 'number') {
+    const lines = buildNumberPost(pool, entry.card);
+    if (!lines) return null;
+    lines.push('', SUPPORT_LINE);
+    return { lines, items: [], label: 'number' };
+  }
+
+  if (entry.kind === 'file') {
+    // Числа в готовому тексті не пишуться руками — підставляються з бази зараз
+    // (scripts/telegram-counters.mjs).
+    try {
+      const raw = (await readFile(join(__dirname, '..', 'content', 'telegram', entry.file), 'utf8')).trim();
+      const { text } = await resolveTokens(raw, { url: SUPABASE_URL, key: SUPABASE_KEY });
+      const bad = [...text.matchAll(/<\/?([a-zA-Z-]+)[^>]*>/g)]
+        .map((m) => m[1].toLowerCase())
+        .filter((tag) => !ALLOWED_TAGS.test(tag));
+      const length = text.replace(/<[^>]+>/g, '').length;
+      if (bad.length || length > 4096) {
+        console.error(`Файл ${entry.file}: теги ${[...new Set(bad)].join(', ') || '—'}, ${length} символів.`);
+        return null;
+      }
+      return { lines: [text], items: [], label: `file ${entry.file}` };
+    } catch (e) {
+      console.error(`Файл ${entry.file}: ${e.message}`);
+      return null;
     }
   }
 
-  // --- Формат «number»: одна цифра + пояснення ---
-  if (format === 'number') {
-    const nLines = buildNumberPost(pool, weekIndex);
-    if (nLines) {
-      nLines.push('');
-      nLines.push('🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
-      await postToChannel(nLines, 'number');
-      return [];
-    }
-  }
+  return null;
+}
 
-  // --- Формат «digest» (і запасний варіант, якщо для інших не набралось) ---
-  const lines = [];
-  if (urgent.length > 0) {
-    lines.push(`⏰ <b>Дедлайн наближається (${urgent.length})</b>`);
-    lines.push('');
-    urgent.forEach((r, i) => {
-      lines.push(formatLine(r, i));
-      if (i < urgent.length - 1) lines.push('');
-    });
-    lines.push('');
-  }
-  if (themed.length > 0) {
-    lines.push(`<b>${theme.heading}</b>`);
-    if (theme.description) lines.push(`<i>${theme.description}</i>`);
-    lines.push('');
-    themed.forEach((r, i) => {
-      lines.push(formatLine(r, i));
-      if (i < themed.length - 1) lines.push('');
-    });
-    lines.push('');
-  }
-  const moreUrl = theme.link || 'https://dityam.com.ua';
-  lines.push(`🔗 Більше — на <a href="https://dityam.com.ua">dityam.com.ua</a>${moreUrl !== 'https://dityam.com.ua' ? ` · <a href="${moreUrl}">добірка дня</a>` : ''}`);
-
-  // Прохання про підтримку — раз на тиждень, у неділю, рядком усередині
-  // дайджесту. Окремий суботній пост скасовано: він був другим за добу.
-  if ((dayOverride ?? FORCE_DAY ?? today.getDay()) === 0) {
-    lines.push('');
-    lines.push('🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.');
-  }
-
-  // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
-  // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
-  // з людини рутину. Усе з діджесту лишається відкритим для всіх.
-  lines.push('');
-  lines.push('⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/plus">Dityam+</a> відбере ваші й нагадає вчасно.');
-
-  // У суботу тема дня сама «нові на сайті»: її записи позначаємо як уже
-  // показані в каналі, щоб наступного дня окремий пост «Нова можливість» не
-  // повторив їх.
-  const sent = await postToChannel(lines, `digest (urgent=${urgent.length}, themed=${themed.length})`);
-  if (sent && theme.sortBy === 'created_at_desc') await markPosted(themed);
-  return [...urgent, ...themed].map((r) => r.id);
+/**
+ * Добір для теми: спершу безкоштовні, серед них — із найближчим дедлайном,
+ * далі без дати у випадковому порядку; платні — лише якщо безкоштовних
+ * забракло. Канал читають заради безкоштовного: за 30 днів до 15.09.2026 на
+ * безкоштовні програми припало 410 із 479 кліків зі сторінок можливостей.
+ */
+function pickItems(eligible, match, n) {
+  const matched = eligible.filter(match);
+  const dated = matched.filter((r) => r.daysLeft != null).sort((a, b) => a.daysLeft - b.daysLeft);
+  const undated = shuffle(matched.filter((r) => r.daysLeft == null));
+  const rank = (r) => (r.cost_type === 'free' ? 0 : 1);
+  return [...dated, ...undated].sort((a, b) => rank(a) - rank(b)).slice(0, n);
 }
 
 /** Відправка в канал. Один шлях для всіх форматів поста. true — пост пішов. */
@@ -548,10 +520,8 @@ async function postToChannel(lines, label) {
   return false;
 }
 
-/** Формат «story»: одна можливість розгорнуто. */
-// claimOpen = false — не писати «набір триває», коли дати немає: у нової
-// можливості це часто означає «набір ще не оголошено», а не «подавайтесь».
-function buildStoryPost(r, theme, { claimOpen = true } = {}) {
+/** Формат «story»: одна можливість розгорнуто. link — «схожі можливості». */
+function buildStoryPost(r, link = null) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const lines = [`<b>${escapeHtml(r.title)}</b>`, ''];
 
@@ -565,18 +535,20 @@ function buildStoryPost(r, theme, { claimOpen = true } = {}) {
   if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
   else if (r.cost_type === 'partially_free') lines.push('💳 Скільки коштує: є фінансування');
 
+  // Без дати рядка немає. «Дедлайну немає — набір триває» тут писати не можна:
+  // часто це означає «набір ще не оголошено» — як у «Володаря стихій» 15.09.2026,
+  // де реєстрацію фонд оголошує у своїх соцмережах.
   const when = whenLine(r);
   if (when) lines.push(when);
-  else if (claimOpen) lines.push('⏰ Дедлайну немає — набір триває');
 
   lines.push('');
   lines.push(`👉 <a href="${url}">Умови й подача — на dityam.com.ua</a>`);
-  if (theme?.link) lines.push(`🔗 Схожі можливості — <a href="${theme.link}">тут</a>`);
+  if (link) lines.push(`🔗 Схожі можливості — <a href="${link}">тут</a>`);
   return lines;
 }
 
-/** Формат «number»: одна цифра, яка щось означає. */
-function buildNumberPost(pool, weekIndex) {
+/** Формат «number»: одна цифра, яка щось означає. startCard — з плану каналу. */
+function buildNumberPost(pool, startCard) {
   const free = pool.filter((r) => r.cost_type === 'free').length;
   const sources = new Set(pool.map((r) => r.source).filter(Boolean)).size;
   const withNeeds = pool.filter((r) => (r.child_needs || []).length > 0).length;
@@ -614,7 +586,7 @@ function buildNumberPost(pool, weekIndex) {
   // відкочувався в дайджест, і «цифра дня» ніколи не виходила.
   let card = null;
   for (let i = 0; i < CARDS.length; i += 1) {
-    const c = CARDS[(weekIndex + i) % CARDS.length];
+    const c = CARDS[(startCard + i) % CARDS.length];
     if (c.value) { card = c; break; }
   }
   if (!card) return null;
@@ -658,17 +630,22 @@ async function sendNewOpportunityPost(excludeIds = []) {
     console.error(`New opportunity fetch failed: ${error.message}`);
     return;
   }
-  const r = (data || []).find((x) => !excludeIds.includes(x.id));
+  const r = (data || []).find((x) => !excludeIds.includes(x.id) && !shownInPreview.has(x.id));
   if (!r) {
     console.log('Нової можливості для окремого поста немає.');
     return;
   }
-  const lines = ['🆕 <b>Нова можливість</b>', '', ...buildStoryPost(r, null, { claimOpen: false })];
-  if (await postToChannel(lines, `new (${r.slug})`)) await markPosted([r]);
+  const lines = ['🆕 <b>Нова можливість</b>', '', ...buildStoryPost(r)];
+  const sent = await postToChannel(lines, `new (${r.slug})`);
+  if (sent || PREVIEW) await markPosted([r]);
 }
 
 async function markPosted(items) {
   if (items.length === 0) return;
+  if (PREVIEW) {
+    items.forEach((r) => shownInPreview.add(r.id));
+    return;
+  }
   const { error } = await supabase
     .from('opportunities')
     .update({ telegram_posted_at: new Date().toISOString() })

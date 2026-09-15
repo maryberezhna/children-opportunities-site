@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       preview:
-        description: 'Показати пости на всі 7 днів, нічого не надсилаючи'
+        description: 'Показати пости за планом на 14 днів уперед, нічого не надсилаючи'
         required: false
         default: 'false'
       dry_run:
