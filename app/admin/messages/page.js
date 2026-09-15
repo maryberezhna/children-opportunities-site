@@ -12,7 +12,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const wrap = { maxWidth: 860, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
+const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
 
 export default async function MessagesPage() {
   const token = process.env.ADMIN_TOKEN;

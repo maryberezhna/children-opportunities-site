@@ -69,7 +69,7 @@ export default async function AdminPage() {
   }
 
   return (
-    <main style={{ maxWidth: 820, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
+    <main style={{ maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
       <AdminNav current="queue" />
       <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
       <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
