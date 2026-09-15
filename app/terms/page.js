@@ -11,7 +11,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '14 вересня 2026';
+const UPDATED = '15 вересня 2026';
 
 export default function TermsPage() {
   return (
@@ -46,7 +46,7 @@ export default function TermsPage() {
             щойно такі можливості зʼявляються;</li>
           <li>нагадування про строки подачі;</li>
           <li>інформаційну підтримку щодо подання заявок;</li>
-          <li>участь у розіграшах подарунків від партнерів.</li>
+          <li>з жовтня 2026 — участь у розіграшах подарунків від партнерів.</li>
         </ul>
         <p>
           Послуга є цифровою й надається через Telegram-бот{' '}

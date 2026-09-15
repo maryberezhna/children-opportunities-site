@@ -68,8 +68,10 @@ jobs:
           # Основний лишається запасним (див. send_telegram у personal_digest.py).
           TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: mashaberezhna0209@gmail.com
+          # Пошта проєкту, щойно заведено її пароль застосунку (секрет
+          # DITYAM_GMAIL_APP_PASSWORD); доти — особиста, як і раніше.
+          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD && 'hellodityam.com.ua@gmail.com' || 'mashaberezhna0209@gmail.com' }}
           SITE_URL: https://dityam.com.ua
           # Раніше за цю годину за Києвом нічого не шлемо — див. коментар
           # про розклад вище. 0 вимкнув би ворота повністю.

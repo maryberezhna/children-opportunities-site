@@ -59,7 +59,9 @@ const L = {
       'Можливість для кількох дітей приходить один раз, із позначкою, кому саме',
       'Нагадує завчасно: за 2–4 тижні для стипендій і обмінів, за тиждень для гуртків',
       'Додавайте можливість до календаря в один клік',
-      'Відмічайте «Цікаво» чи «Не цікаво», беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
+      // Розіграші й знижки партнерів — з жовтня 2026 (рішення Марії 15.09.2026,
+      // задача в Notion). Поки механізму немає, «з жовтня» тут обовʼязкове.
+      'Відмічайте «Цікаво» чи «Не цікаво», а з жовтня — беріть участь у розіграшах подарунків і отримуйте знижки від партнерів',
     ],
 
     mockTitle: 'Що приходить у Telegram або на імейл',
@@ -226,7 +228,7 @@ const L = {
       'An opportunity for several children arrives once, marked with who it is for',
       'Reminds you in good time: 2–4 weeks ahead for scholarships and exchanges, a week for clubs',
       'Add an opportunity to your calendar in one click',
-      'Mark “Interested” or “Not interested”, join partner giveaways and get partner discounts',
+      'Mark “Interested” or “Not interested”, and from October join partner giveaways and get partner discounts',
     ],
 
     mockTitle: 'What arrives on Telegram or by email',

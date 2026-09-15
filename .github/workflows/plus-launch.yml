@@ -38,8 +38,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: mashaberezhna0209@gmail.com
+          # Пошта проєкту, щойно заведено її пароль застосунку (секрет
+          # DITYAM_GMAIL_APP_PASSWORD); доти — особиста, як і раніше.
+          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD && 'hellodityam.com.ua@gmail.com' || 'mashaberezhna0209@gmail.com' }}
           SITE_URL: https://dityam.com.ua
         run: |
           if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then

@@ -267,9 +267,13 @@ def main():
     ap.add_argument("--demo", action="store_true")
     ap.add_argument("--any-time", action="store_true",
                     help="не зважати на ворота часу (ручний запуск, тест)")
+    # Пробний лист перед запуском Dityam+ (15.09.2026): демо-родина, справжній
+    # шаблон і справжня пошта — але таблицю підписників не читаємо й не змінюємо.
+    ap.add_argument("--test-to", metavar="EMAIL",
+                    help="надіслати пробну добірку демо-родини на цю адресу")
     args = ap.parse_args()
 
-    if not (args.dry_run or args.demo or args.any_time) and send_window.too_early():
+    if not (args.dry_run or args.demo or args.any_time or args.test_to) and send_window.too_early():
         return 0
 
     from db import get_client
@@ -306,10 +310,10 @@ def main():
         len(opps), dropped, MIN_LEAD_DAYS,
     )
 
-    if args.demo:
+    if args.demo or args.test_to:
         subs = [{
-            "id": "demo", "channel": "telegram", "telegram_chat_id": None,
-            "email": None, "unsub_token": "demo",
+            "id": "demo", "channel": "email" if args.test_to else "telegram", "telegram_chat_id": None,
+            "email": args.test_to, "unsub_token": "demo",
             "age_bands": [], "interests": [], "places": [],
             "cost_pref": "free_only", "last_sent_at": None,
         }]
@@ -330,8 +334,8 @@ def main():
     sent = 0
     for sub in subs:
         # Шлемо лише можливості, що зʼявились після останнього сповіщення.
-        # --force / --demo ігнорують новизну (для тесту).
-        since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
+        # --force / --demo / --test-to ігнорують новизну (для тесту).
+        since = None if (args.force or args.demo or args.test_to) else parse_ts(sub.get("last_sent_at"))
         kids = plus_profile.children_of(sub, child_rows)
         items = pick_for(sub, opps, since, kids)
 
@@ -340,7 +344,7 @@ def main():
         # (курси, держпослуги), і вони не «нові» вже давно. Підписник платить,
         # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
         revival = False
-        if not items and not (args.dry_run or args.demo):
+        if not items and not (args.dry_run or args.demo or args.test_to):
             all_matches = pick_for(sub, opps, None, kids)
             if not all_matches:
                 # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
@@ -365,12 +369,20 @@ def main():
         if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
             ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival))
         elif sub["channel"] == "email" and sub.get("email"):
-            ok = send_email(sub["email"], build_email(sub, items, revival))
+            if args.test_to:
+                ok = send_email(sub["email"], build_email(sub, items, revival),
+                                subject="[Тест] 🧡 Нові можливості для вашої дитини — Dityam+")
+            else:
+                ok = send_email(sub["email"], build_email(sub, items, revival))
         else:
             logger.info("sub %s — channel not connected yet, skip", sub["id"])
             continue
 
-        if ok:
+        if ok and args.test_to:
+            # Демо-підписника в базі немає — last_sent_at не чіпаємо.
+            logger.info("Пробну добірку (%d можливостей) надіслано на %s", len(items), sub["email"])
+            sent += 1
+        elif ok:
             client.table("digest_subscribers").update(
                 {"last_sent_at": datetime.now(timezone.utc).isoformat()}
             ).eq("id", sub["id"]).execute()
