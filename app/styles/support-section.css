@@ -608,49 +608,8 @@
   vertical-align: 1px;
 }
 
-.plus-wait-form {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.plus-wait-form input {
-  flex: 1 1 200px;
-  min-width: 0;
-  padding: 12px 16px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface);
-  font: inherit;
-  /* 16px: iOS збільшує сторінку при фокусі на дрібнішому полі. */
-  font-size: 1rem;
-}
-
-.plus-wait-form input:focus {
-  outline: none;
-  border-color: var(--ink);
-}
-
-.plus-wait-form button {
-  flex-shrink: 0;
-  font: inherit;
-  font-size: 0.90625rem;
-  font-weight: 600;
-  padding: 12px 22px;
-  border: none;
-  border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
-  cursor: pointer;
-  box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.plus-wait-form button:hover { transform: translateY(-1px); }
-.plus-wait-form button:disabled { opacity: 0.6; cursor: wait; }
-.plus-wait-form button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-/* Продаж відкрито (PLUS_SALES_OPEN у lib/plus.js): та сама кнопка, але посилання в бот. */
+/* Кнопка в Telegram: у список очікування (основний бот) або, коли продаж
+   відкрито (PLUS_SALES_OPEN у lib/plus.js), в @DityamPlusBot. */
 .plus-open-btn {
   display: inline-block;
   font-size: 0.90625rem;
@@ -667,20 +626,6 @@
 .plus-open-btn:hover { transform: translateY(-1px); }
 .plus-open-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.plus-wait-error {
-  margin: 8px 0 0;
-  font-size: 0.8125rem;
-  color: #b3402a;
-}
-
-.plus-wait-done strong { font-size: 1.03125rem; }
-.plus-wait-done p {
-  margin: 6px 0 0;
-  font-size: 0.90625rem;
-  color: var(--ink-soft);
-  line-height: 1.5;
-}
-
 @media (max-width: 640px) {
-  .plus-wait-form button { width: 100%; }
+  .plus-open-btn { display: block; text-align: center; }
 }

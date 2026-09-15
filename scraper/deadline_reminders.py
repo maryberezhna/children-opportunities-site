@@ -21,8 +21,7 @@ digest_reminders_sent ПЕРЕД відправкою. UNIQUE ловить по�
 тож двічі те саме не прийде.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_PLUS_BOT_TOKEN (TELEGRAM_BOT_TOKEN —
-     запасний, див. send_telegram у personal_digest), RESEND_API_KEY (є — листи
-     через Resend; нема — GMAIL_FROM і GMAIL_APP_PASSWORD), SITE_URL (опційно).
+     запасний, див. send_telegram у personal_digest), SITE_URL (опційно).
 
 Прапорці:
   --dry-run   лише друкує, кому що пішло б; нічого не шле й не пише в журнал
@@ -50,10 +49,8 @@ import send_window
 from personal_digest import (
     SITE_URL,
     age_overlaps,
-    email_footer,
     load_disliked,
     match_themes,
-    send_email,
     send_telegram,
 )
 
@@ -281,13 +278,7 @@ def main() -> int:
                 continue
 
             text = build_text(fresh, days)
-            ok = False
-            if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
-                ok = send_telegram(sub["telegram_chat_id"], text)
-            elif sub["channel"] == "email" and sub.get("email"):
-                # Без власної теми лист-нагадування приходив як «Нові можливості».
-                ok = send_email(sub["email"], text.replace("\n", "<br>") + email_footer(sub),
-                                subject="⏳ Нагадування про дедлайн — Dityam+")
+            ok = bool(sub.get("telegram_chat_id")) and send_telegram(sub["telegram_chat_id"], text)
             if ok:
                 sent += 1
                 logger.info("sub %s — нагадування -%dд про %d можливостей",

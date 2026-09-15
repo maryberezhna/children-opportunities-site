@@ -1,16 +1,20 @@
-"""Кнопки й футер у добірках Dityam+ (15.09.2026).
+"""Добірка Dityam+ у Telegram: кнопки, зміст і «Не цікаво» (15.09.2026).
 
-До 15.09.2026 /plus показував у прикладі повідомлення «👍 Цікаво / 👎 Не
-цікаво / 📅 Додати в календар», а в справжніх листах і в Telegram їх не було.
-Марія попросила ще й футер «Редагувати інтереси · Керувати підпискою». Тести
-тримають те, що легко тихо зламати: токен і id у посиланнях, календар лише з
-дедлайном, ліміт Telegram на callback_data, і що «👎» справді прибирає запис.
+До 15.09.2026 /plus показував у прикладі «👍 Цікаво / 👎 Не цікаво / 📅 Додати
+в календар», а в справжніх повідомленнях їх не було. Тести тримають те, що
+легко тихо зламати: ліміт Telegram на callback_data, календар лише з
+дедлайном, дедлайн у рядку деталей і що «👎» справді прибирає запис.
+
+Того ж дня імейл Dityam+ прибрано повністю (рішення Марії): добірки й
+нагадування йдуть лише в Telegram, і тест стежить, щоб листи не повернулись
+непомітно.
 """
 import importlib.util
 import pathlib
 import sys
 import types
 import unittest
+from datetime import date
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -25,7 +29,7 @@ def load_personal_digest():
     # Під окремою назвою: test_deadline_reminders підміняє "personal_digest"
     # заглушкою в sys.modules, а тут потрібен справжній модуль.
     spec = importlib.util.spec_from_file_location(
-        "personal_digest_actions_under_test", ROOT / "personal_digest.py")
+        "personal_digest_telegram_under_test", ROOT / "personal_digest.py")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -43,31 +47,6 @@ def item(**over):
     }
     base.update(over)
     return base
-
-
-class EmailActions(unittest.TestCase):
-    def setUp(self):
-        self.pd = load_personal_digest()
-
-    def test_feedback_links_carry_token_opportunity_and_value(self):
-        body = self.pd.build_email(SUB, [item()])
-        self.assertIn(f"/api/plus/feedback?t=tok123&amp;o={OPP_ID}&amp;v=yes", body)
-        self.assertIn(f"/api/plus/feedback?t=tok123&amp;o={OPP_ID}&amp;v=no", body)
-
-    def test_calendar_link_only_when_there_is_a_deadline(self):
-        self.assertIn("/events/isef-ukraine/add", self.pd.build_email(SUB, [item()]))
-        self.assertNotIn("/events/", self.pd.build_email(SUB, [item(deadline=None)]))
-
-    def test_footer_lets_manage_interests_subscription_and_unsubscribe(self):
-        body = self.pd.build_email(SUB, [item()])
-        self.assertIn("https://t.me/DityamPlusBot?start=edit", body)
-        self.assertIn("https://t.me/DityamPlusBot?start=sub", body)
-        self.assertIn("/api/unsubscribe?t=tok123", body)
-        self.assertIn("Редагувати інтереси", body)
-        self.assertIn("Керувати підпискою", body)
-
-    def test_title_is_escaped(self):
-        self.assertIn("ISEF &lt;Ukraine&gt;", self.pd.build_email(SUB, [item()]))
 
 
 class TelegramKeyboard(unittest.TestCase):
@@ -100,6 +79,23 @@ class TelegramKeyboard(unittest.TestCase):
         self.assertEqual(sent[0]["reply_markup"], keyboard)
         self.assertTrue(self.pd.send_telegram("1", "hi"))
         self.assertNotIn("reply_markup", sent[1])
+
+
+class Content(unittest.TestCase):
+    def setUp(self):
+        self.pd = load_personal_digest()
+
+    def test_title_is_escaped(self):
+        self.assertIn("ISEF &lt;Ukraine&gt;", self.pd.build_telegram(SUB, [item()]))
+
+    def test_deadline_in_meta(self):
+        this_year = f"{date.today().year}-10-30"
+        self.assertIn("до 30 жовтня", self.pd.build_telegram(SUB, [item(deadline=this_year)]))
+        self.assertNotIn(" до ", self.pd._meta(item(deadline=None)))
+
+    def test_no_email_delivery_left(self):
+        for name in ("send_email", "build_email", "email_footer", "feedback_url"):
+            self.assertFalse(hasattr(self.pd, name), name)
 
 
 class FakeQuery:

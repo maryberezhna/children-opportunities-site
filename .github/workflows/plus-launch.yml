@@ -1,7 +1,8 @@
 name: Dityam+ — launch to waitlist
 
-# Разове повідомлення про запуск Dityam+ усім зі списку очікування: Telegram —
-# від основного бота, імейл — листом із персональним посиланням у платний бот.
+# Разове повідомлення про запуск Dityam+ усім зі списку очікування, хто
+# записався через Telegram, — від основного бота. Тих, хто записався імейлом до
+# 15.09.2026, скрипт лише рахує: листів Dityam+ не шле (рішення Марії).
 # Знижка для них — перший місяць за 89 грн (рішення Марії 14.09.2026).
 #
 # ЗАПУСКАТИ ЛИШЕ ЗА РІШЕННЯМ МАРІЇ і разом із PLUS_SALES_OPEN = true у
@@ -38,15 +39,6 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          # Пошта проєкту, щойно заведено її пароль застосунку (секрет
-          # DITYAM_GMAIL_APP_PASSWORD); доти — особиста, як і раніше.
-          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD && 'hellodityam.com.ua@gmail.com' || 'mashaberezhna0209@gmail.com' }}
-          # Щойно заведено секрет RESEND_API_KEY, листи йдуть через Resend із
-          # домену dityam.com.ua: Gmail відбиває автоматичні листи зі звичайної
-          # gmail.com (550 5.7.30 DKIM, 15.09.2026). Без ключа — Gmail, як і раніше.
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          SITE_URL: https://dityam.com.ua
         run: |
           if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
             python plus_launch.py --send

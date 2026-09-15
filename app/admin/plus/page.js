@@ -21,8 +21,8 @@ export const metadata = {
  * лежить у digest_subscribers / plus_children / plus_waitlist — сторінка лише
  * збирає його в одне місце.
  *
- * Телефон свідомо не показуємо: для підтримки досить Telegram чи імейлу, а
- * зайвий номер на екрані — зайвий ризик.
+ * Телефон свідомо не показуємо: для підтримки досить Telegram, а зайвий
+ * номер на екрані — зайвий ризик. Імейл-доставки Dityam+ з 15.09.2026 немає.
  */
 
 const C = {
@@ -54,7 +54,6 @@ const STEP = {
   place: 'анкета: місто',
   cost: 'анкета: вартість',
   phone: 'телефон для оплати',
-  email: 'чекаємо адресу імейлу',
 };
 
 const DAY = 86400000;
@@ -71,7 +70,6 @@ function whereStuck(s) {
 
 function who(s) {
   if (s.telegram_handle) return `@${s.telegram_handle}`;
-  if (s.email) return s.email;
   return s.telegram_chat_id ? `Telegram · …${String(s.telegram_chat_id).slice(-4)}` : '—';
 }
 
@@ -104,7 +102,7 @@ export default async function PlusAdminPage() {
 
   const [subsRes, kidsRes, waitRes, remindRes] = await Promise.all([
     supabase.from('digest_subscribers')
-      .select('id, created_at, updated_at, status, channel, email, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at')
+      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at')
       .order('created_at', { ascending: false }).limit(500),
     supabase.from('plus_children').select('subscriber_id'),
     supabase.from('plus_waitlist').select('id, email, telegram_username, telegram_chat_id, source, created_at')
@@ -126,7 +124,6 @@ export default async function PlusAdminPage() {
   const paused = subs.filter((s) => s.status === 'paused');
   const unsub30 = subs.filter((s) => s.status === 'unsubscribed'
     && new Date(s.updated_at || s.created_at).getTime() >= Date.now() - 30 * DAY);
-  const emailActive = active.filter((s) => s.channel === 'email').length;
 
   const activeChats = new Set(active.map((s) => String(s.telegram_chat_id || '')).filter(Boolean));
   const converted = waitlist.filter((w) => w.telegram_chat_id && activeChats.has(String(w.telegram_chat_id))).length;
@@ -154,7 +151,7 @@ export default async function PlusAdminPage() {
         <Card value={waitlist.length} label={`у списку очікування · оформили ${converted}`} />
       </div>
       <p style={noteS}>
-        На імейл із активних отримують {emailActive}. Нагадувань про дедлайни за 7 днів: {remindRes.count ?? 0}.
+        Нагадувань про дедлайни за 7 днів: {remindRes.count ?? 0}.
       </p>
 
       <h2 style={h2S}>Потребує уваги · {attention.length}</h2>
@@ -185,7 +182,7 @@ export default async function PlusAdminPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
             <thead>
               <tr>
-                <th style={head}>Статус</th><th style={head}>Хто</th><th style={head}>Канал</th>
+                <th style={head}>Статус</th><th style={head}>Хто</th>
                 <th style={head}>Дітей</th><th style={head}>Тариф</th><th style={head}>Почав</th>
                 <th style={head}>Остання добірка</th><th style={head}>Де зараз</th>
               </tr>
@@ -197,7 +194,6 @@ export default async function PlusAdminPage() {
                   <tr key={s.id}>
                     <td style={{ ...cell, color: st.color, fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</td>
                     <td style={cell}>{who(s)}</td>
-                    <td style={cell}>{s.channel === 'email' ? '📧 імейл' : '✈️ Telegram'}</td>
                     <td style={cell}>{kidsBySub[s.id] || 0}</td>
                     <td style={cell}>{s.status === 'active' ? (s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
                     <td style={cell}>{fmtDate(s.created_at)}</td>
@@ -221,7 +217,7 @@ export default async function PlusAdminPage() {
             <tbody>
               {waitlist.map((w) => (
                 <tr key={w.id}>
-                  <td style={cell}>{w.email || (w.telegram_username ? `@${w.telegram_username}` : 'Telegram')}</td>
+                  <td style={cell}>{w.telegram_username ? `@${w.telegram_username}` : w.telegram_chat_id ? 'Telegram' : `📧 ${w.email || '—'} · без Telegram`}</td>
                   <td style={{ ...cell, color: C.ink2 }}>{w.source || '—'}</td>
                   <td style={cell}>{fmtDate(w.created_at)}</td>
                   <td style={cell}>{w.telegram_chat_id && activeChats.has(String(w.telegram_chat_id)) ? '✅' : '—'}</td>

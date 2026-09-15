@@ -3,7 +3,8 @@ import { useEffect, useRef, useState } from 'react';
 
 /**
  * Анімований приклад підписки на /plus: одна можливість від першого
- * повідомлення до нагадування про дедлайн, у Telegram або в листі.
+ * повідомлення до нагадування про дедлайн у Telegram. Вкладку «Імейл»
+ * прибрано 15.09.2026 разом із листами Dityam+.
  *
  * Кроки перемикаються самі, лише коли блок видно, курсор чи фокус не всередині
  * і людина не просила менше руху. Клік по кроку зупиняє автоплей — людина
@@ -16,7 +17,6 @@ const LAST_STEP_MS = 5200;
 const TICK_MS = 60;
 
 export default function PlusFlowDemo({ f }) {
-  const [channel, setChannel] = useState('tg');
   const [step, setStep] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [auto, setAuto] = useState(true);
@@ -59,21 +59,8 @@ export default function PlusFlowDemo({ f }) {
       onFocus={() => setHold(true)}
       onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false); }}
     >
-      <div className="pl-fd-bar">
-        <div className="pl-fd-tabs" role="group" aria-label={f.channelLabel}>
-          {['tg', 'mail'].map((c) => (
-            <button
-              key={c}
-              type="button"
-              className={`pl-fd-tab${channel === c ? ' is-on' : ''}`}
-              aria-pressed={channel === c}
-              onClick={() => { setChannel(c); go(0); }}
-            >
-              {f.tabs[c]}
-            </button>
-          ))}
-        </div>
-        {!reduce && (
+      {!reduce && (
+        <div className="pl-fd-bar">
           <button
             type="button"
             className="pl-fd-play"
@@ -83,8 +70,8 @@ export default function PlusFlowDemo({ f }) {
           >
             {auto ? '❚❚' : '▶'}
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       <ol className="pl-fd-steps">
         {f.steps.map(([head, sub], i) => (
@@ -113,9 +100,9 @@ export default function PlusFlowDemo({ f }) {
       </ol>
 
       <div className="pl-fd-screen">
-        {channel === 'tg' ? <TgScreen f={f} step={step} /> : <MailScreen f={f} step={step} />}
+        <TgScreen f={f} step={step} />
         {step === 1 && (
-          <span className={`pl-tg-toast pl-fd-toast${channel === 'mail' ? ' pl-fd-toast-mail' : ''}`} aria-hidden="true">
+          <span className="pl-tg-toast pl-fd-toast" aria-hidden="true">
             {f.toast}
           </span>
         )}
@@ -178,48 +165,6 @@ function TgScreen({ f, step }) {
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// Формат — build_email (дайджест із шапкою DITYAM+) і лист-нагадування, де
-// текст із Telegram іде в тіло як є.
-function MailScreen({ f, step }) {
-  const m = f.mail;
-  const reminder = step === 3;
-  return (
-    <div className="pl-mail pl-fd-mail">
-      <div className="pl-mail-head">
-        <div><span>{m.fromLabel}</span>{m.from}</div>
-        <div><span>{m.subjLabel}</span><strong>{reminder ? m.subjRemind : m.subjDigest}</strong></div>
-      </div>
-      {reminder ? (
-        <div className="pl-mail-body pl-fd-msg" key="remind">
-          <p className="pl-fd-mail-h">{f.remindHead}</p>
-          <p className="pl-mail-text">{f.remindSub}</p>
-          <p className="pl-mail-title pl-fd-gap">🔸 {f.title}</p>
-          <p className="pl-mail-meta">{f.remindMeta}</p>
-          <p className="pl-mail-meta"><i>{f.forWho}</i></p>
-          <p className="pl-mail-foot"><i>{f.remindFoot}</i></p>
-        </div>
-      ) : (
-        <div className="pl-mail-body pl-fd-msg" key="digest">
-          <p className="pl-fd-brand">{m.brand}</p>
-          <p className="pl-fd-mail-h">{m.h}</p>
-          <p className="pl-mail-text">{m.lead}</p>
-          <div className="pl-mail-item">
-            <p className="pl-mail-title">{f.title}</p>
-            <p className="pl-mail-meta">{f.meta}</p>
-            <p className="pl-mail-meta">{f.forWho}</p>
-            <div className="pl-mail-btns" aria-hidden="true">
-              <span className={`pl-mail-btn${step === 2 ? ' is-on is-tap' : ''}`}>{f.cal}</span>
-              <span className={`pl-mail-btn${step >= 1 ? ' is-on' : ''}${step === 1 ? ' is-tap' : ''}`}>{f.yes}</span>
-              <span className="pl-mail-btn">{f.no}</span>
-            </div>
-          </div>
-          <p className="pl-mail-foot">{f.digestFoot}</p>
-        </div>
-      )}
     </div>
   );
 }

@@ -15,7 +15,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '14 September 2026';
+const UPDATED = '15 September 2026';
 
 export default function PrivacyPageEn() {
   return (
@@ -57,8 +57,10 @@ export default function PrivacyPageEn() {
               and can measure advertising.
             </li>
             <li>
-              <strong>Dityam+ waitlist.</strong> Your email and the page you signed
-              up from — to tell you about the launch.
+              <strong>Dityam+ waitlist.</strong> You can join only through the
+              @DityamComUABot Telegram bot (see below) — so we can tell you about the
+              launch. Emails left on the site before 15 September 2026 are kept until
+              you ask us to delete them; we send no emails to them.
             </li>
             <li>
               <strong>“Suggest an opportunity” form.</strong> Title, link, comment
@@ -76,8 +78,7 @@ export default function PrivacyPageEn() {
             </li>
             <li>
               <strong>Dityam+ subscription (@DityamPlusBot).</strong> Telegram chat
-              ID and username; your phone number if you shared it; your email if you
-              chose email delivery; for each child —
+              ID and username; your phone number if you shared it; for each child —
               age group, interests, preferred formats and, optionally, special
               circumstances (section 3); the family’s city or format (online,
               abroad) and whether to show only free opportunities; which reminders

@@ -89,7 +89,7 @@
 
 .chip-place { white-space: nowrap; }
 
-/* ---- Форма нагадувань ---- */
+/* ---- Нагадування: кнопка в Telegram (імейл-форму прибрано 15.09.2026) ---- */
 .dl-remind {
   margin: 26px 0 8px;
   padding: 20px 22px;
@@ -104,39 +104,20 @@
 
 .dl-remind-row { display: flex; gap: 10px; flex-wrap: wrap; }
 
-.dl-remind-row input {
-  flex: 1 1 240px;
-  min-width: 0;
-  padding: 12px 14px;
-  font-size: 0.9375rem;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-
-.dl-remind-row input[aria-invalid='true'] { border-color: #c0392b; }
-
-.dl-remind-row button {
-  flex: 0 0 auto;
+.dl-remind-btn {
+  display: inline-block;
   padding: 12px 24px;
   font-size: 0.9375rem;
   font-weight: 600;
   color: #fff;
   background: var(--ink);
-  border: none;
   border-radius: 12px;
-  cursor: pointer;
+  text-decoration: none;
   transition: background 0.15s;
 }
 
-.dl-remind-row button:hover:not(:disabled) { background: #000; }
-.dl-remind-row button:disabled { opacity: 0.6; cursor: default; }
-
-.dl-remind-err { margin: 8px 0 0; font-size: 0.84375rem; color: #c0392b; }
-
-.dl-remind-done strong { color: var(--ink); }
-.dl-remind-done span { display: block; font-size: 0.90625rem; color: var(--ink-muted); margin-top: 3px; }
+.dl-remind-btn:hover { background: #000; }
+.dl-remind-btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 @media (max-width: 640px) {
   .dl-link { gap: 12px; padding: 12px 6px; }
@@ -144,5 +125,5 @@
   .dl-day { font-size: 1.3125rem; }
   .dl-title { font-size: 0.9375rem; }
   .dl-remind { padding: 16px; }
-  .dl-remind-row button { flex: 1 1 100%; }
+  .dl-remind-btn { flex: 1 1 100%; text-align: center; }
 }
