@@ -20,7 +20,8 @@
 Тому це ручний воркфлоу з підтвердженням, а не розклад.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_BOT_TOKEN,
-     GMAIL_FROM, GMAIL_APP_PASSWORD, SITE_URL (опційно).
+     RESEND_API_KEY (є — листи йдуть через Resend; нема — GMAIL_FROM і
+     GMAIL_APP_PASSWORD), SITE_URL (опційно).
 """
 import argparse
 import html

@@ -10,7 +10,8 @@
 Підписник платить за зняту з нього роботу, а не за доступ.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, TELEGRAM_PLUS_BOT_TOKEN (TELEGRAM_BOT_TOKEN —
-     запасний), GMAIL_FROM, GMAIL_APP_PASSWORD, SITE_URL (optional).
+     запасний), RESEND_API_KEY (є — листи йдуть через Resend із dityam.com.ua;
+     нема — GMAIL_FROM і GMAIL_APP_PASSWORD), SITE_URL (optional).
 
 Прапорці:
   --dry-run   нічого не шле й не оновлює last_sent_at — лише друкує, кому що пішло б
@@ -29,6 +30,7 @@ import logging
 import os
 import smtplib
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -346,7 +348,46 @@ def send_telegram(chat_id, text, reply_markup=None) -> bool:
     return False
 
 
+RESEND_URL = "https://api.resend.com/emails"
+# Відправник — адреса на домені, підтвердженому в Resend (скринька за нею не
+# потрібна); відповіді людей ідуть у пошту проєкту.
+RESEND_FROM = os.environ.get("RESEND_FROM", "Dityam.com.ua <hello@dityam.com.ua>")
+REPLY_TO = "hellodityam.com.ua@gmail.com"
+PLAIN_TEXT = "Відкрий лист у HTML, щоб побачити підбірку. dityam.com.ua"
+
+
+def _send_resend(api_key, to_addr, html_body, subject) -> bool:
+    payload = {
+        "from": RESEND_FROM, "to": [to_addr], "subject": subject,
+        "html": html_body, "text": PLAIN_TEXT, "reply_to": REPLY_TO,
+    }
+    for attempt in range(3):
+        try:
+            r = httpx.post(RESEND_URL, json=payload, timeout=20,
+                           headers={"Authorization": f"Bearer {api_key}"})
+        except Exception as e:
+            logger.warning("Resend send failed for %s: %s", to_addr, e)
+            return False
+        # Resend пускає лише кілька запитів на секунду — на 429 чекаємо й
+        # пробуємо ще, щоб розсилка списку очікування не губила листи.
+        if r.status_code == 429 and attempt < 2:
+            time.sleep(1)
+            continue
+        if r.status_code < 300:
+            return True
+        logger.warning("Resend send failed for %s: %s %s", to_addr, r.status_code, r.text[:200])
+        return False
+    return False
+
+
 def send_email(to_addr, html_body, subject="🧡 Нові можливості для вашої дитини — Dityam+") -> bool:
+    # Gmail відбиває автоматичні HTML-листи зі звичайної gmail.com: «550 5.7.30
+    # DKIM authentication didn't pass» (15.09.2026 не дійшов жоден пробний лист
+    # із пошти проєкту). Підписати лист DKIM можна лише доменом відправника,
+    # тож щойно є ключ Resend — шлемо з dityam.com.ua; без ключа — Gmail.
+    api_key = os.environ.get("RESEND_API_KEY", "")
+    if api_key:
+        return _send_resend(api_key, to_addr, html_body, subject)
     if not GMAIL_APP_PASSWORD:
         logger.warning("GMAIL_APP_PASSWORD not set")
         return False
@@ -354,7 +395,7 @@ def send_email(to_addr, html_body, subject="🧡 Нові можливості �
     msg["Subject"] = subject
     msg["From"] = f"Dityam.com.ua <{GMAIL_FROM}>"
     msg["To"] = to_addr
-    msg.attach(MIMEText("Відкрий лист у HTML, щоб побачити підбірку. dityam.com.ua", "plain", "utf-8"))
+    msg.attach(MIMEText(PLAIN_TEXT, "plain", "utf-8"))
     msg.attach(MIMEText(html_body, "html", "utf-8"))
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:

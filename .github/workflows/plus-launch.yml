@@ -42,6 +42,10 @@ jobs:
           # DITYAM_GMAIL_APP_PASSWORD); доти — особиста, як і раніше.
           GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD || secrets.GMAIL_APP_PASSWORD }}
           GMAIL_FROM: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD && 'hellodityam.com.ua@gmail.com' || 'mashaberezhna0209@gmail.com' }}
+          # Щойно заведено секрет RESEND_API_KEY, листи йдуть через Resend із
+          # домену dityam.com.ua: Gmail відбиває автоматичні листи зі звичайної
+          # gmail.com (550 5.7.30 DKIM, 15.09.2026). Без ключа — Gmail, як і раніше.
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           SITE_URL: https://dityam.com.ua
         run: |
           if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
