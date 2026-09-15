@@ -16,7 +16,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 # функцій вікон вони не потрібні.
 _stub = types.ModuleType("personal_digest")
 _stub.SITE_URL = "https://dityam.com.ua"
-for _name in ("age_overlaps", "match_themes", "send_email", "send_telegram"):
+for _name in ("age_overlaps", "email_footer", "load_disliked", "match_themes", "send_email", "send_telegram"):
     setattr(_stub, _name, lambda *a, **k: None)
 sys.modules.setdefault("personal_digest", _stub)
 

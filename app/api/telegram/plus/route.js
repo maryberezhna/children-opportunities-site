@@ -316,6 +316,16 @@ export async function POST(request) {
       // сайті профіль (вік, інтереси) загубився б.
       const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
 
+      // Посилання з футера листа Dityam+ (personal_digest.email_footer):
+      // start=edit — «Редагувати інтереси» (анкета заново, як menu:form),
+      // start=sub — «Керувати підпискою» (деталі й /stop, як menu:sub).
+      // Лише для активного підписника; решту веде звичайний /start нижче.
+      if (sub?.status === 'active' && (startArg === 'edit' || startArg === 'sub')) {
+        if (startArg === 'edit') await beginFlow(bot, supabase, chatId, null);
+        else await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
+        return new Response('ok');
+      }
+
       // Посилання з листа про запуск: /start w_<id рядка plus_waitlist>. Людина
       // записалась у список імейлом, тож її chat_id там порожній. Привʼязуємо
       // чат до запису — за ним бот дає знижку для перших (isEarlyBird).
@@ -439,6 +449,25 @@ export async function POST(request) {
         await askChannel(bot, chatId);                 // далі телефон і оплата — у afterChannel
       }
     }
+    return new Response('ok');
+  }
+
+  // «👍 / 👎» під добіркою Dityam+ (personal_digest.telegram_keyboard). Ті самі
+  // позначки, що й з листа (/api/plus/feedback): opportunity_feedback за
+  // Telegram-id. «👎» — цю можливість підписнику більше не надсилаємо.
+  const pfb = (cbq.data || '').match(/^pfb:(yes|no):([0-9a-f-]{36})$/i);
+  if (pfb) {
+    const userId = cbq.from?.id;
+    if (!userId) { await bot.answerCallback(cbq.id); return new Response('ok'); }
+    const { error } = await supabase.from('opportunity_feedback').upsert({
+      opportunity_id: pfb[2],
+      telegram_user_id: userId,
+      value: pfb[1],
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'opportunity_id,telegram_user_id' });
+    await bot.answerCallback(cbq.id, error
+      ? 'Не вдалося зберегти, спробуйте ще раз'
+      : pfb[1] === 'yes' ? 'Позначили: цікаво 👍' : 'Позначили: не цікаво — більше не надсилатимемо');
     return new Response('ok');
   }
 

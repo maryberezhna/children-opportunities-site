@@ -167,44 +167,118 @@ def _meta(o) -> str:
     return " · ".join(b for b in bits if b)
 
 
+PLUS_BOT = "DityamPlusBot"
+
+
+def feedback_url(sub, o, value: str) -> str:
+    """«👍 Цікаво / 👎 Не цікаво» з листа. Сторінка на сайті сама відправляє
+    POST — сканери посилань у поштових сервісах відкривають лише GET і голос
+    не ставлять (app/api/plus/feedback/route.js)."""
+    return f"{SITE_URL}/api/plus/feedback?t={sub['unsub_token']}&o={o['id']}&v={value}"
+
+
+def calendar_url(o):
+    """«Додати в календар» — лише коли є дедлайн: без дати подію немає куди
+    поставити, і /api/events/<slug>/ics без неї відповідає 422."""
+    return f"{SITE_URL}/events/{o['slug']}/add" if o.get("deadline") else None
+
+
+def email_footer(sub) -> str:
+    """Керування підпискою з листа (прохання Марії 15.09.2026). Профіль і
+    підписка живуть у @DityamPlusBot, тож посилання відкривають бот одразу на
+    потрібному кроці: start=edit — анкета, start=sub — деталі підписки й /stop."""
+    unsub = f"{SITE_URL}/api/unsubscribe?t={sub['unsub_token']}"
+    return (
+        '<p style="font-size:13px;margin-top:20px;line-height:1.9">'
+        f'<a href="https://t.me/{PLUS_BOT}?start=edit" style="color:#1e4fd6">✏️ Редагувати інтереси</a> · '
+        f'<a href="https://t.me/{PLUS_BOT}?start=sub" style="color:#1e4fd6">⭐ Керувати підпискою</a> · '
+        f'<a href="{html.escape(unsub)}" style="color:#6b6b6b">Відписатись</a></p>'
+    )
+
+
+def telegram_keyboard(items) -> dict:
+    """Кнопки під добіркою в Telegram: рядок на можливість, номер — як у тексті.
+    callback_data вміщується в ліміт Telegram 64 байти: pfb:yes:<uuid> — 44."""
+    rows = []
+    for n, o in enumerate(items, 1):
+        row = [
+            {"text": f"👍 {n}", "callback_data": f"pfb:yes:{o['id']}"},
+            {"text": f"👎 {n}", "callback_data": f"pfb:no:{o['id']}"},
+        ]
+        cal = calendar_url(o)
+        if cal:
+            row.append({"text": f"📅 {n}", "url": cal})
+        rows.append(row)
+    return {"inline_keyboard": rows}
+
+
+def load_disliked(client, subs) -> dict:
+    """«👎 Не цікаво» → цю можливість підписнику більше не надсилаємо ні в
+    добірках, ні в нагадуваннях. Позначки лежать в opportunity_feedback за
+    Telegram-id — і з кнопок у Telegram, і з листа. Повертає {chat_id: {id}}."""
+    chats = sorted({str(s["telegram_chat_id"]) for s in subs if s.get("telegram_chat_id")})
+    if not chats:
+        return {}
+    rows = (client.table("opportunity_feedback").select("opportunity_id, telegram_user_id")
+            .eq("value", "no").in_("telegram_user_id", chats).execute().data or [])
+    out = {}
+    for r in rows:
+        out.setdefault(str(r["telegram_user_id"]), set()).add(r["opportunity_id"])
+    return out
+
+
 def build_telegram(sub, items, revival: bool = False) -> str:
     # revival — це не нові записи, а добірка з того, що вже є в каталозі.
     # Називати їх «новими» було б неправдою.
     head = ("🧡 <b>Добірка під вашу дитину</b>" if revival
             else "🧡 <b>Нові можливості для вашої дитини</b>")
     lines = [head, ""]
-    for o in items:
+    for n, o in enumerate(items, 1):
         url = f"{SITE_URL}/o/{o['slug']}"
-        lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
+        # Номер, а не маркер: кнопки під повідомленням підписані тими самими номерами.
+        lines.append(f"{n}. <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
         lines.append(html.escape(_meta(o)))
         if o.get("_for"):
             lines.append(f"<i>{html.escape(o['_for'])}</i>")
         lines.append("")
+    lines.append("Під повідомленням: 👍 цікаво · 👎 не цікаво · 📅 додати в календар — номер як у списку.")
+    lines.append("")
     lines.append("<i>Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на dityam.com.ua</i>")
-    lines.append("Відписатись — /stop")
+    lines.append("Змінити профіль — /start · Відписатись — /stop")
     return "\n".join(lines)
+
+
+EMAIL_BUTTON = ("display:inline-block;margin:0 6px 6px 0;padding:6px 12px;border:1px solid #d4cfc1;"
+                "border-radius:9999px;color:#131b28;font-size:13px;text-decoration:none")
 
 
 def build_email(sub, items, revival: bool = False) -> str:
     rows = []
     for o in items:
         url = f"{SITE_URL}/o/{o['slug']}"
+        actions = [
+            f'<a href="{html.escape(feedback_url(sub, o, "yes"))}" style="{EMAIL_BUTTON}">👍 Цікаво</a>',
+            f'<a href="{html.escape(feedback_url(sub, o, "no"))}" style="{EMAIL_BUTTON}">👎 Не цікаво</a>',
+        ]
+        cal = calendar_url(o)
+        if cal:
+            actions.append(f'<a href="{html.escape(cal)}" style="{EMAIL_BUTTON}">📅 Додати в календар</a>')
         rows.append(
             f'<tr><td style="padding:14px 0;border-bottom:1px solid #eee">'
             f'<a href="{html.escape(url)}" style="color:#131b28;font-size:16px;font-weight:700;text-decoration:none">{html.escape(o["title"])}</a>'
             f'<div style="color:#54617a;font-size:13px;margin-top:4px">{html.escape(_meta(o))}</div>'
-            + (f'<div style="color:#8a94a6;font-size:12px;margin-top:2px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
+            + (f'<div style="color:#6b6b6b;font-size:12px;margin-top:2px">{html.escape(o["_for"])}</div>' if o.get("_for") else "")
+            + f'<div style="margin-top:10px">{"".join(actions)}</div>'
             + '</td></tr>'
         )
-    unsub = f"{SITE_URL}/api/unsubscribe?t={sub['unsub_token']}"
     return (
         f'<div style="max-width:560px;margin:0 auto;font-family:system-ui,Arial,sans-serif;color:#131b28">'
-        f'<div style="font-size:12px;color:#db5a1e;font-weight:700;letter-spacing:.04em">DITYAM+</div>'
+        f'<div style="font-size:12px;color:#c8501a;font-weight:700;letter-spacing:.04em">DITYAM+</div>'
         f'<h1 style="font-size:22px;margin:6px 0 4px">{"Добірка під вашу дитину" if revival else "Нові можливості для вашої дитини"}</h1>'
         f'<p style="color:#54617a;font-size:14px;margin:0 0 8px">Підібрано під вік та інтереси дитини.</p>'
         f'<table style="width:100%;border-collapse:collapse">{"".join(rows)}</table>'
-        f'<p style="color:#8a94a6;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>. '
-        f'<a href="{html.escape(unsub)}" style="color:#8a94a6">Відписатись</a>.</p></div>'
+        f'<p style="color:#6b6b6b;font-size:12px;margin-top:20px">Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на <a href="{SITE_URL}" style="color:#1e4fd6">dityam.com.ua</a>.</p>'
+        f'{email_footer(sub)}</div>'
     )
 
 
@@ -215,16 +289,17 @@ def build_email(sub, items, revival: bool = False) -> str:
 _TRY_NEXT_BOT = ("chat not found", "can't initiate conversation")
 
 
-def send_telegram(chat_id, text) -> bool:
+def send_telegram(chat_id, text, reply_markup=None) -> bool:
     tokens = [t for t in (PLUS_BOT_TOKEN, MAIN_BOT_TOKEN) if t]
     if not tokens:
         logger.warning("TELEGRAM_PLUS_BOT_TOKEN not set")
         return False
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     detail = ""
     for i, token in enumerate(tokens):
-        r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
-            "chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True,
-        }, timeout=20)
+        r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=20)
         try:
             body = r.json()
         except ValueError:
@@ -330,6 +405,7 @@ def main():
         child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
                       .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
+    disliked = {} if (args.demo or args.test_to) else load_disliked(client, subs)
 
     sent = 0
     for sub in subs:
@@ -337,7 +413,10 @@ def main():
         # --force / --demo / --test-to ігнорують новизну (для тесту).
         since = None if (args.force or args.demo or args.test_to) else parse_ts(sub.get("last_sent_at"))
         kids = plus_profile.children_of(sub, child_rows)
-        items = pick_for(sub, opps, since, kids)
+        # «👎 Не цікаво» — цю можливість підписнику більше не пропонуємо.
+        skip = disliked.get(str(sub.get("telegram_chat_id")), set())
+        pool = [o for o in opps if o["id"] not in skip] if skip else opps
+        items = pick_for(sub, pool, since, kids)
 
         # Немає НОВИХ збігів — ще не привід мовчати місяцями. У каталозі лише
         # кілька десятків записів з відкритою подачею, решта — довідкові
@@ -345,7 +424,7 @@ def main():
         # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
         revival = False
         if not items and not (args.dry_run or args.demo or args.test_to):
-            all_matches = pick_for(sub, opps, None, kids)
+            all_matches = pick_for(sub, pool, None, kids)
             if not all_matches:
                 # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
                 # обмаль) — тут доречна не добірка, а пропозиція розширити фільтри.
@@ -367,7 +446,8 @@ def main():
 
         ok = False
         if sub["channel"] == "telegram" and sub.get("telegram_chat_id"):
-            ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival))
+            ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival),
+                               reply_markup=telegram_keyboard(items))
         elif sub["channel"] == "email" and sub.get("email"):
             if args.test_to:
                 ok = send_email(sub["email"], build_email(sub, items, revival),

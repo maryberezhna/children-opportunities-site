@@ -50,6 +50,8 @@ import send_window
 from personal_digest import (
     SITE_URL,
     age_overlaps,
+    email_footer,
+    load_disliked,
     match_themes,
     send_email,
     send_telegram,
@@ -215,6 +217,8 @@ def main() -> int:
                       .execute().data or []) if ids else []
     if not subs:
         return 0
+    # «👎 Не цікаво» з добірки — про цю можливість і не нагадуємо.
+    disliked = {} if args.demo else load_disliked(client, subs)
 
     today = date.today()
     widest = max(override) if override else max(
@@ -243,7 +247,8 @@ def main() -> int:
         # Одне нагадування на родину, навіть якщо запис підходить кільком
         # дітям: у журналі пара «підписник × можливість × вікно», а не дитина.
         kids = plus_profile.children_of(sub, child_rows)
-        fitting = family_matches(sub, kids, opps)
+        skip = disliked.get(str(sub.get("telegram_chat_id")), set())
+        fitting = [o for o in family_matches(sub, kids, opps) if o["id"] not in skip]
         # Кожен запис уже знає своє вікно (найтісніше для його типу), тож
         # групуємо за ним: одне повідомлення на вікно, від найтерміновішого.
         for days in sorted({o["_window"] for o in opps}):
@@ -281,7 +286,7 @@ def main() -> int:
                 ok = send_telegram(sub["telegram_chat_id"], text)
             elif sub["channel"] == "email" and sub.get("email"):
                 # Без власної теми лист-нагадування приходив як «Нові можливості».
-                ok = send_email(sub["email"], text.replace("\n", "<br>"),
+                ok = send_email(sub["email"], text.replace("\n", "<br>") + email_footer(sub),
                                 subject="⏳ Нагадування про дедлайн — Dityam+")
             if ok:
                 sent += 1

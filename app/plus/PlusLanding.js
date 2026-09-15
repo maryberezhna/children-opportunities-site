@@ -111,7 +111,7 @@ const L = {
         lead: 'Підібрано під вік та інтереси дитини.',
       },
     },
-    mockNote: 'Приклад на справжній можливості з платформи. Кнопки «Цікаво / Не цікаво» і «Додати в календар» додамо в повідомлення до запуску Dityam+.',
+    mockNote: 'Приклад на справжній можливості з платформи.',
 
     pathsTitle: 'Три шляхи з нашої бази',
     pathsSub: 'Не вигадані приклади: усі дванадцять програм нижче є на платформі просто зараз. Підписка надішле кожну з них дитині, якій вона підходить за віком і вподобаннями.',
@@ -275,7 +275,7 @@ const L = {
         lead: 'Selected for your child’s age and interests.',
       },
     },
-    mockNote: 'An example built on a real opportunity from the platform. The “Interested / Not interested” and “Add to calendar” buttons will be added to the messages before Dityam+ launches.',
+    mockNote: 'An example built on a real opportunity from the platform.',
 
     pathsTitle: 'Three paths from our database',
     pathsSub: 'Not made-up examples: all twelve programmes below are on the platform right now. The subscription sends each of them to a child it fits by age and interests.',
@@ -500,9 +500,11 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
               (build_telegram, build_email) і scraper/deadline_reminders.py.
               ISEF Ukraine звірено з базою 14.09.2026: 14–17, безкоштовно,
               конкурс (нагадування за 14 і 3 дні), подача до 31.01.2027.
-              Кнопок «Цікаво / Не цікаво» і «Додати в календар» у справжніх
-              повідомленнях ще немає — сторінка обіцяє їх наперед (Марія
-              14.09.2026), і примітка під прикладом каже це прямо. */}
+              Кнопки «Цікаво / Не цікаво» і «Додати в календар» є і в
+              справжніх повідомленнях з 15.09.2026: у листі — посилання
+              (/api/plus/feedback, /events/<slug>/add), у Telegram — кнопки
+              під добіркою (pfb: у /api/telegram/plus). Календар — лише для
+              записів із дедлайном. */}
           <div className="pl-mock">
             <h3 className="pl-mock-title">{t.mockTitle}</h3>
             <p className="pl-mock-sub">{t.mockSub}</p>
