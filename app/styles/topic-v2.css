@@ -67,6 +67,12 @@
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 40px;
   align-items: stretch;
+  /* 15.09.2026 (Марія): хіро ширше за сітку карток — майже на всю ширину
+   * вікна, з полями по 32px і стелею 1680px. .tp-main — flex-колонка, тож
+   * align-self: center виносить блок за її межі порівну з обох боків. */
+  box-sizing: border-box;
+  width: min(calc(100vw - 64px), 1680px);
+  align-self: center;
 }
 .tp-hero.tp-hero-solo { grid-template-columns: minmax(0, 1fr); }
 .tp-hero-copy {
@@ -388,7 +394,7 @@
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }
-  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
+  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; width: auto; align-self: stretch; }
   .tp-hero-copy, .tp-hero-solo .tp-hero-copy { padding: 0; }
   /* Фото зверху, 220px; картка з цифрою лишається поверх нього. */
   .tp-hero-photo { order: -1; min-height: 0; height: 220px; }
