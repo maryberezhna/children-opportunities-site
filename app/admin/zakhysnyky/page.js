@@ -27,7 +27,7 @@ const C = {
   ink: '#131b28', ink2: '#54617a', ink3: '#8a95a9',
   border: '#e2e8f2', bg: '#f7f9fc', accent: '#e85d24', link: '#1e4fd6', warn: '#b4530a',
 };
-const wrap = { maxWidth: 940, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: C.ink };
+const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: C.ink };
 const h2S = { fontSize: 18, margin: '30px 0 4px' };
 const noteS = { fontSize: 13.5, color: C.ink3, margin: '4px 0 12px', lineHeight: 1.5, maxWidth: 720 };
 const cardS = { border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', background: '#fff' };

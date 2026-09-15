@@ -14,7 +14,7 @@ export const metadata = {
 const PRICE_MONTH = 179;
 const PRICE_YEAR = 1199;
 
-const wrap = { maxWidth: 860, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
+const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
 const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, margin: '14px 0 6px' };
 const cardS = { border: '1px solid #e3e8f0', borderRadius: 10, padding: '12px 14px', background: '#fff' };
 const numS = { fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', fontVariantNumeric: 'tabular-nums' };
