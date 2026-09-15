@@ -105,7 +105,7 @@
   color: var(--v2-ink);
 }
 
-.pk-mention-more { margin-top: auto; font-size: 0.8125rem; font-weight: 500; color: var(--v2-accent); }
+.pk-mention-more { margin-top: auto; font-size: 0.8125rem; font-weight: 500; color: var(--v2-accent-strong); }
 
 /* ── Опис + «Коротко» ──────────────────────────────────────────────────── */
 .pk-two {
@@ -217,7 +217,7 @@
 .pk-download strong { font-size: 0.9375rem; font-weight: 600; color: var(--v2-ink); }
 .pk-download-meta { font-weight: 400; color: var(--v2-ink-3); }
 .pk-download > span { font-size: 0.8125rem; line-height: 1.45; color: var(--v2-ink-2); }
-.pk-download-cta { margin-top: auto; padding-top: 4px; font-weight: 500; color: var(--v2-accent) !important; }
+.pk-download-cta { margin-top: auto; padding-top: 4px; font-weight: 500; color: var(--v2-accent-strong) !important; }
 
 /* ── Контакт і посилання ───────────────────────────────────────────────── */
 .pk-links {

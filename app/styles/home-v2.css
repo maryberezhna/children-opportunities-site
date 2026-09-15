@@ -9,9 +9,13 @@
   --v2-line-strong: #d4cfc1;
   --v2-ink: #1a1a1a;
   --v2-ink-2: #4a4a4a;
-  --v2-ink-3: #8a8a8a;
+  /* #6b6b6b, а не #8a8a8a: на білому 5,3:1, на кремовому 4,7:1 (WCAG AA). */
+  --v2-ink-3: #6b6b6b;
   --v2-accent: #e85d24;
   --v2-accent-hover: #d14c15;
+  /* Помаранчевий для ТЕКСТУ й кнопок із білим текстом: #e85d24 дає лише 3,5:1,
+     #c8501a — 4,7:1 (WCAG AA). Логотип, рукописні акценти й декор — брендовий. */
+  --v2-accent-strong: #c8501a;
   --v2-input-bg: #fdfbf6;
   --v2-frame: #f0ddd0;
 }
@@ -55,6 +59,7 @@
 .v2-logo {
   display: flex;
   align-items: center;
+  min-height: 44px;
   gap: 10px;
   color: var(--v2-ink);
   text-decoration: none;
@@ -143,7 +148,7 @@
   white-space: nowrap;
 }
 .v2-nav .v2-nav-drop-panel a:hover { background: var(--v2-cream); color: var(--v2-ink); }
-.v2-nav .v2-nav-drop-panel a[aria-current="page"] { color: var(--v2-accent-hover); }
+.v2-nav .v2-nav-drop-panel a[aria-current="page"] { color: var(--v2-accent-strong); }
 
 .v2-header-right {
   margin-left: auto;
@@ -187,7 +192,7 @@
   font-weight: 500;
   padding: 10px 18px;
   border-radius: 9999px;
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #ffffff !important;
   box-shadow: 0 6px 20px rgba(232, 93, 36, 0.35);
   white-space: nowrap;
@@ -265,7 +270,7 @@
   text-decoration: none;
 }
 
-.v2-mmenu a.is-active { color: var(--v2-accent-hover); }
+.v2-mmenu a.is-active { color: var(--v2-accent-strong); }
 
 /* Група «Підбірки» в мобільному меню. З нею меню довше за екран телефона —
    тому воно прокручується, а не вилазить за нижній край. */
@@ -298,7 +303,7 @@
   margin-top: 16px;
   border: 0;
   border-radius: 999px;
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #ffffff;
 }
 
@@ -509,11 +514,11 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 .v2-chip:hover { transform: translateY(-1px); }
 
 /* Активний фільтр: батькам — помаранчевий, підліткам — чорний (рішення Марії
-   14.09.2026). Відтінок #d14c15, а не #e85d24: білий текст на ньому ≈4,4:1. */
+   14.09.2026). Відтінок --v2-accent-strong (#c8501a): білий текст на ньому ≈4,7:1. */
 .v2-chip.is-on {
-  background: var(--v2-accent-hover);
+  background: var(--v2-accent-strong);
   color: #ffffff;
-  border-color: var(--v2-accent-hover);
+  border-color: var(--v2-accent-strong);
 }
 
 html[data-mode="teens"] .v2-chip.is-on {
@@ -574,7 +579,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--v2-accent);
+  color: var(--v2-accent-strong);
   background: none;
   border: none;
   padding: 9px 4px;
@@ -700,7 +705,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   margin-top: auto;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--v2-accent);
+  color: var(--v2-accent-strong);
   text-decoration: none;
 }
 
@@ -1021,7 +1026,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   padding: 16px 24px;
   border-radius: 14px;
   border: none;
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #ffffff;
   cursor: pointer;
   margin-top: 4px;
@@ -1051,9 +1056,9 @@ html[data-mode="teens"] .v2-chip.is-on {
   gap: 12px;
   padding: 14px 20px;
   border-radius: 16px;
-  border: 1px solid var(--v2-accent);
+  border: 1px solid var(--v2-accent-strong);
   background: rgba(232, 93, 36, 0.10);
-  color: var(--v2-accent);
+  color: var(--v2-accent-strong);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.3;

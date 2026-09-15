@@ -149,6 +149,9 @@ html.a11y-underline-links a {
   color: var(--ink-muted);
   display: flex;
   align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   padding: 4px;
   border-radius: 6px;
   transition: color 0.15s, background 0.15s;
@@ -192,8 +195,8 @@ html.a11y-underline-links a {
   gap: 8px;
 }
 .a11y-step-btn {
-  width: 30px;
-  height: 30px;
+  width: 44px;
+  height: 44px;
   border: 1.5px solid var(--border);
   border-radius: 6px;
   background: none;
@@ -227,6 +230,7 @@ html.a11y-underline-links a {
   display: flex;
   align-items: center;
   gap: 5px;
+  min-height: 44px;
   padding: 5px 12px;
   background: none;
   border: none;
@@ -255,6 +259,8 @@ html.a11y-underline-links a {
   flex-shrink: 0;
 }
 .a11y-switch.on { background: var(--accent); }
+/* Візуально 42×24, зона дотику — 44px заввишки. */
+.a11y-switch::after { content: ''; position: absolute; inset: -10px -2px; }
 .a11y-switch-thumb {
   position: absolute;
   top: 3px;
@@ -281,6 +287,7 @@ html.a11y-underline-links a {
   color: var(--ink-muted);
   font-size: 13px;
   font-weight: 600;
+  min-height: 44px;
   padding: 8px 0 0;
   text-align: left;
   transition: color 0.15s;

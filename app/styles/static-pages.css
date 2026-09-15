@@ -113,7 +113,7 @@
 .legal-page li { margin-bottom: 6px; }
 
 .legal-page a {
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 2px;
@@ -227,7 +227,7 @@
 
 /* Позначка закріпленої картки в підбірці («Лише для дітей захисників»).
    .v2-tag.v2-tag-pinned — щоб перебити базовий .v2-tag, який підключається пізніше. */
-.v2-tag.v2-tag-pinned { background: var(--accent-soft); color: var(--accent); }
+.v2-tag.v2-tag-pinned { background: var(--accent-soft); color: var(--v2-accent-strong); }
 
 /* Кінець кожної підбірки — дорога на головну (рішення Марії 14.09.2026). */
 .topic-more {

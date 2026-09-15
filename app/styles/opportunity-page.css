@@ -211,7 +211,7 @@
 .closed-banner strong {
   display: block;
   margin-bottom: 8px;
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   font-size: 1.4375rem;
   font-weight: 700;
   line-height: 1.2;
@@ -225,7 +225,7 @@
   width: fit-content;
   margin-top: 16px;
   padding: 10px 18px;
-  background: var(--accent);
+  background: var(--v2-accent-strong);
   border-radius: 10px;
   color: #fff;
   font-weight: 600;
@@ -274,7 +274,7 @@
 }
 
 .opportunity-details p { margin: 0 0 14px; }
-.opportunity-details a { color: var(--accent); }
+.opportunity-details a { color: var(--v2-accent-strong); }
 
 .details-h {
   font-size: 1.1875rem;

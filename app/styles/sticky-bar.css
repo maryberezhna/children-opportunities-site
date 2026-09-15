@@ -93,7 +93,7 @@
 }
 
 .sticky-btn-subscribe span {
-  color: var(--accent) !important;
+  color: var(--v2-accent-strong) !important;
 }
 
 /* Instagram кнопка */
@@ -130,7 +130,7 @@
 .sticky-btn-tg:hover,
 .sticky-btn-tg:focus,
 .sticky-btn-tg:active {
-  background: #29B6F6;
+  background: #1a73a3;
   color: #ffffff !important;
   border-color: transparent;
 }
@@ -155,7 +155,7 @@
 .sticky-btn-donate:visited,
 .sticky-btn-donate:focus,
 .sticky-btn-donate:active {
-  background: var(--accent);
+  background: var(--v2-accent-strong); /* білий на #e85d24 — лише 3,5:1 */
   color: #ffffff !important;
   border-color: transparent;
 }

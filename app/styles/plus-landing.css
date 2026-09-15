@@ -59,7 +59,7 @@
 }
 
 .pl-badge-soon {
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #fff;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -99,7 +99,7 @@
   display: inline-block;
   padding: 16px 26px;
   border-radius: 12px;
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #fff;
   font-size: 1.03125rem;
   font-weight: 700;
@@ -156,19 +156,19 @@
 .pl-stair:nth-child(3) { margin-left: 22%; }
 .pl-stair:nth-child(4) {
   margin-left: 34%;
-  background: var(--v2-accent);
-  border-color: var(--v2-accent);
+  background: var(--v2-accent-strong);
+  border-color: var(--v2-accent-strong);
 }
 
 .pl-stair-lvl {
-  font-size: 0.71875rem;
+  font-size: 0.8125rem; /* було 11,5px */
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
   color: #ff9a6b;
 }
 
-.pl-stair:nth-child(4) .pl-stair-lvl { color: rgba(255, 255, 255, 0.82); }
+.pl-stair:nth-child(4) .pl-stair-lvl { color: #ffffff; }
 
 .pl-stair-t { font-size: 1.03125rem; font-weight: 600; color: var(--pl-on-black); }
 .pl-stair:nth-child(4) .pl-stair-t { color: #fff; }
@@ -220,7 +220,7 @@
 .pl-contrast-a li::before { content: '—'; position: absolute; left: 0; color: var(--v2-ink-3); }
 
 .pl-contrast-b { background: var(--pl-black); color: var(--pl-on-black); }
-.pl-contrast-b h3 { color: var(--v2-accent); }
+.pl-contrast-b h3 { color: var(--v2-accent-strong); }
 .pl-contrast-b li::before { content: '✓'; position: absolute; left: 0; color: var(--v2-accent); font-weight: 700; }
 
 /* ── Приклад: Telegram і пошта ─────────────────────────────────────────
@@ -328,7 +328,7 @@
 }
 
 .pl-fd-step.is-on .pl-fd-num,
-.pl-fd-step.is-done .pl-fd-num { background: var(--v2-accent); color: #fff; }
+.pl-fd-step.is-done .pl-fd-num { background: var(--v2-accent-strong); color: #fff; }
 
 .pl-fd-step-t { display: flex; flex-direction: column; gap: 2px; }
 .pl-fd-step-t strong { font-size: 1rem; font-weight: 700; }
@@ -461,7 +461,7 @@
   border: 1px solid var(--v2-line);
 }
 
-.pl-fd-cal-date span { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--v2-accent); }
+.pl-fd-cal-date span { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--v2-accent-strong); }
 .pl-fd-cal-date strong { font-size: 1.5rem; line-height: 1.1; color: var(--v2-ink); }
 .pl-fd-cal-info { display: flex; flex-direction: column; gap: 2px; }
 .pl-fd-cal-info strong { font-size: 1rem; color: var(--v2-ink); }
@@ -618,7 +618,7 @@
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
-  color: var(--v2-accent-hover);
+  color: var(--v2-accent-strong);
 }
 
 .pl-path-title {
@@ -731,7 +731,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   line-height: 1;
-  color: var(--v2-accent);
+  color: var(--v2-accent-strong);
   font-variant-numeric: tabular-nums;
 }
 
@@ -767,7 +767,7 @@
   right: 18px;
   padding: 3px 11px;
   border-radius: 999px;
-  background: var(--v2-accent);
+  background: var(--v2-accent-strong);
   color: #fff;
   font-size: 0.78125rem;
   font-weight: 700;

@@ -189,7 +189,7 @@
 .load-more {
   font: inherit;
   font-weight: 500;
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 999px;

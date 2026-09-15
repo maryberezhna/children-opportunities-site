@@ -37,7 +37,7 @@
 }
 
 .fm-btn:hover { border-color: var(--border-hover); color: var(--ink); }
-.fm-btn.has { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.fm-btn.has { border-color: var(--v2-accent-strong); color: var(--v2-accent-strong); background: var(--accent-soft); }
 .fm-btn.open { border-color: var(--ink); color: var(--ink); }
 .fm-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -47,7 +47,7 @@
   min-width: 18px; height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--v2-accent-strong);
   color: #fff;
   font-size: 0.6875rem; font-weight: 700; line-height: 1;
 }
@@ -93,7 +93,7 @@
   border: 1px solid var(--accent);
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--v2-accent-strong);
   font-family: inherit;
   font-size: 0.8125rem;
   cursor: pointer;
@@ -183,7 +183,7 @@
 }
 
 .filter-btn-hl.active {
-  background: var(--accent, #e85d24);
+  background: var(--v2-accent-strong);
   border-color: var(--accent, #e85d24);
   color: #fff;
 }

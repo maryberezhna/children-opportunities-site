@@ -63,7 +63,7 @@
     color: var(--v2-ink-2);
   }
 
-  .v2-home .v2-card-dl.is-urgent { color: var(--v2-accent); font-weight: 700; }
+  .v2-home .v2-card-dl.is-urgent { color: var(--v2-accent-strong); font-weight: 700; }
 
   .v2-home .v2-card h3 {
     font-size: 20px;
@@ -131,7 +131,7 @@
     align-self: flex-start;
     padding: 4px 10px;
     border-radius: 6px;
-    background: var(--v2-accent);
+    background: var(--v2-accent-strong);
     font-size: 13px;
     font-weight: 700;
     letter-spacing: 0.02em;
@@ -274,7 +274,7 @@
 
   /* Батькам — помаранчевий, підліткам — чорний (див. .v2-chip.is-on). */
   .v2-home .v2-side-item.is-on {
-    background: var(--v2-accent-hover);
+    background: var(--v2-accent-strong);
     color: #ffffff;
     font-weight: 700;
   }
@@ -291,7 +291,7 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .v2-home .v2-side-item.is-on .v2-side-n { color: rgba(255, 255, 255, 0.82); }
+  .v2-home .v2-side-item.is-on .v2-side-n { color: #ffffff; }
   html[data-mode="teens"] .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
 
   .v2-home .v2-side-select {
