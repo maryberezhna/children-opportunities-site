@@ -1,0 +1,28 @@
+name: Діагностика конвеєра (вручну)
+
+# Показує те, чого не видно з локального оточення: `raw_items` і `sources`
+# мають RLS без політики читання, тож анонімним ключем вони завжди віддають
+# нуль рядків — і це неможливо відрізнити від справді порожнього шару.
+# Нічого не пише, лише читає службовим ключем.
+on:
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Report pipeline health
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/diag-pipeline.mjs
