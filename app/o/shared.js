@@ -661,16 +661,18 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 <dd>{item.recurrence === 'annual' ? t.annual : t.ongoing}</dd>
               </>
             ) : null}
-            {item.price_note && (
+            {/* Один рядок «Вартість»: категорія і, якщо відомо, сума словами.
+                Коли 16.09.2026 перерозмітка заповнила price_note на ~260
+                сторінках, два окремі рядки з однаковим підписом стояли підряд:
+                «Вартість: €100 — включає проживання…» і «Вартість: Платно». */}
+            {(item.cost_type || item.price_note) && (
               <>
                 <dt>{t.cost}</dt>
-                <dd>{item.price_note}</dd>
-              </>
-            )}
-            {item.cost_type && (
-              <>
-                <dt>{t.cost}</dt>
-                <dd>{COSTS[item.cost_type] || item.cost_type}</dd>
+                <dd>
+                  {[item.cost_type && (COSTS[item.cost_type] || item.cost_type), item.price_note]
+                    .filter(Boolean)
+                    .join(' — ')}
+                </dd>
               </>
             )}
             {item.teen_requirement ? (
