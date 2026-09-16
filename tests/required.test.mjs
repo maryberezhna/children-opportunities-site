@@ -30,6 +30,21 @@ test('кожне з пʼяти полів окремо блокує публік
   );
 });
 
+// Дата ПРОВЕДЕННЯ відповідає на питання «коли» не гірше за дедлайн подачі:
+// сесія «6–8 листопада» без оголошеного строку подачі — повноцінний запис.
+// До 16.09.2026 такий запис ішов у чернетки, і саме тому перший день події
+// писали в deadline, аби «закрити» вимогу.
+test('дату закриває будь-що з чотирьох', () => {
+  const bare = {
+    deadline: null, event_start_date: null, event_end_date: null, recurrence: null,
+  };
+  assert.deepEqual(missingRequired(full(bare)), [DATE]);
+  assert.deepEqual(missingRequired(full({ ...bare, deadline: '2026-09-17' })), []);
+  assert.deepEqual(missingRequired(full({ ...bare, event_start_date: '2026-11-06' })), []);
+  assert.deepEqual(missingRequired(full({ ...bare, event_end_date: '2026-11-08' })), []);
+  assert.deepEqual(missingRequired(full({ ...bare, recurrence: 'annual' })), []);
+});
+
 test('сміттєве значення не рахується за заповнене поле', () => {
   // LLM віддавала cost_type "unknown" і тип поза словником — раніше такий
   // запис мовчки ставав null уже після перевірок.

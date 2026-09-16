@@ -1,6 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-// Спільне з сайтом визначення події.
-import { isEvent } from '../lib/labels.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -98,11 +96,25 @@ function formatDateRange(fromStr, toStr) {
   return `${from} — ${to}`;
 }
 
-function whenLine(item) {
-  const from = formatDeadline(item.deadline);
-  if (!from) return null;
-  if (!isEvent(item)) return `⏰ Дедлайн: <b>${from}</b>`;
-  return `📅 Коли: <b>${formatDateRange(item.deadline, item.event_end_date)}</b>`;
+// Дві РІЗНІ дати — два різні рядки, і вони не замінюють одна одну.
+//
+// Було: одна функція на обидва випадки. Якщо в записі стояв event_end_date,
+// вона брала deadline за ПОЧАТОК події і зшивала їх у діапазон. Так у канал
+// пішло «📅 Коли: 17 вересня — 8 листопада» про сесію ЄМП у Мальме, яка
+// насправді триває 6–8 листопада, а 17 вересня — останній день ПОДАЧІ.
+// А шість постів про закордонні табори (SHAD, MIT Launch, CISV, GYLC…)
+// узагалі називали «днем проведення» сам дедлайн подачі.
+//
+// Тепер «коли відбувається» читається з event_start_date / event_end_date,
+// «до коли подати» — з deadline, і в пості може бути як один рядок, так і
+// обидва. Порожнє поле дає порожній рядок, а не вигаданий діапазон.
+function whenLines(item) {
+  const lines = [];
+  const when = formatDateRange(item.event_start_date, item.event_end_date);
+  if (when) lines.push(`📅 Коли: <b>${when}</b>`);
+  const deadline = formatDeadline(item.deadline);
+  if (deadline) lines.push(`⏰ Заявки до: <b>${deadline}</b>`);
+  return lines;
 }
 
 function formatDeadline(dateStr) {
@@ -147,8 +159,7 @@ function buildMessageA(item) {
   if (cost) meta.push(item.cost_type === 'free' ? `✅ ${cost}` : cost);
   lines.push(meta.join(' · '));
 
-  const when = whenLine(item);
-  if (when) lines.push(when);
+  lines.push(...whenLines(item));
   if (item.format) lines.push(`📍 ${escapeHtml(item.format)}`);
 
   if (item.summary) {
@@ -178,13 +189,12 @@ function buildMessageB(item) {
 
   const meta = [typeLabel, ageLabel(item)];
   if (cost) meta.push(cost);
-  // «до 12 вересня» для події означало б, що подача закривається, — а це
-  // день, коли вона відбувається.
-  if (deadline) {
-    meta.push(isEvent(item)
-      ? formatDateRange(item.deadline, item.event_end_date)
-      : `до ${deadline}`);
-  }
+  // Дати проведення і дедлайн подачі — різні факти. У стислому варіанті вони
+  // стоять поруч у тому ж рядку меты, але не підмінюють одне одного: «6 — 8
+  // листопада · подача до 17 вересня».
+  const when = formatDateRange(item.event_start_date, item.event_end_date);
+  if (when) meta.push(when);
+  if (deadline) meta.push(`подача до ${deadline}`);
   lines.push(meta.join(' · '));
 
   if (item.summary) {
@@ -291,7 +301,7 @@ const minLeadIso = minLead.toISOString().slice(0, 10);
 
 const { data: pool, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_end_date')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_start_date, event_end_date')
   .eq('status', 'active')
   .is('canonical_slug', null)
   .is('telegram_posted_at', null)
