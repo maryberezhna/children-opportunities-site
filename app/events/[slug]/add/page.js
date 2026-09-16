@@ -1,3 +1,7 @@
+// Сторінка існує тільки для Dityam+: посилання на неї ставить бот під
+// можливістю в персональній добірці (scraper/personal_digest.py). З відкритого
+// каталогу кнопки «Додати в календар» немає — 16.09.2026 її прибрали звідти
+// й з постів каналу: додавання дедлайну в календар належить підписці.
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';

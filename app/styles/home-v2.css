@@ -528,7 +528,10 @@ html[data-mode="teens"] .v2-chip.is-on {
 
 .v2-search input::placeholder { color: #b8b3a6; }
 
+/* Кнопка живе в першому ряду фільтрів, праворуч від пігулок: щойно фільтр
+   увімкнений, скидання видно одразу, а не під селектами й пошуком. */
 .v2-reset {
+  margin-left: auto;
   font-family: inherit;
   font-size: 0.875rem;
   font-weight: 500;
