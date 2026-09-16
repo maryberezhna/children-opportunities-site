@@ -10,8 +10,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL = process.env.TELEGRAM_CHAT_ID;
-const PRICE_MONTH = Number(process.env.WAYFORPAY_AMOUNT || 179);
-const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 1199);
+const PRICE_MONTH = Number(process.env.WAYFORPAY_AMOUNT || 99);
+const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 999);
 
 if (!SUPABASE_URL || !KEY) {
   console.error('Missing env: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
@@ -85,7 +85,7 @@ const [active, closed, drafts, added, waitlist, profiles, feedback] = await Prom
   countRows('opportunity_feedback', (q) => q, 'opportunity_id'),
 ]);
 
-// MRR: місячні × 179 + річні × (1199/12) — та сама формула, що в plus-stats.
+// MRR: місячні × 99 + річні × (999/12) — та сама формула, що в plus-stats.
 const { data: subs } = await supabase
   .from('digest_subscribers')
   .select('status, billing_period')
