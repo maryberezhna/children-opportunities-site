@@ -77,7 +77,9 @@ const L = {
     paid: 'платно',
     topWeek: '⭐ Топ тижня',
     format: 'Формат',
-    deadline: 'Дедлайн',
+    when: 'Коли',
+    deadline: 'Заявки до',
+    apply: '📝 Подати заявку',
     applications: 'Подача',
     annual: 'Щорічно — стежте за новим набором',
     ongoing: 'Постійно відкрита',
@@ -108,7 +110,9 @@ const L = {
     paid: 'paid',
     topWeek: '⭐ Pick of the week',
     format: 'Format',
-    deadline: 'Deadline',
+    when: 'When',
+    deadline: 'Apply by',
+    apply: '📝 Apply',
     applications: 'Applications',
     annual: 'Every year — watch for the next intake',
     ongoing: 'Always open',
@@ -211,6 +215,28 @@ export function formatDate(dateStr, lang = 'uk') {
   if (isNaN(date.getTime())) return dateStr;
   const months = MONTHS[lang] || MONTHS.uk;
   return `${date.getUTCDate()} ${months[date.getUTCMonth()]} ${date.getUTCFullYear()}`;
+}
+
+// Діапазон дат ПРОВЕДЕННЯ — окремий від дедлайну подачі.
+//
+// Коли місяць і рік збігаються, не повторюємо їх двічі: «6 — 8 листопада
+// 2026», а не «6 листопада 2026 — 8 листопада 2026». Одноденна подія
+// (початок = кінець) друкується один раз.
+//
+// Повертає null, якщо жодної дати проведення немає. Саме тут і був колишній
+// баг: сторінка показувала лише «Дедлайн», а коли подія насправді
+// відбувається — не показувала ніде, хоч event_end_date лежав у базі.
+export function formatEventDates(item, lang = 'uk') {
+  const from = formatDate(item?.event_start_date, lang);
+  const to = formatDate(item?.event_end_date, lang);
+  if (!from) return to;
+  if (!to || to === from) return from;
+  const a = new Date(item.event_start_date);
+  const b = new Date(item.event_end_date);
+  if (a.getUTCMonth() === b.getUTCMonth() && a.getUTCFullYear() === b.getUTCFullYear()) {
+    return `${a.getUTCDate()} — ${to}`;
+  }
+  return `${from} — ${to}`;
 }
 
 // «Перевірено сьогодні / вчора / N днів тому» — чесний сигнал свіжості.
@@ -404,10 +430,16 @@ function buildJsonLd(item, lang) {
     };
   }
 
-  // Event — лише коли відома дата: Google вимагає startDate, і 27 сторінок
-  // без неї висіли в Search Console помилкою. Без дати чесніше віддати
-  // WebPage, ніж вигадувати дату чи ловити помилки валідації.
-  if (EVENT_TYPES.has(item.opportunity_type) && item.deadline) {
+  // Event — лише коли відома дата ПРОВЕДЕННЯ. Google вимагає startDate, і
+  // 27 сторінок без неї висіли в Search Console помилкою.
+  //
+  // Раніше сюди підставлявся item.deadline — тобто Google ми називали днем
+  // початку події останній день подачі заявок. Для сесії ЄМП у Мальме це
+  // означало «подія 17 вересня» замість справжніх 6–8 листопада.
+  // Без справжньої дати проведення чесніше віддати WebPage, ніж вигадати
+  // подію на день дедлайну.
+  const eventStart = item.event_start_date || null;
+  if (EVENT_TYPES.has(item.opportunity_type) && eventStart) {
     const isOnline = /онлайн|online/i.test(item.format || '');
     return {
       '@context': 'https://schema.org',
@@ -416,7 +448,8 @@ function buildJsonLd(item, lang) {
       description,
       url,
       inLanguage,
-      startDate: item.deadline,
+      startDate: eventStart,
+      ...(item.event_end_date ? { endDate: item.event_end_date } : {}),
       eventAttendanceMode: isOnline
         ? 'https://schema.org/OnlineEventAttendanceMode'
         : 'https://schema.org/OfflineEventAttendanceMode',
@@ -511,6 +544,9 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
   const deadlineDays = item.deadline ? daysUntil(item.deadline, today) : null;
   const showDeadlineBlock = Boolean(item.deadline) && !isClosed;
+  // «Коли відбувається» живе окремо від «до коли подати»: у записі можуть
+  // бути обидві дати, одна з них або жодної.
+  const eventDates = formatEventDates(item, lang);
   const showBar = Boolean(item.source_url) && !isClosed;
 
   return (
@@ -608,6 +644,12 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 <dd>{item.cities.map((c) => cityLabel(c, lang)).join(', ')}</dd>
               </>
             )}
+            {eventDates ? (
+              <>
+                <dt>{t.when}</dt>
+                <dd>{eventDates}</dd>
+              </>
+            ) : null}
             {item.deadline ? (
               <>
                 <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
@@ -663,6 +705,20 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           <div className="opportunity-actions">
             {item.source_url && (
               <OutboundCta href={item.source_url} title={item.title} lang={lang} />
+            )}
+            {/* Пряме посилання на подачу, коли воно відоме й відрізняється від
+                адреси джерела. У пості про сесію ЄМП у Мальме це була
+                Google-форма — єдине, що людині насправді потрібне, і саме
+                воно не зберігалось, бо колонки для нього не існувало. */}
+            {item.apply_url && item.apply_url !== item.source_url && (
+              <a
+                href={item.apply_url}
+                target="_blank"
+                rel="noopener noreferrer nofollow"
+                className="cal-btn"
+              >
+                {t.apply}
+              </a>
             )}
           </div>
         </article>

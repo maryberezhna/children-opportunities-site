@@ -42,6 +42,7 @@ export async function POST(request) {
   patch.age_to = clampAge(b.age_to, 18);
   if (patch.age_from > patch.age_to) { patch.age_from = 0; patch.age_to = 18; }
   patch.cost_type = COST.includes(b.cost_type) ? b.cost_type : null;
+  patch.event_start_date = isDate(b.event_start_date) ? b.event_start_date : null;
   patch.event_end_date = isDate(b.event_end_date) ? b.event_end_date : null;
   patch.recurrence = RECURRENCE.includes(b.recurrence) ? b.recurrence : null;
   patch.format = FORMATS.includes(b.format) ? b.format : null;
@@ -52,6 +53,12 @@ export async function POST(request) {
   if (TYPES.includes(b.opportunity_type)) patch.opportunity_type = b.opportunity_type;
   if (typeof b.price_note === 'string') patch.price_note = b.price_note.trim().slice(0, 200) || null;
   if (typeof b.details === 'string') patch.details = b.details.trim().slice(0, 20000) || null;
+  // Посилання на подачу приймаємо лише як http(s): «дивись у пості» чи назва
+  // форми — не адреса, і кнопка з таким href веде в нікуди.
+  if (typeof b.apply_url === 'string') {
+    const url = b.apply_url.trim();
+    patch.apply_url = url.startsWith('http') ? url.slice(0, 500) : null;
+  }
   // Ручний топ тижня. Пишемо не прапорець, а сам тиждень: знята галочка
   // гасить позначку одразу, а забута — сама в понеділок.
   if (typeof b.featured === 'boolean') patch.featured_week = b.featured ? isoWeek() : null;

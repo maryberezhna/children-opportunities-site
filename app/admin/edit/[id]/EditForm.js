@@ -25,7 +25,9 @@ export default function EditForm({ opp }) {
   const [f, setF] = useState({
     title: opp.title || '', summary: opp.summary || '', deadline: opp.deadline || '',
     age_from: opp.age_from ?? 0, age_to: opp.age_to ?? 18,
+    event_start_date: opp.event_start_date || '',
     event_end_date: opp.event_end_date || '', recurrence: opp.recurrence || '',
+    apply_url: opp.apply_url || '',
     cost_type: opp.cost_type || '', opportunity_type: opp.opportunity_type || 'course',
     format: opp.format || '', cities: (opp.cities || []).join(', '),
     price_note: opp.price_note || '', details: opp.details || '',
@@ -82,7 +84,8 @@ export default function EditForm({ opp }) {
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Дата завершення</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
+        <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
+        <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік від</label><input type="number" min="0" max="18" style={I} value={f.age_from} onChange={up('age_from')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік до</label><input type="number" min="0" max="18" style={I} value={f.age_to} onChange={up('age_to')} /></div>
       </div>
@@ -100,6 +103,8 @@ export default function EditForm({ opp }) {
           отримували жодного кліку, бо категорії вартості на них не відповідають. */}
       <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
       <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
+      <label style={L}>Посилання на подачу <span style={{ fontWeight: 400, color: '#8a94a6' }}>— форма або реєстрація, якщо адреса не та сама, що в джерелі</span></label>
+      <input style={I} value={f.apply_url} onChange={up('apply_url')} placeholder="https://forms.gle/…" />
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>
       <textarea style={{ ...I, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13.5 }} rows={14} value={f.details} onChange={up('details')} placeholder={'## Хто може подаватись\n- учні 8-11 класів\n\n## Етапи\n...'} />
       {/* Ручний вибір перебиває правило: щотижневий скрипт бачить позначку
