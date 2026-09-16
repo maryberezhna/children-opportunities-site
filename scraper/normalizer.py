@@ -86,6 +86,26 @@ def missing_required(data: dict, age_missing: bool = None) -> list:
     return missing
 
 
+# Адреси, які НЕ бувають посиланням на подачу, хоч модель їх туди і кладе:
+# чат чи канал організатора, профіль у соцмережі. Сухий прогін перерозмітки
+# 16.09.2026 приліпив одне й те саме запрошення в Telegram-чат
+# (t.me/+QTt-hFjTfJw0MGNi) до чотирьох різних обмінів Erasmus+ як «форму подачі».
+_NOT_APPLY_HOSTS = ("t.me", "telegram.me", "instagram.com", "www.instagram.com")
+
+
+def valid_apply_url(url, source_url=None):
+    """Посилання на подачу або None. Спільне для екстрактора й remark.py."""
+    from urllib.parse import urlparse
+    url = (url or "").strip()
+    if not url.startswith("http"):
+        return None
+    if source_url and url.rstrip("/") == str(source_url).strip().rstrip("/"):
+        return None
+    if (urlparse(url).hostname or "").lower() in _NOT_APPLY_HOSTS:
+        return None
+    return url[:500]
+
+
 def _sanitize(data: dict) -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
     the whole record."""
@@ -107,10 +127,9 @@ def _sanitize(data: dict) -> dict:
     if start and end and start > end:
         data["event_start_date"], data["event_end_date"] = end, start
 
-    # Посилання на подачу приймаємо лише як http(s) — модель іноді віддає
-    # «дивись у пості» чи назву форми, а це не адреса.
-    apply_url = (data.get("apply_url") or "").strip()
-    data["apply_url"] = apply_url[:500] if apply_url.startswith("http") else None
+    # Посилання на подачу: лише http(s), не адреса самого джерела і не чат чи
+    # соцмережа організатора (див. valid_apply_url).
+    data["apply_url"] = valid_apply_url(data.get("apply_url"), data.get("source_url"))
 
     # details — вільний текст із розміткою; ріжемо по стелі колонки в адмінці.
     details = (data.get("details") or "").strip()
@@ -311,6 +330,9 @@ event_start_date і event_end_date — КОЛИ ПОДІЯ ВІДБУВАЄТЬ�
 - Одна дата проведення («15 вересня») → та сама дата в ОБИДВА поля.
 - Відомий лише початок або лише кінець → заповни те, що названо, друге null.
 - Постійна програма, гурток, курс без конкретних дат → обидва null.
+- Конкурс, олімпіада, премія: «прийом робіт з 1 вересня», «реєстрація
+  відкрита з…» — це НЕ дата проведення. Проведення — коли відбувається сам
+  захід: фінал, сесія, табір, церемонія. Такої дати в тексті немає → null.
 
 ЧАС ЖИТТЯ ЗАПИСУ. У кожного запису має бути хоч щось, чим його можна
 закрити: deadline, або event_end_date, або recurrence. Запис без жодного з

@@ -65,6 +65,7 @@ import anthropic
 import httpx
 
 from db import get_client
+from normalizer import valid_apply_url
 # Той самий похід по сторінці, що в тижневій перевірці дат: httpx + зачистка
 # розмітки + класифікація 404/таймаут. Другої копії тут бути не повинно.
 from recheck_dates import fetch_text
@@ -160,6 +161,17 @@ event_end_date=8 листопада, deadline=17 вересня.
 Якщо названі ЛИШЕ дати проведення — deadline лишається null. Не підставляй
 туди перший день події: це різні факти.
 Рік не вказано → найближчий майбутній.
+
+Для конкурсів, олімпіад і премій «прийом робіт з 1 вересня», «реєстрація
+відкрита з…» — це НЕ дата проведення. Дата проведення — коли відбувається сам
+захід: фінал, сесія, табір, церемонія. Немає такої дати → обидва null.
+
+Якщо на сторінці лише дати МИНУЛОГО циклу (торішній конкурс, подія, що вже
+пройшла) — повертай їх як є і НЕ перенось на наступний рік. Що робити із
+записом, у якого дати минули, вирішує людина.
+
+Посилання на Telegram-чат, канал, групу чи профіль організатора — НЕ
+посилання на подачу: apply_url тоді null.
 
 Якщо текст описує НЕ одну конкретну можливість, а перелік програм чи просто
 організацію — постав page_kind=listing_or_org і не вигадуй дат: єдиних дат у
@@ -283,10 +295,15 @@ def source_text(sb, row: dict) -> tuple[str | None, str]:
     return (text, "сторінка") if kind == "ok" else (None, f"сторінка: {_why}")
 
 
-def plan_patch(row: dict, out: dict, only_dates: bool) -> tuple[dict, list[str]]:
-    """Що саме змінюємо в записі. Повертає (патч, перелік змін словами)."""
-    patch, notes = {}, []
+def plan_patch(row: dict, out: dict, only_dates: bool,
+               today: str | None = None) -> tuple[dict, list[str], str | None]:
+    """Що саме змінюємо в записі.
+
+    Повертає (патч, перелік змін словами, причина «дати минули» або None).
+    """
+    patch, notes, stale = {}, [], None
     verified = bool(row.get("verified_at"))
+    today = today or date.today().isoformat()
 
     start = _valid_date(out.get("event_start_date"))
     end = _valid_date(out.get("event_end_date"))
@@ -298,7 +315,17 @@ def plan_patch(row: dict, out: dict, only_dates: bool) -> tuple[dict, list[str]]
     # Дати перезаписуємо набором — але лише якщо модель знайшла бодай одну і
     # текст описує саме цю можливість. Запис, який дивився модератор, не
     # чіпаємо: там могли бути ручні правки.
-    if not verified and (start or end or deadline):
+    # МИНУЛІ ДАТИ НЕ ПИШЕМО. Сухий прогін 16.09.2026 показав: сторінки
+    # щорічних програм часто показують минулий цикл — Adroit Prizes із
+    # дедлайном травня 2026, Brain Bee з датами 2025, ISEF і міжнародні
+    # олімпіади з датами цього літа. Запис такої дати означав би, що нічний
+    # check-deadlines мовчки закрив би живу щорічну програму. Минуле —
+    # сигнал людині перевірити запис, а не підстава правити його автоматично.
+    past = [f"{label} {val}" for label, val in (
+        ("подача до", deadline), ("подія до", end or start)) if val and val < today]
+    if not verified and past:
+        stale = "джерело показує минулі дати: " + ", ".join(past)
+    elif not verified and (start or end or deadline):
         for key, val in (("deadline", deadline),
                          ("event_start_date", start),
                          ("event_end_date", end)):
@@ -311,21 +338,20 @@ def plan_patch(row: dict, out: dict, only_dates: bool) -> tuple[dict, list[str]]
         if not row.get("details") and (out.get("details") or "").strip():
             patch["details"] = out["details"].strip()[:20000]
             notes.append(f"details: +{len(patch['details'])} знаків")
-        apply_url = (out.get("apply_url") or "").strip()
-        if (not row.get("apply_url") and apply_url.startswith("http")
-                and apply_url != (row.get("source_url") or "")):
-            patch["apply_url"] = apply_url[:500]
+        apply_url = valid_apply_url(out.get("apply_url"), row.get("source_url"))
+        if not row.get("apply_url") and apply_url:
+            patch["apply_url"] = apply_url
             notes.append(f"apply_url: {apply_url[:60]}")
         if not row.get("price_note") and (out.get("price_note") or "").strip():
             patch["price_note"] = out["price_note"].strip()[:200]
             notes.append("price_note заповнено")
 
-    return patch, notes
+    return patch, notes, stale
 
 
 SELECT = ("id, title, source, source_url, opportunity_type, is_international, "
           "age_from, age_to, deadline, event_start_date, event_end_date, "
-          "details, apply_url, price_note, verified_at")
+          "details, apply_url, price_note, verified_at, admin_comment")
 
 
 def pick_rows(sb, scope: str, offset: int, limit: int) -> list[dict]:
@@ -370,7 +396,8 @@ def run(apply: bool, limit: int, only_dates: bool,
 
     stats = {"seen": 0, "from_raw": 0, "from_page": 0, "from_tg": 0, "no_text": 0,
              "changed": 0, "dates_fixed": 0, "details_added": 0,
-             "apply_added": 0, "skipped_listing": 0, "unchanged": 0}
+             "apply_added": 0, "skipped_listing": 0, "unchanged": 0, "stale": 0}
+    stale_list = []
     why_no_text = Counter()
 
     for row in rows:
@@ -390,7 +417,16 @@ def run(apply: bool, limit: int, only_dates: bool,
             stats["skipped_listing"] += 1
             continue
 
-        patch, notes = plan_patch(row, out, only_dates)
+        patch, notes, stale = plan_patch(row, out, only_dates)
+        if stale:
+            # Дати не чіпаємо, але лишаємо слід для модератора: адмінка
+            # показує admin_comment, і запис не загубиться в лозі воркфлоу.
+            stats["stale"] += 1
+            stale_list.append(f"{(row.get('title') or '')[:70]} — {stale}")
+            note = f"remark: {stale} — перевір, чи набір ще відкритий"
+            if note not in (row.get("admin_comment") or ""):
+                patch["admin_comment"] = f"{row.get('admin_comment') or ''} {note}".strip()
+            notes.append(f"⚠️ {stale} → дати не чіпаю, позначка модератору")
         if not patch:
             stats["unchanged"] += 1
             continue
@@ -423,7 +459,12 @@ def run(apply: bool, limit: int, only_dates: bool,
     print(f"змінено {stats['changed']}: дати {stats['dates_fixed']}, "
           f"details {stats['details_added']}, apply_url {stats['apply_added']}")
     print(f"без змін {stats['unchanged']}, "
-          f"перелік/організація {stats['skipped_listing']}")
+          f"перелік/організація {stats['skipped_listing']}, "
+          f"минулі дати → модератору {stats['stale']}")
+    if stale_list:
+        print("\nДати минули — не записано, позначено для перевірки:")
+        for line in stale_list:
+            print(f"  • {line}")
     if not apply:
         print("\nСУХИЙ ПРОГІН — у базу нічого не записано.")
     return stats
