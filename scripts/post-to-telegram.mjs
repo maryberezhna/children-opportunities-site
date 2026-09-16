@@ -205,11 +205,11 @@ function buildMessage(item, variant) {
   return variant === 'b' ? buildMessageB(item) : buildMessageA(item);
 }
 
-function buildKeyboard(opportunityId, slug, deadline, variant) {
+// Кнопки «Додати в календар» тут немає: додавання дедлайну в календар —
+// частина Dityam+, і ставить її бот під персональною добіркою
+// (scraper/personal_digest.py). Відкритий канал лишає тільки голос.
+function buildKeyboard(opportunityId, variant) {
   const rows = [];
-  if (deadline) {
-    rows.push([{ text: '📅 Додати в календар', url: `${SITE_URL}/events/${slug}/add` }]);
-  }
   // Варіант їде в callback_data, щоб вебхук зберіг його разом з голосом.
   // UUID не містить ':', тож старі кнопки без суфікса теж лишаються валідними.
   rows.push([
@@ -348,7 +348,7 @@ for (const item of items) {
   }
 
   try {
-    await sendTelegramMessage(message, buildKeyboard(item.id, item.slug, item.deadline, variant));
+    await sendTelegramMessage(message, buildKeyboard(item.id, variant));
     const { error: updateError } = await supabase
       .from('opportunities')
       .update({ telegram_posted_at: new Date().toISOString() })

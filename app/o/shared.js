@@ -10,7 +10,6 @@
  */
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
-import { addToCalendarPageUrl } from '@/lib/calendar-links';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { isoWeek } from '@/lib/week';
 import {
@@ -86,7 +85,6 @@ const L = {
     city: 'Місто',
     source: 'Джерело',
     verified: 'Перевірено',
-    calendar: '📅 Додати в календар',
     relatedTitle: (age) => `Схожі можливості для дітей ${age}`,
     today: 'сьогодні',
     yesterday: 'вчора',
@@ -118,7 +116,6 @@ const L = {
     city: 'City',
     source: 'Source',
     verified: 'Checked',
-    calendar: '📅 Add to calendar',
     relatedTitle: (age) => `Similar opportunities for children ${age}`,
     today: 'today',
     yesterday: 'yesterday',
@@ -666,11 +663,6 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           <div className="opportunity-actions">
             {item.source_url && (
               <OutboundCta href={item.source_url} title={item.title} lang={lang} />
-            )}
-            {item.deadline && (
-              <Link href={addToCalendarPageUrl(item.slug).replace(SITE, '')} className="cal-btn">
-                {t.calendar}
-              </Link>
             )}
           </div>
         </article>
