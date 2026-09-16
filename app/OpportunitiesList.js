@@ -1111,6 +1111,9 @@ export default function OpportunitiesList({
 
   const renderSide = () => (
     <aside className="v2-side" aria-label={t.filters}>
+      {hasActive ? (
+        <button type="button" className="v2-side-reset" onClick={reset}>{t.resetFilters}</button>
+      ) : null}
       <label className="v2-side-search">
         <span aria-hidden="true">🔍</span>
         <input
@@ -1168,9 +1171,6 @@ export default function OpportunitiesList({
             ))}
           </select>
         </div>
-      ) : null}
-      {hasActive ? (
-        <button type="button" className="v2-side-reset" onClick={reset}>{t.resetFilters}</button>
       ) : null}
     </aside>
   );
@@ -1272,6 +1272,9 @@ export default function OpportunitiesList({
               {isEn ? c.en : c.label}
             </button>
           ))}
+          {hasActive ? (
+            <button type="button" className="v2-reset" onClick={reset}>{t.reset}</button>
+          ) : null}
         </div>
 
         <div className="v2-selects">
@@ -1324,9 +1327,6 @@ export default function OpportunitiesList({
               aria-label={isEn ? 'Search' : 'Пошук'}
             />
           </label>
-          {hasActive ? (
-            <button type="button" className="v2-reset" onClick={reset}>{t.reset}</button>
-          ) : null}
         </div>
 
         <div className="v2-found">
