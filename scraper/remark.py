@@ -325,6 +325,13 @@ def plan_patch(row: dict, out: dict, only_dates: bool,
         ("подача до", deadline), ("подія до", end or start)) if val and val < today]
     if not verified and past:
         stale = "джерело показує минулі дати: " + ", ".join(past)
+    # Подати заявку після того, як подія скінчилась, неможливо. Така пара дат
+    # означає, що модель переплутала поля або змішала два цикли: для MBA Kids
+    # International два прогони поспіль дали різні дедлайни, і другий
+    # (2027-08-31) стояв після кінця програми (2027-05-20).
+    elif not verified and deadline and (end or start) and deadline > (end or start):
+        stale = (f"дедлайн подачі {deadline} пізніше за кінець події {end or start} — "
+                 "дати суперечать одна одній")
     elif not verified and (start or end or deadline):
         for key, val in (("deadline", deadline),
                          ("event_start_date", start),
@@ -423,7 +430,7 @@ def run(apply: bool, limit: int, only_dates: bool,
             # показує admin_comment, і запис не загубиться в лозі воркфлоу.
             stats["stale"] += 1
             stale_list.append(f"{(row.get('title') or '')[:70]} — {stale}")
-            note = f"remark: {stale} — перевір, чи набір ще відкритий"
+            note = f"remark: {stale} — перевір дати й чи набір ще відкритий"
             if note not in (row.get("admin_comment") or ""):
                 patch["admin_comment"] = f"{row.get('admin_comment') or ''} {note}".strip()
             notes.append(f"⚠️ {stale} → дати не чіпаю, позначка модератору")
@@ -460,9 +467,9 @@ def run(apply: bool, limit: int, only_dates: bool,
           f"details {stats['details_added']}, apply_url {stats['apply_added']}")
     print(f"без змін {stats['unchanged']}, "
           f"перелік/організація {stats['skipped_listing']}, "
-          f"минулі дати → модератору {stats['stale']}")
+          f"дати на перевірку людині {stats['stale']}")
     if stale_list:
-        print("\nДати минули — не записано, позначено для перевірки:")
+        print("\nДати не записано, позначено для перевірки:")
         for line in stale_list:
             print(f"  • {line}")
     if not apply:
