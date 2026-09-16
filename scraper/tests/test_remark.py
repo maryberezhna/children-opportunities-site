@@ -63,6 +63,14 @@ class Dates(unittest.TestCase):
         self.assertIsNotNone(stale)
         self.assertFalse({"event_start_date", "event_end_date"} & patch.keys())
 
+    def test_deadline_after_event_end_is_not_written(self):
+        r = row()
+        out = {"deadline": "2027-08-31", "event_start_date": "2026-09-21",
+               "event_end_date": "2027-05-20"}
+        patch, _notes, stale = plan_patch(r, out, only_dates=True, today=TODAY)
+        self.assertIn("суперечать", stale)
+        self.assertFalse({"deadline", "event_start_date", "event_end_date"} & patch.keys())
+
     def test_verified_record_dates_untouched(self):
         r = row(verified_at="2026-09-01T00:00:00Z", deadline="2026-10-01")
         out = {"deadline": "2026-10-20", "details": "## Програма\n- дебати"}
