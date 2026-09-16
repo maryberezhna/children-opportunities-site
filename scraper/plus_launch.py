@@ -14,7 +14,8 @@
 Хто записався імейлом на сайті до 15.09.2026, повідомлення не отримає: листів
 Dityam+ більше не шле (рішення Марії 15.09.2026). Скрипт лише рахує таких людей.
 
-Знижка (рішення Марії 14.09.2026): перший місяць за 89 грн, далі 179 грн/міс.
+Знижка (рішення Марії 16.09.2026): перший місяць безкоштовний — технічно 1 грн,
+бо платіжний сервіс не проводить 0 грн, далі 99 грн/міс.
 Її рахує сам бот (isEarlyBird у app/api/telegram/plus/route.js) за наявністю
 людини в plus_waitlist — тут лише повідомляємо.
 
@@ -37,8 +38,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 MAIN_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
 PLUS_BOT = "DityamPlusBot"
-EARLY_PRICE = 89
-PRICE = 179
+EARLY_PRICE = 1
+PRICE = 99
 
 WHAT = (
     "Dityam+ щодня добирає можливості окремо для кожної вашої дитини — за віком, "
@@ -51,7 +52,8 @@ def telegram_text() -> str:
     return (
         "🧡 <b>Dityam+ запустився</b>\n\n"
         f"Ви були в списку перших — дякуємо, що чекали. Як обіцяли, для вас перший "
-        f"місяць за <b>{EARLY_PRICE} грн</b> замість {PRICE}, далі {PRICE} грн/міс.\n\n"
+        f"місяць <b>безкоштовний</b>: платіжний сервіс не проводить 0 грн, тож перше "
+        f"списання — {EARLY_PRICE} грн, далі {PRICE} грн/міс.\n\n"
         f"{WHAT}\n\n"
         "Скасувати можна командою /stop у боті."
     )
@@ -69,7 +71,7 @@ def send_telegram_launch(chat_id: str, token: str) -> bool:
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
         "reply_markup": {"inline_keyboard": [[
-            {"text": f"🚀 Оформити за {EARLY_PRICE} грн", "url": f"https://t.me/{PLUS_BOT}?start=launch"},
+            {"text": "🚀 Оформити — перший місяць безкоштовно", "url": f"https://t.me/{PLUS_BOT}?start=launch"},
         ]]},
     }, timeout=20)
     ok = r.status_code == 200 and r.json().get("ok")

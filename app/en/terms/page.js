@@ -74,12 +74,12 @@ export default function TermsPageEn() {
 
           <h2>3. Price and payment</h2>
           <ul>
-            <li><strong>Monthly subscription — UAH 179</strong> (charged every month).</li>
-            <li><strong>Annual subscription — UAH 1,199</strong> (charged every year, ≈ UAH 100/month).</li>
-            <li><strong>For members of the waiting list</strong> — the first month of the monthly
-              subscription is UAH 89, then UAH 179 every month. The discount applies to the first
-              payment of a person who joined the Dityam+ waiting list and has not paid for the
-              subscription before.</li>
+            <li><strong>Monthly subscription — UAH 99</strong> (charged every month).</li>
+            <li><strong>Annual subscription — UAH 999</strong> (charged every year, ≈ UAH 83/month).</li>
+            <li><strong>For members of the waiting list</strong> — the first month is free: the
+              first payment is UAH 1, because the payment service cannot process a UAH 0 payment,
+              then UAH 99 every month. It applies to the first payment of a person who joined the
+              Dityam+ waiting list and has not paid for the subscription before.</li>
           </ul>
           <p>
             Payment is made online through the WayForPay payment service.

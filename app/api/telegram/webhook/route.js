@@ -145,8 +145,8 @@ const ADMIN_MENU = {
   ],
 };
 
-const PRICE_MONTH = 179;
-const PRICE_YEAR = 1199;
+const PRICE_MONTH = 99;
+const PRICE_YEAR = 999;
 
 function daysAgoIso(days) {
   return new Date(Date.now() - days * 86400000).toISOString();

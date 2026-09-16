@@ -36,7 +36,7 @@ const L = {
     lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
-    priceHint: '179 грн/міс · 1 199 грн/рік',
+    priceHint: '99 грн/міс · 999 грн/рік',
     stairsLabel: 'Приклад шляху',
     stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
@@ -150,13 +150,13 @@ const L = {
     ],
 
     priceTitle: 'Скільки коштує',
-    month: '179 грн',
+    month: '99 грн',
     monthPer: ' / місяць',
-    year: '1 199 грн',
+    year: '999 грн',
     yearPer: ' / рік',
-    yearNote: '≈ 100 грн на місяць',
-    // 1 199 грн проти 12 × 179 = 2 148 грн → на 44% менше. Міняючи ціну — перерахувати.
-    yearRibbon: 'вигідніше на 44%',
+    yearNote: '≈ 83 грн на місяць',
+    // 999 грн проти 12 × 99 = 1 188 грн → на 16% менше. Міняючи ціну — перерахувати.
+    yearRibbon: 'вигідніше на 16%',
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
@@ -193,7 +193,7 @@ const L = {
     lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits on Telegram, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
-    priceHint: 'UAH 179/month · UAH 1,199/year',
+    priceHint: 'UAH 99/month · UAH 999/year',
     stairsLabel: 'An example path',
     stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
@@ -301,12 +301,12 @@ const L = {
     ],
 
     priceTitle: 'Pricing',
-    month: 'UAH 179',
+    month: 'UAH 99',
     monthPer: ' / month',
-    year: 'UAH 1,199',
+    year: 'UAH 999',
     yearPer: ' / year',
-    yearNote: '≈ UAH 100 a month',
-    yearRibbon: '44% cheaper',
+    yearNote: '≈ UAH 83 a month',
+    yearRibbon: '16% cheaper',
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
@@ -342,13 +342,13 @@ const L = {
 const OPEN = {
   uk: {
     cta: 'Оформити в Telegram',
-    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць за 89 грн.'],
+    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць безкоштовно — перше списання 1 грн, бо платіжний сервіс не проводить 0 грн, далі 99 грн/міс.'],
     joinTitle: 'Оформити Dityam+',
     joinText: 'Кілька хвилин у Telegram-боті: питання про дитину, потім оплата. Останні можливості під профіль — у меню бота одразу після оплати.',
   },
   en: {
     cta: 'Subscribe on Telegram',
-    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, then payment through WayForPay. People from the waiting list get their first month for UAH 89.'],
+    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, then payment through WayForPay. People from the waiting list get their first month free — the first charge is UAH 1, because the payment service cannot process UAH 0, then UAH 99 a month.'],
     joinTitle: 'Get Dityam+',
     joinText: 'A few minutes in the Telegram bot: questions about your child, then payment. The latest matching opportunities are in the bot menu right after payment.',
   },
@@ -386,8 +386,8 @@ function jsonLd(t, lang) {
           serviceUrl: 'https://t.me/DityamPlusBot',
         },
         offers: [
-          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '179', priceCurrency: 'UAH' },
-          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '1199', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '99', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '999', priceCurrency: 'UAH' },
         ],
       },
       {

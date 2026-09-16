@@ -72,7 +72,7 @@ export default function PrivacyPageEn() {
               phone, and the page you are writing from — to reply.
             </li>
             <li>
-              <strong>@DityamComUABot and the channel.</strong> Your Telegram chat ID
+              <strong>Service bot and the channel.</strong> Your Telegram chat ID
               and username if you joined the waitlist through this bot before
               15 September 2026; your “Interested / Not
               interested” marks together with your Telegram account ID.
