@@ -53,12 +53,16 @@ audit_seed.py). Тому тут — оновлення на місці за id.
 from __future__ import annotations
 
 import argparse
+import html
 import logging
 import os
+import re
 import time
+from collections import Counter
 from datetime import date
 
 import anthropic
+import httpx
 
 from db import get_client
 # Той самий похід по сторінці, що в тижневій перевірці дат: httpx + зачистка
@@ -217,13 +221,49 @@ def _valid_date(value) -> str | None:
         return None
 
 
-def source_text(sb, row: dict) -> tuple[str | None, str]:
-    """Текст джерела: спершу збережений сирець, інакше — жива сторінка.
+_TG_POST = re.compile(r"^https://t\.me/(?:s/)?([A-Za-z0-9_]+)/(\d+)")
+_TG_TEXT = re.compile(r'class="tgme_widget_message_text[^"]*"[^>]*>(.*?)</div>', re.S)
 
-    Повертає (текст, звідки). raw_items дає той самий текст, з якого запис і
-    зробили, і не вимагає походу на чужий сайт — а таких записів дві третини.
+
+def telegram_text(url: str) -> str | None:
+    """Повний текст допису в публічному Telegram-каналі — разом із посиланнями.
+
+    Сирець у raw_items для Telegram-джерел лежить уже без href: посилання на
+    Google-форму в пості про сесію ЄМП у Мальме там не збереглось, і саме тому
+    apply_url неможливо було відновити з бази. Embed-віджет t.me віддає допис
+    цілком, а посилання ми розгортаємо в «текст (адреса)», щоб модель їх
+    бачила. Telegram, на відміну від частини сайтів, не блокує сервери GitHub.
+    """
+    m = _TG_POST.match(url)
+    if not m:
+        return None
+    try:
+        r = httpx.get(f"https://t.me/{m.group(1)}/{m.group(2)}?embed=1&mode=tme",
+                      timeout=20, follow_redirects=True)
+    except Exception:
+        return None
+    found = _TG_TEXT.search(r.text) if r.status_code == 200 else None
+    if not found:
+        return None
+    body = found.group(1)
+    body = re.sub(r'<a[^>]+href="([^"]+)"[^>]*>(.*?)</a>',
+                  lambda a: f"{a.group(2)} ({html.unescape(a.group(1))})", body, flags=re.S)
+    body = re.sub(r"<br\s*/?>", "\n", body)
+    text = html.unescape(re.sub(r"<[^>]+>", "", body)).strip()
+    return text if len(text) >= 200 else None
+
+
+def source_text(sb, row: dict) -> tuple[str | None, str]:
+    """Текст джерела. Повертає (текст, звідки).
+
+    Порядок: допис у Telegram (свіжий і з посиланнями) → збережений сирець із
+    raw_items (не треба ходити на чужий сайт) → жива сторінка.
     """
     url = (row.get("source_url") or "").strip()
+    if _TG_POST.match(url):
+        text = telegram_text(url)
+        if text:
+            return text, "telegram"
     if url:
         try:
             got = (sb.table("raw_items")
@@ -283,34 +323,65 @@ def plan_patch(row: dict, out: dict, only_dates: bool) -> tuple[dict, list[str]]
     return patch, notes
 
 
-def run(apply: bool, limit: int, only_dates: bool) -> dict:
+SELECT = ("id, title, source, source_url, opportunity_type, is_international, "
+          "age_from, age_to, deadline, event_start_date, event_end_date, "
+          "details, apply_url, price_note, verified_at")
+
+
+def pick_rows(sb, scope: str, offset: int, limit: int) -> list[dict]:
+    """Які записи дивимось і в якому порядку.
+
+    Перший сухий прогін 16.09.2026 брав найдавніші за updated_at — і влучив
+    у квітневий стартовий набір: головні сторінки Пласту, Save the Children,
+    інклюзивно-ресурсних центрів. Єдиних дат там не буває, а 35 із 50 сайтів
+    відповіли серверам GitHub 403. Змінено один запис із п'ятдесяти.
+
+    Тепер спершу міжнародні (там дати й посилання на подачу важать найбільше),
+    а гуртки в scope=priority не беремо зовсім: вони постійні, без дат, і не в
+    пріоритеті наповнення. Порядок стабільний — за полями, яких цей скрипт не
+    змінює, — тож прогони можна гортати через --offset.
+    """
+    rows, start = [], 0
+    while True:
+        # PostgREST віддає щонайбільше 1000 рядків — активних записів більше.
+        page = (sb.table("opportunities").select(SELECT)
+                .eq("status", "active").is_("canonical_slug", "null")
+                .order("id").range(start, start + 999).execute().data or [])
+        rows += page
+        if len(page) < 1000:
+            break
+        start += 1000
+    if scope == "priority":
+        rows = [r for r in rows if r.get("opportunity_type") != "club"]
+    rows.sort(key=lambda r: (not r.get("is_international"), r["id"]))
+    return rows[offset:offset + limit]
+
+
+def run(apply: bool, limit: int, only_dates: bool,
+        scope: str = "priority", offset: int = 0) -> dict:
     sb = get_client()
     llm = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    rows = (sb.table("opportunities")
-            .select("id, title, source, source_url, opportunity_type, "
-                    "age_from, age_to, deadline, event_start_date, "
-                    "event_end_date, details, apply_url, price_note, verified_at")
-            .eq("status", "active")
-            .is_("canonical_slug", "null")
-            .order("updated_at")          # найдавніші першими
-            .limit(limit).execute().data or [])
+    rows = pick_rows(sb, scope, offset, limit)
 
-    print(f"{'=' * 70}\nПерерозмітка: {len(rows)} записів"
-          f"{' (СУХИЙ ПРОГІН)' if not apply else ''}\n{'=' * 70}")
+    print(f"{'=' * 70}\nПерерозмітка: {len(rows)} записів "
+          f"(scope={scope}, offset={offset})"
+          f"{' — СУХИЙ ПРОГІН' if not apply else ''}\n{'=' * 70}")
 
-    stats = {"seen": 0, "from_raw": 0, "from_page": 0, "no_text": 0,
+    stats = {"seen": 0, "from_raw": 0, "from_page": 0, "from_tg": 0, "no_text": 0,
              "changed": 0, "dates_fixed": 0, "details_added": 0,
              "apply_added": 0, "skipped_listing": 0, "unchanged": 0}
+    why_no_text = Counter()
 
     for row in rows:
         stats["seen"] += 1
         page, whence = source_text(sb, row)
         if not page:
             stats["no_text"] += 1
+            why_no_text[whence] += 1
             logger.info("· без тексту (%s): %s", whence, (row.get("title") or "")[:60])
             continue
-        stats["from_raw" if whence == "raw_items" else "from_page"] += 1
+        stats[{"raw_items": "from_raw", "telegram": "from_tg"}.get(whence, "from_page")] += 1
 
         out = ask(llm, row, page)
         if not out:
@@ -345,8 +416,10 @@ def run(apply: bool, limit: int, only_dates: bool) -> dict:
 
     print(f"\n{'=' * 70}")
     print(f"переглянуто {stats['seen']}: "
-          f"{stats['from_raw']} із сирцю, {stats['from_page']} зі сторінки, "
-          f"{stats['no_text']} без тексту")
+          f"{stats['from_tg']} з Telegram, {stats['from_raw']} із сирцю, "
+          f"{stats['from_page']} зі сторінки, {stats['no_text']} без тексту")
+    for why, n in why_no_text.most_common():
+        print(f"    без тексту — {why}: {n}")
     print(f"змінено {stats['changed']}: дати {stats['dates_fixed']}, "
           f"details {stats['details_added']}, apply_url {stats['apply_added']}")
     print(f"без змін {stats['unchanged']}, "
@@ -363,5 +436,9 @@ if __name__ == "__main__":
     p.add_argument("--limit", type=int, default=LIMIT)
     p.add_argument("--only-dates", action="store_true",
                    help="чіпати лише дати, не заповнювати details")
+    p.add_argument("--scope", choices=["priority", "all"], default="priority",
+                   help="priority — без гуртків, міжнародні першими")
+    p.add_argument("--offset", type=int, default=0)
     a = p.parse_args()
-    run(apply=a.apply and not a.dry_run, limit=a.limit, only_dates=a.only_dates)
+    run(apply=a.apply and not a.dry_run, limit=a.limit, only_dates=a.only_dates,
+        scope=a.scope, offset=a.offset)

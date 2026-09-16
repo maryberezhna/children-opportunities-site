@@ -25,6 +25,14 @@ on:
         description: 'true = чіпати лише дати, не заповнювати details'
         required: false
         default: 'false'
+      scope:
+        description: 'priority = без гуртків, міжнародні першими; all = усе'
+        required: false
+        default: 'priority'
+      offset:
+        description: 'з якого запису почати (для гортання прогонами)'
+        required: false
+        default: '0'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -54,4 +62,4 @@ jobs:
           ARGS=""
           if [ "${{ github.event.inputs.apply }}" = "true" ]; then ARGS="$ARGS --apply"; fi
           if [ "${{ github.event.inputs.only_dates }}" = "true" ]; then ARGS="$ARGS --only-dates"; fi
-          python remark.py $ARGS
+          python remark.py $ARGS --scope "${{ github.event.inputs.scope || 'priority' }}" --offset "${{ github.event.inputs.offset || '0' }}"
