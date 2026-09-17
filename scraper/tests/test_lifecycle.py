@@ -10,7 +10,9 @@ import unittest
 from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from lifecycle import decide_check, plan_bootstrap, plan_close  # noqa: E402
+from lifecycle import (  # noqa: E402
+    MANUAL_MARK, decide_check, plan_bootstrap, plan_close, plan_unreadable,
+)
 
 TODAY = date(2026, 9, 17)
 
@@ -104,6 +106,32 @@ class PlannedCheck(unittest.TestCase):
         out2 = dict(out, kind_evidence="турніри зазвичай щорічні")
         self.assertNotIn("timing_kind", decide_check(row(status="closed"), out2, page, TODAY))
 
+
+class Unreadable(unittest.TestCase):
+    """mon.gov.ua віддає серверам GitHub 403 — олімпіади не мали б як повернутись."""
+
+    def test_first_failure_retries_in_two_weeks(self):
+        patch = plan_unreadable(row(), "HTTP 403", TODAY)
+        self.assertEqual(patch["recheck_at"], "2026-10-01")
+        self.assertNotIn(MANUAL_MARK, patch["admin_comment"])
+
+    def test_second_failure_asks_human_once(self):
+        first = plan_unreadable(row(), "HTTP 403", TODAY)
+        second = plan_unreadable(row(admin_comment=first["admin_comment"]), "HTTP 403", TODAY)
+        self.assertIn(MANUAL_MARK, second["admin_comment"])
+        self.assertEqual(second["recheck_at"], "2026-10-17")
+        third = plan_unreadable(row(admin_comment=second["admin_comment"]), "HTTP 403", TODAY)
+        self.assertNotIn("admin_comment", third)
+
+
+class SeasonMonths(unittest.TestCase):
+    def test_periodic_without_months_learns_them_from_quote(self):
+        page = "The Bloomsday competition runs every year, entries close on 16 June."
+        out = {"state": "ended", "evidence": page, "timing_kind": "periodic",
+               "kind_evidence": "runs every year", "season_months": [5, 6]}
+        patch = decide_check(row(status="closed", timing_kind="periodic"), out, page, TODAY)
+        self.assertEqual(patch["season_months"], [5, 6])
+        self.assertEqual(patch["recheck_at"], "2027-04-01")
 
 class Bootstrap(unittest.TestCase):
     def test_closed_olympiad_without_season_is_checked_within_three_weeks(self):

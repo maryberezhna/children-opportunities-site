@@ -164,13 +164,18 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
     patch: dict = {}
     new_kind = clean_kind(out.get("timing_kind"))
     kind_quote = (out.get("kind_evidence") or "").strip()
-    if not kind and new_kind and kind_quote and evidence_in_text(kind_quote, page):
+    quoted_kind = bool(kind_quote and evidence_in_text(kind_quote, page))
+    if not kind and new_kind and quoted_kind:
         kind = new_kind
         patch["timing_kind"] = kind
-        if kind == "periodic":
-            months = clean_months(out.get("season_months"))
-            if months:
-                patch["season_months"] = months
+    # Місяці сезону: якщо запис періодичний, а місяців у ньому немає, беремо їх
+    # із перевірки (з цитатою). Без них наступна перевірка ставилась «через 30
+    # днів» — так Bloomsday із сезоном у червні перевірявся б щомісяця.
+    if (kind == "periodic" and not row.get("season_months") and quoted_kind
+            and new_kind in (None, "periodic")):
+        months = clean_months(out.get("season_months"))
+        if months:
+            patch["season_months"] = months
     months = patch.get("season_months") or row.get("season_months")
 
     # Дати: лише ті, що стоять у цитаті, і лише майбутні.
@@ -217,6 +222,34 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
         note = f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}"
 
     patch["admin_comment"] = _with_trace(row, f"lifecycle {iso_today}: {note}"[:240])
+    return patch
+
+
+UNREADABLE_MARK = "джерело не прочиталось"
+MANUAL_MARK = "сайт не пускає автоматичну перевірку"
+
+
+def plan_unreadable(row: dict, why: str, today: date) -> dict:
+    """Джерело не відкрилось. Чиста функція — під тести.
+
+    Частина сайтів (mon.gov.ua, plast.org.ua, usaco.org) відповідає серверам
+    GitHub 403, хоча з браузера відкривається. Перший раз — пробуємо ще через
+    два тижні. Повторно — позначка людині «перевір вручну» (один раз) і
+    перевірка раз на місяць: спроба без тексту не викликає модель, тож
+    нічого не коштує, а раптом сайт почне пускати.
+    """
+    comment = row.get("admin_comment") or ""
+    iso = today.isoformat()
+    if UNREADABLE_MARK not in comment and MANUAL_MARK not in comment:
+        retry = (today + timedelta(days=RETRY_DAYS)).isoformat()
+        note = f"lifecycle {iso}: {UNREADABLE_MARK} ({why}), ще раз {retry}"
+    else:
+        retry = (today + timedelta(days=UNKNOWN_RECHECK_DAYS)).isoformat()
+        note = (f"lifecycle {iso}: ⚠️ {MANUAL_MARK} ({why}) — перевір вручну"
+                if MANUAL_MARK not in comment else None)
+    patch = {"recheck_at": retry}
+    if note:
+        patch["admin_comment"] = _with_trace(row, note)
     return patch
 
 
@@ -362,14 +395,17 @@ def main() -> int:
             return 1
         ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         states = Counter()
+        manual = []
         for row in due:
             page, whence = _source_text(row)
             if not page:
-                retry = (today + timedelta(days=RETRY_DAYS)).isoformat()
+                patch = plan_unreadable(row, whence, today)
                 states["без тексту"] += 1
-                logger.info("  ? %s — %s, ще раз %s", (row["title"] or "")[:60], whence, retry)
-                write(row["id"], {"recheck_at": retry, "admin_comment": _with_trace(
-                    row, f"lifecycle {iso}: джерело не прочиталось ({whence}), ще раз {retry}")})
+                if MANUAL_MARK in patch.get("admin_comment", ""):
+                    manual.append(row)
+                logger.info("  ? %s — %s, ще раз %s", (row["title"] or "")[:60], whence,
+                            patch["recheck_at"])
+                write(row["id"], patch)
                 continue
             out = _ask(ai, row, page, today)
             patch = decide_check(row, out, page, today)
@@ -379,6 +415,10 @@ def main() -> int:
                         out.get("state"), changes)
             write(row["id"], patch)
         logger.info("  підсумок: %s", dict(states))
+        if manual:
+            logger.info("\n  ⚠️ Перевірити вручну — сайт не пускає автоматичну перевірку:")
+            for r in manual:
+                logger.info("    • %s — %s", (r["title"] or "")[:70], r.get("source_url"))
 
     if args.dry_run:
         logger.info("\nСУХИЙ ПРОГІН — у базу нічого не записано.")
