@@ -196,3 +196,122 @@ def rule_kind(row: dict) -> tuple[str, list[int] | None, str] | None:
         return "periodic", (months_from_dates(row) or None), "у тексті — повторюється щороку"
 
     return None
+
+
+# ── Час життя запису (планова перевірка, scraper/lifecycle.py) ──────────────
+# Принцип Марії 17.09.2026: «ціль не скрапити нон-стоп, а мати базу і
+# періодично її продивлятися». У кожного запису — дата наступної перевірки,
+# що залежить від виду; щоденний процес бере лише ті, чия дата настала.
+
+from datetime import date as _date, timedelta as _timedelta  # noqa: E402
+import hashlib as _hashlib  # noqa: E402
+
+PERMANENT_RECHECK_DAYS = 120     # постійна: переконатись, що сторінка жива й набір той самий
+UNKNOWN_RECHECK_DAYS = 30        # вид невідомий: подивитись на джерело найближчим часом
+RETRY_DAYS = 14                  # сторінка не відкрилась / сезон ще не відкрито
+
+
+def _iso(value) -> _date | None:
+    m = re.match(r"^(\d{4})-(\d{2})-(\d{2})", str(value or ""))
+    if not m:
+        return None
+    try:
+        return _date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+    except ValueError:
+        return None
+
+
+def is_expired(row: dict, today: _date) -> bool:
+    """Чи минула можливість: подати вже не можна або подія вже відбулась.
+
+    Дата початку закриває запис лише тоді, коли ні дедлайну, ні кінця події
+    немає: запис лише з початком раніше не закривався ніколи (аудит, С4).
+    """
+    deadline = _iso(row.get("deadline"))
+    end = _iso(row.get("event_end_date"))
+    start = _iso(row.get("event_start_date"))
+    if deadline and deadline < today:
+        return True
+    if end and end < today:
+        return True
+    if not deadline and not end and start and start < today:
+        return True
+    return False
+
+
+def season_start_month(months) -> int | None:
+    """Перший місяць сезону з урахуванням переходу через Новий рік.
+
+    [9, 10, 11, 12, 1, 2, 3, 4, 5] (навчальний рік) → 9, а не 1: початок
+    циклу — місяць одразу після найбільшої перерви.
+    """
+    months = clean_months(months)
+    if not months or len(months) == 12:
+        return None
+    best_gap, start = -1, months[0]
+    for i, m in enumerate(months):
+        prev = months[i - 1]
+        gap = (m - prev - 1) % 12
+        if gap > best_gap:
+            best_gap, start = gap, m
+    return start
+
+
+def next_season_check(season_months, dates, today: _date,
+                      skip_current: bool = False) -> _date:
+    """Коли періодичну програму варто перевірити наступного разу.
+
+    skip_current=False — сезон, що попереду або йде просто зараз, теж рахується:
+    олімпіада з сезоном у жовтні 17 вересня перевіряється вже скоро, а не у
+    вересні наступного року. skip_current=True — сезон щойно завершився
+    (запис закрився за датою або сторінка каже «завершено»), тож чекаємо
+    наступного циклу.
+
+    Є місяці сезону → 1-ше число місяця перед його початком. Немає, але є
+    остання відома дата → та сама пора наступного циклу мінус два місяці.
+    Нічого немає → за UNKNOWN_RECHECK_DAYS днів.
+    """
+    soon = today + _timedelta(days=3)
+    start = season_start_month(season_months)
+    if start:
+        running = today.month in (clean_months(season_months) or [])
+        if running and not skip_current:
+            return soon
+        # Щойно завершений сезон не може початись знову за кілька тижнів:
+        # якщо дедлайн вересневий, а подія жовтнева, жовтень цього року — той
+        # самий цикл. Наступний — не раніше ніж за три місяці.
+        horizon = today + _timedelta(days=90) if skip_current else today
+        season = _date(today.year, start, 1)
+        while season <= horizon:
+            season = _date(season.year + 1, start, 1)
+        check = (_date(season.year, start - 1, 1) if start > 1
+                 else _date(season.year - 1, 12, 1))
+        return check if check > today else soon
+    known = [d for d in (_iso(x) for x in (dates or [])) if d]
+    if known:
+        anchor = max(known) - _timedelta(days=60)
+        while anchor <= today:
+            try:
+                anchor = anchor.replace(year=anchor.year + 1)
+            except ValueError:            # 29 лютого
+                anchor = anchor.replace(year=anchor.year + 1, day=28)
+        return anchor
+    return today + _timedelta(days=UNKNOWN_RECHECK_DAYS)
+
+
+def recheck_after_close(kind, season_months, dates, today: _date) -> _date | None:
+    """Дата перевірки для запису, що щойно закрився за датою."""
+    if kind == "one_time":
+        return None                                   # не повториться
+    if kind == "periodic":
+        return next_season_check(season_months, dates, today, skip_current=True)
+    if kind == "permanent":
+        # Постійна з датою, що минула, — суперечність: подивитись скоро.
+        return today + _timedelta(days=7)
+    return today + _timedelta(days=UNKNOWN_RECHECK_DAYS)
+
+
+def spread_date(row_id, today: _date, within_days: int) -> _date:
+    """Детерміновано розкладає перші перевірки по днях, без піку в один день."""
+    h = int(_hashlib.md5(str(row_id).encode()).hexdigest()[:8], 16)
+    return today + _timedelta(days=1 + h % max(within_days, 1))

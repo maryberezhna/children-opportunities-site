@@ -7,11 +7,14 @@
 import pathlib
 import sys
 import unittest
+from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from timing import (  # noqa: E402
     accept_model_kind, clean_kind, clean_months, clean_text, evidence_in_text,
-    from_injecting_source, months_from_dates, recurrence_from_text, rule_kind,
+    from_injecting_source, is_expired, months_from_dates, next_season_check,
+    recheck_after_close, recurrence_from_text, rule_kind, season_start_month,
+    spread_date,
 )
 
 
@@ -133,6 +136,55 @@ class ModelAnswers(unittest.TestCase):
         kind, _m, why = rule_kind(row(opportunity_type="olympiad"))
         self.assertEqual(kind, "periodic")
         self.assertIn("визначенням", why)
+
+
+TODAY = date(2026, 9, 17)
+
+
+class Seasons(unittest.TestCase):
+    """Коли дивитись на програму знову (планова перевірка, 17.09.2026)."""
+
+    def test_school_year_starts_in_september(self):
+        self.assertEqual(season_start_month([9, 10, 11, 12, 1, 2, 3, 4, 5]), 9)
+        self.assertIsNone(season_start_month(list(range(1, 13))))
+
+    def test_upcoming_season_is_checked_soon_not_next_year(self):
+        # Олімпіада з сезоном у жовтні 17 вересня — дивимось уже за кілька днів.
+        self.assertEqual(next_season_check([10], [], TODAY), date(2026, 9, 20))
+
+    def test_just_ended_season_waits_for_next_cycle(self):
+        self.assertEqual(next_season_check([10], [], TODAY, skip_current=True), date(2027, 9, 1))
+        self.assertEqual(next_season_check([9, 10, 11, 12, 1, 2, 3, 4, 5], [], TODAY,
+                                           skip_current=True), date(2027, 8, 1))
+
+    def test_later_season_checks_month_before(self):
+        self.assertEqual(next_season_check([1], [], TODAY), date(2026, 12, 1))
+        self.assertEqual(next_season_check([3], [], TODAY), date(2027, 2, 1))
+
+    def test_without_months_uses_last_known_date(self):
+        # Bloomsday: дедлайн 16 червня → наступна перевірка у квітні.
+        self.assertEqual(next_season_check(None, ["2026-06-16"], TODAY), date(2027, 4, 17))
+        self.assertEqual(next_season_check(None, [], TODAY), date(2026, 10, 17))
+
+    def test_after_close_by_kind(self):
+        self.assertIsNone(recheck_after_close("one_time", None, [], TODAY))
+        self.assertEqual(recheck_after_close("periodic", [10], [], TODAY), date(2027, 9, 1))
+        self.assertEqual(recheck_after_close("permanent", None, [], TODAY), date(2026, 9, 24))
+        self.assertEqual(recheck_after_close(None, None, [], TODAY), date(2026, 10, 17))
+
+    def test_expiry(self):
+        self.assertTrue(is_expired({"deadline": "2026-09-16"}, TODAY))
+        self.assertFalse(is_expired({"deadline": "2026-09-17"}, TODAY))
+        # Табір, що триває, не закривається через минулий початок.
+        self.assertFalse(is_expired({"event_start_date": "2026-09-01",
+                                     "event_end_date": "2026-09-30"}, TODAY))
+        # Лише дата початку — раніше такий запис не закривався ніколи.
+        self.assertTrue(is_expired({"event_start_date": "2026-09-01"}, TODAY))
+
+    def test_spread_is_stable_and_in_range(self):
+        d = spread_date("abc", TODAY, 30)
+        self.assertEqual(d, spread_date("abc", TODAY, 30))
+        self.assertTrue(date(2026, 9, 18) <= d <= date(2026, 10, 17))
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,57 @@
+name: Планові перевірки
+
+# Єдиний власник життя запису в часі (scraper/lifecycle.py), з 17.09.2026:
+#   A. закриття за датою — за видом можливості, з датою наступної перевірки;
+#   B. перевірка лише тих записів, чия дата перевірки настала;
+#   C. (вручну, bootstrap=true) перший розклад перевірок для записів без дати.
+# Замінив: закриття в check-deadlines, TTL-перечитування в scrape-py,
+# щотижневі backfill-deadlines і recheck-dates.
+#
+# 05:10 UTC — до щоденного поста каналу (check-deadlines, 06:00), щоб у пост
+# не потрапило те, що вже минуло. GitHub запускає розклад із запізненням.
+on:
+  schedule:
+    - cron: '10 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = лише звіт, без запису'
+        required: false
+        default: 'true'
+      bootstrap:
+        description: 'true = поставити перші дати перевірки записам без них'
+        required: false
+        default: 'false'
+      limit:
+        description: 'скільки планових перевірок за прогін'
+        required: false
+        default: '30'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Lifecycle
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # За розкладом — пишемо; вручну — лише якщо попросили dry_run=false.
+          DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || github.event.inputs.dry_run }}
+          BOOTSTRAP: ${{ github.event.inputs.bootstrap || 'false' }}
+          LIFECYCLE_LIMIT: ${{ github.event.inputs.limit || '30' }}
+        run: python lifecycle.py
