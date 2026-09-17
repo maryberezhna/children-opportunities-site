@@ -8,6 +8,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
+from normalizer import _fix_invented_years, published_date  # noqa: E402
 
 
 class SlugInvariants(unittest.TestCase):
@@ -56,6 +57,34 @@ class ClubDefault(unittest.TestCase):
     def test_course_is_not_defaulted(self):
         data = _sanitize(self.base(opportunity_type="course"))
         self.assertIsNone(data["timing_kind"])
+
+
+class PublishedDate(unittest.TestCase):
+    """С5 аудиту «Дедлайн, подія, сезон»: рік — відносно дати публікації допису."""
+
+    def test_parsed_from_first_line(self):
+        self.assertEqual(published_date("Дата публікації: 2025-12-28\n\nЗаявки до 15 січня"),
+                         "2025-12-28")
+        self.assertIsNone(published_date("Заявки до 15 січня"))
+
+    def test_year_is_snapped_to_publication_not_to_processing_day(self):
+        # Пост від 28.12.2025 «до 15 січня», розмічений лише у вересні 2026.
+        # Модель дописала рік 2025. Від дня розмітки вийшло б 2027-01-15.
+        data = {"deadline": "2025-01-15"}
+        fixed = _fix_invented_years(dict(data), "Заявки до 15 січня", "2026-09-17", "2025-12-28")
+        self.assertEqual(fixed["deadline"], "2026-01-15")
+
+    def test_publication_line_does_not_count_as_year_in_text(self):
+        # Рік із рядка «Дата публікації» не сміє «підтверджувати» вигаданий рік.
+        import re
+        raw = "Дата публікації: 2025-12-28\n\nЗаявки до 15 січня"
+        body = re.sub(r"^Дата публікації: \d{4}-\d{2}-\d{2}\s*", "", raw)
+        self.assertNotIn("2025", body)
+
+    def test_event_start_is_fixed_too(self):
+        fixed = _fix_invented_years({"event_start_date": "2025-11-06"}, "6–8 листопада",
+                                    "2026-09-17", "2026-09-10")
+        self.assertEqual(fixed["event_start_date"], "2026-11-06")
 
 
 if __name__ == "__main__":

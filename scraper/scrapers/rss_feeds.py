@@ -12,6 +12,8 @@ from datetime import datetime, timedelta, timezone
 from urllib.parse import parse_qs, urlparse
 from email.utils import parsedate_to_datetime
 
+from raw_store import with_published
+
 import httpx
 from bs4 import BeautifulSoup
 
@@ -147,7 +149,7 @@ def _parse_feed(xml: str, name: str, since: datetime) -> list[dict]:
             "source": name,
             "source_url": url,
             "raw_title": title[:120],
-            "raw_text": text[:6000],
+            "raw_text": with_published(text[:6000], dt),
         })
     return out
 

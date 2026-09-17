@@ -13,6 +13,8 @@ import asyncio
 import logging
 from datetime import datetime, timedelta, timezone
 
+from raw_store import with_published
+
 import httpx
 from bs4 import BeautifulSoup
 
@@ -90,6 +92,7 @@ def _parse_channel(html: str, handle: str, display: str, since: datetime) -> lis
 
         # Recency filter (skip if we can read a date and it's too old).
         time_el = msg.select_one("time[datetime]")
+        published = None
         if time_el and time_el.get("datetime"):
             try:
                 dt = datetime.fromisoformat(time_el["datetime"])
@@ -97,6 +100,7 @@ def _parse_channel(html: str, handle: str, display: str, since: datetime) -> lis
                     dt = dt.replace(tzinfo=timezone.utc)
                 if dt < since:
                     continue
+                published = dt
             except ValueError:
                 pass
 
@@ -116,7 +120,7 @@ def _parse_channel(html: str, handle: str, display: str, since: datetime) -> lis
             "source": display,
             "source_url": url,
             "raw_title": title,
-            "raw_text": text[:6000],
+            "raw_text": with_published(text[:6000], published),
         })
     return out
 

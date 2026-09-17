@@ -27,6 +27,8 @@ import logging
 import os
 from datetime import datetime, timedelta, timezone
 
+from raw_store import with_published
+
 import httpx
 
 from keywords import is_relevant as _is_relevant
@@ -116,16 +118,18 @@ async def _fetch_account(
     for post in media:
         text = (post.get("caption") or "").strip()
         ts = post.get("timestamp")
+        published = None
         if ts:
             try:
-                if datetime.fromisoformat(ts.replace("+0000", "+00:00")) < since:
+                published = datetime.fromisoformat(ts.replace("+0000", "+00:00"))
+                if published < since:
                     continue
             except ValueError:
-                pass
+                published = None
         if len(text) < MIN_TEXT_LEN or not _is_relevant(text):
             continue
         results.append({
-            "raw_text": text,
+            "raw_text": with_published(text, published),
             "source": f"Instagram @{account}",
             "source_url": post.get("permalink") or f"https://www.instagram.com/{account}/",
             "raw_title": None,
