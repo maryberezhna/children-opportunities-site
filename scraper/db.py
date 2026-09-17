@@ -144,7 +144,8 @@ def find_active_by_canonical(client: Client, canonical: str) -> dict | None:
     try:
         rows = (
             client.table("opportunities")
-            .select("id, title, opportunity_type, updated_at")
+            .select("id, title, opportunity_type, updated_at, recheck_at, deadline, "
+                    "event_start_date, event_end_date, admin_comment")
             .eq("canonical_url", canonical)
             .eq("status", "active")
             .limit(1)

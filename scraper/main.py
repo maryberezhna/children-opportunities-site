@@ -155,6 +155,31 @@ async def run_scraper(name, module, sb_client):
             "total_found": len(raw_items), "duration": duration}
 
 
+def check_on_change(existing: dict, today) -> str | None:
+    """Сторінка свіжого запису змінилась — коли подивитись на неї плановою перевіркою.
+
+    Раніше змінений текст просто відкидався як дублікат, і «набір закрито
+    достроково» до дедлайну ніхто не помічав (аудит «Дедлайн, подія, сезон»,
+    С7). Перечитувати все підряд не можна — принцип Марії: оновлюємо базу
+    плановими перевірками, а не скрапінгом нон-стоп. Тож:
+      • лише запис із майбутньою датою: там дострокове закриття щось змінює;
+      • не частіше ніж раз на 14 днів: частина сторінок міняє текст щодня
+        (лічильники, дати публікацій), і без межі модель викликалась би щоранку.
+    Чиста функція — під тести.
+    """
+    import re as _re
+    iso = today.isoformat()
+    dates = [existing.get(k) for k in ("deadline", "event_start_date", "event_end_date")]
+    if not any(d and str(d)[:10] >= iso for d in dates):
+        return None
+    if existing.get("recheck_at") and str(existing["recheck_at"])[:10] <= iso:
+        return None                                   # і так уже на сьогодні
+    checks = _re.findall(r"lifecycle (\d{4}-\d{2}-\d{2})", existing.get("admin_comment") or "")
+    if checks and (today - datetime.fromisoformat(max(checks)).date()).days < 14:
+        return None
+    return iso
+
+
 def _fresh_duplicate(sb_client, item):
     """Чи веде цей сирець на можливість, яка вже є в базі і ще не протухла.
 
@@ -232,6 +257,14 @@ def process_pending(normalizer, sb_client, limit=500):
                            error=f"duplicate: вже є {dup['id']}",
                            opportunity_id=dup["id"])
             stats["skipped_dup"] += 1
+            when = check_on_change(dup, datetime.now(timezone.utc).date())
+            if when:
+                try:
+                    sb_client.table("opportunities").update(
+                        {"recheck_at": when}).eq("id", dup["id"]).execute()
+                    stats["planned_on_change"] = stats.get("planned_on_change", 0) + 1
+                except Exception as e:
+                    logger.error("recheck_at on change failed (%s): %s", dup["id"], e)
             continue
 
         try:

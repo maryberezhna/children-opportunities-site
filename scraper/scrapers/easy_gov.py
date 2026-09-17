@@ -150,6 +150,15 @@ async def fetch_all() -> list[dict]:
         short_desc = (item.get("shortDescription") or "").strip()[:500]
         opp_type = _resolve_type(type_name, direction)
         deadline = _resolve_deadline(item)
+        # Точний дедлайн і форма подачі приходять з API структуровано. До
+        # 17.09.2026 дедлайн тут рахувався і викидався: у тексті для моделі його
+        # не було, і вона мусила вгадувати з короткого опису (аудит, Д1).
+        facts = []
+        if deadline:
+            facts.append(f"Заявки приймаються до: {deadline}.")
+        form = item.get("applicationFormLink")
+        if form and form != url:
+            facts.append(f"Подати заявку: {form}")
 
         results.append({
             "source": SOURCE_NAME,
@@ -158,6 +167,7 @@ async def fetch_all() -> list[dict]:
             "raw_text": (
                 f"Державна програма для молоді. Платформа easy.gov.ua.\n"
                 f"Напрям: {direction}. Тип: {type_name}.\n\n{short_desc}"
+                + (("\n\n" + "\n".join(facts)) if facts else "")
             ),
         })
 
