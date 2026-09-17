@@ -70,6 +70,32 @@ class EvidenceIsMandatory(unittest.TestCase):
         self.assertIn(QUOTE[:20], why)
 
 
+
+class EventDatesAreNotDeadline(unittest.TestCase):
+    """17.09.2026: схема тут казала «deadline — АБО дата початку події», і
+    перевірка могла вписати перший день табору в дедлайн подачі."""
+    START = (TODAY + timedelta(days=40)).isoformat()
+    END = (TODAY + timedelta(days=43)).isoformat()
+
+    def quote(self):
+        ys, ms, ds = self.START.split("-")
+        ye, me, de = self.END.split("-")
+        return f"Табір проходитиме з {ds}.{ms}.{ys} по {de}.{me}.{ye}"
+
+    def test_event_range_goes_to_event_fields(self):
+        patch, _ = decide(row(opportunity_type="camp"),
+                          out(evidence=self.quote(), event_start_date=self.START,
+                              event_end_date=self.END), TODAY_ISO)
+        self.assertEqual(patch.get("event_start_date"), self.START)
+        self.assertEqual(patch.get("event_end_date"), self.END)
+        self.assertNotIn("deadline", patch)
+
+    def test_start_not_in_quote_is_dropped(self):
+        patch, _ = decide(row(opportunity_type="camp"),
+                          out(evidence=quote_for(self.END), event_start_date=self.START,
+                              event_end_date=self.END), TODAY_ISO)
+        self.assertNotIn("event_start_date", patch)
+
 class ClosingRules(unittest.TestCase):
     def test_page_says_closed(self):
         patch, why = decide(row(), out(enrollment="closed",

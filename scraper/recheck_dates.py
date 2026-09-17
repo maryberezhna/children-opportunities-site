@@ -57,9 +57,15 @@ TOOL = {
         "properties": {
             "deadline": {
                 "type": ["string", "null"],
-                "description": "YYYY-MM-DD — дата, до якої подають заявки, "
-                               "АБО дата початку події. Лише якщо вона названа "
-                               "на сторінці. Діапазон — перша дата.",
+                "description": "YYYY-MM-DD — останній день ПОДАЧІ заявки. Лише "
+                               "якщо він названий на сторінці. Дата проведення "
+                               "події сюди НЕ йде — для неї event_start_date.",
+            },
+            "event_start_date": {
+                "type": ["string", "null"],
+                "description": "YYYY-MM-DD — перший день проведення події, "
+                               "якщо названий. Діапазон — перша дата; одна "
+                               "дата проведення — вона ж.",
             },
             "event_end_date": {
                 "type": ["string", "null"],
@@ -336,6 +342,9 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
     end = _valid_date(out.get("event_end_date"))
     if end and not _date_supported_by(end, evidence):
         end = None
+    start = _valid_date(out.get("event_start_date"))
+    if start and not _date_supported_by(start, evidence):
+        start = None
     recurrence = out.get("recurrence") if out.get("recurrence") in ("annual", "ongoing") else None
 
     # Набір закрито словами самої сторінки — знімаємо з сайту.
@@ -361,12 +370,16 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
         patch["deadline"] = deadline
     if end and end >= today:
         patch["event_end_date"] = end
+    # Початок події пишемо, поки подія ще не скінчилась: початок міг уже
+    # минути, а кінець — ні (табір, що триває).
+    if start and (end or start) >= today and not (end and start > end):
+        patch["event_start_date"] = start
     if recurrence and not patch.get("deadline"):
         patch["recurrence"] = recurrence
     if not patch:
         return {}, "сторінка про строки не говорить"
 
-    label = (patch.get("deadline") or patch.get("event_end_date")
+    label = (patch.get("deadline") or patch.get("event_start_date") or patch.get("event_end_date")
              or {"annual": "щорічна", "ongoing": "постійна"}[patch["recurrence"]])
     return patch, f"{label}: «{evidence[:120]}»"
 
