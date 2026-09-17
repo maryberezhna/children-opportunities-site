@@ -32,7 +32,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const { data: row, error } = await supabase
   .from('opportunities')
-  .select('id, title, status, slug, age_from, age_to, deadline, event_end_date, recurrence, cost_type, price_note, opportunity_type, format, cities, countries, is_international, admin_comment')
+  .select('id, title, status, slug, age_from, age_to, deadline, event_start_date, event_end_date, recurrence, cost_type, price_note, opportunity_type, format, cities, countries, is_international, admin_comment')
   .eq('id', ID)
   .maybeSingle();
 

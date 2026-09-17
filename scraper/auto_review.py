@@ -32,6 +32,7 @@ from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
 from normalizer import missing_required, summary_says_over
+from timing import is_expired
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +73,11 @@ def mechanical(row: dict) -> tuple[str, str] | None:
         return RED, "дубль — на злиття, не в публікацію"
     if (row.get("link_status") or "ok") != "ok":
         return RED, f"лінк не живий ({row.get('link_status')})"
-    for key in ("deadline", "event_end_date"):
-        v = row.get(key)
-        if v and v < today:
-            return RED, f"{key} у минулому ({v})"
+    # Та сама ознака «минуло», що в плановій перевірці (scraper/timing.py):
+    # зокрема запис лише з датою початку, який раніше сюди не потрапляв.
+    if is_expired(row, date.fromisoformat(today)):
+        last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
+        return RED, f"дата в минулому ({last})"
 
     # ── Жовтий: дорогі категорії ────────────────────────────────────────
     if row.get("opportunity_type") in SENSITIVE_TYPES:
@@ -147,7 +149,9 @@ JUDGE_PROMPT = """Ти — редактор платформи Dityam.com.ua, я
 - назва й опис узгоджені між собою і з типом та віком;
 - опис пояснює, ЩО дитина отримає, а не лише рекламує організатора;
 - джерело схоже на справжнього організатора, а не на перепост невідомо чого;
-- немає ознак, що набір уже закритий або подія минула.
+- немає ознак, що набір уже закритий або подія минула. Дата «Сьогодні» є в
+  даних; «Заявки до» — останній день подачі, «Початок/Кінець події» — коли
+  вона відбувається. Це різні дати.
 
 Кажи publish=false, якщо:
 - це реклама платного сервісу під виглядом можливості;
@@ -170,7 +174,13 @@ def judge(client, row: dict) -> dict:
         "Вартість": row.get("cost_type"),
         "Джерело": row.get("source"),
         "URL": row.get("source_url"),
-        "Дедлайн": row.get("deadline"),
+        # До 17.09.2026 суддя бачив лише дедлайн — без дат події, виду й
+        # сьогоднішньої дати, хоча мав перевіряти, «чи подія не минула».
+        "Сьогодні": date.today().isoformat(),
+        "Заявки до": row.get("deadline"),
+        "Початок події": row.get("event_start_date"),
+        "Кінець події": row.get("event_end_date"),
+        "Вид за часом": row.get("timing_kind"),
     }
     try:
         resp = client.messages.create(

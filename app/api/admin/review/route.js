@@ -43,7 +43,7 @@ export async function POST(request) {
   if (spec.status === 'active') {
     const { data: row } = await supabase
       .from('opportunities')
-      .select('age_from, age_to, deadline, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .select('age_from, age_to, deadline, event_start_date, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
       .eq('id', id)
       .maybeSingle();
     const missing = row ? missingRequired(row) : [];
