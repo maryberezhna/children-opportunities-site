@@ -14,6 +14,37 @@ def get_client() -> Client:
     return create_client(url, key)
 
 
+# Поля, які повторна розмітка не сміє затерти порожнім. Їх заповнюють не лише
+# з тексту сторінки: дати й вид ставить планова перевірка (lifecycle.py) і
+# перерозмітка (remark.py, classify_timing.py), details і apply_url — remark.
+# До 17.09.2026 зміна сторінки джерела перезаписувала запис усіма ключами,
+# включно з None, і все це мовчки зникало (аудит «Дедлайн, подія, сезон», С6).
+KEEP_IF_KNOWN = (
+    "deadline", "event_start_date", "event_end_date", "recurrence",
+    "timing_kind", "season_months", "details", "apply_url", "price_note",
+)
+EXISTING_FIELDS = "id, verified_at, status, " + ", ".join(KEEP_IF_KNOWN)
+
+
+def merge_patch(existing: dict, record: dict) -> dict:
+    """Що писати в наявний (не схвалений людиною) запис. Чиста функція — під тести.
+
+    • slug не міняється ніколи: це URL, що вже живе в Telegram і Google;
+    • відоме значення не затирається порожнім;
+    • статус лише закривається: «закрито» зі сторінки приймаємо, а повертати
+      закритий чи чернетку в active розмітка не може. Закритий модератором
+      («пропустити» не ставить verified_at) інакше сам ожив би, щойно на
+      сторінці змінився текст; повернення сезону — справа планової перевірки.
+    """
+    patch = {k: v for k, v in record.items() if k != "slug"}
+    for key in KEEP_IF_KNOWN:
+        if key in patch and patch[key] in (None, "", []) and existing.get(key) not in (None, "", []):
+            patch.pop(key)
+    if "status" in patch and patch["status"] != "closed" and existing.get("status"):
+        patch.pop("status")
+    return patch
+
+
 def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
     from datetime import datetime, timezone
     # Always stamp updated_at so get_processed_today() can find today's activity.
@@ -29,7 +60,7 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
         slug = record.get("slug") or ""
         existing = (
             client.table("opportunities")
-            .select("id, verified_at")
+            .select(EXISTING_FIELDS)
             .or_(f"content_hash.eq.{content_hash},slug.eq.{slug}")
             .limit(1)
             .execute()
@@ -53,7 +84,7 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
                 if want:
                     same_page = (
                         client.table("opportunities")
-                        .select("id, title, verified_at")
+                        .select(EXISTING_FIELDS + ", title")
                         .eq("canonical_url", cu)
                         .limit(50)
                         .execute()
@@ -70,9 +101,7 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
                 # a full update would clobber their edits with re-extracted text.
                 patch = {"updated_at": now}
             else:
-                # slug не оновлюємо ніколи: це URL сторінки, зміна назви від
-                # LLM не сміє ламати посилання, що вже живуть у Telegram.
-                patch = {k: v for k, v in record.items() if k != "slug"}
+                patch = merge_patch(row, record)
             try:
                 result = (
                     client.table("opportunities")
