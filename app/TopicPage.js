@@ -2,7 +2,8 @@ import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import { kyivToday, daysUntil } from '@/lib/dates';
+import { kyivToday } from '@/lib/dates';
+import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
@@ -197,10 +198,9 @@ async function getRows(lang, slug) {
 
 /** Найближчий дедлайн угорі, без дедлайну — вкінці; закріплені — першими. */
 function sortByDeadline(items, todayIso, pinned) {
-  const rank = (o) => {
-    const d = daysUntil(o.deadline, todayIso);
-    return d === null || d < 0 ? Number.POSITIVE_INFINITY : d;
-  };
+  // Дедлайн, а без нього — дата події (lib/timing.js): подія з датами, але
+  // без дедлайну, більше не падає в кінець як «без дати».
+  const rank = (o) => whenRank(o, todayIso);
   return [...items].sort((a, b) => {
     const pa = pinned.has(a.id) ? 0 : 1;
     const pb = pinned.has(b.id) ? 0 : 1;
@@ -268,6 +268,9 @@ const slim = (o) => ({
   summary: o.summary, summary_en: o.summary_en || null, source: o.source,
   opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to,
   deadline: o.deadline, cities: o.cities, countries: o.countries || null,
+  // Без дат події й виду картка знову вгадувала б час лише з дедлайну й типу.
+  event_start_date: o.event_start_date || null, event_end_date: o.event_end_date || null,
+  timing_kind: o.timing_kind || null,
   is_international: o.is_international || false, format: o.format,
 });
 

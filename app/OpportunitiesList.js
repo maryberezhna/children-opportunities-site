@@ -2,7 +2,8 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import PlusSection, { PlusBanner } from './PlusSection';
-import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent } from '@/lib/labels';
+import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
+import { whenRank, whenState } from '@/lib/timing';
 import { cityLabel, formatLabel } from '@/lib/labels';
 import { opportunitiesWord } from '@/lib/plural';
 import { daysUntil, kyivToday } from '@/lib/dates';
@@ -43,6 +44,7 @@ const UI = {
     today: 'сьогодні',
     tomorrow: 'завтра',
     inDays: (n) => `через ${n} дн.`,
+    running: 'триває',
     daysLeft: (n) => `${n} ${n === 1 ? 'день' : 'днів'}`,
     until: (d) => `до ${d}`,
     noDeadline: 'без дедлайну',
@@ -88,6 +90,7 @@ const UI = {
     today: 'today',
     tomorrow: 'tomorrow',
     inDays: (n) => `in ${n} days`,
+    running: 'on now',
     daysLeft: (n) => `${n} ${n === 1 ? 'day' : 'days'}`,
     until: (d) => `by ${d}`,
     noDeadline: 'no deadline',
@@ -588,15 +591,15 @@ export default function OpportunitiesList({
 
   const filtered = useMemo(() => {
     const list = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
-    // Найближчий дедлайн угорі; без дедлайну — вкінці, свіжіші перші.
+    // Найближче угорі: дедлайн, а без нього — початок чи кінець події (раніше
+    // подія з датами, але без дедлайну, падала в кінець як «без дати»).
+    // Без жодної майбутньої дати — вкінці, свіжіші перші.
     return list.sort((a, b) => {
       const pa = pinned.has(a.id) ? 0 : 1;
       const pb = pinned.has(b.id) ? 0 : 1;
       if (pa !== pb) return pa - pb;
-      const da = daysUntil(a.deadline, todayIso);
-      const db = daysUntil(b.deadline, todayIso);
-      const ra = da === null || da < 0 ? 9999 : da;
-      const rb = db === null || db < 0 ? 9999 : db;
+      const ra = Math.min(whenRank(a, todayIso), 9999);
+      const rb = Math.min(whenRank(b, todayIso), 9999);
       if (ra !== rb) return ra - rb;
       return (b.created_at || '').localeCompare(a.created_at || '');
     });
@@ -657,21 +660,28 @@ export default function OpportunitiesList({
 
   const enField = (item, field) => (isEn && item[`${field}_en`]) || item[field] || '';
 
+  // Значок часу — з lib/timing.js, спільного для всього сайту. Дедлайн подачі
+  // горить терміновістю завжди, навіть коли сама подія ще далеко: до
+  // 17.09.2026 для подій дні рахувались від дедлайну спокійним «📅», і подача,
+  // що закривається, виглядала як далека подія.
   const dlChip = (item) => {
-    const days = daysUntil(item.deadline, todayIso);
-    const annual = ANNUAL_TYPES.has(item.opportunity_type);
-    if (days === null || days < 0) {
-      return { text: annual ? t.annual : t.open, kind: 'calm' };
+    const s = whenState(item, todayIso);
+    if (s.state === 'deadline') {
+      if (s.days === 0) return { text: `⏰ ${t.today}`, kind: 'urgent' };
+      if (s.days <= 7) return { text: `⏰ ${t.daysLeft(s.days)}`, kind: 'urgent' };
+      if (s.days <= 30) return { text: `⏳ ${t.daysLeft(s.days)}`, kind: 'soon' };
+      return { text: t.until(formatDeadline(item.deadline, lang)), kind: 'calm' };
     }
-    if (isEvent(item)) {
-      if (days === 0) return { text: `📅 ${t.today}`, kind: 'event' };
-      if (days === 1) return { text: `📅 ${t.tomorrow}`, kind: 'event' };
-      return { text: `📅 ${t.inDays(days)}`, kind: 'event' };
+    if (s.state === 'event') {
+      if (s.days === 1) return { text: `📅 ${t.tomorrow}`, kind: 'event' };
+      if (s.days <= 30) return { text: `📅 ${t.inDays(s.days)}`, kind: 'event' };
+      return {
+        text: `📅 ${formatDeadline(s.date, lang).replace(` ${todayIso.slice(0, 4)}`, '')}`,
+        kind: 'event',
+      };
     }
-    if (days === 0) return { text: `⏰ ${t.today}`, kind: 'urgent' };
-    if (days <= 7) return { text: `⏰ ${t.daysLeft(days)}`, kind: 'urgent' };
-    if (days <= 30) return { text: `⏳ ${t.daysLeft(days)}`, kind: 'soon' };
-    return { text: t.until(formatDeadline(item.deadline, lang)), kind: 'calm' };
+    if (s.state === 'running') return { text: `📅 ${t.running}`, kind: 'event' };
+    return { text: s.state === 'periodic' ? t.annual : t.open, kind: 'calm' };
   };
 
   const ageText = (item) => (

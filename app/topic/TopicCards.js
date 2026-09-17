@@ -1,8 +1,8 @@
 'use client';
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { daysUntil } from '@/lib/dates';
-import { TYPE_LABELS, TYPE_LABELS_EN, ANNUAL_TYPES, isEvent, cityLabel } from '@/lib/labels';
+import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
+import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
 
@@ -34,6 +34,7 @@ const MONTHS = {
 const TEXT = {
   uk: {
     annual: '🔄 щорічно', open: 'набір відкритий', today: 'сьогодні', tomorrow: 'завтра',
+    running: 'триває',
     days: (n) => `${n} ${plural(n, 'день', 'дні', 'днів')}`,
     until: (d) => `до ${d}`,
     age: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
@@ -41,6 +42,7 @@ const TEXT = {
   },
   en: {
     annual: '🔄 every year', open: 'enrolment open', today: 'today', tomorrow: 'tomorrow',
+    running: 'on now',
     days: (n) => `${n} ${n === 1 ? 'day' : 'days'}`,
     until: (d) => `by ${d}`,
     age: (a, b) => (a === b ? `age ${a}` : `ages ${a}–${b}`),
@@ -59,25 +61,27 @@ function dateShort(iso, todayIso, lang) {
   return lang === 'en' ? `${day} ${month}${year}` : `${day} ${month}${year}`;
 }
 
-/** Текст дедлайну й чи він горить (≤ 7 днів — помаранчевий жирний). */
+/**
+ * Текст про час і чи він горить (≤ 7 днів до дедлайну — помаранчевий жирний).
+ * Стан — з lib/timing.js, спільного з карткою головної: дедлайн подачі горить
+ * завжди, подія показує свою дату, вид важить більше за тип.
+ */
 function deadlineChip(item, todayIso, lang) {
   const t = TEXT[lang] || TEXT.uk;
-  const days = daysUntil(item.deadline, todayIso);
-  if (days === null || days < 0) {
-    return { text: ANNUAL_TYPES.has(item.opportunity_type) ? t.annual : t.open, urgent: false };
+  const s = whenState(item, todayIso);
+  if (s.state === 'deadline') {
+    if (s.days === 0) return { text: `⏰ ${t.today}`, urgent: true };
+    if (s.days === 1) return { text: `⏰ ${t.tomorrow}`, urgent: true };
+    if (s.days <= 7) return { text: `⏰ ${t.days(s.days)}`, urgent: true };
+    if (s.days <= 30) return { text: `⏳ ${t.days(s.days)}`, urgent: false };
+    return { text: t.until(dateShort(item.deadline, todayIso, lang)), urgent: false };
   }
-  // Для подій дата — день, коли вона відбувається, а не кінець подачі:
-  // «горить» тут було б неправдою.
-  if (isEvent(item)) {
-    if (days === 0) return { text: `📅 ${t.today}`, urgent: false };
-    if (days === 1) return { text: `📅 ${t.tomorrow}`, urgent: false };
-    return { text: `📅 ${dateShort(item.deadline, todayIso, lang)}`, urgent: false };
+  if (s.state === 'event') {
+    if (s.days === 1) return { text: `📅 ${t.tomorrow}`, urgent: false };
+    return { text: `📅 ${dateShort(s.date, todayIso, lang)}`, urgent: false };
   }
-  if (days === 0) return { text: `⏰ ${t.today}`, urgent: true };
-  if (days === 1) return { text: `⏰ ${t.tomorrow}`, urgent: true };
-  if (days <= 7) return { text: `⏰ ${t.days(days)}`, urgent: true };
-  if (days <= 30) return { text: `⏳ ${t.days(days)}`, urgent: false };
-  return { text: t.until(dateShort(item.deadline, todayIso, lang)), urgent: false };
+  if (s.state === 'running') return { text: `📅 ${t.running}`, urgent: false };
+  return { text: s.state === 'periodic' ? t.annual : t.open, urgent: false };
 }
 
 function placeText(item, lang) {

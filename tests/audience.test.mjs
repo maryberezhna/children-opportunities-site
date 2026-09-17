@@ -19,9 +19,19 @@ test('прострочена разова можливість не рахуєт
   assert.equal(isLive(item({ deadline: null }), TODAY), true);
 });
 
-test('щорічна можливість не гасне після дедлайну', () => {
+// Рішення Марії «Б» (17.09.2026): між сезонами періодична програма зникає зі
+// списків — подати туди зараз не можна. Сторінка живе, повертає її планова
+// перевірка, коли відкриється новий сезон.
+test('періодична програма після дедлайну зникає зі списків', () => {
   const olympiad = item({ opportunity_type: 'olympiad', deadline: '2026-01-01' });
-  assert.equal(isLive(olympiad, TODAY), true);
+  assert.equal(isLive(olympiad, TODAY), false);
+  assert.equal(isLive(item({ opportunity_type: 'olympiad', deadline: null }), TODAY), true);
+});
+
+test('подія, що вже відбулась, не рахується навіть без дедлайну', () => {
+  assert.equal(isLive(item({ deadline: null, event_end_date: '2026-09-09' }), TODAY), false);
+  assert.equal(isLive(item({ deadline: null, event_start_date: '2026-09-01',
+    event_end_date: '2026-09-30' }), TODAY), true);
 });
 
 test('підліткам — усе, що доступне у 13+', () => {

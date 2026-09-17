@@ -141,6 +141,18 @@ const strings = (lang) => L[lang] || L.uk;
 const isPeriodic = (item) => (item.timing_kind
   ? item.timing_kind === 'periodic'
   : ANNUAL_TYPES.has(item.opportunity_type));
+
+// «Подача» без дедлайну: щороку чи постійно. З виду, прочитаного з тексту;
+// поки вид не визначено — зі старого recurrence. Одноразова без дедлайну —
+// нічого не пишемо: вигадувати «постійно відкрита» не можна.
+const applicationsNote = (item) => {
+  if (item.timing_kind === 'periodic') return 'periodic';
+  if (item.timing_kind === 'permanent') return 'permanent';
+  if (item.timing_kind === 'one_time') return null;
+  if (item.recurrence === 'annual') return 'periodic';
+  if (item.recurrence === 'ongoing') return 'permanent';
+  return null;
+};
 const typeLabels = (lang) => (lang === 'en' ? TYPE_LABELS_EN : TYPE_LABELS);
 const needLabels = (lang) => (lang === 'en' ? NEED_LABELS_EN : NEED_LABELS);
 const basePath = (lang) => (lang === 'en' ? '/en' : '');
@@ -625,10 +637,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
                 <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>
               </>
-            ) : item.recurrence ? (
+            ) : applicationsNote(item) ? (
               <>
                 <dt>{t.applications}</dt>
-                <dd>{item.recurrence === 'annual' ? t.annual : t.ongoing}</dd>
+                <dd>{applicationsNote(item) === 'periodic' ? t.annual : t.ongoing}</dd>
               </>
             ) : null}
             {/* Один рядок «Вартість»: категорія і, якщо відомо, сума словами.
