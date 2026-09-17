@@ -23,6 +23,7 @@ import { plural } from '@/lib/plural';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
+import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 
 const SITE = 'https://dityam.com.ua';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
@@ -710,6 +711,17 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
         <div lang={detailsLang} className={isClosed ? 'closed-dim' : undefined}>
           <Details text={detailsText} />
         </div>
+
+        {/* Сторінки обмінів Erasmus+ приводять найбільше людей із пошуку, а
+            картка не пояснює, що це за програма. Путівник поки лише
+            українською. */}
+        {lang === 'uk' && isErasmus(item) ? (
+          <p className="o-guide-link">
+            <Link href={ERASMUS_PATH}>
+              Вперше про Erasmus+? Путівник: хто з України може поїхати, скільки це коштує і як подати заявку →
+            </Link>
+          </p>
+        ) : null}
 
         <TelegramSubscribeBlock place="detail_page" lang={lang} />
 

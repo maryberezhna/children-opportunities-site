@@ -411,6 +411,9 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
               {heading.tail || null}
             </h1>
             <p className="tp-intro">{c.intro}</p>
+            {c.guide ? (
+              <p className="tp-guide-link"><Link href={c.guide.href}>{c.guide.label}</Link></p>
+            ) : null}
             <div className="tp-actions">
               <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
                 {ch.telegram}
