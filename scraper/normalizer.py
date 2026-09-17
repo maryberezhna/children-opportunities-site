@@ -131,6 +131,33 @@ def valid_apply_url(url, source_url=None):
     return url[:500]
 
 
+def _apply_club_default(data: dict) -> None:
+    """Гурток, про набір якого текст мовчить, — постійний (рішення Марії 17.09.2026).
+
+    До 17.09.2026 це «знання» підкладали скрапери гуртків: дописували в сирий
+    текст «Набір постійний, дедлайну немає», і модель слухняно читала це як
+    факт зі сторінки. Тепер правило стоїть тут, відкрито, і лишає позначку
+    модератору, — а скрапери пишуть лише те, що є в джерелі.
+
+    Вид, прочитаний із тексту (періодичний, одноразовий), має пріоритет. А
+    recurrence тримаємо в злагоді з видом: на ньому досі тримається вимога
+    «дата, період або періодичність».
+    """
+    kind = data.get("timing_kind")
+    has_dates = any(data.get(k) for k in ("deadline", "event_start_date", "event_end_date"))
+    if data.get("opportunity_type") == "club" and not kind and not has_dates \
+            and not data.get("recurrence"):
+        data["timing_kind"] = kind = "permanent"
+        note = ("вид: постійна — гурток, текст не каже про сезон набору; "
+                "за замовчуванням (рішення 17.09.2026), перевірити")
+        data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+    if not data.get("recurrence") and not has_dates:
+        if kind == "permanent":
+            data["recurrence"] = "ongoing"
+        elif kind == "periodic":
+            data["recurrence"] = "annual"
+
+
 def _sanitize(data: dict) -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
     the whole record."""
@@ -181,6 +208,7 @@ def _sanitize(data: dict) -> dict:
     data["timing_kind"] = clean_kind(data.get("timing_kind"))
     data["season_months"] = (clean_months(data.get("season_months"))
                              if data["timing_kind"] == "periodic" else None)
+    _apply_club_default(data)
     if data["age_from"] > data["age_to"]:
         data["age_from"], data["age_to"] = data["age_to"], data["age_from"]
 
