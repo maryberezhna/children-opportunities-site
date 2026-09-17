@@ -56,6 +56,15 @@ const DRY_RUN = process.env.DRY_RUN === 'true' || process.argv.includes('--dry-r
 // PREVIEW=true — зібрати пости й надрукувати, нічого не шлючи і не змінюючи
 // в базі. PREVIEW_DAYS — на скільки днів уперед показати план (типово 14).
 const PREVIEW = process.env.PREVIEW === 'true';
+// Який пост надсилає цей запуск (17.09.2026, рішення Марії «рознести в часі»):
+//   digest — лише щоденний тематичний (ранковий запуск);
+//   new    — лише «🆕 Нова можливість» (вечірній запуск);
+//   both   — обидва поспіль (ручний запуск і превʼю, як було до 17.09).
+// Раніше обидва пости йшли одним запуском з різницею в секунду: 17.09 вони
+// прийшли разом о 13:49 замість 09:00, бо GitHub запустив розклад на 5 годин
+// пізніше. Новинка, що вже вийшла в ранковому пості, ввечері не повториться:
+// її telegram_posted_at уже стоїть.
+const POST = ['digest', 'new'].includes(process.env.POST) ? process.env.POST : 'both';
 const PREVIEW_DAYS = Number(process.env.PREVIEW_DAYS || 14);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -226,8 +235,8 @@ if (PREVIEW) {
     await sendNewOpportunityPost(shown);
   }
 } else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
-  const shown = await sendDailyDigest();
-  await sendNewOpportunityPost(shown);
+  const shown = POST === 'new' ? [] : await sendDailyDigest();
+  if (POST !== 'digest') await sendNewOpportunityPost(shown || []);
 }
 
 /** Щоденний пост за планом каналу. Повертає id можливостей, які в нього потрапили. */
@@ -497,7 +506,7 @@ function freeCountForPost(pool) {
 }
 
 /**
- * «🆕 Нова можливість» — окремий пост одразу після щоденного.
+ * «🆕 Нова можливість» — окремий пост; з 17.09.2026 — окремим вечірнім запуском.
  * 15.09.2026 блок у кінці щоденного поста губився, тож за рішенням Марії
  * новинка завжди йде окремо. Одна на день: окремі картки на кожну новинку
  * (до 8 за запуск) вимкнули 19.08 як спам.

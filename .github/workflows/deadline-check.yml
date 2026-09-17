@@ -1,8 +1,13 @@
 name: Deadline check
 
 on:
+  # Два пости — у різний час (рішення Марії 17.09.2026): до цього обидва йшли
+  # одним запуском із різницею в секунду. GitHub запускає розклад із
+  # запізненням до ~5 годин, тож зазор великий: навіть якщо ранковий запуск
+  # спізниться до 11:00 UTC, а вечірній прийде вчасно, між постами — 3 години.
   schedule:
-    - cron: '0 6 * * *'  # daily 06:00 UTC (09:00 Kyiv summer / 08:00 winter)
+    - cron: '0 6 * * *'   # тематичний пост дня: 09:00 Kyiv (літо)
+    - cron: '0 14 * * *'  # «🆕 Нова можливість»: 17:00 Kyiv (літо)
   workflow_dispatch:
     inputs:
       preview:
@@ -17,6 +22,10 @@ on:
         description: 'Post a Telegram digest of items due within 7 days'
         required: false
         default: 'true'
+      post:
+        description: 'Який пост: digest (тематичний), new (Нова можливість) або both'
+        required: false
+        default: 'both'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -47,6 +56,7 @@ jobs:
           NOTIFY: ${{ github.event.inputs.notify || 'true' }}
           PREVIEW: ${{ github.event.inputs.preview || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          POST: ${{ github.event.schedule == '0 14 * * *' && 'new' || (github.event_name == 'schedule' && 'digest' || github.event.inputs.post || 'both') }}
         run: node scripts/check-deadlines.mjs
 
       - name: Upload report
