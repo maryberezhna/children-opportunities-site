@@ -156,15 +156,40 @@ MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "�
               "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
 
 
+def _day(iso) -> tuple[int, int, int] | None:
+    try:
+        y, m, d = (int(x) for x in str(iso or "")[:10].split("-"))
+        return y, m, d
+    except ValueError:
+        return None
+
+
 def _deadline(o) -> str:
     """«до 30 жовтня» (рік — лише якщо не поточний). Сира ISO-дата в
     повідомленні для батьків читалась би як помилка."""
-    try:
-        y, m, d = (int(x) for x in str(o.get("deadline") or "")[:10].split("-"))
-    except ValueError:
+    ymd = _day(o.get("deadline"))
+    if not ymd:
         return ""
+    y, m, d = ymd
     year = f" {y}" if y != datetime.now(timezone.utc).year else ""
     return f"до {d} {MONTHS_GEN[m - 1]}{year}"
+
+
+def _event(o) -> str:
+    """«6–8 листопада» — коли подія ВІДБУВАЄТЬСЯ. Окремо від дедлайну подачі:
+    до 17.09.2026 добірка знала лише дедлайн, і подія без нього не мала дати
+    зовсім, а з ним — підписник не бачив, коли саме їхати."""
+    start = _day(o.get("event_start_date")) or _day(o.get("event_end_date"))
+    end = _day(o.get("event_end_date")) or start
+    if not start:
+        return ""
+    now_year = datetime.now(timezone.utc).year
+    year = f" {end[0]}" if end[0] != now_year else ""
+    if start == end:
+        return f"{start[2]} {MONTHS_GEN[start[1] - 1]}{year}"
+    if start[:2] == end[:2]:
+        return f"{start[2]}–{end[2]} {MONTHS_GEN[end[1] - 1]}{year}"
+    return f"{start[2]} {MONTHS_GEN[start[1] - 1]} – {end[2]} {MONTHS_GEN[end[1] - 1]}{year}"
 
 
 def _meta(o) -> str:
@@ -175,14 +200,18 @@ def _meta(o) -> str:
     # Дедлайн — те, заради чого читають добірку; /plus обіцяє його в повідомленні.
     deadline = _deadline(o)
     if deadline:
-        bits.append(deadline)
+        bits.append(f"заявки {deadline}")
+    event = _event(o)
+    if event:
+        bits.append(f"проходить {event}")
     return " · ".join(b for b in bits if b)
 
 
 def calendar_url(o):
-    """«Додати в календар» — лише коли є дедлайн: без дати подію немає куди
-    поставити, і /api/events/<slug>/ics без неї відповідає 422."""
-    return f"{SITE_URL}/events/{o['slug']}/add" if o.get("deadline") else None
+    """«Додати в календар» — коли є дедлайн або дати самої події: без жодної
+    дати подію немає куди поставити, і /api/events/<slug>/ics відповідає 422."""
+    has_date = o.get("deadline") or o.get("event_start_date") or o.get("event_end_date")
+    return f"{SITE_URL}/events/{o['slug']}/add" if has_date else None
 
 
 def telegram_keyboard(items) -> dict:
@@ -292,6 +321,7 @@ def main():
     for start in range(0, 20000, 1000):
         page = client.table("opportunities").select(
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
+            "event_start_date, event_end_date, timing_kind, "
             "opportunity_type, format, cities, countries, is_international, child_needs"
         ).eq("status", "active").is_("canonical_slug", "null") \
             .order("id").range(start, start + 999).execute().data or []
@@ -302,7 +332,8 @@ def main():
     # Дедлайн «сьогодні» або «завтра» — це не можливість, а привід засмутитись:
     # поки підписник прочитає підбірку й збере документи, подача вже закриється.
     # Тому відсіваємо все, до чого лишилось менше MIN_LEAD_DAYS днів. Записи без
-    # дедлайну (набір триває постійно) лишаються.
+    # дедлайну лишаються: це постійні можливості, періодичні з відкритим набором
+    # або події, де відома лише дата проведення.
     min_deadline = (datetime.now(timezone.utc).date() + timedelta(days=MIN_LEAD_DAYS)).isoformat()
     before = len(opps)
     opps = [o for o in opps if not o.get("deadline") or str(o["deadline"])[:10] >= min_deadline]

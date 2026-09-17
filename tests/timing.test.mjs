@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { isExpired, isPeriodic, whenRank, whenState } from '../lib/timing.js';
+import { calendarTarget, googleCalendarUrl } from '../lib/calendar-links.js';
 
 // Кейси з аудиту «Дедлайн, подія, сезон» (17.09.2026).
 const TODAY = '2026-09-17';
@@ -61,4 +62,21 @@ test('whenRank: найближче угорі, без дат — у кінець
   const sorted = [...items].sort((a, b) => whenRank(a, TODAY) - whenRank(b, TODAY));
   assert.deepEqual(sorted.map((i) => i.id), ['deadline', 'event', 'none']);
   assert.equal(whenRank({}, TODAY), Number.POSITIVE_INFINITY);
+});
+
+
+test('календар: дедлайн, поки попереду, інакше — дати події', () => {
+  const malmo = { deadline: '2026-09-30', event_start_date: '2026-11-06', event_end_date: '2026-11-08' };
+  assert.deepEqual(calendarTarget(malmo, TODAY), { kind: 'deadline', start: '2026-09-30', end: '2026-09-30' });
+  assert.deepEqual(calendarTarget({ ...malmo, deadline: '2026-09-10' }, TODAY),
+    { kind: 'event', start: '2026-11-06', end: '2026-11-08' });
+  assert.equal(calendarTarget({ event_end_date: '2026-09-01' }, TODAY), null);
+  assert.equal(calendarTarget({}, TODAY), null);
+});
+
+test('Google: кінець цілоденної події — наступний день', () => {
+  const url = googleCalendarUrl({ title: 't', date: '2026-11-06', endDate: '2026-11-08', url: 'https://x' });
+  assert.match(decodeURIComponent(url), /dates=20261106\/20261109/);
+  const dl = googleCalendarUrl({ title: 't', date: '2026-09-30', url: 'https://x' });
+  assert.match(decodeURIComponent(dl), /dates=20260930\/20260930/);
 });
