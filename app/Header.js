@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { TOPIC_LIST, TOPIC_NAV, topicPath } from '@/lib/topics';
+import { ERASMUS_PATH } from '@/lib/erasmus';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
 
@@ -121,10 +122,12 @@ export default function Header() {
     : [{ href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') }];
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
-  const topicLinks = TOPIC_NAV.map((t) => ({
-    href: topicPath(t, isEnglish ? 'en' : 'uk'),
-    label: isEnglish ? t.labelEn : t.label,
-  }));
+  const topicLinks = TOPIC_NAV.flatMap((t) => {
+    const link = { href: topicPath(t, isEnglish ? 'en' : 'uk'), label: isEnglish ? t.labelEn : t.label };
+    // Путівник Erasmus+ — одразу під «Програмами обміну», як у його хлібних
+    // крихтах. Англійської версії путівника поки немає.
+    return !isEnglish && t.slug === 'prohramy-obminu' ? [link, { href: ERASMUS_PATH, label: 'Erasmus+' }] : [link];
+  });
   const topicActive = topicLinks.some((l) => l.href === pathname);
 
   return (
