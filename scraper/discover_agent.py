@@ -46,7 +46,7 @@ import hubs
 from keywords import (
     DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
 )
-from normalizer import _sanitize
+from normalizer import _sanitize, summary_says_over
 from recheck_dates import fetch_text
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -109,6 +109,11 @@ def _regions() -> list[dict]:
 # кандидат іде в модерацію, тільки якщо агент САМ відкрив сторінку і на ній
 # дослівно видно: це для дітей, і діти з України можуть брати участь.
 VERIFY = RARE and (os.environ.get("DISCOVER_VERIFY") or "true") != "false"
+# Перевірка актуальності сторінкою для ЗВИЧАЙНОГО пошуку. До 17.09.2026 сторінку
+# читав лише флоу «рідкісне за кордоном», а щоденний агент пускав у чергу все:
+# «Bloomsday Young Authors» (Ірландія) приїхав зі своїм же описом «сезон 2026
+# року вже завершено». Тут перевіряємо лише одне — чи це ще попереду.
+CHECK_CURRENT = not RARE and (os.environ.get("DISCOVER_CHECK_CURRENT") or "true") != "false"
 VERIFY_MODEL = os.environ.get("DISCOVER_VERIFY_MODEL") or "claude-haiku-4-5-20251001"
 MIN_QUOTE = 12
 
@@ -165,10 +170,12 @@ VERIFY_SYSTEM = """Тобі дають сторінку, яку агент за�
 4. kind: regular_club — звичайний регулярний гурток, секція чи курс поруч із
    домом; unusual — табір, турнір, експедиція, резиденція, фестиваль, програма
    фонду, стипендія — те, чого родина сама не знайде.
-5. is_current: чи це ще актуально. Новина про табір, який уже відбувся, — past,
-   навіть якщо програма колись була чудова. date_evidence — цитата з датою чи
-   роком. Дата публікації новини — теж дата: стаття 2023 року без згадки про
-   новий сезон — past.
+5. is_current: чи це ще актуально НА СЬОГОДНІ (дата — у повідомленні). Новина
+   про табір, який уже відбувся, — past, навіть якщо програма колись була
+   чудова. Щорічний конкурс, чий дедлайн чи подія цього року вже минули, а про
+   наступний сезон нічого не сказано, — теж past. date_evidence — цитата з
+   датою чи роком. Дата публікації новини — теж дата: стаття 2023 року без
+   згадки про новий сезон — past.
 6. residency: чи може скористатися дитина, яка ЖИВЕ В УКРАЇНІ. residents_only —
    у тексті вимога жити в країні: місцева школа, реєстрація, тимчасовий
    захист, «для родин, які перебувають у країні». open_from_ukraine — програма
@@ -208,19 +215,10 @@ def decide_verified(out: dict, page: str, today: date | None = None) -> tuple[bo
                        if rq else "треба жити в країні — з України не скористатися")
     if residency == "open_from_ukraine" and rq and _norm_text(rq)[:60] not in _norm_text(page):
         return False, "цитати про участь з України на сторінці немає"
-    # Актуальність. 14.09.2026 контрольний прогін «теніс · Іспанія» приніс
-    # новину 2023 року про табір, що давно відбувся: дітей і Україну перевірка
-    # бачила, а дату — ні. Рік у цитаті звіряємо самі, не покладаючись на
-    # модель: якщо всі роки в ній уже минули — це минуле.
+    ok, why = decide_current(out, page, today)
+    if not ok:
+        return False, why
     dq = (out.get("date_evidence") or "").strip()
-    if out.get("is_current") == "past":
-        return False, f"уже минуло: «{dq[:80]}»" if dq else "уже минуло"
-    if dq:
-        if _norm_text(dq)[:60] not in _norm_text(page):
-            return False, "цитати з датою на сторінці немає"
-        years = [int(y) for y in re.findall(r"\b(20\d{2})\b", dq)]
-        if years and max(years) < (today or date.today()).year:
-            return False, f"дата в минулому: «{dq[:80]}»"
     label = "для дітей з України" if el == "for_ukrainians" else "відкрито для всіх"
     # Безстрокові програми (урядовий протокол, постійний набір) дат не мають —
     # їх не губимо, але модератор бачить, що дату треба перевірити.
@@ -230,24 +228,56 @@ def decide_verified(out: dict, page: str, today: date | None = None) -> tuple[bo
     return True, f"{label}: «{ev[:140]}»{reach}{when}"
 
 
-def verify_candidate(rec: dict) -> tuple[bool, str]:
+def decide_current(out: dict, page: str, today: date | None = None) -> tuple[bool, str]:
+    """Чи можливість ще попереду. Чиста функція — під тести.
+
+    Актуальність. 14.09.2026 контрольний прогін «теніс · Іспанія» приніс
+    новину 2023 року про табір, що давно відбувся: дітей і Україну перевірка
+    бачила, а дату — ні. Рік у цитаті звіряємо самі, не покладаючись на
+    модель: якщо всі роки в ній уже минули — це минуле. Минуле в межах
+    ПОТОЧНОГО року (Bloomsday — 16 червня 2026) рік не ловить, тому моделі
+    тепер передається сьогоднішня дата і її висновок is_current=past вирішальний.
+    """
+    dq = (out.get("date_evidence") or "").strip()
+    if out.get("is_current") == "past":
+        return False, f"уже минуло: «{dq[:80]}»" if dq else "уже минуло"
+    if dq:
+        if _norm_text(dq)[:60] not in _norm_text(page):
+            return False, "цитати з датою на сторінці немає"
+        years = [int(y) for y in re.findall(r"\b(20\d{2})\b", dq)]
+        if years and max(years) < (today or date.today()).year:
+            return False, f"дата в минулому: «{dq[:80]}»"
+    return True, (f"актуально: «{dq[:80]}»" if dq
+                  else "⚠️ дату на сторінці не видно — перевірити актуальність")
+
+
+def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str]:
+    """full=True — повна перевірка «рідкісного» флоу; False — лише актуальність."""
     page, status, _kind = fetch_text(rec["source_url"])
     if not page:
-        return False, f"сторінка не відкривається ({status})"
+        if full:
+            return False, f"сторінка не відкривається ({status})"
+        # Частина сайтів не пускає сервери GitHub (403), хоча з браузера
+        # відкривається. Звичайного кандидата через це не губимо — модератор
+        # бачить, що актуальність ніхто не перевірив.
+        return True, f"⚠️ актуальність не перевірено: сторінка не відкрилась ({status})"
     try:
         llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         resp = llm.messages.create(
             model=VERIFY_MODEL, max_tokens=700, system=VERIFY_SYSTEM,
             tools=[VERIFY_TOOL], tool_choice={"type": "tool", "name": "verify"},
             messages=[{"role": "user", "content":
+                       f"Сьогодні: {date.today().isoformat()}\n"
                        f"Кандидат: «{rec['title']}»\nАдреса: {rec['source_url']}\n\n"
                        f"Текст сторінки:\n{page}"}],
         )
         block = next((b for b in resp.content if b.type == "tool_use"), None)
         out = block.input if block else {}
     except Exception as e:
-        return False, f"перевірка впала: {type(e).__name__}"
-    return decide_verified(out, page)
+        if full:
+            return False, f"перевірка впала: {type(e).__name__}"
+        return True, f"⚠️ актуальність не перевірено: {type(e).__name__}"
+    return decide_verified(out, page) if full else decide_current(out, page)
 
 
 def keyword_of_day() -> str:
@@ -289,13 +319,16 @@ def region_of_day() -> dict:
 def _prompt(kw: str, region: dict) -> str:
     is_home = region["name"] == "Україна"
     return (
+        f"Сьогодні {date.today().isoformat()}.\n"
         f"Знайди в інтернеті до {MAX_CANDIDATES} КОНКРЕТНИХ, актуальних можливостей "
         f"{region['audience']} за темою «{kw}». Використай веб-пошук.\n"
         f"Мова пошуку: {region['hint']}.\n\n"
         "Кожна має бути:\n"
         "- для дітей/підлітків 0–18 (НЕ для дорослих чи студентів ВНЗ),\n"
         "- конкретна, з реальним організатором і сторінкою (НЕ агрегатор/каталог),\n"
-        "- бажано з активним дедлайном або набором, що триває.\n"
+        "- АКТУАЛЬНА на сьогодні: набір відкритий, триває, або вже оголошено\n"
+        "  наступний сезон. Якщо подача чи подія цього року вже минули, а про\n"
+        "  новий набір нічого не сказано, — НЕ бери, навіть якщо програма щорічна.\n"
         # У флоу «рідкісне за кордоном» цей блок вимкнено: його «для дітей з
         # України/біженців» пускало діаспорні програми, для яких треба жити в
         # країні. Там своя, суворіша умова — RARE_FOCUS.
@@ -650,8 +683,14 @@ def main() -> int:
             rec["dup_score"] = round(score, 3)
             flagged += 1
 
-        if VERIFY:
-            ok, why = verify_candidate(rec)
+        # Агент сам написав, що все минуло, — сторінку навіть не відкриваємо.
+        if summary_says_over(rec.get("summary")):
+            unverified += 1
+            logger.info("  ✗ в описі сказано, що вже завершено: %s", rec["title"][:55])
+            continue
+
+        if VERIFY or CHECK_CURRENT:
+            ok, why = verify_candidate(rec, full=VERIFY)
             if not ok:
                 unverified += 1
                 logger.info("  ✗ не підтверджено сторінкою (%s): %s", why, rec["title"][:55])
@@ -688,8 +727,8 @@ def main() -> int:
             logger.error("  ✗ insert failed for '%s': %s", rec["title"][:50], e)
             skipped += 1
 
-    if VERIFY:
-        logger.info("Не пройшли перевірку сторінкою: %d", unverified)
+    if VERIFY or CHECK_CURRENT:
+        logger.info("Не пройшли перевірку (минуле або не підтверджено): %d", unverified)
 
     # Здоров'я агента в тому ж реєстрі, що й у решти джерел. Без цього
     # рядок discover-agent мав checks_count=0 і порожній last_success_at:
