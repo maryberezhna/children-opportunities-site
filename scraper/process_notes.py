@@ -19,6 +19,7 @@ import logging
 import os
 import sys
 import urllib.request
+from datetime import datetime, timezone
 
 import anthropic
 
@@ -36,7 +37,10 @@ ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
 EDITABLE = [
     "title", "summary", "details", "opportunity_type", "age_from", "age_to",
     "cost_type", "price_note", "format", "cities", "deadline", "child_needs",
+    # З 17.09.2026: час можливості — не лише дедлайн (аудит, С8).
+    "event_start_date", "event_end_date", "timing_kind", "apply_url",
 ]
+DATE_FIELDS = ("deadline", "event_start_date", "event_end_date")
 
 APPLY_TOOL = {
     "name": "apply_note",
@@ -55,18 +59,64 @@ APPLY_TOOL = {
             "price_note": {"type": "string"},
             "format": {"type": "string"},
             "cities": {"type": "array", "items": {"type": "string"}},
-            "deadline": {"type": "string", "description": "YYYY-MM-DD або порожньо"},
+            "deadline": {"type": "string",
+                         "description": "YYYY-MM-DD — останній день ПОДАЧІ. Порожній рядок — прибрати дедлайн."},
+            "event_start_date": {"type": "string",
+                                 "description": "YYYY-MM-DD — перший день проведення. Порожній рядок — прибрати."},
+            "event_end_date": {"type": "string",
+                               "description": "YYYY-MM-DD — останній день проведення. Порожній рядок — прибрати."},
+            "timing_kind": {"type": "string", "enum": ["one_time", "periodic", "permanent"],
+                            "description": "Вид за часом: разова, повторюється циклами, будь-коли."},
+            "apply_url": {"type": "string", "description": "Пряме посилання на подачу заявки."},
             "child_needs": {"type": "array", "items": {"type": "string"}},
         },
         "additionalProperties": False,
     },
 }
 
-SYSTEM = """Ти — редактор каталогу можливостей для українських дітей (0–18).
+SYSTEM = """Сьогодні {today}. Ти — редактор каталогу можливостей для українських дітей (0–18).
 Редактор людською мовою написав нотатку, що виправити в записі. Застосуй
 РІВНО те, про що просить нотатка: не переписуй поля, яких вона не стосується.
 Пиши українською, стисло й фактично. Якщо нотатка просить неможливого для
-цих полів — зміни лише те, що можеш, решту проігноруй."""
+цих полів — зміни лише те, що можеш, решту проігноруй.
+
+Дати — різні речі: «до коли подати» → deadline; «коли відбувається» →
+event_start_date / event_end_date. Якщо нотатка просить прибрати дату, поверни
+для цього поля порожній рядок. Рік не вказано — найближчий майбутній."""
+
+
+def build_patch(raw: dict) -> dict:
+    """Що з відповіді моделі справді писати в запис. Чиста функція — під тести.
+
+    Дати — лише YYYY-MM-DD; порожній рядок для дати означає «прибрати» (раніше
+    нотатка не могла стерти дедлайн узагалі). Вид — лише з трьох значень.
+    Посилання на подачу — лише справжня адреса, не чат чи соцмережа.
+    """
+    import re
+    from normalizer import valid_apply_url
+    from timing import clean_kind
+    patch = {}
+    for key, value in (raw or {}).items():
+        if key not in EDITABLE:
+            continue
+        if key in DATE_FIELDS:
+            if value == "":
+                patch[key] = None
+            elif isinstance(value, str) and re.fullmatch(r"\d{4}-\d{2}-\d{2}", value.strip()):
+                patch[key] = value.strip()
+            continue
+        if key == "timing_kind":
+            if clean_kind(value):
+                patch[key] = value
+            continue
+        if key == "apply_url":
+            url = valid_apply_url(value)
+            if url:
+                patch[key] = url
+            continue
+        if value not in (None, "", []):
+            patch[key] = value
+    return patch
 
 TG_ESC = str.maketrans({"&": "&amp;", "<": "&lt;", ">": "&gt;"})
 
@@ -101,7 +151,10 @@ def candidate_card(o: dict) -> str:
         "",
         f"🎓 <b>{esc(o['title'])}</b>",
         " · ".join(meta) if meta else "",
-        f"⏰ Дедлайн: {o['deadline']}" if o.get("deadline") else "",
+        f"⏰ Заявки до: {o['deadline']}" if o.get("deadline") else "",
+        (f"📅 Коли: {o.get('event_start_date') or ''}"
+         f"{' — ' + o['event_end_date'] if o.get('event_end_date') and o.get('event_end_date') != o.get('event_start_date') else ''}")
+        if (o.get("event_start_date") or o.get("event_end_date")) else "",
         "",
         esc((o.get("summary") or "")[:400]),
         "",
@@ -132,7 +185,7 @@ def main() -> int:
             resp = llm.messages.create(
                 model="claude-sonnet-5",
                 max_tokens=1500,
-                system=SYSTEM,
+                system=SYSTEM.format(today=datetime.now(timezone.utc).date().isoformat()),
                 tools=[APPLY_TOOL],
                 tool_choice={"type": "tool", "name": "apply_note"},
                 messages=[{"role": "user", "content":
@@ -141,14 +194,15 @@ def main() -> int:
                     "Поверни лише поля, які змінюються."}],
             )
             tool_use = next((b for b in resp.content if b.type == "tool_use"), None)
-            patch = {k: v for k, v in (tool_use.input if tool_use else {}).items()
-                     if k in EDITABLE and v not in (None, "", [])}
+            patch = build_patch(tool_use.input if tool_use else {})
         except Exception as e:
             logger.error("LLM failed for %s: %s", o["id"], e)
             continue
 
         patch["note_status"] = "applied"
-        patch["updated_at"] = "now()"
+        # ISO-час, а не рядок "now()": PostgREST передає значення як є, і
+        # рядок "now()" у timestamptz — не функція, а невалідна дата.
+        patch["updated_at"] = datetime.now(timezone.utc).isoformat()
         try:
             client.table("opportunities").update(patch).eq("id", o["id"]).execute()
         except Exception as e:
