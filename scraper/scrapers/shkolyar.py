@@ -78,8 +78,8 @@ def _parse_item(html: str, url: str) -> dict | None:
         title,
         f"Місто: {city}" if city else "",
         body,
-        "Картка з путівника shkolyar.org.ua. Набір постійний, дедлайну немає — "
-        "вартість і розклад уточнюються в організації.",
+        "Картка з путівника shkolyar.org.ua. Вартість і розклад уточнюються "
+        "в організації.",
     ]
     return {
         "source": SOURCE_NAME,

@@ -136,8 +136,8 @@ def _parse_page(html: str) -> list[dict]:
             f"Дні занять: {days}" if days else "",
             f"Вартість: {price}" if price else "",
             descr,
-            "Гурток із переліку gurtok.org. Набір постійний, дедлайну немає — "
-            "умови й контакти уточнюються в організації.",
+            "Гурток із переліку gurtok.org. Умови й контакти уточнюються "
+            "в організації.",
         ]
         out.append({
             "source": SOURCE_NAME,

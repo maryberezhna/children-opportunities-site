@@ -29,6 +29,35 @@ class SlugInvariants(unittest.TestCase):
         self.assertRegex(slug, r"-[0-9a-f]{6}$")
 
 
+class ClubDefault(unittest.TestCase):
+    """17.09.2026: скрапери гуртків більше не дописують «Набір постійний» у
+    текст. Правило «мовчить — постійний» тепер застосовує екстрактор."""
+
+    def base(self, **over):
+        d = {"title": "Гурток шахів", "summary": "Шахи для дітей", "age_from": 7, "age_to": 14,
+             "opportunity_type": "club", "cost_type": "free", "format": "offline",
+             "cities": ["Київ"], "deadline": None, "recurrence": None, "timing_kind": None}
+        d.update(over)
+        return d
+
+    def test_silent_club_becomes_permanent_with_note(self):
+        data = _sanitize(self.base())
+        self.assertEqual(data["timing_kind"], "permanent")
+        self.assertEqual(data["recurrence"], "ongoing")
+        self.assertIn("перевірити", data["admin_comment"])
+        self.assertNotEqual(data.get("status"), "draft")
+
+    def test_periodic_club_from_text_is_kept(self):
+        data = _sanitize(self.base(timing_kind="periodic", season_months=[9]))
+        self.assertEqual(data["timing_kind"], "periodic")
+        self.assertEqual(data["recurrence"], "annual")
+        self.assertNotIn("перевірити", data.get("admin_comment") or "")
+
+    def test_course_is_not_defaulted(self):
+        data = _sanitize(self.base(opportunity_type="course"))
+        self.assertIsNone(data["timing_kind"])
+
+
 if __name__ == "__main__":
     unittest.main()
 
