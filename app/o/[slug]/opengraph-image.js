@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { supabase } from '@/lib/supabase';
 import { TYPE_LABELS, AID_TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
+import { kyivToday } from '@/lib/dates';
+import { whenState } from '@/lib/timing';
 
 // nodejs (not edge) бо шрифт читаємо з диска. Картинка генерується на білді
 // для кожного slug з generateStaticParams у page.js і кешується як статика.
@@ -30,20 +32,35 @@ async function fonts() {
   return fontCache;
 }
 
-function formatDeadline(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return null;
-  const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
-    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
-  return `до ${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+const MONTHS = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
+  'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
+
+function formatDay(dateStr) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dateStr || ''));
+  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : null;
+}
+
+// Рядок про час на картинці. До 17.09.2026 тут завжди стояло «до <дедлайн>» —
+// і для закритої програми, і для події, де дедлайн уже минув, а сама подія ще
+// попереду. Картинка живе в прев'ю Telegram і соцмереж тижнями, тож пише лише
+// те, що правда на момент рендеру.
+function timingChip(item) {
+  if (item.status !== 'active') return null;
+  const s = whenState(item, kyivToday());
+  if (s.state === 'deadline') return `заявки до ${formatDay(item.deadline)}`;
+  if (s.state === 'event' || s.state === 'running') {
+    const start = formatDay(item.event_start_date);
+    const end = formatDay(item.event_end_date);
+    return start && end && start !== end ? `${start} — ${end}` : (start || end);
+  }
+  return null;
 }
 
 async function getItem(slug) {
   if (!supabase) return null;
   const { data } = await supabase
     .from('opportunities')
-    .select('title, summary, opportunity_type, aid_type, age_from, age_to, cost_type, deadline, cities')
+    .select('title, summary, opportunity_type, aid_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, timing_kind, status, cities')
     .eq('slug', slug)
     .maybeSingle();
   return data || null;
@@ -64,8 +81,8 @@ export default async function Image({ params }) {
       chips.push(ageLabel(item.age_from, item.age_to));
     }
     if (COST_LABELS[item.cost_type]) chips.push(COST_LABELS[item.cost_type]);
-    const deadline = formatDeadline(item.deadline);
-    if (deadline) chips.push(deadline);
+    const when = timingChip(item);
+    if (when) chips.push(when);
     const city = (item.cities || [])[0];
     if (city) chips.push(city);
   }
