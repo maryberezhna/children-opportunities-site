@@ -5,7 +5,8 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { googleCalendarUrl } from '@/lib/calendar-links';
+import { calendarTarget, googleCalendarUrl } from '@/lib/calendar-links';
+import { kyivToday } from '@/lib/dates';
 import AddToCalendarFlow from './AddToCalendarFlow';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
@@ -36,7 +37,7 @@ export default async function AddToCalendarPage({ params }) {
   // 25.08.2026 їх було 79, і кожне нове закриття додавало ще одне.
   const { data: item } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, deadline, status')
+    .select('slug, title, summary, deadline, event_start_date, event_end_date, status')
     .eq('slug', params.slug)
     .maybeSingle();
 
@@ -45,24 +46,30 @@ export default async function AddToCalendarPage({ params }) {
   // Запис існує, але додавати в календар уже нічого: набір закрито або
   // дедлайну немає. Ведемо на саму можливість — там людина побачить, що
   // сталося, і знайде посилання далі.
-  if (item.status !== 'active' || !item.deadline) redirect(`/o/${item.slug}`);
+  // Дедлайн, поки він попереду, інакше — дати самої події (lib/calendar-links).
+  const target = item.status === 'active' ? calendarTarget(item, kyivToday()) : null;
+  if (!target) redirect(`/o/${item.slug}`);
 
   const googleUrl = googleCalendarUrl({
     title: item.title,
     description: item.summary,
-    date: item.deadline,
+    date: target.start,
+    endDate: target.kind === 'event' ? target.end : undefined,
     url: `${SITE_URL}/o/${item.slug}`,
   });
 
   const icsApiUrl = `${SITE_URL}/api/events/${item.slug}/ics`;
   const webcalUrl = icsApiUrl.replace(/^https?:\/\//, 'webcal://');
 
-  const deadlineFormatted = new Date(item.deadline).toLocaleDateString('uk-UA', {
+  const fmt = (iso) => new Date(iso).toLocaleDateString('uk-UA', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'Europe/Kyiv',
   });
+  const whenText = target.kind === 'deadline'
+    ? `Заявки до: ${fmt(target.start)}`
+    : `Коли: ${target.start === target.end ? fmt(target.start) : `${fmt(target.start)} — ${fmt(target.end)}`}`;
 
   return (
     <div className="container">
@@ -72,7 +79,7 @@ export default async function AddToCalendarPage({ params }) {
 
       <div className="cal-add-wrap">
         <p className="cal-add-event-name">{item.title}</p>
-        <p className="cal-add-deadline">Дедлайн: {deadlineFormatted}</p>
+        <p className="cal-add-deadline">{whenText}</p>
 
         <AddToCalendarFlow
           googleUrl={googleUrl}
@@ -80,7 +87,9 @@ export default async function AddToCalendarPage({ params }) {
         />
 
         <p className="cal-add-note">
-          Нагадування прийде за день до дедлайну.
+          {target.kind === 'deadline'
+            ? 'Нагадування прийде за день до дедлайну.'
+            : 'Нагадування прийде за день до початку.'}
         </p>
       </div>
     </div>

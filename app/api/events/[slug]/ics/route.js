@@ -1,4 +1,6 @@
 import { supabase } from '@/lib/supabase';
+import { calendarTarget } from '@/lib/calendar-links';
+import { kyivToday } from '@/lib/dates';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
 
@@ -32,7 +34,7 @@ export async function GET(request, { params }) {
 
   const { data: item } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, deadline, source_url, opportunity_type')
+    .select('slug, title, summary, deadline, event_start_date, event_end_date, source_url, opportunity_type')
     .eq('slug', slug)
     .eq('status', 'active')
     .maybeSingle();
@@ -41,14 +43,27 @@ export async function GET(request, { params }) {
     return new Response('Not found', { status: 404 });
   }
 
-  if (!item.deadline) {
-    return new Response('No deadline for this opportunity', { status: 422 });
+  // Дедлайн, поки він попереду, інакше — дати самої події. Раніше подію без
+  // дедлайну додати в календар було неможливо: тут стояло 422.
+  const target = calendarTarget(item, kyivToday());
+  if (!target) {
+    return new Response('No upcoming date for this opportunity', { status: 422 });
   }
 
   const pageUrl = `${SITE_URL}/o/${item.slug}`;
-  const uid = `${item.slug}-deadline@dityam.com.ua`;
+  const uid = `${item.slug}-${target.kind}@dityam.com.ua`;
   const dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  const dateStr = toDateStr(item.deadline);
+  const dateStr = toDateStr(target.start);
+  const nextDay = (iso) => {
+    const d = new Date(`${iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return toDateStr(d.toISOString().slice(0, 10));
+  };
+  // Дедлайн — зустріч о 09:00 того дня; подія — цілі дні проведення.
+  const when = target.kind === 'deadline'
+    ? [`DTSTART;TZID=Europe/Kyiv:${dateStr}T090000`, `DTEND;TZID=Europe/Kyiv:${dateStr}T095900`]
+    : [`DTSTART;VALUE=DATE:${dateStr}`, `DTEND;VALUE=DATE:${nextDay(target.end)}`];
+  const summary = target.kind === 'deadline' ? `Заявки до: ${item.title}` : item.title;
 
   const descParts = [item.summary || '', '', pageUrl].filter(Boolean);
   const description = escape(descParts.join('\n'));
@@ -79,9 +94,8 @@ export async function GET(request, { params }) {
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${dtstamp}`,
-    `DTSTART;TZID=Europe/Kyiv:${dateStr}T090000`,
-    `DTEND;TZID=Europe/Kyiv:${dateStr}T095900`,
-    foldLine(`SUMMARY:${escape(item.title)}`),
+    ...when,
+    foldLine(`SUMMARY:${escape(summary)}`),
     foldLine(`DESCRIPTION:${description}`),
     `URL:${pageUrl}`,
     'BEGIN:VALARM',

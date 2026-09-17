@@ -88,6 +88,16 @@ class Content(unittest.TestCase):
     def test_title_is_escaped(self):
         self.assertIn("ISEF &lt;Ukraine&gt;", self.pd.build_telegram(SUB, [item()]))
 
+    def test_event_dates_in_meta_and_calendar(self):
+        # 17.09.2026: подія без дедлайну не мала в добірці ні дати, ні кнопки
+        # календаря; подія з дедлайном — не показувала, коли саме відбувається.
+        y = __import__("datetime").datetime.now().year
+        o = item(deadline=None, event_start_date=f"{y}-11-06", event_end_date=f"{y}-11-08")
+        meta = self.pd._meta(o)
+        self.assertIn("проходить 6–8 листопада", meta)
+        self.assertTrue(self.pd.calendar_url(o))
+        self.assertIsNone(self.pd.calendar_url(item(deadline=None)))
+
     def test_deadline_in_meta(self):
         this_year = f"{date.today().year}-10-30"
         self.assertIn("до 30 жовтня", self.pd.build_telegram(SUB, [item(deadline=this_year)]))

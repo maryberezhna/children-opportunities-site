@@ -5,7 +5,8 @@
 import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
-import { googleCalendarUrl } from '@/lib/calendar-links';
+import { calendarTarget, googleCalendarUrl } from '@/lib/calendar-links';
+import { kyivToday } from '@/lib/dates';
 import AddToCalendarFlow from '../../../../events/[slug]/add/AddToCalendarFlow';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
@@ -35,13 +36,14 @@ export default async function AddToCalendarPage({ params }) {
   // накопичувались би.
   const { data: item } = await supabase
     .from('opportunities')
-    .select('slug, title, title_en, summary, summary_en, deadline, status')
+    .select('slug, title, title_en, summary, summary_en, deadline, event_start_date, event_end_date, status')
     .eq('slug', params.slug)
     .maybeSingle();
 
   if (!item) notFound();
 
-  if (item.status !== 'active' || !item.deadline) redirect(`/en/o/${item.slug}`);
+  const target = item.status === 'active' ? calendarTarget(item, kyivToday()) : null;
+  if (!target) redirect(`/en/o/${item.slug}`);
 
   const name = item.title_en || item.title;
 
@@ -51,19 +53,23 @@ export default async function AddToCalendarPage({ params }) {
   const googleUrl = googleCalendarUrl({
     title: name,
     description: item.summary_en || item.summary,
-    date: item.deadline,
+    date: target.start,
+    endDate: target.kind === 'event' ? target.end : undefined,
     url: `${SITE_URL}/en/o/${item.slug}`,
   });
 
   const icsApiUrl = `${SITE_URL}/api/events/${item.slug}/ics`;
   const webcalUrl = icsApiUrl.replace(/^https?:\/\//, 'webcal://');
 
-  const deadlineFormatted = new Date(item.deadline).toLocaleDateString('en-GB', {
+  const fmt = (iso) => new Date(iso).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
     timeZone: 'Europe/Kyiv',
   });
+  const whenText = target.kind === 'deadline'
+    ? `Apply by: ${fmt(target.start)}`
+    : `When: ${target.start === target.end ? fmt(target.start) : `${fmt(target.start)} — ${fmt(target.end)}`}`;
 
   return (
     <div className="container" lang="en">
@@ -73,7 +79,7 @@ export default async function AddToCalendarPage({ params }) {
 
       <div className="cal-add-wrap">
         <p className="cal-add-event-name">{name}</p>
-        <p className="cal-add-deadline">Deadline: {deadlineFormatted}</p>
+        <p className="cal-add-deadline">{whenText}</p>
 
         <AddToCalendarFlow
           googleUrl={googleUrl}
@@ -81,7 +87,9 @@ export default async function AddToCalendarPage({ params }) {
         />
 
         <p className="cal-add-note">
-          A reminder arrives the day before the deadline.
+          {target.kind === 'deadline'
+            ? 'A reminder arrives the day before the deadline.'
+            : 'A reminder arrives the day before it starts.'}
         </p>
       </div>
     </div>
