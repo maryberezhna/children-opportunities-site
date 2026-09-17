@@ -87,3 +87,53 @@ class Dates(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PickRows(unittest.TestCase):
+    """Черга модерації теж перерозмічується: 17.09.2026 з неї схвалили
+    «Учнівську академію ветеринарної медицини» зі старою розміткою дат."""
+
+    class FakeQuery:
+        def __init__(self, rows, seen):
+            self.rows, self.seen = rows, seen
+
+        def select(self, *_):
+            return self
+
+        def eq(self, key, val):
+            self.seen[key] = val
+            self.rows = [r for r in self.rows if r.get(key) == val]
+            return self
+
+        def is_(self, *_):
+            return self
+
+        def order(self, *_):
+            return self
+
+        def range(self, *_):
+            return self
+
+        def execute(self):
+            return type("R", (), {"data": self.rows})()
+
+    def pick(self, scope):
+        from remark import pick_rows
+        rows = [
+            {"id": "a", "status": "active", "opportunity_type": "course"},
+            {"id": "b", "status": "draft", "opportunity_type": "course"},
+            {"id": "c", "status": "draft", "opportunity_type": "club"},
+        ]
+        seen = {}
+        sb = type("SB", (), {"table": lambda _s, _n: self.FakeQuery(rows, seen)})()
+        return [r["id"] for r in pick_rows(sb, scope, 0, 10)], seen
+
+    def test_drafts_scope_takes_the_queue_with_clubs(self):
+        ids, seen = self.pick("drafts")
+        self.assertEqual(seen["status"], "draft")
+        self.assertEqual(sorted(ids), ["b", "c"])
+
+    def test_priority_stays_on_active(self):
+        ids, seen = self.pick("priority")
+        self.assertEqual(seen["status"], "active")
+        self.assertEqual(ids, ["a"])

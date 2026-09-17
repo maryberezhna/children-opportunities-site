@@ -373,12 +373,20 @@ def pick_rows(sb, scope: str, offset: int, limit: int) -> list[dict]:
     а гуртки в scope=priority не беремо зовсім: вони постійні, без дат, і не в
     пріоритеті наповнення. Порядок стабільний — за полями, яких цей скрипт не
     змінює, — тож прогони можна гортати через --offset.
+
+    scope=drafts — черга модерації. Перші прогони 16.09.2026 брали лише
+    активні записи, і черга лишилась у старій розмітці: «Учнівська академія
+    ветеринарної медицини» (навчання 27–29 жовтня, дедлайну в джерелі немає)
+    чекала схвалення з deadline=27 жовтня і без дати початку. Модератор
+    схвалив її 17.09 — і сайт показав «Заявки до 27 жовтня». Черга — саме те
+    місце, де виправлена розмітка потрібна до того, як запис побачить людина.
     """
+    status = "draft" if scope == "drafts" else "active"
     rows, start = [], 0
     while True:
         # PostgREST віддає щонайбільше 1000 рядків — активних записів більше.
         page = (sb.table("opportunities").select(SELECT)
-                .eq("status", "active").is_("canonical_slug", "null")
+                .eq("status", status).is_("canonical_slug", "null")
                 .order("id").range(start, start + 999).execute().data or [])
         rows += page
         if len(page) < 1000:
@@ -484,8 +492,9 @@ if __name__ == "__main__":
     p.add_argument("--limit", type=int, default=LIMIT)
     p.add_argument("--only-dates", action="store_true",
                    help="чіпати лише дати, не заповнювати details")
-    p.add_argument("--scope", choices=["priority", "all"], default="priority",
-                   help="priority — без гуртків, міжнародні першими")
+    p.add_argument("--scope", choices=["priority", "all", "drafts"], default="priority",
+                   help="priority — без гуртків, міжнародні першими; "
+                        "drafts — черга модерації")
     p.add_argument("--offset", type=int, default=0)
     a = p.parse_args()
     run(apply=a.apply and not a.dry_run, limit=a.limit, only_dates=a.only_dates,
