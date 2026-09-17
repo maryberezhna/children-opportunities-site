@@ -79,6 +79,7 @@ const L = {
     topWeek: '⭐ Топ тижня',
     format: 'Формат',
     when: 'Коли',
+    results: 'Результати',
     deadline: 'Заявки до',
     apply: '📝 Подати заявку',
     applications: 'Подача',
@@ -112,6 +113,7 @@ const L = {
     topWeek: '⭐ Pick of the week',
     format: 'Format',
     when: 'When',
+    results: 'Results',
     deadline: 'Apply by',
     apply: '📝 Apply',
     applications: 'Applications',
@@ -146,6 +148,12 @@ const isPeriodic = (item) => (item.timing_kind
 // «Подача» без дедлайну: щороку чи постійно. З виду, прочитаного з тексту;
 // поки вид не визначено — зі старого recurrence. Одноразова без дедлайну —
 // нічого не пишемо: вигадувати «постійно відкрита» не можна.
+// Одноденна подія з дедлайном того ж дня: «Коли: 19 вересня» і «Заявки до:
+// 19 вересня» поруч читаються як повтор — показуємо лише «Коли».
+const sameDayAsEvent = (item) => Boolean(item.deadline
+  && item.event_start_date === item.deadline
+  && (item.event_end_date || item.event_start_date) === item.deadline);
+
 const applicationsNote = (item) => {
   if (item.timing_kind === 'periodic') return 'periodic';
   if (item.timing_kind === 'permanent') return 'permanent';
@@ -633,7 +641,15 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 <dd>{eventDates}</dd>
               </>
             ) : null}
-            {item.deadline ? (
+            {/* Розіграш чи оголошення переможців — окремий факт, не подача й не
+                проведення (з 17.09.2026). */}
+            {item.results_date ? (
+              <>
+                <dt>{t.results}</dt>
+                <dd>{formatDate(item.results_date, lang)}</dd>
+              </>
+            ) : null}
+            {item.deadline && !sameDayAsEvent(item) ? (
               <>
                 <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
                 <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>

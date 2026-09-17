@@ -230,11 +230,16 @@ def is_expired(row: dict, today: _date) -> bool:
     deadline = _iso(row.get("deadline"))
     end = _iso(row.get("event_end_date"))
     start = _iso(row.get("event_start_date"))
+    results = _iso(row.get("results_date"))
     if deadline and deadline < today:
         return True
     if end and end < today:
         return True
     if not deadline and not end and start and start < today:
+        return True
+    # Лише дата результатів (розіграш, оголошення переможців): після неї подати
+    # вже точно не можна.
+    if not deadline and not end and not start and results and results < today:
         return True
     return False
 

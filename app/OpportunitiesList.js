@@ -681,6 +681,12 @@ export default function OpportunitiesList({
       };
     }
     if (s.state === 'running') return { text: `📅 ${t.running}`, kind: 'event' };
+    if (s.state === 'results') {
+      return {
+        text: `🏆 ${formatDeadline(s.date, lang).replace(` ${todayIso.slice(0, 4)}`, '')}`,
+        kind: 'calm',
+      };
+    }
     return { text: s.state === 'periodic' ? t.annual : t.open, kind: 'calm' };
   };
 

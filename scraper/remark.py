@@ -65,7 +65,7 @@ import anthropic
 import httpx
 
 from db import get_client
-from normalizer import valid_apply_url
+from normalizer import strip_foreign_script, valid_apply_url
 # Той самий похід по сторінці, що в тижневій перевірці дат: httpx + зачистка
 # розмітки + класифікація 404/таймаут. Другої копії тут бути не повинно.
 from recheck_dates import fetch_text
@@ -343,7 +343,7 @@ def plan_patch(row: dict, out: dict, only_dates: bool,
     # Решта — тільки дозаповнення порожнього, щоб не затерти ручну роботу.
     if not only_dates:
         if not row.get("details") and (out.get("details") or "").strip():
-            patch["details"] = out["details"].strip()[:20000]
+            patch["details"] = strip_foreign_script(out["details"].strip())[0][:20000]
             notes.append(f"details: +{len(patch['details'])} знаків")
         apply_url = valid_apply_url(out.get("apply_url"), row.get("source_url"))
         if not row.get("apply_url") and apply_url:

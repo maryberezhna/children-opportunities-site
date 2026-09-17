@@ -95,7 +95,7 @@ def missing_required(data: dict, age_missing: bool = None) -> list:
     if age_missing:
         missing.append("вік")
     if not data.get("deadline") and not data.get("event_start_date") \
-            and not data.get("event_end_date") \
+            and not data.get("event_end_date") and not data.get("results_date") \
             and not data.get("recurrence") \
             and data.get("opportunity_type") not in PAYMENT_TYPES:
         missing.append("дата, період або періодичність")
@@ -158,10 +158,31 @@ def _apply_club_default(data: dict) -> None:
             data["recurrence"] = "annual"
 
 
+# Ієрогліфи, які модель зрідка вставляє замість українського слова: «Навчання可а
+# офлайн», «для創ення», «##時间розгляду» — сім записів станом на 17.09.2026.
+_FOREIGN_SCRIPT = re.compile(r"[\u3040-\u30ff\u3400-\u9fff\uac00-\ud7af]+")
+
+
+def strip_foreign_script(text):
+    """(текст без ієрогліфів, чи щось вирізали)."""
+    if not isinstance(text, str):
+        return text, False
+    cleaned = _FOREIGN_SCRIPT.sub("", text)
+    return cleaned, cleaned != text
+
+
 def _sanitize(data: dict) -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
     the whole record."""
-    for key in ("deadline", "event_start_date", "event_end_date"):
+    stripped = False
+    for key in ("title", "summary", "details"):
+        data[key], hit = strip_foreign_script(data.get(key))
+        stripped = stripped or hit
+    if stripped:
+        data["admin_comment"] = ((data.get("admin_comment") or "")
+                                 + " auto: модель вставила ієрогліфи — вирізано, перевір формулювання").strip()
+
+    for key in ("deadline", "event_start_date", "event_end_date", "results_date"):
         val = data.get(key)
         if val:
             try:
@@ -405,6 +426,15 @@ timing_kind — ЯК МОЖЛИВІСТЬ ЖИВЕ В ЧАСІ (рішення �
 season_months — лише для periodic: місяці (1–12), коли зазвичай відкрита
 подача або проходить подія, з тексту чи з дат. Не знаєш — [].
 
+results_date — РОЗІГРАШ, ОГОЛОШЕННЯ ПЕРЕМОЖЦІВ ЧИ ШОРТЛИСТА, YYYY-MM-DD:
+- «переможців визначать 30 вересня», «розіграш у прямому ефірі 30 вересня»,
+  «результати оголосять 2 лютого» → results_date.
+- Це НЕ дедлайн і НЕ дата проведення. Не переноси її в deadline чи
+  event_start_date / event_end_date: подати заявку, скоріш за все, треба раніше,
+  а участь дитини (навчання, табір) відбувається в інший час.
+- Якщо строк подачі окремо не названий — deadline=null, навіть коли є дата
+  результатів.
+
 ЧАС ЖИТТЯ ЗАПИСУ. У кожного запису має бути хоч щось, чим його можна
 закрити: deadline, або event_end_date, або recurrence. Запис без жодного з
 трьох висить на сайті вічно, і родина дізнається про закритий набір уже в
@@ -546,6 +576,12 @@ EXTRACT_TOOL = {
                                "дата проведення → вона ж. Постійна програма "
                                "без конкретних дат → null.",
             },
+            "results_date": {
+                "type": ["string", "null"],
+                "description": "YYYY-MM-DD — розіграш, оголошення переможців "
+                               "чи шортлиста. Це НЕ дедлайн подачі й НЕ дата "
+                               "проведення. Не названо → null.",
+            },
             "apply_url": {
                 "type": ["string", "null"],
                 "description": "Пряме посилання, за яким ПОДАЮТЬ ЗАЯВКУ: "
@@ -642,7 +678,7 @@ def _fix_invented_years(data: dict, haystack: str, today_iso: str,
     # Рік підставляємо відносно дати ПУБЛІКАЦІЇ, коли джерело її знає: пост від
     # 15 серпня, розмічений у вересні, мав би інакше отримати рік «сьогодні».
     anchor = published_iso or today_iso
-    for key in ("deadline", "event_start_date", "event_end_date"):
+    for key in ("deadline", "event_start_date", "event_end_date", "results_date"):
         v = data.get(key)
         if not v or v >= today_iso:
             continue

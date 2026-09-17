@@ -270,6 +270,7 @@ const slim = (o) => ({
   deadline: o.deadline, cities: o.cities, countries: o.countries || null,
   // Без дат події й виду картка знову вгадувала б час лише з дедлайну й типу.
   event_start_date: o.event_start_date || null, event_end_date: o.event_end_date || null,
+  results_date: o.results_date || null,
   timing_kind: o.timing_kind || null,
   is_international: o.is_international || false, format: o.format,
 });

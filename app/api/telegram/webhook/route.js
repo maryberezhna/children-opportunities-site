@@ -114,7 +114,7 @@ async function sendNextCandidate(chatId) {
   const { count } = await supabase.from('opportunities')
     .select('id', { count: 'exact', head: true }).eq('status', 'draft');
   const { data } = await supabase.from('opportunities')
-    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, recurrence, format, cities, countries, is_international, dup_of, dup_score')
+    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, recurrence, format, cities, countries, is_international, dup_of, dup_score')
     // updated_at ASC so postponed candidates (touched now) drop to the back.
     .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {
@@ -357,7 +357,7 @@ async function handleModeration(action, id, cbq) {
   if (action === 'add') {
     const { data: row } = await supabase
       .from('opportunities')
-      .select('age_from, age_to, deadline, event_start_date, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .select('age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
       .eq('id', id)
       .maybeSingle();
     const missing = row ? missingRequired(row) : [];

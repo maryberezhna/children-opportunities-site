@@ -80,3 +80,15 @@ test('Google: кінець цілоденної події — наступни�
   const dl = googleCalendarUrl({ title: 't', date: '2026-09-30', url: 'https://x' });
   assert.match(decodeURIComponent(dl), /dates=20260930\/20260930/);
 });
+
+test('лише дата розіграшу — стан results і закриття після неї', () => {
+  // «10 річних грантів на англійську»: переможців визначать 30 вересня,
+  // строк подачі й дати навчання не названі.
+  const grant = { results_date: '2026-09-30', timing_kind: 'one_time' };
+  assert.deepEqual(whenState(grant, TODAY), { state: 'results', days: 13, date: '2026-09-30' });
+  assert.equal(whenRank(grant, TODAY), 13);
+  assert.equal(isExpired(grant, '2026-10-01'), true);
+  assert.equal(isExpired(grant, TODAY), false);
+  // Дедлайн важить більше: результати — лише коли інших дат немає.
+  assert.equal(whenState({ ...grant, deadline: '2026-09-25' }, TODAY).state, 'deadline');
+});

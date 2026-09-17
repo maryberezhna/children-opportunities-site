@@ -105,7 +105,7 @@ const isPublishable = (r) => r.status === 'active' && !r.canonical_slug;
 
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_start_date, event_end_date, cost_type, status, canonical_slug, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_start_date, event_end_date, results_date, cost_type, status, canonical_slug, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -179,7 +179,7 @@ const PLUS_LINE = '⚡ Не встигаєте стежити за дедлай�
 // Теги, які Telegram приймає в parse_mode=HTML (як у post-message.mjs).
 const ALLOWED_TAGS = /^(b|strong|i|em|u|s|code|pre|a|blockquote|tg-spoiler)$/;
 const POOL_COLUMNS = 'id, slug, title, summary, details, source, opportunity_type, age_from, age_to, '
-  + 'cost_type, deadline, event_start_date, event_end_date, created_at, telegram_posted_at, child_needs, cities, '
+  + 'cost_type, deadline, event_start_date, event_end_date, results_date, created_at, telegram_posted_at, child_needs, cities, '
   + 'countries, is_international, format, aid_type';
 
 // Ситуації для формату «situation»: починаємо з болю батьків, а не з програми.
@@ -519,7 +519,7 @@ async function sendNewOpportunityPost(excludeIds = []) {
   const since = new Date(Date.now() - 3 * 86400000).toISOString();
   const { data, error } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, created_at')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, created_at')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .is('telegram_posted_at', null)
@@ -590,7 +590,14 @@ function whenLine(r, indent = '') {
   const lines = [];
   const when = formatDateRange(r.event_start_date || r.event_end_date, r.event_end_date);
   if (when) lines.push(`${indent}📅 Коли: <b>${when}</b>`);
-  if (r.deadline) {
+  // Одноденна подія з дедлайном того ж дня — лише «Коли», без повтору дати.
+  const sameDay = r.deadline && r.event_start_date === r.deadline
+    && (r.event_end_date || r.event_start_date) === r.deadline;
+  // Розіграш чи оголошення переможців — окремий рядок (з 17.09.2026): до цього
+  // дата розіграшу потрапляла і в «Коли», і в «Заявки до».
+  const results = formatDeadlineDate(r.results_date);
+  if (results) lines.push(`${indent}🏆 Результати: <b>${results}</b>`);
+  if (r.deadline && !sameDay) {
     const days = r.daysLeft;
     const tag = days == null || days < 0 ? formatDeadlineDate(r.deadline)
       : days === 0 ? 'сьогодні' : days === 1 ? 'завтра' : `за ${days} дн.`;

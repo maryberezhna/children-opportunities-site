@@ -8,7 +8,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
-from normalizer import _fix_invented_years, published_date  # noqa: E402
+from normalizer import _fix_invented_years, published_date, strip_foreign_script  # noqa: E402
 
 
 class SlugInvariants(unittest.TestCase):
@@ -85,6 +85,23 @@ class PublishedDate(unittest.TestCase):
         fixed = _fix_invented_years({"event_start_date": "2025-11-06"}, "6–8 листопада",
                                     "2026-09-17", "2026-09-10")
         self.assertEqual(fixed["event_start_date"], "2026-11-06")
+
+
+class GeneratedTextHygiene(unittest.TestCase):
+    """17.09.2026: «Навчання可а офлайн», «для創ення» — модель вставляла ієрогліфи."""
+
+    def test_foreign_script_is_stripped(self):
+        self.assertEqual(strip_foreign_script("для創ення"), ("дляення", True))
+        self.assertEqual(strip_foreign_script("Звичайний текст"), ("Звичайний текст", False))
+
+    def test_sanitize_strips_and_flags(self):
+        data = _sanitize({"title": "Гранти", "summary": "Навчання可а офлайн", "age_from": 5,
+                          "age_to": 18, "opportunity_type": "scholarship", "cost_type": "free",
+                          "format": "online", "results_date": "2026-09-30"})
+        self.assertNotIn("可", data["summary"])
+        self.assertIn("ієрогліфи", data["admin_comment"])
+        self.assertEqual(data["results_date"], "2026-09-30")
+        self.assertNotIn("дата, період або періодичність", data.get("admin_comment") or "")
 
 
 if __name__ == "__main__":

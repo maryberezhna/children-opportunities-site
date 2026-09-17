@@ -44,6 +44,7 @@ export async function POST(request) {
   patch.cost_type = COST.includes(b.cost_type) ? b.cost_type : null;
   patch.event_start_date = isDate(b.event_start_date) ? b.event_start_date : null;
   patch.event_end_date = isDate(b.event_end_date) ? b.event_end_date : null;
+  patch.results_date = isDate(b.results_date) ? b.results_date : null;
   patch.recurrence = RECURRENCE.includes(b.recurrence) ? b.recurrence : null;
   patch.format = FORMATS.includes(b.format) ? b.format : null;
   // Міста приходять рядком через кому — так їх і вводять руками.
