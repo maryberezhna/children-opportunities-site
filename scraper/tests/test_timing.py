@@ -10,8 +10,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from timing import (  # noqa: E402
-    clean_kind, clean_months, clean_text, months_from_dates,
-    recurrence_from_text, rule_kind,
+    accept_model_kind, clean_kind, clean_months, clean_text, evidence_in_text,
+    from_injecting_source, months_from_dates, recurrence_from_text, rule_kind,
 )
 
 
@@ -89,6 +89,50 @@ class Cleaning(unittest.TestCase):
         self.assertIsNone(clean_kind("annual"))
         self.assertIsNone(clean_kind("unknown"))
 
+
+
+class ModelAnswers(unittest.TestCase):
+    """Кейси першого сухого прогону 17.09.2026, які не можна було записати."""
+
+    def test_reasoning_is_not_evidence(self):
+        text = "Всеукраїнська олімпіада зі штучного інтелекту UOAI 2026 для учнів 8–11 класів."
+        self.assertFalse(evidence_in_text("олімпіада як формат зазвичай щорічна", text))
+
+    def test_real_quote_is_evidence(self):
+        text = "Курси англійської мови. Групи стартують у вересні, заняття двічі на тиждень."
+        self.assertTrue(evidence_in_text("«Групи стартують у вересні»", text))
+
+    def test_record_dates_are_evidence(self):
+        self.assertTrue(evidence_in_text("дати в записі: заявки до 2026-09-19", ""))
+
+    def test_periodic_needs_repeat_signal(self):
+        text = "Програма для учнів 8–9 класів, заняття з вересня по грудень."
+        self.assertFalse(accept_model_kind(row(opportunity_type="course"), "periodic",
+                                           "заняття з вересня по грудень", text))
+        text2 = "VII Всеукраїнський Турнір Астрономічних Боїв. Реєстрація до 3 серпня."
+        self.assertTrue(accept_model_kind(row(opportunity_type="competition"), "periodic",
+                                          "VII Всеукраїнський Турнір", text2))
+
+    def test_one_time_rejected_when_text_says_yearly(self):
+        text = "Щорічний конкурс есе. Заявки до 30 листопада 2026."
+        self.assertFalse(accept_model_kind(row(opportunity_type="competition"), "one_time",
+                                           "дати в записі: заявки до 2026-11-30", text))
+
+    def test_permanent_needs_quote_not_dates(self):
+        self.assertFalse(accept_model_kind(row(), "permanent", "дати в записі: немає", ""))
+
+    def test_scraper_permanent_claim_is_dropped_for_its_sources(self):
+        r = row(source="Гурток (gurtok.org)")
+        self.assertTrue(from_injecting_source(r))
+        text = clean_text("Літні мовні курси польської. Набір постійний, умови уточнюються.",
+                          drop_permanent_claims=True)
+        self.assertNotIn("постійн", text)
+        self.assertIn("Літні мовні курси", text)
+
+    def test_olympiad_is_periodic_by_definition(self):
+        kind, _m, why = rule_kind(row(opportunity_type="olympiad"))
+        self.assertEqual(kind, "periodic")
+        self.assertIn("визначенням", why)
 
 if __name__ == "__main__":
     unittest.main()

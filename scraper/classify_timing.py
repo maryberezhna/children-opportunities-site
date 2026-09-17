@@ -38,8 +38,8 @@ import anthropic
 import api_guard
 from db import get_client
 from timing import (
-    LABELS, clean_kind, clean_months, clean_text, months_from_dates,
-    recurrence_from_text, rule_kind,
+    LABELS, accept_model_kind, clean_kind, clean_months, clean_text,
+    from_injecting_source, months_from_dates, recurrence_from_text, rule_kind,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -115,9 +115,23 @@ unknown — текст не дає підстав вирішити. Це нор�
 - season_months — лише для periodic: місяці, коли зазвичай відкрита подача
   або проходить подія. Бери з тексту («реєстрація щороку у жовтні») або з
   наведених дат запису. Нічого з цього немає — порожній масив.
-- evidence — коротка цитата чи «дати в записі: …». Без неї висновку не буває:
-  тоді unknown.
+- evidence — ДОСЛІВНА цитата з тексту (скопіюй шматок як є) або
+  «дати в записі: …». Міркування на кшталт «олімпіади зазвичай щорічні» — не
+  доказ: тоді unknown.
+- Регулярний розклад занять («щосуботи», «двічі на тиждень») — не цикл
+  сезонів. Якщо записатися можна будь-коли — permanent; якщо це серія зустрічей
+  з конкретними датами — one_time.
+- Одна програма з датами «з вересня по грудень» без ознак, що вона
+  повторюється, — one_time, не periodic.
+- periodic лише з ознакою повторення в тексті: «щороку», «щорічний»,
+  «традиційний», порядковий номер («VII Всеукраїнський»), «новий сезон».
 - Поверни відповідь для КОЖНОГО запису зі списку, за його номером i."""
+
+
+def _text_for(row: dict, raw_texts: dict[str, str]) -> str:
+    return clean_text(row.get("summary"), row.get("details"),
+                      raw_texts.get(row.get("source_url") or ""),
+                      drop_permanent_claims=from_injecting_source(row))[:TEXT_LIMIT]
 
 
 def _payload(rows: list[dict], raw_texts: dict[str, str]) -> str:
@@ -131,8 +145,7 @@ def _payload(rows: list[dict], raw_texts: dict[str, str]) -> str:
         rec = recurrence_from_text(r)
         if rec:
             dates.append("позначено з тексту: " + ("щороку" if rec == "annual" else "постійно"))
-        text = clean_text(r.get("summary"), r.get("details"),
-                          raw_texts.get(r.get("source_url") or ""))[:TEXT_LIMIT]
+        text = _text_for(r, raw_texts)
         parts.append(
             f"[{i}] {r.get('title') or ''}\n"
             f"тип: {r.get('opportunity_type') or '—'} · джерело: {r.get('source') or '—'}"
@@ -250,7 +263,7 @@ def main() -> int:
                 ans = answers.get(i) or {}
                 kind = clean_kind(ans.get("kind"))
                 evidence = (ans.get("evidence") or "").strip()
-                if not kind or not evidence:
+                if not kind or not accept_model_kind(r, kind, evidence, _text_for(r, raw)):
                     unknown.append(r)
                     continue
                 months = clean_months(ans.get("season_months")) if kind == "periodic" else None
