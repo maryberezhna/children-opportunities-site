@@ -9,6 +9,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
 from normalizer import _fix_invented_years, published_date, strip_foreign_script  # noqa: E402
+from normalizer import is_state_support  # noqa: E402
 
 
 class SlugInvariants(unittest.TestCase):
@@ -102,6 +103,37 @@ class GeneratedTextHygiene(unittest.TestCase):
         self.assertIn("ієрогліфи", data["admin_comment"])
         self.assertEqual(data["results_date"], "2026-09-30")
         self.assertNotIn("дата, період або періодичність", data.get("admin_comment") or "")
+
+
+class StateSupportIsFree(unittest.TestCase):
+    """17.09.2026, Марія: «всюди де є слово державна — це безкоштовно»."""
+
+    def base(self, **over):
+        d = {"title": "Державна цільова підтримка для здобуття вищої освіти",
+             "summary": "Повна оплата навчання за державним замовленням, соціальна стипендія.",
+             "age_from": 15, "age_to": 18, "opportunity_type": "scholarship",
+             "cost_type": None, "format": "offline", "cities": ["Київ"], "recurrence": "ongoing"}
+        d.update(over)
+        return d
+
+    def test_state_support_without_cost_becomes_free(self):
+        data = _sanitize(self.base())
+        self.assertEqual(data["cost_type"], "free")
+        self.assertNotIn("вартість", data.get("admin_comment") or "")
+
+    def test_state_university_name_is_not_a_reason(self):
+        # 28 платних курсів «Житомирського державного університету».
+        text = "Літні мовні курси польської, організовані Житомирським державним університетом"
+        self.assertFalse(is_state_support(text))
+        data = _sanitize(self.base(title="Літні мовні курси польської", summary=text,
+                                   opportunity_type="course", cost_type="paid_affordable"))
+        self.assertEqual(data["cost_type"], "paid_affordable")
+
+    def test_state_aid_marked_paid_is_fixed(self):
+        data = _sanitize(self.base(aid_type="cash", cost_type="paid_affordable",
+                                   opportunity_type="allowance"))
+        self.assertEqual(data["cost_type"], "free")
+        self.assertIn("перевір", data["admin_comment"])
 
 
 if __name__ == "__main__":
