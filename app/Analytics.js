@@ -1,15 +1,12 @@
 'use client';
+import { useEffect } from 'react';
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { ADS_ID } from '@/lib/track';
+import { NO_ANALYTICS_KEY, PRODUCTION_HOST, isInternalPath } from '@/lib/analytics-scope';
 
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
-
-// Внутрішні маршрути, які не мають потрапляти в статистику. Модерація давала
-// ~16 переглядів на місяць — це власна робота, а не аудиторія, і вона псувала
-// і кількість сторінок, і показники залученості.
-const EXCLUDED = ['/admin'];
 
 // Вимикач власного трафіку. Заходи авторки псували статистику: середня сесія
 // на головній була 11 хвилин при 16% відмов — так поводиться не відвідувач.
@@ -21,24 +18,40 @@ const EXCLUDED = ['/admin'];
 // намагаємось виміряти — мовчки зникають, бо кожен відправник перевіряє
 // `window.gtag`. Тому скрипти лишаються на місці завжди, а відмову від збору
 // вмикаємо штатним прапорцем GA `ga-disable-<ID>`.
+//
+// Не рахуємо, якщо: сторінка відкрита не на dityam.com.ua (прев'ю на Vercel,
+// локальні сервери, знімки верстки) або браузер позначено як свій — вручну
+// через ?noga=1 чи автоматично, коли в ньому відкривали адмінку.
 const OPT_OUT_SCRIPT = `
   (function () {
+    var off = !${PRODUCTION_HOST}.test(window.location.hostname);
     try {
-      var key = 'dityam_no_analytics';
+      var key = '${NO_ANALYTICS_KEY}';
       var flag = new URLSearchParams(window.location.search).get('noga');
       if (flag === '1') localStorage.setItem(key, '1');
       if (flag === '0') localStorage.removeItem(key);
-      if (localStorage.getItem(key)) {
-        window['ga-disable-${GA_ID}'] = true;
-        window.__dityamNoAnalytics = true;
-      }
+      if (localStorage.getItem(key)) off = true;
     } catch (e) {}
+    if (off) {
+      window['ga-disable-${GA_ID}'] = true;
+      window.__dityamNoAnalytics = true;
+    }
   })();
 `;
 
 export function Analytics() {
   const pathname = usePathname();
-  if (pathname && EXCLUDED.some((p) => pathname.startsWith(p))) return null;
+  const internal = isInternalPath(pathname);
+
+  // Модерацію відкриває лише той, хто працює над сайтом. Позначаємо браузер,
+  // щоб його наступні заходи на публічні сторінки теж не рахувались: до
+  // 17.09.2026 адмінку виключали, а решту заходів із того ж браузера — ні.
+  useEffect(() => {
+    if (!internal) return;
+    try { localStorage.setItem(NO_ANALYTICS_KEY, '1'); } catch { /* приватний режим */ }
+  }, [internal]);
+
+  if (internal) return null;
 
   return (
     <>
