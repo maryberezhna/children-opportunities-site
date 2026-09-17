@@ -378,7 +378,8 @@ deadline — ОСТАННІЙ ДЕНЬ ПОДАЧІ ЗАЯВКИ, формат Y
 - Дедлайну немає, програма постійна або набір триває цілий рік → null,
   але тоді ОБОВʼЯЗКОВО заповни recurrence: ongoing для постійного набору,
   annual для того, що повторюється щороку.
-- Рік не вказано → найближчий майбутній.
+- Рік не вказано → найближча така дата, що не раніша за дату публікації
+  («Опубліковано» в повідомленні); немає її — не раніша за «Сьогодні».
 
 event_start_date і event_end_date — КОЛИ ПОДІЯ ВІДБУВАЄТЬСЯ (табір, фестиваль,
 табірна зміна, сесія, фінал конкурсу, обмін), формат YYYY-MM-DD:
@@ -617,7 +618,14 @@ EXTRACT_TOOL = {
 _SNAP_BACKSTOP_DAYS = 180
 
 
-def _fix_invented_years(data: dict, haystack: str, today_iso: str) -> dict:
+def published_date(raw_text: str) -> str | None:
+    """Дата публікації з першого рядка сирця (raw_store.with_published)."""
+    m = re.match(r"^Дата публікації: (\d{4}-\d{2}-\d{2})", raw_text or "")
+    return m.group(1) if m else None
+
+
+def _fix_invented_years(data: dict, haystack: str, today_iso: str,
+                        published_iso: str | None = None) -> dict:
     """Полагодити дати, яким модель дописала чужий рік.
 
     Модель регулярно ставить до дати без року рік із минулого — попри пряме
@@ -631,14 +639,17 @@ def _fix_invented_years(data: dict, haystack: str, today_iso: str) -> dict:
     НЕМАЄ в тексті дослівно — рік вигадали, підставляємо рік публікації.
     Якщо рік у тексті є, дату не чіпаємо: вона чесно торішня.
     """
-    for key in ("deadline", "event_end_date"):
+    # Рік підставляємо відносно дати ПУБЛІКАЦІЇ, коли джерело її знає: пост від
+    # 15 серпня, розмічений у вересні, мав би інакше отримати рік «сьогодні».
+    anchor = published_iso or today_iso
+    for key in ("deadline", "event_start_date", "event_end_date"):
         v = data.get(key)
         if not v or v >= today_iso:
             continue
         year = v[:4]
         if year in haystack:
             continue  # рік справді написаний у тексті — дата чесна
-        fixed = _snap_year_to_now(v, today_iso)
+        fixed = _snap_year_to_now(v, anchor)
         if not fixed or fixed == v:
             continue
         data[key] = fixed
@@ -700,7 +711,10 @@ class Normalizer:
         self.last_reject_reason = None
         try:
             today_iso = datetime.utcnow().date().isoformat()
+            published_iso = published_date(raw_text)
+            published_line = f"Опубліковано: {published_iso}\n" if published_iso else ""
             user_msg = f"""Сьогодні: {today_iso}
+{published_line}
 Джерело: {source}
 URL: {source_url}
 Заголовок: {raw_title or '(немає)'}
@@ -744,8 +758,11 @@ URL: {source_url}
             if enrollment in ("closed", "expired") and data.get("status") != "draft":
                 data["status"] = "closed"
 
+            # Рядок «Дата публікації» не рахується текстом джерела: інакше рік
+            # публікації завжди «є в тексті», і вигаданий рік не виправлявся б.
+            body = re.sub(r"^Дата публікації: \d{4}-\d{2}-\d{2}\s*", "", raw_text or "")
             data = _fix_invented_years(
-                data, f"{raw_text} {raw_title or ''}", today_iso)
+                data, f"{body} {raw_title or ''}", today_iso, published_iso)
 
             # Дати в минулому — запобіжник, незалежний від LLM: подія, що вже
             # відбулась, або дедлайн, що минув, не сміють дати active-запис

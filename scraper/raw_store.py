@@ -45,6 +45,22 @@ def _clean(value):
     return value.replace("\x00", "")
 
 
+PUBLISHED_PREFIX = "Дата публікації: "
+
+
+def with_published(text: str, published) -> str:
+    """Перший рядок сирця — дата публікації допису, якщо джерело її знає.
+
+    До 17.09.2026 скрапери Telegram, RSS та Instagram читали дату допису лише
+    щоб відсіяти старе, а в текст для моделі вона не потрапляла. Модель брала
+    «сьогодні» за день розмітки, і «до 20 серпня» в пості від 15 серпня, який
+    розмітили в вересні, отримувало не той рік (аудит «Дедлайн, подія, сезон», С5).
+    """
+    if not published:
+        return text
+    return f"{PUBLISHED_PREFIX}{published.date().isoformat()}\n\n{text}"
+
+
 def raw_hash(source_url: str, raw_text: str) -> str:
     return hashlib.sha256(f"{source_url}|{raw_text}".encode()).hexdigest()[:32]
 
