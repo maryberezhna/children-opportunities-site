@@ -102,6 +102,8 @@
   max-width: 600px;
   text-wrap: pretty;
 }
+.tp-guide-link { margin: -4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.45; max-width: 600px; }
+.tp-main .tp-guide-link a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .tp-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
 
 .tp-btn {
@@ -385,6 +387,48 @@
 .tp-hub-head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
 .tp-hub-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
+/* ── Путівник Erasmus+ (app/erasmus/page.js) ──
+ * Розділи — та сама сітка «заголовок ліворуч», що й «Часті питання»;
+ * кольори лише з токенів шаблону. */
+.er-body { display: flex; flex-direction: column; gap: 18px; max-width: 760px; min-width: 0; }
+.er-lead, .er-prose p { margin: 0; font-size: 16px; line-height: 1.65; color: #1a1a1a; text-wrap: pretty; }
+.er-prose { gap: 14px; }
+.tp-main .er-body a:not(.tp-btn) { color: #b04312; text-decoration: underline; text-underline-offset: 2px; }
+
+.er-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.er-fact { background: #f7f1e6; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+.er-fact-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6b6b; }
+.er-fact-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: #1a1a1a; }
+.er-fact-note { font-size: 14px; line-height: 1.45; color: #4a4a4a; }
+
+.er-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.er-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.er-col-title { margin: 0; font-size: 18px; font-weight: 700; }
+
+.er-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.er-list li { position: relative; padding-left: 28px; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
+.er-list li strong { color: #1a1a1a; }
+.er-list li::before { content: '•'; position: absolute; left: 8px; top: 0; font-weight: 800; color: #e85d24; }
+.er-list.is-yes li::before { content: '✓'; left: 4px; color: #2d5814; }
+.er-list.is-no li::before { content: '✕'; left: 4px; color: #8a1a3a; }
+.er-list.is-warn li::before { content: '!'; left: 8px; color: #8a1a3a; }
+
+.er-steps { list-style: none; margin: 0; padding: 0; counter-reset: er-step; display: flex; flex-direction: column; }
+.er-step { counter-increment: er-step; position: relative; padding: 18px 0 18px 52px; border-top: 1px solid #e8e3d6; }
+.er-step:first-child { border-top: 0; padding-top: 4px; }
+.er-step::before {
+  content: counter(er-step);
+  position: absolute; left: 0; top: 16px;
+  width: 34px; height: 34px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #1a1a1a; color: #ffffff; font-weight: 800; font-size: 16px;
+}
+.er-step:first-child::before { top: 2px; }
+.er-step h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; }
+.er-step p { margin: 0; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
+
+.er-open { display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 80px; }
+
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }
@@ -402,6 +446,8 @@
   .tp-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tp-note, .tp-faq { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .tp-note { padding: 24px 20px; }
+  .er-facts, .er-columns { grid-template-columns: minmax(0, 1fr); }
+  .er-fact-value { font-size: 20px; }
 }
 /* На найвужчих екранах підпис картки може перенестись, аби не вилізти за фото. */
 @media (max-width: 359px) {

@@ -90,6 +90,8 @@ export default async function sitemap() {
   // Google англійську версію, якої немає, — це 404 у Search Console.
   const monolingual = [
     { url: `${SITE_URL}/dedlainy`, changeFrequency: 'daily', priority: 0.9 },
+    // Путівник Erasmus+ поки лише українською.
+    { url: `${SITE_URL}/erasmus`, changeFrequency: 'weekly', priority: 0.8 },
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]

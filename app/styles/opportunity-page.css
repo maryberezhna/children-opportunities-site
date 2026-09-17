@@ -110,6 +110,19 @@
   margin: 48px 0 24px;
 }
 
+/* Посилання на путівник (зараз лише Erasmus+) між описом і підпискою. */
+.o-guide-link {
+  margin: 24px 0 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #f7f1e6;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.o-guide-link a { color: var(--v2-accent-strong); text-decoration: none; }
+.o-guide-link a:hover { text-decoration: underline; text-underline-offset: 2px; }
+
 .opportunity-related-title {
   font-size: 1.375rem;
   font-weight: 700;
