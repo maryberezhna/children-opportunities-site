@@ -73,7 +73,7 @@ export default async function DefendersAdminPage() {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const [d, a] = await Promise.all([
       supabase.from('opportunities')
-        .select('id, title, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, recurrence, format, cities, countries, is_international, admin_comment, created_at')
+        .select('id, title, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, recurrence, format, cities, countries, is_international, admin_comment, created_at')
         .eq('status', 'draft').contains('child_needs', ['veteran_family'])
         .order('created_at', { ascending: false }).limit(100),
       supabase.from('opportunities').select('id', { count: 'exact', head: true })

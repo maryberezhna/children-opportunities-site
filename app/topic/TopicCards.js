@@ -81,6 +81,7 @@ function deadlineChip(item, todayIso, lang) {
     return { text: `📅 ${dateShort(s.date, todayIso, lang)}`, urgent: false };
   }
   if (s.state === 'running') return { text: `📅 ${t.running}`, urgent: false };
+  if (s.state === 'results') return { text: `🏆 ${dateShort(s.date, todayIso, lang)}`, urgent: false };
   return { text: s.state === 'periodic' ? t.annual : t.open, urgent: false };
 }
 

@@ -64,7 +64,7 @@ PAGE_CHARS = 9000
 DELAY = 0.6
 
 SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind, "
-          "season_months, deadline, event_start_date, event_end_date, recheck_at, "
+          "season_months, deadline, event_start_date, event_end_date, results_date, recheck_at, "
           "verified_at, admin_comment")
 
 STATES = ("open", "upcoming", "ended", "gone", "unclear")
@@ -348,7 +348,8 @@ def main() -> int:
     iso = today.isoformat()
     expired = _load(db, lambda: db.table("opportunities").select(SELECT)
                     .eq("status", "active").is_("canonical_slug", "null")
-                    .or_(f"deadline.lt.{iso},event_end_date.lt.{iso},event_start_date.lt.{iso}"))
+                    .or_(f"deadline.lt.{iso},event_end_date.lt.{iso},event_start_date.lt.{iso},"
+                         f"results_date.lt.{iso}"))
     closed = Counter()
     logger.info("%s\nA. Закриття за датою%s", "=" * 70, dry)
     for row in expired:

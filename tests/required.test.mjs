@@ -43,6 +43,8 @@ test('дату закриває будь-що з чотирьох', () => {
   assert.deepEqual(missingRequired(full({ ...bare, event_start_date: '2026-11-06' })), []);
   assert.deepEqual(missingRequired(full({ ...bare, event_end_date: '2026-11-08' })), []);
   assert.deepEqual(missingRequired(full({ ...bare, recurrence: 'annual' })), []);
+  // Дата розіграшу теж дає запису кінець (з 17.09.2026).
+  assert.deepEqual(missingRequired(full({ ...bare, results_date: '2026-09-30' })), []);
 });
 
 test('сміттєве значення не рахується за заповнене поле', () => {

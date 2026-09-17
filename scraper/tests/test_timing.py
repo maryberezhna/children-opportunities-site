@@ -180,6 +180,10 @@ class Seasons(unittest.TestCase):
                                      "event_end_date": "2026-09-30"}, TODAY))
         # Лише дата початку — раніше такий запис не закривався ніколи.
         self.assertTrue(is_expired({"event_start_date": "2026-09-01"}, TODAY))
+        # Лише дата розіграшу — закривається після неї.
+        self.assertTrue(is_expired({"results_date": "2026-09-16"}, TODAY))
+        self.assertFalse(is_expired({"results_date": "2026-09-30"}, TODAY))
+        self.assertFalse(is_expired({"deadline": "2026-10-01", "results_date": "2026-09-01"}, TODAY))
 
     def test_spread_is_stable_and_in_range(self):
         d = spread_date("abc", TODAY, 30)

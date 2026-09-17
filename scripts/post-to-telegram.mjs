@@ -112,8 +112,12 @@ function whenLines(item) {
   const lines = [];
   const when = formatDateRange(item.event_start_date, item.event_end_date);
   if (when) lines.push(`📅 Коли: <b>${when}</b>`);
+  const results = formatDeadline(item.results_date);
+  if (results) lines.push(`🏆 Результати: <b>${results}</b>`);
+  const sameDay = item.deadline && item.event_start_date === item.deadline
+    && (item.event_end_date || item.event_start_date) === item.deadline;
   const deadline = formatDeadline(item.deadline);
-  if (deadline) lines.push(`⏰ Заявки до: <b>${deadline}</b>`);
+  if (deadline && !sameDay) lines.push(`⏰ Заявки до: <b>${deadline}</b>`);
   return lines;
 }
 
@@ -301,7 +305,7 @@ const minLeadIso = minLead.toISOString().slice(0, 10);
 
 const { data: pool, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_start_date, event_end_date')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_start_date, event_end_date, results_date')
   .eq('status', 'active')
   .is('canonical_slug', null)
   .is('telegram_posted_at', null)

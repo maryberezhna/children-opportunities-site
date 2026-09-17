@@ -27,6 +27,7 @@ export default function EditForm({ opp }) {
     age_from: opp.age_from ?? 0, age_to: opp.age_to ?? 18,
     event_start_date: opp.event_start_date || '',
     event_end_date: opp.event_end_date || '', recurrence: opp.recurrence || '',
+    results_date: opp.results_date || '',
     apply_url: opp.apply_url || '',
     cost_type: opp.cost_type || '', opportunity_type: opp.opportunity_type || 'course',
     format: opp.format || '', cities: (opp.cities || []).join(', '),
@@ -46,7 +47,9 @@ export default function EditForm({ opp }) {
     age_from: f.age_from === '' ? null : Number(f.age_from),
     age_to: f.age_to === '' ? null : Number(f.age_to),
     deadline: f.deadline || null,
+    event_start_date: f.event_start_date || null,
     event_end_date: f.event_end_date || null,
+    results_date: f.results_date || null,
     recurrence: f.recurrence || null,
     cost_type: f.cost_type || null,
     opportunity_type: f.opportunity_type,
@@ -86,6 +89,7 @@ export default function EditForm({ opp }) {
         <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
         <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
         <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
+        <div style={{ flex: '1 1 150px' }}><label style={L}>Результати / розіграш</label><input type="date" style={I} value={f.results_date || ''} onChange={up('results_date')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік від</label><input type="number" min="0" max="18" style={I} value={f.age_from} onChange={up('age_from')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік до</label><input type="number" min="0" max="18" style={I} value={f.age_to} onChange={up('age_to')} /></div>
       </div>

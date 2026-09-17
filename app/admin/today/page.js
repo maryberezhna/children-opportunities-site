@@ -104,7 +104,7 @@ export default async function TodayPage() {
 
   const [draftsRes, msgs, sugs, subsRes, active, added7, snapsRes] = await Promise.all([
     supabase.from('opportunities')
-      .select('id, age_from, age_to, deadline, event_start_date, event_end_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international, admin_comment, child_needs')
+      .select('id, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international, admin_comment, child_needs')
       .eq('status', 'draft').limit(500),
     count('contact_messages', (q) => q.eq('status', 'new')),
     count('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human'])),
