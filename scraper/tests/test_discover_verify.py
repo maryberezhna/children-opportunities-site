@@ -10,7 +10,8 @@ import unittest
 from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from discover_agent import decide_verified  # noqa: E402
+from discover_agent import decide_current, decide_verified  # noqa: E402
+from normalizer import summary_says_over  # noqa: E402
 
 KOSTYUK = ("Фонд Марти Костюк запрошує українських дітей віком 10–14 років на безкоштовний "
            "тенісний табір у Салоу. Табір для дітей з України, які займаються тенісом.")
@@ -109,6 +110,41 @@ class Actuality(unittest.TestCase):
         self.assertTrue(ok)
         self.assertIn("дату на сторінці не видно", why)
 
+
+
+class BloomsdayOverThisYear(unittest.TestCase):
+    """17.09.2026: щоденний агент поклав у чергу «Bloomsday Young Authors»
+    (Ірландія) з власним описом «сезон 2026 року вже завершено»."""
+    SUMMARY = ("Щорічний конкурс творчого письма для дітей та підлітків, організований "
+               "The Museum of Childhood Ireland у Дубліні. Проводиться щороку до/на "
+               "Bloomsday (16 червня), сезон 2026 року вже завершено.")
+    PAGE = "Bloomsday 2026 Creative Writing Competition. Entries closed on 16 June 2026."
+
+    def test_summary_saying_over_is_caught(self):
+        self.assertTrue(summary_says_over(self.SUMMARY))
+        self.assertTrue(summary_says_over("Реєстрацію закрито."))
+
+    def test_ordinary_words_are_not_caught(self):
+        self.assertFalse(summary_says_over("Після завершення курсу — сертифікат."))
+        self.assertFalse(summary_says_over("Сезон 2026 завершено, реєстрація на 2027 відкрита."))
+        self.assertFalse(summary_says_over(None))
+
+    def test_past_this_year_rejected_when_model_knows_today(self):
+        # Рік 2026 = поточний, тож перевірка року сама не ловить; вирішує
+        # висновок моделі, якій тепер передається сьогоднішня дата.
+        ok, why = decide_current({"is_current": "past",
+                                  "date_evidence": "Entries closed on 16 June 2026"},
+                                 self.PAGE, today=date(2026, 9, 17))
+        self.assertFalse(ok)
+        self.assertIn("минуло", why)
+
+    def test_current_passes_with_quote(self):
+        page = "Entries open until 30 November 2026."
+        ok, why = decide_current({"is_current": "current",
+                                  "date_evidence": "Entries open until 30 November 2026"},
+                                 page, today=date(2026, 9, 17))
+        self.assertTrue(ok)
+        self.assertIn("актуально", why)
 
 
 class ReachableFromUkraine(unittest.TestCase):

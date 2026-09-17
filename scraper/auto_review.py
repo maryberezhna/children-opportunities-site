@@ -31,7 +31,7 @@ import api_guard  # відмова через ліміт/оплату робит
 from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
-from normalizer import missing_required
+from normalizer import missing_required, summary_says_over
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +96,8 @@ def mechanical(row: dict) -> tuple[str, str] | None:
     if row["age_from"] < 0 or row["age_to"] > 18:
         return YELLOW, f"вік поза 0–18 ({row['age_from']}–{row['age_to']})"
     summary = row.get("summary") or ""
+    if summary_says_over(summary):
+        return YELLOW, "в описі сказано, що набір чи сезон уже завершено"
     if len(summary) < MIN_SUMMARY_LEN:
         return YELLOW, f"опис коротший за {MIN_SUMMARY_LEN} символів"
     if len(row.get("title") or "") < MIN_TITLE_LEN:
