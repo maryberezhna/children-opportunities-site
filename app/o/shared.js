@@ -69,7 +69,7 @@ const L = {
   uk: {
     back: '← Усі можливості',
     closedTitle: 'Ця можливість уже завершилась.',
-    closedAnnual: 'Такі програми зазвичай відкриваються щороку — стежте за оновленнями, ми повідомимо, коли почнеться новий набір.',
+    closedAnnual: 'Ця програма відкривається знову щосезону. Ми перевіримо, коли почнеться новий набір, — і сторінка знову стане активною.',
     closedOnce: 'Подача заявок закрита, сторінку лишили для довідки.',
     closedLink: 'Подивитись актуальні можливості →',
     stateAid: 'держдопомога',
@@ -102,7 +102,7 @@ const L = {
   en: {
     back: '← All opportunities',
     closedTitle: 'This opportunity has ended.',
-    closedAnnual: 'Programmes like this usually open every year — follow the updates and we’ll say when the next intake starts.',
+    closedAnnual: 'This programme opens again each season. We check when the next intake starts, and this page becomes active again.',
     closedOnce: 'Applications are closed; the page is kept for reference.',
     closedLink: 'See current opportunities →',
     stateAid: 'state aid',
@@ -135,6 +135,12 @@ const L = {
 };
 
 const strings = (lang) => L[lang] || L.uk;
+
+// Періодична — за видом, прочитаним із тексту (з 17.09.2026). Поки вид не
+// визначено, лишається стара підказка за типом.
+const isPeriodic = (item) => (item.timing_kind
+  ? item.timing_kind === 'periodic'
+  : ANNUAL_TYPES.has(item.opportunity_type));
 const typeLabels = (lang) => (lang === 'en' ? TYPE_LABELS_EN : TYPE_LABELS);
 const needLabels = (lang) => (lang === 'en' ? NEED_LABELS_EN : NEED_LABELS);
 const basePath = (lang) => (lang === 'en' ? '/en' : '');
@@ -267,8 +273,11 @@ function buildDescription(item, typeLabel, ageRange, lang) {
 
   // Для закритої — чесний факт замість простроченого «заявки до …».
   if (item.status === 'closed') {
-    facts.push(en ? 'intake closed, we’re watching for the next one'
-      : 'набір закрито, стежимо за наступним');
+    // «Стежимо за наступним» — лише для періодичних: одноразова вже не
+    // повториться, і обіцяти їй наступний набір — неправда.
+    facts.push(isPeriodic(item)
+      ? (en ? 'intake closed, we’re watching for the next one' : 'набір закрито, стежимо за наступним')
+      : (en ? 'applications closed' : 'подачу закрито'));
   } else {
     const deadline = formatDate(item.deadline, lang);
     if (deadline) facts.push(en ? `apply by ${deadline}` : `заявки до ${deadline}`);
@@ -536,7 +545,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 читалось як його хвіст, а не як кнопка. */}
             <div className="closed-banner-body">
               <strong>{t.closedTitle}</strong>
-              <p>{ANNUAL_TYPES.has(item.opportunity_type) ? t.closedAnnual : t.closedOnce}</p>
+              <p>{isPeriodic(item) ? t.closedAnnual : t.closedOnce}</p>
               <Link href={base || '/'}>{t.closedLink}</Link>
             </div>
           </div>

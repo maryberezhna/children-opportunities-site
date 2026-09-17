@@ -1,19 +1,11 @@
 /**
  * Daily deadline check.
  *
- * For every opportunity with deadline <= today:
- * - If type is "annual" (olympiads, contests, scholarships, exchanges, grants,
- *   study_abroad) — clear `deadline = NULL`. The next scrape will repopulate
- *   with this year's date when the source publishes it. We do NOT try to add
- *   +1 year ourselves because the actual deadline often shifts.
- *   Festivals and camps are NOT annual here: they are date-bound events, and a
- *   past event must close, not sit visible "till next year" (the ATLAS bug).
- * - Otherwise — mark `cost_type = 'closed'` so UI hides the "apply now" CTA.
+ * Closing expired opportunities moved to scraper/lifecycle.py on 17.09.2026:
+ * it decides by the opportunity's timing kind (one-time / periodic /
+ * permanent) and schedules the next check, instead of guessing by type.
  *
- * Separately, every non-closed opportunity with event_end_date < today is
- * closed: the event has happened, regardless of deadlines.
- *
- * Also prints (and writes to artifact) a report with stats and the items that
+ * Prints (and writes to artifact) a report with stats and the items that
  * are due within the next 7 / 30 days.
  *
  * Optionally posts a short summary to Telegram if TELEGRAM_BOT_TOKEN +
@@ -33,23 +25,6 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
-
-const ANNUAL_TYPES = new Set([
-  'olympiad', 'competition', 'exchange', 'scholarship',
-  'grant', 'study_abroad',
-]);
-
-// Сезонні типи: закриваємо чесно, але через ~11 місяців дивимось ще раз —
-// ttl_requeue перечитає сторінку, і нова річна програма оживить запис.
-const SEASONAL_RECHECK_TYPES = new Set([
-  'festival', 'camp', 'summer_school', 'sport_tournament', 'excursion',
-]);
-const seasonalRecheck = (type) => {
-  if (!SEASONAL_RECHECK_TYPES.has(type)) return {};
-  const d = new Date();
-  d.setMonth(d.getMonth() + 11);
-  return { recheck_at: d.toISOString().slice(0, 10) };
-};
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -130,95 +105,27 @@ if (error) {
   process.exit(1);
 }
 
-const expiredAnnual = [];      // → deadline = NULL
-const expiredOneShot = [];     // → cost_type = 'closed'
+// Закриття за датою з 17.09.2026 живе в scraper/lifecycle.py («Планові
+// перевірки»). Тут воно вирішувалось за типом: конкурси й гранти з минулим
+// дедлайном лишались активними як «щорічні» (стирався лише дедлайн), а
+// олімпіади, закриті за датою події, не отримували дати повторної перевірки
+// і зникали назавжди. Тепер рішення залежить від виду можливості, і дата
+// наступної перевірки ставиться там само. Цей скрипт лишає звіт і пост.
 const dueSoon = [];            // 0..30 days, just for report
 
 for (const row of data || []) {
   const dl = new Date(row.deadline);
   dl.setHours(0, 0, 0, 0);
   const daysLeft = Math.ceil((dl - today) / 86400000);
-
-  if (daysLeft < 0) {
-    if (ANNUAL_TYPES.has(row.opportunity_type)) expiredAnnual.push({ ...row, daysLeft });
-    else if (row.status !== 'closed') expiredOneShot.push({ ...row, daysLeft });
-    // already-closed one-shots: skip silently
-  } else {
-    dueSoon.push({ ...row, daysLeft });
-  }
+  if (daysLeft >= 0) dueSoon.push({ ...row, daysLeft });
 }
 
 dueSoon.sort((a, b) => a.daysLeft - b.daysLeft);
 
 console.log(`Deadline check — ${stamp}${DRY_RUN ? ' (DRY RUN)' : ''}`);
 console.log('='.repeat(60));
-console.log(`Found: ${expiredAnnual.length} annual to refresh, ${expiredOneShot.length} one-shot to close, ${dueSoon.length} due soon.`);
+console.log(`Due soon: ${dueSoon.length}. Closing by date: scraper/lifecycle.py.`);
 console.log('');
-
-let archived = 0;
-let refreshed = 0;
-let failed = 0;
-
-if (expiredOneShot.length > 0) {
-  console.log(`🔴 ARCHIVING ${expiredOneShot.length} expired one-shot opportunities (cost_type='closed'):`);
-  for (const r of expiredOneShot) {
-    console.log(`  ${r.deadline}  [${-r.daysLeft}d ago]  ${r.title}`);
-    if (!DRY_RUN) {
-      const { error: e } = await supabase
-        .from('opportunities')
-        .update({ status: 'closed', updated_at: new Date().toISOString(),
-                  ...seasonalRecheck(r.opportunity_type) })
-        .eq('id', r.id);
-      if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
-      else archived += 1;
-    }
-  }
-  console.log('');
-}
-
-if (expiredAnnual.length > 0) {
-  console.log(`🟡 CLEARING deadlines on ${expiredAnnual.length} annual events (next scrape will refill):`);
-  for (const r of expiredAnnual) {
-    console.log(`  ${r.deadline}  [${-r.daysLeft}d ago]  ${r.title}  (${r.opportunity_type})`);
-    if (!DRY_RUN) {
-      const { error: e } = await supabase
-        .from('opportunities')
-        .update({ deadline: null, updated_at: new Date().toISOString() })
-        .eq('id', r.id);
-      if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
-      else refreshed += 1;
-    }
-  }
-  console.log('');
-}
-
-// --- Події, що вже відбулися (event_end_date < today) ---
-const { data: endedEvents, error: endedErr } = await supabase
-  .from('opportunities')
-  .select('id, title, event_end_date, opportunity_type')
-  .not('event_end_date', 'is', null)
-  .lt('event_end_date', stamp)
-  .neq('status', 'closed');
-
-if (endedErr) console.error('Supabase select (ended events) error:', endedErr);
-
-let endedClosed = 0;
-if ((endedEvents || []).length > 0) {
-  console.log(`🏁 CLOSING ${endedEvents.length} finished events (event_end_date passed):`);
-  for (const r of endedEvents) {
-    console.log(`  ${r.event_end_date}  ${r.title}  (${r.opportunity_type})`);
-    if (!DRY_RUN) {
-      const { error: e } = await supabase
-        .from('opportunities')
-        .update({ status: 'closed', updated_at: new Date().toISOString(),
-                  ...seasonalRecheck(r.opportunity_type) })
-        .eq('id', r.id);
-      if (e) { failed += 1; console.error(`    ✗ ${e.message}`); }
-      else endedClosed += 1;
-    }
-  }
-  console.log('');
-}
 
 console.log(`🟢 DUE WITHIN 30 DAYS (${dueSoon.length}):`);
 for (const r of dueSoon) {
@@ -226,10 +133,6 @@ for (const r of dueSoon) {
   console.log(` ${tag} ${r.deadline}  [in ${r.daysLeft}d]  ${r.title}`);
 }
 
-if (!DRY_RUN) {
-  console.log('');
-  console.log(`Done: archived=${archived}, events-closed=${endedClosed}, deadline-cleared=${refreshed}, failed=${failed}`);
-}
 
 // --- Persist artifact for GitHub Actions ---
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -239,16 +142,7 @@ await mkdir(outDir, { recursive: true });
 const reportLines = [
   `Deadline check — ${stamp}`,
   '='.repeat(60),
-  `archived=${archived}, events-closed=${endedClosed}, deadline-cleared=${refreshed}, failed=${failed}, due-soon=${dueSoon.length}`,
-  '',
-  `Expired one-shot → archived (cost_type='closed'):`,
-  ...expiredOneShot.map((r) => `  ${r.deadline} [${-r.daysLeft}d]  ${r.title}`),
-  '',
-  `Finished events → closed (event_end_date passed):`,
-  ...(endedEvents || []).map((r) => `  ${r.event_end_date}  ${r.title}`),
-  '',
-  `Expired annual → deadline cleared:`,
-  ...expiredAnnual.map((r) => `  ${r.deadline} [${-r.daysLeft}d]  ${r.title}`),
+  `due-soon=${dueSoon.length} (closing by date: scraper/lifecycle.py)`,
   '',
   `Due within 30 days:`,
   ...dueSoon.map((r) => `  ${r.deadline} [in ${r.daysLeft}d]  ${r.title}`),
@@ -751,4 +645,4 @@ function escapeHtml(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-process.exit(failed > 0 ? 1 : 0);
+process.exit(0);
