@@ -3,6 +3,8 @@ import { useState, useMemo } from 'react';
 // Той самий перелік, що й у конвеєрі: модератор бачить у черзі рівно те
 // формулювання, яким нормалізатор позначив запис.
 import { missingRequired } from '@/lib/required';
+import { formatDate, formatEventDates } from '@/lib/dates';
+import { dateWarnings } from '@/lib/date-warnings';
 
 const TYPE_LABELS = {
   course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
@@ -34,7 +36,8 @@ function MiniCol({ label, item, accent }) {
   const meta = [
     ageLabel(item),
     item.cost_type === 'free' ? 'безкоштовно' : null,
-    item.deadline ? `⏰ ${item.deadline}`
+    formatEventDates(item) ? `📅 ${formatEventDates(item)}`
+      : item.deadline ? `⏰ до ${formatDate(item.deadline)}`
       : item.recurrence === 'annual' ? '🔁 щорічна'
       : item.recurrence === 'ongoing' ? '♾ постійна'
       : '⚠️ без дати',
@@ -71,6 +74,8 @@ function Card({ o, mode, onAction, match }) {
   // сайт (вимога Марії 11.09.2026). Неповний запис показуємо з переліком
   // того, чого бракує, і з прямим лінком, де це дозаповнити.
   const missing = missingRequired(o);
+  const warnings = dateWarnings(o);
+  const when = formatEventDates(o);
   const gone = done === 'approved' || done === 'skipped' || done === 'removed';
   const bg = done === 'approved' || done === 'verified' ? C.greenBg
     : done === 'skipped' || done === 'removed' ? C.greyBg : '#fff';
@@ -87,7 +92,11 @@ function Card({ o, mode, onAction, match }) {
         </span>
         {ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
         {o.cost_type === 'free' ? <span style={{ color: C.green }}>безкоштовно</span> : null}
-        {o.deadline ? <span>⏰ {o.deadline}</span> : null}
+        {/* Коли відбувається і до коли подати — два різні факти й два підписи.
+            Раніше тут стояв голий «⏰ 2026-10-27»: так перший день події
+            читався як дедлайн, а дат проведення картка не показувала взагалі. */}
+        {when ? <span>📅 коли: {when}</span> : null}
+        {o.deadline ? <span>⏰ подача до {formatDate(o.deadline)}</span> : null}
         {mode === 'active' && o.verified_at
           ? <span style={{ color: C.green, fontWeight: 600 }}>✓ перевірено</span> : null}
       </div>
@@ -98,6 +107,15 @@ function Card({ o, mode, onAction, match }) {
             ⛔ {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'} — бракує: {missing.join(', ')}
           </div>
           <a href={`/admin/edit/${o.id}`} style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
+        </div>
+      ) : null}
+
+      {warnings.length ? (
+        <div style={{ background: C.warnBg, border: '1px solid #f3d3ad', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
+          {warnings.map((w) => (
+            <div key={w} style={{ color: C.warnInk, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>⚠ {w}</div>
+          ))}
+          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>виправити →</a>
         </div>
       ) : null}
 
