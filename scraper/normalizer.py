@@ -11,6 +11,7 @@ from slugify import slugify
 
 import hubs
 from canonical import canonical_url
+from timing import clean_kind, clean_months
 
 logger = logging.getLogger(__name__)
 
@@ -176,6 +177,10 @@ def _sanitize(data: dict) -> dict:
         data[key] = max(0, min(18, val))
     if data.get("recurrence") not in ("annual", "ongoing"):
         data["recurrence"] = None
+    # Вид за часом і місяці сезону (з 17.09.2026, див. scraper/timing.py).
+    data["timing_kind"] = clean_kind(data.get("timing_kind"))
+    data["season_months"] = (clean_months(data.get("season_months"))
+                             if data["timing_kind"] == "periodic" else None)
     if data["age_from"] > data["age_to"]:
         data["age_from"], data["age_to"] = data["age_to"], data["age_from"]
 
@@ -358,6 +363,19 @@ event_start_date і event_end_date — КОЛИ ПОДІЯ ВІДБУВАЄТЬ�
   відкрита з…» — це НЕ дата проведення. Проведення — коли відбувається сам
   захід: фінал, сесія, табір, церемонія. Такої дати в тексті немає → null.
 
+timing_kind — ЯК МОЖЛИВІСТЬ ЖИВЕ В ЧАСІ (рішення Марії 17.09.2026):
+- one_time — одна конкретна подія чи набір, що не повториться в такому
+  вигляді: вебінар, курс-когорта з датою старту, конкурс конкретного року без
+  ознак щорічності, обмін на конкретні дати, зміна табору.
+- periodic — повторюється циклами: олімпіада, стипендія з набором раз на рік,
+  щорічний конкурс, щорічна літня школа, гурток із набором у вересні. Ознаки:
+  «щороку», «щорічний», порядковий номер («XII»), «новий сезон».
+- permanent — записатися можна будь-коли: онлайн-курс у власному темпі,
+  державна виплата з постійним прийомом, гурток із вільним записом.
+- null — з тексту не зрозуміло. Тип можливості — лише підказка, не підстава.
+season_months — лише для periodic: місяці (1–12), коли зазвичай відкрита
+подача або проходить подія, з тексту чи з дат. Не знаєш — [].
+
 ЧАС ЖИТТЯ ЗАПИСУ. У кожного запису має бути хоч щось, чим його можна
 закрити: deadline, або event_end_date, або recurrence. Запис без жодного з
 трьох висить на сайті вічно, і родина дізнається про закритий набір уже в
@@ -538,6 +556,23 @@ EXTRACT_TOOL = {
                                "щороку (олімпіада, щорічний конкурс, табірний "
                                "сезон); ongoing — набір відкритий постійно "
                                "(гурток, курс, виплата); null — не зрозуміло.",
+            },
+            "timing_kind": {
+                "type": ["string", "null"],
+                "enum": ["one_time", "periodic", "permanent", None],
+                "description": "Як можливість живе в часі: one_time — разова "
+                               "подія чи набір; periodic — повторюється "
+                               "циклами (олімпіада, щорічний конкурс, гурток "
+                               "із набором у вересні); permanent — записатися "
+                               "можна будь-коли. З тексту, не з типу. "
+                               "Не зрозуміло → null.",
+            },
+            "season_months": {
+                "type": "array",
+                "items": {"type": "integer", "minimum": 1, "maximum": 12},
+                "description": "Лише для periodic: місяці, коли зазвичай "
+                               "відкрита подача або проходить подія. "
+                               "Не знаєш → [].",
             },
             "confidence": {"type": "number"},
         },

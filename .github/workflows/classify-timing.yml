@@ -1,0 +1,44 @@
+name: Вид можливостей за часом (вручну)
+
+# Разова розмітка timing_kind (одноразова / періодична / постійна) для всіх
+# активних і закритих записів без виду. Спершу правила без моделі, решта —
+# модель за текстом, уже збереженим у базі; на сайти джерел не ходить.
+# Дивись scraper/classify_timing.py.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = лише звіт, без запису'
+        required: false
+        default: 'true'
+      limit:
+        description: 'скільки записів (порожньо = всі)'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  classify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Classify
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          LIMIT: ${{ github.event.inputs.limit }}
+        run: python classify_timing.py
