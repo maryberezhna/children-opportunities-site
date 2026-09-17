@@ -28,8 +28,6 @@
  */
 import { createClient } from '@supabase/supabase-js';
 import { opportunitiesWord } from '../lib/plural.js';
-// Спільне з сайтом визначення події — щоб бот і картка не розходились.
-import { isEvent } from '../lib/labels.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -123,7 +121,7 @@ const isPublishable = (r) => r.status === 'active' && !r.canonical_slug;
 
 const { data, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_end_date, cost_type, status, canonical_slug, source_url')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, deadline, event_start_date, event_end_date, cost_type, status, canonical_slug, source_url')
   .not('deadline', 'is', null)
   .lte('deadline', lookahead.toISOString().slice(0, 10));
 
@@ -278,7 +276,7 @@ const PLUS_LINE = '⚡ Не встигаєте стежити за дедлай�
 // Теги, які Telegram приймає в parse_mode=HTML (як у post-message.mjs).
 const ALLOWED_TAGS = /^(b|strong|i|em|u|s|code|pre|a|blockquote|tg-spoiler)$/;
 const POOL_COLUMNS = 'id, slug, title, summary, details, source, opportunity_type, age_from, age_to, '
-  + 'cost_type, deadline, event_end_date, created_at, telegram_posted_at, child_needs, cities, '
+  + 'cost_type, deadline, event_start_date, event_end_date, created_at, telegram_posted_at, child_needs, cities, '
   + 'countries, is_international, format, aid_type';
 
 // Ситуації для формату «situation»: починаємо з болю батьків, а не з програми.
@@ -618,7 +616,7 @@ async function sendNewOpportunityPost(excludeIds = []) {
   const since = new Date(Date.now() - 3 * 86400000).toISOString();
   const { data, error } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_end_date, created_at')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, created_at')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .is('telegram_posted_at', null)
@@ -680,18 +678,22 @@ function formatDateRange(fromStr, toStr) {
   return `${from} — ${to}`;
 }
 
+// Дві РІЗНІ дати — два різні рядки. До 17.09.2026 тут для подій друкувалось
+// formatDateRange(r.deadline, r.event_end_date): дедлайн подачі ставав
+// «початком» події. Саме так пішов пост про сесію ЄМП у Мальме («Коли:
+// 17 вересня — 8 листопада» при справжніх 6–8 листопада). У post-to-telegram
+// це виправили 16.09, але щоденний пост робить цей скрипт.
 function whenLine(r, indent = '') {
-  if (isEvent(r)) {
-    const when = formatDateRange(r.deadline, r.event_end_date);
-    if (!when) return null;
-    return `${indent}📅 Коли: <b>${when}</b>`;
+  const lines = [];
+  const when = formatDateRange(r.event_start_date || r.event_end_date, r.event_end_date);
+  if (when) lines.push(`${indent}📅 Коли: <b>${when}</b>`);
+  if (r.deadline) {
+    const days = r.daysLeft;
+    const tag = days == null || days < 0 ? formatDeadlineDate(r.deadline)
+      : days === 0 ? 'сьогодні' : days === 1 ? 'завтра' : `за ${days} дн.`;
+    if (tag) lines.push(`${indent}⏰ Заявки до: <b>${tag}</b>`);
   }
-  if (r.daysLeft != null && r.daysLeft >= 0) {
-    const tag = r.daysLeft === 0 ? 'сьогодні' : r.daysLeft === 1 ? 'завтра' : `за ${r.daysLeft} дн.`;
-    return `${indent}⏰ Дедлайн: <b>${tag}</b>`;
-  }
-  const dl = formatDeadlineDate(r.deadline);
-  return dl ? `${indent}⏰ Дедлайн: <b>${dl}</b>` : null;
+  return lines.length ? lines.join('\n') : null;
 }
 
 function formatDeadlineDate(dateStr) {

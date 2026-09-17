@@ -344,7 +344,8 @@ def _prompt(kw: str, region: dict) -> str:
         + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
-        '"deadline":"YYYY-MM-DD або null","recurrence":"annual|ongoing|null",'
+        '"deadline":"YYYY-MM-DD або null","event_start_date":"YYYY-MM-DD або null",'
+        '"event_end_date":"YYYY-MM-DD або null","recurrence":"annual|ongoing|null",'
         '"age_from":7,"age_to":17,'
         '"opportunity_type":"course|olympiad|competition|club|camp|scholarship|grant|festival|exchange|workshop",'
         '"cost_type":"free|paid_affordable",'
@@ -359,7 +360,9 @@ def _prompt(kw: str, region: dict) -> str:
         "  покрите державою чи грантом); paid_affordable — якщо без оплати\n"
         "  участь неможлива, навіть часткової. Інших значень немає.\n"
         "- deadline — останній день ПОДАЧІ заявки. Якщо в тексті лише дати\n"
-        "  проведення діапазоном — бери ПЕРШУ дату, ніколи не останню.\n"
+        "  проведення — deadline=null: день початку події НЕ є дедлайном.\n"
+        "- event_start_date / event_end_date — коли подія ВІДБУВАЄТЬСЯ:\n"
+        "  «6–8 листопада» → 6 і 8 листопада; одна дата → в обидва поля.\n"
         "- recurrence — коли конкретної дати подачі немає: annual, якщо в\n"
         "  тексті сказано, що це буває щороку («щорічний конкурс», «реєстрація\n"
         "  зазвичай у жовтні, сам конкурс — у листопаді»); ongoing, якщо набір\n"
@@ -514,6 +517,11 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "opportunity_type": c.get("opportunity_type"),
         "cost_type": c.get("cost_type"),
         "deadline": c.get("deadline"),
+        # Дати проведення окремо від дедлайну (з 16.09.2026). Агент раніше
+        # клав перший день події в deadline — див. міграцію
+        # 20260916_event_start_and_apply_url.sql.
+        "event_start_date": c.get("event_start_date"),
+        "event_end_date": c.get("event_end_date"),
         # Дата-або-періодичність і місце-або-формат — два з пʼяти обовʼязкових
         # полів. Агент їх не питав узагалі, тож КОЖЕН його драфт приїздив у
         # чергу з «бракує: дата…, формат або місце», навіть коли в самому
