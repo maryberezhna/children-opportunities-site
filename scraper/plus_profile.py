@@ -15,16 +15,22 @@
 MAX_CHILDREN = 6
 
 AGE_RANGES = {"0-3": (0, 3), "4-6": (4, 6), "7-10": (7, 10), "11-14": (11, 14), "15-18": (15, 18)}
-LIKE_KEYS = ("stem", "arts", "sport", "languages", "soft_skills", "career")
+# У синхроні з lib/plusProfile.js (19.09.2026: додано 4 теми і 3 формати).
+LIKE_KEYS = ("stem", "arts", "sport", "languages", "soft_skills", "career",
+             "nature", "health", "history", "business")
 
 FORMAT_TYPES = {
-    "clubs": ("club", "course", "workshop", "study_program", "mentorship"),
-    "camps": ("camp", "summer_school"),
-    "contests": ("competition", "olympiad", "hackathon", "sport_tournament", "festival", "award"),
-    "grants": ("scholarship", "grant", "exchange", "residency"),
+    "clubs": ("club", "course", "workshop", "study_program", "mentorship", "educational_material"),
+    "camps": ("camp", "summer_school", "excursion"),
+    "contests": ("competition", "olympiad", "hackathon", "sport_tournament", "festival", "award", "conference", "sport_event"),
+    "grants": ("scholarship", "grant", "exchange", "residency", "study_abroad"),
+    "support": ("psychology", "rehabilitation", "medical_aid"),
+    "family_aid": ("allowance", "support_payment", "humanitarian", "shelter", "legal_aid"),
+    "volunteering": ("volunteer", "internship"),
 }
 FORMAT_THEMES = {
     "clubs": ("format", "nonformal"), "camps": ("camps",), "contests": ("contests",), "grants": (),
+    "support": (), "family_aid": (), "volunteering": (),
 }
 
 PLACE_ONLINE = "online"
