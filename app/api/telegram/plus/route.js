@@ -46,41 +46,18 @@ async function cancelSubscription(sub) {
   return { ...r, hadOrder: true };
 }
 
-// Живий доказ замість переліку обіцянок. Спершу те, що горить, потім
-// добираємо вічнозеленими: у каталозі лише кілька десятків записів з
-// відкритою подачею, а решта — довідкові (курси Prometheus, послуги easy.gov).
-// Якби брали тільки дедлайнові, у пів року доказ був би порожній.
-async function payoffProof(supabase) {
-  const today = new Date().toISOString().slice(0, 10);
-  const base = () => supabase.from('opportunities')
-    .select('title, deadline')
-    .eq('status', 'active').is('canonical_slug', null);
-
-  const { data: urgent } = await base()
-    .not('deadline', 'is', null).gte('deadline', today)
-    .order('deadline', { ascending: true }).limit(2);
-
-  const picked = [...(urgent || [])];
-  if (picked.length < 2) {
-    const { data: evergreen } = await base()
-      .is('deadline', null)
-      .order('created_at', { ascending: false }).limit(2 - picked.length);
-    picked.push(...(evergreen || []));
-  }
-  if (!picked.length) return '';
-
-  const M = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
-  const lines = picked.map((o) => {
-    const t = esc(cutTitle(o.title, 60));
-    if (!o.deadline) return `• ${t}`;
-    const d = new Date(o.deadline);
-    return `• ${t} — до ${d.getDate()} ${M[d.getMonth()]}`;
-  });
-  // Заголовок під фактичний склад: «горить» лише коли справді є дедлайни
-  const head = picked.some((o) => o.deadline)
-    ? 'Ось що зараз на платформі:'
-    : 'Ось що є прямо зараз:';
-  return `\n<b>${head}</b>\n${lines.join('\n')}\n`;
+// Знижка для списку очікування (рішення Марії 14.09.2026): перший місяць за
+// PRICE_EARLY. Лише тим, хто ще жодного разу не платив (немає
+// wfp_order_reference), і лише якщо людина є в plus_waitlist за chat_id
+// (з 15.09.2026 записуються тут, у @DityamPlusBot, раніше — через
+// @DityamComUABot; у приватному чаті chat_id однаковий для обох ботів, бо це
+// id користувача). Імейлом у список більше не записуємо
+// (15.09.2026), тож і шукати за ним нема чого.
+async function isEarlyBird(supabase, sub) {
+  if (!supabase || !sub || sub.wfp_order_reference || !sub.telegram_chat_id) return false;
+  const { count } = await supabase.from('plus_waitlist')
+    .select('id', { count: 'exact', head: true }).eq('telegram_chat_id', String(sub.telegram_chat_id));
+  return (count || 0) > 0;
 }
 
 async function sendPayOffer(bot, sub, chatId, supabase) {
@@ -89,13 +66,15 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
   //
   // Свідомо НЕ обіцяємо «подарунки від партнерів»: у коді такого немає,
   // а обіцянка, яку нічим не закрити, коштує дорожче за зайвий рядок.
-  const proof = supabase ? await payoffProof(supabase) : '';
+  // Блок «Ось що зараз на платформі» прибрано 19.09.2026 (Марія: «мені
+  // здається, це взагалі не треба»): у добірку потрапляло випадкове — запис
+  // із дедлайном сьогодні або онлайн-консультація, — і замість доказу це
+  // виглядало як дрібний список.
   const text = '🧡 <b>Dityam+</b>\n\n'
     // До 14.09.2026 тут стояло «памʼятаємо, куди дитина вже подавалась, і
     // пропонуємо наступний крок» — у коді такого немає, тезу прибрано.
     + 'Платформа показує все, що існує. Dityam+ щодня добирає з цього те, що підходить '
     + 'кожній вашій дитині, і нагадує про дедлайни, поки ще є час подати заявку.\n'
-    + proof
     + '\n<b>Що входить:</b>\n'
     + '• Відбір під кожну дитину: вік, вподобання, формат і місто\n'
     + '• Нагадування про дедлайни завчасно — за 2–4 тижні для стипендій і обмінів\n'
