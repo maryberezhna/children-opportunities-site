@@ -121,6 +121,15 @@
 
 .legal-page a:hover { color: #d14c15; }
 
+.contact-requisites {
+  margin: 12px 0 24px;
+  padding-left: 20px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--ink);
+}
+.contact-requisites a { color: var(--v2-accent-strong); }
+
 .contact-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
