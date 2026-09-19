@@ -78,7 +78,9 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '\n<b>Що входить:</b>\n'
     + '• Відбір під кожну дитину: вік, вподобання, формат і місто\n'
     + '• Нагадування про дедлайни завчасно — за 2–4 тижні для стипендій і обмінів\n'
-    + '• Допомога із заявкою — напишіть сюди, підкажемо, що заповнювати\n'
+    // Допомогу із заявкою поки не робимо (Марія, 19.09.2026) — у переліку
+    // вона лишається як задум із позначкою «скоро», а не як те, що вже є.
+    + '• Допомога із заявкою — скоро\n'
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Усе приходить сюди, у Telegram';
   if (wayforpayConfigured && sub) {
@@ -141,7 +143,7 @@ const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
   + '/child — додати ще одну дитину\n'
   + '/form — заповнити анкету заново\n'
   + '/profile — профіль дітей і деталі підписки\n'
-  + '/support — допомога із заявкою\n'
+  + '/support — написати нам\n'
   + '/stop — відписатися і скасувати списання';
 
 // Головне меню для активного підписника.
@@ -427,8 +429,8 @@ export async function POST(request) {
       const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
       if (/^\/support\b/i.test(text)) {
         await bot.sendMessage(chatId, sub?.status === 'active'
-          ? '📝 <b>Допомога із заявкою</b>\nНапишіть питання прямо сюди — підкажемо, що і як заповнювати.'
-          : 'Допомога із заявкою доступна підписникам Dityam+. Оформити — /start 🧡');
+          ? '📝 <b>Напишіть нам</b>\nПитання про підписку чи про можливість — пишіть прямо сюди, відповімо. Допомога із заявкою — скоро.'
+          : 'Написати нам можуть підписники Dityam+. Оформити — /start 🧡');
       } else {
         await bot.sendMessage(chatId, COMMANDS_TEXT);
       }
@@ -577,7 +579,7 @@ export async function POST(request) {
     else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
     else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
-    else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — підкажемо, що і як заповнювати.');
+    else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — відповімо.');
     return new Response('ok');
   }
 
