@@ -49,7 +49,9 @@ class Place(unittest.TestCase):
 class Child(unittest.TestCase):
     def test_formats_by_type_and_theme_fallback(self):
         self.assertEqual(pp.formats_of(opp(opportunity_type="olympiad"), set()), {"contests"})
-        self.assertEqual(pp.formats_of(opp(opportunity_type="rehabilitation"), {"camps"}), {"camps"})
+        self.assertEqual(pp.formats_of(opp(opportunity_type="club"), {"camps"}), {"clubs", "camps"})
+        self.assertEqual(pp.formats_of(opp(opportunity_type="psychology"), set()), {"support"})
+        self.assertEqual(pp.formats_of(opp(opportunity_type="allowance"), set()), {"family_aid"})
 
     def test_age_likes_and_format_all_apply(self):
         c = kid(age_bands=["7-10"], likes=["stem"], formats=["camps"])

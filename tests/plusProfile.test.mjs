@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   placeOk, childMatch, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
+  FORMAT_TYPES, FORMAT_OPTIONS,
 } from '../lib/plusProfile.js';
+import { TYPE_LABELS } from '../lib/labels.js';
 
 // Дзеркало: scraper/tests/test_plus_profile.py. Правити обидва файли.
 
@@ -36,7 +38,26 @@ test('місце: запис без позначки місця не вгаду�
 
 test('формат: за типом запису і за темою як запасний шлях', () => {
   assert.deepEqual([...formatsOf(opp({ opportunity_type: 'olympiad' }), none)], ['contests']);
-  assert.deepEqual([...formatsOf(opp({ opportunity_type: 'rehabilitation' }), new Set(['camps']))], ['camps']);
+  // Тема — запасний шлях: табірна тема додає «табори» до формату за типом.
+  assert.deepEqual(
+    [...formatsOf(opp({ opportunity_type: 'club' }), new Set(['camps']))].sort(),
+    ['camps', 'clubs'],
+  );
+  assert.deepEqual([...formatsOf(opp({ opportunity_type: 'psychology' }), none)], ['support']);
+  assert.deepEqual([...formatsOf(opp({ opportunity_type: 'allowance' }), none)], ['family_aid']);
+});
+
+// 19.09.2026: чотири формати не покривали 66 активних записів (виплати,
+// психологія, гуманітарна допомога, волонтерство…), і людина, яка обрала
+// хоч один формат, не отримувала їх узагалі. Новий тип записів не має
+// повторити цю історію мовчки.
+test('формат: кожен тип запису належить рівно до одного формату анкети', () => {
+  const keys = FORMAT_OPTIONS.map(([k]) => k);
+  assert.deepEqual(Object.keys(FORMAT_TYPES).sort(), [...keys].sort());
+  for (const type of Object.keys(TYPE_LABELS)) {
+    const groups = keys.filter((k) => FORMAT_TYPES[k].includes(type));
+    assert.equal(groups.length, 1, `тип «${type}» у форматах: ${groups.join(', ') || 'ніде'}`);
+  }
 });
 
 test('дитина: вік обовʼязковий, вподобання й формат одночасно', () => {
