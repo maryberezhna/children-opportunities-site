@@ -12,6 +12,7 @@ import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR, PRICE_EARLY,
 } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
+import { cutTitle } from '@/lib/text';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
@@ -69,7 +70,7 @@ async function payoffProof(supabase) {
 
   const M = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
   const lines = picked.map((o) => {
-    const t = esc(o.title.slice(0, 60));
+    const t = esc(cutTitle(o.title, 60));
     if (!o.deadline) return `• ${t}`;
     const d = new Date(o.deadline);
     return `• ${t} — до ${d.getDate()} ${M[d.getMonth()]}`;
