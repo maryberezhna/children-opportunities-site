@@ -4,12 +4,14 @@
 20 пар дублів. Ці тести прибʼють поведінку до власної таблиці."""
 import pathlib
 import sys
+import re
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
 from normalizer import _fix_invented_years, published_date, strip_foreign_script  # noqa: E402
 from normalizer import is_state_support  # noqa: E402
+from normalizer import SYSTEM_PROMPT, VALID_OPP_TYPES  # noqa: E402
 
 
 class SlugInvariants(unittest.TestCase):
@@ -136,9 +138,6 @@ class StateSupportIsFree(unittest.TestCase):
         self.assertIn("перевір", data["admin_comment"])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
 
 class RequiredBeforePublish(unittest.TestCase):
     """Дата, тип, вік, вартість і місце-або-формат — обовʼязковий мінімум
@@ -235,3 +234,27 @@ class SanitizeGate(unittest.TestCase):
         self.assertEqual(out["opportunity_type"], "course")
         self.assertEqual(out["status"], "draft")
         self.assertIn("тип", out["admin_comment"])
+
+
+class PromptKnowsEveryType(unittest.TestCase):
+    """18.09.2026: пропозиція «Діалог українських дітей з Радою Європи»
+    застрягла в чернетці з «бракує: тип». Причина — промпт перелічував
+    16 типів із 30, які приймає база, і для онлайн-консультації в моделі
+    просто не було слова. Перелік у промпті мусить дорівнювати словнику."""
+
+    def block(self):
+        start = SYSTEM_PROMPT.index("opportunity_type — ЛИШЕ одне значення")
+        return SYSTEM_PROMPT[start:SYSTEM_PROMPT.index("cost_type —", start)]
+
+    def test_prompt_lists_all_valid_types(self):
+        block = self.block()
+        missing = sorted(t for t in VALID_OPP_TYPES if f"- {t} —" not in block)
+        self.assertEqual(missing, [], f"немає в промпті: {missing}")
+
+    def test_prompt_invents_no_type(self):
+        listed = set(re.findall(r"^- ([a-z_]+) —", self.block(), re.M))
+        self.assertEqual(listed - VALID_OPP_TYPES, set())
+
+
+if __name__ == "__main__":
+    unittest.main()
