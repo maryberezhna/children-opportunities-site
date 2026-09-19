@@ -9,7 +9,9 @@ import { opportunitiesWord } from '@/lib/plural';
  *
  * Сторінка обіцяє рівно те, що робить код (звірено 14.09.2026):
  *   профіль для кожної дитини → щоденний добір нового → нагадування про
- *   дедлайни за вікнами типу програми → допомога із заявкою в боті → /stop.
+ *   дедлайни за вікнами типу програми → /stop.
+ * Допомога із заявкою з 19.09.2026 позначена «скоро» — Марія вирішила поки її
+ * не робити, тож у теперішньому часі її не обіцяємо ні кроком, ні переліком.
  * Виняток — кнопки «Цікаво / Не цікаво» і «Додати в календар» у переліку й
  * прикладі повідомлень: їх обіцяно наперед (Марія 14.09.2026), примітка під
  * прикладом так і каже.
@@ -147,7 +149,10 @@ const L = {
       ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Імені, прізвища чи школи дитини не запитуємо.'],
       ['Отримуйте нове під профіль', 'Щодня перевіряємо нові записи й надсилаємо ті, що підходять кожній дитині. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
-      ['Питайте про заявку', 'Не зрозуміло, що заповнювати чи які документи потрібні? Напишіть боту — відповімо там само.'],
+      // Рішення Марії 19.09.2026: допомогу із заявкою поки не робимо, тож
+      // блок лишається з позначкою «скоро» — обіцяти те, чого ще немає, не
+      // можна, а прибирати задум зі сторінки вона не просила.
+      ['Питайте про заявку', 'Готуємо: можна буде написати боту, якщо не зрозуміло, що заповнювати чи які документи потрібні.', true],
     ],
 
     priceTitle: 'Скільки коштує',
@@ -162,7 +167,7 @@ const L = {
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
-      'допомога із заявкою — просто напишіть боту',
+      'допомога із заявкою — скоро',
       'усе приходить у Telegram',
     ],
     trust: (total) => [
@@ -298,7 +303,7 @@ const L = {
       ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. We don’t ask for your child’s name, surname or school.'],
       ['Get what fits the profile', 'Every day we check new listings and send the ones that fit each child. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
-      ['Ask about the application', 'Not sure what to fill in or which documents you need? Message the bot — we answer right there.'],
+      ['Ask about the application', 'In the works: you will be able to message the bot when you are not sure what to fill in or which documents you need.', true],
     ],
 
     priceTitle: 'Pricing',
@@ -312,7 +317,7 @@ const L = {
     included: [
       'a selection for each child’s profile — age, likes, format, city',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
-      'help with applications — just message the bot',
+      'help with applications — coming soon',
       'everything arrives on Telegram',
     ],
     trust: (total) => [
@@ -528,10 +533,13 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
         <div className="pl-wrap">
           <h2 className="pl-h2">{t.howTitle}</h2>
           <ol className="pl-how">
-            {t.how4.map(([title, text], i) => (
+            {t.how4.map(([title, text, soon], i) => (
               <li key={title} className="pl-how-item">
                 <span className="pl-how-n" aria-hidden="true">{i + 1}</span>
-                <h3>{title}</h3>
+                <h3>
+                  {title}
+                  {soon ? <span className="pl-badge pl-badge-soon pl-how-soon">{t.soon}</span> : null}
+                </h3>
                 <p>{text}</p>
               </li>
             ))}
