@@ -6,7 +6,7 @@
 // вже пройдено, одразу меню, а не повторна анкета.
 import { createClient } from '@supabase/supabase-js';
 import {
-  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback,
+  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback, saveCustomCity,
 } from '@/lib/digestFlow';
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR, PRICE_EARLY,
@@ -405,6 +405,14 @@ export async function POST(request) {
 
     if (!text.startsWith('/')) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+
+      // Текст на кроці «Де» — це місто, якого немає серед кнопок. Перевірка
+      // стоїть перед підтримкою: інакше місто від підписника, який заповнює
+      // анкету заново, пішло б адміну як питання.
+      if (sub?.flow_step === 'place') {
+        await saveCustomCity(bot, supabase, chatId, sub, text);
+        return new Response('ok');
+      }
 
       // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
       if (sub?.status === 'active') {
