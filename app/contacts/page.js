@@ -72,6 +72,20 @@ export default function ContactsPage() {
           <a href="https://base.monobank.ua/5QKZeVxPVjZEx7" target="_blank" rel="noopener noreferrer">Підписка Base</a>.
         </p>
 
+        {/* Реквізити продавця на сторінці контактів — вимога платіжного
+            сервісу до сайтів, що приймають оплату: повне найменування, ІПН,
+            адреса, телефон і пошта мають бути саме в контактах, а не лише в
+            оферті. Значення тримати однаковими з розділом 9 у /terms. */}
+        <h2>Реквізити</h2>
+        <ul className="contact-requisites">
+          <li>ФОП Шутяк Марія Олександрівна</li>
+          <li>ІПН (РНОКПП): 3530900201</li>
+          <li>Адреса: 02130, Україна, м. Київ, вул. Воскресенська, 16Б, кв. 20</li>
+          <li>Телефон: <a href="tel:+380634763998">+380 63 476 3998</a></li>
+          <li>Email: <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a></li>
+          <li>Сайт: dityam.com.ua</li>
+        </ul>
+
         <p style={{ fontSize: 14, color: '#54617a' }}>
           Умови надання послуги — <Link href="/terms">Публічна оферта</Link> ·
           Повернення коштів — <Link href="/refund">тут</Link>.
