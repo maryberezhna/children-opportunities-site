@@ -66,7 +66,7 @@ export default async function MetricsPage() {
   const [
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
-    subsRes, snapshotsRes,
+    subsRes, snapshotsRes, promoRes,
   ] = await Promise.all([
     count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -80,12 +80,27 @@ export default async function MetricsPage() {
     count(supabase, 'opportunity_outcomes'),
     supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
     supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
+    supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
   ]);
 
   const subs = subsRes.data || [];
   const yearly = subs.filter((s) => s.billing_period === 'yearly').length;
   const monthly = subs.length - yearly;
   const mrr = Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+
+  // Промокоди: рахуємо і введення, і оплати. Різниця між ними — головне,
+  // що тут видно: код привів людей, але ціна їх не вмовила (або навпаки).
+  const promoUses = promoRes.data || [];
+  const byCode = new Map();
+  for (const u of promoUses) {
+    const row = byCode.get(u.code) || { code: u.code, entered: 0, paid: 0, sum: 0, sources: new Map() };
+    row.entered += 1;
+    if (u.paid_at) { row.paid += 1; row.sum += Number(u.paid_amount || 0); }
+    row.sources.set(u.source || '—', (row.sources.get(u.source || '—') || 0) + 1);
+    byCode.set(u.code, row);
+  }
+  const promoCodes = [...byCode.values()].sort((a, b) => b.entered - a.entered);
+  const dt = (iso) => (iso ? new Date(iso).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
 
   const snaps = snapshotsRes.data || [];
   const latest = snaps[0];
@@ -128,6 +143,44 @@ export default async function MetricsPage() {
         <Card value={`${mrr} грн`} label="MRR (місячний еквівалент)" />
         <Card value={waitlist ? `${Math.round((subs.length / waitlist) * 100)}%` : '—'} label="конверсія waitlist → оплата" />
       </div>
+
+      <h2 style={h2S}>🎟 Промокоди</h2>
+      {promoCodes.length === 0 ? (
+        <p style={noteS}>Ще ніхто не вводив. Посилання для поста: <code>https://t.me/DityamPlusBot?start=promo_first_kanal</code> — суфікс після коду стає джерелом.</p>
+      ) : (
+        <>
+          <div style={grid}>
+            {promoCodes.map((c) => (
+              <Card key={c.code} value={`${c.paid} / ${c.entered}`}
+                label={`${c.code.toUpperCase()}: оплатили / ввели · ${c.sum} грн · ${[...c.sources.entries()].map(([k, n]) => `${k}: ${n}`).join(', ')}`} />
+            ))}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ borderCollapse: 'collapse', fontSize: 13.5, width: '100%', fontVariantNumeric: 'tabular-nums' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: '#54617a' }}>
+                  {['Код', 'Хто', 'Звідки', 'Ввів', 'Оплатив'].map((h) => (
+                    <th key={h} style={{ padding: '6px 10px', borderBottom: '1px solid #e3e8f0' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {promoUses.slice(0, 25).map((u) => (
+                  <tr key={u.id}>
+                    <td style={{ padding: '5px 10px' }}>{u.code.toUpperCase()}</td>
+                    <td style={{ padding: '5px 10px' }}>{u.telegram_username ? `@${String(u.telegram_username).replace(/^@/, '')}` : u.telegram_chat_id}</td>
+                    <td style={{ padding: '5px 10px' }}>{u.source || '—'}</td>
+                    <td style={{ padding: '5px 10px' }}>{dt(u.created_at)}</td>
+                    <td style={{ padding: '5px 10px', color: u.paid_at ? '#15803d' : '#8a94a6' }}>
+                      {u.paid_at ? `${dt(u.paid_at)} · ${u.paid_amount ?? '—'} грн` : 'ще ні'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <h2 style={h2S}>📅 Щоденні знімки (останні 14)</h2>
       {snaps.length === 0 ? (

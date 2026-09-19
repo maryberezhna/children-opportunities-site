@@ -12,6 +12,7 @@ import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR, PRICE_EARLY,
 } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
+import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
@@ -115,19 +116,44 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Усе приходить сюди, у Telegram';
   if (wayforpayConfigured && sub) {
-    const early = await isEarlyBird(supabase, sub);
-    const [m, y] = await Promise.all([createInvoice(sub, 'monthly', { early }), createInvoice(sub, 'yearly')]);
+    // Дві підстави для знижки: список очікування (за chat_id) і промокод,
+    // введений у боті. Промокод сильніший: людина його щойно ввела і чекає
+    // саме цю ціну на кнопці.
+    const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
+    const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
+    const early = promoOk ? false : await isEarlyBird(supabase, sub);
+    const firstMonth = promoOk ? Number(promo.first_amount) : null;
+    const firstYear = promoOk && promo.yearly_amount != null ? Number(promo.yearly_amount) : null;
+    const [m, y] = await Promise.all([
+      createInvoice(sub, 'monthly', { early, firstAmount: firstMonth }),
+      createInvoice(sub, 'yearly', { firstAmount: firstYear }),
+    ]);
     const rows = [];
     if (m.url) {
+      const monthText = firstMonth != null ? `Перший місяць за ${fmtPrice(firstMonth)} грн, далі ${PRICE} грн/міс`
+        : early ? `Перший місяць за ${PRICE_EARLY} грн, далі ${PRICE} грн/міс`
+        : `Оформити за ${PRICE} грн/міс`;
+      rows.push([{ text: monthText, url: m.url }]);
+    }
+    if (y.url) {
       rows.push([{
-        text: early ? `Перший місяць за ${PRICE_EARLY} грн, далі ${PRICE} грн/міс` : `Оформити за ${PRICE} грн/міс`,
-        url: m.url,
+        text: firstYear != null ? `Перший рік за ${fmtPrice(firstYear)} грн замість ${PRICE_YEAR}`
+          : `Рік за ${PRICE_YEAR} грн — вигідніше`,
+        url: y.url,
       }]);
     }
-    if (y.url) rows.push([{ text: `Рік за ${PRICE_YEAR} грн — вигідніше`, url: y.url }]);
-    const offer = early
-      ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.`
-      : text;
+    // Кнопку «У мене є промокод» показуємо, поки коду немає: інакше людина
+    // не здогадається, що код узагалі можна ввести, і введе його в чат
+    // навмання (або не введе зовсім).
+    if (!promoOk && !early) rows.push([{ text: '🎟 У мене є промокод', callback_data: 'promo:ask' }]);
+    const offer = promoOk
+      ? `${text}\n\n🎟 <b>Промокод ${esc(String(sub.promo_code).toUpperCase())} застосовано</b> — `
+        + `перший місяць за ${fmtPrice(firstMonth)} грн замість ${PRICE}`
+        + (firstYear != null ? `, перший рік за ${fmtPrice(firstYear)} замість ${PRICE_YEAR}` : '')
+        + '. Далі — звичайна ціна.'
+      : early
+        ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.`
+        : text;
     if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
@@ -285,6 +311,48 @@ async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
   await bot.sendMessage(chatId, WAITLIST_WELCOME());
 }
 
+// Промокод: перевіряємо, запамʼятовуємо на підписнику й ведемо людину далі
+// звичайним шляхом — знижку вона побачить на кнопці оплати. Про кожне
+// введення пишемо в адмін-чат: інакше незрозуміло, скільки людей код привів.
+async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
+  const c = normalizeCode(code);
+  if (!c) return false;
+  const promo = await findPromo(supabase, c);
+  const check = promoUsable(promo, { used: promo?.used || 0 });
+  if (!check.ok) {
+    if (check.reason === 'unknown') return false;   // не код — мовчимо, це міг бути просто текст
+    await bot.sendMessage(chatId, check.reason === 'expired'
+      ? 'Термін дії цього промокоду минув 🙈 Але підписка доступна за звичайною ціною — /start'
+      : 'Цей промокод уже розібрали 🙈 Підписка доступна за звичайною ціною — /start');
+    return true;
+  }
+
+  let { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+  if (sub?.status === 'active') {
+    await bot.sendMessage(chatId, 'У вас уже активна підписка 🧡 Промокод діє лише на перший платіж.');
+    return true;
+  }
+  if (!sub) {
+    const { data: ins } = await supabase.from('digest_subscribers')
+      .insert({ telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle, status: 'pending', promo_code: c })
+      .select('*').single();
+    sub = ins;
+  } else {
+    const { data: upd } = await supabase.from('digest_subscribers')
+      .update({ promo_code: c, telegram_handle: handle || sub.telegram_handle, updated_at: new Date().toISOString() })
+      .eq('id', sub.id).select('*').maybeSingle();
+    sub = upd || { ...sub, promo_code: c };
+  }
+  await claimPromo(supabase, { code: c, chatId, handle, source });
+  if (MAIN_TOKEN && ADMIN_CHAT_ID) {
+    await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+      `🎟 <b>Промокод ${esc(c.toUpperCase())}</b> ввів ${esc(handle || chatId)} · ${esc(source || 'typed')}`);
+  }
+  await bot.sendMessage(chatId, `🎟 Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
+  await continueStart(bot, supabase, sub, chatId, handle);
+  return true;
+}
+
 export async function POST(request) {
   if (!SECRET) return new Response('secret not configured', { status: 500 });
   if (request.headers.get('x-telegram-bot-api-secret-token') !== SECRET) return new Response('forbidden', { status: 403 });
@@ -341,6 +409,14 @@ export async function POST(request) {
 
     if (/^\/start\b/i.test(text)) {
       const startArg = text.match(/^\/start\s+(\S+)/i)?.[1];
+
+      // Діп-лінк із промокодом: ?start=promo_first[_звідки]. Джерело — щоб
+      // було видно, який пост чи канал привів людину.
+      const fromLink = parseStartArg(startArg);
+      if (PLUS_SALES_OPEN && fromLink
+          && await applyPromo(bot, supabase, { chatId, handle, code: fromLink.code, source: fromLink.source })) {
+        return new Response('ok');
+      }
 
       // Кнопки «Хочу першим» на сайті й у каналі: ?start=waitlist[_звідки].
       // Поки продаж закритий, людина лише стає в список — без анкети, оплати й
@@ -406,6 +482,14 @@ export async function POST(request) {
     if (!text.startsWith('/')) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
 
+      // Промокод, введений руками: одне слово від того, хто ще не платить.
+      // Перевіряємо ДО звернення в підтримку, інакше «first» полетів би
+      // адміну як питання.
+      if (PLUS_SALES_OPEN && sub?.status !== 'active' && normalizeCode(text)
+          && await applyPromo(bot, supabase, { chatId, handle, code: text, source: 'typed' })) {
+        return new Response('ok');
+      }
+
       // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
       if (sub?.status === 'active') {
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
@@ -419,6 +503,16 @@ export async function POST(request) {
 
   const cbq = update?.callback_query;
   if (!cbq) return new Response('ok');
+
+  // «🎟 У мене є промокод» — просимо ввести його одним словом. Стан не
+  // зберігаємо: будь-яке наступне слово від неплатника і так перевіряється
+  // як код.
+  if (cbq.data === 'promo:ask') {
+    await bot.answerCallback(cbq.id);
+    await bot.sendMessage(String(cbq.message.chat.id),
+      '🎟 Введіть промокод одним словом — і ціна на кнопці оновиться.');
+    return new Response('ok');
+  }
 
   // «✅ Погоджуюсь» — фіксуємо згоду й ведемо далі тим самим шляхом, що /start.
   if (cbq.data === 'consent:yes') {

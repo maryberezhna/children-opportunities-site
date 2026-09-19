@@ -3,6 +3,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import { verifyCallback, acceptResponse, tokenFromOrderRef, PRICE_YEAR } from '@/lib/wayforpay';
+import { markPromoPaid } from '@/lib/promo';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -10,6 +11,8 @@ export const dynamic = 'force-dynamic';
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PLUS_TOKEN = process.env.TELEGRAM_PLUS_BOT_TOKEN;
+const MAIN_TOKEN = process.env.TELEGRAM_BOT_TOKEN;           // сповіщення адміну
+const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const FAILED = ['Declined', 'Expired', 'Refunded', 'Voided', 'RefundInProcessing'];
 
 // WayForPay шле JSON — інколи як raw body, інколи як єдиний ключ форми.
@@ -53,6 +56,23 @@ export async function POST(request) {
 
       const { data: sub } = await supabase.from('digest_subscribers')
         .update(patch).eq('unsub_token', token).select('*').maybeSingle();
+
+      // Промокод: оплату зараховуємо лише на ПЕРШОМУ платежі — знижка діє
+      // один раз, а колбек приходить і на кожне поновлення.
+      if (!renewal && sub?.promo_code && sub?.telegram_chat_id) {
+        const use = await markPromoPaid(supabase, {
+          code: sub.promo_code,
+          chatId: sub.telegram_chat_id,
+          orderReference: b.orderReference,
+          amount: b.amount,
+        });
+        if (use && MAIN_TOKEN && ADMIN_CHAT_ID) {
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+            `💳 <b>Оплата за промокодом ${String(sub.promo_code).toUpperCase()}</b>\n`
+            + `${sub.telegram_handle || sub.telegram_chat_id} · ${b.amount} грн · джерело: ${use.source || '—'}`);
+        }
+      }
+
       if (sub?.telegram_chat_id && PLUS_TOKEN && !renewal) {
         const bot = makeBot(PLUS_TOKEN);
         // З 14.09.2026 анкету проходять до оплати. Тому після оплати профіль
