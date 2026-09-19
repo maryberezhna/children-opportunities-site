@@ -145,15 +145,19 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     // Кнопку «У мене є промокод» показуємо, поки коду немає: інакше людина
     // не здогадається, що код узагалі можна ввести, і введе його в чат
     // навмання (або не введе зовсім).
-    if (!promoOk && !early) rows.push([{ text: '🎟 У мене є промокод', callback_data: 'promo:ask' }]);
+    if (!promoOk) rows.push([{ text: '🎟 У мене є промокод', callback_data: 'promo:ask' }]);
+    // Підказка в тексті, а не лише кнопка: людина з кодом у руках мусить
+    // одразу бачити, що його є де ввести (Марія, 19.09.2026).
+    const promoHint = '\n\n🎟 <b>Є промокод?</b> Натисніть «У мене є промокод» — і введіть його у віконечку, '
+      + 'що зʼявиться. Ціна на кнопці одразу оновиться.';
     const offer = promoOk
       ? `${text}\n\n🎟 <b>Промокод ${esc(String(sub.promo_code).toUpperCase())} застосовано</b> — `
         + `перший місяць за ${fmtPrice(firstMonth)} грн замість ${PRICE}`
         + (firstYear != null ? `, перший рік за ${fmtPrice(firstYear)} замість ${PRICE_YEAR}` : '')
         + '. Далі — звичайна ціна.'
       : early
-        ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.`
-        : text;
+        ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.${promoHint}`
+        : `${text}${promoHint}`;
     if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
@@ -509,8 +513,11 @@ export async function POST(request) {
   // як код.
   if (cbq.data === 'promo:ask') {
     await bot.answerCallback(cbq.id);
+    // force_reply відкриває людині поле введення з підказкою — те саме
+    // «віконечко», якого вона чекає, замість здогадки «а куди писати?».
     await bot.sendMessage(String(cbq.message.chat.id),
-      '🎟 Введіть промокод одним словом — і ціна на кнопці оновиться.');
+      '🎟 Введіть промокод у віконечку нижче — великими чи малими літерами, це не важливо.',
+      { force_reply: true, input_field_placeholder: 'FIRST' });
     return new Response('ok');
   }
 
