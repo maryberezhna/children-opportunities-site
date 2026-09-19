@@ -144,7 +144,7 @@ export default async function MetricsPage() {
         <Card value={waitlist ? `${Math.round((subs.length / waitlist) * 100)}%` : '—'} label="конверсія waitlist → оплата" />
       </div>
 
-      <h2 style={h2S}>🎟 Промокоди</h2>
+      <h2 style={h2S}>🎁 Промокоди</h2>
       {promoCodes.length === 0 ? (
         <p style={noteS}>Ще ніхто не вводив. Посилання для поста: <code>https://t.me/DityamPlusBot?start=promo_first_kanal</code> — суфікс після коду стає джерелом.</p>
       ) : (
