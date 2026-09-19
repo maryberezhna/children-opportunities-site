@@ -6,13 +6,14 @@
 // вже пройдено, одразу меню, а не повторна анкета.
 import { createClient } from '@supabase/supabase-js';
 import {
-  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback,
+  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback, saveCustomCity,
 } from '@/lib/digestFlow';
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
 } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
+import { cutTitle } from '@/lib/text';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
@@ -70,7 +71,7 @@ async function payoffProof(supabase) {
 
   const M = ['січ','лют','бер','квіт','трав','черв','лип','сер','вер','жовт','лист','груд'];
   const lines = picked.map((o) => {
-    const t = esc(o.title.slice(0, 60));
+    const t = esc(cutTitle(o.title, 60));
     if (!o.deadline) return `• ${t}`;
     const d = new Date(o.deadline);
     return `• ${t} — до ${d.getDate()} ${M[d.getMonth()]}`;
@@ -472,9 +473,18 @@ export async function POST(request) {
     if (!text.startsWith('/')) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
 
+      // Текст на кроці «Де» — це місто, якого немає серед кнопок. Перевірка
+      // стоїть перед підтримкою: інакше місто від підписника, який заповнює
+      // анкету заново, пішло б адміну як питання. І перед промокодом: людина
+      // посеред анкети вводить місто, а не код.
+      if (sub?.flow_step === 'place') {
+        await saveCustomCity(bot, supabase, chatId, sub, text);
+        return new Response('ok');
+      }
+
       // Промокод, введений руками: одне слово від того, хто ще не платить.
-      // Перевіряємо ДО звернення в підтримку, інакше «first» полетів би
-      // адміну як питання.
+      // Теж до звернення в підтримку, інакше «first» полетів би адміну як
+      // питання.
       if (sub?.status !== 'active' && normalizeCode(text)
           && await applyPromo(bot, supabase, { chatId, handle, code: text, source: 'typed' })) {
         return new Response('ok');

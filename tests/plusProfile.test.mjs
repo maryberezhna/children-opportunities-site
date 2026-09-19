@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   placeOk, childMatch, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
-  FORMAT_TYPES, FORMAT_OPTIONS,
+  FORMAT_TYPES, FORMAT_OPTIONS, parseCustomCities,
 } from '../lib/plusProfile.js';
 import { TYPE_LABELS } from '../lib/labels.js';
 
@@ -123,4 +123,29 @@ test('добірка ділиться по черзі між дітьми', () =
   const matches = matchFamily({ cost_pref: 'any', places: [] }, [a, b], [...young, ...old], () => none);
   const picked = pickFair(matches, [a, b], 3).map((m) => m.o.id);
   assert.deepEqual(picked, ['y1', 'o1', 'y2']);
+});
+
+// Вписане місто — лише в боті на JS, у Python-дзеркалі парсера немає:
+// туди приходить уже готовий рядок у places.
+test('вписане місто: чистимо регістр, «м.» і зайве', () => {
+  assert.deepEqual(parseCustomCities('Ніжин'), ['Ніжин']);
+  assert.deepEqual(parseCustomCities('  м. ніжин '), ['Ніжин']);
+  assert.deepEqual(parseCustomCities('КИЇВ'), ['Київ']);
+  assert.deepEqual(parseCustomCities('кривий ріг'), ['Кривий Ріг']);
+  assert.deepEqual(parseCustomCities('івано-франківськ'), ['Івано-Франківськ']);
+  assert.deepEqual(parseCustomCities("кам'янець-подільський"), ["Кам'янець-Подільський"]);
+});
+
+test('вписане місто: кілька через кому, без повторів і не більше трьох', () => {
+  assert.deepEqual(parseCustomCities('Ніжин, Коломия'), ['Ніжин', 'Коломия']);
+  assert.deepEqual(parseCustomCities('Ніжин, ніжин'), ['Ніжин']);
+  assert.deepEqual(parseCustomCities('Ніжин, Коломия, Дубно, Самбір'), ['Ніжин', 'Коломия', 'Дубно']);
+});
+
+test('вписане місто: не місто — нічого не беремо', () => {
+  assert.deepEqual(parseCustomCities(''), []);
+  assert.deepEqual(parseCustomCities('+380501112233'), []);
+  assert.deepEqual(parseCustomCities('https://example.com/misto'), []);
+  assert.deepEqual(parseCustomCities('а'), []);
+  assert.deepEqual(parseCustomCities('я'.repeat(40)), []);
 });
