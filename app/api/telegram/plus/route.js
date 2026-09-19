@@ -9,7 +9,7 @@ import {
   makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback,
 } from '@/lib/digestFlow';
 import {
-  createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR, PRICE_EARLY,
+  createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
 } from '@/lib/wayforpay';
 import { matchThemes } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
@@ -33,7 +33,7 @@ const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
-  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, priceEarly: PRICE_EARLY, wayforpay: wayforpayConfigured });
+  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, wayforpay: wayforpayConfigured });
 }
 
 // Скасування підписки у WayForPay. hadOrder=false — платежу не було
@@ -82,20 +82,6 @@ async function payoffProof(supabase) {
   return `\n<b>${head}</b>\n${lines.join('\n')}\n`;
 }
 
-// Знижка для списку очікування (рішення Марії 14.09.2026): перший місяць за
-// PRICE_EARLY. Лише тим, хто ще жодного разу не платив (немає
-// wfp_order_reference), і лише якщо людина є в plus_waitlist за chat_id
-// (з 15.09.2026 записуються тут, у @DityamPlusBot, раніше — через
-// @DityamComUABot; у приватному чаті chat_id однаковий для обох ботів, бо це
-// id користувача). Імейлом у список більше не записуємо
-// (15.09.2026), тож і шукати за ним нема чого.
-async function isEarlyBird(supabase, sub) {
-  if (!supabase || !sub || sub.wfp_order_reference || !sub.telegram_chat_id) return false;
-  const { count } = await supabase.from('plus_waitlist')
-    .select('id', { count: 'exact', head: true }).eq('telegram_chat_id', String(sub.telegram_chat_id));
-  return (count || 0) > 0;
-}
-
 async function sendPayOffer(bot, sub, chatId, supabase) {
   // «Ви» — як на сайті. Раніше тут було «ти», і людина бачила два різні
   // тони в одному продукті.
@@ -116,22 +102,24 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Усе приходить сюди, у Telegram';
   if (wayforpayConfigured && sub) {
-    // Дві підстави для знижки: список очікування (за chat_id) і промокод,
-    // введений у боті. Промокод сильніший: людина його щойно ввела і чекає
-    // саме цю ціну на кнопці.
+    // Єдина підстава для знижки — промокод (рішення Марії 19.09.2026).
+    // Раніше бот сам давав перший місяць за 1 грн тому, кого знаходив у
+    // plus_waitlist за chat_id. Механіка мовчки обходила трьох людей, що
+    // лишили пошту, і обіцяла знижку тим, хто про неї не просив. Тепер
+    // список очікування отримує код FIRST у листі про запуск — і знижка
+    // в усіх одна.
     const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
     const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
-    const early = promoOk ? false : await isEarlyBird(supabase, sub);
     const firstMonth = promoOk ? Number(promo.first_amount) : null;
     const firstYear = promoOk && promo.yearly_amount != null ? Number(promo.yearly_amount) : null;
     const [m, y] = await Promise.all([
-      createInvoice(sub, 'monthly', { early, firstAmount: firstMonth }),
+      createInvoice(sub, 'monthly', { firstAmount: firstMonth }),
       createInvoice(sub, 'yearly', { firstAmount: firstYear }),
     ]);
     const rows = [];
     if (m.url) {
-      const monthText = firstMonth != null ? `Перший місяць за ${fmtPrice(firstMonth)} грн, далі ${PRICE} грн/міс`
-        : early ? `Перший місяць за ${PRICE_EARLY} грн, далі ${PRICE} грн/міс`
+      const monthText = firstMonth != null
+        ? `Перший місяць за ${fmtPrice(firstMonth)} грн, далі ${PRICE} грн/міс`
         : `Оформити за ${PRICE} грн/міс`;
       rows.push([{ text: monthText, url: m.url }]);
     }
@@ -155,9 +143,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
         + `перший місяць за ${fmtPrice(firstMonth)} грн замість ${PRICE}`
         + (firstYear != null ? `, перший рік за ${fmtPrice(firstYear)} замість ${PRICE_YEAR}` : '')
         + '. Далі — звичайна ціна.'
-      : early
-        ? `${text}\n\n🎁 <b>Ви були в списку очікування</b> — як обіцяли, перший місяць за ${PRICE_EARLY} грн замість ${PRICE}.${promoHint}`
-        : `${text}${promoHint}`;
+      : `${text}${promoHint}`;
     if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
   }
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
@@ -417,7 +403,7 @@ export async function POST(request) {
       // Діп-лінк із промокодом: ?start=promo_first[_звідки]. Джерело — щоб
       // було видно, який пост чи канал привів людину.
       const fromLink = parseStartArg(startArg);
-      if (PLUS_SALES_OPEN && fromLink
+      if (fromLink
           && await applyPromo(bot, supabase, { chatId, handle, code: fromLink.code, source: fromLink.source })) {
         return new Response('ok');
       }
@@ -489,7 +475,7 @@ export async function POST(request) {
       // Промокод, введений руками: одне слово від того, хто ще не платить.
       // Перевіряємо ДО звернення в підтримку, інакше «first» полетів би
       // адміну як питання.
-      if (PLUS_SALES_OPEN && sub?.status !== 'active' && normalizeCode(text)
+      if (sub?.status !== 'active' && normalizeCode(text)
           && await applyPromo(bot, supabase, { chatId, handle, code: text, source: 'typed' })) {
         return new Response('ok');
       }
