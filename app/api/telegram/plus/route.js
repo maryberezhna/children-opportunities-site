@@ -134,13 +134,13 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     // Кнопку «У мене є промокод» показуємо, поки коду немає: інакше людина
     // не здогадається, що код узагалі можна ввести, і введе його в чат
     // навмання (або не введе зовсім).
-    if (!promoOk) rows.push([{ text: '🎟 У мене є промокод', callback_data: 'promo:ask' }]);
+    if (!promoOk) rows.push([{ text: '🎁 У мене є промокод', callback_data: 'promo:ask' }]);
     // Підказка в тексті, а не лише кнопка: людина з кодом у руках мусить
     // одразу бачити, що його є де ввести (Марія, 19.09.2026).
-    const promoHint = '\n\n🎟 <b>Є промокод?</b> Натисніть «У мене є промокод» — і введіть його у віконечку, '
+    const promoHint = '\n\n🎁 <b>Є промокод?</b> Натисніть «У мене є промокод» — і введіть його у віконечку, '
       + 'що зʼявиться. Ціна на кнопці одразу оновиться.';
     const offer = promoOk
-      ? `${text}\n\n🎟 <b>Промокод ${esc(String(sub.promo_code).toUpperCase())} застосовано</b> — `
+      ? `${text}\n\n🎁 <b>Промокод ${esc(String(sub.promo_code).toUpperCase())} застосовано</b> — `
         + `перший місяць за ${fmtPrice(firstMonth)} грн замість ${PRICE}`
         + (firstYear != null ? `, перший рік за ${fmtPrice(firstYear)} замість ${PRICE_YEAR}` : '')
         + '. Далі — звичайна ціна.'
@@ -337,9 +337,9 @@ async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
   await claimPromo(supabase, { code: c, chatId, handle, source });
   if (MAIN_TOKEN && ADMIN_CHAT_ID) {
     await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
-      `🎟 <b>Промокод ${esc(c.toUpperCase())}</b> ввів ${esc(handle || chatId)} · ${esc(source || 'typed')}`);
+      `🎁 <b>Промокод ${esc(c.toUpperCase())}</b> ввів ${esc(handle || chatId)} · ${esc(source || 'typed')}`);
   }
-  await bot.sendMessage(chatId, `🎟 Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
+  await bot.sendMessage(chatId, `🎁 Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
   await continueStart(bot, supabase, sub, chatId, handle);
   return true;
 }
@@ -504,7 +504,7 @@ export async function POST(request) {
   const cbq = update?.callback_query;
   if (!cbq) return new Response('ok');
 
-  // «🎟 У мене є промокод» — просимо ввести його одним словом. Стан не
+  // «🎁 У мене є промокод» — просимо ввести його одним словом. Стан не
   // зберігаємо: будь-яке наступне слово від неплатника і так перевіряється
   // як код.
   if (cbq.data === 'promo:ask') {
@@ -512,7 +512,7 @@ export async function POST(request) {
     // force_reply відкриває людині поле введення з підказкою — те саме
     // «віконечко», якого вона чекає, замість здогадки «а куди писати?».
     await bot.sendMessage(String(cbq.message.chat.id),
-      '🎟 Введіть промокод у віконечку нижче — великими чи малими літерами, це не важливо.',
+      '🎁 Введіть промокод у віконечку нижче — великими чи малими літерами, це не важливо.',
       { force_reply: true, input_field_placeholder: 'FIRST' });
     return new Response('ok');
   }
