@@ -133,6 +133,19 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
   await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
 }
 
+// Команди підписника в меню «/» (їхній перелік реєструє
+// scripts/set-bot-commands.mjs — тримати списки однаковими).
+const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile']);
+
+const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
+  + '/start — головне меню\n'
+  + '/new — свіжі можливості під профіль дитини\n'
+  + '/child — додати ще одну дитину\n'
+  + '/form — заповнити анкету заново\n'
+  + '/profile — профіль дітей і деталі підписки\n'
+  + '/support — допомога із заявкою\n'
+  + '/stop — відписатися і скасувати списання';
+
 // Головне меню для активного підписника.
 async function sendMainMenu(bot, chatId) {
   await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
@@ -369,8 +382,24 @@ export async function POST(request) {
           ? '📝 <b>Допомога із заявкою</b>\nНапишіть питання прямо сюди — підкажемо, що і як заповнювати.'
           : 'Допомога із заявкою доступна підписникам Dityam+. Оформити — /start 🧡');
       } else {
-        await bot.sendMessage(chatId, '🧡 <b>Dityam+ — меню</b>\n\n/start — оформити підписку або змінити профіль дітей\n/support — допомога із заявкою\n/stop — відписатися');
+        await bot.sendMessage(chatId, COMMANDS_TEXT);
       }
+      return new Response('ok');
+    }
+
+    // Команди підписника — те саме, що кнопки головного меню, але з меню «/»
+    // Telegram: людина бачить перелік і не мусить памʼятати, де яка кнопка.
+    const cmd = text.match(/^\/([a-z]+)\b/i)?.[1]?.toLowerCase();
+    if (cmd && SUB_COMMANDS.has(cmd)) {
+      const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+      if (sub?.status !== 'active') {
+        await bot.sendMessage(chatId, 'Це для підписників Dityam+. Оформити підписку — /start 🧡');
+        return new Response('ok');
+      }
+      if (cmd === 'new') await sendLatest(bot, supabase, sub, chatId);
+      else if (cmd === 'child') await beginAddChild(bot, supabase, chatId);
+      else if (cmd === 'form') await beginFlow(bot, supabase, chatId, handle);
+      else await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
       return new Response('ok');
     }
 
