@@ -511,11 +511,13 @@ export async function POST(request) {
   // як код.
   if (cbq.data === 'promo:ask') {
     await bot.answerCallback(cbq.id);
-    // force_reply відкриває людині поле введення з підказкою — те саме
-    // «віконечко», якого вона чекає, замість здогадки «а куди писати?».
+    // force_reply відкриває людині поле введення — те саме «віконечко»,
+    // якого вона чекає, замість здогадки «а куди писати?».
+    // У підказці поля НЕ пишемо справжній код: її бачить кожен, хто натисне
+    // кнопку, і код дістався б тим, кому ми його не давали (Марія, 19.09.2026).
     await bot.sendMessage(String(cbq.message.chat.id),
       'Введіть промокод у віконечку нижче — великими чи малими літерами, це не важливо.',
-      { force_reply: true, input_field_placeholder: 'FIRST' });
+      { force_reply: true, input_field_placeholder: 'Ваш промокод' });
     return new Response('ok');
   }
 
