@@ -4,7 +4,7 @@
 // де canonical_url ще порожній.
 
 import { createClient } from '@supabase/supabase-js';
-import { canonicalUrl } from '../scrapers/lib/canonical.mjs';
+import { canonicalUrl } from '../lib/canonical.mjs';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { canonicalUrl } from '../scrapers/lib/canonical.mjs';
+import { canonicalUrl } from '../lib/canonical.mjs';
 
 // Спільна таблиця для обох дзеркал. Той самий список лежить у
 // scraper/tests/test_canonical.py — якщо правити, правити обидва файли.
