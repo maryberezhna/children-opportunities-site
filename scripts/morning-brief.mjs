@@ -47,6 +47,7 @@ const base = () => supabase.from('opportunities');
 // (scripts/check-catalogue-queries.mjs).
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
+  inReview, reviewTop,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -66,6 +67,11 @@ const [
     .eq('status', 'closed').gte('updated_at', `${inDays(-1)}T00:00:00Z`)),
   count(supabase.from('opportunity_suggestions').select('id', { count: 'exact', head: true })
     .eq('status', 'needs_human')),
+  // Карантин: класифікатор вагався (0.25–0.55). Саме там губилось рідкісне
+  // закордонне, описане скупо. Без цього рядка черга росла б мовчки.
+  count(supabase.from('raw_items').select('id', { count: 'exact', head: true })
+    .eq('status', 'review').is('reviewed_at', null)),
+  rows(supabase.from('v_raw_review').select('raw_title, url, confidence, source_name').limit(3)),
 ]);
 
 const blocks = [];
@@ -89,6 +95,14 @@ if (deadLinkLive.length) {
 if (overdueChecks) {
   blocks.push(`⏳ <b>Планові перевірки протерміновані:</b> ${overdueChecks}. `
     + 'Це означає, що нічний прогін не встигає або впав.');
+}
+
+if (inReview) {
+  blocks.push([
+    `🔍 <b>Класифікатор вагається</b> — ${inReview} у карантині`,
+    ...reviewTop.map((r) => `• ${esc(cut(r.raw_title || r.source_name))} — ${r.confidence ?? '?'}\n  ${esc(r.url || '')}`),
+    'Кожне «так» звідси — можливість, яку ми інакше втратили б мовчки.',
+  ].join('\n'));
 }
 
 if (needsHuman) {

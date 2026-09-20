@@ -116,9 +116,21 @@ def fetch_pending(client, limit: int = 300) -> list[dict]:
 
 
 def mark(client, raw_id: str, status: str, *, error: str = None,
-         opportunity_id: str = None, attempts: int = None) -> None:
+         opportunity_id: str = None, attempts: int = None,
+         confidence: float = None, reason_code: str = None) -> None:
+    """`confidence` і `reason_code` — машинні поля відбору (20.09.2026).
+
+    Доти обидва жили текстом усередині last_error, і тому відбір неможливо
+    було виміряти: ні порахувати accept-rate по джерелу, ні побачити, де
+    класифікатор вагається. Тепер це колонки, а last_error лишається людським
+    поясненням.
+    """
     from datetime import datetime, timezone
     patch = {"status": status}
+    if confidence is not None:
+        patch["confidence"] = confidence
+    if reason_code is not None:
+        patch["reject_reason"] = reason_code
     if status in ("processed", "rejected", "failed"):
         patch["processed_at"] = datetime.now(timezone.utc).isoformat()
     if error is not None:
@@ -139,3 +151,22 @@ def bump_attempt(client, raw_item: dict, error: str) -> None:
     attempts = (raw_item.get("attempts") or 0) + 1
     status = "failed" if attempts >= MAX_ATTEMPTS else "pending"
     mark(client, raw_item["id"], status, error=error, attempts=attempts)
+
+
+# Сіра смуга класифікатора: не «ні», а «не впевнений».
+#
+# Межі 0.25–0.55 (20.09.2026): нижче — переважно справжній шум (анонси
+# організацій, архіви), вище — модель і так пропускає. За місяць під це
+# підпадає близько 70 записів, тобто ~2 на добу — стільки людина розбере.
+#
+# Сенс не в числах, а в тому, що рідкісне закордонне часто описане скупо, і
+# саме на ньому модель вагається. Раніше такі записи зникали мовчки.
+GREY_LOW = 0.25
+GREY_HIGH = 0.55
+
+
+def triage_status(reason_code: str | None, confidence: float | None) -> str:
+    """'review' для сірої смуги, інакше 'rejected'. Чиста функція — під тест."""
+    if reason_code != "low_confidence" or confidence is None:
+        return "rejected"
+    return "review" if GREY_LOW <= confidence < GREY_HIGH else "rejected"

@@ -859,6 +859,11 @@ class Normalizer:
         # лежали в raw_items із порожнім last_error: неможливо було ні довести,
         # що фільтр працює, ні помітити, коли він почне різати живе.
         self.last_reject_reason = None
+        # Машинні поля відмови (20.09.2026): раніше і причина, і оцінка жили
+        # текстом усередині last_error, тож їх не можна було ні порахувати, ні
+        # відсортувати, ні тюнити поріг. Тепер у raw_items є колонки.
+        self.last_reject_code = None
+        self.last_confidence = None
         try:
             today_iso = datetime.utcnow().date().isoformat()
             published_iso = published_date(raw_text)
@@ -883,13 +888,16 @@ URL: {source_url}
             )
             if not tool_use:
                 self.last_reject_reason = "не можливість для дитини (модель не витягла даних)"
+                self.last_reject_code = "not_child"
                 return None
 
             data = tool_use.input
+            self.last_confidence = data.get("confidence")
             if data.get("confidence", 0) < 0.5:
                 conf = data.get("confidence", 0)
                 logger.info(f"Low confidence, skipping: {source_url}")
                 self.last_reject_reason = f"низька впевненість моделі ({conf})"
+                self.last_reject_code = "low_confidence"
                 return None
 
             data = _sanitize(dict(data))
@@ -938,6 +946,7 @@ URL: {source_url}
                         key, v, source_url,
                     )
                     self.last_reject_reason = f"архівне: {key}={v} (старше 400 днів)"
+                    self.last_reject_code = "off_topic"
                     return None
 
             # Симетрія: відкритий набір без минулих дат ОЖИВЛЯЄ авто-закритий
