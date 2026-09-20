@@ -389,6 +389,16 @@ function buildJsonLd(item, lang) {
   const base = basePath(lang);
   const url = `${SITE}${base}/o/${item.slug}`;
   const isFree = item.cost_type === 'free';
+  // Закритий запис лишається в індексі (сторінка з плашкою — це і є відповідь
+  // людині, яка прийшла з пошуку), але має бути машинно позначений як
+  // завершений: інакше Google показує його як чинну можливість.
+  // Дату не вигадуємо: у 275 із 475 закритих записів її немає взагалі, і тоді
+  // лишається сама позначка «набір закрито» без validThrough.
+  const isClosed = item.status === 'closed';
+  const endedOn = item.deadline || item.event_end_date || item.event_start_date || null;
+  const offerState = isClosed
+    ? { availability: 'https://schema.org/SoldOut', ...(endedOn ? { validThrough: endedOn } : {}) }
+    : { availability: 'https://schema.org/InStock' };
   const inLanguage = lang === 'en' ? 'en' : 'uk';
   const name = field(item, 'title', lang);
   const description = field(item, 'summary', lang);
@@ -406,12 +416,12 @@ function buildJsonLd(item, lang) {
         name: item.source || 'dityam.com.ua',
         sameAs: item.source_url || undefined,
       },
-      ...(isFree && {
+      ...((isFree || isClosed) && {
         offers: {
           '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'UAH',
-          category: 'Free',
+          url,
+          ...(isFree ? { price: '0', priceCurrency: 'UAH', category: 'Free' } : {}),
+          ...offerState,
         },
       }),
       audience: {
@@ -461,13 +471,12 @@ function buildJsonLd(item, lang) {
         name: item.source || 'dityam.com.ua',
         url: item.source_url || undefined,
       },
-      ...(isFree && {
+      ...((isFree || isClosed) && {
         offers: {
           '@type': 'Offer',
-          price: '0',
-          priceCurrency: 'UAH',
           url,
-          availability: 'https://schema.org/InStock',
+          ...(isFree ? { price: '0', priceCurrency: 'UAH' } : {}),
+          ...offerState,
         },
       }),
     };
@@ -480,6 +489,10 @@ function buildJsonLd(item, lang) {
     description,
     url,
     inLanguage,
+    // expires — властивість CreativeWork: «дата, після якої вміст більше не
+    // актуальний». Для закритих сторінок без Course/Event це єдина машинна
+    // позначка завершення.
+    ...(isClosed && endedOn ? { expires: endedOn } : {}),
   };
 }
 
@@ -491,9 +504,11 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   const AIDS = lang === 'en' ? AID_TYPE_LABELS_EN : AID_TYPE_LABELS;
   const COSTS = COST_LABELS[lang] || COST_LABELS.uk;
   const isClosed = item.status === 'closed';
-  // Для закритої можливості structured data не віддаємо: Google не має
-  // показувати її як активний курс чи подію в rich results.
-  const jsonLd = isClosed ? null : buildJsonLd(item, lang);
+  // Закритий запис теж отримує розмітку — але позначену як завершену
+  // (availability SoldOut + validThrough / expires). До 20.09.2026 ми не
+  // віддавали нічого: сторінка лишалась в індексі без жодної машинної ознаки,
+  // що набір закрито.
+  const jsonLd = buildJsonLd(item, lang);
   const today = kyivToday();
   const breadcrumbs = {
     '@context': 'https://schema.org',
