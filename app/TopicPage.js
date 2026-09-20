@@ -5,6 +5,7 @@ import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -322,11 +323,15 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   ) : null);
   const h1Text = `${heading.lead}${heading.script ? ` ${heading.script}` : ''}${heading.tail || ''}`;
 
+  // Кнопка веде прямо в Telegram, а не на /plus (рішення Марії 20.09.2026):
+  // людина вже прочитала, що робить Dityam+, просто в цій картці — проміжна
+  // сторінка між нею і ботом лише губить частину дороги.
   const promo = topic.showPromo === false ? null : {
     title: ch.promoTitle,
     text: ch.promoText(total),
     cta: ch.promoCta,
-    href: isEn ? '/en/plus' : '/plus',
+    href: PLUS_SALES_OPEN ? plusBotUrl(`topic_${topic.slug}`) : PLUS_WAITLIST_URL,
+    source: `topic_${topic.slug}`,
   };
 
   // Один @graph: CollectionPage — що це за сторінка й коли оновлена;
