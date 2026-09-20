@@ -45,7 +45,7 @@ test('термін і ліміт закривають код', () => {
   assert.equal(promoUsable({ code: 'first', first_amount: 1 }, { used: 9999 }).ok, true);
 });
 
-test('місяць за кодом: 1 грн зараз, 99 далі', () => {
+test('місяць за кодом: 1 грн зараз, 119 далі', () => {
   const b = invoiceBody(sub, 'monthly', { firstAmount: 1, now });
   assert.equal(b.amount, 1);
   assert.deepEqual(b.productPrice, [1]);

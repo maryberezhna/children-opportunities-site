@@ -11,7 +11,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const PRICE_MONTH = 99;
+const PRICE_MONTH = 119;
 const PRICE_YEAR = 999;
 
 const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
