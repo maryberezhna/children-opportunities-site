@@ -58,5 +58,20 @@ class TightestWindow(unittest.TestCase):
         self.assertIsNone(dr.tightest_window(8, dr.windows_for("club")))
 
 
+class RemindersToggle(unittest.TestCase):
+    """Нагадування вимикає сам підписник — кнопкою в меню бота."""
+
+    def test_on_by_default(self):
+        # Рядок, створений до появи колонки, нагадування отримував.
+        self.assertTrue(dr.reminders_on({}))
+        self.assertTrue(dr.reminders_on({"deadline_reminders": None}))
+
+    def test_explicit_true(self):
+        self.assertTrue(dr.reminders_on({"deadline_reminders": True}))
+
+    def test_explicit_false_means_silence(self):
+        self.assertFalse(dr.reminders_on({"deadline_reminders": False}))
+
+
 if __name__ == "__main__":
     unittest.main()

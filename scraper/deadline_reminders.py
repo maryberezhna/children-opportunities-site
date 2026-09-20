@@ -97,6 +97,15 @@ def windows_for(opportunity_type) -> tuple:
     return WINDOWS_BY_TYPE.get(opportunity_type or "", DEFAULT_WINDOWS)
 
 
+def reminders_on(sub: dict) -> bool:
+    """Чи хоче підписник нагадування про дедлайни (колонка
+    digest_subscribers.deadline_reminders, перемикач у меню бота).
+
+    Порожнє значення читаємо як «так»: рядки, створені до появи колонки,
+    нагадування отримували, і мовчати для них без вказівки людини не можна."""
+    return sub.get("deadline_reminders") is not False
+
+
 def tightest_window(left: int, windows) -> int | None:
     """Найтісніше вікно, у яке потрапляє залишок днів, або None.
 
@@ -208,7 +217,12 @@ def main() -> int:
     else:
         subs = (client.table("digest_subscribers").select("*")
                 .eq("status", "active").execute().data or [])
-        logger.info("Активних підписників: %d", len(subs))
+        # Вимкнув нагадування в меню бота — не пишемо взагалі. Фільтруємо
+        # тут, а не в запиті: колонки може не бути на старій базі.
+        active_count = len(subs)
+        subs = [s for s in subs if reminders_on(s)]
+        logger.info("Активних підписників: %d (нагадування вимкнули %d)",
+                    active_count, active_count - len(subs))
         ids = [s["id"] for s in subs]
         child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
                       .execute().data or []) if ids else []
