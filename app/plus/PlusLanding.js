@@ -1,3 +1,4 @@
+import PlusChoice from '../PlusChoice';
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
@@ -429,7 +430,7 @@ function jsonLd(t, lang) {
   };
 }
 
-export default function PlusLanding({ lang = 'uk', total = null }) {
+export default function PlusLanding({ lang = 'uk', total = null, picks = [], today = null }) {
   const base = L[lang] || L.uk;
   const open = PLUS_SALES_OPEN ? (OPEN[lang] || OPEN.uk) : null;
   const t = open
@@ -586,6 +587,13 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
           <ul className="pl-trust">
             {t.trust(total).map((x) => <li key={x}>{x}</li>)}
           </ul>
+        </div>
+      </section>
+
+      {/* ── Кава чи можливість: ціна щойно названа, тут вона отримує міру ── */}
+      <section className="pl-sec">
+        <div className="pl-wrap">
+          <PlusChoice opportunities={picks} today={today} lang={lang} />
         </div>
       </section>
 

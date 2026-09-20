@@ -1,5 +1,6 @@
 import PlusLanding from './PlusLanding';
 import { supabase, publicOpportunities } from '@/lib/supabase';
+import { kyivToday } from '@/lib/dates';
 import { PLUS_SALES_OPEN } from '@/lib/plus';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -50,7 +51,27 @@ async function activeCount() {
   }
 }
 
+// Три найближчі дедлайни для блоку «Кава чи можливість»: беремо рівно три
+// рядки, а не весь каталог — сторінці більше не треба. Збій бази лише ховає
+// блок (PlusChoice без записів не рендериться), сторінка лишається цілою.
+async function soonestThree(today, fields) {
+  if (!supabase) return [];
+  try {
+    const { data, error } = await publicOpportunities(fields)
+      .gte('deadline', today)
+      .order('deadline', { ascending: true })
+      .limit(3);
+    return error ? [] : (data || []);
+  } catch {
+    return [];
+  }
+}
+
 export default async function PlusPage() {
-  const total = await activeCount();
-  return <PlusLanding lang="uk" total={total} />;
+  const today = kyivToday();
+  const [total, picks] = await Promise.all([
+    activeCount(),
+    soonestThree(today, 'id, title, deadline'),
+  ]);
+  return <PlusLanding lang="uk" total={total} picks={picks} today={today} />;
 }
