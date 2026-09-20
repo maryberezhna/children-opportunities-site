@@ -33,10 +33,34 @@ test('«відкрито», але запис перестав бути акти
   assert.match(dropped[0].why, /open\/closed/);
 });
 
-test('стан не зрозумілий або джерело не прочиталось — не публікуємо', () => {
+test('стан не зрозумілий у запису з датами — не публікуємо', () => {
   const { kept } = keepOpen([row('a'), row('b')], {
-    a: { state: 'unclear', status: 'active' },
-    b: { state: 'unreadable', status: 'active' },
+    a: { state: 'unclear', status: 'active', kind: 'one_time', has_dates: true },
+    b: { state: 'unreadable', status: 'active', kind: 'periodic', has_dates: true },
+  });
+  assert.equal(kept.length, 0);
+});
+
+test('вічна платформа без дат проходить, навіть коли стан не зрозумілий', () => {
+  // Khan Academy, CS50, Scratch: сторінка часто не пускає робота, а
+  // «завершитись» такому запису нема як — дат у ньому немає взагалі.
+  const { kept } = keepOpen([row('a'), row('b')], {
+    a: { state: 'unclear', status: 'active', kind: 'permanent', has_dates: false },
+    b: { state: 'unreadable', status: 'active', kind: 'permanent', has_dates: false },
+  });
+  assert.deepEqual(kept.map((r) => r.id), ['a', 'b']);
+});
+
+test('вічний вид, але дати в записі є — перевірка обовʼязкова', () => {
+  const { kept } = keepOpen([row('a')], {
+    a: { state: 'unclear', status: 'active', kind: 'permanent', has_dates: true },
+  });
+  assert.equal(kept.length, 0);
+});
+
+test('сезон завершено — не рятує навіть вид «постійна»', () => {
+  const { kept } = keepOpen([row('a')], {
+    a: { state: 'ended', status: 'closed', kind: 'permanent', has_dates: false },
   });
   assert.equal(kept.length, 0);
 });

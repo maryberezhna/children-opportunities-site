@@ -227,6 +227,23 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
     return patch
 
 
+def _verdict(row: dict, patch: dict, state: str, **extra) -> dict:
+    """Що знає про запис публікатор у Telegram (scripts/verify-before-post.mjs).
+
+    Крім стану, віддаємо вид у часі й чи є в записі хоч якась дата: вічній
+    платформі («Khan Academy», «CS50») нема чого «відкривати», і стан «не
+    зрозуміло» для неї не те саме, що для табору з датами.
+    """
+    dates = ("deadline", "event_start_date", "event_end_date")
+    return {
+        "state": state,
+        "status": patch.get("status", row.get("status")),
+        "kind": patch.get("timing_kind", row.get("timing_kind")),
+        "has_dates": any(patch.get(k, row.get(k)) for k in dates),
+        **extra,
+    }
+
+
 UNREADABLE_MARK = "джерело не прочиталось"
 MANUAL_MARK = "сайт не пускає автоматичну перевірку"
 
@@ -425,8 +442,7 @@ def main() -> int:
                 logger.info("  ? %s — %s, ще раз %s", (row["title"] or "")[:60], whence,
                             patch["recheck_at"])
                 write(row["id"], patch)
-                verdicts[row["id"]] = {"state": "unreadable", "why": whence,
-                                       "status": row.get("status")}
+                verdicts[row["id"]] = _verdict(row, patch, "unreadable", why=whence)
                 continue
             out = _ask(ai, row, page, today)
             patch = decide_check(row, out, page, today)
@@ -435,9 +451,10 @@ def main() -> int:
             logger.info("  • %s [%s → %s] %s", (row["title"] or "")[:55], row["status"],
                         out.get("state"), changes)
             write(row["id"], patch)
-            verdicts[row["id"]] = {"state": out.get("state") or "unclear",
-                                   "status": patch.get("status", row.get("status")),
-                                   "evidence": (out.get("evidence") or "")[:200]}
+            verdicts[row["id"]] = _verdict(
+                row, patch,
+                out.get("state") if out.get("state") in STATES else "unclear",
+                evidence=(out.get("evidence") or "")[:200])
         logger.info("  підсумок: %s", dict(states))
         if manual:
             logger.info("\n  ⚠️ Перевірити вручну — сайт не пускає автоматичну перевірку:")
