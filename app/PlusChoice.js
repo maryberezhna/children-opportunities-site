@@ -8,10 +8,9 @@ import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
 // Дві умови, які тут важливі:
 // 1. Праворуч крутяться СПРАВЖНІ записи з найближчими дедлайнами, а не
 //    вигадані приклади — інакше блок обіцяє те, чого в базі може не бути.
-// 2. Порівняння з кавою свідомо не на нашу користь: 119 грн/міс — це близько
-//    28 грн на тиждень, а кава на кокосовому коштує помітно більше. Тобто
-//    фраза називає Dityam+ дорожчим, ніж він є, і точно нікого не вводить в
-//    оману щодо ціни (формулювання Марії 20.09.2026).
+// 2. Порівняння з кавою — про місяць проти однієї чашки, без тижневої
+//    арифметики в голові читача: 119 грн/міс приблизно дорівнюють одній каві
+//    на кокосовому молоці (формулювання Марії 20.09.2026).
 //
 // Анімація — лише CSS (три картки по черзі), тож блок серверний і нічого не
 // важить для JS. Під prefers-reduced-motion рух вимикається, видно першу картку.
@@ -21,7 +20,7 @@ const T = {
     eyebrow: 'Вибір очевидний',
     title: 'Кава чи можливість ',
     script: 'для дитини',
-    text: (price) => `Dityam+ коштує ${price} грн на місяць — як 1 кава на тиждень на кокосовому. `
+    text: (price) => `Dityam+ коштує ${price} грн на місяць — як 1 кава на кокосовому молоці. `
       + 'Щодня добираємо можливості окремо для кожної вашої дитини й нагадуємо про дедлайни, '
       + 'поки ще є час подати заявку.',
     cupLabel: 'Кава з собою',
@@ -38,7 +37,7 @@ const T = {
     eyebrow: 'An easy choice',
     title: 'A coffee, or an opportunity ',
     script: 'for your child',
-    text: (price) => `Dityam+ costs UAH ${price} a month — like one coconut-milk coffee a week. `
+    text: (price) => `Dityam+ costs UAH ${price} a month — like one coconut-milk coffee. `
       + 'Every day we match opportunities to each of your children and remind you about '
       + 'deadlines while there is still time to apply.',
     cupLabel: 'Coffee to go',
