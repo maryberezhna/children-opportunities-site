@@ -10,4 +10,3 @@ tenacity==9.0.0
 instaloader==4.13.1
 # Браузер — лише для Eurodesk: сайт малюється на клієнті, у HTML по HTTP
 # немає ні програм, ні посилань (див. scrapers/eurodesk.py).
-playwright==1.47.0
