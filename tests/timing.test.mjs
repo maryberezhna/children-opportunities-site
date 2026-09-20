@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isExpired, isPeriodic, whenRank, whenState } from '../lib/timing.js';
+import { isExpired, isPeriodic, soonestDeadlines, whenRank, whenState } from '../lib/timing.js';
 import { calendarTarget, googleCalendarUrl } from '../lib/calendar-links.js';
 
 // Кейси з аудиту «Дедлайн, подія, сезон» (17.09.2026).
@@ -91,4 +91,18 @@ test('лише дата розіграшу — стан results і закрит�
   assert.equal(isExpired(grant, TODAY), false);
   // Дедлайн важить більше: результати — лише коли інших дат немає.
   assert.equal(whenState({ ...grant, deadline: '2026-09-25' }, TODAY).state, 'deadline');
+});
+
+test('блок «Кава чи можливість»: три найближчі дедлайни, без минулих', () => {
+  const items = [
+    { id: 'past', deadline: '2026-09-16' },
+    { id: 'c', deadline: '2026-10-01' },
+    { id: 'a', deadline: '2026-09-18' },
+    { id: 'today', deadline: TODAY },
+    { id: 'd', deadline: '2026-12-01' },
+    { id: 'none' },
+  ];
+  assert.deepEqual(soonestDeadlines(items, TODAY).map((o) => o.id), ['today', 'a', 'c']);
+  assert.deepEqual(soonestDeadlines([], TODAY), []);
+  assert.deepEqual(soonestDeadlines(null, TODAY), []);
 });

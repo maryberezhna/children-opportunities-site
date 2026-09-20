@@ -1107,3 +1107,199 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   .v2-header-inner { gap: 8px; }
   .v2-support-btn { padding: 7px 10px; font-size: 0.8125rem; }
 }
+
+/* ── «Кава чи можливість» — заклик у кінці головної (19.09.2026) ────────── */
+.v2-choice {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 36px;
+  border: 1px solid var(--v2-line);
+  border-radius: 24px;
+  background: var(--v2-cream) linear-gradient(135deg, #fbf5ea 0%, var(--v2-cream) 60%);
+}
+
+.v2-choice-text { display: flex; flex-direction: column; gap: 14px; }
+
+.v2-choice-eyebrow {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v2-accent-strong);
+}
+
+.v2-choice h2 {
+  margin: 0;
+  font-weight: 700;
+  font-size: 1.75rem;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+.v2-choice p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+  max-width: 44ch;
+}
+
+/* Сцена: ліворуч чашка, праворуч стрічка можливостей. */
+.v2-choice-scene {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: end;
+}
+
+.v2-choice-scene figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.v2-choice-scene figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  color: var(--v2-ink-3);
+}
+
+.v2-choice-scene figcaption strong { font-size: 0.8125rem; color: var(--v2-ink); font-weight: 600; }
+
+/* Чашка: кава повільно спадає й доливається знову. */
+.v2-cup { width: 96px; }
+
+.v2-cup-steam {
+  height: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 7px;
+  align-items: flex-end;
+}
+
+.v2-cup-steam span {
+  width: 3px;
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(200, 80, 26, 0.35), rgba(200, 80, 26, 0));
+  animation: v2-steam 2.8s ease-in-out infinite;
+}
+
+.v2-cup-steam span:nth-child(2) { animation-delay: 0.5s; height: 20px; }
+.v2-cup-steam span:nth-child(3) { animation-delay: 1s; }
+
+@keyframes v2-steam {
+  0%, 100% { opacity: 0; transform: translateY(4px) scaleY(0.8); }
+  40% { opacity: 1; transform: translateY(-4px) scaleY(1); }
+}
+
+.v2-cup-body {
+  position: relative;
+  height: 62px;
+  border: 2px solid var(--v2-ink);
+  border-radius: 6px 6px 22px 22px;
+  background: #fffdf8;
+  overflow: hidden;
+}
+
+/* Вушко чашки. */
+.v2-cup-body::after {
+  content: '';
+  position: absolute;
+  right: -16px;
+  top: 12px;
+  width: 18px;
+  height: 24px;
+  border: 2px solid var(--v2-ink);
+  border-left: none;
+  border-radius: 0 12px 12px 0;
+}
+
+.v2-cup-fill {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 78%;
+  background: linear-gradient(180deg, #a9612f 0%, #6f3b18 100%);
+  animation: v2-drink 7s ease-in-out infinite;
+}
+
+/* Кава спадає, але не зникає: порожня чашка на знімку читається як біла
+   коробка, а не як кава. */
+@keyframes v2-drink {
+  0%, 10% { height: 78%; }
+  72%, 84% { height: 20%; }
+  100% { height: 78%; }
+}
+
+.v2-cup-saucer {
+  height: 6px;
+  margin: 4px 6px 0;
+  border-radius: 6px;
+  background: var(--v2-ink);
+  opacity: 0.85;
+}
+
+/* Стрічка: три справжні картки змінюють одна одну. */
+.v2-feed-window {
+  position: relative;
+  height: 96px;
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 16px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.v2-feed-card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  padding: 14px 16px;
+  opacity: 0;
+  transform: translateY(12px);
+  animation: v2-feed 10.5s ease-in-out infinite;
+  animation-delay: calc(var(--i) * 3.5s);
+}
+
+@keyframes v2-feed {
+  0% { opacity: 0; transform: translateY(12px); }
+  4%, 29% { opacity: 1; transform: translateY(0); }
+  33%, 100% { opacity: 0; transform: translateY(-12px); }
+}
+
+.v2-feed-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--v2-ink);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.v2-feed-date {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--v2-accent-strong);
+}
+
+@media (max-width: 860px) {
+  .v2-choice { grid-template-columns: 1fr; padding: 28px 20px; gap: 22px; }
+  .v2-choice h2 { font-size: 1.5rem; }
+  .v2-choice-scene { grid-template-columns: auto 1fr; gap: 16px; }
+  .v2-cup { width: 72px; }
+  .v2-cup-body { height: 50px; }
+}
+
+/* Рух — не для всіх: лишається перша картка й повна чашка. */
+@media (prefers-reduced-motion: reduce) {
+  .v2-cup-fill, .v2-cup-steam span { animation: none; }
+  .v2-feed-card { animation: none; opacity: 0; }
+  .v2-feed-card:first-child { opacity: 1; transform: none; }
+}
