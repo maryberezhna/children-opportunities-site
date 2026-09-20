@@ -12,6 +12,7 @@ from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
 from normalizer import _fix_invented_years, published_date, strip_foreign_script  # noqa: E402
 from normalizer import is_state_support  # noqa: E402
 from normalizer import SYSTEM_PROMPT, VALID_OPP_TYPES  # noqa: E402
+from normalizer import strip_invented_repeat  # noqa: E402
 
 
 class SlugInvariants(unittest.TestCase):
@@ -258,3 +259,43 @@ class PromptKnowsEveryType(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class NoInventedRecurrence(unittest.TestCase):
+    """20.09.2026, курс AI Kids Academy: один набір на три місяці приїхав як
+    periodic + recurrence=annual, хоч у статті немає ні слова про повторення.
+    «Щороку» без підстави в тексті — обіцянка, яку нема кому виконати."""
+
+    BASE = {"title": "AI Kids Academy", "summary": "Безкоштовний курс зі штучного інтелекту",
+            "age_from": 13, "age_to": 15, "opportunity_type": "course",
+            "cost_type": "free", "format": "offline", "cities": ["Львів"]}
+
+    def test_no_signal_strips_both(self):
+        out = strip_invented_repeat(
+            dict(self.BASE, timing_kind="periodic", recurrence="annual"),
+            "Курс триватиме три місяці, 12 тренінгів щосуботи")
+        self.assertIsNone(out["timing_kind"])
+        self.assertIsNone(out["recurrence"])
+        self.assertIn("немає ознак повторюваності", out["admin_comment"])
+
+    def test_signal_keeps_both(self):
+        out = strip_invented_repeat(
+            dict(self.BASE, timing_kind="periodic", recurrence="annual"),
+            "Щорічний конкурс для школярів, IV всеукраїнський")
+        self.assertEqual(out["timing_kind"], "periodic")
+        self.assertEqual(out["recurrence"], "annual")
+        self.assertNotIn("admin_comment", out)
+
+    def test_olympiad_is_periodic_by_definition(self):
+        out = strip_invented_repeat(
+            dict(self.BASE, opportunity_type="olympiad", timing_kind="periodic",
+                 recurrence="annual"), "Умови участі")
+        self.assertEqual(out["timing_kind"], "periodic")
+        self.assertEqual(out["recurrence"], "annual")
+
+    def test_ongoing_and_one_time_untouched(self):
+        out = strip_invented_repeat(
+            dict(self.BASE, timing_kind="permanent", recurrence="ongoing"),
+            "Набір триває постійно")
+        self.assertEqual(out["timing_kind"], "permanent")
+        self.assertEqual(out["recurrence"], "ongoing")
