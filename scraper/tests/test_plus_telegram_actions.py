@@ -56,11 +56,18 @@ class TelegramKeyboard(unittest.TestCase):
     def test_row_per_item_numbered_like_the_text(self):
         other = item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)
         rows = self.pd.telegram_keyboard([item(), other])["inline_keyboard"]
-        self.assertEqual([b["text"] for b in rows[0]], ["👍 1", "👎 1", "📅 1"])
-        self.assertEqual([b["text"] for b in rows[1]], ["👍 2", "👎 2"])  # без дедлайну — без календаря
+        self.assertEqual([b["text"] for b in rows[0]], ["👍 1", "👎 1", "✍️ 1", "📅 1"])
+        self.assertEqual([b["text"] for b in rows[1]], ["👍 2", "👎 2", "✍️ 2"])  # без дедлайну — без календаря
         text = self.pd.build_telegram(SUB, [item(), other])
         self.assertIn("1. <a", text)
         self.assertIn("2. <a", text)
+
+    def test_apply_button_carries_the_opportunity_id(self):
+        """«✍️ Подаємося» — памʼять про пройдене: бот має знати, що саме позначили."""
+        rows = self.pd.telegram_keyboard([item()])["inline_keyboard"]
+        apply_btn = [b for b in rows[0] if b.get("callback_data", "").startswith("papp:")]
+        self.assertEqual(len(apply_btn), 1)
+        self.assertTrue(apply_btn[0]["callback_data"].endswith(item()["id"]))
 
     def test_callback_data_fits_telegram_limit(self):
         for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:

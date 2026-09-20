@@ -574,6 +574,27 @@ export async function POST(request) {
     return new Response('ok');
   }
 
+  // «✍️ Подаємося» під карткою добірки (personal_digest.telegram_keyboard).
+  // Памʼять про пройдене: цю можливість більше не пропонуємо як нову, а
+  // нагадування про її дедлайн звучить інакше — «ви позначили, що подаєтеся».
+  const papp = (cbq.data || '').match(/^papp:([0-9a-f-]{36})$/i);
+  if (papp) {
+    const chatId = String(cbq.message.chat.id);
+    const { data: sub } = await supabase.from('digest_subscribers')
+      .select('id, status').eq('telegram_chat_id', chatId).maybeSingle();
+    if (sub?.status !== 'active') { await bot.answerCallback(cbq.id, 'Оформіть підписку — /start'); return new Response('ok'); }
+    const { error } = await supabase.from('plus_applications').upsert({
+      subscriber_id: sub.id,
+      opportunity_id: papp[1],
+      stage: 'applying',
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'subscriber_id,opportunity_id' });
+    await bot.answerCallback(cbq.id, error
+      ? 'Не вдалося зберегти, спробуйте ще раз'
+      : 'Запамʼятали: ви подаєтеся ✍️ Нагадаємо, коли дедлайн буде близько');
+    return new Response('ok');
+  }
+
   // Головне меню підписника.
   if ((cbq.data || '').startsWith('menu:')) {
     const chatId = String(cbq.message.chat.id);

@@ -373,6 +373,9 @@ def telegram_keyboard(items) -> dict:
         row = [
             {"text": f"👍 {n}", "callback_data": f"pfb:yes:{o['id']}"},
             {"text": f"👎 {n}", "callback_data": f"pfb:no:{o['id']}"},
+            # «Подаємося» — памʼять про пройдене: цю можливість більше не
+            # пропонуємо як нову, а нагадування про її дедлайн звучить інакше.
+            {"text": f"✍️ {n}", "callback_data": f"papp:{o['id']}"},
         ]
         cal = calendar_url(o)
         if cal:
@@ -393,6 +396,23 @@ def load_disliked(client, subs) -> dict:
     out = {}
     for r in rows:
         out.setdefault(str(r["telegram_user_id"]), set()).add(r["opportunity_id"])
+    return out
+
+
+def load_applications(client, subs) -> dict:
+    """«✍️ Подаємося» під карткою → памʼять про пройдене. Повертає
+    {subscriber_id: {opportunity_id}}.
+
+    Навіщо. Обіцянка Dityam+ — «памʼятаємо пройдене»: те, на що родина вже
+    подає заявку, не має приходити ще раз як свіжа знахідка."""
+    ids = [s["id"] for s in subs if s.get("id")]
+    if not ids:
+        return {}
+    rows = (client.table("plus_applications").select("subscriber_id, opportunity_id")
+            .in_("subscriber_id", ids).execute().data or [])
+    out = {}
+    for r in rows:
+        out.setdefault(str(r["subscriber_id"]), set()).add(r["opportunity_id"])
     return out
 
 
@@ -520,6 +540,8 @@ def main():
                       .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
     disliked = {} if args.demo else load_disliked(client, subs)
+    # Памʼять про пройдене: на що родина вже подає заявку (кнопка «✍️ Подаємося»).
+    applied = {} if args.demo else load_applications(client, subs)
 
     sent = 0
     for sub in subs:
@@ -537,7 +559,10 @@ def main():
         since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
         kids = plus_profile.children_of(sub, child_rows)
         # «👎 Не цікаво» — цю можливість підписнику більше не пропонуємо.
-        skip = disliked.get(str(sub.get("telegram_chat_id")), set())
+        # Не показуємо вдруге ні те, що позначили «не цікаво», ні те, на що
+        # вже подаються: перше людина відкинула, про друге вона й так памʼятає.
+        skip = disliked.get(str(sub.get("telegram_chat_id")), set()) \
+            | applied.get(str(sub["id"]), set())
         pool = [o for o in opps if o["id"] not in skip] if skip else opps
         items = pick_for(sub, pool, since, kids)
 

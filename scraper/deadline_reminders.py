@@ -49,6 +49,7 @@ import send_window
 from personal_digest import (
     SITE_URL,
     age_overlaps,
+    load_applications,
     load_disliked,
     themes_of,
     send_telegram,
@@ -171,6 +172,10 @@ def build_text(items: list, days: int) -> str:
         url = f"{SITE_URL}/o/{o['slug']}"
         lines.append(f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
         lines.append(f"подача до {human_date(o['deadline'])}")
+        # Памʼять про пройдене: родина вже натиснула «✍️ Подаємося». Нагадати
+        # все одно треба — саме тут дедлайн і горить, — але не як про знахідку.
+        if o.get("_applying"):
+            lines.append("<i>ви позначили, що подаєтеся</i>")
         if o.get("_for"):
             lines.append(f"<i>{html.escape(o['_for'])}</i>")
         lines.append("")
@@ -230,6 +235,7 @@ def main() -> int:
         return 0
     # «👎 Не цікаво» з добірки — про цю можливість і не нагадуємо.
     disliked = {} if args.demo else load_disliked(client, subs)
+    applying = {} if args.demo else load_applications(client, subs)
 
     today = date.today()
     widest = max(override) if override else max(
@@ -260,7 +266,10 @@ def main() -> int:
         # дітям: у журналі пара «підписник × можливість × вікно», а не дитина.
         kids = plus_profile.children_of(sub, child_rows)
         skip = disliked.get(str(sub.get("telegram_chat_id")), set())
+        mine = applying.get(str(sub["id"]), set())
         fitting = [o for o in family_matches(sub, kids, opps) if o["id"] not in skip]
+        for o in fitting:
+            o["_applying"] = o["id"] in mine
         # Кожен запис уже знає своє вікно (найтісніше для його типу), тож
         # групуємо за ним: одне повідомлення на вікно, від найтерміновішого.
         for days in sorted({o["_window"] for o in opps}):
