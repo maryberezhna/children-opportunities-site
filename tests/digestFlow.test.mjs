@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { beginFlow, handleFlowCallback } from '../lib/digestFlow.js';
+import { beginFlow, beginFreq, handleFlowCallback } from '../lib/digestFlow.js';
 
 /**
  * Анкета Dityam+ від «скількох дітей» до «вартості».
@@ -136,10 +136,28 @@ test('анкета: двоє дітей — профіль кожної по ч�
   const done = await handleFlowCallback(bot, db, click('flow:place:__done'));
   assert.equal(done.finished, false);
   assert.match(bot.last().text, /платні можливості чи лише безкоштовні/);
-  const finished = await handleFlowCallback(bot, db, click('flow:cost:free_only'));
-  assert.equal(finished.finished, true);
+
+  // Останнє питання — частота добірки; анкета завершується саме на ньому.
+  const cost = await handleFlowCallback(bot, db, click('flow:cost:free_only'));
+  assert.equal(cost.finished, false);
   assert.equal(db._rows.digest_subscribers[0].cost_pref, 'free_only');
+  assert.match(bot.last().text, /Як часто надсилати добірку/);
+
+  const finished = await handleFlowCallback(bot, db, click('flow:freq:weekly'));
+  assert.equal(finished.finished, true);
+  assert.equal(db._rows.digest_subscribers[0].digest_freq, 'weekly');
   assert.equal(db._rows.digest_subscribers[0].flow_step, null);
+});
+
+test('частота: зміна з меню не видає «Профіль готовий»', async () => {
+  const { db, bot } = await setup();
+  db._rows.digest_subscribers[0].status = 'active';
+  await beginFreq(bot, db, '77');
+  assert.match(bot.last().text, /Як часто надсилати добірку/);
+  const res = await handleFlowCallback(bot, db, click('flow:freq:2days'));
+  assert.equal(res.finished, false);
+  assert.equal(db._rows.digest_subscribers[0].digest_freq, '2days');
+  assert.equal(db._rows.digest_subscribers[0].flow_mode, null);
 });
 
 test('анкета: кнопка зі старого кроку не збиває послідовність', async () => {

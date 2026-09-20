@@ -6,7 +6,8 @@
 // вже пройдено, одразу меню, а не повторна анкета.
 import { createClient } from '@supabase/supabase-js';
 import {
-  makeBot, beginFlow, beginAddChild, finishFlow, handleFlowCallback, saveCustomCity,
+  makeBot, beginFlow, beginAddChild, beginFreq, finishFlow, handleFlowCallback,
+  saveCustomCity, FLOW_FREQ,
 } from '@/lib/digestFlow';
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
@@ -135,13 +136,14 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
 
 // Команди підписника в меню «/» (їхній перелік реєструє
 // scripts/set-bot-commands.mjs — тримати списки однаковими).
-const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile']);
+const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile', 'freq']);
 
 const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
   + '/start — головне меню\n'
   + '/new — свіжі можливості під профіль дитини\n'
   + '/child — додати ще одну дитину\n'
   + '/form — заповнити анкету заново\n'
+  + '/freq — як часто надсилати добірку\n'
   + '/profile — профіль дітей і деталі підписки\n'
   + '/support — написати нам\n'
   + '/stop — відписатися і скасувати списання';
@@ -153,6 +155,7 @@ async function sendMainMenu(bot, chatId) {
       [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
       [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
+      [{ text: '⏰ Як часто писати', callback_data: 'menu:freq' }],
       [{ text: '⭐ Деталі підписки', callback_data: 'menu:sub' }],
       [{ text: '📝 Питання в підтримку', callback_data: 'menu:support' }],
     ],
@@ -249,6 +252,7 @@ function subDetails(sub, kids) {
   });
   lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
+  lines.push(`Частота: ${esc(labels(FLOW_FREQ, [sub.digest_freq || 'instant']))}`);
   lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
   return lines.join('\n');
 }
@@ -447,6 +451,7 @@ export async function POST(request) {
         return new Response('ok');
       }
       if (cmd === 'new') await sendLatest(bot, supabase, sub, chatId);
+      else if (cmd === 'freq') await beginFreq(bot, supabase, chatId);
       else if (cmd === 'child') await beginAddChild(bot, supabase, chatId);
       else if (cmd === 'form') await beginFlow(bot, supabase, chatId, handle);
       else await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
@@ -578,6 +583,7 @@ export async function POST(request) {
     if (action === 'form') await beginFlow(bot, supabase, chatId, null);
     else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
+    else if (action === 'freq') await beginFreq(bot, supabase, chatId);
     else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
     else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — відповімо.');
     return new Response('ok');

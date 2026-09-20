@@ -78,6 +78,25 @@ THEME_LABEL = {"format": "Гуртки/курси", "stem": "STEM/IT", "arts": "
 AGE_BANDS = {"0-3": (0, 3), "4-6": (4, 6), "7-10": (7, 10), "11-14": (11, 14), "15-18": (15, 18)}
 
 
+# Скільки днів мовчимо між добірками для кожного варіанта анкети.
+FREQ_DAYS = {"instant": 0, "2days": 2, "weekly": 7}
+
+
+def freq_due(sub: dict, now=None) -> bool:
+    """Чи можна слати добірку цьому підписнику зараз.
+
+    Порожній last_sent_at (новий підписник) — можна завжди: перша добірка не
+    має чекати тиждень. Невідоме значення частоти читаємо як «instant»."""
+    days = FREQ_DAYS.get(sub.get("digest_freq") or "instant", 0)
+    if not days:
+        return True
+    last = parse_ts(sub.get("last_sent_at"))
+    if not last:
+        return True
+    now = now or datetime.now(timezone.utc)
+    return (now - last) >= timedelta(days=days)
+
+
 def match_themes(text: str) -> set:
     low = (text or "").lower()
     return {k for k, kws in THEME_CATEGORIES.items() if any(kw in low for kw in kws)}
@@ -378,6 +397,15 @@ def main():
 
     sent = 0
     for sub in subs:
+        # Частота з анкети (digest_subscribers.digest_freq): «щойно зʼявиться»,
+        # «раз на 2 дні» чи «раз на тиждень». Пропущені дні не втрачаються:
+        # наступного разу підуть усі можливості, що зʼявились від останньої
+        # відправки. Нагадування про дедлайни живуть у deadline_reminders.py і
+        # цієї межі не знають — пропущений дедлайн не «менше листів», а
+        # втрачена можливість.
+        if not (args.force or args.demo) and not freq_due(sub):
+            logger.info("Sub %s: рано за частотою (%s)", sub["id"], sub.get("digest_freq"))
+            continue
         # Шлемо лише можливості, що зʼявились після останнього сповіщення.
         # --force / --demo ігнорують новизну (для тесту).
         since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
