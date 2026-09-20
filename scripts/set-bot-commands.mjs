@@ -62,6 +62,7 @@ const PLUS_COMMANDS = [
   { command: 'new', description: '🔎 Свіжі можливості під профіль дитини' },
   { command: 'child', description: '➕ Додати ще одну дитину' },
   { command: 'form', description: '✏️ Заповнити анкету заново' },
+  { command: 'freq', description: '⏰ Як часто надсилати добірку' },
   { command: 'profile', description: '⭐ Профіль дітей і деталі підписки' },
   { command: 'support', description: '📝 Написати нам' },
   { command: 'stop', description: '🚪 Відписатися і скасувати списання' },
