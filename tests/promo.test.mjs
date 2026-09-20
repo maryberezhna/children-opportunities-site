@@ -1,5 +1,5 @@
 // Промокоди Dityam+ (19.09.2026). Ціна за кодом `first`: місяць 1 грн
-// замість 99, рік 499 замість 999 — і лише на ПЕРШИЙ платіж.
+// замість 119, рік 799 замість 999 — і лише на ПЕРШИЙ платіж.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -53,10 +53,10 @@ test('місяць за кодом: 1 грн зараз, 119 далі', () => {
   assert.equal(b.dateNext, '19.10.2026');
 });
 
-test('рік за кодом: 499 зараз, 999 через рік', () => {
-  const b = invoiceBody(sub, 'yearly', { firstAmount: 499, now });
-  assert.equal(b.amount, 499);
-  assert.deepEqual(b.productPrice, [499]);
+test('рік за кодом: 799 зараз, 999 через рік', () => {
+  const b = invoiceBody(sub, 'yearly', { firstAmount: 799, now });
+  assert.equal(b.amount, 799);
+  assert.deepEqual(b.productPrice, [799]);
   assert.equal(b.regularAmount, PRICE_YEAR);
   assert.equal(b.regularMode, 'yearly');
   assert.equal(b.dateNext, '19.09.2027');

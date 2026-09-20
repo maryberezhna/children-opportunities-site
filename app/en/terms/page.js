@@ -80,7 +80,7 @@ export default function TermsPageEn() {
               only; every payment after that is the full price. The code is entered in the
               Telegram bot before paying, and the price on the button updates before you reach
               the payment page. The current code, “FIRST”: the first month is UAH 1 instead of
-              119 (the payment service cannot process a UAH 0 payment), the first year UAH 499
+              119 (the payment service cannot process a UAH 0 payment), the first year UAH 799
               instead of 999. It applies to a person who has not paid for the subscription before.</li>
           </ul>
           <p>
