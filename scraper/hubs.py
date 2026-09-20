@@ -12,7 +12,9 @@
 одного. Тепер джерело правди одне — таблиця; список нижче лишається тільки
 фолбеком на випадок, коли база недоступна.
 """
+import hashlib
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -103,3 +105,19 @@ def hub_domains(prefixes_: tuple[str, ...] | None = None) -> set[str]:
     """Домени з переліку хабів — для них правило «сайт уже є» не діє взагалі."""
     return {_host(p) for p in (prefixes_ if prefixes_ is not None else prefixes()) if p}
 
+# Ключ дедуплікації — один на всі конвеєри (20.09.2026).
+#
+# Формул було дві: нормалізатор рахував хеш від самого URL (а для хабів —
+# «назва|URL»), discover-агент завжди від «назва|URL». Та сама сторінка з двох
+# шляхів давала різні ключі, і запис лягав двічі — саме так у базі з'явилось
+# 8 копій uBoost і 7 українсько-польських обмінів.
+#
+# Назву генерує модель, і для того самого джерела вона щоразу інша, тож
+# ключем служить URL. Виняток — сторінки-хаби, де на одній адресі справді
+# живе багато різних можливостей: там у ключ додається нормалізована назва.
+def content_hash(title: str, url: str) -> str:
+    if is_hub(url):
+        normalized = re.sub(r"[^\w\s]", "", (title or "").lower())
+        normalized = re.sub(r"\s+", " ", normalized).strip()
+        return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
+    return hashlib.sha256((url or "").encode()).hexdigest()[:16]
