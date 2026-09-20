@@ -52,9 +52,9 @@ from db import get_client
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
 from remark import telegram_text, _TG_POST
 from timing import (
-    LABELS, PERMANENT_RECHECK_DAYS, RETRY_DAYS, UNKNOWN_RECHECK_DAYS,
+    LABELS, RETRY_DAYS, UNKNOWN_RECHECK_DAYS,
     clean_kind, clean_months, clean_text, evidence_in_text, is_expired,
-    next_season_check, recheck_after_close, spread_date,
+    next_season_check, permanent_recheck_days, recheck_after_close, spread_date,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -66,8 +66,8 @@ PAGE_CHARS = 9000
 DELAY = 0.6
 
 SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind, "
-          "season_months, deadline, event_start_date, event_end_date, results_date, recheck_at, "
-          "verified_at, admin_comment")
+          "timing_assumed, season_months, deadline, event_start_date, event_end_date, "
+          "results_date, recheck_at, verified_at, admin_comment")
 
 STATES = ("open", "upcoming", "ended", "gone", "unclear")
 
@@ -170,6 +170,10 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
     if not kind and new_kind and quoted_kind:
         kind = new_kind
         patch["timing_kind"] = kind
+        patch["timing_assumed"] = False      # тепер вид стоїть на цитаті, не на здогаді
+    elif row.get("timing_assumed") and kind and new_kind == kind and quoted_kind:
+        # Здогад підтвердився цитатою — далі це вже факт.
+        patch["timing_assumed"] = False
     # Місяці сезону: якщо запис періодичний, а місяців у ньому немає, беремо їх
     # із перевірки (з цитатою). Без них наступна перевірка ставилась «через 30
     # днів» — так Bloomsday із сезоном у червні перевірявся б щомісяця.
@@ -204,7 +208,10 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
         for key in ("deadline", "event_start_date", "event_end_date"):
             if fresh and key not in fresh:
                 patch[key] = None
-        patch["recheck_at"] = ((today + timedelta(days=PERMANENT_RECHECK_DAYS)).isoformat()
+        # Здогад про постійність перечитуємо за 30 днів, підтверджений — за 120.
+        assumed = patch.get("timing_assumed", row.get("timing_assumed"))
+        days = permanent_recheck_days({"timing_assumed": assumed})
+        patch["recheck_at"] = ((today + timedelta(days=days)).isoformat()
                                if kind == "permanent" and not fresh else None)
         note = f"відкрито: {quote}"
     elif state == "upcoming":
@@ -239,6 +246,7 @@ def _verdict(row: dict, patch: dict, state: str, **extra) -> dict:
         "state": state,
         "status": patch.get("status", row.get("status")),
         "kind": patch.get("timing_kind", row.get("timing_kind")),
+        "assumed": bool(patch.get("timing_assumed", row.get("timing_assumed"))),
         "has_dates": any(patch.get(k, row.get(k)) for k in dates),
         **extra,
     }
@@ -320,7 +328,7 @@ def plan_bootstrap(row: dict, today: date) -> str | None:
     has_dates = any(row.get(k) for k in ("deadline", "event_start_date", "event_end_date"))
     if row.get("status") == "active":
         if kind == "permanent":
-            return spread_date(row["id"], today, PERMANENT_RECHECK_DAYS).isoformat()
+            return spread_date(row["id"], today, permanent_recheck_days(row)).isoformat()
         if not has_dates:
             # Без дати запис не закриється сам — подивитись на джерело протягом місяця.
             return spread_date(row["id"], today, UNKNOWN_RECHECK_DAYS).isoformat()

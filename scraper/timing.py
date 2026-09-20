@@ -207,8 +207,20 @@ from datetime import date as _date, timedelta as _timedelta  # noqa: E402
 import hashlib as _hashlib  # noqa: E402
 
 PERMANENT_RECHECK_DAYS = 120     # постійна: переконатись, що сторінка жива й набір той самий
+ASSUMED_RECHECK_DAYS = 30        # «постійна» за замовчуванням — це здогад, а не факт
 UNKNOWN_RECHECK_DAYS = 30        # вид невідомий: подивитись на джерело найближчим часом
 RETRY_DAYS = 14                  # сторінка не відкрилась / сезон ще не відкрито
+
+
+def permanent_recheck_days(row: dict) -> int:
+    """За скільки днів перечитати постійний запис.
+
+    120 днів — для тих, де постійність прочитана в тексті. Для здогаду
+    (timing_assumed) — 30: саме такі записи й живуть на сайті вічно, бо
+    «завершитись» їм нема як. 610 гуртків станом на 20.09.2026 тримаються
+    рівно на цьому припущенні.
+    """
+    return ASSUMED_RECHECK_DAYS if row.get("timing_assumed") else PERMANENT_RECHECK_DAYS
 
 
 def _iso(value) -> _date | None:

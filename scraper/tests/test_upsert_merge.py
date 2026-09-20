@@ -34,3 +34,16 @@ class MergePatch(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class TimingAssumption(unittest.TestCase):
+    """Здогад «набір постійний» знімається перевіркою і не повертається."""
+
+    def test_confirmed_kind_is_not_assumed_again(self):
+        existing = {"timing_assumed": False, "timing_kind": "permanent", "status": "active"}
+        patch = merge_patch(existing, {"timing_assumed": True, "title": "Гурток шахів"})
+        self.assertNotIn("timing_assumed", patch)
+
+    def test_new_assumption_is_written(self):
+        existing = {"timing_assumed": False, "timing_kind": None, "status": "active"}
+        patch = merge_patch(existing, {"timing_assumed": True, "timing_kind": "permanent"})
+        self.assertTrue(patch["timing_assumed"])

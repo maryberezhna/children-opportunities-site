@@ -189,6 +189,10 @@ def _apply_club_default(data: dict) -> None:
     if data.get("opportunity_type") == "club" and not kind and not has_dates \
             and not data.get("recurrence"):
         data["timing_kind"] = kind = "permanent"
+        # Позначка в базі, а не лише в коментарі: припущення мусить бути
+        # видно машині. Такий запис перевіряється частіше і не вважається
+        # вічно відкритим там, де ми публікуємо (ворота поста в канал).
+        data["timing_assumed"] = True
         note = ("вид: постійна — гурток, текст не каже про сезон набору; "
                 "за замовчуванням (рішення 17.09.2026), перевірити")
         data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()

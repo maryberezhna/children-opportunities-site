@@ -51,6 +51,15 @@ test('вічна платформа без дат проходить, навіт
   assert.deepEqual(kept.map((r) => r.id), ['a', 'b']);
 });
 
+test('«постійна» за замовчуванням не рятує: це здогад, а не факт', () => {
+  // 610 гуртків мали «набір постійний» лише тому, що текст мовчав про сезон.
+  const { kept, dropped } = keepOpen([row('a', 'Гурток шахів')], {
+    a: { state: 'unclear', status: 'active', kind: 'permanent', has_dates: false, assumed: true },
+  });
+  assert.equal(kept.length, 0);
+  assert.match(dropped[0].why, /unclear/);
+});
+
 test('вічний вид, але дати в записі є — перевірка обовʼязкова', () => {
   const { kept } = keepOpen([row('a')], {
     a: { state: 'unclear', status: 'active', kind: 'permanent', has_dates: true },
