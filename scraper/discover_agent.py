@@ -553,9 +553,10 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
 
     short = hashlib.md5(f"{title}{url}".encode()).hexdigest()[:6]
     rec["slug"] = f"{slugify(title, max_length=80, word_boundary=True)}-{short}"
-    normalized = re.sub(r"[^\w\s]", "", title.lower())
-    normalized = re.sub(r"\s+", " ", normalized).strip()
-    rec["content_hash"] = hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
+    # Ключ — той самий, що в нормалізатора (hubs.content_hash): до 20.09.2026
+    # агент завжди рахував його від «назва|URL», тож та сама сторінка з двох
+    # конвеєрів лягала двома записами.
+    rec["content_hash"] = hubs.content_hash(title, url)
     rec["canonical_url"] = canonical_url(url)
     return rec
 

@@ -63,9 +63,15 @@ YELLOW = "yellow"
 RED = "red"
 
 
-def mechanical(row: dict) -> tuple[str, str] | None:
+def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
     """Детермінована частина. Повертає (коридор, причина) або None, якщо
-    запис пройшов механіку і йде далі, до судді."""
+    запис пройшов механіку і йде далі, до судді.
+
+    trust_tier — надійність джерела з реєстру `sources`: 1 держ/офіційні,
+    2 звичайні організації, 3 соцмережі й агреговані стрічки. Джерела, якого
+    в реєстрі немає, вважаємо третім рівнем: так поводиться discover-агент,
+    що приносить сайт, якого ми ще ніколи не бачили.
+    """
     today = date.today().isoformat()
 
     # ── Червоний ────────────────────────────────────────────────────────
@@ -78,6 +84,14 @@ def mechanical(row: dict) -> tuple[str, str] | None:
     if is_expired(row, date.fromisoformat(today)):
         last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
         return RED, f"дата в минулому ({last})"
+
+    # ── Жовтий: джерело, якому не можна вірити наосліп ──────────────────
+    # Ворота автодопуску мали спиратись на жорсткі сигнали, і надійність
+    # джерела — один із них. До 20.09.2026 поле trust_tier у реєстрі стояло,
+    # але жоден рядок коду його не читав: агрегатор із соцмережі проходив тими
+    # самими воротами, що й сайт міністерства.
+    if trust_tier >= 3:
+        return YELLOW, "джерело третього рівня довіри (соцмережі, агрегатори, новий сайт)"
 
     # ── Жовтий: дорогі категорії ────────────────────────────────────────
     if row.get("opportunity_type") in SENSITIVE_TYPES:
@@ -205,8 +219,10 @@ def judge(client, row: dict) -> dict:
 MIN_CONFIDENCE = 0.8
 
 
-def classify(row: dict, client) -> tuple[str, str]:
-    verdict = mechanical(row)
+def classify(row: dict, client, trust: dict | None = None) -> tuple[str, str]:
+    # Джерела немає в реєстрі — це не «нормальне», а «невідоме»: третій рівень.
+    tier = (trust or {}).get(row.get("source"), 3)
+    verdict = mechanical(row, tier)
     if verdict:
         return verdict
 
@@ -258,9 +274,12 @@ def run(apply: bool = False, limit: int = 500) -> dict:
             .eq("status", "draft").limit(limit).execute().data or [])
     print(f"Чернеток у черзі: {len(rows)}\n")
 
+    trust = {r["name"]: r.get("trust_tier") or 3
+             for r in (sb.table("sources").select("name, trust_tier").execute().data or [])}
+
     buckets = {GREEN: [], YELLOW: [], RED: []}
     for row in rows:
-        corridor, reason = classify(row, client)
+        corridor, reason = classify(row, client, trust)
         buckets[corridor].append((row, reason))
         if apply:
             apply_decision(sb, row, corridor, reason)
