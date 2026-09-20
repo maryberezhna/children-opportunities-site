@@ -235,7 +235,11 @@ if (PREVIEW) {
     const shown = await sendDailyDigest(date);
     await sendNewOpportunityPost(shown);
   }
-} else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID && !DRY_RUN) {
+// DRY_RUN тепер теж збирає пост — і друкує його замість відправки
+// (postToChannel), нічого не позначаючи як опубліковане. До 20.09.2026 сухий
+// прогін завершувався на звіті, тож перевірити добір і ворота публікації перед
+// змінами в проді було ніяк.
+} else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
   const shown = POST === 'new' ? [] : await sendDailyDigest();
   if (POST !== 'digest') await sendNewOpportunityPost(shown || []);
 }
