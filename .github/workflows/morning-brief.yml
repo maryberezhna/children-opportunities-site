@@ -1,0 +1,42 @@
+name: Ранкове зведення (що потребує рішення)
+
+# Одне повідомлення в адмін-чат про те, що без людини не зрушить: чернетки з
+# дедлайном на цьому тижні, записи з мертвим лінком і відкритою подачею,
+# протерміновані планові перевірки, пропозиції без відповіді. Якщо таких
+# пунктів немає — нічого не надсилається.
+#
+# 03:00 UTC: розклад GitHub запізнюється на 4–6 годин (заміряно 11.09), тож
+# лист реально приходить близько 09:00–12:00 за Києвом. Точнішого часу цим
+# механізмом не буває — див. пам'ять «Розклад GitHub бреше».
+on:
+  schedule:
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = лише показати текст, нічого не слати'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  brief:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save @supabase/supabase-js
+      - name: Зібрати й надіслати
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SITE_URL: https://dityam.com.ua
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/morning-brief.mjs
