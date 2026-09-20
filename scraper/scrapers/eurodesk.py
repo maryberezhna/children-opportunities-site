@@ -1,29 +1,56 @@
 """Скрапер Eurodesk Opportunity Finder — європейські програми для молоді.
 
-Чому окремо від решти. programmes.eurodesk.eu — застосунок, який малюється
-на клієнті: у HTML, що приходить по HTTP, немає ні програм, ні посилань.
-Дані віддає власний виклик `/search`, і він відповідає 403 на звичайний
-запит — але працює зсередини вже відкритої сторінки, бо там є сесія.
-Тому тут потрібен справжній браузер. Це НЕ обхід захисту: сайт віддає вміст
-будь-якому браузеру без жодних перевірок, він просто малює його скриптом.
+Чому окремо від решти. programmes.eurodesk.eu малюється на клієнті: у HTML,
+що приходить по HTTP, програм немає — самі кістяки-плейсхолдери. Дані віддає
+власний виклик `/search`, і без сесії він відповідає 403.
+
+До 20.09.2026 сесію давав справжній браузер (playwright). Він перестав
+працювати: у логах прогону 15.09 — «Page.evaluate: SyntaxError: Unexpected
+token '<'», тобто виклик зсередини сторінки почав повертати сторінку 403, а
+не JSON. Джерело мовчки віддавало нуль, і це не було видно: воно ходить раз
+на 30 днів.
+
+Тепер браузер не потрібен. Сесію дає звичайний httpx: перший GET на головну
+кладе в банку куки, далі той самий `/search` віддає 200 і JSON. Запит іде з
+`all=1` — так робить сам застосунок у режимі вбудовування, і замість 20
+карток сторінкою приходять усі відкриті набори за один раз.
+
+Формат теж змінився: `open` був рядком, став обʼєктом `{html, starts}`.
+Підтримуємо обидва — сайт може відкотитись.
 
 Беремо лише секцію `open` — програми з відкритим набором просто зараз
-(близько 90 із 533). Секція `upcoming` важить утричі більше й описує те,
-що ще не відкрилось: у каталозі воно стало б записами, на які не подаси.
+(близько 82 із 534). Секція `upcoming` описує те, що ще не відкрилось: у
+каталозі воно стало б записами, на які не подаси.
 
-Якщо playwright недоступний або браузер не піднявся — повертаємо порожньо
-й пишемо в лог. Одне джерело не сміє зупинити нічний прогін.
+Помилка мережі чи формату — повертаємо порожньо й пишемо в лог. Одне джерело
+не сміє зупинити нічний прогін.
 """
 import logging
 import re
 
+import httpx
 from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
 SOURCE_NAME = "Eurodesk"
 BASE = "https://programmes.eurodesk.eu"
-PAGE_TIMEOUT_MS = 45_000
+TIMEOUT_S = 60
+
+# Ті самі заголовки, що шле браузер на цій сторінці. Без X-Requested-With і
+# Referer запит лишається 403 навіть із куками.
+_BROWSER = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "en-GB,en;q=0.9",
+}
+_XHR = {
+    "Accept": "application/json",
+    "X-Requested-With": "XMLHttpRequest",
+    "Referer": f"{BASE}/",
+}
 
 _ID_RE = re.compile(r"^(\d+)-")
 
@@ -94,33 +121,29 @@ def parse_open(html: str) -> list[dict]:
     return items
 
 
+def section_html(section) -> str:
+    """`open` приходить обʼєктом {html, starts}, а раніше був рядком."""
+    if isinstance(section, dict):
+        return section.get("html") or ""
+    return str(section or "")
+
+
 async def fetch_all() -> list[dict]:
     try:
-        from playwright.async_api import async_playwright
-    except ImportError:
-        logger.warning("Eurodesk: playwright не встановлено — пропускаю джерело")
-        return []
-
-    try:
-        async with async_playwright() as pw:
-            browser = await pw.chromium.launch(args=["--disable-dev-shm-usage"])
-            page = await browser.new_page()
-            await page.goto(BASE, timeout=PAGE_TIMEOUT_MS, wait_until="networkidle")
-            # Виклик робимо ЗСЕРЕДИНИ сторінки: ззовні той самий шлях віддає 403,
-            # бо немає сесії, яку застосунок отримує при завантаженні.
-            payload = await page.evaluate(
-                """() => fetch('/search?', {headers: {Accept: 'application/json'}})
-                        .then(r => r.json())
-                        .then(j => ({open: String(j.open || ''), count: j.count || 0}))"""
-            )
-            await browser.close()
+        async with httpx.AsyncClient(headers=_BROWSER, timeout=TIMEOUT_S,
+                                     follow_redirects=True) as client:
+            # Перший запит потрібен лише заради куків сесії.
+            await client.get(f"{BASE}/")
+            r = await client.get(f"{BASE}/search?all=1", headers=_XHR)
+            r.raise_for_status()
+            data = r.json()
     except Exception as e:
-        logger.error(f"Eurodesk: браузер не впорався ({type(e).__name__}: {e})")
+        logger.error("Eurodesk: не вдалось отримати перелік (%s: %s)", type(e).__name__, e)
         return []
 
-    items = parse_open(payload.get("open", ""))
+    items = parse_open(section_html(data.get("open")))
     logger.info(
         "Eurodesk: %d програм з відкритим набором (усього в переліку %s)",
-        len(items), payload.get("count"),
+        len(items), data.get("count"),
     )
     return items
