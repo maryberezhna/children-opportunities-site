@@ -5,6 +5,7 @@ import { audienceStats } from '@/lib/audience';
 import OpportunitiesList from './OpportunitiesList';
 import HomeHero from './HomeHero';
 import HomeBlocks from './HomeBlocks';
+import PlusChoice from './PlusChoice';
 import Footer from './Footer';
 import { TOPIC_NAV } from '@/lib/topics';
 
@@ -76,6 +77,8 @@ export default async function Home() {
         </nav>
 
         <HomeBlocks />
+
+        <PlusChoice opportunities={opportunities} today={today} />
       </main>
 
       <Footer />
