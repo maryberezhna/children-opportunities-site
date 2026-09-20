@@ -3,7 +3,9 @@ import { soonestDeadlines } from '@/lib/timing';
 import { PRICE } from '@/lib/wayforpay';
 import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
 
-// Заклик у кінці головної: кава чи можливість для дитини (ідея Марії 19.09.2026).
+// Заклик наприкінці сторінки Dityam+: кава чи можливість для дитини (ідея
+// Марії 19.09.2026). До 20.09.2026 блок стояв у кінці головної — Марія
+// перенесла його туди, де людина вже читає про саму підписку.
 //
 // Дві умови, які тут важливі:
 // 1. Праворуч крутяться СПРАВЖНІ записи з найближчими дедлайнами, а не
@@ -90,7 +92,7 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
           <div className="v2-feed-window">
             {picks.map((o, i) => (
               <article key={o.id || i} className="v2-feed-card" style={{ '--i': i }}>
-                <span className="v2-feed-title">{o.title}</span>
+                <span className="v2-feed-title">{(lang === 'en' && o.title_en) || o.title}</span>
                 <span className="v2-feed-date">
                   {t.deadline(formatDate(o.deadline, lang) || t.soon)}
                 </span>

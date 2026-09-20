@@ -6,7 +6,6 @@ import { audienceStats } from '@/lib/audience';
 import OpportunitiesList from '../OpportunitiesList';
 import HomeHero from '../HomeHero';
 import HomeBlocks from '../HomeBlocks';
-import PlusChoice from '../PlusChoice';
 import Footer from '../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -121,8 +120,6 @@ export default async function EnglishPage() {
         </p>
 
         <HomeBlocks lang="en" />
-
-        <PlusChoice opportunities={opportunities} today={today} lang="en" />
       </main>
 
       <Footer lang="en" />

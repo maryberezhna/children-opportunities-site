@@ -89,6 +89,7 @@ const L = {
     city: 'Місто',
     source: 'Джерело',
     verified: 'Перевірено',
+    linkAlive: 'Посилання працює',
     relatedTitle: (age) => `Схожі можливості для дітей ${age}`,
     today: 'сьогодні',
     yesterday: 'вчора',
@@ -123,6 +124,7 @@ const L = {
     city: 'City',
     source: 'Source',
     verified: 'Checked',
+    linkAlive: 'Link works',
     relatedTitle: (age) => `Similar opportunities for children ${age}`,
     today: 'today',
     yesterday: 'yesterday',
@@ -228,11 +230,21 @@ export function ageRangeLabel(item, lang = 'uk') {
 }
 
 // «Перевірено сьогодні / вчора / N днів тому» — чесний сигнал свіжості.
-// last_verified_at ставить щоденний verify-links (лінк живий), verified_at —
-// модератор при схваленні. Понад 30 днів без перевірки — нічого не показуємо,
-// стара дата довіри не додає.
+//
+// Три різні перевірки — і обіцяти можна лише ту, що справді сталась:
+//   verified_at         — людина відкрила запис і схвалила;
+//   content_checked_at  — планова перевірка прочитала сторінку й зрозуміла стан набору;
+//   last_verified_at    — щоденний пінг: адреса відповідає, і тільки це.
+// До 20.09.2026 «Перевірено» бралось із пінга, тож на всіх 1100 записах стояло
+// «сьогодні» — слово обіцяло більше, ніж було зроблено. Тепер пінг має власний
+// підпис («Посилання працює»), а «Перевірено» лишається для двох перших.
+export function verifiedKind(item) {
+  if (item.verified_at || item.content_checked_at) return 'checked';
+  return item.last_verified_at ? 'link' : null;
+}
+
 export function verifiedLabel(item, lang = 'uk') {
-  const ts = item.last_verified_at || item.verified_at;
+  const ts = item.verified_at || item.content_checked_at || item.last_verified_at;
   if (!ts) return null;
   const date = new Date(ts);
   if (isNaN(date.getTime())) return null;
@@ -712,7 +724,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             )}
             {verifiedLabel(item, lang) && (
               <>
-                <dt>{t.verified}</dt>
+                <dt>{verifiedKind(item) === 'checked' ? t.verified : t.linkAlive}</dt>
                 <dd>✅ {verifiedLabel(item, lang)}</dd>
               </>
             )}

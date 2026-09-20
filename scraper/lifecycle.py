@@ -42,7 +42,7 @@ import logging
 import os
 import time
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 import anthropic
@@ -230,6 +230,10 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
         patch["recheck_at"] = (today + timedelta(days=days)).isoformat()
         note = f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}"
 
+    # Дата змістової перевірки — окремо від пінга лінка (last_verified_at):
+    # на сторінці можливості «Перевірено» має означати, що хтось справді читав
+    # сторінку, а не що адреса відповіла кодом 200.
+    patch["content_checked_at"] = datetime.now(timezone.utc).isoformat()
     patch["admin_comment"] = _with_trace(row, f"lifecycle {iso_today}: {note}"[:240])
     return patch
 

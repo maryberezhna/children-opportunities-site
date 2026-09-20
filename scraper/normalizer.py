@@ -1040,6 +1040,8 @@ URL: {source_url}
     def _make_hash(title: str, url: str) -> str:
         """Ключ дедуплікації (upsert on_conflict=content_hash).
 
+        Сама формула живе в hubs.content_hash — одна на всі конвеєри.
+
         Раніше ключ був title+url — і не працював: назву генерує LLM, тож для
         того самого джерела вона щоразу інша («uBoost Career», «uBoost Career —
         державна програма профорієнтації та навичок для молоді», «uBoost Career
@@ -1058,8 +1060,4 @@ URL: {source_url}
         одній адресі справді живе багато різних можливостей (перелік олімпіад
         МОН, каталог послуг Дії). Для них лишаємо title+url.
         """
-        if hubs.is_hub(url):
-            normalized = re.sub(r"[^\w\s]", "", title.lower())
-            normalized = re.sub(r"\s+", " ", normalized).strip()
-            return hashlib.sha256(f"{normalized}|{url}".encode()).hexdigest()[:16]
-        return hashlib.sha256(url.encode()).hexdigest()[:16]
+        return hubs.content_hash(title, url)
