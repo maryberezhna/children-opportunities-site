@@ -156,7 +156,7 @@ const L = {
     ],
 
     priceTitle: 'Скільки коштує',
-    month: '99 грн',
+    month: '119 грн',
     monthPer: ' / місяць',
     year: '999 грн',
     yearPer: ' / рік',
@@ -307,7 +307,7 @@ const L = {
     ],
 
     priceTitle: 'Pricing',
-    month: 'UAH 99',
+    month: 'UAH 119',
     monthPer: ' / month',
     year: 'UAH 999',
     yearPer: ' / year',
@@ -348,13 +348,13 @@ const L = {
 const OPEN = {
   uk: {
     cta: 'Оформити в Telegram',
-    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, потім оплата через WayForPay. Хто був у списку очікування, отримує перший місяць безкоштовно — перше списання 1 грн, бо платіжний сервіс не проводить 0 грн, далі 99 грн/міс.'],
+    faqWhen: ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину, потім оплата через WayForPay. Якщо у вас є промокод, введіть його в боті перед оплатою — ціна на кнопці одразу зміниться.'],
     joinTitle: 'Оформити Dityam+',
     joinText: 'Кілька хвилин у Telegram-боті: питання про дитину, потім оплата. Останні можливості під профіль — у меню бота одразу після оплати.',
   },
   en: {
     cta: 'Subscribe on Telegram',
-    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, then payment through WayForPay. People from the waiting list get their first month free — the first charge is UAH 1, because the payment service cannot process UAH 0, then UAH 99 a month.'],
+    faqWhen: ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, then payment through WayForPay. If you have a promo code, enter it in the bot before paying — the price on the button updates right away.'],
     joinTitle: 'Get Dityam+',
     joinText: 'A few minutes in the Telegram bot: questions about your child, then payment. The latest matching opportunities are in the bot menu right after payment.',
   },
@@ -392,7 +392,7 @@ function jsonLd(t, lang) {
           serviceUrl: 'https://t.me/DityamPlusBot',
         },
         offers: [
-          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '99', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '119', priceCurrency: 'UAH' },
           { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '999', priceCurrency: 'UAH' },
         ],
       },
