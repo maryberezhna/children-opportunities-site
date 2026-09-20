@@ -12,6 +12,7 @@
 // заголовком/тілом і за редіректом на головну з глибокого шляху.
 
 import { createClient } from '@supabase/supabase-js';
+import { stillAhead } from '../lib/links.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -102,13 +103,14 @@ async function checkUrl(url) {
   return { alive: true, reason: `http ${status}` };
 }
 
+
 async function loadActive() {
   const rows = [];
   const PAGE = 1000;
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await supabase
       .from('opportunities')
-      .select('id, slug, title, source_url, link_status, link_failures')
+      .select('id, slug, title, source_url, link_status, link_failures, deadline, event_start_date, event_end_date')
       .eq('status', 'active')
       .not('source_url', 'is', null)
       .order('id')
@@ -125,8 +127,10 @@ async function run() {
   console.log(`Перевіряю ${rows.length} активних лінків (макс ${CONCURRENCY} одночасно)…`);
 
   const now = new Date().toISOString();
-  const results = { ok: 0, suspect: 0, closed: 0, recovered: 0 };
+  const results = { ok: 0, suspect: 0, closed: 0, recovered: 0, heldOpen: 0 };
   const newlyClosed = [];
+  const heldOpen = [];
+  const today = now.slice(0, 10);
   const queue = [...rows];
 
   async function worker() {
@@ -142,7 +146,20 @@ async function run() {
         patch = { link_status: 'ok', link_failures: 0, link_checked_at: now, last_verified_at: now };
       } else {
         const failures = (row.link_failures || 0) + 1;
-        if (failures >= MAX_FAILURES) {
+        if (failures >= MAX_FAILURES && stillAhead(row, today)) {
+          // Подача ще відкрита — закривати не можна. Найімовірніше, сайт
+          // блокує саме нас: перевірка ходить з IP GitHub Actions.
+          results.heldOpen += 1;
+          heldOpen.push({ ...row, reason });
+          patch = {
+            link_status: 'dead',
+            link_failures: failures,
+            link_checked_at: now,
+            admin_comment: `auto: лінк недоступний ${failures} перевірки поспіль (${reason}), `
+              + 'але подача ще попереду — запис лишено активним, перевір адресу вручну',
+            updated_at: now,
+          };
+        } else if (failures >= MAX_FAILURES) {
           results.closed += 1;
           newlyClosed.push({ ...row, reason });
           patch = {
@@ -172,6 +189,22 @@ async function run() {
   console.log(`\nЖивих: ${results.ok} (з них відновилось: ${results.recovered})`);
   console.log(`Підозрілих (${'<'}${MAX_FAILURES} збоїв): ${results.suspect}`);
   console.log(`Закрито як мертві: ${results.closed}`);
+  console.log(`Лишено активними (подача попереду): ${results.heldOpen}`);
+
+  if (heldOpen.length && TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_CHAT_ID && !DRY_RUN) {
+    const text = [
+      `🔗 Лінк не відповідає, але подача ще попереду — ${heldOpen.length} записів лишено активними:`,
+      '',
+      ...heldOpen.slice(0, 20).map((r) => `• ${r.title.slice(0, 60)}\n  ${r.source_url}`),
+      '',
+      'Перевір адресу руками: сайти часто блокують саме IP GitHub Actions.',
+    ].filter(Boolean).join('\n');
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_ADMIN_CHAT_ID, text, disable_web_page_preview: true }),
+    }).catch((e) => console.error('Telegram notify failed:', e.message));
+  }
 
   if (newlyClosed.length && TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_CHAT_ID && !DRY_RUN) {
     const lines = newlyClosed.slice(0, 20).map(
