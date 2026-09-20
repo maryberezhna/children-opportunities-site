@@ -85,8 +85,13 @@ def _pick_keeper(a: dict, b: dict) -> tuple:
 
 def run_sweep(sb_client, max_pairs: int = MAX_PAIRS_PER_RUN) -> dict:
     """Один прохід судді. Повертає статистику; ніколи не кидає виняток —
-    дедуплікація не сміє завалити нічний скрап."""
-    stats = {"candidates": 0, "merged": 0, "distinct": 0, "errors": 0}
+    дедуплікація не сміє завалити нічний скрап.
+
+    Але й мовчати не сміє: у stats["failed"] лягає текст помилки, і головний
+    скрипт робить із цього видимий збій. З 17.09 по 20.09.2026 запит кандидатів
+    вилітав по statement timeout, виняток ковтався тут, воркфлоу лишався
+    зеленим — суддя не бачив жодної пари чотири доби."""
+    stats = {"candidates": 0, "merged": 0, "distinct": 0, "errors": 0, "failed": None}
     try:
         llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         pairs = (sb_client.rpc("find_dup_candidates",
@@ -134,5 +139,6 @@ def run_sweep(sb_client, max_pairs: int = MAX_PAIRS_PER_RUN) -> dict:
                 if stats["errors"] >= 3:
                     break
     except Exception as e:
-        logger.error("dedup sweep failed entirely: %s", e)
+        stats["failed"] = str(e)[:300]
+        logger.error("🚨 дедуплікація не відпрацювала: %s", e)
     return stats

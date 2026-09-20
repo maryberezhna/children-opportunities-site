@@ -488,6 +488,12 @@ async def amain():
     # Етап В: суддя неточних дублів (лише повні запуски — не --only/--skip).
     if not args.only and not args.skip:
         dd = dedup_judge.run_sweep(sb_client)
+        if dd.get("failed"):
+            # Зламана дедуплікація має виглядати зламаною: червоний прогін
+            # помітний, мовчазний нуль у звіті — ні.
+            print(f"\n🚨 Дедуплікація не відпрацювала: {dd['failed']}")
+            results.append({"name": "Дедуплікація (LLM-суддя)", "status": "error",
+                            "count": 0, "error": dd["failed"]})
         if dd["candidates"]:
             print(f"\n🔍 Дедуплікація: {dd['candidates']} пар-кандидатів, "
                   f"злито {dd['merged']}, різних {dd['distinct']}, "
