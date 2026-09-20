@@ -25,6 +25,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
+import { verifyBeforePost } from './verify-before-post.mjs';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -294,7 +295,7 @@ async function sendDailyDigest(dateIso = kyivIso()) {
  */
 async function buildPlannedPost(entry, pool, eligible) {
   if (entry.kind === 'digest') {
-    const items = pickItems(eligible, entry.match, 3);
+    const items = await pickChecked(rankItems(eligible, entry.match), 3, entry.key);
     if (items.length < 2) return null;
     const lines = [`<b>${entry.heading}</b>`];
     if (entry.description) lines.push(`<i>${entry.description}</i>`);
@@ -308,16 +309,16 @@ async function buildPlannedPost(entry, pool, eligible) {
   }
 
   if (entry.kind === 'story') {
-    const [hero] = pickItems(eligible, entry.match, 1);
+    const [hero] = await pickChecked(rankItems(eligible, entry.match), 1, entry.key);
     if (!hero) return null;
     return { lines: [entry.heading, '', ...buildStoryPost(hero, entry.link)], items: [hero], label: `story ${hero.slug}` };
   }
 
   if (entry.kind === 'deadlines') {
-    const items = eligible
+    const soon = eligible
       .filter((r) => r.daysLeft != null && r.daysLeft <= 14)
-      .sort((a, b) => a.daysLeft - b.daysLeft)
-      .slice(0, 5);
+      .sort((a, b) => a.daysLeft - b.daysLeft);
+    const items = await pickChecked(soon, 5, 'дедлайни');
     if (items.length < 2) return null;
     const lines = [`<b>${entry.heading}</b>`, `<i>${entry.description}</i>`, ''];
     items.forEach((r, i) => {
@@ -333,7 +334,8 @@ async function buildPlannedPost(entry, pool, eligible) {
     // Безкоштовність — для всіх ситуацій: рядок нижче обіцяє «за які не треба
     // платити», а фільтри про математику, поїздки й малювання ціну не
     // перевіряли.
-    const picks = shuffle(eligible.filter((r) => r.cost_type === 'free' && situation.filter(r))).slice(0, 3);
+    const picks = await pickChecked(
+      shuffle(eligible.filter((r) => r.cost_type === 'free' && situation.filter(r))), 3, 'ситуація');
     if (picks.length < 2) return null;
     const lines = [`<b>${situation.text}</b>`, ''];
     lines.push(`${picks.length === 3 ? 'Три варіанти' : 'Ось варіанти'}, за які не треба платити:`);
@@ -383,12 +385,34 @@ async function buildPlannedPost(entry, pool, eligible) {
  * забракло. Канал читають заради безкоштовного: за 30 днів до 15.09.2026 на
  * безкоштовні програми припало 410 із 479 кліків зі сторінок можливостей.
  */
-function pickItems(eligible, match, n) {
+function rankItems(eligible, match) {
   const matched = eligible.filter(match);
   const dated = matched.filter((r) => r.daysLeft != null).sort((a, b) => a.daysLeft - b.daysLeft);
   const undated = shuffle(matched.filter((r) => r.daysLeft == null));
   const rank = (r) => (r.cost_type === 'free' ? 0 : 1);
-  return [...dated, ...undated].sort((a, b) => rank(a) - rank(b)).slice(0, n);
+  return [...dated, ...undated].sort((a, b) => rank(a) - rank(b));
+}
+
+/**
+ * Скільки треба — стільки й беремо, але кожну кандидатку спершу перевіряємо на
+ * сторінці джерела (scripts/verify-before-post.mjs). Та, що не пройшла, поста
+ * не скорочує: беремо наступну з черги, кандидатів завжди більше, ніж місць.
+ *
+ * 20.09.2026 у канал пішла «Літня ІТ-школа Star for Life Ukraine»: назву взяли
+ * 12 липня, школа скінчилась 20 серпня, а сторінка джерела стала бібліотекою
+ * курсів. Перевірка лінка бачила 200 і мовчала. Тепер перед постом читається
+ * сама сторінка.
+ */
+async function pickChecked(candidates, need, label) {
+  const chosen = [];
+  let i = 0;
+  while (chosen.length < need && i < candidates.length) {
+    const batch = candidates.slice(i, i + (need - chosen.length));
+    i += batch.length;
+    const { items } = await verifyBeforePost(batch, { label });
+    chosen.push(...items);
+  }
+  return chosen;
 }
 
 /** Відправка в канал. Один шлях для всіх форматів поста. true — пост пішов. */
@@ -531,7 +555,8 @@ async function sendNewOpportunityPost(excludeIds = []) {
     console.error(`New opportunity fetch failed: ${error.message}`);
     return;
   }
-  const r = (data || []).find((x) => !excludeIds.includes(x.id) && !shownInPreview.has(x.id));
+  const fresh = (data || []).filter((x) => !excludeIds.includes(x.id) && !shownInPreview.has(x.id));
+  const [r] = await pickChecked(fresh, 1, 'нова можливість');
   if (!r) {
     console.log('Нової можливості для окремого поста немає.');
     return;

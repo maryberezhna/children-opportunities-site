@@ -37,11 +37,13 @@ check-deadlines закривав і стирав дедлайни, ttl_requeue �
 from __future__ import annotations
 
 import argparse
+import json
 import logging
 import os
 import time
 from collections import Counter
 from datetime import date, timedelta
+from pathlib import Path
 
 import anthropic
 
@@ -335,7 +337,16 @@ def main() -> int:
     ap.add_argument("--bootstrap", action="store_true",
                     default=os.environ.get("BOOTSTRAP", "").lower() == "true")
     ap.add_argument("--limit", type=int, default=DAILY_LIMIT)
+    # Перевірка на вимогу: рівно ці записи, хай коли стоїть їхня планова дата.
+    # Так публікатор у Telegram питає про ті кілька можливостей, які збирається
+    # надіслати: 20.09.2026 у канал пішла «Літня ІТ-школа», бо перевірка лінка
+    # бачила 200, а сторінка джерела вже була про інше.
+    ap.add_argument("--ids", default=os.environ.get("LIFECYCLE_IDS", ""),
+                    help="id через кому — перевірити саме їх, поза розкладом")
+    ap.add_argument("--json-out", default=os.environ.get("LIFECYCLE_JSON_OUT", ""),
+                    help="куди записати підсумок перевірки у форматі JSON")
     args = ap.parse_args()
+    only_ids = [i.strip() for i in (args.ids or "").split(",") if i.strip()]
     today = date.today()
     db = get_client()
     dry = " (СУХИЙ ПРОГІН)" if args.dry_run else ""
@@ -344,9 +355,11 @@ def main() -> int:
         if not args.dry_run:
             db.table("opportunities").update(patch).eq("id", row_id).execute()
 
-    # A ────────────────────────────────────────────────────────────────────
     iso = today.isoformat()
-    expired = _load(db, lambda: db.table("opportunities").select(SELECT)
+    verdicts: dict[str, dict] = {}
+
+    # A ────────────────────────────────────────────────────────────────────
+    expired = [] if only_ids else _load(db, lambda: db.table("opportunities").select(SELECT)
                     .eq("status", "active").is_("canonical_slug", "null")
                     .or_(f"deadline.lt.{iso},event_end_date.lt.{iso},event_start_date.lt.{iso},"
                          f"results_date.lt.{iso}"))
@@ -363,7 +376,7 @@ def main() -> int:
     logger.info("  закрито: %d %s", sum(closed.values()), dict(closed))
 
     # C ────────────────────────────────────────────────────────────────────
-    if args.bootstrap:
+    if args.bootstrap and not only_ids:
         rows = _load(db, lambda: db.table("opportunities").select(SELECT)
                      .in_("status", ["active", "closed"]).is_("canonical_slug", "null")
                      .is_("recheck_at", "null"))
@@ -384,12 +397,17 @@ def main() -> int:
                     busiest[0] if busiest else "—")
 
     # B ────────────────────────────────────────────────────────────────────
-    due = (db.table("opportunities").select(SELECT)
-           .in_("status", ["active", "closed"]).is_("canonical_slug", "null")
-           .lte("recheck_at", iso).order("recheck_at").limit(args.limit)
-           .execute().data or [])
-    logger.info("\nB. Планова перевірка: %d записів на сьогодні (ліміт %d)%s",
-                len(due), args.limit, dry)
+    if only_ids:
+        due = (db.table("opportunities").select(SELECT)
+               .in_("id", only_ids).execute().data or [])
+        logger.info("\nB. Перевірка перед публікацією: %d записів%s", len(due), dry)
+    else:
+        due = (db.table("opportunities").select(SELECT)
+               .in_("status", ["active", "closed"]).is_("canonical_slug", "null")
+               .lte("recheck_at", iso).order("recheck_at").limit(args.limit)
+               .execute().data or [])
+        logger.info("\nB. Планова перевірка: %d записів на сьогодні (ліміт %d)%s",
+                    len(due), args.limit, dry)
     if due:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             logger.error("Немає ANTHROPIC_API_KEY")
@@ -407,6 +425,8 @@ def main() -> int:
                 logger.info("  ? %s — %s, ще раз %s", (row["title"] or "")[:60], whence,
                             patch["recheck_at"])
                 write(row["id"], patch)
+                verdicts[row["id"]] = {"state": "unreadable", "why": whence,
+                                       "status": row.get("status")}
                 continue
             out = _ask(ai, row, page, today)
             patch = decide_check(row, out, page, today)
@@ -415,11 +435,20 @@ def main() -> int:
             logger.info("  • %s [%s → %s] %s", (row["title"] or "")[:55], row["status"],
                         out.get("state"), changes)
             write(row["id"], patch)
+            verdicts[row["id"]] = {"state": out.get("state") or "unclear",
+                                   "status": patch.get("status", row.get("status")),
+                                   "evidence": (out.get("evidence") or "")[:200]}
         logger.info("  підсумок: %s", dict(states))
         if manual:
             logger.info("\n  ⚠️ Перевірити вручну — сайт не пускає автоматичну перевірку:")
             for r in manual:
                 logger.info("    • %s — %s", (r["title"] or "")[:70], r.get("source_url"))
+
+    if args.json_out:
+        # Публікатор читає саме цей файл: запис без вердикту «open» у канал не йде.
+        Path(args.json_out).write_text(json.dumps(verdicts, ensure_ascii=False),
+                                       encoding="utf-8")
+        logger.info("Вердикти записано: %s (%d)", args.json_out, len(verdicts))
 
     if args.dry_run:
         logger.info("\nСУХИЙ ПРОГІН — у базу нічого не записано.")

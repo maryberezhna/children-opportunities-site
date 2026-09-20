@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { verifyBeforePost } from './verify-before-post.mjs';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -334,7 +335,13 @@ for (const r of postedRows || []) {
 }
 
 // Diversify the batch so the channel doesn't get flooded with same-type posts.
-const items = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE, lastPosted);
+// Перед відправкою читаємо сторінку джерела кожної обраної можливості
+// (scripts/verify-before-post.mjs): активний статус і код 200 не означають,
+// що набір іще триває. Не пройшла перевірку — не публікуємо.
+const picked = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE, lastPosted);
+const { items } = DRY_RUN
+  ? { items: picked }
+  : await verifyBeforePost(picked, { label: 'post-to-telegram' });
 
 if (items.length === 0) {
   console.log('No new opportunities to post.');
