@@ -41,6 +41,10 @@ async function count(build) {
 
 const base = () => supabase.from('opportunities');
 
+// Дублі (заповнений canonical_slug) у зведення не беремо: вони віддають 301
+// на оригінал, тож у переліку роботи це зайвий рядок і зайва одиниця в
+// лічильнику. Той самий фільтр, що й на сайті — його стереже prebuild
+// (scripts/check-catalogue-queries.mjs).
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
 ] = await Promise.all([
@@ -52,11 +56,12 @@ const [
     .order('deadline', { ascending: true }).limit(5)),
   // Лінк не відповідає, але подача ще попереду: найімовірніше, сайт блокує
   // саме IP GitHub Actions (verify-links лишає такий запис активним).
-  rows(base().select('title, source_url').eq('status', 'active').eq('link_status', 'dead').limit(5)),
+  rows(base().select('title, source_url').eq('status', 'active').is('canonical_slug', null)
+    .eq('link_status', 'dead').limit(5)),
   count(base().select('id', { count: 'exact', head: true })
-    .eq('status', 'active').lt('recheck_at', today)),
+    .eq('status', 'active').is('canonical_slug', null).lt('recheck_at', today)),
   count(base().select('id', { count: 'exact', head: true })
-    .eq('status', 'active').eq('recheck_at', today)),
+    .eq('status', 'active').is('canonical_slug', null).eq('recheck_at', today)),
   count(base().select('id', { count: 'exact', head: true })
     .eq('status', 'closed').gte('updated_at', `${inDays(-1)}T00:00:00Z`)),
   count(supabase.from('opportunity_suggestions').select('id', { count: 'exact', head: true })
