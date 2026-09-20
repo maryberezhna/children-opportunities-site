@@ -3,6 +3,15 @@ import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
 import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
+import { PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+
+// Ціни й вигода рахуються з того самого джерела, що й рахунок у боті
+// (WAYFORPAY_AMOUNT / WAYFORPAY_AMOUNT_YEAR), а не вписані в текст руками.
+// 20.09.2026 сторінка місяцями казала «вигідніше на 16%»: число рахувалось
+// від старих 99 грн і після переходу на 119 грн перестало бути правдою —
+// сайт применшував власну вигоду майже вдвічі.
+const PER_MONTH = Math.round(PRICE_YEAR / 12);
+const YEAR_SAVING = Math.round((1 - PRICE_YEAR / (PRICE * 12)) * 100);
 import { opportunitiesWord } from '@/lib/plural';
 
 /**
@@ -165,13 +174,12 @@ const L = {
     ],
 
     priceTitle: 'Скільки коштує',
-    month: '119 грн',
+    month: `${PRICE} грн`,
     monthPer: ' / місяць',
-    year: '999 грн',
+    year: `${PRICE_YEAR} грн`,
     yearPer: ' / рік',
-    yearNote: '≈ 83 грн на місяць',
-    // 999 грн проти 12 × 99 = 1 188 грн → на 16% менше. Міняючи ціну — перерахувати.
-    yearRibbon: 'вигідніше на 16%',
+    yearNote: `≈ ${PER_MONTH} грн на місяць`,
+    yearRibbon: `вигідніше на ${YEAR_SAVING}%`,
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
@@ -321,12 +329,12 @@ const L = {
     ],
 
     priceTitle: 'Pricing',
-    month: 'UAH 119',
+    month: `UAH ${PRICE}`,
     monthPer: ' / month',
-    year: 'UAH 999',
+    year: `UAH ${PRICE_YEAR}`,
     yearPer: ' / year',
-    yearNote: '≈ UAH 83 a month',
-    yearRibbon: '16% cheaper',
+    yearNote: `≈ UAH ${PER_MONTH} a month`,
+    yearRibbon: `${YEAR_SAVING}% cheaper`,
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
