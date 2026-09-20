@@ -5,6 +5,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
 import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
+import { trackConversion } from '@/lib/track';
 
 /**
  * Картки підбірки за макетом design_handoff_dityam_pidbirka (README, п. 4–5):
@@ -154,7 +155,15 @@ export default function TopicCards({
             <h3 className="tp-promo-title">{promo.title}</h3>
             <p className="tp-promo-text">{promo.text}</p>
           </div>
-          <Link href={promo.href} className="tp-btn tp-btn-white">{promo.cta}</Link>
+          {/* Пряме посилання в Telegram — не Link: це зовнішня адреса, і
+              клік треба порахувати як конверсію. */}
+          <a
+            href={promo.href}
+            className="tp-btn tp-btn-white"
+            onClick={() => trackConversion('plus_waitlist_tg_click', { event_label: promo.source || 'topic_promo' })}
+          >
+            {promo.cta}
+          </a>
         </aside>,
       );
     }
