@@ -1,7 +1,7 @@
 -- Промокоди Dityam+ (рішення Марії 19.09.2026).
 -- Знижка застосовується ДО створення інвойса у WayForPay: людина вводить код
 -- у боті й одразу бачить нову ціну на кнопці оплати.
--- Код `first`: перший місяць 1 грн замість 99, перший рік 499 замість 999.
+-- Код `first`: перший місяць 1 грн замість 119, перший рік 799 замість 999.
 -- Знижка діє лише на ПЕРШИЙ платіж — поновлення завжди за повною ціною.
 
 create table if not exists plus_promo_codes (
@@ -41,5 +41,5 @@ alter table digest_subscribers add column if not exists promo_code text;
 comment on column digest_subscribers.promo_code is 'Промокод, введений перед оплатою (lib/promo.js).';
 
 insert into plus_promo_codes (code, first_amount, yearly_amount, note)
-values ('first', 1, 499, 'Перші користувачі: місяць 1 грн замість 99, рік 499 замість 999 (−50%)')
+values ('first', 1, 799, 'Перші користувачі: місяць 1 грн замість 119, рік 799 замість 999')
 on conflict (code) do nothing;
