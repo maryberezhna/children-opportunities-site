@@ -101,6 +101,131 @@ def match_themes(text: str) -> set:
     low = (text or "").lower()
     return {k for k, kws in THEME_CATEGORIES.items() if any(kw in low for kw in kws)}
 
+# --- Категорії з джерела (opportunities.categories) → наші теми ---
+#
+# Поле categories заповнює модель при екстракції, словника там немає: у базі
+# ~500 різних значень трьома мовами й у різному регістрі — «танець», «танці»,
+# «dance», «Танець». Брати їх як теми не можна, викидати шкода: саме вони
+# описують запис, назва якого не каже нічого («Зразковий колектив „Дивосвіт“»).
+#
+# Тому два проходи: ключові слова по тексту категорій (ловлять українські
+# написання) і ця мапа — для англомовних та абстрактних значень.
+#
+# Дзеркало lib/themes.js (CATEGORY_THEMES) — правити обидва файли.
+CATEGORY_THEMES = {
+    "arts": [
+        "arts", "art", "creative", "creativity", "crafts", "craft", "handicraft",
+        "handicrafts", "handcrafts", "needlework", "music", "musik", "singing", "vocal",
+        "choir", "dance", "design", "photography", "animation", "film", "video", "visual arts",
+        "performing arts", "artistic creativity", "ceramics", "drawing", "sewing", "acting",
+        "modeling", "circus arts", "folk art", "traditional crafts", "traditional arts",
+        "folk instruments", "clothing", "мистецтво", "творчість", "музика", "танець",
+        "рукоділля", "ремесло", "ремесла", "кераміка", "спів", "хор", "мода", "кіно", "медіа",
+    ],
+    "sport": [
+        "sport", "sports", "fitness", "swimming", "football", "chess", "climbing", "cycling",
+        "triathlon", "martial arts", "physical activity", "roller skating", "фітнес",
+        "бойові мистецтва", "карате", "дзюдо", "бокс", "боротьба", "акробатика", "самбо",
+        "хортинг", "тхеквондо", "таеквон до", "кікбоксинг", "велоспорт", "тенніс", "бадмінтон",
+        "йога", "аеробіка", "фізкультура", "фізична культура", "фізична підготовка",
+        "фізичний розвиток", "туризм", "спорт", "стрільба", "автоспорт", "верхова їзда",
+        "кінна справа", "орієнтування", "силовий спорт", "волейбол", "фізична активність",
+    ],
+    "stem": [
+        "stem", "science", "sciences", "technology", "tech", "it", "digital", "digital skills",
+        "digital literacy", "programming", "robotics", "computer science", "engineering",
+        "mathematics", "physics", "chemistry", "biology", "ai", "game development",
+        "web development", "3d design", "innovation", "research", "наука", "науки",
+        "технології", "техніка", "математика", "хімія", "біологія", "фізика",
+        "штучний інтелект", "кібербезпека", "радіотехніка", "конструювання", "моделювання",
+        "дослідження", "технічна творчість", "веб дизайн",
+    ],
+    "languages": [
+        "languages", "language", "language learning", "english", "speaking",
+        "ukrainian language", "мови", "мова", "англійська", "іноземна мова", "іноземні мови",
+        "мовні курси", "мовна практика", "лінгвістика", "мовлення", "розвиток мовлення",
+        "культура мовлення",
+    ],
+    "soft_skills": [
+        "leadership", "teamwork", "team building", "communication", "communications",
+        "debates", "soft skills", "life skills", "skills", "skills development",
+        "skill development", "personal development", "self development", "self expression",
+        "etiquette", "лідерство", "комунікація", "навички", "саморозвиток", "самопізнання",
+        "самоорганізація", "командна робота", "соціальні навички", "навички спілкування",
+        "комунікативні навички", "media literacy", "медіаграмотність", "розвиток навичок",
+        "переговори", "дипломатія",
+    ],
+    "international": [
+        "international", "eu", "erasmus", "erasmus+", "exchange", "youth exchange",
+        "volunteer exchange", "mobility", "єс", "еразмус+", "обміни", "молодіжний обмін",
+        "молодіжні обміни", "міжнародна мобільність", "міжнародна програма",
+        "міжнародні змагання",
+    ],
+    "nature": [
+        "nature", "environment", "ecology", "animals", "природа", "природознавство",
+        "натуралістика", "квітникарство", "флористика", "ветеринарія", "конярство",
+    ],
+    "health": [
+        "health", "psychology", "medical", "mental health", "rehabilitation", "wellness",
+        "care", "safety", "здоров'я", "безпека", "логопедія", "іппотерапія", "арт терапія",
+        "адаптивна фізкультура", "інклюзія",
+    ],
+    "history": [
+        "history", "culture", "cultural education", "heritage", "folk art",
+        "traditional skills", "literature", "writing", "humanities", "історія", "культура",
+        "традиції", "українська культура", "народне мистецтво", "література", "письменництво",
+        "поезія", "писанкарство", "релігія",
+    ],
+    "business": [
+        "business", "entrepreneurship", "economics", "finance", "marketing", "startups",
+        "бізнес", "економіка", "підприємництво",
+    ],
+    "career": [
+        "vocational", "vocational training", "vocational guidance", "professional",
+        "career development", "paid work", "profession", "профорієнтація",
+    ],
+    "contests": [
+        "competition", "competitions", "olympiad", "olympiad preparation", "конкурс",
+        "олімпіади", "дебати",
+    ],
+    "camps": [
+        "camp", "summer", "recreation", "оздоровлення", "рекреація", "літні курси",
+    ],
+    "online": [
+        "online", "онлайн", "дистанційно", "video lessons",
+    ],
+    "nonformal": [
+        "club", "clubs", "hobby", "гурток", "гуртки", "дитячі гуртки", "клуб", "дозвілля",
+        "позашкільна освіта", "скаутизм", "скаутинг", "скаут", "волонтерство", "volunteering",
+        "volunteer", "community service", "civic engagement", "civic education",
+        "громадянська освіта", "патріотичне виховання", "громадська активність",
+    ],
+}
+
+
+def normalize_category(value) -> str:
+    low = str(value or "").lower()
+    for ch in ("_", "-"):
+        low = low.replace(ch, " ")
+    return " ".join(low.split())
+
+
+CATEGORY_INDEX = {}
+for _theme, _values in CATEGORY_THEMES.items():
+    for _v in _values:
+        CATEGORY_INDEX.setdefault(normalize_category(_v), set()).add(_theme)
+
+
+def themes_of(o: dict) -> set:
+    """Теми можливості: ключові слова по назві, опису Й категоріях, плюс мапа
+    категорій. Чим менше записів лишається без теми, тим менше можливостей не
+    доходить до родини: вподобання дитини звіряються саме з темами."""
+    cats = o.get("categories") or []
+    out = match_themes(f"{o.get('title') or ''} {o.get('summary') or ''} {' '.join(cats)}")
+    for c in cats:
+        out |= CATEGORY_INDEX.get(normalize_category(c), set())
+    return out
+
 
 def age_overlaps(a_from, a_to, bands) -> bool:
     if not bands:
@@ -348,7 +473,8 @@ def main():
         page = client.table("opportunities").select(
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
             "event_start_date, event_end_date, timing_kind, "
-            "opportunity_type, format, cities, countries, is_international, child_needs"
+            "opportunity_type, format, cities, countries, is_international, child_needs, "
+            "categories"
         ).eq("status", "active").is_("canonical_slug", "null") \
             .order("id").range(start, start + 999).execute().data or []
         opps.extend(page)
@@ -366,7 +492,7 @@ def main():
     dropped = before - len(opps)
 
     for o in opps:
-        o["_themes"] = match_themes(f"{o['title']} {o.get('summary') or ''}")
+        o["_themes"] = themes_of(o)
         o["_created"] = parse_ts(o.get("created_at"))
     logger.info(
         "Loaded %d active opportunities (%d skipped — дедлайн ближче ніж за %d дні)",
