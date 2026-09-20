@@ -50,6 +50,14 @@ class ClubDefault(unittest.TestCase):
         self.assertEqual(data["recurrence"], "ongoing")
         self.assertIn("перевірити", data["admin_comment"])
         self.assertNotEqual(data.get("status"), "draft")
+        # Здогад позначений у базі, а не лише в коментарі: за ним запис
+        # перевіряється за 30 днів і не вважається вічно відкритим.
+        self.assertTrue(data["timing_assumed"])
+
+    def test_kind_from_text_is_not_an_assumption(self):
+        data = _sanitize(self.base(timing_kind="permanent"))
+        self.assertEqual(data["timing_kind"], "permanent")
+        self.assertFalse(data.get("timing_assumed"))
 
     def test_periodic_club_from_text_is_kept(self):
         data = _sanitize(self.base(timing_kind="periodic", season_months=[9]))

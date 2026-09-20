@@ -23,7 +23,7 @@ KEEP_IF_KNOWN = (
     "deadline", "event_start_date", "event_end_date", "recurrence",
     "timing_kind", "season_months", "details", "apply_url", "price_note",
 )
-EXISTING_FIELDS = "id, verified_at, status, " + ", ".join(KEEP_IF_KNOWN)
+EXISTING_FIELDS = "id, verified_at, status, timing_assumed, " + ", ".join(KEEP_IF_KNOWN)
 
 
 def merge_patch(existing: dict, record: dict) -> dict:
@@ -42,6 +42,12 @@ def merge_patch(existing: dict, record: dict) -> dict:
             patch.pop(key)
     if "status" in patch and patch["status"] != "closed" and existing.get("status"):
         patch.pop("status")
+    # Здогад про вид у часі можна лише зняти. Якщо планова перевірка вже
+    # підтвердила постійність цитатою, повторна розмітка не сміє знову
+    # назвати її припущенням — інакше запис вічно ходив би по колу.
+    if patch.get("timing_assumed") and existing.get("timing_assumed") is False \
+            and existing.get("timing_kind"):
+        patch.pop("timing_assumed")
     return patch
 
 

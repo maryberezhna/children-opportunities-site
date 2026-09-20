@@ -21,7 +21,8 @@ def row(**over):
     base = {"id": "r1", "title": "t", "status": "active", "opportunity_type": "competition",
             "timing_kind": None, "season_months": None, "deadline": None,
             "event_start_date": None, "event_end_date": None, "recheck_at": None,
-            "verified_at": None, "admin_comment": None, "source_url": "https://x.org/p"}
+            "verified_at": None, "admin_comment": None, "source_url": "https://x.org/p",
+            "timing_assumed": False}
     base.update(over)
     return base
 
@@ -88,6 +89,24 @@ class PlannedCheck(unittest.TestCase):
         self.assertEqual(patch["status"], "active")
         self.assertEqual(patch["recheck_at"], "2027-01-15")
 
+    def test_assumed_permanent_is_checked_again_in_a_month(self):
+        # «Набір постійний» за замовчуванням — здогад, а не факт зі сторінки:
+        # 610 гуртків станом на 20.09.2026 тримаються саме на ньому.
+        r = row(timing_kind="permanent", opportunity_type="club", timing_assumed=True)
+        quote = "Гурток робототехніки для дітей 10–16 років."
+        patch = decide_check(r, {"state": "open", "evidence": quote}, quote, TODAY)
+        self.assertEqual(patch["status"], "active")
+        self.assertEqual(patch["recheck_at"], "2026-10-17")
+
+    def test_quote_turns_assumption_into_fact(self):
+        r = row(timing_kind="permanent", opportunity_type="club", timing_assumed=True)
+        quote = "Запис до гуртка відкритий протягом усього року."
+        patch = decide_check(r, {"state": "open", "evidence": quote,
+                                 "timing_kind": "permanent",
+                                 "kind_evidence": quote}, quote, TODAY)
+        self.assertFalse(patch["timing_assumed"])
+        self.assertEqual(patch["recheck_at"], "2027-01-15")
+
     def test_gone_goes_to_moderator(self):
         patch = decide_check(row(), {"state": "gone", "evidence": "Проєкт завершено назавжди.",
                                      "timing_kind": "unknown"}, "Проєкт завершено назавжди.", TODAY)
@@ -142,6 +161,10 @@ class Bootstrap(unittest.TestCase):
     def test_permanent_spread_over_four_months(self):
         when = plan_bootstrap(row(timing_kind="permanent"), TODAY)
         self.assertTrue("2026-09-18" <= when <= "2027-01-15")
+
+    def test_assumed_permanent_spread_over_one_month(self):
+        when = plan_bootstrap(row(timing_kind="permanent", timing_assumed=True), TODAY)
+        self.assertTrue("2026-09-18" <= when <= "2026-10-17")
 
     def test_dated_active_waits_for_close_by_date(self):
         self.assertIsNone(plan_bootstrap(row(deadline="2026-10-01"), TODAY))
