@@ -220,7 +220,7 @@ def process_pending(normalizer, sb_client, limit=500):
     # Налаштування джерел читаємо один раз на прогін, не на кожен запис.
     source_configs = get_source_configs(sb_client)
 
-    stats = {"queued": len(queue), "processed": 0, "rejected": 0,
+    stats = {"queued": len(queue), "processed": 0, "rejected": 0, "review": 0,
              "retry": 0, "failed": 0, "closed": 0, "drafts": 0, "skipped_dup": 0,
              "out_of_time": 0, "api_limit": 0}
     if not queue:
@@ -255,7 +255,7 @@ def process_pending(normalizer, sb_client, limit=500):
         if dup:
             raw_store.mark(sb_client, item["id"], "rejected",
                            error=f"duplicate: вже є {dup['id']}",
-                           opportunity_id=dup["id"])
+                           opportunity_id=dup["id"], reason_code="duplicate")
             stats["skipped_dup"] += 1
             when = check_on_change(dup, datetime.now(timezone.utc).date())
             if when:
@@ -298,9 +298,17 @@ def process_pending(normalizer, sb_client, limit=500):
             # неможливо ні довести, що фільтр працює, ні побачити, коли він
             # почне різати живе.
             reason = getattr(normalizer, "last_reject_reason", None)
-            raw_store.mark(sb_client, item["id"], "rejected",
-                           error=reason or "відхилено екстракцією (причина не вказана)")
-            stats["rejected"] += 1
+            code = getattr(normalizer, "last_reject_code", None) or "unknown"
+            conf = getattr(normalizer, "last_confidence", None)
+            # Сіра смуга 0.25–0.55: не «ні», а «не впевнений». Нижче — справжній
+            # шум, вище — модель і так пропускає. Такий запис лягає в карантин
+            # (status='review') і чекає людини, а не зникає мовчки: саме там
+            # губилось рідкісне закордонне, якого мало в тексті сторінки.
+            verdict = raw_store.triage_status(code, conf)
+            raw_store.mark(sb_client, item["id"], verdict,
+                           error=reason or "відхилено екстракцією (причина не вказана)",
+                           confidence=conf, reason_code=code)
+            stats[verdict if verdict == "review" else "rejected"] += 1
             continue
 
         # Вхідні ворота для НОВИХ записів: мертвий лінк не публікується.
@@ -314,7 +322,7 @@ def process_pending(normalizer, sb_client, limit=500):
             alive, reason = link_check.is_alive(normalized.get("source_url", ""))
             if not alive:
                 raw_store.mark(sb_client, item["id"], "rejected",
-                               error=f"dead link: {reason}")
+                               error=f"dead link: {reason}", reason_code="dead_link")
                 stats["rejected"] += 1
                 print(f"  🔗✗ мертвий лінк ({reason}): "
                       f"{normalized.get('source_url', '')[:80]}")
@@ -358,7 +366,8 @@ def process_pending(normalizer, sb_client, limit=500):
     print(f"✅ Екстракція: {stats['processed']} збережено "
           f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
           f"{stats['skipped_dup']} пропущено до LLM (вже є), "
-          f"{stats['rejected']} відхилено, {stats['retry']} на повтор, "
+          f"{stats['rejected']} відхилено, {stats['review']} у карантин, "
+          f"{stats['retry']} на повтор, "
           f"{stats['failed']} вичерпали спроби")
     return stats
 
