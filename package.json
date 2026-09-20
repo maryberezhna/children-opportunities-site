@@ -7,7 +7,6 @@
     "prebuild": "node scripts/check-catalogue-queries.mjs",
     "build": "next build",
     "start": "next start",
-    "scrape": "node scrapers/run.mjs",
     "populate-cities": "node scripts/populate-cities.mjs",
     "populate-cities:dry": "DRY_RUN=true node scripts/populate-cities.mjs",
     "test": "node --test tests/*.test.mjs"
