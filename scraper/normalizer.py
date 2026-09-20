@@ -11,7 +11,7 @@ from slugify import slugify
 
 import hubs
 from canonical import canonical_url
-from timing import clean_kind, clean_months
+from timing import PERIODIC_BY_DEFINITION, clean_kind, clean_months, has_repeat_signal
 
 logger = logging.getLogger(__name__)
 
@@ -732,6 +732,38 @@ EXTRACT_TOOL = {
 _SNAP_BACKSTOP_DAYS = 180
 
 
+
+def strip_invented_repeat(data: dict, haystack: str) -> dict:
+    """«Періодична» і «щороку» — це факт зі сторінки, а не здогад.
+
+    20.09.2026: курс AI Kids Academy — один набір на три місяці — приїхав як
+    periodic + recurrence=annual, хоч у статті немає ні слова про повторення.
+    Вид у шляху екстракції ніхто не звіряв із текстом (на відміну від
+    classify_timing.py), тож модель могла пообіцяти читачеві «щороку» там, де
+    набір один.
+
+    Знімаємо обидва поля — запис піде людині, бо без періодичності в нього не
+    лишається чим закритись. Це дорожче за тихий здогад, але здогад тут коштує
+    довіри: родина чекатиме наступного року, якого не буде.
+    """
+    if data.get("opportunity_type") in PERIODIC_BY_DEFINITION:
+        return data
+    if has_repeat_signal(haystack):
+        return data
+    stripped = []
+    if data.get("timing_kind") == "periodic":
+        data["timing_kind"] = None
+        stripped.append("вид «періодична»")
+    if data.get("recurrence") == "annual":
+        data["recurrence"] = None
+        stripped.append("recurrence=annual")
+    if stripped:
+        note = ("знято " + " і ".join(stripped)
+                + ": у тексті немає ознак повторюваності — перевірити")
+        data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+    return data
+
+
 def published_date(raw_text: str) -> str | None:
     """Дата публікації з першого рядка сирця (raw_store.with_published)."""
     m = re.match(r"^Дата публікації: (\d{4}-\d{2}-\d{2})", raw_text or "")
@@ -877,6 +909,8 @@ URL: {source_url}
             body = re.sub(r"^Дата публікації: \d{4}-\d{2}-\d{2}\s*", "", raw_text or "")
             data = _fix_invented_years(
                 data, f"{body} {raw_title or ''}", today_iso, published_iso)
+
+            data = strip_invented_repeat(data, f"{body} {raw_title or ''}")
 
             # Дати в минулому — запобіжник, незалежний від LLM: подія, що вже
             # відбулась, або дедлайн, що минув, не сміють дати active-запис
