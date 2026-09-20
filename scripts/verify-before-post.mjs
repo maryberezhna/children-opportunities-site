@@ -57,20 +57,38 @@ function runLifecycle(ids, jsonOut) {
   });
 }
 
+// «Не зрозуміло» і «сторінка не прочиталась» — не однакові для всіх записів.
+// Для табору з датами це причина не публікувати. Для вічної платформи —
+// Khan Academy, CS50, Scratch — відкривати нічого: запис без жодної дати й із
+// видом «постійна» не може «завершитись», а сторінки таких сайтів часто не
+// пускають робота. Інакше ворота вирізали б із каналу саме те, що завжди
+// доступне (перший прогін 20.09.2026: 11 відсіяних із 15, майже всі — платформи).
+const UNKNOWN = new Set(['unclear', 'unreadable']);
+const evergreen = (v) => v.kind === 'permanent' && !v.has_dates;
+
 /**
  * Розбір вердиктів. Чиста функція — під тести.
  *
- * У канал іде лише те, що перевірка назвала відкритим просто зараз і що
- * лишилось активним після її правок. Немає вердикту (сторінка не відкрилась,
- * джерело не пускає робота) — теж не йде: мовчання не доказ.
+ * Правила:
+ *   open + запис лишився активним          → публікуємо;
+ *   ended / gone / upcoming                → ні, сезон не триває;
+ *   не зрозуміло, але вічна платформа      → публікуємо;
+ *   не зрозуміло в усьому іншому           → ні;
+ *   вердикту немає взагалі                 → ні, мовчання не доказ.
  */
 export function keepOpen(items, verdicts) {
   const kept = [];
   const dropped = [];
   for (const row of items) {
     const v = (verdicts || {})[row.id];
-    if (v && v.state === 'open' && v.status === 'active') kept.push(row);
-    else dropped.push({ row, why: v ? `${v.state}/${v.status || '—'}` : 'без вердикту' });
+    if (!v) {
+      dropped.push({ row, why: 'без вердикту' });
+      continue;
+    }
+    const ok = v.status === 'active'
+      && (v.state === 'open' || (UNKNOWN.has(v.state) && evergreen(v)));
+    if (ok) kept.push(row);
+    else dropped.push({ row, why: `${v.state}/${v.status || '—'}` });
   }
   return { kept, dropped };
 }
