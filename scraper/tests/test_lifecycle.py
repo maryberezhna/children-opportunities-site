@@ -179,3 +179,23 @@ class Bootstrap(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InvariantEveryActiveHasAnEnding(unittest.TestCase):
+    """20.09.2026, ревізія Марії: активний запис мусить мати або майбутню
+    дату, якою закриється сам, або дату планової перевірки. Інакше він не
+    протухне ніколи. Блок C у lifecycle тепер бігає щодня саме заради цього."""
+
+    def test_dateless_active_always_gets_a_check(self):
+        for kind in (None, "permanent", "periodic", "one_time"):
+            with self.subTest(kind=kind):
+                when = plan_bootstrap(row(timing_kind=kind), TODAY)
+                self.assertIsNotNone(when, f"вид {kind} лишився без перевірки")
+                self.assertGreater(when, TODAY.isoformat())
+
+    def test_record_with_future_date_needs_no_check(self):
+        # Такий закриється сам — блоком A, за датою.
+        self.assertIsNone(plan_bootstrap(row(deadline="2026-12-01"), TODAY))
+
+    def test_existing_check_is_not_overwritten(self):
+        self.assertIsNone(plan_bootstrap(row(recheck_at="2026-10-01"), TODAY))

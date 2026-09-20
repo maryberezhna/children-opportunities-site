@@ -359,8 +359,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true",
                     default=os.environ.get("DRY_RUN", "").lower() == "true")
+    # Лишений для сумісності з воркфлоу: блок C тепер бігає щодня сам.
     ap.add_argument("--bootstrap", action="store_true",
-                    default=os.environ.get("BOOTSTRAP", "").lower() == "true")
+                    default=os.environ.get("BOOTSTRAP", "").lower() == "true",
+                    help="нічого не змінює: розклад для записів без дати ставиться щодня")
     ap.add_argument("--limit", type=int, default=DAILY_LIMIT)
     # Перевірка на вимогу: рівно ці записи, хай коли стоїть їхня планова дата.
     # Так публікатор у Telegram питає про ті кілька можливостей, які збирається
@@ -401,13 +403,22 @@ def main() -> int:
     logger.info("  закрито: %d %s", sum(closed.values()), dict(closed))
 
     # C ────────────────────────────────────────────────────────────────────
-    if args.bootstrap and not only_ids:
+    # Інваріант (20.09.2026): активний запис мусить мати або майбутню дату,
+    # якою закриється сам, або дату планової перевірки. Інакше він не протухне
+    # ніколи — просто висітиме, поки хтось випадково не гляне.
+    #
+    # Раніше цей блок бігав лише вручну (BOOTSTRAP=true), тож кожен новий шлях
+    # — агент, пропозиція з форми, ручне додавання — міг лишити запис без
+    # жодної дати. Ревізія 20.09.2026 знайшла такий один («Гуртки Вінницького
+    # палацу»): мало, але це лише питання часу. Прохід дешевий — один запит до
+    # бази, без мережі й без моделі, — тож робимо його щодня.
+    if not only_ids:
         rows = _load(db, lambda: db.table("opportunities").select(SELECT)
                      .in_("status", ["active", "closed"]).is_("canonical_slug", "null")
                      .is_("recheck_at", "null"))
         plan = Counter()
         by_day = Counter()
-        logger.info("\nC. Перший розклад перевірок%s", dry)
+        logger.info("\nC. Записи без планової перевірки%s", dry)
         for row in rows:
             when = plan_bootstrap(row, today)
             if not when:
