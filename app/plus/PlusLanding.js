@@ -38,7 +38,6 @@ const L = {
     lead: 'Розкажіть про кожну дитину: вік, вподобання, місто. Щодня ми перебираємо понад тисячу записів і надсилаємо вам у Telegram лише те, що підходить, а про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
     cta: 'Стати в список першим',
     how: 'Як це працює ↓',
-    priceHint: '99 грн/міс · 999 грн/рік',
     stairsLabel: 'Приклад шляху',
     stairsCaption: 'Можливий шлях для дитини 14 років, яка любить біологію. Усі чотири програми є на платформі просто зараз.',
     stairs: [
@@ -208,7 +207,6 @@ const L = {
     lead: 'Tell us about each child: age, interests, city. Every day we go through more than a thousand listings and send you only what fits on Telegram, and we remind you about the deadline while there is still time to apply.',
     cta: 'Join the list first',
     how: 'How it works ↓',
-    priceHint: 'UAH 99/month · UAH 999/year',
     stairsLabel: 'An example path',
     stairsCaption: 'A possible path for a 14-year-old who loves biology. All four programmes are on the platform right now.',
     stairs: [
@@ -463,7 +461,6 @@ export default function PlusLanding({ lang = 'uk', total = null }) {
               <a href={PLUS_SALES_OPEN ? plusBotUrl(`plus_${lang}`) : PLUS_WAITLIST_URL} className="pl-btn">{t.cta}</a>
               <a href="#how" className="pl-link">{t.how}</a>
             </div>
-            <p className="pl-price-hint">{t.priceHint}</p>
           </div>
 
           <figure className="pl-stairs-fig">

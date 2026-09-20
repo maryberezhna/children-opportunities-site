@@ -120,13 +120,6 @@
 
 .pl-link:hover { text-decoration-color: var(--v2-accent); }
 
-.pl-price-hint {
-  margin: 22px 0 0;
-  font-size: 0.875rem;
-  color: #8f887c;
-  font-variant-numeric: tabular-nums;
-}
-
 /* Сходинки: знизу «Школа», вгорі праворуч «Світ». DOM іде по порядку, а
    column-reverse кладе першу сходинку вниз — читач сканує знизу вгору так
    само, як дитина проходить шлях. */
