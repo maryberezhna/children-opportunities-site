@@ -7,7 +7,7 @@
 import { createClient } from '@supabase/supabase-js';
 import {
   makeBot, beginFlow, beginAddChild, beginFreq, finishFlow, handleFlowCallback,
-  saveCustomCity, FLOW_FREQ,
+  saveCustomCity, FLOW_FREQ, toggleReminders, remindersLabel, remindersToast,
 } from '@/lib/digestFlow';
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
@@ -149,13 +149,15 @@ const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
   + '/stop — відписатися і скасувати списання';
 
 // Головне меню для активного підписника.
-async function sendMainMenu(bot, chatId) {
+async function sendMainMenu(bot, chatId, sub) {
   await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
     inline_keyboard: [
       [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
       [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
       [{ text: '⏰ Як часто писати', callback_data: 'menu:freq' }],
+      // Стан видно прямо на кнопці: натискання перемикає, зайвого екрана немає.
+      [{ text: remindersLabel(sub), callback_data: 'menu:remind' }],
       [{ text: '⭐ Деталі підписки', callback_data: 'menu:sub' }],
       [{ text: '📝 Питання в підтримку', callback_data: 'menu:support' }],
     ],
@@ -222,7 +224,7 @@ async function continueStart(bot, supabase, sub, chatId, handle) {
   if (!sub.consent_at) { await askConsent(bot, chatId); return; }
   const profiled = await hasProfile(supabase, sub);
   if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
-  else if (sub.status === 'active') await sendMainMenu(bot, chatId);  // є профіль і підписка → меню
+  else if (sub.status === 'active') await sendMainMenu(bot, chatId, sub);  // є профіль і підписка → меню
   else if (!sub.phone) await askPhone(bot, supabase, sub, chatId);    // анкета є → телефон
   else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
 }
@@ -584,6 +586,14 @@ export async function POST(request) {
     else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
     else if (action === 'freq') await beginFreq(bot, supabase, chatId);
+    else if (action === 'remind') {
+      const on = await toggleReminders(supabase, chatId);
+      if (on === null) await bot.sendMessage(chatId, 'Не вдалося зберегти. Спробуйте ще раз.');
+      else {
+        await bot.sendMessage(chatId, remindersToast(on));
+        await sendMainMenu(bot, chatId, { ...sub, deadline_reminders: on });
+      }
+    }
     else if (action === 'sub') await bot.sendMessage(chatId, subDetails(sub, await loadKids(supabase, sub)));
     else if (action === 'support') await bot.sendMessage(chatId, '📝 Напишіть питання прямо сюди — відповімо.');
     return new Response('ok');

@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { beginFlow, beginFreq, handleFlowCallback } from '../lib/digestFlow.js';
+import {
+  beginFlow, beginFreq, handleFlowCallback,
+  toggleReminders, remindersOn, remindersLabel,
+} from '../lib/digestFlow.js';
 
 /**
  * Анкета Dityam+ від «скількох дітей» до «вартості».
@@ -167,4 +170,36 @@ test('анкета: кнопка зі старого кроку не збива�
   await handleFlowCallback(bot, db, click('flow:count:3'));
   assert.equal(db._rows.digest_subscribers[0].flow_step, before);
   assert.equal(db._rows.plus_children.length, 1);
+});
+
+/**
+ * Нагадування про дедлайни — вибір підписника, а не наша обіцянка «завжди».
+ * Родина, яка стежить за подачею сама, має змогу їх вимкнути, не відписуючись
+ * від Dityam+ цілком. Дзеркало в Python: scraper/deadline_reminders.reminders_on.
+ */
+test('нагадування: увімкнені, поки людина не сказала інакше', () => {
+  assert.equal(remindersOn({}), true);
+  assert.equal(remindersOn({ deadline_reminders: null }), true);
+  assert.equal(remindersOn({ deadline_reminders: true }), true);
+  assert.equal(remindersOn({ deadline_reminders: false }), false);
+  assert.match(remindersLabel({}), /увімкнені/);
+  assert.match(remindersLabel({ deadline_reminders: false }), /вимкнені/);
+});
+
+test('нагадування: кнопка меню перемикає стан і зберігає його', async () => {
+  const db = fakeDb();
+  db._rows.digest_subscribers.push({
+    id: 'sub-1', telegram_chat_id: '77', status: 'active', deadline_reminders: true,
+  });
+
+  assert.equal(await toggleReminders(db, '77'), false);
+  assert.equal(db._rows.digest_subscribers[0].deadline_reminders, false);
+
+  assert.equal(await toggleReminders(db, '77'), true);
+  assert.equal(db._rows.digest_subscribers[0].deadline_reminders, true);
+});
+
+test('нагадування: чужий чат нічого не перемикає', async () => {
+  const db = fakeDb();
+  assert.equal(await toggleReminders(db, '404'), null);
 });
