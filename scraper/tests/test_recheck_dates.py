@@ -11,6 +11,7 @@ import unittest
 from datetime import date, timedelta
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
+import recheck_dates as rd  # noqa: E402
 from recheck_dates import (  # noqa: E402
     classify_status, decide, drop_stale_unreachable, _valid_date,
     UsageLimitReached, stop_if_usage_limit,
@@ -303,6 +304,28 @@ class ApiUsageLimit(unittest.TestCase):
 
     def test_other_errors_do_not_stop(self):
         stop_if_usage_limit("overloaded_error")
+
+
+class AnnualCooldown(unittest.TestCase):
+    """Щорічні програми повертаються на перевірку, але не щодня.
+
+    Регресія, проти якої стоїть тест: до 20.09.2026 обидва скрипти дат брали
+    лише записи без періодичності, тож 82 активні щорічні відбори (олімпіади,
+    обміни, табори) не могли отримати дедлайн узагалі — а він у них щороку
+    новий."""
+
+    def test_annual_without_date_waits_half_a_season(self):
+        patch = rd._annual_cooldown({"recurrence": "annual"}, {"recurrence": "annual"})
+        expected = (date.today() + timedelta(days=rd.ANNUAL_RECHECK_DAYS)).isoformat()
+        self.assertEqual(patch, {"recheck_at": expected})
+
+    def test_annual_that_got_a_deadline_needs_no_cooldown(self):
+        patch = rd._annual_cooldown({"recurrence": "annual"}, {"deadline": "2026-11-01"})
+        self.assertEqual(patch, {})
+
+    def test_others_are_untouched(self):
+        self.assertEqual(rd._annual_cooldown({"recurrence": None}, {"deadline": "2026-11-01"}), {})
+        self.assertEqual(rd._annual_cooldown({"recurrence": "ongoing"}, {}), {})
 
 
 if __name__ == "__main__":

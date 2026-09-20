@@ -384,6 +384,22 @@ def decide(row: dict, out: dict, today: str) -> tuple[dict, str]:
     return patch, f"{label}: «{evidence[:120]}»"
 
 
+# Як часто повертаємось до щорічної програми, якщо дата ще не оголошена.
+# 45 днів — компроміс: подача зазвичай висить довше, а частіше ходити на ті
+# самі 80+ сторінок щодня означає палити API без нової інформації.
+ANNUAL_RECHECK_DAYS = 45
+
+
+def _annual_cooldown(row: dict, patch: dict) -> dict:
+    """Щорічний запис, який так і лишився без дати, відкладаємо на пів сезону.
+
+    Отримав дедлайн — охолодження не потрібне: далі його веде звичайний
+    конвеєр дат і нагадування."""
+    if row.get("recurrence") != "annual" or patch.get("deadline"):
+        return {}
+    return {"recheck_at": (date.today() + timedelta(days=ANNUAL_RECHECK_DAYS)).isoformat()}
+
+
 def _with_trace(row: dict, note: str) -> str:
     prev = (row.get("admin_comment") or "").strip()
     return (f"{prev} · {note}" if prev else note)[:500]
@@ -444,9 +460,10 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
     llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     today = date.today().isoformat()
 
+    cols = ("id, title, source, source_url, opportunity_type, "
+            "admin_comment, link_status, recurrence")
     rows = (sb.table("opportunities")
-            .select("id, title, source, source_url, opportunity_type, "
-                    "admin_comment, link_status")
+            .select(cols)
             .eq("status", "active")
             .is_("deadline", "null")
             .is_("event_end_date", "null")
@@ -454,7 +471,32 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
             .order("updated_at")          # найдавніші першими: там найбільше ризику
             .limit(limit).execute().data or [])
 
-    print(f"Активних записів без жодної дати: {len(rows)}\n")
+    # Щорічні програми (recurrence='annual') раніше не перевіряв ніхто: обидва
+    # скрипти брали лише записи БЕЗ періодичності. А саме в них щороку
+    # зʼявляється нова дата подачі — олімпіади, обміни, табори як бренд. Станом
+    # на 20.09.2026 таких активних відбіркових записів 82, і жоден не міг
+    # отримати дедлайн, хоч би що писало джерело.
+    #
+    # Щоб не палити API на тих самих записах щодня, кожному після перевірки
+    # ставимо recheck_at на ANNUAL_RECHECK_DAYS уперед і беремо лише тих, кому
+    # цей строк настав. Для активних записів recheck_at більше ніхто не
+    # використовує (ttl_requeue читає його лише в закритих).
+    seats = max(limit - len(rows), 0)
+    annual = []
+    if seats:
+        annual = (sb.table("opportunities")
+                  .select(cols)
+                  .eq("status", "active")
+                  .eq("recurrence", "annual")
+                  .is_("deadline", "null")
+                  .is_("event_end_date", "null")
+                  .or_(f"recheck_at.is.null,recheck_at.lte.{today}")
+                  .order("updated_at")
+                  .limit(seats).execute().data or [])
+        rows = rows + annual
+
+    print(f"Активних записів без жодної дати: {len(rows)} "
+          f"(з них щорічних: {len(annual)})\n")
     stats = {"closed": 0, "dated": 0, "recurring": 0, "unreachable": 0,
              "unread": 0, "unclear": 0, "not_an_opportunity": 0}
     closed_list, dated_list, left_list, hub_list = [], [], [], []
@@ -520,6 +562,7 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
 
         if apply:
             patch["admin_comment"] = _with_trace(row, f"recheck-dates · {why}")
+            patch.update(_annual_cooldown(row, patch))
             sb.table("opportunities").update(patch).eq("id", row["id"]).execute()
 
     def dump(title, items):
