@@ -12,7 +12,7 @@ import {
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
 } from '@/lib/wayforpay';
-import { matchThemes } from '@/lib/themes';
+import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
 import { cutTitle } from '@/lib/text';
 import {
@@ -179,11 +179,10 @@ async function hasProfile(supabase, sub) {
 // місця діляться по черзі, а біля кожної можливості видно, кому вона.
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
-    .select('title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs')
+    .select('title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories')
     .eq('status', 'active').is('canonical_slug', null)
     .order('created_at', { ascending: false }).limit(300);
   const kids = await loadKids(supabase, sub);
-  const themesOf = (o) => new Set(matchThemes(`${o.title} ${o.summary || ''}`));
   const picked = pickFair(matchFamily(sub, kids, opps || [], themesOf), kids, 5);
   if (!picked.length) {
     await bot.sendMessage(chatId, 'Поки немає нічого під профіль — щойно зʼявиться, напишемо першими. Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».');

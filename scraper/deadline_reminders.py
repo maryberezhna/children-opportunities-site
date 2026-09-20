@@ -50,7 +50,7 @@ from personal_digest import (
     SITE_URL,
     age_overlaps,
     load_disliked,
-    match_themes,
+    themes_of,
     send_telegram,
 )
 
@@ -236,14 +236,15 @@ def main() -> int:
         max(w) for w in (*WINDOWS_BY_TYPE.values(), DEFAULT_WINDOWS))
     opps = (client.table("opportunities")
             .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, "
-                    "opportunity_type, format, cities, countries, is_international, child_needs")
+                    "opportunity_type, format, cities, countries, is_international, "
+                    "child_needs, categories")
             .eq("status", "active")
             .is_("canonical_slug", "null")
             .gte("deadline", today.isoformat())
             .lte("deadline", (today + timedelta(days=widest)).isoformat())
             .execute().data or [])
     for o in opps:
-        o["_themes"] = match_themes(f"{o['title']} {o.get('summary') or ''}")
+        o["_themes"] = themes_of(o)
         o["_left"] = (date.fromisoformat(o["deadline"]) - today).days
         # Одне вікно на запис на цей запуск — найтісніше з вікон його типу.
         o["_window"] = tightest_window(
