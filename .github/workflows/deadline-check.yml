@@ -44,6 +44,18 @@ jobs:
 
       - run: npm ci
 
+      # Перед публікацією скрипт читає сторінку джерела кожної можливості,
+      # яку збирається надіслати (scripts/verify-before-post.mjs запускає
+      # scraper/lifecycle.py --ids). Без Python пост не піде — і це навмисно:
+      # 20.09.2026 у канал пішла літня школа, що скінчилась 20 серпня.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - run: pip install -r scraper/requirements.txt
+
       - name: Перевірити порядок оголошень у скрипті
         run: node scripts/check-script-order.mjs
 
@@ -51,8 +63,12 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Превʼю нічого не шле — там перевірка сторінок зайва (це 14 постів
+          # наперед, тобто десятки звернень до моделі даремно).
+          PUBLISH_CHECK: ${{ github.event.inputs.preview == 'true' && 'off' || 'on' }}
           NOTIFY: ${{ github.event.inputs.notify || 'true' }}
           PREVIEW: ${{ github.event.inputs.preview || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
