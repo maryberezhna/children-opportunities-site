@@ -2,15 +2,21 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Анімований приклад підписки на /plus: одна можливість від першого
- * повідомлення до нагадування про дедлайн у Telegram. Вкладку «Імейл»
- * прибрано 15.09.2026 разом із листами Dityam+.
+ * Анімований приклад підписки на /plus: від анкети про дитину до нагадування
+ * про дедлайн у Telegram. Вкладку «Імейл» прибрано 15.09.2026 разом із
+ * листами Dityam+.
+ *
+ * Кроки названі, а не пронумеровані в коді: 20.09.2026 попереду додався крок
+ * «Заповнюєте анкету», і всі порівняння з числами довелось би зсувати.
  *
  * Кроки перемикаються самі, лише коли блок видно, курсор чи фокус не всередині
  * і людина не просила менше руху. Клік по кроку зупиняє автоплей — людина
  * хоче роздивитись. Прогрес рахуємо самі, а не CSS-анімацією: так смужка
  * стоїть разом із таймером, коли автоплей на паузі.
  */
+
+// Порядок кроків демо = порядок f.steps.
+const S = { form: 0, arrive: 1, like: 2, cal: 3, remind: 4 };
 
 const STEP_MS = 3400;
 const LAST_STEP_MS = 5200;
@@ -101,12 +107,12 @@ export default function PlusFlowDemo({ f }) {
 
       <div className="pl-fd-screen">
         <TgScreen f={f} step={step} />
-        {step === 1 && (
+        {step === S.like && (
           <span className="pl-tg-toast pl-fd-toast" aria-hidden="true">
             {f.toast}
           </span>
         )}
-        <div className={`pl-fd-cal${step === 2 ? ' is-open' : ''}`} aria-hidden={step !== 2}>
+        <div className={`pl-fd-cal${step === S.cal ? ' is-open' : ''}`} aria-hidden={step !== S.cal}>
           <div className="pl-fd-cal-card">
             <p className="pl-fd-cal-app">📅 {f.calApp}</p>
             <div className="pl-fd-cal-row">
@@ -130,7 +136,31 @@ export default function PlusFlowDemo({ f }) {
 // Формат — scraper/personal_digest.py build_telegram і
 // scraper/deadline_reminders.py build_text.
 function TgScreen({ f, step }) {
-  if (step === 3) {
+  // Анкета: те саме, що бачить людина в боті — питання про конкретну дитину
+  // з підписом «Дитина 1 з 2».
+  if (step === S.form) {
+    return (
+      <div className="pl-tg pl-fd-chat">
+        <div className="pl-fd-msg" key="form">
+          <div className="pl-tg-bubble">
+            <p className="pl-tg-title">👶 {f.formWho}. {f.formQ}</p>
+            <p className="pl-tg-meta">{f.formSub}</p>
+          </div>
+          <div className="pl-tg-kb" aria-hidden="true">
+            {f.formBtns.map((row) => (
+              <div className="pl-tg-row" key={row.join('|')}>
+                {row.map((b) => (
+                  <span key={b} className={`pl-tg-btn${b === f.formPick ? ' is-on is-tap' : ''}`}>{b}</span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === S.remind) {
     return (
       <div className="pl-tg pl-fd-chat">
         <div className="pl-fd-msg" key="remind">
@@ -158,9 +188,9 @@ function TgScreen({ f, step }) {
           <p className="pl-tg-more"><i>{f.digestFoot}</i></p>
         </div>
         <div className="pl-tg-kb" aria-hidden="true">
-          <span className={`pl-tg-btn${step === 2 ? ' is-on is-tap' : ''}`}>{f.cal}</span>
+          <span className={`pl-tg-btn${step === S.cal ? ' is-on is-tap' : ''}`}>{f.cal}</span>
           <div className="pl-tg-row">
-            <span className={`pl-tg-btn${step >= 1 ? ' is-on' : ''}${step === 1 ? ' is-tap' : ''}`}>{f.yes}</span>
+            <span className={`pl-tg-btn${step >= S.like ? ' is-on' : ''}${step === S.like ? ' is-tap' : ''}`}>{f.yes}</span>
             <span className="pl-tg-btn">{f.no}</span>
           </div>
         </div>

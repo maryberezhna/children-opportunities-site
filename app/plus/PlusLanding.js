@@ -73,6 +73,10 @@ const L = {
       play: 'Відтворити',
       pause: 'Пауза',
       steps: [
+        // Перший крок — анкета: саме з неї все починається, і батьки мають
+        // бачити, що профіль заповнюється на кожну дитину окремо
+        // (Марія, 20.09.2026).
+        ['Заповнюєте анкету', 'Окремо на кожну дитину: вік, вподобання, формат'],
         ['Приходить нове', 'Лише те, що підходить профілю дитини'],
         ['Тиснете «Цікаво»', 'Або «Не цікаво» — одним дотиком'],
         ['Додаєте в календар', 'Дедлайн уже не загубиться'],
@@ -81,6 +85,11 @@ const L = {
         // лише тому, що ISEF Ukraine — конкурс.
         ['Нагадуємо завчасно', 'Стипендії — за 4 тижні, конкурси — за 2, гуртки — за тиждень'],
       ],
+      formWho: 'Дитина 1 з 2',
+      formQ: 'Скільки років дитині?',
+      formSub: 'Оберіть діапазон — далі теми, формат і місто.',
+      formBtns: [['0–3 р.', '4–6 р.'], ['7–10 р.', '11–14 р.'], ['15–18 р.']],
+      formPick: '11–14 р.',
       digestHead: '🧡 Нові можливості для вашої дитини',
       title: 'ISEF Ukraine — національний відбір на Regeneron ISEF',
       meta: 'Конкурси/олімпіади · 14–17 р. · безкоштовно',
@@ -231,11 +240,17 @@ const L = {
       play: 'Play',
       pause: 'Pause',
       steps: [
+        ['You fill in the profile', 'One per child: age, interests, format'],
         ['A new match arrives', 'Only what fits your child’s profile'],
         ['You tap “Interested”', 'Or “Not interested” — one tap'],
         ['You add it to your calendar', 'The deadline won’t get lost'],
         ['We remind you early', 'Scholarships 4 weeks ahead, contests 2 weeks, clubs 1 week'],
       ],
+      formWho: 'Child 1 of 2',
+      formQ: 'How old is your child?',
+      formSub: 'Pick a range — then interests, format and place.',
+      formBtns: [['0–3', '4–6'], ['7–10', '11–14'], ['15–18']],
+      formPick: '11–14',
       digestHead: '🧡 New opportunities for your child',
       title: 'ISEF Ukraine — National Selection for Regeneron ISEF',
       meta: 'Contests & olympiads · ages 14–17 · free',
