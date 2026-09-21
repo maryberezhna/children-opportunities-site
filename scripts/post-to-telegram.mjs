@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyBeforePost } from './verify-before-post.mjs';
+import { costLabel } from './post-labels.mjs';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -66,13 +67,6 @@ const TYPE_LABELS = {
   sport_event: 'Спорт',
 };
 
-const COST_LABELS = {
-  free: 'Безкоштовно',
-  partially_free: 'З фінансуванням',
-  paid_affordable: 'Доступно',
-  paid_premium: 'Преміум',
-  closed: 'Закрита подача',
-};
 
 function ageLabel(item) {
   if (item.age_from === 0 && item.age_to >= 17) return '0–18 років';
@@ -152,7 +146,7 @@ function pickVariant(opportunityId) {
 // A — розгорнутий: повний опис, «🆕» лідер. Це історичний формат.
 function buildMessageA(item) {
   const typeLabel = TYPE_LABELS[item.opportunity_type] || item.opportunity_type;
-  const cost = COST_LABELS[item.cost_type];
+  const cost = costLabel(item.cost_type);
   const deadline = formatDeadline(item.deadline);
   const url = `${SITE_URL}/o/${item.slug}`;
 
@@ -161,7 +155,7 @@ function buildMessageA(item) {
   lines.push('');
 
   const meta = [`📚 ${typeLabel}`, `👶 ${ageLabel(item)}`];
-  if (cost) meta.push(item.cost_type === 'free' ? `✅ ${cost}` : cost);
+  if (cost) meta.push(`${item.cost_type === 'free' ? '✅' : '💳'} ${cost}`);
   lines.push(meta.join(' · '));
 
   lines.push(...whenLines(item));
@@ -185,7 +179,7 @@ function buildMessageA(item) {
 // Гіпотеза: у стрічці каналу коротший пост читають до кінця частіше.
 function buildMessageB(item) {
   const typeLabel = TYPE_LABELS[item.opportunity_type] || item.opportunity_type;
-  const cost = COST_LABELS[item.cost_type];
+  const cost = costLabel(item.cost_type);
   const deadline = formatDeadline(item.deadline);
   const url = `${SITE_URL}/o/${item.slug}`;
 
