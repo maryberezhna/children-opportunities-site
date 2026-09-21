@@ -53,7 +53,7 @@ jobs:
           ARGS="--report audit_clubs_report.jsonl"
           if [ "${{ github.event.inputs.dry_run }}" != "false" ]; then ARGS="$ARGS --dry-run"; fi
           if [ -n "${{ github.event.inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"; fi
-          if [ -n "${{ github.event.inputs.source }}" ]; then ARGS="$ARGS --source '${{ github.event.inputs.source }}'"; fi
+          if [ -n "${{ github.event.inputs.source }}" ]; then ARGS="$ARGS --source ${{ github.event.inputs.source }}"; fi
           if [ "${{ github.event.inputs.hide_unverified }}" = "true" ]; then ARGS="$ARGS --hide-unverified"; fi
           python audit_clubs.py $ARGS
       - uses: actions/upload-artifact@v4
