@@ -37,6 +37,7 @@ check-deadlines закривав і стирав дедлайни, ttl_requeue �
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import logging
 import os
@@ -68,7 +69,57 @@ DELAY = 0.6
 
 SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind, "
           "timing_assumed, season_months, deadline, event_start_date, event_end_date, "
-          "results_date, recheck_at, verified_at, admin_comment")
+          "results_date, recheck_at, verified_at, admin_comment, page_hash, "
+          "check_interval_days")
+
+# Ритм перевірки постійних записів — як у пошуковика (Марія, 21.09.2026:
+# «візьми як робить гугл: якщо джерело оновлюється — перевіряти частіше, а
+# якщо ні — рідше»). Сторінка змінилась — інтервал удвічі коротший; та сама —
+# удвічі довший. Межі — як у розкладу джерел (db.record_crawl_result), але в
+# днях для запису, а не для стрічки.
+MIN_CHECK_DAYS = 14
+MAX_CHECK_DAYS = 180
+
+
+def page_fingerprint(text: str) -> str | None:
+    """Відбиток тексту сторінки: пробіли й регістр не рахуються, решта — так.
+
+    Цифри свідомо НЕ прибираємо: зсунутий дедлайн чи новий рік на сторінці —
+    саме та зміна, заради якої її треба перечитати моделлю."""
+    norm = " ".join((text or "").split()).casefold()
+    return hashlib.sha1(norm.encode("utf-8")).hexdigest() if norm else None
+
+
+def unchanged_open(row: dict, fingerprint: str | None) -> bool:
+    """Чи можна не питати модель: постійний відкритий запис, і текст сторінки
+    дослівно той, на якому минула перевірка сказала «відкрито».
+
+    Лише для постійних: у них стан не залежить від сьогоднішньої дати. Для
+    записів із датами чи сезоном та сама сторінка сьогодні може означати інше
+    («реєстрація з 1 жовтня»), тож їх модель читає завжди. Відбиток пишеться
+    лише у вердикті «постійний і відкритий» (decide_check), після будь-якого
+    іншого — стирається."""
+    return bool(fingerprint) and row.get("page_hash") == fingerprint \
+        and row.get("status") == "active" and row.get("timing_kind") == "permanent"
+
+
+def plan_unchanged(row: dict, today: date) -> dict:
+    """Сторінка та сама — модель не кличемо, наступну перевірку відсуваємо вдвічі."""
+    prev = row.get("check_interval_days") or permanent_recheck_days(row)
+    days = min(MAX_CHECK_DAYS, prev * 2)
+    return {"recheck_at": (today + timedelta(days=days)).isoformat(),
+            "check_interval_days": days,
+            "content_checked_at": datetime.now(timezone.utc).isoformat()}
+
+
+def _adaptive_days(row: dict, fingerprint: str | None, assumed: bool) -> int:
+    """Інтервал після перевірки моделлю постійного відкритого запису."""
+    prev_hash, prev = row.get("page_hash"), row.get("check_interval_days")
+    if prev and prev_hash and fingerprint and prev_hash != fingerprint:
+        return max(MIN_CHECK_DAYS, prev // 2)          # сторінка живе — частіше
+    if prev and prev_hash == fingerprint:
+        return prev
+    return permanent_recheck_days({"timing_assumed": assumed})
 
 STATES = ("open", "upcoming", "ended", "gone", "unclear")
 
@@ -155,8 +206,13 @@ def plan_close(row: dict, today: date) -> dict | None:
 
 # ── B. Планова перевірка ────────────────────────────────────────────────────
 
-def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
-    """Що змінити за результатом перевірки. Чиста функція — під тести."""
+def decide_check(row: dict, out: dict, page: str, today: date,
+                 fingerprint: str | None = None) -> dict:
+    """Що змінити за результатом перевірки. Чиста функція — під тести.
+
+    fingerprint — відбиток прочитаного тексту (page_fingerprint). Зберігається
+    лише для постійного відкритого запису; будь-який інший вердикт його стирає,
+    щоб наступна перевірка не пропустила модель на старій підставі."""
     iso_today = today.isoformat()
     state = out.get("state") if out.get("state") in STATES else "unclear"
     evidence = (out.get("evidence") or "").strip()
@@ -164,7 +220,7 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
     # Вид: беремо з перевірки лише тоді, коли запис його ще не має і модель
     # навела справжню цитату (правило розмітки від 17.09.2026).
     kind = row.get("timing_kind")
-    patch: dict = {}
+    patch: dict = {"page_hash": None} if fingerprint else {}
     new_kind = clean_kind(out.get("timing_kind"))
     kind_quote = (out.get("kind_evidence") or "").strip()
     quoted_kind = bool(kind_quote and evidence_in_text(kind_quote, page))
@@ -232,11 +288,17 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
         for key in ("deadline", "event_start_date", "event_end_date"):
             if fresh and key not in fresh:
                 patch[key] = None
-        # Здогад про постійність перечитуємо за 30 днів, підтверджений — за 120.
+        # Здогад про постійність уперше перечитуємо за 30 днів, підтверджений —
+        # за 120; далі ритм підлаштовується під те, чи змінюється сторінка.
         assumed = patch.get("timing_assumed", row.get("timing_assumed"))
-        days = permanent_recheck_days({"timing_assumed": assumed})
-        patch["recheck_at"] = ((today + timedelta(days=days)).isoformat()
-                               if kind == "permanent" and not fresh else None)
+        if kind == "permanent" and not fresh:
+            days = _adaptive_days(row, fingerprint, bool(assumed))
+            patch["recheck_at"] = (today + timedelta(days=days)).isoformat()
+            if fingerprint:
+                patch["page_hash"] = fingerprint
+                patch["check_interval_days"] = days
+        else:
+            patch["recheck_at"] = None
         note = f"відкрито: {quote}"
     elif state == "upcoming":
         patch.update({"status": "closed", **fresh,
@@ -499,8 +561,20 @@ def main() -> int:
                 write(row["id"], patch)
                 verdicts[row["id"]] = _verdict(row, patch, "unreadable", why=whence)
                 continue
+            fingerprint = page_fingerprint(page)
+            if unchanged_open(row, fingerprint):
+                # Той самий текст, на якому минула перевірка з цитатою сказала
+                # «відкрито», — вердикт той самий, модель не кличемо.
+                patch = plan_unchanged(row, today)
+                states["без змін"] += 1
+                logger.info("  = %s — сторінка без змін, наступна %s", (row["title"] or "")[:60],
+                            patch["recheck_at"])
+                write(row["id"], patch)
+                verdicts[row["id"]] = _verdict(row, patch, "open",
+                                               evidence="сторінка без змін з минулої перевірки")
+                continue
             out = _ask(ai, row, page, today)
-            patch = decide_check(row, out, page, today)
+            patch = decide_check(row, out, page, today, fingerprint)
             states[out.get("state") or "unclear"] += 1
             changes = {k: v for k, v in patch.items() if k != "admin_comment"}
             logger.info("  • %s [%s → %s] %s", (row["title"] or "")[:55], row["status"],

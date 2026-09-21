@@ -229,3 +229,75 @@ class NoFalseClose(unittest.TestCase):
         out = {"state": "ended", "evidence": "Реєстрацію завершено."}
         patch = decide_check(r, out, page, TODAY)
         self.assertEqual(patch["status"], "closed")
+
+
+class AdaptiveRhythm(unittest.TestCase):
+    """«Як гугл»: сторінка змінюється — перевіряємо частіше, ні — рідше
+    (Марія, 21.09.2026). Модель не кличемо, лише коли постійний відкритий
+    запис має дослівно той самий текст, що й минулого разу."""
+
+    PAGE = "Гурток робототехніки. Запис відкритий протягом усього року."
+
+    def setUp(self):
+        from lifecycle import page_fingerprint
+        self.fp = page_fingerprint(self.PAGE)
+
+    def test_fingerprint_ignores_spacing_and_case_but_not_dates(self):
+        from lifecycle import page_fingerprint
+        self.assertEqual(page_fingerprint("  ГУРТОК   робототехніки.\nЗапис відкритий протягом усього року."),
+                         page_fingerprint("гурток робототехніки. запис відкритий протягом усього року."))
+        self.assertNotEqual(page_fingerprint("Подача до 1 жовтня"), page_fingerprint("Подача до 15 жовтня"))
+        self.assertIsNone(page_fingerprint("   "))
+
+    def test_only_permanent_open_with_same_text_skips_the_model(self):
+        from lifecycle import unchanged_open
+        ok = row(timing_kind="permanent", page_hash=self.fp)
+        self.assertTrue(unchanged_open(ok, self.fp))
+        self.assertFalse(unchanged_open(ok, "інший"))
+        # Стан сезонного чи датованого запису залежить від сьогоднішньої дати.
+        self.assertFalse(unchanged_open(row(timing_kind="periodic", page_hash=self.fp), self.fp))
+        self.assertFalse(unchanged_open(row(timing_kind="permanent", status="closed",
+                                            page_hash=self.fp), self.fp))
+        self.assertFalse(unchanged_open(row(timing_kind="permanent", page_hash=None), None))
+
+    def test_unchanged_page_is_checked_twice_as_rarely_up_to_half_a_year(self):
+        from lifecycle import plan_unchanged
+        p = plan_unchanged(row(timing_kind="permanent", timing_assumed=True), TODAY)
+        self.assertEqual((p["check_interval_days"], p["recheck_at"]), (60, "2026-11-16"))
+        p = plan_unchanged(row(timing_kind="permanent", check_interval_days=120), TODAY)
+        self.assertEqual(p["check_interval_days"], 180)
+        self.assertIn("content_checked_at", p)
+        self.assertNotIn("status", p)
+
+    def test_first_check_stores_fingerprint_and_starting_interval(self):
+        r = row(timing_kind="permanent", opportunity_type="club", timing_assumed=True)
+        patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE,
+                             TODAY, self.fp)
+        self.assertEqual(patch["page_hash"], self.fp)
+        self.assertEqual((patch["check_interval_days"], patch["recheck_at"]), (30, "2026-10-17"))
+
+    def test_changed_page_is_checked_twice_as_often_but_not_below_two_weeks(self):
+        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=120)
+        patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE,
+                             TODAY, self.fp)
+        self.assertEqual(patch["check_interval_days"], 60)
+        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=20)
+        patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE,
+                             TODAY, self.fp)
+        self.assertEqual(patch["check_interval_days"], 14)
+
+    def test_any_other_verdict_forgets_the_fingerprint(self):
+        r = row(timing_kind="permanent", page_hash=self.fp, check_interval_days=60)
+        for out in ({"state": "unclear", "evidence": ""},
+                    {"state": "gone", "evidence": "Гурток робототехніки."},
+                    {"state": "ended", "evidence": "без цитати зі сторінки"}):
+            patch = decide_check(r, out, self.PAGE, TODAY, self.fp)
+            self.assertIsNone(patch["page_hash"], out)
+
+    def test_without_fingerprint_nothing_about_it_is_written(self):
+        # Старі виклики (і ручні скрипти) колонок відбитка не чіпають.
+        r = row(timing_kind="permanent", opportunity_type="club")
+        patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE, TODAY)
+        self.assertNotIn("page_hash", patch)
+        self.assertNotIn("check_interval_days", patch)
+        self.assertEqual(patch["recheck_at"], "2027-01-15")
