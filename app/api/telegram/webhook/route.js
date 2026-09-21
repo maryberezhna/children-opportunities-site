@@ -298,7 +298,7 @@ async function handleDigestConnect(token, msg) {
     .update({ telegram_chat_id: String(msg.chat.id), updated_at: new Date().toISOString() })
     .eq('unsub_token', token).eq('channel', 'telegram').select('id').maybeSingle();
   await sendMessage(msg.chat.id, data
-    ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо сюди можливості під профіль дитини, щойно вони зʼявляються.\n\nВідписатись — /stop'
+    ? '✅ Канал підключено! Щойно оплата пройде — надсилатимемо сюди можливості під профіль дитини.\n\nВідписатись — /stop'
     : 'Не знайшли підписку за цим посиланням. Оформити підбірку — dityam.com.ua/plus 🧡');
   return new Response('ok');
 }

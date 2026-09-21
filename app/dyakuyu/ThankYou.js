@@ -13,7 +13,7 @@ const CONNECT_KEY = 'dityam_connect_token';
 const L = {
   uk: {
     paidTitle: 'Оплата пройшла. Дякуємо 🧡',
-    paidLead: 'Підписка активна. Поверніться в бот — там уже чекає підтвердження, а можливості під профіль дитини почнуть приходити одразу.',
+    paidLead: 'Підписка активна. Поверніться в бот — там уже чекає підтвердження, а перша добірка під профіль дитини прийде з найближчою розсилкою.',
     paidCta: 'Відкрити бот',
     savedTitle: 'Профіль збережено',
     savedLead: (<>Лишився один крок: відкрийте бот і натисніть <b>Почати</b>. Там оформимо підписку — і підбірка приходитиме саме під вашу дитину.</>),
@@ -24,7 +24,7 @@ const L = {
   },
   en: {
     paidTitle: 'Payment received. Thank you 🧡',
-    paidLead: 'Your subscription is active. Head back to the bot — the confirmation is waiting there, and opportunities matching your child’s profile will start arriving right away.',
+    paidLead: 'Your subscription is active. Head back to the bot — the confirmation is waiting there, and the first selection for your child’s profile will arrive with the next send-out.',
     paidCta: 'Open the bot',
     savedTitle: 'Profile saved',
     savedLead: (<>One step left: open the bot and press <b>Start</b>. We will set up the subscription there — and the selection will arrive tailored to your child.</>),

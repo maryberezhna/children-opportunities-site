@@ -15,7 +15,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '14 September 2026';
+const UPDATED = '21 September 2026';
 
 export default function TermsPageEn() {
   return (
@@ -57,7 +57,7 @@ export default function TermsPageEn() {
               personal notifications about opportunities for their child
               (competitions, programmes, scholarships, camps and so on), selected
               separately for each child by the age, interests, format and location
-              provided — as soon as such opportunities appear;
+              provided — at the frequency chosen in the bot;
             </li>
             <li>reminders about application deadlines;</li>
             <li>information support with submitting applications;</li>
@@ -99,8 +99,9 @@ export default function TermsPageEn() {
           <p>
             Access is granted <strong>immediately after successful payment</strong>:
             the bot confirms the payment, and the user receives notifications based
-            on the child’s profile filled in in the bot. Notifications are sent as
-            matching opportunities appear (checked daily). The service is provided
+            on the child’s profile filled in in the bot. Notifications are sent at
+            the frequency the user chooses in the bot: every 2 days or once a week
+            (new opportunities are checked daily). The service is provided
             remotely; there is no physical delivery.
           </p>
 
