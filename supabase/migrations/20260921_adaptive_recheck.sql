@@ -4,7 +4,8 @@
 --                         сказала «постійний і відкритий». Той самий текст
 --                         наступного разу — модель не кличемо.
 --   check_interval_days — поточний інтервал: сторінка змінилась → ÷2 (не менше
---                         14 днів), та сама → ×2 (не більше 180).
+--                         7 днів), та сама → ×2 (не більше 90) — «до тижня
+--                         найчастіше і раз в 3 місяці найдовше».
 -- Застосовано в проді 21.09.2026 через конектор Supabase (adaptive_recheck).
 alter table public.opportunities add column if not exists page_hash text;
 alter table public.opportunities add column if not exists check_interval_days integer

@@ -81,13 +81,13 @@ class PlannedCheck(unittest.TestCase):
         self.assertNotIn("deadline", patch)
         self.assertEqual(patch["status"], "closed")
 
-    def test_permanent_still_open_is_checked_again_in_four_months(self):
+    def test_permanent_still_open_is_checked_again_in_three_months(self):
         r = row(timing_kind="permanent", opportunity_type="club")
         quote = "Запис до гуртка відкритий протягом усього року."
         patch = decide_check(r, {"state": "open", "evidence": quote,
                                  "timing_kind": "permanent"}, quote, TODAY)
         self.assertEqual(patch["status"], "active")
-        self.assertEqual(patch["recheck_at"], "2027-01-15")
+        self.assertEqual(patch["recheck_at"], "2026-12-16")
 
     def test_assumed_permanent_is_checked_again_in_a_month(self):
         # «Набір постійний» за замовчуванням — здогад, а не факт зі сторінки:
@@ -105,7 +105,7 @@ class PlannedCheck(unittest.TestCase):
                                  "timing_kind": "permanent",
                                  "kind_evidence": quote}, quote, TODAY)
         self.assertFalse(patch["timing_assumed"])
-        self.assertEqual(patch["recheck_at"], "2027-01-15")
+        self.assertEqual(patch["recheck_at"], "2026-12-16")
 
     def test_gone_goes_to_moderator(self):
         patch = decide_check(row(), {"state": "gone", "evidence": "Проєкт завершено назавжди.",
@@ -158,9 +158,9 @@ class Bootstrap(unittest.TestCase):
                                   opportunity_type="olympiad"), TODAY)
         self.assertTrue("2026-09-18" <= when <= "2026-10-08")
 
-    def test_permanent_spread_over_four_months(self):
+    def test_permanent_spread_over_three_months(self):
         when = plan_bootstrap(row(timing_kind="permanent"), TODAY)
-        self.assertTrue("2026-09-18" <= when <= "2027-01-15")
+        self.assertTrue("2026-09-18" <= when <= "2026-12-16")
 
     def test_assumed_permanent_spread_over_one_month(self):
         when = plan_bootstrap(row(timing_kind="permanent", timing_assumed=True), TODAY)
@@ -260,12 +260,13 @@ class AdaptiveRhythm(unittest.TestCase):
                                             page_hash=self.fp), self.fp))
         self.assertFalse(unchanged_open(row(timing_kind="permanent", page_hash=None), None))
 
-    def test_unchanged_page_is_checked_twice_as_rarely_up_to_half_a_year(self):
+    def test_unchanged_page_is_checked_twice_as_rarely_up_to_three_months(self):
+        # «До тижня найчастіше і раз в 3 місяці найдовше» (Марія, 21.09.2026).
         from lifecycle import plan_unchanged
         p = plan_unchanged(row(timing_kind="permanent", timing_assumed=True), TODAY)
         self.assertEqual((p["check_interval_days"], p["recheck_at"]), (60, "2026-11-16"))
-        p = plan_unchanged(row(timing_kind="permanent", check_interval_days=120), TODAY)
-        self.assertEqual(p["check_interval_days"], 180)
+        p = plan_unchanged(row(timing_kind="permanent", check_interval_days=60), TODAY)
+        self.assertEqual((p["check_interval_days"], p["recheck_at"]), (90, "2026-12-16"))
         self.assertIn("content_checked_at", p)
         self.assertNotIn("status", p)
 
@@ -276,15 +277,15 @@ class AdaptiveRhythm(unittest.TestCase):
         self.assertEqual(patch["page_hash"], self.fp)
         self.assertEqual((patch["check_interval_days"], patch["recheck_at"]), (30, "2026-10-17"))
 
-    def test_changed_page_is_checked_twice_as_often_but_not_below_two_weeks(self):
-        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=120)
+    def test_changed_page_is_checked_twice_as_often_but_not_more_than_weekly(self):
+        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=90)
         patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE,
                              TODAY, self.fp)
-        self.assertEqual(patch["check_interval_days"], 60)
-        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=20)
+        self.assertEqual(patch["check_interval_days"], 45)
+        r = row(timing_kind="permanent", page_hash="старий", check_interval_days=10)
         patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE,
                              TODAY, self.fp)
-        self.assertEqual(patch["check_interval_days"], 14)
+        self.assertEqual(patch["check_interval_days"], 7)
 
     def test_any_other_verdict_forgets_the_fingerprint(self):
         r = row(timing_kind="permanent", page_hash=self.fp, check_interval_days=60)
@@ -300,4 +301,4 @@ class AdaptiveRhythm(unittest.TestCase):
         patch = decide_check(r, {"state": "open", "evidence": "Запис відкритий"}, self.PAGE, TODAY)
         self.assertNotIn("page_hash", patch)
         self.assertNotIn("check_interval_days", patch)
-        self.assertEqual(patch["recheck_at"], "2027-01-15")
+        self.assertEqual(patch["recheck_at"], "2026-12-16")

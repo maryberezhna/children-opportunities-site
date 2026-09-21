@@ -75,10 +75,10 @@ SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind,
 # Ритм перевірки постійних записів — як у пошуковика (Марія, 21.09.2026:
 # «візьми як робить гугл: якщо джерело оновлюється — перевіряти частіше, а
 # якщо ні — рідше»). Сторінка змінилась — інтервал удвічі коротший; та сама —
-# удвічі довший. Межі — як у розкладу джерел (db.record_crawl_result), але в
-# днях для запису, а не для стрічки.
-MIN_CHECK_DAYS = 14
-MAX_CHECK_DAYS = 180
+# удвічі довший. Межі — теж її: «до тижня найчастіше і раз в 3 місяці
+# найдовше».
+MIN_CHECK_DAYS = 7
+MAX_CHECK_DAYS = 90
 
 
 def page_fingerprint(text: str) -> str | None:
@@ -104,7 +104,8 @@ def unchanged_open(row: dict, fingerprint: str | None) -> bool:
 
 
 def plan_unchanged(row: dict, today: date) -> dict:
-    """Сторінка та сама — модель не кличемо, наступну перевірку відсуваємо вдвічі."""
+    """Сторінка та сама — модель не кличемо, наступну перевірку відсуваємо вдвічі
+    (не далі ніж на MAX_CHECK_DAYS)."""
     prev = row.get("check_interval_days") or permanent_recheck_days(row)
     days = min(MAX_CHECK_DAYS, prev * 2)
     return {"recheck_at": (today + timedelta(days=days)).isoformat(),
@@ -289,7 +290,7 @@ def decide_check(row: dict, out: dict, page: str, today: date,
             if fresh and key not in fresh:
                 patch[key] = None
         # Здогад про постійність уперше перечитуємо за 30 днів, підтверджений —
-        # за 120; далі ритм підлаштовується під те, чи змінюється сторінка.
+        # за 90; далі ритм підлаштовується під те, чи змінюється сторінка.
         assumed = patch.get("timing_assumed", row.get("timing_assumed"))
         if kind == "permanent" and not fresh:
             days = _adaptive_days(row, fingerprint, bool(assumed))
