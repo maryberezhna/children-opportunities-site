@@ -67,8 +67,9 @@ _HEADERS = {
     "Accept-Language": "uk,en;q=0.9,de;q=0.8,pl;q=0.7",
 }
 
-# Теми ротуються по днях, щоб за тиждень агент обійшов усі напрями, а не
-# перепитував одне й те саме. Перелік навмисно вузький і весь про дітей.
+# Теми ротуються по тижнях: розвідник запускається раз на тиждень (21.09.2026,
+# рішення Марії про витрати — він знаходив 0–5 кандидатів на день за ~$11/міс).
+# Перелік навмисно вузький і весь про дітей.
 THEMES = [
     "фонди, які фінансують освіту українських дітей за кордоном",
     "стипендії для українських школярів у школах Європи",
@@ -109,12 +110,18 @@ FOUNDATION_THEMES = [
 ]
 
 
-def theme_of_day() -> str:
+def theme_of_day(today: date | None = None) -> str:
+    """Тема цього тижня — за номером ISO-тижня, а не дня року.
+
+    Обидва профілі запускаються раз на тиждень. З номером дня крок був 7, а тем
+    у «фондах» теж 7: щосереди випадала та сама тема, і решта шести не
+    шукались ніколи. Номер тижня дає наступну тему щотижня."""
     override = (os.environ.get("DISCOVER_SOURCES_THEME") or "").strip()
     if override:
         return override
     pool = FOUNDATION_THEMES if PROFILE == "foundations" else THEMES
-    return pool[date.today().timetuple().tm_yday % len(pool)]
+    week = (today or date.today()).isocalendar()[1]
+    return pool[week % len(pool)]
 
 
 PROMPT = """Ти шукаєш ДЖЕРЕЛА для платформи Dityam.com.ua — вона збирає
@@ -176,7 +183,10 @@ def search(theme: str) -> list[dict]:
         # прогонів (11.09 і 14.09.2026) відповідь обрізалась до JSON, і агент
         # «знаходив» 0 замість 8 — хоча пошук відпрацював.
         "max_tokens": 16000,
-        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 8}],
+        # Витрати (21.09.2026): 4 пошуки замість 8 і низький рівень зусиль —
+        # кандидати однаково йдуть людині в чергу, глибокі роздуми тут зайві.
+        **api_guard.effort_config(MODEL, "low"),
+        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 4}],
         "messages": [{"role": "user",
                       "content": PROMPT.format(theme=theme, max_n=MAX_CANDIDATES)
                                  + (FOUNDATIONS_FOCUS if PROFILE == "foundations" else "")}],
