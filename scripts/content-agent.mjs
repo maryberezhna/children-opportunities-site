@@ -23,6 +23,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import { isoWeek } from '../lib/week.js';
 import { TYPE_LABELS } from '../lib/labels.js';
+import { costLabel, withPageLink } from './post-labels.mjs';
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(name);
@@ -71,7 +72,8 @@ const VOICE = `Ти пишеш для Instagram платформи dityam.com.ua
 — Перший рядок — про ситуацію батька або дитини, а не назва програми. Саме
   його видно в стрічці, і саме він вирішує, чи читатимуть далі.
 — Далі конкретика: що це, кому за віком, скільки коштує, до якої дати.
-— Наприкінці — де шукати: «посилання в шапці профілю» або «dityam.com.ua».
+— Наприкінці — рядок «Деталі — <сторінка>»: адреса сторінки САМЕ цієї
+  можливості з даних (dityam.com.ua/o/…), не головна і не «шапка профілю».
 — 4–7 хештегів, українською, по суті.
 — Довжина 500–900 символів.`;
 
@@ -121,14 +123,16 @@ async function write(items, clips) {
   const facts = items.map((o, i) => {
     const parts = [`#${i + 1} ${o.title}`, `тип: ${TYPE_LABELS[o.opportunity_type] || o.opportunity_type}`,
       `вік: ${o.age_from}–${o.age_to}`];
-    if (o.cost_type === 'free') parts.push('безкоштовно');
-    else if (o.cost_type === 'partially_free') parts.push('з фінансуванням');
-    else if (o.cost_type) parts.push(o.price_note ? `платно: ${o.price_note}` : 'платно');
+    // Лише «безкоштовно» або «платно» (рішення 13.09.2026); проміжні
+    // partially_free / subsidized не кажуть, чи платить родина, — мовчимо.
+    const cost = costLabel(o.cost_type);
+    if (cost === 'Безкоштовно') parts.push('безкоштовно');
+    else if (cost) parts.push(o.price_note ? `платно: ${o.price_note}` : 'платно');
     const city = (o.cities || []).find((c) => c);
     if (city) parts.push(`місце: ${city}`);
     if (o.deadline) parts.push(`дедлайн: ${o.deadline} (через ${o.days} дн.)`);
     parts.push(`опис: ${(o.summary || '').slice(0, 400)}`);
-    parts.push(`сторінка: ${SITE}/o/${o.slug}`);
+    parts.push(`сторінка: dityam.com.ua/o/${o.slug}`);
     return parts.join('\n');
   }).join('\n\n---\n\n');
 
@@ -193,7 +197,8 @@ async function main() {
     + (dir ? `Твоїх медіа: ${photos.length} фото, ${clips.length} відео.` : 'Медіа-теки немає — картки генеровані.'));
 
   const text = await write(items, clips);
-  const posts = text.split(/===ПОСТ\s*\d+===/).map((s) => s.trim()).filter(Boolean);
+  const posts = text.split(/===ПОСТ\s*\d+===/).map((s) => s.trim()).filter(Boolean)
+    .map((p, i) => (items[i] ? withPageLink(p, items[i].slug) : p));
   console.log(`\nНаписано постів: ${posts.length}\n`);
 
   if (DRY) {
