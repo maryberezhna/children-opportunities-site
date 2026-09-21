@@ -599,7 +599,7 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
       </section>
 
       {/* ── Кава чи можливість: ціна щойно названа, тут вона отримує міру ── */}
-      <section className="pl-sec">
+      <section className="pl-sec pl-choice-sec">
         <div className="pl-wrap">
           <PlusChoice opportunities={picks} today={today} lang={lang} />
         </div>
