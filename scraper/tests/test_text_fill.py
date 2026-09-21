@@ -136,3 +136,19 @@ class Backfill(unittest.TestCase):
                "event_start_date": None, "event_end_date": None, "results_date": None,
                "recurrence": "ongoing", "admin_comment": ""}
         self.assertEqual(plan(row), {})
+
+
+class RepeatSignal(unittest.TestCase):
+    """Спільна ознака повторення (timing.has_repeat_signal): сполучник «і» — не
+    римська «І». До 21.09.2026 «заняття і відкриті для всіх» ставало «щорічним»."""
+
+    def test_conjunction_is_not_a_roman_numeral(self):
+        from timing import has_repeat_signal
+        self.assertFalse(has_repeat_signal("Заняття українською мовою і відкриті для всіх."))
+        self.assertFalse(has_repeat_signal("для дітей Києва і міжнародних гостей"))
+
+    def test_real_numbering_still_counts(self):
+        from timing import has_repeat_signal
+        self.assertTrue(has_repeat_signal("XII Всеукраїнська літня математична школа"))
+        self.assertTrue(has_repeat_signal("проводиться XII всеукраїнська олімпіада"))
+        self.assertTrue(has_repeat_signal("І Всеукраїнський інструментальний конкурс"))
