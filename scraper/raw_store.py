@@ -9,6 +9,7 @@ RSS-вікно вже не повернуться. Тепер усе знайд�
 content_hash і вставляється лише раз (on_conflict do nothing), тож LLM більше
 не переекстрагує весь каталог щодня. Платимо лише за нове і змінене.
 """
+import re
 import hashlib
 import logging
 
@@ -113,6 +114,18 @@ def fetch_pending(client, limit: int = 300) -> list[dict]:
     except Exception as e:
         logger.error(f"fetch_pending failed: {e}")
         return []
+
+
+# Тендер чи вакансія в ЗАГОЛОВКУ — не можливість для дитини. Такий сирець
+# ішов у модель лише для того, щоб вона відповіла «ні»: за весь час 80 таких
+# заголовків, прийнятих 0 (21.09.2026, звірено з raw_items). Дивимось лише на
+# заголовок: у тексті справжнього гранту «кошти можна використати на
+# закупівлю обладнання» — це мета витрат, а не тендер.
+_NOT_AN_OPPORTUNITY_TITLE = re.compile(r"закупівл|тендер|ваканс|цінових пропозиц", re.IGNORECASE)
+
+
+def not_an_opportunity(raw_title: str) -> bool:
+    return bool(_NOT_AN_OPPORTUNITY_TITLE.search(raw_title or ""))
 
 
 def mark(client, raw_id: str, status: str, *, error: str = None,
