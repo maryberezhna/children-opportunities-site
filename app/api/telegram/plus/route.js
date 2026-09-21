@@ -253,7 +253,7 @@ function subDetails(sub, kids) {
   });
   lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
-  // Старе instant (варіант прибрано 21.09.2026) і порожнє — це «раз на 2 дні».
+  // Старе instant (варіант прибрано 21.09.2026) і порожнє — це «щодня».
   lines.push(`Частота: ${esc(labels(FLOW_FREQ, [freqOf(sub.digest_freq)]))}`);
   lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
   return lines.join('\n');
