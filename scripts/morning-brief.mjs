@@ -59,8 +59,13 @@ const [
   // саме IP GitHub Actions (verify-links лишає такий запис активним).
   rows(base().select('title, source_url').eq('status', 'active').is('canonical_slug', null)
     .eq('link_status', 'dead').limit(5)),
+  // Протермінованою вважаємо перевірку, що чекає ДОВШЕ за добу. 21.09.2026
+  // зведення кричало «прогін впав» через 12 літніх програм, яким інша сесія
+  // поставила перевірку на 20.09 — уже після того, як прогін того дня
+  // відбіг. Вони просто чекали сьогоднішнього. Зведення приходить раніше
+  // за прогін (розклад GitHub), тож учорашні дати — норма, а не збій.
   count(base().select('id', { count: 'exact', head: true })
-    .eq('status', 'active').is('canonical_slug', null).lt('recheck_at', today)),
+    .eq('status', 'active').is('canonical_slug', null).lt('recheck_at', inDays(-1))),
   count(base().select('id', { count: 'exact', head: true })
     .eq('status', 'active').is('canonical_slug', null).eq('recheck_at', today)),
   count(base().select('id', { count: 'exact', head: true })
@@ -71,7 +76,15 @@ const [
   // закордонне, описане скупо. Без цього рядка черга росла б мовчки.
   count(supabase.from('raw_items').select('id', { count: 'exact', head: true })
     .eq('status', 'review').is('reviewed_at', null)),
-  rows(supabase.from('v_raw_review').select('raw_title, url, confidence, source_name').limit(3)),
+  // Верх черги — СВІЖЕ за тиждень, від найвпевненішого. Вʼюха v_raw_review
+  // сортує за trust_tier джерела, і 21.09 нагорі стояли курси Дія.Освіти й
+  // гурток вимкненого Харківського палацу. Свіже приходить лише з увімкнених
+  // джерел і ще має живий дедлайн — тобто саме це варто розібрати першим.
+  rows(supabase.from('raw_items').select('raw_title, source_url, canonical_url, confidence, source_name')
+    .eq('status', 'review').is('reviewed_at', null)
+    .gte('fetched_at', `${inDays(-7)}T00:00:00Z`)
+    .order('confidence', { ascending: false }).order('fetched_at', { ascending: false })
+    .limit(3)),
 ]);
 
 const blocks = [];
@@ -93,14 +106,16 @@ if (deadLinkLive.length) {
 }
 
 if (overdueChecks) {
-  blocks.push(`⏳ <b>Планові перевірки протерміновані:</b> ${overdueChecks}. `
-    + 'Це означає, що нічний прогін не встигає або впав.');
+  blocks.push(`⏳ <b>Перевірки запізнюються довше за добу:</b> ${overdueChecks}. `
+    + 'Прогін або впав, або не встигає — глянь останній запуск «Планових перевірок».');
 }
 
 if (inReview) {
   blocks.push([
     `🔍 <b>Класифікатор вагається</b> — ${inReview} у карантині`,
-    ...reviewTop.map((r) => `• ${esc(cut(r.raw_title || r.source_name))} — ${r.confidence ?? '?'}\n  ${esc(r.url || '')}`),
+    ...(reviewTop.length
+      ? reviewTop.map((r) => `• ${esc(cut(r.raw_title || r.source_name))} — ${r.confidence ?? '?'}\n  ${esc(r.canonical_url || r.source_url || '')}`)
+      : ['За тиждень нового немає — у черзі лише старе.']),
     'Кожне «так» звідси — можливість, яку ми інакше втратили б мовчки.',
   ].join('\n'));
 }
