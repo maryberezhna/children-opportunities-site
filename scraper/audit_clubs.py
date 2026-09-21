@@ -144,10 +144,15 @@ def page_text(html: str) -> str:
 
 def fetch(client: httpx.Client, url: str) -> tuple[str | None, str | None, str]:
     """(html, текст, стан). Стан — коротко для моделі й звіту."""
-    try:
-        r = client.get(url)
-    except Exception as e:
-        return None, None, f"не відкривається ({type(e).__name__})"
+    for attempt in range(2):
+        try:
+            r = client.get(url)
+        except Exception as e:
+            return None, None, f"не відкривається ({type(e).__name__})"
+        # Палац у Харкові на паралельні запити відповідав 508 — один повтор.
+        if r.status_code < 500 or attempt:
+            break
+        time.sleep(5)
     if r.status_code >= 400:
         return None, None, f"HTTP {r.status_code}"
     text = page_text(r.text)
@@ -211,8 +216,11 @@ age_to не заповнюй.
 paid — якщо названо ціну, «платні заняття», абонемент. Якщо родина платить
 хоч щось — це paid. Нічого не сказано — лиши порожнім.
 
-evidence, age_evidence, cost_evidence — дослівні цитати, скопійовані зі
-сторінки, без переказу й без власних висновків. reason — одне речення."""
+evidence, age_evidence, cost_evidence — короткі дослівні цитати (5-25 слів),
+скопійовані зі сторінки організатора символ у символ: без переказу, без
+«...», без власних висновків. Для confirmed цитата має називати сам гурток
+чи напрям занять, а не лише адресу чи назву закладу. Немає такої цитати —
+це unverified. reason — одне речення."""
 
 
 SEARCH_PROMPT = """Знайди в інтернеті ОФІЦІЙНУ сторінку закладу, який веде цей
@@ -243,8 +251,18 @@ def parse_urls(text: str) -> list[str]:
             and not NOT_ORGANIZER.search(u)][:MAX_ORGANIZER_PAGES]
 
 
-def search_organizer(ai, row: dict, directory_text: str) -> tuple[list[str], int]:
-    """(адреси офіційних сторінок, скільки пошуків витрачено)."""
+def usage_of(resp) -> dict:
+    """Токени й пошуки одного виклику — щоб ціну повного прогону рахувати, а не вгадувати."""
+    try:
+        u = resp.usage.model_dump()
+    except Exception:
+        return {}
+    return {"in": u.get("input_tokens") or 0, "out": u.get("output_tokens") or 0,
+            "searches": (u.get("server_tool_use") or {}).get("web_search_requests") or 0}
+
+
+def search_organizer(ai, row: dict, directory_text: str) -> tuple[list[str], dict]:
+    """(адреси офіційних сторінок, витрата виклику)."""
     excerpt = directory_text[:1200]
     prompt = SEARCH_PROMPT.format(title=row.get("title") or "",
                                   city=", ".join(row.get("cities") or []) or "—",
@@ -258,10 +276,9 @@ def search_organizer(ai, row: dict, directory_text: str) -> tuple[list[str], int
         )
     except Exception as e:
         logger.warning("пошук упав для %s: %s", row.get("title"), e)
-        return [], 0
+        return [], {}
     text = "".join(b.text for b in resp.content if b.type == "text")
-    used = getattr(getattr(resp.usage, "server_tool_use", None), "web_search_requests", 0) or 0
-    return parse_urls(text), used
+    return parse_urls(text), usage_of(resp)
 
 
 def build_message(row: dict, source_text: str | None, source_state: str,
@@ -283,7 +300,7 @@ def build_message(row: dict, source_text: str | None, source_state: str,
     return "\n\n---\n\n".join(parts)
 
 
-def ask(ai, message: str) -> dict | None:
+def ask(ai, message: str) -> tuple[dict | None, dict]:
     import anthropic
     for attempt in range(3):
         try:
@@ -301,7 +318,31 @@ def ask(ai, message: str) -> dict | None:
             if attempt == 2:
                 raise
             time.sleep(3 * (attempt + 1))
-    return next((b.input for b in resp.content if b.type == "tool_use"), None)
+    return next((b.input for b in resp.content if b.type == "tool_use"), None), usage_of(resp)
+
+
+# Слова з назви, які нічого не кажуть про сам гурток: вони є на кожній
+# сторінці будь-якого центру.
+GENERIC = {"гурток", "гуртка", "гуртки", "студія", "студії", "клуб", "клубу", "секція",
+           "школа", "школи", "центр", "центру", "курси", "курс", "заняття", "дитяча",
+           "дитячий", "дітей", "дитини", "житомир", "житомирі", "харків", "київ",
+           "років", "від", "для", "the", "club", "school", "kids"}
+
+
+_APOS = str.maketrans({"'": "ʼ", "’": "ʼ"})
+
+
+def names_activity(evidence: str, title: str) -> bool:
+    """Цитата згадує сам гурток чи напрям, а не лише заклад.
+
+    Пробний прогін 21.09.2026: «Зарубіжну літературу» «підтверджено» цитатою
+    «Адреса: 10003 м. Житомир вул Троянівська 20» — це доказ, що є будинок,
+    а не гурток. Досить спільного кореня хоча б одного змістовного слова
+    назви: «інструменти» — «інструментів», «Шахи» — «шахи»."""
+    ev = (evidence or "").lower().translate(_APOS)
+    words = re.findall(r"[^\W\d_]+(?:ʼ[^\W\d_]+)?", (title or "").lower().translate(_APOS))
+    stems = [w[:max(4, min(6, len(w) - 2))] for w in words if len(w) >= 4 and w not in GENERIC]
+    return any(s in ev for s in stems)
 
 
 def quoted(evidence: str, text: str) -> bool:
@@ -323,6 +364,8 @@ def build_patch(row: dict, ans: dict, evidence_text: str, today: str,
 
     if verdict in ("confirmed", "gone", "not_children") and not quoted(evidence, evidence_text):
         verdict, reason = "unverified", f"{verdict} без цитати зі сторінки організатора: {reason}"
+    elif verdict == "confirmed" and not names_activity(evidence, row.get("title")):
+        verdict, reason = "unverified", f"цитата не називає гурток: {evidence[:120]}"
 
     if verdict == "gone":
         return verdict, {"status": "closed", "recheck_at": None,
@@ -399,14 +442,14 @@ def check_one(ai, row: dict, search: bool = True) -> dict:
                       headers={"User-Agent": UA, "Accept-Language": "uk,en;q=0.8"}) as client:
         html, text, state = fetch(client, url) if url.startswith("http") else (None, None, "немає адреси")
         result["source_state"] = state
-        organizer, result["searches"] = [], 0
+        organizer, result["usage"] = [], {}
         if directory and html:
             for link in organizer_links(html, url)[:MAX_ORGANIZER_PAGES]:
                 _, otext, ostate = fetch(client, link)
                 organizer.append((link, otext, ostate))
             # Сайту в довіднику немає або він мертвий — шукаємо заклад самі.
             if search and text and not any(t for _, t, _ in organizer):
-                found, result["searches"] = search_organizer(ai, row, text)
+                found, result["usage"] = search_organizer(ai, row, text)
                 for link in found:
                     _, otext, ostate = fetch(client, link)
                     organizer.append((link, otext, f"{ostate}, знайдено пошуком"))
@@ -415,7 +458,8 @@ def check_one(ai, row: dict, search: bool = True) -> dict:
         result.update(verdict="unverified", reason=f"сторінка джерела: {state}", ans=None)
         return result
     evidence_text = " ".join(t for _, t, _ in organizer if t) if directory else text
-    ans = ask(ai, build_message(row, text, state, directory, organizer))
+    ans, used = ask(ai, build_message(row, text, state, directory, organizer))
+    result["usage"] = {k: result["usage"].get(k, 0) + v for k, v in used.items()}
     result.update(ans=ans, evidence_text=evidence_text)
     return result
 
@@ -462,7 +506,8 @@ def main() -> int:
                 res.pop("evidence_text", None)
             stats[f"{res['source']}:{verdict}"] += 1
             stats[verdict] += 1
-            stats["searches"] += res.get("searches", 0)
+            for k, v in (res.get("usage") or {}).items():
+                stats[f"usage_{k}"] += v
             if "age_from" in patch or "age_to" in patch or "cost_type" in patch:
                 fixes += 1
             res.update(final=verdict, note=note,
@@ -476,7 +521,11 @@ def main() -> int:
                 "лише дорослим: %d | не підтверджено: %d",
                 " (dry-run, нічого не записано)" if args.dry_run else "",
                 stats["confirmed"], fixes, stats["gone"], stats["not_children"], stats["unverified"])
-    logger.info("Вебпошуків: %d", stats["searches"])
+    # Haiku 4.5: $1 / $5 за мільйон токенів, вебпошук — $10 за тисячу.
+    cost = stats["usage_in"] / 1e6 + stats["usage_out"] * 5 / 1e6 + stats["usage_searches"] * 0.01
+    logger.info("Витрата: %d вхідних токенів, %d вихідних, %d вебпошуків ≈ $%.2f (≈ $%.3f на гурток)",
+                stats["usage_in"], stats["usage_out"], stats["usage_searches"], cost,
+                cost / max(1, len(rows)))
     for key in sorted(k for k in stats if ":" in k):
         logger.info("  %s: %d", key, stats[key])
     return 0
