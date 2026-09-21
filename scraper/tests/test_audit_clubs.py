@@ -159,6 +159,15 @@ class BuildPatch(unittest.TestCase):
         _, patch, _ = ac.build_patch(dict(ROW, title="Мистецтвознавці"), ans, page, TODAY)
         self.assertNotIn("cost_type", patch)
 
+    def test_materials_are_not_a_fee(self):
+        # 21.09.2026: «повноцінного» містить «цін», а мова про папір і олівці.
+        ev = ("для повноцінного навчання та творчості, вам знадобиться лише мінімальний "
+              "індивідуальний набір: папір для креслення формату А-3; простий олівець")
+        self.assertIsNone(ac.COST_WORDS.search(ev))
+        self.assertIsNotNone(ac.COST_WORDS.search("Вартість заняття — 250 грн"))
+        self.assertIsNotNone(ac.COST_WORDS.search("Навчання безкоштовне"))
+        self.assertIsNotNone(ac.COST_WORDS.search("ціна абонемента 800"))
+
     def test_generic_title_matched_whole(self):
         self.assertTrue(ac.names_activity("СтудіЯ+Ти Відділи Психолого-методичного забезпечення", "СтудіЯ+Ти"))
         self.assertFalse(ac.names_activity("Студія декоративного розпису", "СтудіЯ+Ти"))
