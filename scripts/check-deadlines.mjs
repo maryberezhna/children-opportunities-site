@@ -26,6 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
+import { costLabel, deadlineTag, formatDeadlineDate } from './post-labels.mjs';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -462,7 +463,6 @@ function buildStoryPost(r, link = null) {
   const typeLabel = TYPE_LABELS[r.opportunity_type];
   if (typeLabel) lines.push(`📚 Формат: ${typeLabel}`);
   if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
-  else if (r.cost_type === 'partially_free') lines.push('💳 Скільки коштує: є фінансування');
 
   // Без дати рядка немає. «Дедлайну немає — набір триває» тут писати не можна:
   // часто це означає «набір ще не оголошено» — як у «Володаря стихій» 15.09.2026,
@@ -592,9 +592,9 @@ function ageLabel(r) {
   return `${r.age_from}–${r.age_to} років`;
 }
 
-// Один рядок про дату — «Коли» для подій, «Дедлайн» для подачі.
-// Для подій навмисно не пишемо «за 3 дн.»: у події важлива сама дата, бо
-// її треба вписати в календар, а не встигнути до неї.
+// Один рядок про дату — «Коли» для подій, «Заявки до» для подачі. Для подій
+// лише дата: її треба вписати в календар, а не встигнути до неї. Для подачі —
+// дата й скільки лишилось (post-labels.mjs).
 // Діапазон дат події. Коли місяць і рік збігаються, не повторюємо їх двічі:
 // «12 — 15 вересня 2026» замість «12 вересня 2026 — 15 вересня 2026».
 function formatDateRange(fromStr, toStr) {
@@ -627,21 +627,10 @@ function whenLine(r, indent = '') {
   const results = formatDeadlineDate(r.results_date);
   if (results) lines.push(`${indent}🏆 Результати: <b>${results}</b>`);
   if (r.deadline && !sameDay) {
-    const days = r.daysLeft;
-    const tag = days == null || days < 0 ? formatDeadlineDate(r.deadline)
-      : days === 0 ? 'сьогодні' : days === 1 ? 'завтра' : `за ${days} дн.`;
-    if (tag) lines.push(`${indent}⏰ Заявки до: <b>${tag}</b>`);
+    const tag = deadlineTag(r.deadline, r.daysLeft);
+    if (tag) lines.push(`${indent}⏰ Заявки до: ${tag}`);
   }
   return lines.length ? lines.join('\n') : null;
-}
-
-function formatDeadlineDate(dateStr) {
-  if (!dateStr) return null;
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return null;
-  const months = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
-    'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
 }
 
 function formatLine(r, index) {
@@ -653,11 +642,8 @@ function formatLine(r, index) {
   const meta = [];
   if (typeLabel) meta.push(`📚 ${typeLabel}`);
   if (age) meta.push(`👶 ${age}`);
-  if (r.cost_type === 'free') meta.push('✅ Безкоштовно');
-  else if (r.cost_type === 'partially_free') meta.push('💳 З фінансуванням');
-  else if (r.cost_type === 'paid_affordable') meta.push('💳 Доступно');
-  else if (r.cost_type === 'paid_premium') meta.push('💳 Преміум');
-  else if (r.cost_type === 'subsidized') meta.push('💳 Субсидовано');
+  const cost = costLabel(r.cost_type);
+  if (cost) meta.push(`${r.cost_type === 'free' ? '✅' : '💳'} ${cost}`);
 
   const prefix = `${(index ?? 0) + 1}.`;
   const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
