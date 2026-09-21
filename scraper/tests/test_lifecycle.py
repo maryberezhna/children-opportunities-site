@@ -199,3 +199,33 @@ class InvariantEveryActiveHasAnEnding(unittest.TestCase):
 
     def test_existing_check_is_not_overwritten(self):
         self.assertIsNone(plan_bootstrap(row(recheck_at="2026-10-01"), TODAY))
+
+
+class NoFalseClose(unittest.TestCase):
+    """21.09.2026: бізнес-програму з дедлайном 24.09 закрили 21.09 — «доказом»
+    модель записала власний висновок «дедлайн уже минув»."""
+
+    PAGE = ("Безкоштовна бізнес-програма. Дедлайн: 24 вересня 2026 року. "
+            "Старт навчання 28 вересня.")
+
+    def test_reasoning_instead_of_quote_does_not_close(self):
+        r = row(deadline="2026-09-24", event_start_date="2026-09-28")
+        out = {"state": "ended",
+               "evidence": "Дедлайн: 24 вересня 2026 року. Сьогодні 2026-09-21, дедлайн уже минув."}
+        patch = decide_check(r, out, self.PAGE, TODAY)
+        self.assertNotIn("status", patch)
+        self.assertIn("не закрито", patch["admin_comment"])
+
+    def test_future_date_without_closing_words_does_not_close(self):
+        r = row(deadline="2026-09-24")
+        out = {"state": "ended", "evidence": "Дедлайн: 24 вересня 2026 року."}
+        patch = decide_check(r, out, self.PAGE, TODAY)
+        self.assertNotIn("status", patch)
+        self.assertIn("майбутня дата", patch["admin_comment"])
+
+    def test_real_closure_still_closes(self):
+        page = "Реєстрацію завершено. Дякуємо всім учасникам!"
+        r = row(deadline="2026-09-24")
+        out = {"state": "ended", "evidence": "Реєстрацію завершено."}
+        patch = decide_check(r, out, page, TODAY)
+        self.assertEqual(patch["status"], "closed")
