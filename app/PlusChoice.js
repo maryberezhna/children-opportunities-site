@@ -62,7 +62,20 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
   const href = PLUS_SALES_OPEN ? plusBotUrl('choice') : PLUS_WAITLIST_URL;
 
   return (
+    // Порядок читання зліва направо (Марія, 21.09.2026): чашка — питання —
+    // відповідь. Спершу те, що минає за 15 хвилин, потім сам вибір, потім
+    // те, що приходить щодня.
     <section className="v2-choice" aria-labelledby="v2-choice-title">
+      <figure className="v2-cup" aria-hidden="true">
+        <div className="v2-cup-steam"><span /><span /><span /></div>
+        <div className="v2-cup-body"><div className="v2-cup-fill" /></div>
+        <div className="v2-cup-saucer" />
+        <figcaption>
+          <strong>{t.cupLabel}</strong>
+          <span>{t.cupNote}</span>
+        </figcaption>
+      </figure>
+
       <div className="v2-choice-text">
         <span className="v2-choice-eyebrow">{t.eyebrow}</span>
         <h2 id="v2-choice-title">
@@ -77,34 +90,22 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
         </div>
       </div>
 
-      <div className="v2-choice-scene" aria-hidden="true">
-        <figure className="v2-cup">
-          <div className="v2-cup-steam"><span /><span /><span /></div>
-          <div className="v2-cup-body"><div className="v2-cup-fill" /></div>
-          <div className="v2-cup-saucer" />
-          <figcaption>
-            <strong>{t.cupLabel}</strong>
-            <span>{t.cupNote}</span>
-          </figcaption>
-        </figure>
-
-        <figure className="v2-choice-feed">
-          <div className="v2-feed-window">
-            {picks.map((o, i) => (
-              <article key={o.id || i} className="v2-feed-card" style={{ '--i': i }}>
-                <span className="v2-feed-title">{(lang === 'en' && o.title_en) || o.title}</span>
-                <span className="v2-feed-date">
-                  {t.deadline(formatDate(o.deadline, lang) || t.soon)}
-                </span>
-              </article>
-            ))}
-          </div>
-          <figcaption>
-            <strong>{t.listLabel(PRICE)}</strong>
-            <span>{t.listNote}</span>
-          </figcaption>
-        </figure>
-      </div>
+      <figure className="v2-choice-feed" aria-hidden="true">
+        <div className="v2-feed-window">
+          {picks.map((o, i) => (
+            <article key={o.id || i} className="v2-feed-card" style={{ '--i': i }}>
+              <span className="v2-feed-title">{(lang === 'en' && o.title_en) || o.title}</span>
+              <span className="v2-feed-date">
+                {t.deadline(formatDate(o.deadline, lang) || t.soon)}
+              </span>
+            </article>
+          ))}
+        </div>
+        <figcaption>
+          <strong>{t.listLabel(PRICE)}</strong>
+          <span>{t.listNote}</span>
+        </figcaption>
+      </figure>
     </section>
   );
 }

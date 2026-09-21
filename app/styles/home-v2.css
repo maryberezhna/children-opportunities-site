@@ -1111,8 +1111,10 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 /* ── «Кава чи можливість» — заклик у кінці головної (19.09.2026) ────────── */
 .v2-choice {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 28px;
+  /* Чашка — текст — повідомлення (21.09.2026). Чашка тримає свою ширину,
+     текст ширший за стрічку: питання важливіше за приклад. */
+  grid-template-columns: auto minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 32px;
   align-items: center;
   margin-top: 16px;
   padding: 36px;
@@ -1148,17 +1150,9 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   max-width: 44ch;
 }
 
-/* Сцена: ліворуч чашка, праворуч стрічка можливостей. */
-.v2-choice-scene {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 22px;
-  align-items: end;
-}
+.v2-choice figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
 
-.v2-choice-scene figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
-
-.v2-choice-scene figcaption {
+.v2-choice figcaption {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -1167,7 +1161,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   color: var(--v2-ink-3);
 }
 
-.v2-choice-scene figcaption strong { font-size: 0.8125rem; color: var(--v2-ink); font-weight: 600; }
+.v2-choice figcaption strong { font-size: 0.8125rem; color: var(--v2-ink); font-weight: 600; }
 
 /* Чашка: кава повільно спадає й доливається знову. */
 .v2-cup { width: 96px; }
@@ -1290,10 +1284,13 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 }
 
 @media (max-width: 860px) {
+  /* На телефоні той самий порядок згори вниз: чашка, питання, повідомлення. */
   .v2-choice { grid-template-columns: 1fr; padding: 28px 20px; gap: 22px; }
   .v2-choice h2 { font-size: 1.5rem; }
-  .v2-choice-scene { grid-template-columns: auto 1fr; gap: 16px; }
-  .v2-cup { width: 72px; }
+  /* Чашка вузька, а підпис — ні: інакше «Кава з / собою» ламається надвоє. */
+  .v2-cup { width: auto; }
+  .v2-cup-steam, .v2-cup-body, .v2-cup-saucer { width: 72px; box-sizing: border-box; }
+  .v2-cup-saucer { width: 60px; margin-left: 6px; }
   .v2-cup-body { height: 50px; }
 }
 
