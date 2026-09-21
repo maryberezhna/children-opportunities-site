@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { canonicalUrl } from '@/lib/canonical.mjs';
 import { safeEqual } from '@/lib/adminAuth';
-import { originOf, broughtBy, repliesByEmail } from '@/lib/suggestions';
+import { originOf, broughtBy, letterNote } from '@/lib/suggestions';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 import MessageList from './MessageList';
@@ -61,9 +61,8 @@ export default async function MessagesPage() {
   const outcomeOf = (s) => {
     const base = OUTCOME[s.status];
     if (!base) return null;
-    return ['imported', 'duplicate'].includes(s.status) && repliesByEmail(s)
-      ? `${base}, лист відправнику пішов`
-      : base;
+    const note = letterNote(s);
+    return note ? `${base}, ${note}` : base;
   };
 
   // Який запис на сайті вже відповідає пропозиції — за тією самою сторінкою.

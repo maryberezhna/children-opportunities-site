@@ -19,7 +19,9 @@
      пропозиція, і з контактом відправника в коментарі;
   4. відповідає листом на вказану пошту — тим самим Gmail SMTP, яким уже
      ходять нагадування про дедлайни;
-  5. проставляє пропозиції статус: `imported`, `duplicate` або `rejected`.
+  5. проставляє пропозиції статус: `imported`, `duplicate` або `rejected`;
+  6. коли можливість із пропозиції вийшла на сайт — шле відправнику другий
+     лист: посилання, дати з картки й пропозицію «Топ тижня» (з 21.09.2026).
 
 Чернетка, а не публікація, — свідомо. Пропозиція від організатора це заявка,
 а не факт: у ній буває реклама, буває вік «від 6 до 18» на програмі, куди
@@ -35,10 +37,12 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY,
      GMAIL_FROM + GMAIL_APP_PASSWORD (без них лист просто не піде).
 """
 import argparse
+import html
 import logging
 import os
 import re
 import smtplib
+from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from urllib.parse import urlparse
@@ -119,6 +123,31 @@ def fetch_text(url: str) -> tuple[str | None, str]:
 
 SUBJECT_OK = "Ваша можливість на Dityam.com.ua"
 SUBJECT_DUP = "Ваша можливість уже є на Dityam.com.ua"
+SUBJECT_PUBLISHED = "Вашу можливість опубліковано на Dityam.com.ua"
+
+# Підпис — як у листах Марії до медіа. До 21.09.2026 тут стояло «Марія
+# Бережна» — імʼя, яким Марія більше не підписується.
+SIGNATURE = """<p>З повагою,<br>
+Марія Шутяк<br>
+Засновниця платформи Dityam.com.ua<br>
+<a href="{site}">{site}</a><br>
+hellodityam.com.ua@gmail.com · +380 63 476 3998</p>"""
+
+# Платне просування для організаторів — слова Марії з листа Seniv Studio
+# 21.09.2026. Лише в листах про те, що можливість УЖЕ на сайті: пропонувати
+# «Топ тижня» для чернетки, якої ніхто не бачить, — дивно.
+OFFER = """<p>І ще питання: чи було б вам цікаво потрапити в «Топ тижня» на платформі
+й отримати окремий пост про вас у нашому
+<a href="https://t.me/dityam_com_ua">Telegram-каналі</a> та
+<a href="https://www.instagram.com/dityam.com.ua">Instagram</a>? Це нова послуга
+для організаторів, ми саме її запускаємо. Вартість — 500 грн.</p>"""
+
+BODY_PUBLISHED = """<p>Доброго дня!</p>
+
+<p>Дякую, що надіслали нам можливість «{title}». Ми її опублікували:<br>
+<a href="{url}">{url}</a></p>
+
+{facts}""" + OFFER + "\n\n" + SIGNATURE
 
 BODY_IMPORTED = """<p>Доброго дня!</p>
 
@@ -135,9 +164,7 @@ BODY_IMPORTED = """<p>Доброго дня!</p>
 <p>Dityam.com.ua — безкоштовна платформа, яка збирає можливості для українських
 дітей 0–18 років: конкурси, табори, олімпіади, стипендії, гуртки.</p>
 
-<p>Марія Бережна<br>
-Dityam.com.ua<br>
-<a href="{site}">{site}</a></p>"""
+""" + SIGNATURE
 
 BODY_DUPLICATE = """<p>Доброго дня!</p>
 
@@ -147,9 +174,7 @@ BODY_DUPLICATE = """<p>Доброго дня!</p>
 чи все там правильно — дати, вік, вартість. Якщо щось застаріло, напишіть у
 відповідь на цей лист, і ми виправимо того ж дня.</p>
 
-<p>Марія Бережна<br>
-Dityam.com.ua<br>
-<a href="{site}">{site}</a></p>"""
+{offer}""" + SIGNATURE
 
 BODY_NEEDS_HUMAN = """<p>Доброго дня!</p>
 
@@ -161,9 +186,7 @@ BODY_NEEDS_HUMAN = """<p>Доброго дня!</p>
 чи за кордоном). Без них ми не публікуємо нічого — батькам така картка не
 допомагає.</p>
 
-<p>Марія Бережна<br>
-Dityam.com.ua<br>
-<a href="{site}">{site}</a></p>"""
+""" + SIGNATURE
 
 
 def send_email(to_addr: str, subject: str, html: str) -> bool:
@@ -174,7 +197,12 @@ def send_email(to_addr: str, subject: str, html: str) -> bool:
     msg["Subject"] = subject
     msg["From"] = f"Dityam.com.ua <{GMAIL_FROM}>"
     msg["To"] = to_addr
-    plain = re.sub(r"<[^>]+>", "", html)
+    # Посилання під словом («Telegram-каналі») у текстовій версії інакше
+    # губиться — лишаємо адресу в дужках.
+    plain = re.sub(r'<a href="([^"]+)">([^<]+)</a>',
+                   lambda m: m.group(2) if m.group(1) == m.group(2)
+                   else f"{m.group(2)} ({m.group(1)})", html)
+    plain = re.sub(r"<[^>]+>", "", plain)
     msg.attach(MIMEText(plain, "plain", "utf-8"))
     msg.attach(MIMEText(html, "html", "utf-8"))
     try:
@@ -204,6 +232,145 @@ def find_existing(sb, url: str) -> dict | None:
     return rows[0] if rows else None
 
 
+# ── Лист «опубліковано» ─────────────────────────────────────────────────────
+# Перший лист («у черзі на перевірку») іде в момент імпорту, а публікація —
+# через день-два, після модерації. До 21.09.2026 про неї відправник не
+# дізнавався взагалі. Тепер кожен прохід скрипта перевіряє, чи не вийшли
+# чернетки з пропозицій на сайт, і шле другий лист — один раз:
+# opportunity_suggestions.published_letter_at.
+
+PUBLISHED_FIELDS = "slug, title, status, deadline, event_start_date, event_end_date, cities"
+
+# Статуси, з яких можливість виходить на сайт пізніше: імпортована скриптом,
+# додана вручну в адмінці або дубль запису, що ще лежав чернеткою.
+AWAITING_PUBLISH = ["imported", "added", "duplicate"]
+
+# Пропозиція, що пролежала чернеткою квартал, — уже не новина для відправника.
+# Без межі прохід щоразу перебирав би й усі старі рядки без пошти.
+PUBLISHED_WINDOW_DAYS = 90
+
+
+def find_published(sb, url: str) -> dict | None:
+    """Запис про цю сторінку, який люди бачать на сайті. Злиті дублі
+    (canonical_slug) не беремо: їхня сторінка веде на інший запис."""
+    canon = canonical_url(url)
+    for column, value in (("canonical_url", canon), ("source_url", canon), ("source_url", url)):
+        if not value:
+            continue
+        try:
+            rows = (sb.table("opportunities").select(PUBLISHED_FIELDS)
+                    .eq(column, value).eq("status", "active").is_("canonical_slug", "null")
+                    .limit(1).execute().data or [])
+        except Exception:
+            continue
+        if rows:
+            return rows[0]
+    return None
+
+
+MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня",
+              "липня", "серпня", "вересня", "жовтня", "листопада", "грудня"]
+
+
+def uk_date(iso) -> str:
+    """«2026-10-25» → «25 жовтня»; рік — лише якщо не поточний."""
+    try:
+        d = datetime.fromisoformat(str(iso)[:10]).date()
+    except ValueError:
+        return ""
+    year = f" {d.year}" if d.year != datetime.now(timezone.utc).year else ""
+    return f"{d.day} {MONTHS_GEN[d.month - 1]}{year}"
+
+
+def card_facts(o: dict) -> str:
+    """«На сторінці: заявки до 25 жовтня, проведення — 31 жовтня, місце — Львів.»
+    Щоб організатор одним поглядом звірив картку зі своєю сторінкою. Чого на
+    картці немає, того немає й у листі."""
+    parts = []
+    if d := uk_date(o.get("deadline") or ""):
+        parts.append(f"заявки до {d}")
+    start = uk_date(o.get("event_start_date") or "")
+    end = uk_date(o.get("event_end_date") or "")
+    if start and end and start != end:
+        parts.append(f"проведення — {start} – {end}")
+    elif start or end:
+        parts.append(f"проведення — {start or end}")
+    cities = [c for c in (o.get("cities") or []) if c]
+    if cities:
+        parts.append("місце — " + ", ".join(cities[:3]))
+    if not parts:
+        return ""
+    return (f"<p>На сторінці: {html.escape(', '.join(parts))}. Якщо щось неточно, "
+            "напишіть у відповідь на цей лист.</p>\n\n")
+
+
+def mark_letter_sent(sb, ids: list) -> None:
+    now = datetime.now(timezone.utc).isoformat()
+    for sid in ids:
+        sb.table("opportunity_suggestions").update(
+            {"published_letter_at": now}).eq("id", sid).execute()
+
+
+def reply_duplicate(sb, s: dict, existing: dict, apply: bool) -> bool:
+    """Лист «уже є на платформі» — лише коли сторінку справді видно на сайті.
+
+    До 21.09.2026 він ішов і на дубль чернетки — з посиланням, яке віддає 404.
+    Тепер такий рядок чекає: щойно чернетку опублікують, notify_published
+    надішле лист про публікацію. Повертає, чи лист пішов."""
+    email = reply_email(s)
+    status = existing.get("status")
+    if not apply or not email or status not in ("active", "closed"):
+        return False
+    url = (s.get("url") or "").strip()
+    sent = send_email(email, SUBJECT_DUP, BODY_DUPLICATE.format(
+        title=html.escape(s.get("title") or url), url=f"{SITE}/o/{existing['slug']}",
+        site=SITE, offer=OFFER + "\n\n" if status == "active" else ""))
+    if sent:
+        mark_letter_sent(sb, [s["id"]])
+    return sent
+
+
+def notify_published(sb, apply: bool = False) -> int:
+    """Відправникам, чия можливість уже на сайті, — лист «опубліковано».
+    Повертає, скільки листів пішло б (у дампі) або пішло."""
+    since = (datetime.now(timezone.utc) - timedelta(days=PUBLISHED_WINDOW_DAYS)).isoformat()
+    rows = (sb.table("opportunity_suggestions").select("*")
+            .in_("status", AWAITING_PUBLISH).is_("published_letter_at", "null")
+            .gte("created_at", since).order("created_at").limit(500)
+            .execute().data or [])
+    # Та сама людина про ту саму можливість — один лист, навіть якщо
+    # пропозицій кілька: Seniv Studio 12.09.2026 надіслала LORELEIFEST двічі.
+    letters = {}
+    for s in rows:
+        email = reply_email(s)
+        url = (s.get("url") or "").strip()
+        if not email or not url.startswith(("http://", "https://")):
+            continue
+        opp = find_published(sb, url)
+        if not opp:
+            continue
+        key = (email.lower(), opp["slug"])
+        letter = letters.setdefault(key, {"email": email, "opp": opp, "ids": [],
+                                          "title": (s.get("title") or "").strip() or opp["title"]})
+        letter["ids"].append(s["id"])
+
+    sent = 0
+    for letter in letters.values():
+        opp = letter["opp"]
+        print(f"📬 {letter['title'][:56]:<56} опубліковано → {letter['email']}")
+        if not apply:
+            sent += 1
+            continue
+        ok = send_email(letter["email"], SUBJECT_PUBLISHED, BODY_PUBLISHED.format(
+            title=html.escape(letter["title"]), url=f"{SITE}/o/{opp['slug']}",
+            facts=card_facts(opp), site=SITE))
+        # Лист не пішов — не позначаємо: наступний прохід спробує ще раз.
+        if ok:
+            mark_letter_sent(sb, letter["ids"])
+            sent += 1
+    return sent
+
+
 def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, str]:
     """Повертає (новий статус, пояснення для дампу)."""
     url = (s.get("url") or "").strip()
@@ -226,9 +393,7 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
 
     existing = find_existing(sb, url)
     if existing:
-        if apply and email:
-            send_email(email, SUBJECT_DUP, BODY_DUPLICATE.format(
-                title=title or url, url=f"{SITE}/o/{existing['slug']}", site=SITE))
+        reply_duplicate(sb, s, existing, apply)
         return "duplicate", f"вже в базі: {existing['title'][:50]}"
 
     page, http = fetch_text(url)
@@ -306,10 +471,7 @@ def recheck_waiting(sb, apply: bool = False, limit: int = 200) -> int:
             continue
         sb.table("opportunity_suggestions").update(
             {"status": "duplicate"}).eq("id", s["id"]).execute()
-        contact = reply_email(s)
-        if contact:
-            send_email(contact, SUBJECT_DUP, BODY_DUPLICATE.format(
-                title=s.get("title") or url, url=f"{SITE}/o/{existing['slug']}", site=SITE))
+        reply_duplicate(sb, s, existing, apply)
     return closed
 
 
@@ -319,6 +481,10 @@ def run(apply: bool = False, limit: int = 50) -> dict:
     rechecked = recheck_waiting(sb, apply)
     if rechecked:
         print(f"З черги «потребує людини» закрито як дублі: {rechecked}\n")
+
+    published = notify_published(sb, apply)
+    if published:
+        print(f"Листів «опубліковано»: {published}\n")
 
     rows = (sb.table("opportunity_suggestions").select("*")
             .eq("status", "new").order("created_at").limit(limit).execute().data or [])

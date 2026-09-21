@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   STUB_MARK, isStubDraft, withoutStubMark, slugFromTitle, contentHash,
-  broughtBy, originOf, repliesByEmail, sourceFor,
+  broughtBy, originOf, repliesByEmail, sourceFor, letterNote,
 } from '../lib/suggestions.js';
 
 // «Додати на сайт» у /admin/messages: чернетка з пропозиції.
@@ -66,4 +66,18 @@ test('джерело на картці: для внесеного вручну �
   assert.equal(sourceFor({ origin: 'research', url }, 'Пропозиція від людей'), 'rada-poltava.gov.ua');
   assert.equal(sourceFor({ origin: 'popup', url }, 'Пропозиція від людей'), 'Пропозиція від людей');
   assert.equal(sourceFor({ origin: 'maria', url: 'не адреса' }, 'Пропозиція від людей'), 'Пропозиція від людей');
+});
+
+test('адмінка пише «лист пішов» лише тоді, коли він справді пішов', () => {
+  const popup = { origin: 'popup', contact: 'apply@seniv.studio' };
+  // Дубль чернетки: посилання віддало б 404, лист чекає публікації.
+  assert.equal(letterNote({ ...popup, status: 'duplicate' }), 'лист відправнику піде, щойно запис опублікуємо');
+  assert.equal(letterNote({ ...popup, status: 'duplicate', published_letter_at: '2026-09-21' }), 'лист відправнику пішов');
+  assert.equal(letterNote({ ...popup, status: 'imported' }), 'лист відправнику пішов, другий — після публікації');
+  assert.equal(letterNote({ ...popup, status: 'imported', published_letter_at: '2026-09-21' }), 'опубліковано — відправнику пішли обидва листи');
+  assert.equal(letterNote({ ...popup, status: 'added' }), 'лист відправнику піде після публікації');
+  // Без пошти або внесене нами — листів немає й не буде.
+  assert.equal(letterNote({ origin: 'research', contact: 'info@fund.org', status: 'imported' }), null);
+  assert.equal(letterNote({ origin: 'popup', contact: 'https://t.me/x', status: 'duplicate' }), null);
+  assert.equal(letterNote({ ...popup, status: 'dismissed' }), null);
 });
