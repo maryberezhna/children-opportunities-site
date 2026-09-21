@@ -411,7 +411,12 @@ def search_candidates(kw: str, region: dict) -> list[dict]:
         # No user_location — the web_search tool rejects country code "UA"
         # ("Country code UA is not supported"). Ukraine focus comes from the
         # prompt text instead.
-        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 6}],
+        # Витрати (21.09.2026): 4 пошуки замість 6 і середній рівень зусиль
+        # замість типового високого. Не «низький»: агент сам судить про вік,
+        # актуальність і відкритість для дітей з України, а хибна чернетка
+        # коштує Марії часу модерації.
+        **api_guard.effort_config(MODEL, "medium"),
+        "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 4}],
         "messages": [{"role": "user", "content": _prompt(kw, region)}],
     }
     try:

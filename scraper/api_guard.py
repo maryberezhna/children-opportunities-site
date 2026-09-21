@@ -105,3 +105,16 @@ def _exit_red() -> None:
         sys.stderr.flush()
     finally:
         os._exit(EXIT_CODE)
+
+
+# Моделі, що приймають output_config.effort. Haiku 4.5 і старші на ньому
+# падають із 400, а модель пошукових агентів можна перевизначити змінною
+# (DISCOVER_MODEL). Невідома модель — без параметра: це лише дорожче, не збій.
+_EFFORT_MODELS = ("sonnet-5", "sonnet-4-6", "opus-5", "opus-4-5", "opus-4-6",
+                  "opus-4-7", "opus-4-8", "fable", "mythos")
+
+
+def effort_config(model: str, level: str) -> dict:
+    """{"output_config": {"effort": level}} — якщо модель це приймає, інакше {}."""
+    m = (model or "").lower()
+    return {"output_config": {"effort": level}} if any(k in m for k in _EFFORT_MODELS) else {}
