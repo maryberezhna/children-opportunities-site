@@ -21,15 +21,18 @@ const TYPES = [
 const L = { display: 'block', fontSize: 13, color: '#54617a', margin: '13px 0 4px', fontWeight: 600 };
 const I = { width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '9px 12px', borderRadius: 9, border: '1px solid #d3dbe9', fontFamily: 'inherit' };
 
-export default function EditForm({ opp }) {
+export default function EditForm({ opp, stub = false }) {
   const [f, setF] = useState({
     title: opp.title || '', summary: opp.summary || '', deadline: opp.deadline || '',
-    age_from: opp.age_from ?? 0, age_to: opp.age_to ?? 18,
+    // stub — чернетка, створена кнопкою «Додати на сайт» з пропозиції: у базі
+    // тип «Курс» і вік 0–18 лише тому, що без них запис не зберегти. Показати
+    // їх тут — означало б видати заглушку за факт.
+    age_from: stub ? '' : (opp.age_from ?? 0), age_to: stub ? '' : (opp.age_to ?? 18),
     event_start_date: opp.event_start_date || '',
     event_end_date: opp.event_end_date || '', recurrence: opp.recurrence || '',
     results_date: opp.results_date || '',
     apply_url: opp.apply_url || '',
-    cost_type: opp.cost_type || '', opportunity_type: opp.opportunity_type || 'course',
+    cost_type: opp.cost_type || '', opportunity_type: stub ? '' : (opp.opportunity_type || 'course'),
     format: opp.format || '', cities: (opp.cities || []).join(', '),
     price_note: opp.price_note || '', details: opp.details || '',
     // Прапорець, а не рядок: модератор думає «так, це в топ цього тижня»,
@@ -94,7 +97,7 @@ export default function EditForm({ opp }) {
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік до</label><input type="number" min="0" max="18" style={I} value={f.age_to} onChange={up('age_to')} /></div>
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 170px' }}><label style={L}>Тип</label><select style={I} value={f.opportunity_type} onChange={up('opportunity_type')}>{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+        <div style={{ flex: '1 1 170px' }}><label style={L}>Тип</label><select style={I} value={f.opportunity_type} onChange={up('opportunity_type')}>{f.opportunity_type === '' ? <option value="">— не визначено —</option> : null}{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         <div style={{ flex: '1 1 170px' }}><label style={L}>Вартість</label><select style={I} value={f.cost_type} onChange={up('cost_type')}>{COST.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>

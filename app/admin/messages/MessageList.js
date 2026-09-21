@@ -38,6 +38,35 @@ function Message({ row, onChange }) {
   const [noteOpen, setNoteOpen] = useState(false);
   const t = CONTACT_TYPE_MAP[row.type] || CONTACT_TYPE_MAP.other;
 
+  // «Додати на сайт» / «Відхилити» — лише для пропозицій можливостей.
+  // Після «додати» одразу відкриваємо форму правки: там пʼять обовʼязкових
+  // полів, без яких запис на сайт не вийде.
+  const [err, setErr] = useState('');
+  const suggestionAction = async (action) => {
+    setBusy(true); setErr('');
+    try {
+      const res = await fetch('/api/admin/suggestion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: row.id, action }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErr(body.error === 'no_url'
+          ? 'Немає посилання на можливість — додати нема з чого.'
+          : 'Не вийшло. Оновіть сторінку й спробуйте ще раз.');
+        return;
+      }
+      if (action === 'add' && body.opportunityId) {
+        window.location.href = `/admin/edit/${body.opportunityId}`;
+        return;
+      }
+      onChange(row.id, { status: 'done', outcome: 'відхилено вручну' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const setStatus = async (status, withNote = false) => {
     setBusy(true);
     try {
@@ -100,6 +129,31 @@ function Message({ row, onChange }) {
             з поп-апа · {row.outcome || 'ще не опрацьовано'}
           </span>
         )}
+        {row.kind === 'suggestion' && row.opportunityId && (
+          <a href={`/admin/edit/${row.opportunityId}`} style={{ ...btnS, textDecoration: 'none', color: '#131b28' }}>
+            📝 Відкрити запис{row.opportunityStatus === 'draft' ? ' (чернетка)' : ''}
+          </a>
+        )}
+        {row.kind === 'suggestion' && row.status !== 'done' && !row.opportunityId && (
+          <button
+            type="button"
+            style={{ ...btnS, background: '#15803d', borderColor: '#15803d', color: '#fff' }}
+            disabled={busy}
+            onClick={() => suggestionAction('add')}
+          >
+            ➕ Додати на сайт
+          </button>
+        )}
+        {row.kind === 'suggestion' && row.status !== 'done' && (
+          <button
+            type="button"
+            style={{ ...btnS, borderColor: '#b42318', color: '#b42318' }}
+            disabled={busy}
+            onClick={() => suggestionAction('reject')}
+          >
+            ✕ Відхилити
+          </button>
+        )}
         {row.kind !== 'suggestion' && row.status !== 'in_progress' && (
           <button type="button" style={btnS} disabled={busy} onClick={() => setStatus('in_progress')}>
             ⏳ В роботу
@@ -134,6 +188,7 @@ function Message({ row, onChange }) {
           </a>
         )}
       </div>
+      {err ? <p style={{ ...metaS, color: '#b42318', margin: '8px 0 0' }}>{err}</p> : null}
     </div>
   );
 }

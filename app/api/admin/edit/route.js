@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { isoWeek } from '@/lib/week';
 import { missingRequired } from '@/lib/required';
+import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -38,9 +39,15 @@ export async function POST(request) {
   if (typeof b.summary === 'string') patch.summary = b.summary.trim().slice(0, 400);
   if (b.deadline === '' || b.deadline == null) patch.deadline = null;
   else if (typeof b.deadline === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(b.deadline)) patch.deadline = b.deadline;
-  patch.age_from = clampAge(b.age_from, 0);
-  patch.age_to = clampAge(b.age_to, 18);
-  if (patch.age_from > patch.age_to) { patch.age_from = 0; patch.age_to = 18; }
+  // Порожній вік приходить лише з чернетки, створеної з пропозиції (форма
+  // показує заглушку 0–18 порожньою). Тоді вік не пишемо зовсім — і публікація
+  // нижче спіткнеться об «бракує: вік», а не пропустить заглушку як факт.
+  const hasAges = ![b.age_from, b.age_to].some((v) => v === '' || v == null);
+  if (hasAges) {
+    patch.age_from = clampAge(b.age_from, 0);
+    patch.age_to = clampAge(b.age_to, 18);
+    if (patch.age_from > patch.age_to) { patch.age_from = 0; patch.age_to = 18; }
+  }
   patch.cost_type = COST.includes(b.cost_type) ? b.cost_type : null;
   patch.event_start_date = isDate(b.event_start_date) ? b.event_start_date : null;
   patch.event_end_date = isDate(b.event_end_date) ? b.event_end_date : null;
@@ -83,6 +90,17 @@ export async function POST(request) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return Response.json({ ok: false, error: 'server' }, { status: 500 });
   const supabase = createClient(url, key, { auth: { persistSession: false } });
+
+  // Людина сама обрала тип і вік — заглушка з пропозиції стала фактом, знімаємо
+  // позначку, і форма далі показує збережені значення.
+  if (hasAges && TYPES.includes(b.opportunity_type)) {
+    const { data: cur } = await supabase.from('opportunities')
+      .select('admin_comment').eq('id', b.id).maybeSingle();
+    if (cur && String(cur.admin_comment || '').includes(STUB_MARK)) {
+      patch.admin_comment = withoutStubMark(cur.admin_comment);
+    }
+  }
+
   const { error } = await supabase.from('opportunities').update(patch).eq('id', b.id).select('id').maybeSingle();
   if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
   return Response.json({ ok: true, published: !!b.publish });

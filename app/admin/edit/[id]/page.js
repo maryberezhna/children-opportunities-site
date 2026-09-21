@@ -5,6 +5,7 @@ import AdminNav from '../../AdminNav';
 import LoginForm from '../../LoginForm';
 import EditForm from './EditForm';
 import { isoWeek } from '@/lib/week';
+import { isStubDraft } from '@/lib/suggestions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -37,7 +38,7 @@ export default async function EditPage({ params }) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data } = await supabase
       .from('opportunities')
-      .select('id, title, summary, deadline, event_start_date, event_end_date, results_date, recurrence, age_from, age_to, cost_type, opportunity_type, format, cities, countries, is_international, source, source_url, apply_url, status, price_note, details, featured_week')
+      .select('id, title, summary, deadline, event_start_date, event_end_date, results_date, recurrence, age_from, age_to, cost_type, opportunity_type, format, cities, countries, is_international, source, source_url, apply_url, status, price_note, details, featured_week, admin_comment')
       .eq('id', params.id)
       .maybeSingle();
     opp = data;
@@ -54,7 +55,9 @@ export default async function EditPage({ params }) {
       <AdminNav current="queue" />
       <h1 style={{ fontSize: 22, marginBottom: 2 }}>Редагувати можливість</h1>
       <p style={{ color: '#54617a', fontSize: 14, marginTop: 0 }}>{opp.source || '—'} · статус: <b>{opp.status}</b></p>
-      <EditForm opp={{ ...opp, currentWeek: isoWeek() }} />
+      {/* Чернетка з пропозиції: тип і вік у базі — заглушка, форма показує їх
+          порожніми, доки їх не обере людина. */}
+      <EditForm opp={{ ...opp, currentWeek: isoWeek() }} stub={isStubDraft(opp)} />
     </>,
   );
 }
