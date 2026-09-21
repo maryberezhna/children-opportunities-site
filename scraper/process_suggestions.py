@@ -242,13 +242,56 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
     return "imported", label
 
 
+def recheck_waiting(sb, apply: bool = False, limit: int = 200) -> int:
+    """Пропозиції, що чекають людини, ще раз звіряємо з базою.
+
+    Дублі ловимо ДО читання сторінки — але лише раз, у момент надходження.
+    Якщо запис про ту саму можливість зʼявився ПІЗНІШЕ, пропозиція так і
+    висіла в «потребує людини»: 14.09.2026 дослідження «Дітям захисників»
+    спершу створило пропозиції, а записи про ті самі виплати — того ж дня,
+    але пізніше. Троє з шести тиждень чекали розбору, хоча давно були в базі
+    (розбір Марії 21.09.2026).
+
+    Прохід дешевий: два-три запити на пропозицію, без мережі й без моделі.
+    Повертає, скільки закрито як дублі.
+    """
+    rows = (sb.table("opportunity_suggestions").select("*")
+            .eq("status", "needs_human").order("created_at").limit(limit)
+            .execute().data or [])
+    closed = 0
+    for s in rows:
+        url = (s.get("url") or "").strip()
+        if not url.startswith(("http://", "https://")):
+            continue
+        existing = find_existing(sb, url)
+        if not existing:
+            continue
+        closed += 1
+        title = (s.get("title") or url)[:56]
+        print(f"♻️ {title:<56} тепер уже в базі: {existing['title'][:50]}")
+        if not apply:
+            continue
+        sb.table("opportunity_suggestions").update(
+            {"status": "duplicate"}).eq("id", s["id"]).execute()
+        contact = (s.get("contact") or "").strip()
+        if EMAIL_RE.match(contact):
+            send_email(contact, SUBJECT_DUP, BODY_DUPLICATE.format(
+                title=s.get("title") or url, url=f"{SITE}/o/{existing['slug']}", site=SITE))
+    return closed
+
+
 def run(apply: bool = False, limit: int = 50) -> dict:
     sb = get_client()
+    # Спершу — ті, що вже чекають людини: частина з них могла стати дублем.
+    rechecked = recheck_waiting(sb, apply)
+    if rechecked:
+        print(f"З черги «потребує людини» закрито як дублі: {rechecked}\n")
+
     rows = (sb.table("opportunity_suggestions").select("*")
             .eq("status", "new").order("created_at").limit(limit).execute().data or [])
     print(f"Пропозицій зі статусом «new»: {len(rows)}\n")
     if not rows:
-        return {}
+        return {"duplicate": rechecked} if rechecked else {}
 
     normalizer = Normalizer()
     stats = {}
