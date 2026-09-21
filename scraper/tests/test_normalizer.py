@@ -345,3 +345,36 @@ class FormatFromText(unittest.TestCase):
 
     def test_model_answer_wins(self):
         self.assertEqual(self.fmt("Онлайн-курс", fmt="offline")["format"], "offline")
+
+
+class AdultParticipant(unittest.TestCase):
+    """Учасник — дорослий, діти лише умова участі (21.09.2026)."""
+
+    def check(self, title, summary="", typ="grant"):
+        from normalizer import looks_adult_participant
+        return looks_adult_participant({"title": title, "summary": summary, "opportunity_type": typ})
+
+    def test_business_program_for_parents(self):
+        self.assertTrue(self.check(
+            "Безкоштовна бізнес-програма для батьків із можливістю отримати грант на власну справу",
+            "Онлайн-навчання з підприємництва для батьків сімей із дітьми до 18 років"))
+
+    def test_grant_for_women_entrepreneurs(self):
+        self.assertTrue(self.check("Грантова програма для жінок «СТВОРЮЙ!»",
+                                   "підтримка підприємиць у виробництві"))
+
+    def test_child_is_the_participant(self):
+        self.assertFalse(self.check("Курс підприємництва для школярів", "бізнес-план для підлітків"))
+        self.assertFalse(self.check("Табір для дітей ветеранів", "оздоровлення дітей", typ="camp"))
+
+    def test_payment_for_the_child_is_in_scope(self):
+        self.assertFalse(self.check("Допомога для батьків на відкриття бізнесу",
+                                    "виплата родинам з дітьми", typ="allowance"))
+
+    def test_goes_to_a_human_not_to_the_site(self):
+        from normalizer import _sanitize
+        d = _sanitize({"title": "Бізнес-програма для батьків", "summary": "грант на власну справу",
+                       "opportunity_type": "grant", "cost_type": "free", "format": "online",
+                       "age_from": 0, "age_to": 18, "recurrence": "annual"})
+        self.assertEqual(d["status"], "draft")
+        self.assertIn("не для дітей", d["admin_comment"])

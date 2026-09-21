@@ -40,6 +40,7 @@ import argparse
 import json
 import logging
 import os
+import re
 import time
 from collections import Counter
 from datetime import date, datetime, timedelta, timezone
@@ -199,6 +200,29 @@ def decide_check(row: dict, out: dict, page: str, today: date) -> dict:
 
     quote = f"«{evidence[:100]}»" if evidence else "без цитати"
 
+    # Закриття — лише на дослівній цитаті зі сторінки й без суперечності з
+    # датами запису. 21.09.2026 перевірка закрила бізнес-програму з дедлайном
+    # 24.09, а «доказом» записала власний висновок: «Дедлайн: 24 вересня 2026
+    # року. Сьогодні 2026-09-21, дедлайн уже минув». Друге речення не зі
+    # сторінки й хибне — до дедлайну лишалось три дні. Цитату звіряли лише для
+    # виду в часі, для самого закриття — ні.
+    if state in ("ended", "gone"):
+        why = None
+        if not (evidence and evidence_in_text(evidence, page)):
+            why = "висновок без дослівної цитати зі сторінки"
+        elif state == "ended":
+            ahead = [d for d in (row.get("deadline"), row.get("event_start_date"),
+                                 row.get("event_end_date")) if d and str(d)[:10] >= iso_today]
+            if ahead and not _CLOSED_WORDS.search(evidence):
+                why = f"у записі майбутня дата {min(ahead)}, а в цитаті немає слів про завершення"
+        if why:
+            days = UNKNOWN_RECHECK_DAYS if row.get("status") == "active" else RETRY_DAYS
+            patch["recheck_at"] = (today + timedelta(days=days)).isoformat()
+            patch["admin_comment"] = _with_trace(
+                row, f"lifecycle {iso_today}: не закрито — {why}: {quote}"[:240])
+            patch["content_checked_at"] = datetime.now(timezone.utc).isoformat()
+            return patch
+
     if state == "gone":
         patch.update({"status": "closed", "recheck_at": None})
         note = f"програми за адресою більше немає — перевір: {quote}"
@@ -254,6 +278,14 @@ def _verdict(row: dict, patch: dict, state: str, **extra) -> dict:
         "has_dates": any(patch.get(k, row.get(k)) for k in dates),
         **extra,
     }
+
+
+# Слова, якими сторінка сама каже, що набір чи подія позаду. Без них «сезон
+# завершено» при майбутній даті в записі — суперечність, а не факт.
+_CLOSED_WORDS = re.compile(
+    r"заверш|закінч|закрит|припинен|скасован|відбул|пройш|минул|архів|"
+    r"closed|ended|finished|cancel|over\b|no longer",
+    re.IGNORECASE)
 
 
 UNREADABLE_MARK = "джерело не прочиталось"
