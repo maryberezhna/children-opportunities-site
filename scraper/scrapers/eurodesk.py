@@ -142,6 +142,11 @@ def section_html(section) -> str:
 
 PROXY_PATH = "/functions/v1/eurodesk-proxy"
 PROXY_TIMEOUT_S = 180
+# Функція виконується в регіоні, найближчому до того, хто її кличе. Виклик із
+# GitHub потрапляв на us-west-1 — і звідти Eurodesk так само віддає 403.
+# Перевірено 21.09.2026: us-west-1 → 403; eu-central-1, eu-west-2, us-east-1 →
+# 200. Франкфурт — найближче до Eurodesk (Брюссель).
+PROXY_REGION = "eu-central-1"
 
 
 async def _via_supabase() -> dict | None:
@@ -152,7 +157,8 @@ async def _via_supabase() -> dict | None:
         return None
     async with httpx.AsyncClient(timeout=PROXY_TIMEOUT_S) as client:
         r = await client.get(f"{base}{PROXY_PATH}", params={"section": "open"},
-                             headers={"Authorization": f"Bearer {key}"})
+                             headers={"Authorization": f"Bearer {key}",
+                                      "x-region": PROXY_REGION})
     if r.status_code != 200:
         raise RuntimeError(f"посередник відповів {r.status_code}: {r.text[:200]}")
     data = r.json()
