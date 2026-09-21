@@ -151,6 +151,18 @@ class BuildPatch(unittest.TestCase):
         _, patch, _ = ac.build_patch(dict(ROW, cost_type="paid_premium"), ans, page, TODAY)
         self.assertNotIn("cost_type", patch)
 
+    def test_cost_quote_must_be_about_money(self):
+        # Сухий прогін 21.09.2026: дослівна цитата, але не про оплату.
+        page = "Мистецтвознавці. Записатись до гуртка. Набір на 2026-2027 навчальний рік."
+        ans = {"verdict": "confirmed", "evidence": "Мистецтвознавці. Записатись до гуртка",
+               "cost": "paid", "cost_evidence": "Набір на 2026-2027 навчальний рік"}
+        _, patch, _ = ac.build_patch(dict(ROW, title="Мистецтвознавці"), ans, page, TODAY)
+        self.assertNotIn("cost_type", patch)
+
+    def test_generic_title_matched_whole(self):
+        self.assertTrue(ac.names_activity("СтудіЯ+Ти Відділи Психолого-методичного забезпечення", "СтудіЯ+Ти"))
+        self.assertFalse(ac.names_activity("Студія декоративного розпису", "СтудіЯ+Ти"))
+
     def test_age_outside_0_18_is_ignored(self):
         ans = {"verdict": "confirmed", "evidence": "Гурток «Астрономія» для учнів 4-11 класів",
                "age_from": 9, "age_to": 23, "age_evidence": "для учнів 4-11 класів"}

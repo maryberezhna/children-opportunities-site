@@ -50,6 +50,7 @@ import logging
 import os
 import re
 import sys
+import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
@@ -142,17 +143,39 @@ def page_text(html: str) -> str:
     return " ".join(soup.get_text(" ").split())
 
 
+# До одного сайту — по одному запиту з паузою. Сайт Харківського палацу на
+# чотири паралельні запити відповідав 508 (ліміт хостингу) — 10 з 57 гуртків
+# сухого прогону 21.09.2026 лишились неперевіреними лише через це.
+HOST_INTERVAL = 2.0
+_host_locks: dict[str, threading.Lock] = {}
+_host_last: dict[str, float] = {}
+_locks_guard = threading.Lock()
+
+
+def _polite_get(client: httpx.Client, url: str) -> httpx.Response:
+    host = _host(url)
+    with _locks_guard:
+        lock = _host_locks.setdefault(host, threading.Lock())
+    with lock:
+        wait = _host_last.get(host, 0) + HOST_INTERVAL - time.monotonic()
+        if wait > 0:
+            time.sleep(wait)
+        try:
+            return client.get(url)
+        finally:
+            _host_last[host] = time.monotonic()
+
+
 def fetch(client: httpx.Client, url: str) -> tuple[str | None, str | None, str]:
     """(html, текст, стан). Стан — коротко для моделі й звіту."""
-    for attempt in range(2):
+    for attempt in range(3):
         try:
-            r = client.get(url)
+            r = _polite_get(client, url)
         except Exception as e:
             return None, None, f"не відкривається ({type(e).__name__})"
-        # Палац у Харкові на паралельні запити відповідав 508 — один повтор.
-        if r.status_code < 500 or attempt:
+        if r.status_code < 500 or attempt == 2:
             break
-        time.sleep(5)
+        time.sleep(15 * (attempt + 1))
     if r.status_code >= 400:
         return None, None, f"HTTP {r.status_code}"
     text = page_text(r.text)
@@ -332,6 +355,13 @@ GENERIC = {"гурток", "гуртка", "гуртки", "студія", "ст
 _APOS = str.maketrans({"'": "ʼ", "’": "ʼ"})
 
 
+# Доказ вартості має говорити про гроші, доказ віку — про вік. Сухий прогін
+# 21.09.2026: «Мистецтвознавців» ЦПР переставило на платне цитатою «Запис до
+# гуртка… Набір на 2026-2027 навчальний рік» — дослівною, але не про оплату.
+COST_WORDS = re.compile(r"(грн|₴|uah|оплат|платн|варт|цін|абонемент|внес|безкоштовн|безоплатн)", re.I)
+AGE_WORDS = re.compile(r"(рок|рік|літ|вік|клас|\d\s*-\s*\d|від\s*\d)", re.I)
+
+
 def names_activity(evidence: str, title: str) -> bool:
     """Цитата згадує сам гурток чи напрям, а не лише заклад.
 
@@ -342,6 +372,10 @@ def names_activity(evidence: str, title: str) -> bool:
     ev = (evidence or "").lower().translate(_APOS)
     words = re.findall(r"[^\W\d_]+(?:ʼ[^\W\d_]+)?", (title or "").lower().translate(_APOS))
     stems = [w[:max(4, min(6, len(w) - 2))] for w in words if len(w) >= 4 and w not in GENERIC]
+    if not stems:
+        # Назва лише із загальних слів — «СтудіЯ+Ти»: звіряємо її цілком.
+        whole = " ".join(words)
+        return bool(whole) and whole in " ".join(re.findall(r"[^\W\d_]+(?:ʼ[^\W\d_]+)?", ev))
     return any(s in ev for s in stems)
 
 
@@ -389,7 +423,8 @@ def build_patch(row: dict, ans: dict, evidence_text: str, today: str,
     patch = {"content_checked_at": datetime.now(timezone.utc).isoformat()}
     fixes = []
     af, at = ans.get("age_from"), ans.get("age_to")
-    if (af is not None or at is not None) and quoted(ans.get("age_evidence") or "", evidence_text):
+    age_ev = ans.get("age_evidence") or ""
+    if (af is not None or at is not None) and AGE_WORDS.search(age_ev) and quoted(age_ev, evidence_text):
         new_from = af if isinstance(af, int) and 0 <= af <= 18 else row.get("age_from")
         new_to = at if isinstance(at, int) and 0 <= at <= 18 else row.get("age_to")
         if new_from is not None and new_to is not None and new_from <= new_to:
@@ -400,7 +435,8 @@ def build_patch(row: dict, ans: dict, evidence_text: str, today: str,
             if "age_from" in patch or "age_to" in patch:
                 fixes.append(f"вік {row.get('age_from')}-{row.get('age_to')} → {new_from}-{new_to}")
     cost = ans.get("cost") or ""
-    if cost and quoted(ans.get("cost_evidence") or "", evidence_text):
+    cost_ev = ans.get("cost_evidence") or ""
+    if cost and COST_WORDS.search(cost_ev) and quoted(cost_ev, evidence_text):
         current = row.get("cost_type")
         new = "free" if cost == "free" else (current if current in ("paid_affordable", "paid_premium")
                                               else "paid_affordable")
