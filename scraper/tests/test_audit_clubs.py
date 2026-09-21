@@ -93,6 +93,21 @@ class BuildPatch(unittest.TestCase):
         self.assertEqual(verdict, "unverified")
         self.assertEqual(patch, {})
 
+    def test_address_is_not_confirmation(self):
+        # Пробний прогін 21.09.2026: «Зарубіжна література» «підтверджена» адресою.
+        page = "Обласний центр творчості. Адреса: 10003 м. Житомир вул Троянівська 20"
+        ans = {"verdict": "confirmed", "evidence": "Адреса: 10003 м. Житомир вул Троянівська 20"}
+        verdict, patch, _ = ac.build_patch(dict(ROW, title="Зарубіжна література"), ans, page, TODAY)
+        self.assertEqual((verdict, patch), ("unverified", {}))
+
+    def test_names_activity_by_stem(self):
+        self.assertTrue(ac.names_activity("17 музичних інструментів: скрипка, віолончель",
+                                          "Струнно-смичкові інструменти"))
+        self.assertTrue(ac.names_activity("гурток «Шахи» для дітей від 6 років", "Гурток «Шахи»"))
+        self.assertTrue(ac.names_activity("гурток в’язання гачком", "Гурток «В'язання»"))
+        # «Гурток» є на кожній сторінці — сам по собі нічого не підтверджує.
+        self.assertFalse(ac.names_activity("Запрошуємо до гуртків центру", "Гурток «Шахи»"))
+
     def test_gone_closes_with_quote(self):
         page = "Шановні батьки! З 1 вересня 2025 року студія припинила роботу."
         ans = {"verdict": "gone", "evidence": "З 1 вересня 2025 року студія припинила роботу"}
@@ -111,9 +126,9 @@ class BuildPatch(unittest.TestCase):
         self.assertIn("не підтверджено", patch["moderation_note"])
 
     def test_paid_needs_quote_and_keeps_premium(self):
-        page = "Вартість заняття — 250 грн, абонемент на місяць 1800 грн."
-        ans = {"verdict": "confirmed", "evidence": "Вартість заняття — 250 грн",
-               "cost": "paid", "cost_evidence": "Вартість заняття — 250 грн"}
+        page = "Гурток «Астрономія»: вартість заняття — 250 грн, абонемент на місяць 1800 грн."
+        ans = {"verdict": "confirmed", "evidence": "Гурток «Астрономія»: вартість заняття — 250 грн",
+               "cost": "paid", "cost_evidence": "вартість заняття — 250 грн"}
         _, patch, _ = ac.build_patch(dict(ROW, cost_type="free"), ans, page, TODAY)
         self.assertEqual(patch["cost_type"], "paid_affordable")
         _, patch, _ = ac.build_patch(dict(ROW, cost_type="paid_premium"), ans, page, TODAY)
