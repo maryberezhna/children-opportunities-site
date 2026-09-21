@@ -100,7 +100,7 @@ export default function TermsPageEn() {
             Access is granted <strong>immediately after successful payment</strong>:
             the bot confirms the payment, and the user receives notifications based
             on the child’s profile filled in in the bot. Notifications are sent at
-            the frequency the user chooses in the bot: every 2 days or once a week
+            the frequency the user chooses in the bot: daily, every 2 days or once a week
             (new opportunities are checked daily). The service is provided
             remotely; there is no physical delivery.
           </p>

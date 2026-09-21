@@ -165,7 +165,7 @@ const L = {
     howTitle: 'Як це працює',
     how4: [
       ['Розкажіть про вподобання дитини', 'Вік, що подобається, формат, місто й чи показувати платне. Особливі обставини — лише за бажанням. Кілька дітей — окремий профіль для кожної. Імені, прізвища чи школи дитини не запитуємо.'],
-      ['Отримуйте нове під профіль', 'Щодня перевіряємо нові записи й надсилаємо ті, що підходять кожній дитині. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
+      ['Отримуйте нове під профіль', 'Щодня перевіряємо нові записи. Те, що підходить кожній дитині, надсилаємо так часто, як ви обрали: щодня, раз на 2 дні чи раз на тиждень. Якщо нового немає два тижні, нагадаємо про те, що вже відкрито.'],
       ['Не пропускайте дедлайни', 'Стипендії, гранти й обміни — за 4 і 2 тижні: на документи й есе потрібен час. Конкурси, олімпіади й табори — за 2 тижні. Курси й гуртки — за тиждень. І останній дзвінок — за кілька днів.'],
       // Рішення Марії 19.09.2026: допомогу із заявкою поки не робимо, тож
       // блок лишається з позначкою «скоро» — обіцяти те, чого ще немає, не
@@ -323,7 +323,7 @@ const L = {
     howTitle: 'How it works',
     how4: [
       ['Tell us what your child enjoys', 'Age, what they like, format, city and whether to show paid options. Special circumstances only if you choose to share them. Several children — a profile for each. We don’t ask for your child’s name, surname or school.'],
-      ['Get what fits the profile', 'Every day we check new listings and send the ones that fit each child. If nothing new shows up for two weeks, we remind you of what is already open.'],
+      ['Get what fits the profile', 'Every day we check new listings. What fits each child we send as often as you choose: daily, every 2 days or once a week. If nothing new shows up for two weeks, we remind you of what is already open.'],
       ['Never miss a deadline', 'Scholarships, grants and exchanges — 4 and 2 weeks ahead: documents and essays take time. Competitions, olympiads and camps — 2 weeks. Courses and clubs — a week. And a last call a few days before.'],
       ['Ask about the application', 'In the works: you will be able to message the bot when you are not sure what to fill in or which documents you need.', true],
     ],

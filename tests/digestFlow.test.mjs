@@ -167,36 +167,37 @@ test('частота: зміна з меню не видає «Профіль г
 /**
  * «⚡ Щойно зʼявиться» прибрано 21.09.2026 (рішення Марії: «зупини і видали
  * поки»): добірка йде раз на день, розклад GitHub запізнюється на 4–5 годин,
- * тож «щойно» було неправдою. Лишились «раз на 2 дні» й «раз на тиждень»;
- * старе instant у базі й порожнє значення — «раз на 2 дні».
+ * тож «щойно» було неправдою. Того ж дня Марія повернула чесне «щодня» —
+ * першим і за замовчуванням; старе instant у базі й порожнє значення — «щодня».
  * Дзеркало в Python: scraper/personal_digest.freq_days.
  */
 test('частота: варіанта «Щойно зʼявиться» немає', async () => {
-  assert.deepEqual(FLOW_FREQ.map(([v]) => v), ['2days', 'weekly']);
+  assert.deepEqual(FLOW_FREQ.map(([v]) => v), ['daily', '2days', 'weekly']);
   assert.ok(FLOW_FREQ.every(([, label]) => !/щойно/i.test(label)));
-  assert.equal(DEFAULT_FREQ, '2days');
+  assert.equal(DEFAULT_FREQ, 'daily');
 
   const { db, bot } = await setup();
   db._rows.digest_subscribers[0].status = 'active';
   await beginFreq(bot, db, '77');
-  assert.deepEqual(buttons(bot.last()), ['flow:freq:2days', 'flow:freq:weekly']);
+  assert.deepEqual(buttons(bot.last()), ['flow:freq:daily', 'flow:freq:2days', 'flow:freq:weekly']);
 });
 
-test('частота: старе instant і невідоме значення — «раз на 2 дні»', () => {
-  for (const legacy of ['instant', null, undefined, '', 'daily']) {
-    assert.equal(freqOf(legacy), '2days', String(legacy));
+test('частота: старе instant і невідоме значення — «щодня»', () => {
+  for (const legacy of ['instant', null, undefined, '', 'щойно']) {
+    assert.equal(freqOf(legacy), 'daily', String(legacy));
   }
+  assert.equal(freqOf('daily'), 'daily');
   assert.equal(freqOf('2days'), '2days');
   assert.equal(freqOf('weekly'), 'weekly');
 });
 
-test('частота: кнопка «Щойно» зі старого повідомлення зберігає «раз на 2 дні»', async () => {
+test('частота: кнопка «Щойно» зі старого повідомлення зберігає «щодня»', async () => {
   const { db, bot } = await setup();
   db._rows.digest_subscribers[0].status = 'active';
   await beginFreq(bot, db, '77');
   await handleFlowCallback(bot, db, click('flow:freq:instant'));
-  assert.equal(db._rows.digest_subscribers[0].digest_freq, '2days');
-  assert.ok(bot.sent.some((m) => /Раз на 2 дні/.test(m.text)));
+  assert.equal(db._rows.digest_subscribers[0].digest_freq, 'daily');
+  assert.ok(bot.sent.some((m) => /Щодня/.test(m.text)));
 });
 
 test('анкета: «Профіль готовий» не обіцяє «щойно зʼявиться»', async () => {

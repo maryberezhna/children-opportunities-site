@@ -33,6 +33,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -78,33 +79,40 @@ THEME_LABEL = {"format": "Гуртки/курси", "stem": "STEM/IT", "arts": "
 AGE_BANDS = {"0-3": (0, 3), "4-6": (4, 6), "7-10": (7, 10), "11-14": (11, 14), "15-18": (15, 18)}
 
 
-# Скільки днів мовчимо між добірками для кожного варіанта анкети.
-# Варіанта «⚡ Щойно зʼявиться» (instant) більше немає — рішення Марії
-# 21.09.2026: «зупини і видали поки». Він обіцяв «щойно зʼявиться», а добірка
-# насправді йде раз на день, і розклад GitHub запізнюється на 4–5 годин.
-# Дзеркало в JS: lib/digestFlow.js (FLOW_FREQ, freqOf).
-FREQ_DAYS = {"2days": 2, "weekly": 7}
-DEFAULT_FREQ = "2days"
+# Скільки календарних днів (за Києвом) між добірками для кожного варіанта.
+# «⚡ Щойно зʼявиться» (instant) прибрано 21.09.2026 — обіцяв те, чого
+# розсилка раз на день не виконує; того ж дня Марія повернула чесне «щодня»,
+# першим і за замовчуванням. Дзеркало в JS: lib/digestFlow.js (FLOW_FREQ, freqOf).
+FREQ_DAYS = {"daily": 1, "2days": 2, "weekly": 7}
+DEFAULT_FREQ = "daily"
+KYIV = ZoneInfo("Europe/Kyiv")
 
 
 def freq_days(value) -> int:
     """Пауза між добірками в днях. Порожнє, невідоме й старе «instant» —
-    це «раз на 2 дні»: колишньої поведінки «щодня» не отримує ніхто."""
+    це «щодня»."""
     return FREQ_DAYS.get(value, FREQ_DAYS[DEFAULT_FREQ])
 
 
 def freq_due(sub: dict, now=None) -> bool:
     """Чи можна слати добірку цьому підписнику зараз.
 
+    Рахуємо календарні дні за Києвом, а не години: розклад GitHub запускає
+    розсилку то о 12:00, то о 16:00, і «24 години від минулої» інколи
+    припадали б на завтра — людина, що обрала «щодня», пропускала б день.
+    Тепер «щодня» = не більше однієї добірки за київську добу, «раз на 2
+    дні» = через день, і повторний запуск того самого дня дубля не шле.
+
     Порожній last_sent_at (новий підписник) — можна завжди: перша добірка не
-    має чекати ні двох днів, ні тижня. Частоту читає freq_days: порожнє,
-    невідоме й старе «instant» — «раз на 2 дні»."""
+    має чекати ні двох днів, ні тижня."""
     days = freq_days(sub.get("digest_freq"))
     last = parse_ts(sub.get("last_sent_at"))
     if not last:
         return True
+    if last.tzinfo is None:
+        last = last.replace(tzinfo=timezone.utc)
     now = now or datetime.now(timezone.utc)
-    return (now - last) >= timedelta(days=days)
+    return (now.astimezone(KYIV).date() - last.astimezone(KYIV).date()).days >= days
 
 
 def match_themes(text: str) -> set:
@@ -555,8 +563,8 @@ def main():
 
     sent = 0
     for sub in subs:
-        # Частота з анкети (digest_subscribers.digest_freq): «раз на 2 дні» чи
-        # «раз на тиждень»; старе «instant» і порожнє — теж 2 дні. Пропущені
+        # Частота з анкети (digest_subscribers.digest_freq): «щодня», «раз на 2
+        # дні» чи «раз на тиждень»; старе «instant» і порожнє — «щодня». Пропущені
         # дні не втрачаються: наступного разу підуть усі можливості, що
         # зʼявились від останньої відправки. Нагадування про дедлайни живуть у deadline_reminders.py і
         # цієї межі не знають — пропущений дедлайн не «менше листів», а
