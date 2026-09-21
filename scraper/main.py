@@ -267,6 +267,13 @@ def process_pending(normalizer, sb_client, limit=500):
                     logger.error("recheck_at on change failed (%s): %s", dup["id"], e)
             continue
 
+        if raw_store.not_an_opportunity(item.get("raw_title")):
+            raw_store.mark(sb_client, item["id"], "rejected",
+                           error="тендер чи вакансія в заголовку — не для дітей, до LLM не йшло",
+                           reason_code="not_for_kids")
+            stats["skipped_prefilter"] = stats.get("skipped_prefilter", 0) + 1
+            continue
+
         try:
             normalized = normalizer.normalize(
                 raw_text=item.get("raw_text", ""),
@@ -366,6 +373,7 @@ def process_pending(normalizer, sb_client, limit=500):
     print(f"✅ Екстракція: {stats['processed']} збережено "
           f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
           f"{stats['skipped_dup']} пропущено до LLM (вже є), "
+          f"{stats.get('skipped_prefilter', 0)} — тендери й вакансії (до LLM не йшли), "
           f"{stats['rejected']} відхилено, {stats['review']} у карантин, "
           f"{stats['retry']} на повтор, "
           f"{stats['failed']} вичерпали спроби")
