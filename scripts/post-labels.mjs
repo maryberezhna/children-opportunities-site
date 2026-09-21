@@ -1,6 +1,6 @@
-// Підписи для постів у Telegram: дата подачі й вартість.
-// Окремим модулем, щоб їх можна було перевірити тестом — check-deadlines.mjs
-// і post-to-telegram.mjs при імпорті одразу йдуть у базу.
+// Підписи для постів: дата подачі, вартість, посилання на сторінку.
+// Окремим модулем, щоб їх можна було перевірити тестом — check-deadlines.mjs,
+// post-to-telegram.mjs і content-agent.mjs при імпорті одразу йдуть у базу.
 import { plural } from '../lib/plural.js';
 
 const MONTHS = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
@@ -33,4 +33,31 @@ const COST = { free: 'Безкоштовно', paid_affordable: 'Платно', 
 
 export function costLabel(costType) {
   return COST[costType] || null;
+}
+
+// Чернетка поста веде на сторінку САМЕ цієї можливості, а не на головну
+// (Марія, 21.09.2026, про чернетку «Erasmus+ WITHIN»: «отут можна прям
+// посилання на сторінку можливості»). Модель інколи пише голий домен — тоді
+// міняємо його в короткому рядку-заклику наприкінці. Довгі рядки не чіпаємо:
+// там «Dityam.com.ua» — назва платформи в тексті, а не посилання.
+const BARE_DOMAIN = /(?:https?:\/\/)?(?:www\.)?dityam\.com\.ua\/?(?=$|[\s.,!?;:)»"'])/i;
+const CTA_MAX = 80;
+
+export function withPageLink(post, slug) {
+  const text = String(post || '');
+  if (!slug || text.includes(`/o/${slug}`)) return text;
+  const url = `dityam.com.ua/o/${slug}`;
+  const lines = text.split('\n');
+  for (let i = lines.length - 1; i >= 0; i -= 1) {
+    if (lines[i].length <= CTA_MAX && BARE_DOMAIN.test(lines[i])) {
+      lines[i] = lines[i].replace(BARE_DOMAIN, url);
+      return lines.join('\n');
+    }
+  }
+  // Заклику немає зовсім — ставимо його перед хештегами.
+  const link = `Деталі — ${url}`;
+  const tags = lines.findIndex((l) => /^\s*#[^\s#]/.test(l));
+  if (tags === -1) return `${text.trimEnd()}\n\n${link}`;
+  lines.splice(tags, 0, link, '');
+  return lines.join('\n');
 }
