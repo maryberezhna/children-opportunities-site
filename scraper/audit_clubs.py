@@ -352,7 +352,7 @@ def quoted(evidence: str, text: str) -> bool:
 
 
 def build_patch(row: dict, ans: dict, evidence_text: str, today: str,
-                hide_unverified: bool = False) -> tuple[str, dict, str]:
+                hide_unverified: bool = False, own_head: str | None = None) -> tuple[str, dict, str]:
     """(підсумковий висновок, патч, рядок для звіту). Чиста функція — під тести.
 
     evidence_text — текст сторінок, яким можна підтвердити висновок: для
@@ -366,6 +366,13 @@ def build_patch(row: dict, ans: dict, evidence_text: str, today: str,
         verdict, reason = "unverified", f"{verdict} без цитати зі сторінки організатора: {reason}"
     elif verdict == "confirmed" and not names_activity(evidence, row.get("title")):
         verdict, reason = "unverified", f"цитата не називає гурток: {evidence[:120]}"
+    # Власна сторінка гуртка на сайті палацу чи ЦПР, де назва гуртка стоїть у
+    # заголовку, — уже доказ, що заклад його веде. Пробний прогін 21.09.2026:
+    # «Основи ветеринарної медицини» не пройшли лише тому, що модель склеїла
+    # цитату з двох шматків. «Не працює» й «лише дорослим» — як і раніше,
+    # тільки з цитатою.
+    if verdict == "unverified" and own_head and names_activity(own_head, row.get("title")):
+        verdict, evidence = "confirmed", own_head[:150]
 
     if verdict == "gone":
         return verdict, {"status": "closed", "recheck_at": None,
@@ -457,6 +464,8 @@ def check_one(ai, row: dict, search: bool = True) -> dict:
     if not text:
         result.update(verdict="unverified", reason=f"сторінка джерела: {state}", ans=None)
         return result
+    # Заголовок власної сторінки гуртка — лише для сайтів організаторів.
+    result["own_head"] = None if directory else text[:200]
     evidence_text = " ".join(t for _, t, _ in organizer if t) if directory else text
     ans, used = ask(ai, build_message(row, text, state, directory, organizer))
     result["usage"] = {k: result["usage"].get(k, 0) + v for k, v in used.items()}
@@ -468,7 +477,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--source", default=None, help="лише одне джерело, напр. gurtok.org")
+    ap.add_argument("--source", default=None,
+                    help="лише ці джерела через кому, напр. cprs.kiev.ua,firstpalace.kh.ua")
     ap.add_argument("--hide-unverified", action="store_true",
                     help="непідтверджені → draft (лише після рішення Марії)")
     ap.add_argument("--no-search", action="store_true",
@@ -487,7 +497,8 @@ def main() -> int:
     today = datetime.now(timezone.utc).date().isoformat()
     rows = load_rows(db, since=today)
     if args.source:
-        rows = [r for r in rows if bulk_domain(r.get("source")) == args.source]
+        wanted = {s.strip() for s in args.source.split(",") if s.strip()}
+        rows = [r for r in rows if bulk_domain(r.get("source")) in wanted]
     if args.limit:
         rows = rows[:args.limit]
     logger.info("Гуртків до перевірки: %d (%s)", len(rows),
@@ -500,7 +511,7 @@ def main() -> int:
             row = by_id[res["id"]]
             if res.get("ans"):
                 verdict, patch, note = build_patch(row, res["ans"], res.pop("evidence_text", ""),
-                                                   today, args.hide_unverified)
+                                                   today, args.hide_unverified, res.get("own_head"))
             else:
                 verdict, patch, note = "unverified", {}, res["reason"]
                 res.pop("evidence_text", None)

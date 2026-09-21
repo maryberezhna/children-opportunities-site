@@ -18,7 +18,7 @@ on:
         required: false
         default: ''
       source:
-        description: 'лише одне джерело, напр. gurtok.org (порожньо = всі)'
+        description: 'лише ці джерела через кому, напр. cprs.kiev.ua,firstpalace.kh.ua (порожньо = всі)'
         required: false
         default: ''
       hide_unverified:
