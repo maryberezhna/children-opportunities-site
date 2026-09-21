@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  beginFlow, beginFreq, handleFlowCallback,
+  beginFlow, beginFreq, handleFlowCallback, finishFlow,
   toggleReminders, remindersOn, remindersLabel,
+  FLOW_FREQ, DEFAULT_FREQ, freqOf,
 } from '../lib/digestFlow.js';
 
 /**
@@ -161,6 +162,48 @@ test('частота: зміна з меню не видає «Профіль г
   assert.equal(res.finished, false);
   assert.equal(db._rows.digest_subscribers[0].digest_freq, '2days');
   assert.equal(db._rows.digest_subscribers[0].flow_mode, null);
+});
+
+/**
+ * «⚡ Щойно зʼявиться» прибрано 21.09.2026 (рішення Марії: «зупини і видали
+ * поки»): добірка йде раз на день, розклад GitHub запізнюється на 4–5 годин,
+ * тож «щойно» було неправдою. Лишились «раз на 2 дні» й «раз на тиждень»;
+ * старе instant у базі й порожнє значення — «раз на 2 дні».
+ * Дзеркало в Python: scraper/personal_digest.freq_days.
+ */
+test('частота: варіанта «Щойно зʼявиться» немає', async () => {
+  assert.deepEqual(FLOW_FREQ.map(([v]) => v), ['2days', 'weekly']);
+  assert.ok(FLOW_FREQ.every(([, label]) => !/щойно/i.test(label)));
+  assert.equal(DEFAULT_FREQ, '2days');
+
+  const { db, bot } = await setup();
+  db._rows.digest_subscribers[0].status = 'active';
+  await beginFreq(bot, db, '77');
+  assert.deepEqual(buttons(bot.last()), ['flow:freq:2days', 'flow:freq:weekly']);
+});
+
+test('частота: старе instant і невідоме значення — «раз на 2 дні»', () => {
+  for (const legacy of ['instant', null, undefined, '', 'daily']) {
+    assert.equal(freqOf(legacy), '2days', String(legacy));
+  }
+  assert.equal(freqOf('2days'), '2days');
+  assert.equal(freqOf('weekly'), 'weekly');
+});
+
+test('частота: кнопка «Щойно» зі старого повідомлення зберігає «раз на 2 дні»', async () => {
+  const { db, bot } = await setup();
+  db._rows.digest_subscribers[0].status = 'active';
+  await beginFreq(bot, db, '77');
+  await handleFlowCallback(bot, db, click('flow:freq:instant'));
+  assert.equal(db._rows.digest_subscribers[0].digest_freq, '2days');
+  assert.ok(bot.sent.some((m) => /Раз на 2 дні/.test(m.text)));
+});
+
+test('анкета: «Профіль готовий» не обіцяє «щойно зʼявиться»', async () => {
+  const bot = fakeBot();
+  await finishFlow(bot, '77', { active: true });
+  assert.match(bot.last().text, /Профіль готовий/);
+  assert.doesNotMatch(bot.last().text, /щойно/i);
 });
 
 test('анкета: кнопка зі старого кроку не збиває послідовність', async () => {

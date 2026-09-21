@@ -7,7 +7,7 @@
 import { createClient } from '@supabase/supabase-js';
 import {
   makeBot, beginFlow, beginAddChild, beginFreq, finishFlow, handleFlowCallback,
-  saveCustomCity, FLOW_FREQ, toggleReminders, remindersLabel, remindersToast,
+  saveCustomCity, FLOW_FREQ, freqOf, toggleReminders, remindersLabel, remindersToast,
 } from '@/lib/digestFlow';
 import {
   createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
@@ -185,7 +185,7 @@ async function sendLatest(bot, supabase, sub, chatId) {
   const kids = await loadKids(supabase, sub);
   const picked = pickFair(matchFamily(sub, kids, opps || [], themesOf), kids, 5);
   if (!picked.length) {
-    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — щойно зʼявиться, напишемо першими. Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».');
+    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — коли зʼявиться, напишемо першими. Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».');
     return;
   }
   const lines = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>', ''];
@@ -253,7 +253,8 @@ function subDetails(sub, kids) {
   });
   lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
-  lines.push(`Частота: ${esc(labels(FLOW_FREQ, [sub.digest_freq || 'instant']))}`);
+  // Старе instant (варіант прибрано 21.09.2026) і порожнє — це «раз на 2 дні».
+  lines.push(`Частота: ${esc(labels(FLOW_FREQ, [freqOf(sub.digest_freq)]))}`);
   lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
   return lines.join('\n');
 }
