@@ -100,6 +100,23 @@ class BuildPatch(unittest.TestCase):
         verdict, patch, _ = ac.build_patch(dict(ROW, title="Зарубіжна література"), ans, page, TODAY)
         self.assertEqual((verdict, patch), ("unverified", {}))
 
+    def test_own_page_head_confirms_club(self):
+        # Модель склеїла цитату з двох шматків — але це власна сторінка гуртка
+        # на сайті палацу, і назва стоїть у заголовку.
+        head = "Гурток «Основи ветеринарної медицини». Керівник – Ксенія Уколова – КЗ «Харківський обласний Палац»"
+        ans = {"verdict": "confirmed", "evidence": "Гурток «Основи ветеринарної медицини» запрошує дітей від 14 років"}
+        row = dict(ROW, title="Гурток «Основи ветеринарної медицини»")
+        verdict, patch, _ = ac.build_patch(row, ans, head, TODAY, own_head=head)
+        self.assertEqual(verdict, "confirmed")
+        self.assertIn("content_checked_at", patch)
+
+    def test_own_page_about_other_club_confirms_nothing(self):
+        head = "Гурток «Шахи» - Запорізький міський палац дитячої та юнацької творчості"
+        verdict, patch, _ = ac.build_patch(dict(ROW, title="Телевізійна майстерня"),
+                                           {"verdict": "unverified", "reason": "про інше"},
+                                           head, TODAY, own_head=head)
+        self.assertEqual((verdict, patch), ("unverified", {}))
+
     def test_names_activity_by_stem(self):
         self.assertTrue(ac.names_activity("17 музичних інструментів: скрипка, віолончель",
                                           "Струнно-смичкові інструменти"))
