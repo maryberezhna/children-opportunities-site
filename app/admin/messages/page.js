@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { canonicalUrl } from '@/lib/canonical.mjs';
 import { safeEqual } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -50,7 +51,34 @@ export default async function MessagesPage() {
     needs_human: 'автоматично не вийшло, чекає на людину',
     rejected: 'відхилено: немає посилання на можливість',
     done: 'опрацьовано вручну',
+    added: 'додано вручну — запис у черзі модерації',
+    dismissed: 'відхилено вручну',
   };
+
+  // Який запис на сайті вже відповідає пропозиції — за тією самою сторінкою.
+  // Так і автоматичний імпорт, і «Додати на сайт» ведуть до правки одним
+  // кліком, а повторне «Додати» не кладе поряд другий запис.
+  const sugUrls = [...new Set((sugRes.data || []).map((s) => s.url).filter(Boolean))];
+  const linked = new Map();
+  if (sugUrls.length) {
+    const canon = sugUrls.map((u) => [u, canonicalUrl(u)]);
+    const opps = [];
+    // Порціями: сотня адрес в одному запиті — задовгий рядок URL для PostgREST.
+    for (let i = 0; i < canon.length; i += 30) {
+      const part = canon.slice(i, i + 30);
+      const [bySource, byCanon] = await Promise.all([
+        supabase.from('opportunities').select('id, status, source_url, canonical_url')
+          .is('canonical_slug', null).in('source_url', part.map(([u]) => u)),
+        supabase.from('opportunities').select('id, status, source_url, canonical_url')
+          .is('canonical_slug', null).in('canonical_url', part.map(([, c]) => c).filter(Boolean)),
+      ]);
+      opps.push(...(bySource.data || []), ...(byCanon.data || []));
+    }
+    for (const [u, c] of canon) {
+      const hit = opps.find((o) => o.source_url === u || (c && o.canonical_url === c));
+      if (hit) linked.set(u, hit);
+    }
+  }
 
   const suggestions = (sugRes.data || []).map((s) => ({
     id: s.id,
@@ -67,6 +95,8 @@ export default async function MessagesPage() {
     admin_note: null,
     created_at: s.created_at,
     kind: 'suggestion',
+    opportunityId: linked.get(s.url)?.id || null,
+    opportunityStatus: linked.get(s.url)?.status || null,
   }));
 
   const rows = [...(msgRes.data || []), ...suggestions]
@@ -76,7 +106,8 @@ export default async function MessagesPage() {
   // Скільки можливостей нам принесли люди. Окремо від звернень: це не
   // «питання», а найдешевше джерело даних, що в нас є, і його треба бачити.
   const sugTotal = (sugRes.data || []).length;
-  const sugImported = (sugRes.data || []).filter((s) => s.status === 'imported').length;
+  // «Додано» — і автоматикою, і кнопкою «Додати на сайт».
+  const sugImported = (sugRes.data || []).filter((s) => ['imported', 'added'].includes(s.status)).length;
   const sugWaiting = (sugRes.data || [])
     .filter((s) => s.status === 'new' || s.status === 'needs_human').length;
 
