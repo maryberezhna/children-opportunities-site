@@ -41,6 +41,7 @@ import re
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from urllib.parse import urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -58,7 +59,38 @@ SITE = "https://dityam.com.ua"
 
 # Пошта у полі «контакт». Люди лишають там і телефон, і нікнейм у Telegram —
 # відповісти листом можна лише на пошту, решту видно модератору в коментарі.
+# Та сама перевірка — у lib/suggestions.js (адмінка пише «лист пішов»).
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s.]+\.[^@\s]{2,}$")
+
+# Хто приніс — колонка origin (з 21.09.2026). Поп-ап — людина ззовні; решту
+# внесли ми самі: Марія або наше дослідження. Для них contact — організатор,
+# а не той, хто нам писав, тож листа «дякуємо, що надіслали» не шлемо, а
+# джерелом на картці ставимо домен сторінки, не «Пропозицію від організатора».
+ORIGIN_TRACE = {
+    "popup": "💡 пропозиція з форми на сайті",
+    "maria": "💡 принесла Марія",
+    "research": "🔎 з нашого дослідження, не з форми",
+}
+
+
+def origin_of(s: dict) -> str:
+    o = s.get("origin")
+    return o if o in ORIGIN_TRACE else "popup"
+
+
+def reply_email(s: dict) -> str | None:
+    """Куди відповісти листом: лише людині з поп-апа, яка лишила пошту."""
+    contact = (s.get("contact") or "").strip()
+    if origin_of(s) != "popup" or not EMAIL_RE.match(contact):
+        return None
+    return contact
+
+
+def source_label(s: dict, url: str) -> str:
+    if origin_of(s) == "popup":
+        return "Пропозиція від організатора"
+    host = (urlparse(url).hostname or "").removeprefix("www.")
+    return host or "Пропозиція від організатора"
 
 
 def fetch_text(url: str) -> tuple[str | None, str]:
@@ -177,7 +209,8 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
     url = (s.get("url") or "").strip()
     title = (s.get("title") or "").strip()
     contact = (s.get("contact") or "").strip()
-    email = contact if EMAIL_RE.match(contact) else None
+    email = reply_email(s)
+    origin = origin_of(s)
 
     if not url.startswith(("http://", "https://")):
         return "rejected", "немає посилання на сторінку можливості"
@@ -206,7 +239,7 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
         return "needs_human", f"сторінку не прочитали ({http})"
 
     try:
-        data = normalizer.normalize(page, source="Пропозиція від організатора",
+        data = normalizer.normalize(page, source=source_label(s, url),
                                     source_url=url, raw_title=title or None)
     except Exception as e:
         return "new", f"нормалізатор упав, спробуємо ще раз: {e}"
@@ -222,9 +255,9 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
     # заявка від зацікавленої сторони, а не наша знахідка.
     missing = missing_required(data)
     data["status"] = "draft"
-    trace = "💡 пропозиція з форми на сайті"
+    trace = ORIGIN_TRACE[origin]
     if contact:
-        trace += f" · контакт: {contact}"
+        trace += f" · {'контакт' if origin == 'popup' else 'організатор'}: {contact}"
     if missing:
         trace += " · бракує: " + ", ".join(missing)
     data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + trace).strip(" ·")
@@ -273,8 +306,8 @@ def recheck_waiting(sb, apply: bool = False, limit: int = 200) -> int:
             continue
         sb.table("opportunity_suggestions").update(
             {"status": "duplicate"}).eq("id", s["id"]).execute()
-        contact = (s.get("contact") or "").strip()
-        if EMAIL_RE.match(contact):
+        contact = reply_email(s)
+        if contact:
             send_email(contact, SUBJECT_DUP, BODY_DUPLICATE.format(
                 title=s.get("title") or url, url=f"{SITE}/o/{existing['slug']}", site=SITE))
     return closed

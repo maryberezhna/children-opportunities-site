@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { canonicalUrl } from '@/lib/canonical.mjs';
 import { safeEqual } from '@/lib/adminAuth';
+import { originOf, broughtBy, repliesByEmail } from '@/lib/suggestions';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 import MessageList from './MessageList';
@@ -46,13 +47,23 @@ export default async function MessagesPage() {
   // показувався як нове — тобто три пропозиції Seniv Studio виглядали б
   // необробленими навіть після того, як їх імпортували й відповіли листом.
   const OUTCOME = {
-    imported: 'додано чернеткою, лист відправнику пішов',
-    duplicate: 'уже є на сайті, лист відправнику пішов',
+    imported: 'додано чернеткою',
+    duplicate: 'уже є на сайті',
     needs_human: 'автоматично не вийшло, чекає на людину',
     rejected: 'відхилено: немає посилання на можливість',
     done: 'опрацьовано вручну',
     added: 'додано вручну — запис у черзі модерації',
     dismissed: 'відхилено вручну',
+  };
+  // «Лист відправнику пішов» — лише там, куди скрипт справді міг його
+  // надіслати: пошта людини з поп-апа. До 21.09.2026 так підписувались і
+  // пропозиції з Telegram-каналом чи Facebook у контакті, і внесені вручну.
+  const outcomeOf = (s) => {
+    const base = OUTCOME[s.status];
+    if (!base) return null;
+    return ['imported', 'duplicate'].includes(s.status) && repliesByEmail(s)
+      ? `${base}, лист відправнику пішов`
+      : base;
   };
 
   // Який запис на сайті вже відповідає пропозиції — за тією самою сторінкою.
@@ -87,11 +98,13 @@ export default async function MessagesPage() {
     contact: s.contact,
     message: [s.title, s.comment].filter(Boolean).join('\n\n'),
     url: s.url,
-    page: 'поп-ап у каталозі',
+    page: null,
+    origin: originOf(s),
+    broughtBy: broughtBy(s),
     // needs_human — теж «нове»: скрипт не впорався, і рішення за людиною. До
     // 15.09.2026 такі пропозиції показувались опрацьованими.
     status: ['new', 'needs_human'].includes(s.status) ? 'new' : 'done',
-    outcome: OUTCOME[s.status] || null,
+    outcome: outcomeOf(s),
     admin_note: null,
     created_at: s.created_at,
     kind: 'suggestion',
@@ -105,11 +118,20 @@ export default async function MessagesPage() {
   const newCount = rows.filter((r) => r.status === 'new').length;
   // Скільки можливостей нам принесли люди. Окремо від звернень: це не
   // «питання», а найдешевше джерело даних, що в нас є, і його треба бачити.
-  const sugTotal = (sugRes.data || []).length;
+  // Лише поп-ап: до 21.09.2026 тут рахувались і 14 рядків нашого власного
+  // дослідження, і те, що Марія вносила сама, — «принесли люди: 21» при
+  // шести справжніх.
+  const sugAll = sugRes.data || [];
+  const fromPeople = sugAll.filter((s) => originOf(s) === 'popup');
+  const sugTotal = fromPeople.length;
   // «Додано» — і автоматикою, і кнопкою «Додати на сайт».
-  const sugImported = (sugRes.data || []).filter((s) => ['imported', 'added'].includes(s.status)).length;
-  const sugWaiting = (sugRes.data || [])
-    .filter((s) => s.status === 'new' || s.status === 'needs_human').length;
+  const sugImported = fromPeople.filter((s) => ['imported', 'added'].includes(s.status)).length;
+  const byMaria = sugAll.filter((s) => originOf(s) === 'maria').length;
+  const byResearch = sugAll.filter((s) => originOf(s) === 'research').length;
+  const manual = [byMaria ? `Марія ${byMaria}` : null, byResearch ? `дослідження ${byResearch}` : null]
+    .filter(Boolean).join(', ');
+  // Чекає — усі, хай хто приніс: рішення за людиною однаково.
+  const sugWaiting = sugAll.filter((s) => s.status === 'new' || s.status === 'needs_human').length;
 
   return (
     <main style={wrap}>
@@ -126,6 +148,7 @@ export default async function MessagesPage() {
       <p style={{ fontSize: 14, margin: '10px 0 0', padding: '9px 12px', borderRadius: 10, background: '#f3f6fb', color: '#54617a' }}>
         💡 Можливостей принесли люди: <b>{sugTotal}</b>
         {sugImported > 0 ? <> · додано {sugImported}</> : null}
+        {manual ? <> · ще {byMaria + byResearch} внесли ми самі ({manual})</> : null}
         {sugWaiting > 0 ? <> · <b style={{ color: '#b4530a' }}>чекає {sugWaiting}</b></> : null}
       </p>
 
