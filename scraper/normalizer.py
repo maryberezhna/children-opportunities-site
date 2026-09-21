@@ -12,6 +12,7 @@ from slugify import slugify
 import hubs
 from canonical import canonical_url
 from timing import PERIODIC_BY_DEFINITION, clean_kind, clean_months, has_repeat_signal
+import text_fill
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,58 @@ _ONLINE_TITLE = re.compile(r"^\W*(?:online|онлайн)\b", re.IGNORECASE)
 _OFFLINE_IN_TEXT = re.compile(r"\bочн(?:о|ий|і|а|их)\b|офлайн|offline|наживо", re.IGNORECASE)
 
 
+def _note(data: dict, text: str) -> None:
+    data["admin_comment"] = ((data.get("admin_comment") or "") + " " + text).strip()
+
+
+def _fill_from_text(data: dict, age_missing: bool) -> bool:
+    """Порожні поля — з назви й опису (scraper/text_fill.py). Повертає, чи вік
+    тепер відомий. Модельна відповідь має пріоритет: правила чіпають лише
+    порожнє, і кожне лишає позначку, звідки взялось значення."""
+    title = data.get("title") or ""
+    text = " ".join(str(data.get(k) or "") for k in ("title", "summary"))
+
+    if age_missing:
+        ages = text_fill.age_from_text(text)
+        if ages:
+            data["age_from"], data["age_to"] = ages
+            age_missing = False
+            _note(data, f"auto: вік {ages[0]}–{ages[1]} — з тексту")
+
+    if data.get("opportunity_type") not in VALID_OPP_TYPES:
+        typ = text_fill.type_from_title(title)
+        if typ:
+            data["opportunity_type"] = typ
+            _note(data, f"auto: тип «{typ}» — з назви")
+
+    if data.get("cost_type") is None:
+        cost = text_fill.cost_from_text(text)
+        if cost:
+            data["cost_type"] = cost
+            _note(data, "auto: вартість «" + ("безкоштовно" if cost == "free" else "платно")
+                  + "» — прямо в тексті")
+
+    has_dates = any(data.get(k) for k in ("deadline", "event_start_date", "event_end_date",
+                                           "results_date"))
+    if not has_dates and not data.get("recurrence"):
+        if text_fill.recurrence_from_text(text):
+            data["recurrence"] = "annual"
+            _note(data, "auto: «щороку» — ознака повторення в тексті")
+
+    # Місце: лише коли нічого не відомо й участь не онлайн.
+    if data.get("format") != "online" and not data.get("cities") and not data.get("countries"):
+        city = text_fill.city_from_text(text)
+        if city:
+            data["cities"] = [city]
+            _note(data, f"auto: місто «{city}» — з тексту")
+        else:
+            code = text_fill.country_from_text(text)
+            if code and code in VALID_COUNTRIES:
+                data["countries"] = [code]
+                _note(data, f"auto: країна «{code}» — з тексту («в/у/до …»)")
+    return age_missing
+
+
 def _apply_format_from_text(data: dict) -> None:
     """Формат, який прямо написаний у назві чи описі, — факт, а не здогад.
 
@@ -341,6 +394,7 @@ def _sanitize(data: dict) -> dict:
     # порожньо чи текст → False, інакше значення поламає NOT NULL у базі.
     data["is_international"] = bool(data.get("is_international"))
     _apply_format_from_text(data)
+    age_missing = _fill_from_text(data, age_missing)
 
     # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
     # Вимога Марії 11.09.2026: дата, тип, вік, вартість і місце-або-формат
