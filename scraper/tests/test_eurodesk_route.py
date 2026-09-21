@@ -35,3 +35,21 @@ class Route(unittest.TestCase):
     def test_no_keys_means_direct(self):
         with patch.dict("os.environ", {"SUPABASE_URL": "", "SUPABASE_SERVICE_KEY": ""}):
             self.assertIsNone(asyncio.run(eurodesk._via_supabase()))
+
+
+class Details(unittest.TestCase):
+    """Повний опис — із прихованого шаблону, а не з одного рядка картки."""
+
+    def test_age_and_conditions_come_from_the_template(self):
+        html = (CARD +
+                '<template id="programme" data-hash="21214-eu"><div>Language EU FR</div>'
+                '<div>Age: 13 to 30</div><div>Who can apply: groups of young people.</div>'
+                '<a href="https://erasmus-plus.ec.europa.eu/opportunities/individuals/youth-exchanges">x</a>'
+                '<a href="https://wa.me/?text=share">wa</a>'
+                '<div>Share Share this opportunity!</div></template>')
+        [item] = eurodesk.parse_open(html)
+        self.assertIn("Age: 13 to 30", item["raw_text"])
+        self.assertIn("Who can apply", item["raw_text"])
+        self.assertIn("erasmus-plus.ec.europa.eu", item["raw_text"])
+        self.assertNotIn("wa.me", item["raw_text"])
+        self.assertNotIn("Language EU FR", item["raw_text"])
