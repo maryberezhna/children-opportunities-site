@@ -31,6 +31,11 @@ class MergePatch(unittest.TestCase):
     def test_extraction_can_close(self):
         self.assertEqual(merge_patch({"status": "active"}, {"status": "closed"})["status"], "closed")
 
+    def test_archived_stays_archived(self):
+        # «Закрито» — публічна сторінка з плашкою; архів — прихований запис.
+        self.assertNotIn("status", merge_patch({"status": "archived"}, {"status": "closed"}))
+        self.assertNotIn("status", merge_patch({"status": "archived"}, {"status": "active"}))
+
 
 if __name__ == "__main__":
     unittest.main()

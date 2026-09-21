@@ -42,6 +42,10 @@ def merge_patch(existing: dict, record: dict) -> dict:
             patch.pop(key)
     if "status" in patch and patch["status"] != "closed" and existing.get("status"):
         patch.pop("status")
+    # Архів (прибрані неперевірні гуртки, 21.09.2026) розмітка не чіпає зовсім:
+    # «закрито» зі сторінки зробило б із прихованого запису публічну сторінку.
+    if "status" in patch and existing.get("status") == "archived":
+        patch.pop("status")
     # Здогад про вид у часі можна лише зняти. Якщо планова перевірка вже
     # підтвердила постійність цитатою, повторна розмітка не сміє знову
     # назвати її припущенням — інакше запис вічно ходив би по колу.

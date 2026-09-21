@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import OpportunityView, {
-  getOpportunity, getRelated, buildMetadata,
+  getOpportunity, getRelated, buildMetadata, isArchived,
 } from '../../../o/shared';
 
 // Англійський двійник /o/[slug]: ті самі дані й та сама розмітка, лише
@@ -23,12 +23,14 @@ export const revalidate = 3600;
 // пошукова поверхня, там чекання на першому візиті коштувало б дорожче.
 
 export async function generateMetadata({ params }) {
-  return buildMetadata(await getOpportunity(params.slug), 'en');
+  const item = await getOpportunity(params.slug);
+  return buildMetadata(isArchived(item) ? null : item, 'en');
 }
 
 export default async function EnglishOpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
+  if (isArchived(item)) redirect('/en');
   const related = await getRelated(item);
   return <OpportunityView item={item} related={related} lang="en" />;
 }
