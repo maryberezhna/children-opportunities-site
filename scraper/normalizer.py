@@ -172,6 +172,48 @@ def _apply_state_support_free(data: dict) -> None:
     data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
 
 
+# «Онлайн» як формат САМОЇ участі. Слова після нього — те, що людина робить:
+# школа, курс, заняття, табір. «Онлайн-реєстрація», «онлайн-заявка», «подати
+# онлайн» сюди не потрапляють навмисно: це спосіб подати документи, а не
+# формат можливості — табір, куди записуються онлайн, лишається табором наживо.
+_ONLINE_WHAT = (r"школ|курс|урок|занятт|навчанн|формат|режим|марафон|табір|табор|"
+                r"клуб|гурт|лекці|програм|олімпіад|конкурс|інтенсив|вебінар|майстер|"
+                r"челендж|хакатон|консультац|студі|академі")
+_ONLINE_IN_TEXT = re.compile(
+    rf"онлайн[-‑\s]?(?:{_ONLINE_WHAT})"
+    rf"|(?:у|в)\s+форматі\s+онлайн"
+    rf"|дистанційн\w*\s+(?:{_ONLINE_WHAT})"
+    rf"|\bonline[-\s]?(?:school|course|class|lesson|program|camp)",
+    re.IGNORECASE)
+_ONLINE_TITLE = re.compile(r"^\W*(?:online|онлайн)\b", re.IGNORECASE)
+_OFFLINE_IN_TEXT = re.compile(r"\bочн(?:о|ий|і|а|их)\b|офлайн|offline|наживо", re.IGNORECASE)
+
+
+def _apply_format_from_text(data: dict) -> None:
+    """Формат, який прямо написаний у назві чи описі, — факт, а не здогад.
+
+    21.09.2026 у черзі модерації стояла «ТВОЯ ШКОЛА — українська онлайн-школа
+    для дітей за кордоном» з «бракує: формат або місце». Модель, що читала
+    сторінку, поле format лишила порожнім, хоча слово стоїть у самій назві.
+    Такі записи не йшли на сайт і чекали, поки модератор допише очевидне.
+
+    Лише коли модель формату не дала: її відповідь має пріоритет. «Онлайн» і
+    «очно» разом — hybrid. Позначка модератору лишається.
+    """
+    if data.get("format"):
+        return
+    title = data.get("title") or ""
+    text = " ".join(str(data.get(k) or "") for k in ("title", "summary"))
+    if not (_ONLINE_TITLE.search(title) or _ONLINE_IN_TEXT.search(text)):
+        return
+    data["format"] = "hybrid" if _OFFLINE_IN_TEXT.search(text) else "online"
+    note = f"auto: формат «{data['format']}» — прямо в назві чи описі"
+    data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+    # «Онлайн» у cities — теж відповідь на «де», і фільтр міст на сайті її читає.
+    if data["format"] == "online" and not data.get("cities"):
+        data["cities"] = ["Онлайн"]
+
+
 def _apply_club_default(data: dict) -> None:
     """Гурток, про набір якого текст мовчить, — постійний (рішення Марії 17.09.2026).
 
@@ -298,6 +340,7 @@ def _sanitize(data: dict) -> dict:
     # Прапорець міжнародності приходить від моделі й мусить бути булевим:
     # порожньо чи текст → False, інакше значення поламає NOT NULL у базі.
     data["is_international"] = bool(data.get("is_international"))
+    _apply_format_from_text(data)
 
     # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
     # Вимога Марії 11.09.2026: дата, тип, вік, вартість і місце-або-формат

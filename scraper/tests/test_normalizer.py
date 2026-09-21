@@ -307,3 +307,41 @@ class NoInventedRecurrence(unittest.TestCase):
             "Набір триває постійно")
         self.assertEqual(out["timing_kind"], "permanent")
         self.assertEqual(out["recurrence"], "ongoing")
+
+
+class FormatFromText(unittest.TestCase):
+    """«Онлайн» у назві чи описі — факт, а не здогад (21.09.2026: «ТВОЯ ШКОЛА —
+    українська онлайн-школа» стояла в черзі з «бракує: формат або місце»)."""
+
+    def fmt(self, title, summary="", fmt=None):
+        from normalizer import _apply_format_from_text
+        d = {"title": title, "summary": summary, "format": fmt, "cities": []}
+        _apply_format_from_text(d)
+        return d
+
+    def test_online_school_in_title(self):
+        d = self.fmt("ТВОЯ ШКОЛА – українська онлайн-школа для дітей за кордоном")
+        self.assertEqual(d["format"], "online")
+        self.assertEqual(d["cities"], ["Онлайн"])
+        self.assertIn("прямо в назві", d["admin_comment"])
+
+    def test_title_starting_with_online(self):
+        self.assertEqual(self.fmt("Online лессенреекс нідерландської мови")["format"], "online")
+
+    def test_online_and_in_person_is_hybrid(self):
+        d = self.fmt("Гурток «Аквабіотехніка»",
+                     "заняття проходять очно та також в онлайн-форматі")
+        self.assertEqual(d["format"], "hybrid")
+        self.assertEqual(d["cities"], [])
+
+    def test_applying_online_is_not_the_format(self):
+        # Подати документи онлайн — це спосіб подачі, а не формат можливості.
+        self.assertIsNone(self.fmt("Допомога при усиновленні",
+                                   "Заяву можна подати онлайн через Дію.")["format"])
+        self.assertIsNone(self.fmt("Літній табір у Карпатах",
+                                   "Онлайн-реєстрація відкрита до 1 травня.")["format"])
+        self.assertIsNone(self.fmt("Конкурс малюнка",
+                                   "Роботи приймаються через онлайн-форму.")["format"])
+
+    def test_model_answer_wins(self):
+        self.assertEqual(self.fmt("Онлайн-курс", fmt="offline")["format"], "offline")
