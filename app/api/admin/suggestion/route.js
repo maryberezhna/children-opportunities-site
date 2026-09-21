@@ -2,7 +2,9 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { canonicalUrl } from '@/lib/canonical.mjs';
-import { STUB_MARK, slugFromTitle, contentHash } from '@/lib/suggestions';
+import {
+  STUB_MARK, slugFromTitle, contentHash, ORIGINS, originOf, sourceFor,
+} from '@/lib/suggestions';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -72,9 +74,10 @@ export async function POST(request) {
   const isHub = (hubs || []).some((h) => h.url_prefix && canon && canon.startsWith(h.url_prefix));
 
   const title = String(s.title || '').trim().slice(0, 300) || source;
+  const popup = originOf(s) === 'popup';
   const trace = [
-    '💡 пропозиція з форми на сайті, додано вручну в адмінці',
-    s.contact ? `контакт: ${s.contact}` : null,
+    `${ORIGINS[originOf(s)].trace}, додано вручну в адмінці`,
+    s.contact ? `${popup ? 'контакт' : 'організатор'}: ${s.contact}` : null,
     s.comment ? `коментар: ${String(s.comment).slice(0, 200)}` : null,
     STUB_MARK,
   ].filter(Boolean).join(' · ');
@@ -82,7 +85,7 @@ export async function POST(request) {
   const { data: created, error } = await supabase.from('opportunities').insert({
     title,
     slug: slugFromTitle(title, source),
-    source: 'Пропозиція від людей',
+    source: sourceFor(s, 'Пропозиція від людей'),
     source_url: source,
     canonical_url: canon,
     content_hash: contentHash(title, source, isHub),

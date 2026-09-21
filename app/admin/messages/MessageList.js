@@ -100,10 +100,14 @@ function Message({ row, onChange }) {
         </p>
       )}
 
+      {/* Хто приніс. У пропозиціях рядок складає сервер (lib/suggestions →
+          broughtBy): поп-ап, Марія чи наше дослідження. */}
       <p style={{ ...metaS, margin: '0 0 10px' }}>
-        {row.name || row.contact
-          ? <>👤 {[row.name, row.contact].filter(Boolean).join(' · ')}</>
-          : <i>без контактів — відповісти не вийде</i>}
+        {row.broughtBy
+          ? row.broughtBy
+          : row.name || row.contact
+            ? <>👤 {[row.name, row.contact].filter(Boolean).join(' · ')}</>
+            : <i>без контактів — відповісти не вийде</i>}
         {row.page ? ` · зі сторінки ${row.page}` : ''}
       </p>
 
@@ -122,11 +126,11 @@ function Message({ row, onChange }) {
       )}
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {/* Пропозиції з поп-апа живуть в opportunity_suggestions: у них немає
+        {/* Пропозиції живуть в opportunity_suggestions: у них немає
             нотаток і стану «в роботі», тож лише «опрацьовано» / «повернути». */}
         {row.kind === 'suggestion' && (
           <span style={{ ...metaS, alignSelf: 'center' }}>
-            з поп-апа · {row.outcome || 'ще не опрацьовано'}
+            {row.outcome || 'ще не опрацьовано'}
           </span>
         )}
         {row.kind === 'suggestion' && row.opportunityId && (
@@ -179,7 +183,9 @@ function Message({ row, onChange }) {
             📝 {noteOpen ? 'Сховати нотатку' : 'Нотатка'}
           </button>
         )}
-        {row.contact?.includes('@') && (
+        {/* У внесеній вручну пропозиції contact — організатор, а не той,
+            хто нам писав: «відповідь на ваше звернення» йому не пасує. */}
+        {row.contact?.includes('@') && (row.kind !== 'suggestion' || row.origin === 'popup') && (
           <a
             href={`mailto:${row.contact}?subject=Dityam.com.ua — відповідь на ваше звернення`}
             style={{ ...btnS, textDecoration: 'none', color: '#131b28' }}

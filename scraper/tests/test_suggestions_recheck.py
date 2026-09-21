@@ -101,6 +101,44 @@ class RecheckWaiting(unittest.TestCase):
         self.assertEqual(ps.recheck_waiting(db, apply=False), 1)
         self.assertEqual(self.status(db, "a"), "needs_human")
 
+    def test_popup_sender_gets_letter(self):
+        db = make_db()
+        db.tables["opportunity_suggestions"][0]["contact"] = "apply@seniv.studio"
+        with mock.patch.object(ps, "send_email") as send:
+            ps.recheck_waiting(db, apply=True)
+        send.assert_called_once()
+        self.assertEqual(send.call_args.args[0], "apply@seniv.studio")
+
+    def test_manual_row_organiser_gets_no_letter(self):
+        # Рядок, який внесли ми самі: contact — організатор, а не той, хто
+        # нам писав. Лист «дякуємо, що надіслали» йому був би неправдою.
+        db = make_db()
+        row = db.tables["opportunity_suggestions"][0]
+        row.update(origin="research", contact="info@kyivcity.gov.ua")
+        with mock.patch.object(ps, "send_email") as send:
+            ps.recheck_waiting(db, apply=True)
+        send.assert_not_called()
+        self.assertEqual(self.status(db, "a"), "duplicate")
+
+
+class Origin(unittest.TestCase):
+    """Хто приніс (колонка origin, 21.09.2026)."""
+
+    def test_unknown_origin_is_popup(self):
+        self.assertEqual(ps.origin_of({}), "popup")
+        self.assertEqual(ps.origin_of({"origin": "щось"}), "popup")
+
+    def test_source_for_manual_is_domain(self):
+        url = "https://www.rada-poltava.gov.ua/ua/news/x"
+        self.assertEqual(ps.source_label({"origin": "research"}, url), "rada-poltava.gov.ua")
+        self.assertEqual(ps.source_label({"origin": "maria"}, url), "rada-poltava.gov.ua")
+        self.assertEqual(ps.source_label({}, url), "Пропозиція від організатора")
+
+    def test_reply_only_to_popup_email(self):
+        self.assertEqual(ps.reply_email({"contact": " a@b.ua "}), "a@b.ua")
+        self.assertIsNone(ps.reply_email({"contact": "https://t.me/kidsrightsplatform"}))
+        self.assertIsNone(ps.reply_email({"origin": "maria", "contact": "a@b.ua"}))
+
 
 if __name__ == "__main__":
     unittest.main()
