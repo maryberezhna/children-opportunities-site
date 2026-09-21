@@ -39,6 +39,9 @@ const ITEMS = [
   { key: 'today', href: '/admin/today', icon: '☀️', label: 'Сьогодні' },
   { key: 'queue', href: '/admin', icon: '🗂', label: 'Черга', count: 'drafts' },
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
+  // Сирі знахідки, де модель не певна (21.09.2026): до того розібрати їх
+  // було нічим — 78 записів, переглянуто нуль.
+  { key: 'quarantine', href: '/admin/quarantine', icon: '🧪', label: 'Карантин', count: 'quarantine' },
   // Підписники, оформлення, оплати й список очікування (15.09.2026).
   { key: 'plus', href: '/admin/plus', icon: '💎', label: 'Dityam+' },
   { key: 'metrics', href: '/admin/metrics', icon: '📈', label: 'Метрики' },
@@ -130,13 +133,14 @@ async function counts() {
     supabase.from(table).select('id', { count: 'exact', head: true }),
   );
   try {
-    const [drafts, msgs, sugs] = await Promise.all([
+    const [drafts, msgs, sugs, quar] = await Promise.all([
       head('opportunities', (q) => q.eq('status', 'draft')),
       head('contact_messages', (q) => q.eq('status', 'new')),
       // Лише ті пропозиції, що чекають на людину. Було «все, крім done», а
       // process_suggestions.py ставить imported / duplicate, не done: число
       // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
       head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human'])),
+      head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
     ]);
     return {
       drafts: drafts.count ?? 0,
@@ -144,6 +148,7 @@ async function counts() {
       // для Марії це одна пошта — на /admin/messages вони вже злиті в один
       // список, тож і цифра має бути одна.
       messages: (msgs.count ?? 0) + (sugs.count ?? 0),
+      quarantine: quar.count ?? 0,
     };
   } catch {
     // Лічильник — не привід впасти всій сторінці: без нього меню лишається
