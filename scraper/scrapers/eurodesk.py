@@ -22,10 +22,22 @@ token '<'», тобто виклик зсередини сторінки поч�
 (близько 82 із 534). Секція `upcoming` описує те, що ще не відкрилось: у
 каталозі воно стало б записами, на які не подаси.
 
-Помилка мережі чи формату — повертаємо порожньо й пишемо в лог. Одне джерело
-не сміє зупинити нічний прогін.
+З 21.09.2026 — через посередника на Supabase. Сайт відповідає 403 на запити
+з адрес GitHub Actions, де живе нічний скрап: прогін 21.09 дав «403
+Forbidden», а з домашньої мережі той самий запит — 200 і 534 програми. Функція
+supabase/functions/eurodesk-proxy робить той самий запит зі своєї адреси й
+віддає сирий HTML, обрізаний до того, що потрібно розбору (без CSS-класів,
+картинок і ~135 мов на картку): 8,8 МБ → 3,2 МБ, записи ті самі до символу.
+Без SUPABASE_URL/SUPABASE_SERVICE_KEY (локальний запуск) — напряму, як раніше.
+
+Помилка мережі чи формату — виняток, а не порожній список. Раніше скрапер
+повертав [] і прогін показував джерело «порожнім, але успішним»: так Eurodesk
+тижнями давав нуль, і цього ніхто не бачив. Тепер це ❌ у звіті й червоний
+прогін; інші джерела при цьому відпрацьовують як завжди (run_scraper ловить
+виняток для кожного джерела окремо).
 """
 import logging
+import os
 import re
 
 import httpx
@@ -128,22 +140,51 @@ def section_html(section) -> str:
     return str(section or "")
 
 
+PROXY_PATH = "/functions/v1/eurodesk-proxy"
+PROXY_TIMEOUT_S = 180
+
+
+async def _via_supabase() -> dict | None:
+    """Перелік через функцію на Supabase. None — якщо ключів немає."""
+    base = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
+    key = os.environ.get("SUPABASE_SERVICE_KEY") or ""
+    if not (base and key):
+        return None
+    async with httpx.AsyncClient(timeout=PROXY_TIMEOUT_S) as client:
+        r = await client.get(f"{base}{PROXY_PATH}", params={"section": "open"},
+                             headers={"Authorization": f"Bearer {key}"})
+    if r.status_code != 200:
+        raise RuntimeError(f"посередник відповів {r.status_code}: {r.text[:200]}")
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"посередник: {data}")
+    return data
+
+
+async def _direct() -> dict:
+    async with httpx.AsyncClient(headers=_BROWSER, timeout=TIMEOUT_S,
+                                 follow_redirects=True) as client:
+        # Перший запит потрібен лише заради куків сесії.
+        await client.get(f"{BASE}/")
+        r = await client.get(f"{BASE}/search?all=1", headers=_XHR)
+        r.raise_for_status()
+        return r.json()
+
+
 async def fetch_all() -> list[dict]:
-    try:
-        async with httpx.AsyncClient(headers=_BROWSER, timeout=TIMEOUT_S,
-                                     follow_redirects=True) as client:
-            # Перший запит потрібен лише заради куків сесії.
-            await client.get(f"{BASE}/")
-            r = await client.get(f"{BASE}/search?all=1", headers=_XHR)
-            r.raise_for_status()
-            data = r.json()
-    except Exception as e:
-        logger.error("Eurodesk: не вдалось отримати перелік (%s: %s)", type(e).__name__, e)
-        return []
+    data = await _via_supabase()
+    route = "через Supabase"
+    if data is None:
+        data = await _direct()
+        route = "напряму"
 
     items = parse_open(section_html(data.get("open")))
+    if not items:
+        # 80 відкритих карток на 534 у переліку — нуль тут означає поламку
+        # формату, а не порожній сайт.
+        raise RuntimeError(f"Eurodesk ({route}): 0 записів із переліку на {data.get('count')}")
     logger.info(
-        "Eurodesk: %d програм з відкритим набором (усього в переліку %s)",
-        len(items), data.get("count"),
+        "Eurodesk (%s): %d програм з відкритим набором (усього в переліку %s)",
+        route, len(items), data.get("count"),
     )
     return items
