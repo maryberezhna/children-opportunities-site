@@ -280,6 +280,7 @@ def process_pending(normalizer, sb_client, limit=500):
                 source=item.get("source_name", ""),
                 source_url=item.get("source_url") or "",
                 raw_title=item.get("raw_title"),
+                human_accepted=item.get("review_verdict") == "accept",
             )
             consecutive_errors = 0
         except NormalizeError as e:

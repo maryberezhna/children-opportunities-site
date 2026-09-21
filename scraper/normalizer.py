@@ -1001,7 +1001,12 @@ class Normalizer:
         self.uncached_input_tokens = 0
 
     def normalize(self, raw_text: str, source: str, source_url: str,
-                  raw_title: Optional[str] = None) -> Optional[dict]:
+                  raw_title: Optional[str] = None,
+                  human_accepted: bool = False) -> Optional[dict]:
+        """human_accepted — людина в адмінці натиснула «Завести можливість» на
+        записі з карантину (21.09.2026). Тоді поріг впевненості не діє: модель
+        вагалась, чи це для дітей, а людина вже відповіла «так». Решта воріт —
+        архівні дати, пʼять обовʼязкових полів — працює як завжди."""
         # Причина останнього відхилення. Без неї 510 із 519 відсіяних записів
         # лежали в raw_items із порожнім last_error: неможливо було ні довести,
         # що фільтр працює, ні помітити, коли він почне різати живе.
@@ -1040,7 +1045,7 @@ URL: {source_url}
 
             data = tool_use.input
             self.last_confidence = data.get("confidence")
-            if data.get("confidence", 0) < 0.5:
+            if data.get("confidence", 0) < 0.5 and not human_accepted:
                 conf = data.get("confidence", 0)
                 logger.info(f"Low confidence, skipping: {source_url}")
                 self.last_reject_reason = f"низька впевненість моделі ({conf})"
@@ -1048,6 +1053,10 @@ URL: {source_url}
                 return None
 
             data = _sanitize(dict(data))
+            if human_accepted:
+                data["admin_comment"] = ((data.get("admin_comment") or "")
+                                         + f" · людина прийняла з карантину (впевненість моделі "
+                                           f"{self.last_confidence})").strip(" ·")
             title = data["title"]
             data["slug"] = self._make_slug(title, source)
             data["content_hash"] = self._make_hash(title, source_url)

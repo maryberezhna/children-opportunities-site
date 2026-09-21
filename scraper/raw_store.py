@@ -103,7 +103,7 @@ def fetch_pending(client, limit: int = 300) -> list[dict]:
     try:
         result = (
             client.table("raw_items")
-            .select("id, source_name, source_url, raw_title, raw_text, attempts")
+            .select("id, source_name, source_url, raw_title, raw_text, attempts, review_verdict")
             .eq("status", "pending")
             .lt("attempts", MAX_ATTEMPTS)
             .order("fetched_at")
