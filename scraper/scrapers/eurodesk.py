@@ -81,6 +81,39 @@ def _text(node) -> str:
     return node.get_text(" ", strip=True) if node else ""
 
 
+_SHARE = re.compile(r"eurodesk\.eu|sharer|shareArticle|wa\.me|t\.me/share|reddit\.com/submit|^mailto:",
+                    re.IGNORECASE)
+
+
+def programme_details(soup, programme_id: str) -> tuple[str, list[str]]:
+    """Повний опис програми з прихованого шаблону.
+
+    Картка несе один рядок («Immersive experience in the European Parliament
+    for high-school students»), і модель ставила «не впевнена»: 21.09.2026 з
+    59 програм жодна не пройшла — 37 у карантин, 22 відхилено. А повний опис
+    — вік («Age: 16 to 18»), хто може подаватись, як подати, організатор —
+    лежить у тій самій відповіді: застосунок відкриває його з
+    <template id="programme" data-hash="19593-eu">. Звідти й беремо.
+    """
+    tpl = soup.select_one(f'template[data-hash="{programme_id}"]')
+    if not tpl:
+        return "", []
+    text = _text(tpl)
+    # Спереду — перелік мов («Language EU BG DK …»), ззаду — кнопки «Share».
+    start = text.find("Age:")
+    if start > 0:
+        text = text[start:]
+    cut = text.find("Share Share this opportunity")
+    if cut > 0:
+        text = text[:cut]
+    links = []
+    for a in tpl.find_all("a", href=True):
+        href = a["href"].strip()
+        if href.startswith("http") and not _SHARE.search(href) and href not in links:
+            links.append(href)
+    return text.strip(), links[:3]
+
+
 def parse_open(html: str) -> list[dict]:
     """Розбирає фрагмент `open` у сирі записи. Винесено окремо від мережі,
     щоб парсер можна було перевірити на збереженому фрагменті."""
@@ -113,11 +146,14 @@ def parse_open(html: str) -> list[dict]:
         if body:
             blocks = [_text(d) for d in body.find_all("div", recursive=False)]
             descr = next((b for b in blocks if b and b != title), "")
+        details, links = programme_details(soup, opt)
 
         parts = [
             title,
             f"Дедлайн подачі: {deadline}" if deadline else "",
             descr,
+            details,
+            ("Посилання організатора: " + ", ".join(links)) if links else "",
             "Європейська програма з переліку Eurodesk Opportunity Finder. "
             "Набір відкритий на момент збору.",
         ]
