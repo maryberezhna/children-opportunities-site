@@ -1,0 +1,64 @@
+name: Audit bulk clubs (manual)
+
+# Чи живі гуртки, які 30.08–01.09.2026 зібрали масово (gurtok.org, «Школяр»,
+# ЦПР Святошинського, палаци творчості) — див. scraper/audit_clubs.py.
+#
+# Ключ Anthropic живе лише в секретах GitHub — локально скрипт не запустити.
+# Перший прогін завжди з dry_run=true: звіт по кожному гуртку лягає
+# артефактом audit-clubs-report, у базу нічого не пишеться.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = лише звіт, без запису'
+        required: false
+        default: 'true'
+      limit:
+        description: 'скільки гуртків (порожньо = всі)'
+        required: false
+        default: ''
+      source:
+        description: 'лише одне джерело, напр. gurtok.org (порожньо = всі)'
+        required: false
+        default: ''
+      hide_unverified:
+        description: 'true = непідтверджені → чернетка (лише після рішення Марії)'
+        required: false
+        default: 'false'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Audit
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          ARGS="--report audit_clubs_report.jsonl"
+          if [ "${{ github.event.inputs.dry_run }}" != "false" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "${{ github.event.inputs.limit }}" ]; then ARGS="$ARGS --limit ${{ github.event.inputs.limit }}"; fi
+          if [ -n "${{ github.event.inputs.source }}" ]; then ARGS="$ARGS --source ${{ github.event.inputs.source }}"; fi
+          if [ "${{ github.event.inputs.hide_unverified }}" = "true" ]; then ARGS="$ARGS --hide-unverified"; fi
+          python audit_clubs.py $ARGS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-clubs-report
+          path: scraper/audit_clubs_report.jsonl
+          if-no-files-found: ignore
