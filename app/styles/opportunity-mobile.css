@@ -148,6 +148,12 @@
      календар». Відступ знизу = висота панелі + safe-area. */
   .o-has-bar .opportunity-actions .opportunity-cta { display: none; }
   .o-has-bar { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
+  /* Під сторінкою тепер футер: відступ під панель переходить до нього, інакше
+     панель закриває копірайт, а над футером зяє порожнеча. */
+  .o-has-bar:has(+ .v2-footer) { padding-bottom: 0; }
+  body:has(.o-m-bar) .v2-footer-inner {
+    padding-bottom: calc(48px + 104px + env(safe-area-inset-bottom, 0px));
+  }
 
   .o-m-bar {
     display: flex;

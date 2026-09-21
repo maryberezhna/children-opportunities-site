@@ -57,9 +57,12 @@ const L = {
  * очікування в основному боті. До 15.09.2026 тут була форма з імейлом; листів
  * Dityam+ більше не шле (рішення Марії), тож і пошту не просимо.
  * `index` іде в аналітику — видно, який повтор блоку приводить людей.
+ * `place` — для блоку поза каталогом (сторінка можливості): тоді джерело
+ * видно і в аналітиці, і в списку очікування бота (?start=waitlist_<place>).
  */
-export default function PlusSection({ total, index = 0, lang = 'uk' }) {
+export default function PlusSection({ total, index = 0, place, lang = 'uk' }) {
   const t = L[lang] || L.uk;
+  const label = place || `catalog_slot_${index}`;
 
   const trackMonobank = () => {
     if (typeof window !== 'undefined' && window.gtag) {
@@ -96,8 +99,8 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
               <p className="plus-wait-note">{t.openNote}</p>
               <a
                 className="plus-open-btn"
-                href={plusBotUrl(`slot_${index}`)}
-                onClick={() => trackConversion('plus_bot_click', { event_label: `catalog_slot_${index}` })}
+                href={plusBotUrl(place || `slot_${index}`)}
+                onClick={() => trackConversion('plus_bot_click', { event_label: label })}
               >
                 {t.openCta}
               </a>
@@ -110,8 +113,8 @@ export default function PlusSection({ total, index = 0, lang = 'uk' }) {
               </p>
               <a
                 className="plus-open-btn"
-                href={PLUS_WAITLIST_URL}
-                onClick={() => trackConversion('plus_waitlist_tg_click', { event_label: `catalog_slot_${index}` })}
+                href={place ? plusBotUrl(`waitlist_${place}`) : PLUS_WAITLIST_URL}
+                onClick={() => trackConversion('plus_waitlist_tg_click', { event_label: label })}
               >
                 {t.waitCta}
               </a>
