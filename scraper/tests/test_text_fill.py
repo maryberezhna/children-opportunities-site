@@ -15,11 +15,29 @@ class Cost(unittest.TestCase):
         self.assertEqual(tf.cost_from_text("Участь безкоштовна для всіх."), "free")
 
     def test_only_partly_free_is_not_free(self):
-        for text in ("Безкоштовний тестовий період.",
-                     "Багато безкоштовних модулів для початківців.",
+        for text in ("Багато безкоштовних модулів для початківців.",
                      "Приймає дітей ВПО безкоштовно; для інших категорій — платно.",
                      "Безкоштовна реєстрація на окремі конкурси."):
             self.assertIsNone(tf.cost_from_text(text), text)
+
+    def test_free_trial_is_paid(self):
+        # Безкоштовне лише пробне — далі родина платить. Справжні записи бази.
+        for text in ("Перший урок доступний безкоштовно для всіх охочих, курс можна "
+                     "проходити повністю самостійно онлайн.",
+                     "Геймифікований підхід, зрозумілі пояснення. Безкоштовний тестовий період.",
+                     "Є безкоштовний пробний/ознайомчий урок. Навчання українською мовою.",
+                     "Перше заняття безкоштовне.",
+                     "Перший місяць — безкоштовно."):
+            self.assertEqual(tf.cost_from_text(text), "paid_affordable", text)
+
+    def test_first_lessons_without_free_are_not_a_trial(self):
+        # Гурток ЦПР, безкоштовний: «перші уроки» тут — зміст, а не пробне.
+        self.assertIsNone(tf.cost_from_text(
+            "Діти 7+ років здобувають та закріплюють перші уроки з шиття."))
+        self.assertIsNone(tf.cost_from_text("Запис на пробне заняття за телефоном."))
+        # Безкоштовно — усе, а не перший урок: «платно» тут не ставимо.
+        self.assertNotEqual(tf.cost_from_text("Усі заняття безкоштовні, перший урок — знайомство."),
+                            "paid_affordable")
 
     def test_paid_only_with_a_fee(self):
         self.assertEqual(tf.cost_from_text("Вартість: 1200 грн на місяць."), "paid_affordable")
@@ -100,6 +118,17 @@ class InSanitize(unittest.TestCase):
         self.assertIn("з тексту", d["admin_comment"])
         self.assertNotIn("бракує", d["admin_comment"])
 
+    def test_in_between_cost_counts_as_empty(self):
+        # «Частково безкоштовно» сайт не показує — запис висів із «бракує: вартість».
+        d = _sanitize(self.base(
+            title="Online lessenreeks нідерландської мови від d-teach",
+            summary="Онлайн-курс для дітей. Перший урок доступний безкоштовно для всіх охочих.",
+            cost_type="partially_free"))
+        self.assertEqual(d["cost_type"], "paid_affordable")
+        self.assertIn("пробний", d["admin_comment"])
+        self.assertNotIn("вартість", d["admin_comment"].split("бракує", 1)[-1]
+                         if "бракує" in d["admin_comment"] else "")
+
     def test_model_answer_wins(self):
         d = _sanitize(self.base(cost_type="paid_affordable", cities=["Київ"],
                                 age_from=10, age_to=12))
@@ -126,6 +155,19 @@ class Backfill(unittest.TestCase):
         self.assertEqual(patch["cost_type"], "free")
         self.assertEqual((patch["age_from"], patch["age_to"]), (6, 12))
         self.assertIn("з тексту", patch["admin_comment"])
+        self.assertNotIn("status", patch)
+
+    def test_draft_with_partly_free_trial_becomes_paid(self):
+        from fill_from_text import plan
+        row = {"id": "x", "title": "Online лессенреекс нідерландської мови від d-teach",
+               "summary": "Онлайн-курс нідерландської мови для дітей-початківців. Перший урок "
+                          "доступний безкоштовно для всіх охочих.",
+               "status": "draft", "opportunity_type": "course", "cost_type": "partially_free",
+               "format": "online", "cities": [], "countries": ["nl"], "age_from": 6, "age_to": 12,
+               "deadline": None, "event_start_date": None, "event_end_date": None,
+               "results_date": None, "recurrence": "ongoing", "admin_comment": ""}
+        patch = plan(row)
+        self.assertEqual(patch["cost_type"], "paid_affordable")
         self.assertNotIn("status", patch)
 
     def test_nothing_in_text_nothing_changes(self):

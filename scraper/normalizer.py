@@ -214,12 +214,17 @@ def _fill_from_text(data: dict, age_missing: bool) -> bool:
             data["opportunity_type"] = typ
             _note(data, f"auto: тип «{typ}» — з назви")
 
-    if data.get("cost_type") is None:
+    # «Частково безкоштовно» / «субсидовано» сайт не показує — для дозаповнення
+    # це така сама порожнеча, як null.
+    if data.get("cost_type") not in PUBLISHABLE_COST_TYPES:
         cost = text_fill.cost_from_text(text)
         if cost:
             data["cost_type"] = cost
-            _note(data, "auto: вартість «" + ("безкоштовно" if cost == "free" else "платно")
-                  + "» — прямо в тексті")
+            if cost == "paid_affordable" and text_fill.free_trial(text):
+                _note(data, "auto: вартість «платно» — безкоштовний лише пробний урок чи період")
+            else:
+                _note(data, "auto: вартість «" + ("безкоштовно" if cost == "free" else "платно")
+                      + "» — прямо в тексті")
 
     has_dates = any(data.get(k) for k in ("deadline", "event_start_date", "event_end_date",
                                            "results_date"))
@@ -631,6 +636,8 @@ cost_type — ЛИШЕ ДВА ЗНАЧЕННЯ:
   оргвнесок, абонемент, членський внесок, доплата за путівку. Часткова
   оплата чи пільга лише для окремих категорій — теж paid_affordable, якщо
   звичайна дитина платить.
+- Безкоштовний лише пробний чи перший урок, тестовий період, перший місяць —
+  paid_affordable: далі родина платить.
 - Якщо текст про гроші не каже — null. НЕ здогадуйся з типу: гурток у
   будинку творчості буває і платним, і безкоштовним.
 - Державна допомога, підтримка, програма, виплата чи стипендія, державне
