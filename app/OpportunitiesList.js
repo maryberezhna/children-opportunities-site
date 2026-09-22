@@ -13,6 +13,8 @@ import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { trackOpportunityClick } from '@/lib/track';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
+import { inlineCardAfter } from '@/lib/inline-card';
+import TelegramCard from './TelegramCard';
 
 // Каталог, версія редизайну (вересень 2026, референс «Dityam — новий дизайн
 // головної»). Один компонент обслуговує головну, /en і сторінки міст/тем.
@@ -860,6 +862,10 @@ export default function OpportunitiesList({
   // назад. Інакше одна-дві картки топу вже є в стрічці й рахувались двічі.
   const count = stream.length + (topCards.length === 3 ? topCards.length : 0);
   const shown = stream.slice(0, limit);
+  // Після четвертої: перша сторінка каталогу — 6 карток на десктопі й 10 на
+  // мобільному, а після шостої картка ставала в самий кінець сторінки, поруч
+  // із блоком Telegram, що й так стоїть під каталогом.
+  const tgAfter = inlineCardAfter(shown.length, { after: 4 });
 
   // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
   // рядку. Тип видно чипом у самому рядку, пошук — у полі.
@@ -1423,7 +1429,13 @@ export default function OpportunitiesList({
 
           {shown.length ? (
             <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
-              {shown.map(renderCard)}
+              {/* Telegram-картка після четвертої: без таймерів, замість
+                  4-секундної спливної підказки (див. TelegramCard.js). */}
+              {shown.flatMap((item, i) => (
+                i === tgAfter
+                  ? [renderCard(item), <TelegramCard key="tg-card" lang={lang} place="catalog" />]
+                  : [renderCard(item)]
+              ))}
             </section>
           ) : (
             <div className="v2-empty">
