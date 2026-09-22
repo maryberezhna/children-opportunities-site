@@ -2,7 +2,7 @@
 import { useState, useMemo } from 'react';
 // Той самий перелік, що й у конвеєрі: модератор бачить у черзі рівно те
 // формулювання, яким нормалізатор позначив запис.
-import { missingRequired } from '@/lib/required';
+import { missingRequired, missingProof, CRITERIA } from '@/lib/required';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
 import ModerationRules from './ModerationRules';
@@ -88,6 +88,13 @@ function Card({ o, mode, onAction, match, notes = [] }) {
   // сайт (вимога Марії 11.09.2026). Неповний запис показуємо з переліком
   // того, чого бракує, і з прямим лінком, де це дозаповнити.
   const missing = missingRequired(o);
+  // Світлофор (22.09.2026): поле є, а цитати зі сторінки на нього немає —
+  // запис жовтий. Показуємо лише кандидатам: для тих, що вже на сайті,
+  // це окремий список «коли буде час» (рішення 21), не щоденна черга.
+  const noProof = mode === 'drafts' ? missingProof(o).filter((l) => !missing.includes(l)) : [];
+  const quotes = mode === 'drafts'
+    ? CRITERIA.order.filter((k) => o.evidence?.[k]).map((k) => [CRITERIA.required[k].label, o.evidence[k]])
+    : [];
   const warnings = dateWarnings(o);
   const when = formatEventDates(o);
   const gone = done === 'approved' || done === 'skipped' || done === 'removed';
@@ -121,6 +128,26 @@ function Card({ o, mode, onAction, match, notes = [] }) {
             ⛔ {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'} — бракує: {missing.join(', ')}
           </div>
           <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
+        </div>
+      ) : null}
+
+      {noProof.length ? (
+        <div style={{ background: C.warnBg, border: '1px solid #f3d3ad', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
+          <div style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
+            🟡 Без цитати зі сторінки: {noProof.join(', ')}
+          </div>
+          <div style={{ fontSize: 14, color: C.ink2 }}>
+            Поле заповнене, але машина не знайшла на нього дослівної фрази. Перевір по джерелу — або додай сам, або поправ.
+          </div>
+        </div>
+      ) : null}
+
+      {quotes.length ? (
+        <div style={{ border: `1px solid ${C.border2}`, borderRadius: 10, padding: '9px 11px', marginBottom: 10, fontSize: 14, color: C.ink2 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: C.ink3, marginBottom: 4 }}>Цитати зі сторінки</div>
+          {quotes.map(([label, q]) => (
+            <div key={label} style={{ marginBottom: 3 }}><b style={{ color: C.ink }}>{label}:</b> «{q}»</div>
+          ))}
         </div>
       ) : null}
 

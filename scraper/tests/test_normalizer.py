@@ -50,10 +50,13 @@ class ClubDefault(unittest.TestCase):
         self.assertEqual(data["timing_kind"], "permanent")
         self.assertEqual(data["recurrence"], "ongoing")
         self.assertIn("перевірити", data["admin_comment"])
-        self.assertNotEqual(data.get("status"), "draft")
         # Здогад позначений у базі, а не лише в коментарі: за ним запис
         # перевіряється за 30 днів і не вважається вічно відкритим.
         self.assertTrue(data["timing_assumed"])
+        # Світлофор (22.09.2026): здогад про дату — не цитата, тож такий
+        # гурток більше не публікується сам: жовтий, до людини.
+        self.assertEqual(data.get("status"), "draft")
+        self.assertIn("без цитати", data["admin_comment"])
 
     def test_kind_from_text_is_not_an_assumption(self):
         data = _sanitize(self.base(timing_kind="permanent"))
@@ -109,7 +112,9 @@ class GeneratedTextHygiene(unittest.TestCase):
     def test_sanitize_strips_and_flags(self):
         data = _sanitize({"title": "Гранти", "summary": "Навчання可а офлайн", "age_from": 5,
                           "age_to": 18, "opportunity_type": "scholarship", "cost_type": "free",
-                          "format": "online", "results_date": "2026-09-30"})
+                          "format": "online", "results_date": "2026-09-30",
+                          "evidence": {"age": "5–18", "date": "30 вересня", "cost": "безкоштовно",
+                                       "type": "стипендія", "place": "онлайн"}})
         self.assertNotIn("可", data["summary"])
         self.assertIn("ієрогліфи", data["admin_comment"])
         self.assertEqual(data["results_date"], "2026-09-30")
@@ -130,7 +135,11 @@ class StateSupportIsFree(unittest.TestCase):
     def test_state_support_without_cost_becomes_free(self):
         data = _sanitize(self.base())
         self.assertEqual(data["cost_type"], "free")
-        self.assertNotIn("вартість", data.get("admin_comment") or "")
+        self.assertNotIn("бракує", data.get("admin_comment") or "")
+        # Правило заповнило вартість, але цитати на неї немає — світлофор
+        # (22.09.2026) відправляє запис людині, а не на сайт.
+        self.assertIn("без цитати", data["admin_comment"])
+        self.assertEqual(data["status"], "draft")
 
     def test_state_university_name_is_not_a_reason(self):
         # 28 платних курсів «Житомирського державного університету».
@@ -225,13 +234,18 @@ class SanitizeGate(unittest.TestCase):
             self.assertIn(expected, out["admin_comment"])
 
     def test_complete_record_keeps_status(self):
+        # З 22.09.2026 «повний» означає ще й «з цитатою на кожне поле»
+        # (світлофор); без цитат той самий запис — жовтий, див. test_proof.py.
         out = _sanitize({
             "status": "active", "age_from": 6, "age_to": 12,
             "deadline": "2026-10-01", "cost_type": "free",
             "opportunity_type": "camp", "format": "offline",
+            "evidence": {"age": "6–12 років", "date": "до 1 жовтня", "cost": "безкоштовно",
+                         "type": "табір", "place": "наживо"},
         })
         self.assertEqual(out["status"], "active")
         self.assertNotIn("бракує", out.get("admin_comment") or "")
+        self.assertNotIn("без цитати", out.get("admin_comment") or "")
 
     def test_unknown_type_still_saves_but_is_flagged(self):
         # opportunity_type NOT NULL — заглушка лишається, але брак видно.
