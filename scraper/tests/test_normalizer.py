@@ -150,8 +150,8 @@ class StateSupportIsFree(unittest.TestCase):
 
 class RequiredBeforePublish(unittest.TestCase):
     """Дата, тип, вік, вартість і місце-або-формат — обовʼязковий мінімум
-    перед публікацією (вимога Марії 11.09.2026). Дзеркало цих перевірок
-    живе в tests/required.test.mjs; правити треба обидва файли."""
+    перед публікацією (вимога Марії 11.09.2026). Визначення — в
+    lib/publish-criteria.json, спільні приклади — tests/fixtures/."""
 
     @staticmethod
     def _full(**over):
