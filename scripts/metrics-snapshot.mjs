@@ -85,15 +85,18 @@ const [active, closed, drafts, added, waitlist, profiles, feedback] = await Prom
   countRows('opportunity_feedback', (q) => q, 'opportunity_id'),
 ]);
 
-// MRR: місячні × 99 + річні × (999/12) — та сама формула, що в plus-stats.
-const { data: subs } = await supabase
+// MRR: місячні × 119 + річні × (999/12) — та сама формула, що в plus-stats.
+// Без фільтра дублів: canonical_slug є лише в opportunities. До 22.09.2026
+// він стояв і тут, запит падав, а в знімок мовчки йшли 0 платних і 0 MRR —
+// тож помилку не ковтаємо: краще «—» на сторінці, ніж правдоподібний нуль.
+const { data: subs, error: subsError } = await supabase
   .from('digest_subscribers')
   .select('status, billing_period')
-  .eq('status', 'active')
-    .is('canonical_slug', null);
-const yearly = (subs || []).filter((s) => s.billing_period === 'yearly').length;
-const monthly = (subs || []).length - yearly;
-const mrr = Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+  .eq('status', 'active');
+if (subsError) console.error(`digest_subscribers (paid) failed: ${subsError.message}`);
+const yearly = subsError ? null : subs.filter((s) => s.billing_period === 'yearly').length;
+const monthly = subsError ? null : subs.length - yearly;
+const mrr = subsError ? null : Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
 
 const row = {
   day: today,
@@ -104,7 +107,7 @@ const row = {
   added_today: added,
   waitlist_total: waitlist,
   digest_profiles: profiles,
-  plus_active: (subs || []).length,
+  plus_active: subsError ? null : subs.length,
   plus_mrr: mrr,
   feedback_votes_total: feedback,
 };
