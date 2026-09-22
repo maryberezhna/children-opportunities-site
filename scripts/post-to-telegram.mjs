@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyBeforePost } from './verify-before-post.mjs';
-import { costLabel } from './post-labels.mjs';
+import { costLabel, isUkrainianPost, placeText } from './post-labels.mjs';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -159,7 +159,8 @@ function buildMessageA(item) {
   lines.push(meta.join(' · '));
 
   lines.push(...whenLines(item));
-  if (item.format) lines.push(`📍 ${escapeHtml(item.format)}`);
+  const place = placeText(item);
+  if (place) lines.push(`📍 Де: ${escapeHtml(place)}`);
 
   if (item.summary) {
     const summary = item.summary.length > 500
@@ -300,7 +301,7 @@ const minLeadIso = minLead.toISOString().slice(0, 10);
 
 const { data: pool, error } = await supabase
   .from('opportunities')
-  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, deadline, event_start_date, event_end_date, results_date')
+  .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, format, cities, countries, is_international, deadline, event_start_date, event_end_date, results_date')
   .eq('status', 'active')
   .is('canonical_slug', null)
   .is('telegram_posted_at', null)
@@ -332,7 +333,8 @@ for (const r of postedRows || []) {
 // Перед відправкою читаємо сторінку джерела кожної обраної можливості
 // (scripts/verify-before-post.mjs): активний статус і код 200 не означають,
 // що набір іще триває. Не пройшла перевірку — не публікуємо.
-const picked = selectDiverse(pool || [], MAX_PER_RUN, MAX_PER_TYPE, lastPosted);
+// Лише українською (post-labels.isUkrainianPost): англійське чекає перекладу.
+const picked = selectDiverse((pool || []).filter(isUkrainianPost), MAX_PER_RUN, MAX_PER_TYPE, lastPosted);
 const { items } = DRY_RUN
   ? { items: picked }
   : await verifyBeforePost(picked, { label: 'post-to-telegram' });

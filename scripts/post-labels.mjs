@@ -2,6 +2,7 @@
 // Окремим модулем, щоб їх можна було перевірити тестом — check-deadlines.mjs,
 // post-to-telegram.mjs і content-agent.mjs при імпорті одразу йдуть у базу.
 import { plural } from '../lib/plural.js';
+import { abroadCountries, goesAbroad, isOnline, realCities } from '../lib/geo.js';
 
 const MONTHS = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня',
   'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
@@ -60,4 +61,49 @@ export function withPageLink(post, slug) {
   if (tags === -1) return `${text.trimEnd()}\n\n${link}`;
   lines.splice(tags, 0, link, '');
   return lines.join('\n');
+}
+
+// ── Мова ────────────────────────────────────────────────────────────────
+// У канал — лише українською (Марія, 22.09.2026: «ніколи не пиши в телеграм
+// канал англійською — тільки переклад або чисто укр»). Того дня «Нова
+// можливість» вийшла про WWOOF з назвою «Volunteer in organic farms» і
+// англійським описом: запис прийшов з Eurodesk англійською, пост узяв як є.
+// Назва мусить мати хоч одне українське слово (імʼя програми — «Erasmus+»,
+// «WWOOF» — лишається, але поруч українське пояснення), опис — переважно
+// кирилицею. Не проходить — запис у пост не бере, доки його не перекладуть.
+const letters = (t) => [...String(t || '')].filter((c) => /\p{L}/u.test(c));
+const cyrillicShare = (t) => {
+  const all = letters(t);
+  return all.length ? all.filter((c) => /[\u0400-\u04FF]/.test(c)).length / all.length : 0;
+};
+
+export function isUkrainianPost(r) {
+  if (!/[\u0400-\u04FF]{3,}/.test(r?.title || '')) return false;
+  return !r.summary || cyrillicShare(r.summary) >= 0.5;
+}
+
+// ── Де ──────────────────────────────────────────────────────────────────
+// Одне з пʼяти обовʼязкових полів, а в пості «Нова можливість» його не було
+// зовсім (22.09.2026: «чому не зрозуміло, до якої країни відноситься ця
+// можливість»). Країни — українською з кодів через Intl, без власного
+// словника. Міжнародна програма без конкретної країни (WWOOF, обміни, де
+// країна залежить від набору) — «у різних країнах», а не вигадана країна.
+const REGION = new Intl.DisplayNames(['uk'], { type: 'region' });
+const countryName = (code) => {
+  try { return REGION.of(String(code).toUpperCase()); } catch { return null; }
+};
+
+export function placeText(r) {
+  const countries = abroadCountries(r).map(countryName).filter(Boolean);
+  if (countries.length) return countries.slice(0, 3).join(', ');
+  // Місто раніше за «у різних країнах»: фестиваль у Львові з іноземними
+  // учасниками теж «міжнародний», але відбувається у Львові.
+  const cities = realCities(r);
+  const hybrid = /hybrid|змішан/i.test(r.format || '');
+  if (cities.length) return cities.slice(0, 2).join(', ') + (hybrid ? ' і онлайн' : '');
+  if (goesAbroad(r)) return 'у різних країнах';
+  if (isOnline(r)) return 'онлайн';
+  if (hybrid) return 'онлайн і наживо';
+  if ((r.cities || []).some((c) => /вся україна/i.test(c))) return 'по всій Україні';
+  return null;
 }

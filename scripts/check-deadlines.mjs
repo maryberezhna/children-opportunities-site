@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
-import { costLabel, deadlineTag, formatDeadlineDate } from './post-labels.mjs';
+import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -277,8 +277,10 @@ async function sendDailyDigest(dateIso = kyivIso()) {
       daysLeft: r.deadline ? Math.round((Date.parse(`${r.deadline}T00:00:00Z`) - dayMs) / 86400000) : null,
     }))
     .filter((r) => r.daysLeft == null || r.daysLeft >= MIN_LEAD_DAYS);
+  // Лише українською: запис англійською чекає перекладу (post-labels.isUkrainianPost).
   const eligible = pool.filter((r) => !shownInPreview.has(r.id)
-    && !(r.telegram_posted_at && r.telegram_posted_at >= repeatCutoff));
+    && !(r.telegram_posted_at && r.telegram_posted_at >= repeatCutoff)
+    && isUkrainianPost(r));
 
   let built = await buildPlannedPost(entry, pool, eligible);
   if (!built) {
@@ -462,6 +464,8 @@ function buildStoryPost(r, link = null) {
   if (age) lines.push(`👶 Для кого: ${age}`);
   const typeLabel = TYPE_LABELS[r.opportunity_type];
   if (typeLabel) lines.push(`📚 Формат: ${typeLabel}`);
+  const place = placeText(r);
+  if (place) lines.push(`📍 Де: ${escapeHtml(place)}`);
   if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
 
   // Без дати рядка немає. «Дедлайну немає — набір триває» тут писати не можна:
@@ -547,7 +551,7 @@ async function sendNewOpportunityPost(excludeIds = []) {
   const since = new Date(Date.now() - 3 * 86400000).toISOString();
   const { data, error } = await supabase
     .from('opportunities')
-    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, created_at')
+    .select('id, slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, created_at, cities, countries, is_international, format')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .is('telegram_posted_at', null)
@@ -559,7 +563,8 @@ async function sendNewOpportunityPost(excludeIds = []) {
     console.error(`New opportunity fetch failed: ${error.message}`);
     return;
   }
-  const fresh = (data || []).filter((x) => !excludeIds.includes(x.id) && !shownInPreview.has(x.id));
+  const fresh = (data || []).filter((x) => !excludeIds.includes(x.id) && !shownInPreview.has(x.id)
+    && isUkrainianPost(x));
   const [r] = await pickChecked(fresh, 1, 'нова можливість');
   if (!r) {
     console.log('Нової можливості для окремого поста немає.');
@@ -644,6 +649,8 @@ function formatLine(r, index) {
   if (age) meta.push(`👶 ${age}`);
   const cost = costLabel(r.cost_type);
   if (cost) meta.push(`${r.cost_type === 'free' ? '✅' : '💳'} ${cost}`);
+  const place = placeText(r);
+  if (place) meta.push(`📍 ${escapeHtml(place)}`);
 
   const prefix = `${(index ?? 0) + 1}.`;
   const lines = [`${prefix} <a href="${url}"><b>${escapeHtml(r.title)}</b></a>`];
