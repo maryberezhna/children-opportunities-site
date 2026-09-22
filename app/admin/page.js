@@ -5,6 +5,7 @@ import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { kyivToday } from '@/lib/dates';
 import { isOverdue, sortByDeadline } from '@/lib/decision-reason';
 import { isStubDraft } from '@/lib/suggestions';
+import { mergeDraftDups } from '@/lib/adminDups';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
 import Queue from './Queue';
@@ -25,6 +26,12 @@ export const metadata = {
 //
 // Прострочені сюди не потрапляють: вночі їх закриває auto_review («дата в
 // минулому»), і рішення людини там не потрібне.
+// Поріг тригамної схожості назв — той самий, що в судді дублів: Jeugdfonds
+// Sport & Cultuur у черзі й на сайті збігаються лише на 0.35, а це та сама
+// програма. Хибний збіг на плашці не страшний: вона каже «порівняй обидва»,
+// а не вирішує сама.
+const DRAFT_DUP_SIM = 0.35;
+
 const FIELDS = [
   'id, slug, status, title, summary, source, source_url, apply_url, opportunity_type',
   'age_from, age_to, cost_type, price_note, deadline, recurrence, results_date',
@@ -71,6 +78,17 @@ export default async function QueuePage({ searchParams }) {
     const all = (data || []).map((o) => ({ ...o, stub: isStubDraft(o) }));
     overdue = all.filter((o) => isOverdue(o, today)).length;
     drafts = sortByDeadline(all.filter((o) => !isOverdue(o, today)), (o) => o.deadline);
+
+    // Можливі дублікати шукає система, а не людина (Марія, 22.09.2026: «це
+    // не має перевіряти людина»). Плашку на картці досі ставив лише
+    // discover_agent для СВОЇХ знахідок; кандидати зі скраперів, карантину й
+    // пропозицій приходили без жодної перевірки — 22.09 у черзі стояли 23
+    // записи без плашки, і серед них EPAS, слово в слово той самий, що вже
+    // активний на сайті.
+    //
+    // Збій цього запиту чергу не валить: без плашок вона працює як раніше.
+    const { data: pairs } = await supabase.rpc('find_draft_dups', { sim_threshold: DRAFT_DUP_SIM });
+    drafts = mergeDraftDups(drafts, pairs);
 
     // Коментарі машині: відкриті (ще в роботі) і виконані за останній
     // тиждень — картка каже, що машина зробила з проханням.
