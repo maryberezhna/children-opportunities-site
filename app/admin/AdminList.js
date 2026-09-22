@@ -5,6 +5,7 @@ import { useState, useMemo } from 'react';
 import { missingRequired } from '@/lib/required';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
+import ModerationRules from './ModerationRules';
 
 const TYPE_LABELS = {
   course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
@@ -56,16 +57,29 @@ function MiniCol({ label, item, accent }) {
   );
 }
 
-function Card({ o, mode, onAction, match }) {
-  const [comment, setComment] = useState(o.admin_comment || '');
+function Card({ o, mode, onAction, match, notes = [] }) {
+  // Поле — лише для нового коментаря людини. Позначки конвеєра
+  // (admin_comment) показуємо окремо й не даємо затерти (22.09.2026).
+  const [comment, setComment] = useState('');
+  const [openNotes, setOpenNotes] = useState(notes);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(null); // 'approved'|'skipped'|'verified'|'removed'
 
   async function act(action) {
     setBusy(true);
-    const ok = await onAction(o.id, action, comment);
+    const res = await onAction(o.id, action, comment);
     setBusy(false);
-    if (!ok) { alert('Не вдалося. Спробуй ще раз або перезайди.'); return; }
+    if (!res.ok) {
+      alert(res.error === 'note_not_saved'
+        ? 'Рішення збережено, а коментар — ні. Натисни ще раз.'
+        : 'Не вдалося. Спробуй ще раз або перезайди.');
+      return;
+    }
+    if (action === 'comment') {
+      if (res.note) setOpenNotes((list) => [...list, res.note]);
+      setComment('');
+      return;
+    }
     setDone({ approve: 'approved', skip: 'skipped', verify: 'verified', remove: 'removed' }[action]);
   }
 
@@ -153,10 +167,27 @@ function Card({ o, mode, onAction, match }) {
         </div>
       ) : (
         <>
+          {o.admin_comment ? (
+            <p style={{ margin: '0 0 9px', fontSize: 12.5, color: C.ink3, lineHeight: 1.45 }}>
+              <b style={{ fontWeight: 600 }}>Позначки конвеєра:</b> {o.admin_comment}
+            </p>
+          ) : null}
+          {openNotes.length ? (
+            <div style={{ background: '#eef4ff', border: '1px solid #cddcfb', borderRadius: 10, padding: '8px 11px', marginBottom: 9 }}>
+              <div style={{ fontSize: 12, fontWeight: 700, color: C.link, marginBottom: 3 }}>
+                💬 Коментар чекає на обробку
+              </div>
+              {openNotes.map((n) => (
+                <div key={n.id} style={{ fontSize: 13.5, color: C.ink, lineHeight: 1.45 }}>
+                  <span style={{ color: C.ink3 }}>{formatDate(String(n.created_at).slice(0, 10))}:</span> {n.body}
+                </div>
+              ))}
+            </div>
+          ) : null}
           <textarea
             value={comment}
             onChange={(e) => setComment(e.target.value)}
-            placeholder="Коментар (збережеться в базі + Notion)…"
+            placeholder="Коментар: питання, сумнів або причина рішення…"
             rows={2}
             style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 13.5,
               padding: '8px 11px', borderRadius: 9, border: `1px solid ${C.border2}`, resize: 'vertical', marginBottom: 9 }}
@@ -174,11 +205,14 @@ function Card({ o, mode, onAction, match }) {
               </>
             )}
             {/* Редагування жило лише під назвою картки, і знайти його було
-                неможливо (22.09.2026). «Лише коментар» прибрано на прохання
-                Марії: коментар зберігається разом із будь-якою дією. */}
+                неможливо (22.09.2026). */}
             <a href={`/admin/edit/${o.id}`} style={{ ...btnStyle(false, { border: true }), textDecoration: 'none' }}>
               ✏️ Редагувати
             </a>
+            {/* Питання без рішення: запис лишається в черзі, коментар — у
+                moderation_notes відкритим, доки його не оброблять; його
+                показує ранкове зведення (Марія, 22.09.2026). */}
+            <Btn onClick={() => act('comment')} busy={busy || !comment.trim()} border>💬 Залишити коментар</Btn>
           </div>
         </>
       )}
@@ -201,7 +235,34 @@ function Btn({ children, onClick, busy, bg, fg, border }) {
   );
 }
 
-export default function AdminList({ drafts, actives, matches = {} }) {
+// Список стоїть рівно там, де й на інших сторінках адмінки (980 px по
+// центру), а правила — у порожньому полі ліворуч. Коли поля бракує, уся
+// пара центрується; на вузькому екрані правила згортаються над списком.
+const LAYOUT_CSS = `
+.adm-queue { display: grid; column-gap: 28px; padding: 0 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 980px) minmax(0, 1fr);
+  /* Зайву висоту правил бере рядок списку, а не шапка: інакше при
+     короткому списку між заголовком і вкладками зʼявляється діра. */
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "rules head ." "rules body ."; }
+.adm-queue-head { grid-area: head; min-width: 0; }
+.adm-queue-body { grid-area: body; min-width: 0; }
+.adm-queue-rules { grid-area: rules; justify-self: end; align-self: start; box-sizing: border-box;
+  width: 100%; max-width: 340px; position: sticky; top: 16px; max-height: calc(100vh - 32px);
+  overflow-y: auto; background: #fff; border: 1px solid ${C.border}; border-radius: 14px; padding: 14px 16px; }
+@media (max-width: 1679px) {
+  .adm-queue { grid-template-columns: 300px minmax(0, 980px); justify-content: center;
+    grid-template-areas: "rules head" "rules body"; }
+  .adm-queue-rules { max-width: none; }
+}
+@media (max-width: 1099px) {
+  .adm-queue { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto;
+    grid-template-areas: "head" "rules" "body"; }
+  .adm-queue-rules { position: static; max-height: none; margin-top: 16px; }
+}
+`;
+
+export default function AdminList({ drafts, actives, matches = {}, notes = {}, children }) {
   const [tab, setTab] = useState('drafts');
   const [search, setSearch] = useState('');
 
@@ -211,8 +272,9 @@ export default function AdminList({ drafts, actives, matches = {} }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, action, comment }),
       });
-      return res.ok;
-    } catch { return false; }
+      const json = await res.json().catch(() => ({}));
+      return { ok: res.ok && json.ok !== false, error: json.error, note: json.note };
+    } catch { return { ok: false }; }
   }
 
   const activeFiltered = useMemo(() => {
@@ -246,55 +308,62 @@ export default function AdminList({ drafts, actives, matches = {} }) {
   );
 
   return (
-    <div style={{ marginTop: 22 }}>
-      <div style={{ display: 'flex', gap: 9, marginBottom: 18 }}>
-        {tabBtn('drafts', `🆕 Кандидати (${drafts.length})`)}
-        {tabBtn('active', `✅ Активні (${actives.length})`)}
-        {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
-      </div>
+    <div className="adm-queue">
+      <style dangerouslySetInnerHTML={{ __html: LAYOUT_CSS }} />
+      <div className="adm-queue-head">{children}</div>
+      <aside className="adm-queue-rules" aria-label="Правила модерації">
+        <ModerationRules tab={tab} />
+      </aside>
+      <div className="adm-queue-body" style={{ marginTop: 22 }}>
+        <div style={{ display: 'flex', gap: 9, marginBottom: 18 }}>
+          {tabBtn('drafts', `🆕 Кандидати (${drafts.length})`)}
+          {tabBtn('active', `✅ Активні (${actives.length})`)}
+          {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
+        </div>
 
-      {tab === 'incomplete' ? (
-        incomplete.length === 0 ? (
-          <p style={{ color: C.ink2 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
+        {tab === 'incomplete' ? (
+          incomplete.length === 0 ? (
+            <p style={{ color: C.ink2 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
+          ) : (
+            <>
+              <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
+                Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
+                не стають — ворота конвеєра їх не пускають.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {incomplete.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
+              </div>
+            </>
+          )
+        ) : tab === 'drafts' ? (
+          drafts.length === 0 ? (
+            <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+              {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
+            </div>
+          )
         ) : (
           <>
+            <input
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Пошук за назвою або джерелом…"
+              style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 14px',
+                borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
+            />
             <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
-              Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
-              не стають — ворота конвеєра їх не пускають.
+              Показано {activeFiltered.length} із {actives.length}.
+              {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-              {incomplete.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} />)}
+              {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
             </div>
+            {activeFiltered.length > 150
+              ? <p style={{ color: C.ink3, fontSize: 13, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
+              : null}
           </>
-        )
-      ) : tab === 'drafts' ? (
-        drafts.length === 0 ? (
-          <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} match={matches[o.dup_of]} />)}
-          </div>
-        )
-      ) : (
-        <>
-          <input
-            value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Пошук за назвою або джерелом…"
-            style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 14px',
-              borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
-          />
-          <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
-            Показано {activeFiltered.length} із {actives.length}.
-            {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-            {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} />)}
-          </div>
-          {activeFiltered.length > 150
-            ? <p style={{ color: C.ink3, fontSize: 13, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
-            : null}
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }
