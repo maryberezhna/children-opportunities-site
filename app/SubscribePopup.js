@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { TELEGRAM_URL } from '@/lib/social';
+import { PLUS_WAITLIST_URL } from '@/lib/plus';
 import { trackConversion, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
 
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
@@ -8,6 +9,10 @@ export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 // localStorage: користувач долучився до каналу — не показуємо більше.
 // Той самий прапорець читає TelegramCard у списках.
 export const JOINED_KEY = 'dityam_subscribed';
+
+// localStorage: став у список очікування Dityam+. Окремий прапорець, бо це
+// інша дія, і TelegramCard у списках його не читає.
+export const PLUS_KEY = 'dityam_plus_waitlist';
 
 // sessionStorage: ЗАКРИВ ХРЕСТИКОМ. Автоприховування сюди навмисно не пише.
 // Раніше писало — і «не хочу» та «не помітив» були злиті в один стан: підказка
@@ -52,16 +57,20 @@ const VALUE_FALLBACK_MS = 12000;
 // Пауза після повернення у вкладку: даємо людині побачити сторінку.
 const VALUE_SETTLE_MS = 800;
 
+// Заголовок підказки. Далі — два рівноцінні шляхи лишитись на звʼязку
+// (Марія, 22.09.2026: «розділи на 2 частини… зліва телеграм канал і справа
+// waitlist Dityam+»). До того підказка пропонувала лише канал, а список
+// очікування Dityam+ за два тижні зібрав 7 кліків на весь сайт.
 const COPY = {
   default: {
-    title: 'Залишайтесь на зв’язку',
-    text: 'Нові можливості — щодня в Telegram',
+    title: 'Давайте бути на звʼязку',
+    text: 'Оберіть, як зручніше',
   },
   // Людина щойно перейшла до організатора: говоримо не «підпишіться», а про
   // те, що таких знахідок буде більше й вони швидко зникають.
   value: {
     title: 'Знайшли потрібне?',
-    text: 'Щодня з’являються нові — надсилаємо їх у Telegram',
+    text: 'Щодня зʼявляються нові — не пропустіть',
   },
 };
 
@@ -99,7 +108,8 @@ export default function SubscribePopup() {
 
   // Долучився або закрив хрестиком — у цій сесії підказка більше не потрібна.
   const isSuppressed = useCallback(() => (
-    readFlag('localStorage', JOINED_KEY) || readFlag('sessionStorage', SESSION_CLOSED_KEY)
+    (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY))
+    || readFlag('sessionStorage', SESSION_CLOSED_KEY)
   ), []);
 
   // force — показ на явну дію людини («Підписатись» у хедері чи нижній панелі).
@@ -108,7 +118,7 @@ export default function SubscribePopup() {
   const canShow = useCallback(({ force = false, ignoreCooldown = false } = {}) => {
     if (typeof window === 'undefined') return false;
     if (openRef.current) return false;
-    if (readFlag('localStorage', JOINED_KEY)) return false;
+    if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) return false;
     if (force) return true;
     if (readFlag('sessionStorage', SESSION_CLOSED_KEY)) return false;
     if (readNumber(SESSION_SHOWS_KEY) >= MAX_SHOWS_PER_SESSION) return false;
@@ -161,6 +171,20 @@ export default function SubscribePopup() {
     // event_label лишаємо 'popup' (сумісність із наявними звітами), а тригер
     // передаємо окремо: тепер видно, який саме момент приносить підписників.
     trackConversion('telegram_join_click', {
+      event_label: 'popup',
+      popup_trigger: lastTrigger.current,
+    });
+    hide('joined');
+  };
+
+  // Другий шлях: список очікування Dityam+. Подію лишаємо ту саму, що й на
+  // решті сайту (plus_waitlist_tg_click), щоб звіти не розʼїхались, а місце
+  // видно в event_label.
+  const handlePlusClick = () => {
+    try {
+      localStorage.setItem(PLUS_KEY, Date.now().toString());
+    } catch (e) {}
+    trackConversion('plus_waitlist_tg_click', {
       event_label: 'popup',
       popup_trigger: lastTrigger.current,
     });
@@ -250,8 +274,8 @@ export default function SubscribePopup() {
   // ТРИГЕР 3: кнопки «Підписатись» у хедері / нижній панелі.
   useEffect(() => {
     const handleOpen = () => {
-      if (readFlag('localStorage', JOINED_KEY)) {
-        alert('Ви вже долучилися до Telegram-каналу 🧡');
+      if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) {
+        alert('Ви вже з нами — і в каналі, і в списку Dityam+ 🧡');
         return;
       }
       open('manual', 'default', { force: true });
@@ -288,26 +312,47 @@ export default function SubscribePopup() {
     <div
       className="tg-callout"
       role="complementary"
-      aria-label="Долучитись до Telegram-каналу"
+      aria-label="Лишитись на звʼязку"
       onMouseEnter={() => clearTimeout(hideTimer.current)}
       onMouseLeave={startHideTimer}
     >
-      {/* Іконки тут немає навмисно: підказка визирає з-під самої кнопки
-          Telegram, і другий літачок за сантиметр від першого — шум. */}
       <p className="tg-callout-text">
         <strong>{copy.title}</strong>
         <span>{copy.text}</span>
       </p>
 
-      <a
-        href={TELEGRAM_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="tg-cta tg-callout-cta"
-        onClick={handleJoinClick}
-      >
-        Долучитися
-      </a>
+      {/* Два рівноцінні шляхи, не один із «або ще можна»: зліва безкоштовний
+          канал, справа список очікування Dityam+. Порядок і сторони —
+          рішення Марії 22.09.2026. */}
+      <div className="tg-callout-options">
+        <div className="tg-callout-option">
+          <span className="tg-callout-opt-title">Telegram-канал</span>
+          <span className="tg-callout-opt-text">Нові можливості щодня, безкоштовно</span>
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tg-cta tg-callout-cta"
+            onClick={handleJoinClick}
+          >
+            Долучитися
+          </a>
+        </div>
+
+        <div className="tg-callout-option">
+          <span className="tg-callout-opt-title">Dityam+</span>
+          <span className="tg-callout-opt-text">Добірка під вашу дитину — скоро</span>
+          <a
+            href={PLUS_WAITLIST_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="tg-callout-cta tg-callout-cta-plus"
+            onClick={handlePlusClick}
+          >
+            Стати в список
+          </a>
+        </div>
+      </div>
 
       <button
         className="tg-callout-close"
