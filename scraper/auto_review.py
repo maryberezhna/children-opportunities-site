@@ -48,6 +48,9 @@ MODEL = "claude-haiku-4-5-20251001"
 # конвеєр і на чергу в адмінці — lib/publish-criteria.json (22.09.2026).
 SENSITIVE_TYPES = set(PUBLISH_CRITERIA["risk"]["sensitive_types"])
 SENSITIVE_NEEDS = set(PUBLISH_CRITERIA["risk"]["sensitive_needs"])
+# Сторінку цих джерел робот прочитати не може — цитати не буде ніколи,
+# тож запис підтверджує людина (один раз), а не чекає доказу вічно.
+UNREADABLE_SOURCES = set(PUBLISH_CRITERIA["risk"].get("unreadable_sources", ()))
 
 MIN_SUMMARY_LEN = 60
 MIN_TITLE_LEN = 15
@@ -108,6 +111,9 @@ def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
     # кожне обовʼязкове поле. Здогад чи дефолт цитати не має.
     no_proof = missing_proof(row)
     if no_proof:
+        if row.get("source") in UNREADABLE_SOURCES:
+            return YELLOW, ("джерело не відкривається роботу "
+                            f"({row.get('source')}) — підтверджує людина")
         return YELLOW, "без цитати: " + ", ".join(PROOF_LABELS[k] for k in no_proof)
     if row["age_from"] < 0 or row["age_to"] > 18:
         return YELLOW, f"вік поза 0–18 ({row['age_from']}–{row['age_to']})"
