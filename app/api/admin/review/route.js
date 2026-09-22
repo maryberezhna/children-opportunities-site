@@ -13,7 +13,7 @@ const ACTIONS = {
   skip:    { status: 'closed', decision: 'Пропущено' },                       // draft → hidden
   verify:  { decision: 'Перевірено', verify: true },                          // active link ok
   remove:  { status: 'closed', decision: 'Прибрано' },                        // active → hidden
-  comment: { decision: 'Коментар' },                                          // note only
+  comment: { decision: 'Коментар' },                                          // note only, stays in queue
 };
 
 export async function POST(request) {
@@ -55,30 +55,54 @@ export async function POST(request) {
     }
   }
 
+  const text = typeof comment === 'string' ? comment.trim().slice(0, 2000) : '';
+  if (action === 'comment' && !text) {
+    return Response.json({ ok: false, error: 'empty_comment' }, { status: 400 });
+  }
+
+  // Коментар людини йде в moderation_notes, а не в admin_comment: там
+  // позначки конвеєра, і людський текст або затирав їх, або тонув серед них
+  // (22.09.2026). «Лише коментар» — питання без рішення, лишається
+  // відкритим, доки його не оброблять; коментар до рішення — його причина.
   const patch = { updated_at: new Date().toISOString() };
   if (spec.status) patch.status = spec.status;
   if (spec.verify) patch.verified_at = new Date().toISOString();
-  if (typeof comment === 'string' && comment.trim()) patch.admin_comment = comment.trim();
 
-  const { data, error } = await supabase
-    .from('opportunities')
-    .update(patch)
-    .eq('id', id)
-    .select('title, source, source_url, opportunity_type')
-    .maybeSingle();
+  const cols = 'title, source, source_url, opportunity_type';
+  const { data, error } = action === 'comment'
+    ? await supabase.from('opportunities').select(cols).eq('id', id).maybeSingle()
+    : await supabase.from('opportunities').update(patch).eq('id', id).select(cols).maybeSingle();
 
   if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
   if (!data) return Response.json({ ok: false, error: 'not_found' }, { status: 404 });
 
+  let note = null;
+  if (text) {
+    const { data: saved, error: noteError } = await supabase
+      .from('moderation_notes')
+      .insert({
+        opportunity_id: id,
+        body: text,
+        action,
+        resolved_at: action === 'comment' ? null : new Date().toISOString(),
+      })
+      .select('id, body, created_at')
+      .single();
+    // Рішення вже записане; коментар до нього — ні. Кажемо про це прямо,
+    // щоб людина не думала, що її питання хтось побачить.
+    if (noteError) return Response.json({ ok: false, error: 'note_not_saved' }, { status: 500 });
+    note = saved;
+  }
+
   // Mirror to Notion (best-effort; no-op if not configured).
   await pushModeration({
     title: data.title,
-    comment: (comment || '').trim(),
+    comment: text,
     decision: spec.decision,
     type: data.opportunity_type,
     url: data.source_url,
     source: data.source,
   });
 
-  return Response.json({ ok: true, action });
+  return Response.json({ ok: true, action, note });
 }

@@ -47,7 +47,7 @@ const base = () => supabase.from('opportunities');
 // (scripts/check-catalogue-queries.mjs).
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
-  inReview, reviewTop,
+  inReview, reviewTop, notesOpen, notesTop,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -85,6 +85,14 @@ const [
     .gte('fetched_at', `${inDays(-7)}T00:00:00Z`)
     .order('confidence', { ascending: false }).order('fetched_at', { ascending: false })
     .limit(3)),
+  // Коментарі модератора без відповіді: людина спитала й чекає. Кнопка
+  // «Залишити коментар» у черзі (22.09.2026) — без цього рядка питання
+  // лежало б у базі, і ніхто б його не прочитав.
+  count(supabase.from('moderation_notes').select('id', { count: 'exact', head: true })
+    .eq('action', 'comment').is('resolved_at', null)),
+  rows(supabase.from('moderation_notes').select('body, created_at, opportunities(title)')
+    .eq('action', 'comment').is('resolved_at', null)
+    .order('created_at', { ascending: true }).limit(5)),
 ]);
 
 const blocks = [];
@@ -117,6 +125,14 @@ if (inReview) {
       ? reviewTop.map((r) => `• ${esc(cut(r.raw_title || r.source_name))} — ${r.confidence ?? '?'}\n  ${esc(r.canonical_url || r.source_url || '')}`)
       : ['За тиждень нового немає — у черзі лише старе.']),
     'Кожне «так» звідси — можливість, яку ми інакше втратили б мовчки.',
+  ].join('\n'));
+}
+
+if (notesOpen) {
+  blocks.push([
+    `💬 <b>Коментарі модератора без відповіді</b> (${notesOpen})`,
+    ...notesTop.map((n) => `• ${esc(cut(n.opportunities?.title || '—', 48))}: ${esc(cut(n.body, 90))}`),
+    'Обробити: попросити Claude «обробити коментарі модератора» — див. CLAUDE.md.',
   ].join('\n'));
 }
 

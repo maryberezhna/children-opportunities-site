@@ -42,6 +42,7 @@ export default async function AdminPage() {
   let drafts = [];
   let actives = [];
   let matches = {};
+  const notes = {};
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const [d, a] = await Promise.all([
@@ -66,16 +67,30 @@ export default async function AdminPage() {
         .in('slug', dupSlugs);
       matches = Object.fromEntries((m || []).map((x) => [x.slug, x]));
     }
+
+    // Відкриті коментарі людини — на картку, щоб наступний модератор бачив
+    // питання, яке вже поставили. Збій тут не валить чергу: без коментарів
+    // картки лишаються робочими.
+    const { data: n } = await supabase
+      .from('moderation_notes')
+      .select('id, opportunity_id, body, created_at')
+      .is('resolved_at', null)
+      .order('created_at', { ascending: true })
+      .limit(500);
+    for (const x of n || []) (notes[x.opportunity_id] ||= []).push(x);
   }
 
   return (
-    <main style={{ maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
-      <AdminNav current="queue" />
-      <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
-      <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
-        Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
-      </p>
-      <AdminList drafts={drafts} actives={actives} matches={matches} />
+    // Ширину задає сітка в AdminList: список лишається на тому ж місці, що
+    // й на інших сторінках адмінки, а правила стають у порожнє поле ліворуч.
+    <main style={{ margin: '32px 0 80px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
+      <AdminList drafts={drafts} actives={actives} matches={matches} notes={notes}>
+        <AdminNav current="queue" />
+        <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
+        <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
+          Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
+        </p>
+      </AdminList>
     </main>
   );
 }
