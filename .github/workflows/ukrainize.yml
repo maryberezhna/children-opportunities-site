@@ -1,24 +1,38 @@
 name: Переклад записів українською (вручну)
 
 # Записи, що лежать англійською (Eurodesk та інші англомовні джерела), —
-# українською: назва, короткий і повний опис. Спершу сухий прогін, прочитати
-# зміни, потім apply. Схвалені людиною записи — лише з include_verified.
-# Див. scraper/ukrainize.py.
+# українською: назва, короткий і повний опис. Див. scraper/ukrainize.py.
+#
+# Два кроки, і записується РІВНО те, що прочитала людина:
+#   1. apply=false — сухий прогін: модель перекладає, пропозиції лягають в
+#      артефакт «ukrainize-proposals» цього прогону. Прочитати лог.
+#   2. apply=true, from_run=<номер прогону з кроку 1> — записати пропозиції
+#      того прогону без нового виклику моделі (Sonnet 5 не дає зафіксувати
+#      температуру — повторний виклик переклав би інакше). skip — частини
+#      назв через «|», які не записувати.
 on:
   workflow_dispatch:
     inputs:
       apply:
-        description: 'true = записати; false = лише показати'
+        description: 'true = записати пропозиції прогону from_run; false = сухий прогін'
         required: false
         default: 'false'
+      from_run:
+        description: 'номер сухого прогону, чиї пропозиції записати'
+        required: false
+        default: ''
       include_verified:
         description: 'true = перекладати й записи, схвалені людиною'
         required: false
         default: 'false'
       skip:
-        description: 'пропустити записи: частини назв через |'
+        description: 'не записувати: частини назв через |'
         required: false
         default: ''
+
+permissions:
+  contents: read
+  actions: read
 
 jobs:
   ukrainize:
@@ -35,6 +49,14 @@ jobs:
           cache: pip
           cache-dependency-path: scraper/requirements.txt
       - run: pip install -r requirements.txt
+      - name: Пропозиції сухого прогону
+        if: github.event.inputs.apply == 'true'
+        uses: actions/download-artifact@v4
+        with:
+          name: ukrainize-proposals
+          path: scraper
+          run-id: ${{ github.event.inputs.from_run }}
+          github-token: ${{ github.token }}
       - name: Ukrainize
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -43,5 +65,12 @@ jobs:
           UKRAINIZE_SKIP: ${{ github.event.inputs.skip }}
         run: >-
           python ukrainize.py
-          ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
+          ${{ github.event.inputs.apply == 'true' && '--apply --from-file ukrainize-proposals.json' || '' }}
           ${{ github.event.inputs.include_verified == 'true' && '--include-verified' || '' }}
+      - name: Зберегти пропозиції
+        if: github.event.inputs.apply != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ukrainize-proposals
+          path: scraper/ukrainize-proposals.json
+          retention-days: 14

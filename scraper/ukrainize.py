@@ -21,9 +21,9 @@
 (scripts/post-labels.mjs): у назві немає жодного українського слова або опис
 здебільшого не кирилицею. Змінювати обидва разом.
 
-    python ukrainize.py                        # сухий прогін: що змінилось би
-    python ukrainize.py --apply                # записати
-    python ukrainize.py --apply --include-verified
+    python ukrainize.py                                   # сухий прогін → ukrainize-proposals.json
+    python ukrainize.py --apply --from-file ukrainize-proposals.json   # записати рівно це
+    python ukrainize.py --include-verified                # і схвалені людиною
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY.
 """
@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import json
 import logging
 import os
 import re
@@ -169,18 +170,7 @@ def translate(llm, row: dict) -> dict | None:
     return tu.input if tu else None
 
 
-def main() -> int:
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--apply", action="store_true")
-    ap.add_argument("--include-verified", action="store_true")
-    # Записи, переклад яких сухий прогін показав хибним, — пропустити:
-    # частини оригінальних назв через «|».
-    ap.add_argument("--skip", default=os.environ.get("UKRAINIZE_SKIP", ""))
-    args = ap.parse_args()
-    skip = [s.strip().lower() for s in args.skip.split("|") if s.strip()]
-
-    from db import get_client
-    db = get_client()
+def load_rows(db) -> list[dict]:
     rows = []
     for start in range(0, 5000, 1000):
         chunk = (db.table("opportunities")
@@ -190,20 +180,75 @@ def main() -> int:
         rows += chunk
         if len(chunk) < 1000:
             break
+    return rows
+
+
+def still_same(row: dict, proposal: dict) -> bool:
+    """Запис не змінився з сухого прогону — інакше переклад застарів."""
+    return (row.get("title") or "") == proposal["old_title"] \
+        and (row.get("summary") or "") == proposal["old_summary"]
+
+
+def apply_file(db, path: str, skip: list[str], today: date) -> int:
+    """Записати рівно те, що показав сухий прогін, — без нового виклику моделі.
+
+    Sonnet 5 не дає зафіксувати температуру: повторний виклик повернув би
+    ІНШИЙ переклад, ніж той, який людина прочитала в сухому прогоні."""
+    proposals = json.load(open(path, encoding="utf-8"))
+    by_id = {r["id"]: r for r in load_rows(db)}
+    written = stale = skipped = 0
+    for p in proposals:
+        if any(s in p["old_title"].lower() for s in skip):
+            skipped += 1
+            logger.info("  ⏭ пропущено: %s", p["old_title"][:70])
+            continue
+        row = by_id.get(p["id"])
+        if not row or not still_same(row, p):
+            stale += 1
+            logger.info("  ≠ змінився після сухого прогону, не чіпаю: %s", p["old_title"][:70])
+            continue
+        patch = {k: v for k, v in p["patch"].items() if k != "admin_comment"}
+        patch["admin_comment"] = _with_trace(
+            row, f"ukrainize {today.isoformat()}: переклад українською (було «{p['old_title'][:60]}»)")
+        db.table("opportunities").update(patch).eq("id", p["id"]).execute()
+        written += 1
+        logger.info("  ✓ %s → %s", p["old_title"][:50], patch.get("title", "(назва та сама)")[:70])
+    logger.info("\nЗаписано: %d, пропущено: %d, змінились після сухого прогону: %d",
+                written, skipped, stale)
+    return 0
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--apply", action="store_true", help="лише разом із --from-file")
+    ap.add_argument("--from-file", help="пропозиції сухого прогону (--out), які записати")
+    ap.add_argument("--out", default="ukrainize-proposals.json",
+                    help="куди сухий прогін кладе пропозиції")
+    ap.add_argument("--include-verified", action="store_true")
+    # Записи, переклад яких сухий прогін показав хибним, — пропустити:
+    # частини оригінальних назв через «|».
+    ap.add_argument("--skip", default=os.environ.get("UKRAINIZE_SKIP", ""))
+    args = ap.parse_args()
+    skip = [s.strip().lower() for s in args.skip.split("|") if s.strip()]
+    today = date.today()
+
+    from db import get_client
+    db = get_client()
+    if args.apply:
+        if not args.from_file:
+            logger.error("--apply пише лише перевірені пропозиції: потрібен --from-file")
+            return 2
+        return apply_file(db, args.from_file, skip, today)
+
+    rows = load_rows(db)
     found = [r for r in rows if needs_ukrainian(r)]
     verified = [r for r in found if r.get("verified_at")]
     todo = found if args.include_verified else [r for r in found if not r.get("verified_at")]
-    skipped = [r for r in todo if any(s in (r.get("title") or "").lower() for s in skip)]
-    todo = [r for r in todo if r not in skipped]
-    for r in skipped:
-        logger.info("  ⏭ пропущено за --skip: %s — https://dityam.com.ua/o/%s", (r.get("title") or "")[:70], r["slug"])
-    logger.info("Не українською: %d, з них схвалених людиною %d%s.%s\n", len(found), len(verified),
-                "" if args.include_verified else " (їх не чіпаю)",
-                "" if args.apply else " СУХИЙ ПРОГІН")
+    logger.info("Не українською: %d, з них схвалених людиною %d%s. СУХИЙ ПРОГІН\n",
+                len(found), len(verified), "" if args.include_verified else " (їх не чіпаю)")
 
     llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
-    today = date.today()
-    changed = failed = 0
+    proposals, failed = [], 0
     for row in todo:
         out = translate(llm, row)
         if not out:
@@ -213,20 +258,22 @@ def main() -> int:
         if not patch:
             logger.info("  = %s — без змін", (row.get("title") or "")[:70])
             continue
-        changed += 1
+        proposals.append({"id": row["id"], "slug": row["slug"], "status": row["status"],
+                          "old_title": row.get("title") or "", "old_summary": row.get("summary") or "",
+                          "patch": patch})
         logger.info("  • [%s] %s\n      → %s", row["status"], (row.get("title") or "")[:70],
                     patch.get("title", "(назва та сама)"))
         if "summary" in patch:
             logger.info("      опис: %s", patch["summary"][:160])
-        if args.apply:
-            db.table("opportunities").update(patch).eq("id", row["id"]).execute()
 
+    with open(args.out, "w", encoding="utf-8") as f:
+        json.dump(proposals, f, ensure_ascii=False, indent=1)
     if verified and not args.include_verified:
         logger.info("\nСхвалені людиною, не змінено (--include-verified, щоб перекласти):")
         for r in verified:
             logger.info("  • %s — https://dityam.com.ua/o/%s", (r.get("title") or "")[:70], r["slug"])
-    logger.info("\nПерекладено: %d, не вдалось: %d%s", changed, failed,
-                "" if args.apply else " — нічого не записано, для запису --apply")
+    logger.info("\nПропозицій: %d, не вдалось: %d. Збережено в %s — прочитати й записати "
+                "через --apply --from-file.", len(proposals), failed, args.out)
     return 0
 
 
