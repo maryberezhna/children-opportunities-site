@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import { quarantineCriteria, quarantineSnippet } from '@/lib/quarantine';
 import AdminList from './AdminList';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
@@ -12,6 +13,13 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
+// Карантин переїхав сюди з окремої сторінки (Марія, 22.09.2026: «зроби так,
+// щоб карантин і черга були 1 сторінкою»; до того — «чим відрізняється
+// карантин і черга, я нічого не розумію»). Це не два види записів, а два
+// кроки одного шляху: сира знахідка → кандидат із полями → сайт. Тепер вони
+// стоять вкладками в тому порядку, у якому запис ними йде.
+const QUARANTINE_LIMIT = 150;
+
 // format/cities/countries/is_international і event_end_date тягнемо не для
 // показу, а щоб порахувати обовʼязковий мінімум прямо в черзі: без них
 // картка не знала б, що запису бракує «де» або дати (11.09.2026).
@@ -21,7 +29,7 @@ const DRAFT_FIELDS =
 const ACTIVE_FIELDS =
   `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, verified_at, admin_comment, dup_of, dup_score, created_at, ${REQUIRED_EXTRA}`;
 
-export default async function AdminPage() {
+export default async function AdminPage({ searchParams }) {
   const token = process.env.ADMIN_TOKEN;
   const cookie = cookies().get('dityam_admin')?.value;
   const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
@@ -41,11 +49,12 @@ export default async function AdminPage() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   let drafts = [];
   let actives = [];
+  let raw = [];
   let matches = {};
   const notes = {};
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    const [d, a] = await Promise.all([
+    const [d, a, rawRes, srcRes] = await Promise.all([
       supabase.from('opportunities').select(DRAFT_FIELDS)
         .eq('status', 'draft').order('created_at', { ascending: false }).limit(300),
       supabase.from('opportunities').select(ACTIVE_FIELDS)
@@ -54,9 +63,34 @@ export default async function AdminPage() {
         .order('verified_at', { ascending: true, nullsFirst: true })
         .order('created_at', { ascending: false })
         .limit(600),
+      supabase.from('raw_items')
+        .select('id, source_name, source_url, canonical_url, raw_title, raw_text, confidence, fetched_at')
+        .eq('status', 'review').is('review_verdict', null)
+        .order('fetched_at', { ascending: false }).limit(QUARANTINE_LIMIT),
+      supabase.from('sources').select('name, trust_tier'),
     ]);
     drafts = d.data || [];
     actives = a.data || [];
+
+    // Порядок сирих знахідок — спершу надійніші джерела (trust_tier 1 —
+    // держ/офіційні), усередині від найвпевненішого: рідкісне міжнародне має
+    // потрапляти на очі першим, а не тонути серед свіжого шуму з Telegram.
+    const tier = new Map((srcRes.data || []).map((x) => [x.name, x.trust_tier]));
+    raw = (rawRes.data || [])
+      .map((r) => ({
+        id: r.id,
+        raw_title: r.raw_title,
+        source_name: r.source_name,
+        trust_tier: tier.get(r.source_name) ?? null,
+        confidence: r.confidence,
+        url: r.canonical_url || r.source_url,
+        raw_text: String(r.raw_text || '').slice(0, 6000),
+        snippet: quarantineSnippet(r.raw_text),
+        // По весь текст, а не по обрізаних 6000: дедлайн буває й наприкінці.
+        criteria: quarantineCriteria(r.raw_title, r.raw_text),
+      }))
+      .sort((a1, b1) => (a1.trust_tier ?? 9) - (b1.trust_tier ?? 9)
+        || (b1.confidence ?? 0) - (a1.confidence ?? 0));
 
     // Fetch the matched opportunities so the UI can show both side by side.
     const dupSlugs = [...new Set([...drafts, ...actives].map((o) => o.dup_of).filter(Boolean))];
@@ -84,11 +118,19 @@ export default async function AdminPage() {
     // Ширину задає сітка в AdminList: список лишається на тому ж місці, що
     // й на інших сторінках адмінки, а правила стають у порожнє поле ліворуч.
     <main style={{ margin: '32px 0 80px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
-      <AdminList drafts={drafts} actives={actives} matches={matches} notes={notes}>
+      <AdminList
+        drafts={drafts}
+        actives={actives}
+        raw={raw}
+        matches={matches}
+        notes={notes}
+        initialTab={searchParams?.tab}
+      >
         <AdminNav current="queue" />
         <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
-        <p style={{ color: '#54617a', fontSize: 16, margin: 0 }}>
-          Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
+        <p style={{ color: '#54617a', fontSize: 16, margin: 0, lineHeight: 1.5 }}>
+          Один шлях у трьох кроках: знахідка скрапера → кандидат із полями → сайт.
+          Вкладки стоять у тому ж порядку.
         </p>
       </AdminList>
     </main>

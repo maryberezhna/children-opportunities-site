@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
- * Рішення людини по запису з карантину (/admin/quarantine).
+ * Рішення людини по сирій знахідці — вкладка «Знахідки» в /admin.
  *
  *   accept — «Завести можливість»: сирець повертається в чергу розбору з
  *            review_verdict='accept'. Нічний розбір (scraper/main.py) створює
