@@ -17,7 +17,7 @@ import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from
 import { cutTitle } from '@/lib/text';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
-  NEED_OPTIONS, PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER,
+  NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN } from '@/lib/plus';
 
@@ -261,7 +261,6 @@ async function afterProfile(bot, supabase, sub, chatId) {
 
 const labels =(options, values) => (values || [])
   .map((v) => (options.find((o) => o[0] === v) || [null, v])[1]).join(', ') || '—';
-const PLACE_LABELS = [[PLACE_ONLINE, 'онлайн'], [PLACE_ABROAD, 'за кордоном'], [PLACE_OTHER, 'мого міста немає']];
 
 // Що бот знає про дітей і родину. Одне місце для «Деталі підписки» й для
 // перевірки анкети перед оплатою — щоб вони не розійшлись.
@@ -275,7 +274,10 @@ function profileLines(sub, kids) {
     if ((k.needs || []).length) lines.push(`Обставини: ${esc(labels(NEED_OPTIONS, k.needs))}`);
     if (i < kids.length - 1) lines.push('');
   });
-  lines.push('', `Де: ${esc(labels(PLACE_LABELS, sub.places))}`);
+  // Міста або «будь-де». Онлайн, всеукраїнське й закордонне з 22.09.2026
+  // приходить кожному (рішення Марії), тож старі online/abroad у профілі
+  // як вибір не показуємо — placeSummary їх відсіює.
+  lines.push('', `Де: ${esc(placeSummary(sub.places))}`);
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
   // Старе instant (варіант прибрано 21.09.2026) і порожнє — це «щодня».
   lines.push(`Частота: ${esc(labels(FLOW_FREQ, [freqOf(sub.digest_freq)]))}`);

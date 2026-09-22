@@ -35,6 +35,8 @@ function fakeBot(sent) {
   return { sendMessage: (chatId, text) => { sent.push(text); return Promise.resolve(); } };
 }
 
+// 'online' — старе значення кнопки «💻 Онлайн» (прибрана 22.09.2026): у
+// збережених профілях воно є й має лишатись нешкідливим.
 const sub = { id: 7, places: ['__other', 'online'] };
 
 test('місто з бази: кажемо, скільки там записів, і додаємо в профіль', async () => {
@@ -50,7 +52,7 @@ test('міста без записів: чесно кажемо, що поки �
   await saveCustomCity(fakeBot(sent), fakeSupabase(saved), '42', sub, 'Самбір');
   assert.deepEqual(saved[0].patch.places, ['__other', 'online', 'Самбір']);
   assert.match(sent[0], /можливостей немає/);
-  assert.match(sent[0], /по всій Україні/);
+  assert.match(sent[0], /онлайн, всеукраїнське й закордонне/);
 });
 
 test('не місто: нічого не зберігаємо', async () => {
