@@ -1,13 +1,16 @@
 """«Чекає доказу»: машина сама перечитує сторінку чернетки, якій бракує лише
-цитати (22.09.2026). Тут — прогін через підроблений клієнт: справжній ходить
-у мережу, а перевірити треба саме добір записів і ворота за хешем."""
+цитати (22.09.2026). Прогін через підроблений клієнт: справжній ходить у
+мережу, а перевірити треба добір записів, ворота за хешем і межу за прогін.
+
+Запускається з нічного скрапу (main.amain) — модуль ttl_requeue вимкнено
+17.09.2026, і лишати живий код у ньому означало б, що він не виконується."""
 import os
 import sys
 import unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import ttl_requeue  # noqa: E402
+import proof_recheck  # noqa: E402
 
 FULL = {"age": "7–12 років", "date": "до 1 жовтня", "cost": "безкоштовно",
         "type": "табір", "place": "Львів"}
@@ -59,24 +62,23 @@ class FakeClient:
 class ProofRequeue(unittest.TestCase):
     def _run(self, drafts, known_hashes=(), page="новий текст сторінки"):
         db = {"drafts": drafts, "known_hashes": set(known_hashes), "updates": [], "stored": []}
-        with mock.patch.object(ttl_requeue, "_fetch_text", return_value=page), \
-             mock.patch.object(ttl_requeue.raw_store, "store_raw_items",
+        with mock.patch.object(proof_recheck.raw_store, "store_raw_items",
                                side_effect=lambda c, src, items: db["stored"].extend(items)), \
-             mock.patch.object(ttl_requeue.raw_store, "raw_hash", return_value="HASH"):
-            stats = ttl_requeue.run(FakeClient(db))
+             mock.patch.object(proof_recheck.raw_store, "raw_hash", return_value="HASH"):
+            stats = proof_recheck.run(FakeClient(db), lambda u: page)
         return stats, db
 
     def test_only_drafts_without_quotes_are_read(self):
         stats, db = self._run([draft("a", {}), draft("b", FULL)])
-        self.assertEqual(stats["proof_checked"], 1)
-        self.assertEqual(stats["proof_requeued"], 1)
+        self.assertEqual(stats["checked"], 1)
+        self.assertEqual(stats["requeued"], 1)
         self.assertEqual([i["raw_title"] for i in db["stored"]], ["Запис a"])
 
     def test_unchanged_page_is_not_re_extracted(self):
         # Текст той самий — нових цитат на ньому не буде, токени не палимо.
         stats, db = self._run([draft("a", {})], known_hashes={"HASH"})
-        self.assertEqual(stats["proof_checked"], 1)
-        self.assertEqual(stats["proof_requeued"], 0)
+        self.assertEqual(stats["checked"], 1)
+        self.assertEqual(stats["requeued"], 0)
         self.assertEqual(db["stored"], [])
 
     def test_checked_record_goes_to_the_back_of_the_queue(self):
@@ -86,17 +88,40 @@ class ProofRequeue(unittest.TestCase):
     def test_payment_needs_no_date_quote(self):
         ev = {k: v for k, v in FULL.items() if k != "date"}
         stats, _ = self._run([draft("a", ev, otype="allowance")])
-        self.assertEqual(stats["proof_checked"], 0)
+        self.assertEqual(stats["checked"], 0)
 
     def test_dead_page_costs_nothing(self):
         stats, db = self._run([draft("a", {})], page=None)
-        self.assertEqual(stats["proof_checked"], 1)
-        self.assertEqual(stats["proof_requeued"], 0)
+        self.assertEqual(stats["checked"], 1)
+        self.assertEqual(stats["requeued"], 0)
         self.assertEqual(db["stored"], [])
 
     def test_cap_per_run(self):
         stats, _ = self._run([draft(str(i), {}) for i in range(40)])
-        self.assertEqual(stats["proof_checked"], ttl_requeue.PROOF_LIMIT_PER_RUN)
+        self.assertEqual(stats["checked"], proof_recheck.PROOF_LIMIT_PER_RUN)
+
+
+class ItActuallyRuns(unittest.TestCase):
+    """Найдорожча помилка тут — не логіка, а мертвий код.
+
+    22.09.2026 перечит спершу написали в ttl_requeue, і лише перевірка
+    процесу показала, що ttl_requeue.run() ніхто не викликає з 17.09: модуль
+    вимкнули, коли його замінила планова перевірка. Вкладка «Чекає машину»
+    обіцяла б те, чого не відбувається. Цей тест стереже виклик.
+    """
+
+    def test_nightly_run_calls_it(self):
+        path = os.path.join(os.path.dirname(__file__), "..", "main.py")
+        with open(path, encoding="utf-8") as f:
+            code = f.read()
+        self.assertIn("import proof_recheck", code)
+        self.assertIn("proof_recheck.run(", code)
+
+    def test_retired_module_has_no_live_proof_code(self):
+        path = os.path.join(os.path.dirname(__file__), "..", "ttl_requeue.py")
+        with open(path, encoding="utf-8") as f:
+            code = f.read()
+        self.assertNotIn("missing_proof", code)
 
 
 if __name__ == "__main__":
