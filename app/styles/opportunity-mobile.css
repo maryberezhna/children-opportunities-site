@@ -212,8 +212,10 @@
      (разом закріплене — 23%). Там, де є панель, її не показуємо. */
   body:has(.o-m-bar) .tg-callout { display: none; }
 
-  /* Підказка Telegram: хрестик 11px і кнопка 34px — до 12px і 40px. */
-  .tg-callout-close { position: relative; font-size: 12px; }
+  /* Підказка Telegram: хрестик 11px і кнопка 34px — до 12px і 40px.
+     position тут більше не чіпаємо: з 22.09.2026 хрестик стоїть у куті
+     картки (position: absolute), і relative звідси скидав його вниз ліворуч. */
+  .tg-callout-close { font-size: 12px; }
   .tg-callout-close::after { content: ''; position: absolute; inset: -12px; } /* 20 + 24 = 44px */
   .tg-callout-cta { min-height: 40px; box-sizing: border-box; }
 
