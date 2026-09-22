@@ -45,9 +45,15 @@ const base = () => supabase.from('opportunities');
 // на оригінал, тож у переліку роботи це зайвий рядок і зайва одиниця в
 // лічильнику. Той самий фільтр, що й на сайті — його стереже prebuild
 // (scripts/check-catalogue-queries.mjs).
+// «За добу» — від учорашньої півночі UTC, як і «закрито вчора». Зведення
+// приходить о 03:00 UTC із запізненням до пʼяти годин, тож ковзне вікно в
+// 24 години лишало б дірки між запусками; вікно від півночі краще повторить
+// запис двічі, ніж пропустить.
+const since = `${inDays(-1)}T00:00:00Z`;
+
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
-  inReview, reviewTop, notesOpen, notesTop,
+  inReview, reviewTop, notesOpen, notesTop, autoCount, autoTop, reviewNewCount,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -93,9 +99,33 @@ const [
   rows(supabase.from('moderation_notes').select('body, created_at, opportunities(title)')
     .eq('action', 'comment').is('resolved_at', null)
     .order('created_at', { ascending: true }).limit(5)),
+  // Пішло на сайт без людини (Марія, 22.09.2026: «щодня присилай, що пішло на
+  // сайт автоматично»). Ознака — активний запис без verified_at: його ставлять
+  // лише «Додати на сайт» і «Посилання робоче», тобто рука людини. За місяць
+  // до цього так вийшло 676 із 729 нових записів, і жоден не показувався.
+  count(base().select('id', { count: 'exact', head: true })
+    .eq('status', 'active').is('canonical_slug', null).is('verified_at', null)
+    .gte('created_at', since)),
+  rows(base().select('title, slug, source, created_at')
+    .eq('status', 'active').is('canonical_slug', null).is('verified_at', null)
+    .gte('created_at', since)
+    .order('created_at', { ascending: false }).limit(8)),
+  // Нове в карантині за добу — окремим числом, бо загальна цифра росте
+  // місяцями й уже нічого не каже.
+  count(supabase.from('raw_items').select('id', { count: 'exact', head: true })
+    .eq('status', 'review').is('reviewed_at', null).gte('fetched_at', since)),
 ]);
 
 const blocks = [];
+
+if (autoCount) {
+  blocks.push([
+    `🤖 <b>Пішло на сайт без людини за добу</b> (${autoCount})`,
+    ...autoTop.map((o) => `• <a href="${SITE}/o/${esc(o.slug)}">${esc(cut(o.title))}</a> — ${esc(cut(o.source || 'джерело не вказане', 36))}`),
+    ...(autoCount > autoTop.length ? [`…і ще ${autoCount - autoTop.length}.`] : []),
+    'Це вже видно батькам. Перевірити або прибрати — в адмінці, вкладка «На сайті».',
+  ].join('\n'));
+}
 
 if (draftsHot.length) {
   blocks.push([
@@ -120,7 +150,7 @@ if (overdueChecks) {
 
 if (inReview) {
   blocks.push([
-    `🔍 <b>Класифікатор вагається</b> — ${inReview} у карантині`,
+    `🔍 <b>У карантин за добу: ${reviewNewCount}</b> · чекає всього ${inReview}`,
     ...(reviewTop.length
       ? reviewTop.map((r) => `• ${esc(cut(r.raw_title || r.source_name))} — ${r.confidence ?? '?'}\n  ${esc(r.canonical_url || r.source_url || '')}`)
       : ['За тиждень нового немає — у черзі лише старе.']),
