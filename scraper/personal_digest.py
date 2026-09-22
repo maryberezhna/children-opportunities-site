@@ -88,6 +88,12 @@ DEFAULT_FREQ = "daily"
 KYIV = ZoneInfo("Europe/Kyiv")
 
 
+def drop_assumed(opps: list) -> tuple[list, int]:
+    """Прибрати записи, чий вид у часі — здогад, а не факт зі сторінки."""
+    kept = [o for o in opps if not o.get("timing_assumed")]
+    return kept, len(opps) - len(kept)
+
+
 def freq_days(value) -> int:
     """Пауза між добірками в днях. Порожнє, невідоме й старе «instant» —
     це «щодня»."""
@@ -510,7 +516,7 @@ def main():
     for start in range(0, 20000, 1000):
         page = client.table("opportunities").select(
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
-            "event_start_date, event_end_date, timing_kind, "
+            "event_start_date, event_end_date, timing_kind, timing_assumed, "
             "opportunity_type, format, cities, countries, is_international, child_needs, "
             "categories"
         ).eq("status", "active").is_("canonical_slug", "null") \
@@ -529,12 +535,19 @@ def main():
     opps = [o for o in opps if not o.get("deadline") or str(o["deadline"])[:10] >= min_deadline]
     dropped = before - len(opps)
 
+    # «Набір постійний», поставлений за замовчуванням, а не прочитаний на
+    # сторінці (timing_assumed), — у платну добірку не йде, доки планова
+    # перевірка не підтвердить його цитатою (рішення Марії 21.09.2026: на сайті
+    # лишаються, у канал і Dityam+ — ні). Таких на 21.09 — 703 гуртки й курси.
+    opps, assumed = drop_assumed(opps)
+
     for o in opps:
         o["_themes"] = themes_of(o)
         o["_created"] = parse_ts(o.get("created_at"))
     logger.info(
-        "Loaded %d active opportunities (%d skipped — дедлайн ближче ніж за %d дні)",
-        len(opps), dropped, MIN_LEAD_DAYS,
+        "Loaded %d active opportunities (%d skipped — дедлайн ближче ніж за %d дні, "
+        "%d — «набір постійний» лише припущення)",
+        len(opps), dropped, MIN_LEAD_DAYS, assumed,
     )
 
     if args.demo:

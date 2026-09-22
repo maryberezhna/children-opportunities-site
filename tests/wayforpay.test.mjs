@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_YEAR;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 14, 12, 0, 0);   // 14.09.2026
@@ -57,4 +57,19 @@ test('підпис рахується від суми першого плате�
 test('orderReference повертає токен підписника', () => {
   const b = invoiceBody(sub, 'monthly', { now });
   assert.equal(tokenFromOrderRef(b.orderReference), sub.unsub_token);
+});
+
+// З промокодом перший річний платіж — 799, менше за 999. Колбек визначав період
+// за сумою й записував таку підписку «місячною» (22.09.2026).
+test('річна підписка з промокодом — річна, а не місячна', () => {
+  const y = invoiceBody(sub, 'yearly', { firstAmount: 799, now });
+  const m = invoiceBody(sub, 'monthly', { firstAmount: 1, now });
+  assert.equal(tokenFromOrderRef(y.orderReference), sub.unsub_token);
+  assert.equal(periodFromOrderRef(y.orderReference, y.amount), 'yearly');
+  assert.equal(periodFromOrderRef(m.orderReference, m.amount), 'monthly');
+});
+
+test('старі номери замовлень без позначки — за сумою, як раніше', () => {
+  assert.equal(periodFromOrderRef('abc123def456-1789900000000', 999), 'yearly');
+  assert.equal(periodFromOrderRef('abc123def456-1789900000000', 119), 'monthly');
 });
