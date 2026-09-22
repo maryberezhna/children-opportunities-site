@@ -1,0 +1,42 @@
+name: Переклад записів українською (вручну)
+
+# Записи, що лежать англійською (Eurodesk та інші англомовні джерела), —
+# українською: назва, короткий і повний опис. Спершу сухий прогін, прочитати
+# зміни, потім apply. Схвалені людиною записи — лише з include_verified.
+# Див. scraper/ukrainize.py.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'true = записати; false = лише показати'
+        required: false
+        default: 'false'
+      include_verified:
+        description: 'true = перекладати й записи, схвалені людиною'
+        required: false
+        default: 'false'
+
+jobs:
+  ukrainize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Ukrainize
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: >-
+          python ukrainize.py
+          ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
+          ${{ github.event.inputs.include_verified == 'true' && '--include-verified' || '' }}
