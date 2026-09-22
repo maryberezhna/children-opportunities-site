@@ -2,7 +2,7 @@
 // Approved → active + запуск форми в боті; Declined/Expired/... → paused.
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
-import { verifyCallback, acceptResponse, tokenFromOrderRef, PRICE_YEAR } from '@/lib/wayforpay';
+import { verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
 
 export const runtime = 'nodejs';
@@ -48,7 +48,7 @@ export async function POST(request) {
         // orderReference зберігаємо обовʼязково — без нього неможливо скасувати
         // рекурентне списання, коли людина відпишеться.
         patch.wfp_order_reference = b.orderReference;
-        patch.billing_period = Number(b.amount) >= PRICE_YEAR ? 'yearly' : 'monthly';
+        patch.billing_period = periodFromOrderRef(b.orderReference, b.amount);
       }
       // Оплата = прийняття оферти. Бот питає згоду перед анкетою, але рядок,
       // створений до 14.09.2026, міг її не мати.
