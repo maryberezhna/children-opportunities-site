@@ -32,7 +32,7 @@ from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
 from normalizer import missing_required, summary_says_over
-from proof import missing_proof, PROOF_LABELS
+from proof import missing_proof, PROOF_LABELS, PUBLISH_CRITERIA
 from timing import is_expired
 
 logger = logging.getLogger(__name__)
@@ -43,18 +43,11 @@ MODEL = "claude-haiku-4-5-20251001"
 # Тут ручна перевірка лишається завжди, навіть якщо все інше бездоганне.
 # Логіка проста: якщо неправильний запис у цій категорії може нашкодити
 # родині або зганьбити проєкт — його дивиться людина.
-SENSITIVE_TYPES = {
-    "medical_aid",     # медична допомога
-    "psychology",      # психологічна підтримка
-    "rehabilitation",  # реабілітація
-    "humanitarian",    # гуманітарна допомога
-    "allowance",       # державні виплати — тут ціна помилки в грошах родини
-}
-
-# Статусні групи дітей: помилка тут б'є по найвразливіших.
-SENSITIVE_NEEDS = {
-    "idp", "disability", "orphan", "veteran_family", "oncology", "low_income",
-}
+# Медична й психологічна допомога, реабілітація, гуманітарка, виплати — і
+# статусні групи дітей: помилка тут б'є по найвразливіших. Перелік один на
+# конвеєр і на чергу в адмінці — lib/publish-criteria.json (22.09.2026).
+SENSITIVE_TYPES = set(PUBLISH_CRITERIA["risk"]["sensitive_types"])
+SENSITIVE_NEEDS = set(PUBLISH_CRITERIA["risk"]["sensitive_needs"])
 
 MIN_SUMMARY_LEN = 60
 MIN_TITLE_LEN = 15

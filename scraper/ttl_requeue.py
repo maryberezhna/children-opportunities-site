@@ -22,6 +22,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 import raw_store
+from proof import missing_proof
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,16 @@ DELAY_BETWEEN_CHECKS = 0.5
 # закритті фестивалю/табору: closed + 11 місяців — подивитися, чи не
 # з'явилась нова річна програма).
 SEASONAL_LIMIT_PER_RUN = 10
+
+# Чернетки, яким бракує лише цитати зі сторінки («чекає доказу», 22.09.2026).
+# Людина їх не бачить: у черзі лежить те, де потрібне ЇЇ рішення, а тут —
+# те, що машина може дочекатись сама. Перечитуємо сторінку; текст той самий —
+# нових цитат на ньому не буде, просто відсуваємо в кінець черги, змінився —
+# віддаємо на повторну екстракцію, і запис може стати зеленим без людини.
+PROOF_LIMIT_PER_RUN = 20
+# Поля, яких вистачає, щоб порахувати, чого бракує (proof.missing_proof).
+PROOF_FIELDS = "id, title, source, source_url, opportunity_type, evidence, updated_at"
+
 UA = "Mozilla/5.0 (compatible; DityamTTLCheck/1.0; +https://dityam.com.ua)"
 
 
@@ -84,7 +95,8 @@ def _fetch_text(url: str) -> str | None:
 def run(client) -> dict:
     """Один прохід TTL. Ніколи не кидає виняток."""
     stats = {"checked": 0, "requeued": 0, "refreshed": 0, "skipped": 0,
-             "seasonal_checked": 0, "seasonal_requeued": 0}
+             "seasonal_checked": 0, "seasonal_requeued": 0,
+             "proof_checked": 0, "proof_requeued": 0}
     try:
         now = datetime.now(timezone.utc)
         rows = (
@@ -183,6 +195,47 @@ def run(client) -> dict:
                 stats["seasonal_requeued"] += 1
             print(f"✅ Сезонні: {stats['seasonal_requeued']} з {stats['seasonal_checked']} "
                   f"пішли на переекстракцію (решта без змін або недоступні)")
+        # --- Чекають доказу: чернетки без цитати на обовʼязкове поле ---
+        # Найдавніше перевірені — перші; після перевірки запис відсувається в
+        # кінець черги (updated_at), тож за кілька прогонів проходять усі.
+        waiting = [
+            r for r in (
+                client.table("opportunities")
+                .select(PROOF_FIELDS)
+                .eq("status", "draft")
+                .order("updated_at")
+                .limit(FETCH_WINDOW)
+                .execute()
+                .data or []
+            )
+            if missing_proof(r)
+        ][:PROOF_LIMIT_PER_RUN]
+        if waiting:
+            print(f"\n🔍 Чекають доказу: {len(waiting)} чернеток — читаю сторінки")
+            for r in waiting:
+                stats["proof_checked"] += 1
+                # Відсуваємо в кінець черги одразу: навіть якщо сторінка не
+                # відповість, наступного разу підуть інші.
+                client.table("opportunities").update(
+                    {"updated_at": now.isoformat()}
+                ).eq("id", r["id"]).execute()
+                url = r.get("source_url") or ""
+                text = _fetch_text(url) if url.startswith("http") else None
+                if not text:
+                    continue
+                content_hash = raw_store.raw_hash(url, text)
+                if (client.table("raw_items").select("id")
+                        .eq("content_hash", content_hash).limit(1).execute().data):
+                    continue  # текст той самий — нових цитат на ньому не буде
+                raw_store.store_raw_items(client, r.get("source") or "proof-recheck", [{
+                    "source": r.get("source") or "proof-recheck",
+                    "source_url": url,
+                    "raw_title": r.get("title"),
+                    "raw_text": text,
+                }])
+                stats["proof_requeued"] += 1
+            print(f"✅ Чекають доказу: {stats['proof_requeued']} зі {stats['proof_checked']} "
+                  f"пішли на повторну екстракцію (решта — сторінка без змін або недоступна)")
     except Exception as e:
         logger.error("ttl_requeue failed: %s", e)
     return stats

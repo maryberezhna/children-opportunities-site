@@ -23,7 +23,9 @@ const QUARANTINE_LIMIT = 150;
 // format/cities/countries/is_international і event_end_date тягнемо не для
 // показу, а щоб порахувати обовʼязковий мінімум прямо в черзі: без них
 // картка не знала б, що запису бракує «де» або дати (11.09.2026).
-const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international, evidence';
+// child_needs — щоб черга впізнала вразливу тему (статусні групи дітей)
+// і поставила такий запис першим (22.09.2026).
+const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international, evidence, child_needs';
 const DRAFT_FIELDS =
   `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at, ${REQUIRED_EXTRA}`;
 const ACTIVE_FIELDS =
