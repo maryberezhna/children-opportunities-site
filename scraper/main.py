@@ -21,6 +21,7 @@ import link_check
 import notifier
 import raw_store
 import ttl_requeue
+import proof_recheck
 from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
                 get_new_today, get_source_configs, get_source_registry,
                 record_crawl_result, upsert_opportunity)
@@ -499,6 +500,13 @@ async def amain():
     # замінила планова перевірка (scraper/lifecycle.py), яка бере лише записи з
     # настаною датою перевірки. Скрапінг приносить нове; наявне оновлює план.
     ttl_stats = {}
+
+    # Чернетки, яким бракує лише цитати зі сторінки, перечитуємо ТУТ — перед
+    # екстракцією, щоб свіжий текст пішов у модель у цьому ж прогоні
+    # (світлофор, 22.09.2026). Людина їх не бачить: у черзі лежить те, де
+    # потрібне її рішення.
+    if not args.only and not args.skip:
+        proof_recheck.run(sb_client, ttl_requeue._fetch_text)
 
     # Етап Б: LLM-екстракція спільної черги (нове + недороблене з минулих днів).
     stats = process_pending(normalizer, sb_client)
