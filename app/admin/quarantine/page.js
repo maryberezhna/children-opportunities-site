@@ -1,8 +1,10 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
-import { quarantineSnippet } from '@/lib/quarantine';
+import { quarantineCriteria, quarantineSnippet } from '@/lib/quarantine';
 import AdminNav from '../AdminNav';
+import ModerationRules from '../ModerationRules';
+import { QUEUE_LAYOUT_CSS } from '../queueLayout';
 import LoginForm from '../LoginForm';
 import QuarantineList from './QuarantineList';
 
@@ -59,22 +61,36 @@ export default async function QuarantinePage() {
       url: r.canonical_url || r.source_url,
       raw_text: String(r.raw_text || '').slice(0, 6000),
       snippet: quarantineSnippet(r.raw_text),
+      // По весь текст, а не по обрізаних 6000: дедлайн буває й наприкінці.
+      criteria: quarantineCriteria(r.raw_title, r.raw_text),
     }))
     .sort((a, b) => (a.trust_tier ?? 9) - (b.trust_tier ?? 9)
       || (b.confidence ?? 0) - (a.confidence ?? 0));
 
   return (
-    <main style={wrap}>
-      <AdminNav current="quarantine" />
-      <h1 style={{ fontSize: 24, margin: 0 }}>
-        Карантин {rows.length > 0 && <span style={{ color: '#c8501a' }}>· {rows.length}</span>}
-      </h1>
-      <p style={{ fontSize: 13.5, color: '#6b6b6b', margin: '6px 0 16px', lineHeight: 1.5 }}>
-        Знахідки скраперів, де модель не певна, що це можливість для дитини. «Завести можливість»
-        повертає запис у нічний розбір: модель заповнить поля сама, а без чогось із пʼяти
-        обовʼязкових він прийде в чергу чернеткою. «Відхилити» — назавжди.
-      </p>
-      <QuarantineList rows={rows} />
+    // Ширину задає сітка з «Черги»: список на тому ж місці, що й на інших
+    // сторінках адмінки, правила — у порожньому полі ліворуч.
+    <main style={{ margin: '32px 0 80px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
+      <div className="adm-queue">
+        <style dangerouslySetInnerHTML={{ __html: QUEUE_LAYOUT_CSS }} />
+        <div className="adm-queue-head">
+          <AdminNav current="quarantine" />
+          <h1 style={{ fontSize: 24, margin: 0 }}>
+            Карантин {rows.length > 0 && <span style={{ color: '#c8501a' }}>· {rows.length}</span>}
+          </h1>
+          <p style={{ fontSize: 16, color: '#54617a', margin: '6px 0 0', lineHeight: 1.5 }}>
+            Знахідки скраперів, де модель не певна, що це можливість для дитини. «Завести можливість»
+            повертає запис у нічний розбір: модель заповнить поля сама, а без чогось із пʼяти
+            обовʼязкових він прийде в чергу чернеткою. «Відхилити» — назавжди.
+          </p>
+        </div>
+        <aside className="adm-queue-rules" aria-label="Правила модерації">
+          <ModerationRules tab="quarantine" />
+        </aside>
+        <div className="adm-queue-body" style={{ marginTop: 22 }}>
+          <QuarantineList rows={rows} />
+        </div>
+      </div>
     </main>
   );
 }
