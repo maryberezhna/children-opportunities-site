@@ -26,7 +26,7 @@ const SCAN_DIRS = [join(ROOT, 'app'), join(ROOT, 'scripts')];
 const ALLOW = [
   'app/admin/',
   // Спільний модуль сторінки можливості: читає запис за slug (canonical_slug
-  // потрібен, щоб віддати 301) і перелічує слаги для generateStaticParams.
+  // потрібен, щоб віддати 301).
   // Розмітка переїхала сюди з app/o/[slug]/page.js, коли зʼявився англійський
   // двійник /en/o/[slug] — маршрути тепер тонкі й самі нічого не питають.
   'app/o/shared.js',
