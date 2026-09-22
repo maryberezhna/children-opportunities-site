@@ -6,6 +6,7 @@ import { missingRequired, missingProof, CRITERIA } from '@/lib/required';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
 import ModerationRules from './ModerationRules';
+import QuarantineList from './QuarantineList';
 import { QUEUE_LAYOUT_CSS } from './queueLayout';
 
 const TYPE_LABELS = {
@@ -263,8 +264,17 @@ function Btn({ children, onClick, busy, bg, fg, border }) {
   );
 }
 
-export default function AdminList({ drafts, actives, matches = {}, notes = {}, children }) {
-  const [tab, setTab] = useState('drafts');
+// Вкладки — кроки одного шляху, у тому порядку, у якому ним іде запис
+// (Марія, 22.09.2026). «Неповні» стоять окремо: це не крок, а підмножина
+// того, що вже на сайті.
+const TABS = ['raw', 'drafts', 'active', 'incomplete'];
+
+export default function AdminList({
+  drafts, actives, raw = [], matches = {}, notes = {}, initialTab, children,
+}) {
+  // Стару адресу /admin/quarantine перенаправлено на /admin?tab=raw, тож
+  // закладки й посилання з листів відкривають саме ту вкладку.
+  const [tab, setTab] = useState(TABS.includes(initialTab) ? initialTab : 'drafts');
   const [search, setSearch] = useState('');
 
   async function onAction(id, action, comment) {
@@ -313,16 +323,27 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
       <style dangerouslySetInnerHTML={{ __html: QUEUE_LAYOUT_CSS }} />
       <div className="adm-queue-head">{children}</div>
       <aside className="adm-queue-rules" aria-label="Правила модерації">
-        <ModerationRules tab={tab} />
+        <ModerationRules tab={tab === 'raw' ? 'quarantine' : tab} />
       </aside>
       <div className="adm-queue-body" style={{ marginTop: 22 }}>
-        <div style={{ display: 'flex', gap: 9, marginBottom: 18 }}>
-          {tabBtn('drafts', `🆕 Кандидати (${drafts.length})`)}
-          {tabBtn('active', `✅ Активні (${actives.length})`)}
+        <div style={{ display: 'flex', gap: 9, marginBottom: 18, flexWrap: 'wrap' }}>
+          {tabBtn('raw', `1 · Знахідки (${raw.length})`)}
+          {tabBtn('drafts', `2 · Кандидати (${drafts.length})`)}
+          {tabBtn('active', `3 · На сайті (${actives.length})`)}
           {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
         </div>
 
-        {tab === 'incomplete' ? (
+        {tab === 'raw' ? (
+          <>
+            <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
+              Сирий текст зі скраперів, де модель не певна, що це можливість для дитини.
+              Одне питання: <b>це для дітей?</b> «Завести можливість» віддає текст у нічний
+              розбір — модель заповнить поля, і запис прийде на вкладку «Кандидати».
+              «Відхилити» — назавжди.
+            </p>
+            <QuarantineList rows={raw} />
+          </>
+        ) : tab === 'incomplete' ? (
           incomplete.length === 0 ? (
             <p style={{ color: C.ink2, fontSize: 16 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
           ) : (
