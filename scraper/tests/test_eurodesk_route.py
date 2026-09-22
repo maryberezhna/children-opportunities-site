@@ -22,7 +22,7 @@ class Route(unittest.TestCase):
         with patch.object(eurodesk, "_via_supabase", fake):
             items = asyncio.run(eurodesk.fetch_all())
         self.assertEqual(items[0]["raw_title"], "Erasmus+ Youth Exchanges")
-        self.assertEqual(items[0]["source_url"], f"{eurodesk.BASE}/21214-eu")
+        self.assertEqual(items[0]["source_url"], f"{eurodesk.BASE}/search/programme/21214/eu")
 
     def test_zero_cards_is_an_error_not_an_empty_success(self):
         # Раніше [] означав «джерело порожнє, усе гаразд» — і поламку не бачив ніхто.

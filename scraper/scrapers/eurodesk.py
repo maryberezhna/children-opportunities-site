@@ -64,7 +64,22 @@ _XHR = {
     "Referer": f"{BASE}/",
 }
 
-_ID_RE = re.compile(r"^(\d+)-")
+_ID_RE = re.compile(r"^(\d+)-([a-z]{2})$")
+
+
+def programme_url(programme_id: str) -> str:
+    """Адреса окремої сторінки програми: «23225-eu» → /search/programme/23225/eu.
+
+    До 22.09.2026 ми складали {BASE}/23225-eu, і сайт відповідав на неї 200 —
+    але самим пошуком з пʼятьмастами картками, без жодного натяку, яку з них
+    мали на увазі. Так вели на нього всі записи Eurodesk: і на сайті, і в
+    модерації. Картку відкриває лише цей шлях (так само робить їхній власний
+    openSharedProgram), і вся програма на ньому є вже в HTML.
+    """
+    m = _ID_RE.match(programme_id)
+    if not m:
+        raise ValueError(f"Eurodesk: незрозумілий ідентифікатор програми {programme_id!r}")
+    return f"{BASE}/search/programme/{m.group(1)}/{m.group(2)}"
 
 # Колір картки в них — це категорія. Зелена означає стажування: усі 23 зелені
 # картки на момент перевірки були traineeship, internship або au pair, а вони
@@ -135,7 +150,7 @@ def parse_open(html: str) -> list[dict]:
                     if o.get("value") and _ID_RE.match(o["value"])), None)
         if not opt:
             continue
-        url = f"{BASE}/{opt}"
+        url = programme_url(opt)
         if url in seen:
             continue
         seen.add(url)
