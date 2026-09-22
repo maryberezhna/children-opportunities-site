@@ -23,7 +23,7 @@ KEEP_IF_KNOWN = (
     "deadline", "event_start_date", "event_end_date", "recurrence",
     "timing_kind", "season_months", "details", "apply_url", "price_note",
 )
-EXISTING_FIELDS = "id, verified_at, status, timing_assumed, " + ", ".join(KEEP_IF_KNOWN)
+EXISTING_FIELDS = "id, verified_at, status, timing_assumed, evidence, " + ", ".join(KEEP_IF_KNOWN)
 
 
 def merge_patch(existing: dict, record: dict) -> dict:
@@ -37,6 +37,12 @@ def merge_patch(existing: dict, record: dict) -> dict:
       сторінці змінився текст; повернення сезону — справа планової перевірки.
     """
     patch = {k: v for k, v in record.items() if k != "slug"}
+    # Цитати зливаються по ключах: нова перевірка може підтвердити вартість,
+    # а про вік мовчати — торішня цитата про вік лишається.
+    if "evidence" in patch:
+        old_ev = existing.get("evidence") if isinstance(existing.get("evidence"), dict) else {}
+        new_ev = patch["evidence"] if isinstance(patch["evidence"], dict) else {}
+        patch["evidence"] = {**old_ev, **{k: v for k, v in new_ev.items() if v}}
     for key in KEEP_IF_KNOWN:
         if key in patch and patch[key] in (None, "", []) and existing.get(key) not in (None, "", []):
             patch.pop(key)

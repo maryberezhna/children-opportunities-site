@@ -1,10 +1,8 @@
 """AI-нормалізація через Claude Haiku."""
 import os
 import hashlib
-import json
 import re
 import logging
-from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 import anthropic
@@ -34,9 +32,7 @@ class NormalizeError(Exception):
 # обовʼязкових полів були двома копіями, Python і JS, і їх правили руками
 # синхронно (уніфіковано 22.09.2026). Спільні приклади для обох мов —
 # tests/fixtures/publish-criteria-cases.json.
-_CRITERIA_PATH = Path(__file__).resolve().parents[1] / "lib" / "publish-criteria.json"
-with open(_CRITERIA_PATH, encoding="utf-8") as _f:
-    PUBLISH_CRITERIA = json.load(_f)
+from proof import PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof, drop_proof  # noqa: E402
 _REQUIRED = PUBLISH_CRITERIA["required"]
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
@@ -398,7 +394,11 @@ def _sanitize(data: dict) -> dict:
     # число в межах 0..18, тож «не знаю» вона висловити не могла. Тепер
     # відсутній вік лишає діапазон 0–18 як технічний, але відправляє запис
     # людині: опублікуватись сам він не може (аудит 11.09.2026).
+    if not isinstance(data.get("evidence"), dict):
+        data["evidence"] = {}
     age_missing = any(data.get(key) in (None, "") for key in ("age_from", "age_to"))
+    if age_missing:
+        drop_proof(data, "age")
     for key, default in (("age_from", 0), ("age_to", 18)):
         try:
             val = int(data.get(key, default))
@@ -412,6 +412,8 @@ def _sanitize(data: dict) -> dict:
     data["season_months"] = (clean_months(data.get("season_months"))
                              if data["timing_kind"] == "periodic" else None)
     _apply_club_default(data)
+    if data.get("timing_assumed"):
+        drop_proof(data, "date")  # «набір постійний» — здогад, не цитата
     if data["age_from"] > data["age_to"]:
         data["age_from"], data["age_to"] = data["age_to"], data["age_from"]
 
@@ -464,6 +466,17 @@ def _sanitize(data: dict) -> dict:
     # суто технічною заглушкою для бази.
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         data["opportunity_type"] = "course"
+        drop_proof(data, "type")  # заглушка для бази, не доказ
+
+    # ── Світлофор: без цитати запис не зелений ──────────────────────────
+    # Рішення Марії 22.09.2026: машина публікує сама лише те, на що має
+    # дослівну цитату зі сторінки на кожне обовʼязкове поле. Поле, заповнене
+    # з тексту нашими правилами чи дефолтом, цитати не має — запис жовтий,
+    # до людини, з переліком. Поля, яких бракує зовсім, уже названі вище.
+    no_proof = [k for k in missing_proof(data) if k not in missing_required_keys(data)]
+    if no_proof:
+        data["status"] = "draft"
+        _note(data, "auto: без цитати зі сторінки — " + ", ".join(PROOF_LABELS[k] for k in no_proof))
     return data
 
 
@@ -741,6 +754,16 @@ enrollment_status — стан набору за текстом: якщо на �
 closed/expired. Це головний сигнал актуальності: сторінка може бути жива,
 а набір — ні.
 
+evidence — ДОСЛІВНІ цитати з ТЕКСТУ на пʼять полів, до 200 знаків кожна:
+- age — фраза про вік чи клас учасників («для дітей 10–14 років», «учні 8–11 класів»);
+- date — фраза про строк подачі, дати проведення або періодичність;
+- cost — фраза про гроші («участь безкоштовна», «вартість 1200 грн на місяць»);
+- type — фраза, з якої видно, що це саме такий вид (конкурс, табір, гурток…);
+- place — фраза про місто, країну або онлайн.
+Копіюй слово в слово, без перефразування й без власних висновків. Немає такої
+фрази в тексті — порожній рядок: поле без цитати не публікується само, його
+дивиться людина. Вигадана цитата гірша за порожню.
+
 Поверни JSON через extract_opportunity."""
 
 
@@ -890,10 +913,31 @@ EXTRACT_TOOL = {
                                "Не знаєш → [].",
             },
             "confidence": {"type": "number"},
+            "evidence": {
+                "type": "object",
+                "description": "ДОСЛІВНІ цитати з ТЕКСТУ на пʼять полів, до 200 "
+                               "знаків кожна. Копіюй слово в слово, без "
+                               "перефразування й без власних висновків. Немає "
+                               "такої фрази в тексті → порожній рядок.",
+                "properties": {
+                    "age": {"type": "string",
+                            "description": "Фраза про вік або клас учасників."},
+                    "date": {"type": "string",
+                             "description": "Фраза про строк подачі, дати проведення "
+                                            "або періодичність («щороку», «набір триває»)."},
+                    "cost": {"type": "string",
+                             "description": "Фраза про гроші: безкоштовно, вартість, внесок."},
+                    "type": {"type": "string",
+                             "description": "Фраза, з якої видно вид: конкурс, табір, гурток…"},
+                    "place": {"type": "string",
+                              "description": "Фраза про місто, країну або онлайн."},
+                },
+                "required": ["age", "date", "cost", "type", "place"],
+            },
         },
         "required": ["title", "summary", "age_from", "age_to",
                      "opportunity_type", "cost_type", "enrollment_status",
-                     "confidence"],
+                     "confidence", "evidence"],
     },
 }
 
@@ -1073,7 +1117,12 @@ URL: {source_url}
                 self.last_reject_code = "low_confidence"
                 return None
 
-            data = _sanitize(dict(data))
+            # Цитати приймаємо лише ті, що справді є в тексті: решта —
+            # висновки моделі, а не докази (світлофор, 22.09.2026).
+            data = dict(data)
+            data["evidence"] = verify_evidence(data.get("evidence"),
+                                               f"{raw_text or ''} {raw_title or ''}")
+            data = _sanitize(data)
             if human_accepted:
                 data["admin_comment"] = ((data.get("admin_comment") or "")
                                          + f" · людина прийняла з карантину (впевненість моделі "

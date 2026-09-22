@@ -32,6 +32,7 @@ from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
 from normalizer import missing_required, summary_says_over
+from proof import missing_proof, PROOF_LABELS
 from timing import is_expired
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,12 @@ def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
     missing = missing_required(row)
     if missing:
         return YELLOW, "бракує: " + ", ".join(missing)
+    # ── Жовтий: поле є, а цитати на нього немає ──────────────────────────
+    # Світлофор (22.09.2026): зелений лише з дослівною цитатою зі сторінки на
+    # кожне обовʼязкове поле. Здогад чи дефолт цитати не має.
+    no_proof = missing_proof(row)
+    if no_proof:
+        return YELLOW, "без цитати: " + ", ".join(PROOF_LABELS[k] for k in no_proof)
     if row["age_from"] < 0 or row["age_to"] > 18:
         return YELLOW, f"вік поза 0–18 ({row['age_from']}–{row['age_to']})"
     summary = row.get("summary") or ""
@@ -195,6 +202,7 @@ def judge(client, row: dict) -> dict:
         "Початок події": row.get("event_start_date"),
         "Кінець події": row.get("event_end_date"),
         "Вид за часом": row.get("timing_kind"),
+        "Цитати зі сторінки": row.get("evidence") or {},
     }
     try:
         resp = client.messages.create(

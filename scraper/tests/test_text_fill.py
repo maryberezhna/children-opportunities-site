@@ -7,7 +7,7 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 import text_fill as tf  # noqa: E402
-from normalizer import _sanitize  # noqa: E402
+from normalizer import _sanitize, missing_required  # noqa: E402
 
 
 class Cost(unittest.TestCase):
@@ -126,8 +126,9 @@ class InSanitize(unittest.TestCase):
             cost_type="partially_free"))
         self.assertEqual(d["cost_type"], "paid_affordable")
         self.assertIn("пробний", d["admin_comment"])
-        self.assertNotIn("вартість", d["admin_comment"].split("бракує", 1)[-1]
-                         if "бракує" in d["admin_comment"] else "")
+        # Вартість заповнена (не в «бракує»); цитати на неї немає — це вже
+        # інша позначка, «без цитати», і вона тут доречна.
+        self.assertNotIn("вартість", missing_required(d))
 
     def test_model_answer_wins(self):
         d = _sanitize(self.base(cost_type="paid_affordable", cities=["Київ"],
