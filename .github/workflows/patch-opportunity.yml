@@ -1,0 +1,41 @@
+name: Картка — точкова правка (manual)
+
+# Змінює текст чи факти однієї картки за slug — див. scripts/patch-opportunity.mjs.
+# Ключ сервісу Supabase живе лише тут, у секретах; без confirm = PATCH
+# воркфлоу лише показує, що саме зміниться.
+#
+# Перше використання — 22.09.2026: у картку туру «9 університетів Великої
+# Британії» дописали, що його веде освітня агенція DEC Education.
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'slug картки (останній шматок адреси dityam.com.ua/o/<slug>)'
+        required: true
+      patch:
+        description: 'JSON: {"поле": "нове значення"} або {"поле": {"replace": [["було", "стало"]]}}'
+        required: true
+      confirm:
+        description: 'PATCH — записати; порожньо — лише показати'
+        required: false
+        default: ''
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Patch
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SLUG: ${{ github.event.inputs.slug }}
+          PATCH: ${{ github.event.inputs.patch }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: node scripts/patch-opportunity.mjs
