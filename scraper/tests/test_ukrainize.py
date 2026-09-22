@@ -6,7 +6,7 @@ import unittest
 from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from ukrainize import needs_ukrainian, plan  # noqa: E402
+from ukrainize import needs_ukrainian, plan, still_same  # noqa: E402
 
 TODAY = date(2026, 9, 22)
 WWOOF = {"title": "Volunteer in organic farms",
@@ -52,9 +52,30 @@ class Plan(unittest.TestCase):
     def test_model_answer_still_english_changes_nothing(self):
         self.assertEqual(plan(WWOOF, {"title": "Volunteer on farms", "summary": "Still English."}, TODAY), {})
 
+    def test_html_entities_are_decoded(self):
+        row = {"title": "Scholastic Art & Writing Awards", "summary": "Конкурс мистецтва.", "admin_comment": None}
+        out = {"title": "Scholastic Art &amp; Writing Awards — конкурс мистецтва і літератури", "summary": ""}
+        self.assertEqual(plan(row, out, TODAY)["title"],
+                         "Scholastic Art & Writing Awards — конкурс мистецтва і літератури")
+
     def test_summary_is_capped(self):
         out = dict(self.OUT, summary="Опис " * 200)
         self.assertLessEqual(len(plan(WWOOF, out, TODAY)["summary"]), 400)
+
+
+class ApplyReviewed(unittest.TestCase):
+    """Записується лише те, що прочитали в сухому прогоні, і лише якщо запис
+    відтоді не змінився."""
+
+    P = {"old_title": "Volunteer in organic farms", "old_summary": "WWOOF connects volunteers."}
+
+    def test_unchanged_row_is_written(self):
+        self.assertTrue(still_same({"title": "Volunteer in organic farms",
+                                    "summary": "WWOOF connects volunteers."}, self.P))
+
+    def test_row_edited_since_dry_run_is_left_alone(self):
+        self.assertFalse(still_same({"title": "WWOOF — волонтерство на фермах",
+                                     "summary": "WWOOF connects volunteers."}, self.P))
 
 
 if __name__ == "__main__":
