@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { costLabel, deadlineTag, withPageLink } from '../scripts/post-labels.mjs';
+import { costLabel, deadlineTag, isUkrainianPost, placeText, withPageLink } from '../scripts/post-labels.mjs';
 
 // 21.09.2026 у каналі вийшло «⏰ Заявки до: за 32 дн.» — «до» і «за N дн.»
 // разом. Після «Заявки до:» завжди стоїть дата, а скільки лишилось — окремо.
@@ -70,4 +70,39 @@ test('посилання вже веде на сторінку чи інший �
   assert.equal(withPageLink(ok, SLUG), ok);
   const plus = 'Нагадаємо — dityam.com.ua/plus';
   assert.equal(withPageLink(plus, SLUG), `${plus}\n\nДеталі — dityam.com.ua/o/${SLUG}`);
+});
+
+// У канал — лише українською (22.09.2026, пост WWOOF англійською).
+const WWOOF = {
+  title: 'Volunteer in organic farms',
+  summary: 'WWOOF connects volunteers with organic farms worldwide. Volunteers live with hosts.',
+  format: 'offline', cities: [], countries: null, is_international: true,
+};
+
+test('англійський запис у канал не йде', () => {
+  assert.equal(isUkrainianPost(WWOOF), false);
+  assert.equal(isUkrainianPost({ title: 'Kresťanský tábor pre ukrajinské deti', summary: 'Табір для дітей.' }), false);
+  // Український опис, але назва без жодного українського слова — теж ні.
+  assert.equal(isUkrainianPost({ title: 'Yale Young Global Scholars', summary: 'Літня академічна програма Єльського університету.' }), false);
+});
+
+test('українське — йде, імʼя програми в назві лишається', () => {
+  assert.equal(isUkrainianPost({ title: 'WWOOF — волонтерство на органічних фермах',
+    summary: 'Волонтери живуть у господарів, працюють 4–6 годин на день, отримують житло й харчування.' }), true);
+  assert.equal(isUkrainianPost({ title: 'UNESCO Youth Eyes on Silk Roads — фотоконкурс',
+    summary: 'Міжнародний фотоконкурс для молоді 14–25 років.' }), true);
+  assert.equal(isUkrainianPost({ title: 'Гурток робототехніки', summary: null }), true);
+});
+
+test('«Де»: країна українською, «у різних країнах», місто, онлайн', () => {
+  assert.equal(placeText(WWOOF), 'у різних країнах');
+  assert.equal(placeText({ countries: ['pl'], is_international: true, format: 'offline' }), 'Польща');
+  assert.equal(placeText({ countries: ['es', 'it'], format: 'offline' }), 'Іспанія, Італія');
+  assert.equal(placeText({ cities: ['Київ'], format: 'offline' }), 'Київ');
+  // Міжнародний фестиваль у Львові відбувається у Львові.
+  assert.equal(placeText({ cities: ['Львів'], is_international: true, format: 'offline' }), 'Львів');
+  // Онлайн-конкурс закордонного організатора — «онлайн», не «за кордоном».
+  assert.equal(placeText({ cities: ['Онлайн'], is_international: true, format: 'online' }), 'онлайн');
+  assert.equal(placeText({ cities: ['Вся Україна'], format: null }), 'по всій Україні');
+  assert.equal(placeText({ cities: [], countries: null, format: null }), null);
 });
