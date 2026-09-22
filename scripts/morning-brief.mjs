@@ -54,6 +54,7 @@ const since = `${inDays(-1)}T00:00:00Z`;
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
   inReview, reviewTop, notesOpen, notesTop, autoCount, autoTop, reviewNewCount,
+  heldCount, passed48,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -114,9 +115,35 @@ const [
   // місяцями й уже нічого не каже.
   count(supabase.from('raw_items').select('id', { count: 'exact', head: true })
     .eq('status', 'review').is('reviewed_at', null).gte('fetched_at', since)),
+  // Скільки ворота притримали за добу: нові чернетки. Разом із autoCount це
+  // і є відповідь на питання «чи не затісні ворота» — щоб її не треба було
+  // вгадувати з нуля в іншому рядку (22.09.2026).
+  count(base().select('id', { count: 'exact', head: true })
+    .eq('status', 'draft').gte('created_at', since)),
+  // Те саме вікно, але дві доби: один нуль буває від тихої ночі, два поспіль
+  // означають, що ворота не пропускають нікого.
+  count(base().select('id', { count: 'exact', head: true })
+    .eq('status', 'active').is('canonical_slug', null).is('verified_at', null)
+    .gte('created_at', `${inDays(-2)}T00:00:00Z`)),
 ]);
 
 const blocks = [];
+
+// Ворота правди (22.09.2026): скільки пройшло само, скільки притримано.
+// Рядок є завжди, навіть із нулями: саме нуль і є сигналом, що ворота
+// затісні, і його не можна лишати непоміченим.
+{
+  const gate = [`🚦 <b>Ворота за добу:</b> на сайт ${autoCount}, притримано ${heldCount}.`];
+  if (!passed48 && heldCount) {
+    gate.push('⚠️ Дві доби поспіль ніхто не пройшов сам, а чернетки додаються — '
+      + 'схоже, ворота затісні. Глянь «До рішення»: якщо записи там годяться, '
+      + 'значить, моделі бракує не якості, а цитат.');
+  } else if (!autoCount && heldCount) {
+    gate.push('Сьогодні сам не пройшов ніхто. Один день — ще не сигнал; '
+      + 'якщо так буде і завтра, зведення про це скаже.');
+  }
+  blocks.push(gate.join('\n'));
+}
 
 if (autoCount) {
   blocks.push([

@@ -25,6 +25,18 @@ test('вразлива тема — завжди до людини й першо
   assert.equal(queueReason(ready({ opportunity_type: 'medical_aid', evidence: {} })).key, 'sensitive');
 });
 
+test('джерело, яке робот не читає, — до людини один раз, а не в «чекає»', () => {
+  // mon.gov.ua віддає 403 і поза GitHub: записи складені зі статичної таблиці,
+  // цитати зі сторінки не буде ніколи. Такий запис не може довести себе сам —
+  // його підтверджує людина, і він не має вічно лежати в «чекає машину».
+  const mon = ready({ source: 'МОН України', evidence: {}, opportunity_type: 'olympiad' });
+  assert.equal(queueReason(mon).key, 'unreadable');
+  // Вразлива тема все одно важливіша.
+  assert.equal(queueReason({ ...mon, opportunity_type: 'psychology' }).key, 'sensitive');
+  // Звичайне джерело без цитат лишається в «чекає машину».
+  assert.equal(queueReason(ready({ source: 'Eurodesk', evidence: {} })), null);
+});
+
 test('суперечність у записі: «18+» у тексті при дитячому віці', () => {
   const r = queueReason(ready({ summary: 'Програма для дорослих, 18+' }));
   assert.equal(r.key, 'conflict');
