@@ -87,7 +87,7 @@ export default async function AdminPage() {
       <AdminList drafts={drafts} actives={actives} matches={matches} notes={notes}>
         <AdminNav current="queue" />
         <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
-        <p style={{ color: '#54617a', fontSize: 15, margin: 0 }}>
+        <p style={{ color: '#54617a', fontSize: 16, margin: 0 }}>
           Кандидати від агента чекають на схвалення. Активні — для ручної перевірки посилань.
         </p>
       </AdminList>

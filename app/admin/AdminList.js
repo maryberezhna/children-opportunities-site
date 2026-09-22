@@ -99,7 +99,7 @@ function Card({ o, mode, onAction, match, notes = [] }) {
       boxShadow: '0 1px 2px rgba(20,30,60,.05)', transition: 'background .2s, opacity .3s',
       opacity: gone ? 0.6 : 1,
     }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 13, color: C.ink2, marginBottom: 6, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 14.5, color: C.ink2, marginBottom: 7, alignItems: 'center' }}>
         <span style={{ background: C.typeBg, color: C.typeInk, padding: '2px 10px', borderRadius: 20 }}>
           {TYPE_LABELS[o.opportunity_type] || o.opportunity_type}
         </span>
@@ -116,25 +116,25 @@ function Card({ o, mode, onAction, match, notes = [] }) {
 
       {missing.length ? (
         <div style={{ background: '#fdecec', border: '1px solid #f3bcbc', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
-          <div style={{ color: '#a11b1b', fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+          <div style={{ color: '#a11b1b', fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
             ⛔ {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'} — бракує: {missing.join(', ')}
           </div>
-          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
+          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
         </div>
       ) : null}
 
       {warnings.length ? (
         <div style={{ background: C.warnBg, border: '1px solid #f3d3ad', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
           {warnings.map((w) => (
-            <div key={w} style={{ color: C.warnInk, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>⚠ {w}</div>
+            <div key={w} style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>⚠ {w}</div>
           ))}
-          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 13, color: C.link, fontWeight: 600 }}>виправити →</a>
+          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>виправити →</a>
         </div>
       ) : null}
 
       {o.dup_of ? (
         <div style={{ background: C.warnBg, borderRadius: 10, padding: '9px 11px', marginBottom: 10, border: '1px solid #f3d3ad' }}>
-          <div style={{ color: C.warnInk, fontSize: 13, fontWeight: 600, marginBottom: 7 }}>
+          <div style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 7 }}>
             ⚠ Можливий дублікат{o.dup_score ? ` (~${Math.round(o.dup_score * 100)}%)` : ''} — порівняй обидва:
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
@@ -148,12 +148,12 @@ function Card({ o, mode, onAction, match, notes = [] }) {
         </div>
       ) : null}
 
-      <h3 style={{ margin: '0 0 6px', fontSize: 16, lineHeight: 1.3 }}>
+      <h3 style={{ margin: '0 0 7px', fontSize: 18, lineHeight: 1.3 }}>
         <a href={`/admin/edit/${o.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{o.title}</a>
       </h3>
-      {o.summary ? <p style={{ margin: '0 0 9px', fontSize: 14, color: C.ink2, lineHeight: 1.5 }}>{o.summary}</p> : null}
+      {o.summary ? <p style={{ margin: '0 0 10px', fontSize: 15.5, color: C.ink2, lineHeight: 1.55 }}>{o.summary}</p> : null}
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 13, color: C.ink2, marginBottom: 11, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 14.5, color: C.ink2, marginBottom: 11, flexWrap: 'wrap' }}>
         {o.source ? <span>{o.source}</span> : null}
         {o.source_url
           ? <a href={o.source_url} target="_blank" rel="noreferrer" style={{ color: C.link, fontWeight: 600 }}>🔗 відкрити джерело ↗</a>
@@ -161,25 +161,25 @@ function Card({ o, mode, onAction, match, notes = [] }) {
       </div>
 
       {done ? (
-        <div style={{ fontWeight: 600, color: gone || done === 'skipped' ? C.ink3 : C.green }}>
+        <div style={{ fontWeight: 600, fontSize: 15, color: gone || done === 'skipped' ? C.ink2 : C.green }}>
           {{ approved: '✅ Додано на сайт', skipped: '❌ Пропущено', verified: '✓ Перевірено',
              removed: '🗑 Прибрано' }[done]}
         </div>
       ) : (
         <>
           {o.admin_comment ? (
-            <p style={{ margin: '0 0 9px', fontSize: 12.5, color: C.ink3, lineHeight: 1.45 }}>
+            <p style={{ margin: '0 0 10px', fontSize: 14, color: C.ink2, lineHeight: 1.5 }}>
               <b style={{ fontWeight: 600 }}>Позначки конвеєра:</b> {o.admin_comment}
             </p>
           ) : null}
           {openNotes.length ? (
             <div style={{ background: '#eef4ff', border: '1px solid #cddcfb', borderRadius: 10, padding: '8px 11px', marginBottom: 9 }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.link, marginBottom: 3 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: C.link, marginBottom: 4 }}>
                 💬 Коментар чекає на обробку
               </div>
               {openNotes.map((n) => (
-                <div key={n.id} style={{ fontSize: 13.5, color: C.ink, lineHeight: 1.45 }}>
-                  <span style={{ color: C.ink3 }}>{formatDate(String(n.created_at).slice(0, 10))}:</span> {n.body}
+                <div key={n.id} style={{ fontSize: 15, color: C.ink, lineHeight: 1.5 }}>
+                  <span style={{ color: C.ink2 }}>{formatDate(String(n.created_at).slice(0, 10))}:</span> {n.body}
                 </div>
               ))}
             </div>
@@ -189,8 +189,8 @@ function Card({ o, mode, onAction, match, notes = [] }) {
             onChange={(e) => setComment(e.target.value)}
             placeholder="Коментар: питання, сумнів або причина рішення…"
             rows={2}
-            style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 13.5,
-              padding: '8px 11px', borderRadius: 9, border: `1px solid ${C.border2}`, resize: 'vertical', marginBottom: 9 }}
+            style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 15,
+              padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border2}`, resize: 'vertical', marginBottom: 10 }}
           />
           <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
             {mode === 'drafts' ? (
@@ -221,7 +221,7 @@ function Card({ o, mode, onAction, match, notes = [] }) {
 }
 
 const btnStyle = (busy, { bg, fg, border }) => ({
-  padding: '8px 15px', fontSize: 13.5, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
+  padding: '10px 17px', fontSize: 15, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
   fontFamily: 'inherit', opacity: busy ? 0.55 : 1,
   background: border ? '#fff' : bg, color: border ? C.ink2 : fg,
   border: border ? `1px solid ${C.border2}` : 'none',
@@ -248,14 +248,18 @@ const LAYOUT_CSS = `
 .adm-queue-head { grid-area: head; min-width: 0; }
 .adm-queue-body { grid-area: body; min-width: 0; }
 .adm-queue-rules { grid-area: rules; justify-self: end; align-self: start; box-sizing: border-box;
-  width: 100%; max-width: 340px; position: sticky; top: 16px; max-height: calc(100vh - 32px);
-  overflow-y: auto; background: #fff; border: 1px solid ${C.border}; border-radius: 14px; padding: 14px 16px; }
+  /* Знизу лишаємо ~100 px: там плаваюча кнопка «око», яка інакше закриває
+     останній рядок правил. */
+  width: 100%; max-width: 400px; position: sticky; top: 16px; max-height: calc(100vh - 110px);
+  overflow-y: auto; background: #fff; border: 1px solid ${C.border}; border-radius: 14px; padding: 18px 20px; }
 @media (max-width: 1679px) {
-  .adm-queue { grid-template-columns: 300px minmax(0, 980px); justify-content: center;
+  .adm-queue { grid-template-columns: 340px minmax(0, 980px); justify-content: center;
     grid-template-areas: "rules head" "rules body"; }
   .adm-queue-rules { max-width: none; }
 }
-@media (max-width: 1099px) {
+/* Стек — уже від 1280 px: із 340 px правил і 980 px списку у вужче не
+   вміщалось, і картки стискались до ~700 px. */
+@media (max-width: 1279px) {
   .adm-queue { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto;
     grid-template-areas: "head" "rules" "body"; }
   .adm-queue-rules { position: static; max-height: none; margin-top: 16px; }
@@ -299,7 +303,7 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
   const tabBtn = (id, label) => (
     <button onClick={() => setTab(id)}
       style={{
-        padding: '9px 16px', fontSize: 14.5, fontWeight: 600, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
+        padding: '10px 18px', fontSize: 16, fontWeight: 600, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
         border: `1px solid ${tab === id ? C.ink : C.border2}`,
         background: tab === id ? C.ink : '#fff', color: tab === id ? '#fff' : C.ink2,
       }}>
@@ -323,10 +327,10 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
 
         {tab === 'incomplete' ? (
           incomplete.length === 0 ? (
-            <p style={{ color: C.ink2 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
+            <p style={{ color: C.ink2, fontSize: 16 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
           ) : (
             <>
-              <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
+              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px' }}>
                 Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
                 не стають — ворота конвеєра їх не пускають.
               </p>
@@ -337,7 +341,7 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
           )
         ) : tab === 'drafts' ? (
           drafts.length === 0 ? (
-            <p style={{ color: C.ink2 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
+            <p style={{ color: C.ink2, fontSize: 16 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
               {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
@@ -348,10 +352,10 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
             <input
               value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Пошук за назвою або джерелом…"
-              style={{ width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '10px 14px',
+              style={{ width: '100%', boxSizing: 'border-box', fontSize: 16, padding: '11px 14px',
                 borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
             />
-            <p style={{ color: C.ink3, fontSize: 13, margin: '0 0 12px' }}>
+            <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px' }}>
               Показано {activeFiltered.length} із {actives.length}.
               {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
             </p>
@@ -359,7 +363,7 @@ export default function AdminList({ drafts, actives, matches = {}, notes = {}, c
               {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
             </div>
             {activeFiltered.length > 150
-              ? <p style={{ color: C.ink3, fontSize: 13, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
+              ? <p style={{ color: C.ink2, fontSize: 14.5, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
               : null}
           </>
         )}
