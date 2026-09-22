@@ -190,11 +190,16 @@ export const isArchived = (item) => item?.status === 'archived';
 
 export async function getOpportunity(slug) {
   if (!supabase) return null;
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('opportunities')
     .select('*')
     .eq('slug', slug)
     .maybeSingle();
+  // Помилка бази — виняток, а не «такої картки немає». Картки збираються на
+  // запит, і null тут став би 404, закешованим на годину (14.09.2026 Supabase
+  // тримав 502/504 довше). Виняток дає 500, а його Next не кешує: наступний
+  // відвідувач отримає або стару копію, або нову спробу.
+  if (error) throw new Error(`getOpportunity(${slug}): ${error.message}`);
   if (data?.status === 'archived') return { status: 'archived' };
   if (!data || !PUBLIC_STATUSES.has(data.status)) return null;
   return data;
@@ -219,13 +224,6 @@ export async function getRelated(item, limit = 8) {
     .gte('age_to', item.age_from)
     .limit(limit);
   return fallback || [];
-}
-
-export async function allActiveSlugs() {
-  if (!supabase) return [];
-  const { data } = await supabase.from('opportunities')
-    .select('slug').eq('status', 'active');
-  return (data || []).map((row) => ({ slug: row.slug }));
 }
 
 export function ageRangeLabel(item, lang = 'uk') {

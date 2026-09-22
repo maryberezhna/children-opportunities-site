@@ -6,8 +6,9 @@ import { TYPE_LABELS, AID_TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/label
 import { kyivToday } from '@/lib/dates';
 import { whenState } from '@/lib/timing';
 
-// nodejs (not edge) бо шрифт читаємо з диска. Картинка генерується на білді
-// для кожного slug з generateStaticParams у page.js і кешується як статика.
+// nodejs (not edge) бо шрифт читаємо з диска. На білді картинки не
+// генеруються («ƒ» у таблиці збірки): лише коли соцмережа чи месенджер
+// запитує прев'ю посилання.
 export const runtime = 'nodejs';
 export const revalidate = 3600;
 
