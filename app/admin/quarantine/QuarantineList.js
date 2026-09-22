@@ -11,6 +11,73 @@ const btnS = {
   borderRadius: 999, border: '1px solid #d9e0ea', background: '#fff', cursor: 'pointer',
 };
 
+// «За критеріями» — чотири критерії з правил збоку. Значок і колір лише
+// підсилюють слово: зміст має читатися й без них.
+const TONE = {
+  ok: { icon: '✓', color: '#15803d' },
+  bad: { icon: '✕', color: '#a11b1b' },
+  check: { icon: '?', color: '#b4530a' },
+};
+
+function Crit({ tone, label, children }) {
+  const t = TONE[tone];
+  return (
+    <li style={{ display: 'grid', gridTemplateColumns: '20px 118px minmax(0, 1fr)', columnGap: 6, alignItems: 'baseline' }}>
+      <span aria-hidden="true" style={{ color: t.color, fontWeight: 700 }}>{t.icon}</span>
+      <b style={{ color: t.color }}>{label}</b>
+      <span>{children}</span>
+    </li>
+  );
+}
+
+function Criteria({ c }) {
+  const f = c.found;
+  const have = [f.age && `вік ${f.age}`, f.date && 'дата', f.cost, f.place].filter(Boolean);
+  const miss = [!f.age && 'вік', !f.date && 'дата', !f.cost && 'вартість', !f.place && 'місце чи формат']
+    .filter(Boolean);
+
+  let actual;
+  if (c.actual === 'yes') {
+    actual = [
+      c.future.length ? `попереду: ${c.future.slice(0, 3).join(', ')}` : null,
+      c.ongoing ? 'постійний набір' : null,
+      c.past.length ? `минули: ${c.past.slice(-2).join(', ')}` : null,
+    ].filter(Boolean).join(' · ');
+  } else if (c.actual === 'no') {
+    actual = `усі дати минули: ${c.past.slice(-3).join(', ')}`;
+  } else if (c.conflict) {
+    actual = `пише «постійний набір», а в тексті лише минулі дати: ${c.past.slice(-2).join(', ')} — звір у джерелі`;
+  } else {
+    actual = c.undated.length
+      ? `дата без року: ${c.undated.slice(0, 2).join(', ')} — звір у джерелі`
+      : 'дат у тексті немає — звір у джерелі';
+  }
+
+  return (
+    <div style={{ margin: '10px 0', padding: '10px 12px', background: '#f7f9fc', borderRadius: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#54617a', marginBottom: 6 }}>За критеріями</div>
+      <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', rowGap: 5, fontSize: 15, lineHeight: 1.45 }}>
+        <Crit tone={{ yes: 'ok', no: 'bad', unknown: 'check' }[c.actual]} label="Актуальна">{actual}</Crit>
+        <Crit tone={miss.length ? 'check' : 'ok'} label="Повна">
+          {have.length ? `у тексті: ${have.join(' · ')}` : 'у тексті нічого з основного'}
+          {miss.length ? `. Не знайдено: ${miss.join(', ')}` : ''}
+        </Crit>
+        <Crit tone="check" label="Конкретна">
+          {c.rubric
+            ? 'назва — рубрика каналу: у пості може бути кілька можливостей'
+            : 'вирішуєш ти: одна програма, свої умови, як подати'}
+        </Crit>
+        <Crit tone={c.ukrainian ? 'ok' : 'check'} label="Українською">
+          {c.ukrainian ? 'так' : 'ні — модель перекладе при розборі'}
+        </Crit>
+        {c.orgsOnly ? (
+          <Crit tone="bad" label="Для кого">Eurodesk: лише для організацій, не для дитини</Crit>
+        ) : null}
+      </ul>
+    </div>
+  );
+}
+
 const DONE = {
   pending: '✓ Прийнято — можливість зʼявиться після нічного розбору',
   rejected: '✕ Відхилено',
@@ -49,10 +116,11 @@ function Item({ row }) {
         </span>
       </div>
 
-      <p style={{ margin: '8px 0', fontSize: 14 }}>
-        <b>Вік:</b> {row.snippet.age || <i style={{ color: '#b4530a' }}>у тексті не названо</i>}
-        {row.snippet.who ? <><br /><b>Хто може:</b> {row.snippet.who}</> : null}
-      </p>
+      <Criteria c={row.criteria} />
+      {/* Вік тепер у рядку «Повна»; «Хто може» лишається окремо. */}
+      {row.snippet.who ? (
+        <p style={{ margin: '0 0 8px', fontSize: 14 }}><b>Хто може:</b> {row.snippet.who}</p>
+      ) : null}
       <p style={{ margin: '0 0 8px', fontSize: 13.5, color: '#54617a', lineHeight: 1.5 }}>
         {open ? row.raw_text : row.snippet.lead}
       </p>
