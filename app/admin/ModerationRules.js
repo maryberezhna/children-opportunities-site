@@ -24,27 +24,32 @@ const C = {
   green: '#15803d', red: '#a11b1b', warn: '#b4530a',
 };
 
+// Розмір і контраст — для людини 55+ (Марія, 22.09.2026): 16 px, міжряддя
+// 1.55, основний текст темний; сірий лише в примітці внизу, і то не
+// найсвітліший.
 const CSS = `
-.mod-rules { font-size: 13px; line-height: 1.45; color: ${C.ink2}; }
-.mod-rules summary { cursor: pointer; font-size: 15px; font-weight: 700; color: ${C.ink}; list-style: none; }
+.mod-rules { font-size: 16px; line-height: 1.55; color: ${C.ink}; }
+.mod-rules summary { cursor: pointer; font-size: 18px; font-weight: 700; color: ${C.ink}; list-style: none; }
 .mod-rules summary::-webkit-details-marker { display: none; }
-.mod-rules summary::after { content: '▾'; float: right; color: ${C.ink3}; font-weight: 400; }
+.mod-rules summary::after { content: '▾'; float: right; color: ${C.ink2}; font-weight: 400; }
 .mod-rules details:not([open]) summary::after { content: '▸'; }
-.mod-rules h4 { margin: 14px 0 5px; font-size: 13.5px; color: ${C.ink}; }
-.mod-rules ul, .mod-rules ol { margin: 0; padding-left: 18px; }
-.mod-rules li { margin-bottom: 4px; }
-.mod-rules b { color: ${C.ink}; font-weight: 600; }
-.mod-rules .lead { margin: 8px 0 0; color: ${C.ink}; }
-.mod-rules .note { margin: 12px 0 0; padding-top: 10px; border-top: 1px solid ${C.border}; color: ${C.ink3}; }
+.mod-rules h4 { margin: 22px 0 8px; font-size: 17px; line-height: 1.35; color: ${C.ink}; }
+.mod-rules ul, .mod-rules ol { margin: 0; padding-left: 22px; }
+.mod-rules li { margin-bottom: 8px; }
+.mod-rules b { color: ${C.ink}; font-weight: 700; }
+.mod-rules .lead { margin: 10px 0 0; color: ${C.ink}; }
+.mod-rules .note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid ${C.border}; color: ${C.ink2}; font-size: 15px; }
 `;
 
 function Drafts() {
   return (
     <>
       <h4 style={{ color: C.green }}>✅ Додати на сайт — коли є всі чотири</h4>
-      <p style={{ margin: '0 0 6px' }}>
-        Це для дитини (до 18 включно; «з 18» чи «16–30» — теж наші, вік ставимо до 18), такого запису на
-        сайті ще немає, «Відкрити джерело» веде саме на цю програму. І далі:
+      <p style={{ margin: '0 0 8px' }}>
+        Це для дитини (до 18 включно; «з 18» чи «16–30» — теж наші, вік ставимо до 18), а «Відкрити
+        джерело» веде саме на цю програму. Чи є такий запис на сайті, система перевіряє сама: якщо
+        схожий уже є, на картці жовта плашка «Можливий дубль». Сумніваєшся — пошук на головній
+        dityam.com.ua за назвою: там усі активні записи. І далі:
       </p>
       {/* Чотири критерії — слова Марії (22.09.2026): актуальна, повна,
           конкретна, українською. Приклади в «конкретна» — її. */}
@@ -96,7 +101,7 @@ function Drafts() {
         <li><b>Місце.</b> Міста через кому. Онлайн чи за кордоном — міста порожні, формат вказаний.</li>
         <li><b>Топ тижня</b> — лише коли скаже Марія: це платне просування.</li>
       </ul>
-      <p style={{ margin: '6px 0 0' }}>Після правок — «Зберегти й опублікувати».</p>
+      <p style={{ margin: '8px 0 0' }}>Після правок — «Зберегти й опублікувати».</p>
 
       <Ask>
         <li>Програма лише для студентів університету (BEST, IAESTE) — рішення ще немає.</li>
@@ -115,7 +120,7 @@ function Ask({ children }) {
         {children}
         <li>Будь-що, чого немає в цих правилах.</li>
       </ul>
-      <p style={{ margin: '6px 0 0' }}>
+      <p style={{ margin: '8px 0 0' }}>
         Запис лишається на місці, а коментар — відкритим, доки його не оброблять. Його видно на
         картці й щоранку в зведенні в адмін-чаті.
       </p>
@@ -166,7 +171,7 @@ export default function ModerationRules({ tab }) {
   // згорнутими, щоб не штовхати картки вниз.
   const [open, setOpen] = useState(true);
   useEffect(() => {
-    if (window.matchMedia('(max-width: 1099px)').matches) setOpen(false);
+    if (window.matchMedia('(max-width: 1279px)').matches) setOpen(false);
   }, []);
 
   return (
