@@ -180,6 +180,14 @@ export const field = (item, name, lang) =>
 // Чернетки з черги модерації ('draft'/'pending') не показуємо ніколи.
 const PUBLIC_STATUSES = new Set(['active', 'closed']);
 
+// 'archived' (з 21.09.2026) — прибрані записи, яких ми не змогли підтвердити:
+// 421 гурток із довідників gurtok.org і «Школяр», де немає жодної дати, а
+// сайту організатора не знайти (scraper/audit_clubs.py). Сторінку не
+// показуємо, але й не 404 з тієї ж причини, що вище: людина з посту чи
+// Google потрапляє на платформу. Переадресація тимчасова — браузер не
+// запамʼятовує її, і повернений з архіву запис знову відкривається.
+export const isArchived = (item) => item?.status === 'archived';
+
 export async function getOpportunity(slug) {
   if (!supabase) return null;
   const { data } = await supabase
@@ -187,6 +195,7 @@ export async function getOpportunity(slug) {
     .select('*')
     .eq('slug', slug)
     .maybeSingle();
+  if (data?.status === 'archived') return { status: 'archived' };
   if (!data || !PUBLIC_STATUSES.has(data.status)) return null;
   return data;
 }

@@ -1,6 +1,6 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import OpportunityView, {
-  getOpportunity, getRelated, allActiveSlugs, buildMetadata,
+  getOpportunity, getRelated, allActiveSlugs, buildMetadata, isArchived,
 } from '../shared';
 
 // Розмітка, дані й structured data живуть у ../shared.js — той самий вигляд
@@ -12,12 +12,14 @@ export async function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }) {
-  return buildMetadata(await getOpportunity(params.slug), 'uk');
+  const item = await getOpportunity(params.slug);
+  return buildMetadata(isArchived(item) ? null : item, 'uk');
 }
 
 export default async function OpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
+  if (isArchived(item)) redirect('/');
   const related = await getRelated(item);
   return <OpportunityView item={item} related={related} lang="uk" />;
 }
