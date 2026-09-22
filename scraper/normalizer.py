@@ -1,8 +1,10 @@
 """AI-нормалізація через Claude Haiku."""
 import os
 import hashlib
+import json
 import re
 import logging
+from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Optional
 import anthropic
@@ -27,41 +29,35 @@ class NormalizeError(Exception):
 # список був захардкоджений тут і розійшовся з базою: два центри творчості
 # були в таблиці, але не в коді.
 
+# Критерії публікації живуть в одному місці — lib/publish-criteria.json.
+# Його ж читає lib/required.js (адмінка, бот, API). Раніше словники й пʼять
+# обовʼязкових полів були двома копіями, Python і JS, і їх правили руками
+# синхронно (уніфіковано 22.09.2026). Спільні приклади для обох мов —
+# tests/fixtures/publish-criteria-cases.json.
+_CRITERIA_PATH = Path(__file__).resolve().parents[1] / "lib" / "publish-criteria.json"
+with open(_CRITERIA_PATH, encoding="utf-8") as _f:
+    PUBLISH_CRITERIA = json.load(_f)
+_REQUIRED = PUBLISH_CRITERIA["required"]
+
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
 # The AI occasionally returns something off-list (e.g. deadline "квітень",
 # cost_type "unknown") — those rows used to fail the whole upsert and get lost.
 # We sanitise here so the opportunity still saves, just without the bad field.
-VALID_COST_TYPES = {
-    "free", "partially_free", "paid_affordable", "paid_premium", "subsidized",
-}
-# Що можна ПОКАЗАТИ людині. База ще приймає проміжні значення, але на сайті
-# вартість — лише «безкоштовно» або «платно» (рішення Марії 13.09.2026):
-# partially_free / subsidized не відповідали на питання, чи платити родині.
-PUBLISHABLE_COST_TYPES = {"free", "paid_affordable", "paid_premium"}
-VALID_OPP_TYPES = {
-    "course", "workshop", "summer_school", "mentorship", "club", "camp",
-    "study_program", "olympiad", "competition", "hackathon", "sport_tournament",
-    "festival", "award", "exchange", "excursion", "residency", "scholarship",
-    "grant", "allowance", "support_payment", "internship", "volunteer",
-    "conference", "medical_aid", "psychology", "rehabilitation", "humanitarian",
-    "legal_aid", "shelter", "educational_material",
-}
+VALID_COST_TYPES = set(PUBLISH_CRITERIA["cost_types_db"])
+# Що можна ПОКАЗАТИ людині: на сайті вартість — лише «безкоштовно» або
+# «платно» (рішення Марії 13.09.2026).
+PUBLISHABLE_COST_TYPES = set(_REQUIRED["cost"]["allowed"])
+VALID_OPP_TYPES = set(_REQUIRED["type"]["allowed"])
 
+# Поля, без яких запис не публікується: підписи у сталому порядку. Той самий
+# перелік читає `auto_review.py` (коридори модерації) і показує адмінка, щоб
+# «чого бракує» скрізь означало одне й те саме.
+REQUIRED_FIELDS = tuple(_REQUIRED[k]["label"] for k in PUBLISH_CRITERIA["order"])
 
-# Поля, без яких запис не публікується. Одне джерело правди: цей же перелік
-# читає `auto_review.py` (коридори модерації) і показує адмінка, щоб «чого
-# бракує» скрізь означало одне й те саме.
-REQUIRED_FIELDS = (
-    "вік", "дата, період або періодичність", "вартість", "тип",
-    "формат або місце (онлайн / офлайн / за кордоном)",
-)
-
-# Виплатам дата не обовʼязкова (рішення Марії 14.09.2026: «якщо виплата —
-# пропусти термін, якщо неможливо знайти»). Громади платять дітям захисників
-# за програмою на роки вперед, і сторінка ради часто взагалі не каже про
-# строк подання — через це корисна виплата висіла в чернетках. Дзеркало в
-# lib/required.js.
-PAYMENT_TYPES = {"allowance", "support_payment"}
+# Виплатам дата не обовʼязкова (рішення Марії 14.09.2026): громади платять
+# дітям захисників за програмою на роки вперед, і сторінка ради часто не каже
+# про строк подання.
+PAYMENT_TYPES = set(_REQUIRED["date"]["except_types"])
 
 
 # Опис, у якому модель САМА написала, що сезон чи набір уже позаду.
@@ -88,28 +84,44 @@ def summary_says_over(text) -> bool:
     return bool(_OVER.search(text)) and not _STILL_OPEN.search(text)
 
 
-def missing_required(data: dict, age_missing: bool = None) -> list:
-    """Чого бракує запису, щоб його можна було показати людині."""
+def _present(value) -> bool:
+    """«Є значення»: список — непорожній, число 0 — значення (вік від 0),
+    False і порожній рядок — порожнеча."""
+    if isinstance(value, (list, tuple, set)):
+        return len(value) > 0
+    return value is not None and value != "" and value is not False
+
+
+def _satisfied(crit: dict, data: dict) -> bool:
+    rule = crit["rule"]
+    if rule == "all":
+        return all(_present(data.get(f)) for f in crit["fields"])
+    if rule == "any":
+        return any(_present(data.get(f)) for f in crit["fields"])
+    if rule == "in":
+        return data.get(crit["fields"][0]) in crit["allowed"]
+    raise ValueError(f"publish-criteria: невідоме правило «{rule}»")
+
+
+def missing_required_keys(data: dict, age_missing: bool = None) -> list:
+    """Ключі критеріїв, яких бракує запису, у сталому порядку."""
     missing = []
-    if age_missing is None:
-        age_missing = data.get("age_from") is None or data.get("age_to") is None
-    if age_missing:
-        missing.append("вік")
-    if not data.get("deadline") and not data.get("event_start_date") \
-            and not data.get("event_end_date") and not data.get("results_date") \
-            and not data.get("recurrence") \
-            and data.get("opportunity_type") not in PAYMENT_TYPES:
-        missing.append("дата, період або періодичність")
-    if data.get("cost_type") not in PUBLISHABLE_COST_TYPES:
-        missing.append("вартість")
-    if data.get("opportunity_type") not in VALID_OPP_TYPES:
-        missing.append("тип")
-    # «Де» вважається відомим, якщо є формат, місто, країна або позначка
-    # міжнародної: будь-що з цього відповідає батькові, куди йти дитині.
-    if not (data.get("format") or data.get("cities") or data.get("countries")
-            or data.get("is_international")):
-        missing.append("формат або місце (онлайн / офлайн / за кордоном)")
+    for key in PUBLISH_CRITERIA["order"]:
+        crit = _REQUIRED[key]
+        if data.get("opportunity_type") in crit.get("except_types", ()):
+            continue
+        if key == "age" and age_missing is not None:
+            ok = not age_missing
+        else:
+            ok = _satisfied(crit, data)
+        if not ok:
+            missing.append(key)
     return missing
+
+
+def missing_required(data: dict, age_missing: bool = None) -> list:
+    """Чого бракує запису, щоб його можна було показати людині (підписи)."""
+    return [_REQUIRED[k]["label"] for k in missing_required_keys(data, age_missing)]
 
 
 # Адреси, які НЕ бувають посиланням на подачу, хоч модель їх туди і кладе:

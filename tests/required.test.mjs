@@ -4,7 +4,7 @@ import { missingRequired, AGE, DATE, COST, TYPE, PLACE } from '../lib/required.j
 
 // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед публікацією
 // (вимога Марії 11.09.2026). Ці тести стережуть саме межу «показуємо / не
-// показуємо», а не формулювання.
+// показуємо», а не формулювання. Визначення — lib/publish-criteria.json.
 
 const full = (over = {}) => ({
   age_from: 6, age_to: 12, deadline: '2026-10-01', cost_type: 'free',
