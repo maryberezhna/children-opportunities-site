@@ -52,6 +52,12 @@ class Plan(unittest.TestCase):
     def test_model_answer_still_english_changes_nothing(self):
         self.assertEqual(plan(WWOOF, {"title": "Volunteer on farms", "summary": "Still English."}, TODAY), {})
 
+    def test_html_entities_are_decoded(self):
+        row = {"title": "Scholastic Art & Writing Awards", "summary": "Конкурс мистецтва.", "admin_comment": None}
+        out = {"title": "Scholastic Art &amp; Writing Awards — конкурс мистецтва і літератури", "summary": ""}
+        self.assertEqual(plan(row, out, TODAY)["title"],
+                         "Scholastic Art & Writing Awards — конкурс мистецтва і літератури")
+
     def test_summary_is_capped(self):
         out = dict(self.OUT, summary="Опис " * 200)
         self.assertLessEqual(len(plan(WWOOF, out, TODAY)["summary"]), 400)

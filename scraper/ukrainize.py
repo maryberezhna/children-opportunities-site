@@ -30,6 +30,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY.
 from __future__ import annotations
 
 import argparse
+import html
 import logging
 import os
 import re
@@ -128,6 +129,9 @@ def plan(row: dict, out: dict, today: date) -> dict:
     Беремо лише те, що модель справді повернула українською, і лише замість
     того, що було не українською: українське поле перекладом не затираємо."""
     patch: dict = {}
+    # Модель інколи повертає HTML-сутності: «Scholastic Art &amp; Writing
+    # Awards» (сухий прогін 22.09.2026). У базі має бути звичайний «&».
+    out = {k: html.unescape(v) if isinstance(v, str) else v for k, v in out.items()}
     title = (out.get("title") or "").strip()
     if title and _UK_WORD.search(title) and not _UK_WORD.search(row.get("title") or ""):
         patch["title"] = title
@@ -169,7 +173,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--include-verified", action="store_true")
+    # Записи, переклад яких сухий прогін показав хибним, — пропустити:
+    # частини оригінальних назв через «|».
+    ap.add_argument("--skip", default=os.environ.get("UKRAINIZE_SKIP", ""))
     args = ap.parse_args()
+    skip = [s.strip().lower() for s in args.skip.split("|") if s.strip()]
 
     from db import get_client
     db = get_client()
@@ -185,6 +193,10 @@ def main() -> int:
     found = [r for r in rows if needs_ukrainian(r)]
     verified = [r for r in found if r.get("verified_at")]
     todo = found if args.include_verified else [r for r in found if not r.get("verified_at")]
+    skipped = [r for r in todo if any(s in (r.get("title") or "").lower() for s in skip)]
+    todo = [r for r in todo if r not in skipped]
+    for r in skipped:
+        logger.info("  ⏭ пропущено за --skip: %s — https://dityam.com.ua/o/%s", (r.get("title") or "")[:70], r["slug"])
     logger.info("Не українською: %d, з них схвалених людиною %d%s.%s\n", len(found), len(verified),
                 "" if args.include_verified else " (їх не чіпаю)",
                 "" if args.apply else " СУХИЙ ПРОГІН")

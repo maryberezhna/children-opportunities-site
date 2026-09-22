@@ -15,6 +15,10 @@ on:
         description: 'true = перекладати й записи, схвалені людиною'
         required: false
         default: 'false'
+      skip:
+        description: 'пропустити записи: частини назв через |'
+        required: false
+        default: ''
 
 jobs:
   ukrainize:
@@ -36,6 +40,7 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          UKRAINIZE_SKIP: ${{ github.event.inputs.skip }}
         run: >-
           python ukrainize.py
           ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
