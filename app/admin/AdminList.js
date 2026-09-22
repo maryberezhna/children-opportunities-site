@@ -59,15 +59,14 @@ function MiniCol({ label, item, accent }) {
 function Card({ o, mode, onAction, match }) {
   const [comment, setComment] = useState(o.admin_comment || '');
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState(null); // 'approved'|'skipped'|'verified'|'removed'|'commented'
+  const [done, setDone] = useState(null); // 'approved'|'skipped'|'verified'|'removed'
 
   async function act(action) {
     setBusy(true);
     const ok = await onAction(o.id, action, comment);
     setBusy(false);
     if (!ok) { alert('Не вдалося. Спробуй ще раз або перезайди.'); return; }
-    setDone(action === 'approve' ? 'approved' : action === 'skip' ? 'skipped'
-      : action === 'verify' ? 'verified' : action === 'remove' ? 'removed' : 'commented');
+    setDone({ approve: 'approved', skip: 'skipped', verify: 'verified', remove: 'removed' }[action]);
   }
 
   // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
@@ -150,7 +149,7 @@ function Card({ o, mode, onAction, match }) {
       {done ? (
         <div style={{ fontWeight: 600, color: gone || done === 'skipped' ? C.ink3 : C.green }}>
           {{ approved: '✅ Додано на сайт', skipped: '❌ Пропущено', verified: '✓ Перевірено',
-             removed: '🗑 Прибрано', commented: '💬 Коментар збережено' }[done]}
+             removed: '🗑 Прибрано' }[done]}
         </div>
       ) : (
         <>
@@ -174,7 +173,12 @@ function Card({ o, mode, onAction, match }) {
                 <Btn onClick={() => act('remove')} busy={busy} bg="#d92c2c" fg="#fff">🗑 Прибрати</Btn>
               </>
             )}
-            <Btn onClick={() => act('comment')} busy={busy || !comment.trim()} border>💬 Лише коментар</Btn>
+            {/* Редагування жило лише під назвою картки, і знайти його було
+                неможливо (22.09.2026). «Лише коментар» прибрано на прохання
+                Марії: коментар зберігається разом із будь-якою дією. */}
+            <a href={`/admin/edit/${o.id}`} style={{ ...btnStyle(false, { border: true }), textDecoration: 'none' }}>
+              ✏️ Редагувати
+            </a>
           </div>
         </>
       )}
@@ -182,15 +186,16 @@ function Card({ o, mode, onAction, match }) {
   );
 }
 
+const btnStyle = (busy, { bg, fg, border }) => ({
+  padding: '8px 15px', fontSize: 13.5, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
+  fontFamily: 'inherit', opacity: busy ? 0.55 : 1,
+  background: border ? '#fff' : bg, color: border ? C.ink2 : fg,
+  border: border ? `1px solid ${C.border2}` : 'none',
+});
+
 function Btn({ children, onClick, busy, bg, fg, border }) {
   return (
-    <button onClick={onClick} disabled={busy}
-      style={{
-        padding: '8px 15px', fontSize: 13.5, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
-        fontFamily: 'inherit', opacity: busy ? 0.55 : 1,
-        background: border ? '#fff' : bg, color: border ? C.ink2 : fg,
-        border: border ? `1px solid ${C.border2}` : 'none',
-      }}>
+    <button onClick={onClick} disabled={busy} style={btnStyle(busy, { bg, fg, border })}>
       {children}
     </button>
   );
