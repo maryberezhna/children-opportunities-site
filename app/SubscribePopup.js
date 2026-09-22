@@ -6,7 +6,8 @@ import { trackConversion, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 
 // localStorage: користувач долучився до каналу — не показуємо більше.
-const JOINED_KEY = 'dityam_subscribed';
+// Той самий прапорець читає TelegramCard у списках.
+export const JOINED_KEY = 'dityam_subscribed';
 
 // sessionStorage: ЗАКРИВ ХРЕСТИКОМ. Автоприховування сюди навмисно не пише.
 // Раніше писало — і «не хочу» та «не помітив» були злиті в один стан: підказка
@@ -22,12 +23,18 @@ const SESSION_CLOSED_KEY = 'dityam_popup_closed_session';
 const SESSION_SHOWS_KEY = 'dityam_popup_shows';
 const SESSION_HIDDEN_AT_KEY = 'dityam_popup_hidden_at';
 
-const TIME_TRIGGER_MS = 4000;
+// 4-секундного тригера більше немає (22.09.2026). За 23.08–22.09 із 3 049
+// показів 70% зникли самі, а закрили хрестиком лише 1,4%: на четвертій секунді
+// людина ще нічого не знайшла, і показ згорав. Перший дотик тепер — Telegram-
+// картка в самому списку (TelegramCard.js), а підказка лишається для моментів,
+// коли вже є інтерес: 15 карток, повернення від організатора, кнопка.
 const CARDS_TRIGGER = 15;
 
 // Скільки висить, перш ніж сховатись. Смуга внизу губилась серед карток —
 // підказка біля кнопки помітна, але саме тому не має стояти вічно.
-const AUTO_HIDE_MS = 10000;
+// 10 секунд було замало: 70% показів гасли непоміченими. Курсор на підказці
+// таймер зупиняє, тож 20 секунд не заважають тому, хто вже тягнеться до кнопки.
+const AUTO_HIDE_MS = 20000;
 
 // Пауза після автоприховування. Не поширюється на момент цінності: там людина
 // щойно зробила дію, і чекати 45 секунд означало б втратити той єдиний момент,
@@ -160,15 +167,7 @@ export default function SubscribePopup() {
     hide('joined');
   };
 
-  // ТРИГЕР 1: 4 секунди — м'який перший дотик. Раніше це був єдиний показ за
-  // сесію, тепер лише перший з кількох, тож рання поява нічого не «спалює».
-  useEffect(() => {
-    if (isSuppressed()) return undefined;
-    const timer = setTimeout(() => open('timer_4s'), TIME_TRIGGER_MS);
-    return () => clearTimeout(timer);
-  }, [open, isSuppressed]);
-
-  // ТРИГЕР 2: 15 переглянутих карток.
+  // ТРИГЕР 1: 15 переглянутих карток.
   // Слухач не вішаємо взагалі, якщо підказка вже не потрібна: checkScroll на
   // кожні 250 мс робить querySelectorAll('.card') і getBoundingClientRect по
   // кожній картці — примусовий перерахунок layout на найгарячішому шляху.
@@ -210,7 +209,7 @@ export default function SubscribePopup() {
     };
   }, [open, isSuppressed]);
 
-  // ТРИГЕР 3: момент цінності — перехід до організатора. Паузу між показами
+  // ТРИГЕР 2: момент цінності — перехід до організатора. Паузу між показами
   // тут свідомо ігноруємо: це найсильніший момент, і другого такого не буде.
   useEffect(() => {
     const showValue = () => open('opportunity_click', 'value', { ignoreCooldown: true });
@@ -248,7 +247,7 @@ export default function SubscribePopup() {
     };
   }, [open]);
 
-  // ТРИГЕР 4: кнопки «Підписатись» у хедері / нижній панелі.
+  // ТРИГЕР 3: кнопки «Підписатись» у хедері / нижній панелі.
   useEffect(() => {
     const handleOpen = () => {
       if (readFlag('localStorage', JOINED_KEY)) {

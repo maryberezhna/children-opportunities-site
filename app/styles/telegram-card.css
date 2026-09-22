@@ -1,0 +1,76 @@
+/* Картка Telegram-каналу всередині списку карток (TelegramCard.js).
+   Біла, як сусідні картки, щоб читатись як частина списку; на всю ширину
+   ряду, щоб не лишати порожньої клітинки в сітці. Кнопка темна, а не
+   блакитна: білий текст на #229ED9 не проходить WCAG AA. */
+.tg-card {
+  grid-column: 1 / -1;
+  background: #ffffff;
+  border: 1px solid #e8e3d6;
+  border-radius: 16px;
+  padding: 22px 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.tg-card-copy {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tg-card-badge {
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: #e6f4fb;
+  color: #0b6f9e;
+}
+.tg-card-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: #1a1a1a;
+  text-wrap: balance;
+}
+.tg-card-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #4a4a4a;
+}
+.tg-card-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 0 22px;
+  border-radius: 12px;
+  background: #1a1a1a;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 150ms;
+}
+/* Подвійний селектор: у підбірках загальне правило для посилань фарбує
+   текст у помаранчевий і перебиває одиночний клас. */
+.tg-card .tg-card-btn { color: #ffffff; }
+.tg-card .tg-card-btn:hover { background: #333333; color: #ffffff; }
+.tg-card-btn:focus-visible { outline: 2px solid #e85d24; outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  .tg-card { padding: 18px; gap: 14px; }
+  .tg-card-btn { width: 100%; }
+}
+
+/* Мобільна головна: картки там — рядки без рамок, тож Telegram-картка
+   лишається білим блоком і дістає повітря згори й знизу. */
+.v2-home .v2-list .tg-card { margin: 12px 0; }

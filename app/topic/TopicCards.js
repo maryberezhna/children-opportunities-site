@@ -6,6 +6,8 @@ import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
+import { inlineCardAfter } from '@/lib/inline-card';
+import TelegramCard from '../TelegramCard';
 
 /**
  * Картки підбірки за макетом design_handoff_dityam_pidbirka (README, п. 4–5):
@@ -144,9 +146,14 @@ export default function TopicCards({
     );
   };
 
+  // Telegram-картка після восьмої: Dityam+ стоїть після четвертої, і два
+  // промоблоки підряд перетворили б список на рекламу.
+  const tgAfter = inlineCardAfter(visible.length, { after: 8 });
+
   const cells = [];
   visible.forEach((item, i) => {
     cells.push(card(item));
+    if (i === tgAfter) cells.push(<TelegramCard key="tg-card" lang={lang} place="topic" />);
     if (i === 3 && promo) {
       cells.push(
         <aside key="promo" className="tp-promo" aria-label="Dityam+">
