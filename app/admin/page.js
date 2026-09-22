@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
+import { mergeDraftDups } from '@/lib/adminDups';
 import AdminList from './AdminList';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
@@ -16,6 +17,11 @@ export const metadata = {
 // показу, а щоб порахувати обовʼязковий мінімум прямо в черзі: без них
 // картка не знала б, що запису бракує «де» або дати (11.09.2026).
 const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international';
+// Дублі для кандидатів шукає система при кожному відкритті черги (Марія,
+// 22.09.2026: «це не має перевіряти людина»). Поріг тригамної схожості назв
+// той самий, що в судді дублів: Jeugdfonds у черзі й на сайті — 0.35, а це
+// та сама програма. Хибний збіг на плашці не страшний: вона каже «порівняй».
+const DRAFT_DUP_SIM = 0.35;
 const DRAFT_FIELDS =
   `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at, ${REQUIRED_EXTRA}`;
 const ACTIVE_FIELDS =
@@ -45,7 +51,7 @@ export default async function AdminPage() {
   const notes = {};
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    const [d, a] = await Promise.all([
+    const [d, a, dd] = await Promise.all([
       supabase.from('opportunities').select(DRAFT_FIELDS)
         .eq('status', 'draft').order('created_at', { ascending: false }).limit(300),
       supabase.from('opportunities').select(ACTIVE_FIELDS)
@@ -54,8 +60,10 @@ export default async function AdminPage() {
         .order('verified_at', { ascending: true, nullsFirst: true })
         .order('created_at', { ascending: false })
         .limit(600),
+      // Збій цього запиту не валить чергу: без нього лишаються плашки агента.
+      supabase.rpc('find_draft_dups', { sim_threshold: DRAFT_DUP_SIM }),
     ]);
-    drafts = d.data || [];
+    drafts = mergeDraftDups(d.data || [], dd.data || []);
     actives = a.data || [];
 
     // Fetch the matched opportunities so the UI can show both side by side.
