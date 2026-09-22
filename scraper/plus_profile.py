@@ -33,9 +33,18 @@ FORMAT_THEMES = {
     "support": (), "family_aid": (), "volunteering": (),
 }
 
+# PLACE_ONLINE і PLACE_ABROAD — колишні кнопки «💻 Онлайн» і «✈️ За кордоном».
+# З 22.09.2026 кнопок в анкеті немає (онлайн і закордон приходять кожному),
+# але в старих профілях ці значення збережені й мають лишатись нешкідливими.
 PLACE_ONLINE = "online"
 PLACE_ABROAD = "abroad"
 PLACE_OTHER = "__other"
+PLACE_PSEUDO = (PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER)
+
+
+def chosen_cities(places) -> list:
+    """Міста з профілю — без службових значень (online/abroad/__other)."""
+    return [p for p in (places or []) if p not in PLACE_PSEUDO]
 
 EMPTY_CHILD = {"position": 1, "age_bands": [], "likes": [], "formats": [], "needs": []}
 
@@ -59,25 +68,31 @@ def formats_of(o: dict, themes: set) -> set:
 
 
 def place_ok(o: dict, places) -> bool:
-    """Порожній вибір — будь-де. «Вся Україна» підходить кожному, хто шукає
-    в Україні. Запис без позначки місця при непорожньому виборі не підходить:
-    вгадувати, де він, не будемо."""
+    """Онлайн, всеукраїнське й закордонне підходить кожному завжди. Місто
+    лише додає офлайн-записи, де це місто є в cities. Порожній вибір — будь-де.
+    Запис без жодної позначки місця при обраному місті не підходить:
+    вгадувати, де він, не будемо.
+
+    Рішення Марії 22.09.2026: «стоп, ми не гарантуємо, що будуть можливості
+    саме з міста» → «тоді нам треба видалити [обмеження], щоб ми показували
+    все по Україні, онлайн і закордоном». До того онлайн і закордон треба було
+    обирати кнопками, і родина з Ніжина, що їх не натиснула, лишалась ні з чим.
+    Старі значення online/abroad/__other у профілі — не місто: нічого не
+    додають і нічого не забирають."""
     if not places:
         return True
-    want = set(places)
     cities = o.get("cities") or []
-    if PLACE_ONLINE in want and (o.get("format") in ("online", "hybrid") or "Онлайн" in cities):
+    if o.get("format") in ("online", "hybrid") or "Онлайн" in cities:
         return True
-    if PLACE_ABROAD in want and (
+    if "Вся Україна" in cities:
+        return True
+    if (
         o.get("is_international")
         or any(c and c != "ua" for c in (o.get("countries") or []))
         or "Міжнародні" in cities
     ):
         return True
-    real = [p for p in places if p not in (PLACE_ONLINE, PLACE_ABROAD, PLACE_OTHER)]
-    if (real or PLACE_OTHER in want) and "Вся Україна" in cities:
-        return True
-    return any(c in cities for c in real)
+    return any(c in cities for c in chosen_cities(places))
 
 
 def child_match(child: dict, o: dict, themes: set):

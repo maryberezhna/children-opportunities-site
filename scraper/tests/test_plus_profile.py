@@ -31,19 +31,38 @@ class Place(unittest.TestCase):
     def test_empty_choice_means_anywhere(self):
         self.assertTrue(pp.place_ok(opp(), []))
 
-    def test_city_online_abroad_and_all_ukraine(self):
-        self.assertFalse(pp.place_ok(opp(), ["Київ"]))
+    # Рішення Марії 22.09.2026: «стоп, ми не гарантуємо, що будуть можливості
+    # саме з міста» → «показувати все по Україні, онлайн і закордоном».
+    def test_online_all_ukraine_and_abroad_come_to_everyone(self):
+        for places in (["Київ"], ["__other"], ["Ніжин", "Коломия"]):
+            self.assertTrue(pp.place_ok(opp(format="online", cities=[]), places))
+            self.assertTrue(pp.place_ok(opp(format="hybrid"), places))
+            self.assertTrue(pp.place_ok(opp(cities=["Онлайн"]), places))
+            self.assertTrue(pp.place_ok(opp(cities=["Вся Україна"]), places))
+            self.assertTrue(pp.place_ok(opp(countries=["pl"], cities=[]), places))
+            self.assertTrue(pp.place_ok(opp(is_international=True, cities=[]), places))
+            self.assertTrue(pp.place_ok(opp(cities=["Міжнародні"]), places))
+
+    def test_city_only_adds_offline_nearby(self):
         self.assertTrue(pp.place_ok(opp(), ["Львів"]))
-        self.assertTrue(pp.place_ok(opp(cities=["Вся Україна"]), ["Київ"]))
-        self.assertTrue(pp.place_ok(opp(cities=["Вся Україна"]), ["__other"]))
+        self.assertTrue(pp.place_ok(opp(), ["Київ", "Львів"]))
+        self.assertFalse(pp.place_ok(opp(), ["Київ"]))
+        self.assertFalse(pp.place_ok(opp(), ["__other"]))
+
+    # До 22.09.2026 «Онлайн» і «За кордоном» були кнопками; у збережених
+    # профілях ці значення лишились. Вони не місто: нічого не додають і не забирають.
+    def test_legacy_online_abroad_values_are_harmless(self):
+        self.assertFalse(pp.place_ok(opp(), ["online", "abroad"]))
+        self.assertTrue(pp.place_ok(opp(), ["online", "Львів"]))
         self.assertTrue(pp.place_ok(opp(format="online", cities=[]), ["online"]))
-        self.assertTrue(pp.place_ok(opp(format="hybrid"), ["online"]))
-        self.assertTrue(pp.place_ok(opp(countries=["pl"], cities=[]), ["abroad"]))
-        self.assertTrue(pp.place_ok(opp(is_international=True, cities=[]), ["abroad"]))
-        self.assertFalse(pp.place_ok(opp(cities=["Вся Україна"]), ["abroad"]))
 
     def test_unknown_place_is_not_guessed(self):
         self.assertFalse(pp.place_ok(opp(format=None, cities=[], countries=None), ["Київ"]))
+        self.assertFalse(pp.place_ok(opp(format="offline", cities=[], countries=["ua"]), ["Київ"]))
+
+    def test_chosen_cities_drop_pseudo_values(self):
+        self.assertEqual(pp.chosen_cities(["Ніжин", "online", "abroad", "__other"]), ["Ніжин"])
+        self.assertEqual(pp.chosen_cities(None), [])
 
 
 class Child(unittest.TestCase):
@@ -94,7 +113,10 @@ class Family(unittest.TestCase):
     def test_cost_and_place_are_family_wide(self):
         k = kid()
         self.assertEqual(pp.match_family({"cost_pref": "free_only"}, [k], [opp(cost_type="paid_affordable")]), [])
+        # Обрано лише місто: офлайн з іншого міста — ні, онлайн — так (22.09.2026).
         self.assertEqual(pp.match_family({"cost_pref": "any", "places": ["Київ"]}, [k], [opp()]), [])
+        self.assertEqual(len(pp.match_family({"cost_pref": "any", "places": ["Київ"]}, [k],
+                                             [opp(format="online", cities=[])])), 1)
 
     def test_slots_are_shared_in_turn(self):
         a, b = kid(1, age_bands=["7-10"]), kid(2, age_bands=["15-18"])

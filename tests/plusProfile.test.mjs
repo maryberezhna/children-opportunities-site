@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  placeOk, childMatch, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
+  placeOk, placeSummary, childMatch, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
   FORMAT_TYPES, FORMAT_OPTIONS, parseCustomCities,
 } from '../lib/plusProfile.js';
 import { TYPE_LABELS } from '../lib/labels.js';
@@ -19,21 +19,46 @@ test('місце: порожній вибір підходить будь-де',
   assert.equal(placeOk(opp(), []), true);
 });
 
-test('місце: місто, онлайн, за кордоном і «Вся Україна»', () => {
-  assert.equal(placeOk(opp(), ['Київ']), false);
+// Рішення Марії 22.09.2026: «стоп, ми не гарантуємо, що будуть можливості
+// саме з міста» → «показувати все по Україні, онлайн і закордоном».
+test('місце: онлайн, «Вся Україна» й закордон приходять кожному, хай яке місто обрано', () => {
+  for (const places of [['Київ'], ['__other'], ['Ніжин', 'Коломия']]) {
+    assert.equal(placeOk(opp({ format: 'online', cities: [] }), places), true);
+    assert.equal(placeOk(opp({ format: 'hybrid' }), places), true);
+    assert.equal(placeOk(opp({ cities: ['Онлайн'] }), places), true);
+    assert.equal(placeOk(opp({ cities: ['Вся Україна'] }), places), true);
+    assert.equal(placeOk(opp({ countries: ['pl'], cities: [] }), places), true);
+    assert.equal(placeOk(opp({ is_international: true, cities: [] }), places), true);
+    assert.equal(placeOk(opp({ cities: ['Міжнародні'] }), places), true);
+  }
+});
+
+test('місце: місто лише додає офлайн поруч; офлайн з іншого міста — ні', () => {
   assert.equal(placeOk(opp(), ['Львів']), true);
-  assert.equal(placeOk(opp({ cities: ['Вся Україна'] }), ['Київ']), true);
-  assert.equal(placeOk(opp({ cities: ['Вся Україна'] }), ['__other']), true);
+  assert.equal(placeOk(opp(), ['Київ', 'Львів']), true);
+  assert.equal(placeOk(opp(), ['Київ']), false);
+  assert.equal(placeOk(opp(), ['__other']), false);
+});
+
+// До 22.09.2026 «💻 Онлайн» і «✈️ За кордоном» були кнопками; у збережених
+// профілях ці значення лишились. Вони не місто: нічого не додають і не забирають.
+test('місце: старі значення online/abroad у профілі нешкідливі', () => {
+  assert.equal(placeOk(opp(), ['online', 'abroad']), false);
+  assert.equal(placeOk(opp(), ['online', 'Львів']), true);
   assert.equal(placeOk(opp({ format: 'online', cities: [] }), ['online']), true);
-  assert.equal(placeOk(opp({ format: 'hybrid' }), ['online']), true);
-  assert.equal(placeOk(opp({ countries: ['pl'], cities: [] }), ['abroad']), true);
-  assert.equal(placeOk(opp({ is_international: true, cities: [] }), ['abroad']), true);
-  // «Вся Україна» не означає «за кордоном»
-  assert.equal(placeOk(opp({ cities: ['Вся Україна'] }), ['abroad']), false);
 });
 
 test('місце: запис без позначки місця не вгадуємо', () => {
   assert.equal(placeOk(opp({ format: null, cities: [], countries: null }), ['Київ']), false);
+  assert.equal(placeOk(opp({ format: 'offline', cities: [], countries: ['ua'] }), ['Київ']), false);
+});
+
+test('підсумок «Де»: міста або «будь-де», старі online/abroad не показуємо', () => {
+  assert.equal(placeSummary([]), 'будь-де');
+  assert.equal(placeSummary(null), 'будь-де');
+  assert.equal(placeSummary(['online', 'abroad']), 'будь-де');
+  assert.equal(placeSummary(['Ніжин', 'online', 'abroad', '__other']), 'Ніжин + усе онлайн, всеукраїнське й закордонне');
+  assert.equal(placeSummary(['__other', 'online']), 'усе онлайн, всеукраїнське й закордонне, без міста');
 });
 
 test('формат: за типом запису і за темою як запасний шлях', () => {
@@ -112,7 +137,9 @@ test('родина: вартість і місце спільні для всі�
   const kid = { position: 1, age_bands: [], likes: [], formats: [], needs: [] };
   const paid = opp({ cost_type: 'paid_affordable' });
   assert.equal(matchFamily({ cost_pref: 'free_only', places: [] }, [kid], [paid], () => none).length, 0);
+  // Обрано лише місто: офлайн з іншого міста — ні, онлайн — так (22.09.2026).
   assert.equal(matchFamily({ cost_pref: 'any', places: ['Київ'] }, [kid], [opp()], () => none).length, 0);
+  assert.equal(matchFamily({ cost_pref: 'any', places: ['Київ'] }, [kid], [opp({ format: 'online', cities: [] })], () => none).length, 1);
 });
 
 test('добірка ділиться по черзі між дітьми', () => {
