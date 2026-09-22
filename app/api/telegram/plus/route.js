@@ -119,6 +119,8 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     // Емодзі лишається ЛИШЕ на кнопці: там Telegram малює його як треба,
     // а в тексті повідомлення те саме 🎟 приїхало як \uD83C\uDF9F (Марія, 19.09.2026).
     if (!promoOk) rows.push([{ text: '🎟 У мене є промокод', callback_data: 'promo:ask' }]);
+    // Оплата — останній крок, але не глухий кут: анкету можна змінити й звідси.
+    rows.push([{ text: '✏️ Змінити анкету', callback_data: 'review:edit' }]);
     // Підказка в тексті, а не лише кнопка: людина з кодом у руках мусить
     // одразу бачити, що його є де ввести (Марія, 19.09.2026).
     const promoHint = '\n\n<b>Є промокод?</b> Натисніть «У мене є промокод» — і введіть його у віконечку, '
@@ -137,6 +139,9 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
 // Команди підписника в меню «/» (їхній перелік реєструє
 // scripts/set-bot-commands.mjs — тримати списки однаковими).
 const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile', 'freq']);
+// Анкету заповнюють до оплати, тож ці три працюють і без підписки — після
+// згоди на обробку даних (анкета збирає й чутливі відповіді).
+const PRE_PAY_COMMANDS = new Set(['child', 'form', 'profile']);
 
 const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
   + '/start — головне меню\n'
@@ -224,8 +229,25 @@ async function continueStart(bot, supabase, sub, chatId, handle) {
   const profiled = await hasProfile(supabase, sub);
   if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
   else if (sub.status === 'active') await sendMainMenu(bot, chatId, sub);  // є профіль і підписка → меню
-  else if (!sub.phone) await askPhone(bot, supabase, sub, chatId);    // анкета є → телефон
-  else await sendPayOffer(bot, sub, chatId, supabase);                // телефон є → оплата
+  else await sendProfileReview(bot, supabase, sub, chatId);           // анкета є → показати її, потім оплата
+}
+
+// Анкету вже заповнювали, а підписки немає: людина повертається після паузи,
+// не доплатила чи просто перевіряє. До 21.09.2026 /start такій людині одразу
+// показував оплату, і ні побачити, ні змінити анкету про дитину було ніяк —
+// меню й /form відкриваються лише підписникам. Марія: «у флоу нема можливості
+// заповнити форму про дитину, тільки підписка — вона має бути в кінці».
+// Тепер спершу анкета, а оплата — останнім кроком, як і в новенького.
+async function sendProfileReview(bot, supabase, sub, chatId) {
+  const kids = await loadKids(supabase, sub);
+  const text = ['📝 <b>Ваша анкета</b>', '', ...profileLines(sub, kids), '', 'Все правильно?'].join('\n');
+  await bot.sendMessage(chatId, text, {
+    inline_keyboard: [
+      [{ text: '✅ Так, далі до оплати', callback_data: 'review:ok' }],
+      [{ text: '✏️ Заповнити анкету заново', callback_data: 'review:edit' }],
+      [{ text: '➕ Додати дитину', callback_data: 'review:add' }],
+    ],
+  });
 }
 
 // Після анкети: підписника повертаємо в меню, решту — до телефону й оплати.
@@ -241,8 +263,10 @@ const labels =(options, values) => (values || [])
   .map((v) => (options.find((o) => o[0] === v) || [null, v])[1]).join(', ') || '—';
 const PLACE_LABELS = [[PLACE_ONLINE, 'онлайн'], [PLACE_ABROAD, 'за кордоном'], [PLACE_OTHER, 'мого міста немає']];
 
-function subDetails(sub, kids) {
-  const lines = ['⭐ <b>Ваша підписка Dityam+</b>', 'Статус: активна ✅', ''];
+// Що бот знає про дітей і родину. Одне місце для «Деталі підписки» й для
+// перевірки анкети перед оплатою — щоб вони не розійшлись.
+function profileLines(sub, kids) {
+  const lines = [];
   kids.forEach((k, i) => {
     lines.push(`<b>${kids.length > 1 ? esc(childLabel(k, kids.length)) : 'Дитина'}</b>`);
     lines.push(`Вік: ${esc(labels(AGE_OPTIONS, k.age_bands))}`);
@@ -255,8 +279,12 @@ function subDetails(sub, kids) {
   lines.push(`Вартість: ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які'}`);
   // Старе instant (варіант прибрано 21.09.2026) і порожнє — це «щодня».
   lines.push(`Частота: ${esc(labels(FLOW_FREQ, [freqOf(sub.digest_freq)]))}`);
-  lines.push('', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.');
-  return lines.join('\n');
+  return lines;
+}
+
+function subDetails(sub, kids) {
+  return ['⭐ <b>Ваша підписка Dityam+</b>', 'Статус: активна ✅', '', ...profileLines(sub, kids),
+    '', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.'].join('\n');
 }
 
 // Список очікування Dityam+ — у цьому боті, а не в основному (15.09.2026):
@@ -448,8 +476,14 @@ export async function POST(request) {
     const cmd = text.match(/^\/([a-z]+)\b/i)?.[1]?.toLowerCase();
     if (cmd && SUB_COMMANDS.has(cmd)) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
-      if (sub?.status !== 'active') {
+      const prePay = sub && sub.status !== 'active' && sub.consent_at && PRE_PAY_COMMANDS.has(cmd);
+      if (sub?.status !== 'active' && !prePay) {
         await bot.sendMessage(chatId, 'Це для підписників Dityam+. Оформити підписку — /start 🧡');
+        return new Response('ok');
+      }
+      if (prePay && cmd === 'profile') {
+        if (await hasProfile(supabase, sub)) await sendProfileReview(bot, supabase, sub, chatId);
+        else await beginFlow(bot, supabase, chatId, handle);
         return new Response('ok');
       }
       if (cmd === 'new') await sendLatest(bot, supabase, sub, chatId);
@@ -536,6 +570,21 @@ export async function POST(request) {
       .update({ channel: 'telegram', flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
     await bot.editMessage(chatId, cbq.message.message_id, '📬 Можливості й нагадування надсилаємо сюди, у Telegram ✅');
     await afterProfile(bot, supabase, { ...sub, channel: 'telegram' }, chatId);
+    return new Response('ok');
+  }
+
+  // Перевірка анкети перед оплатою (sendProfileReview) і «✏️ Змінити анкету»
+  // під пропозицією оплати. Підписки ще немає — статус не перевіряємо; після
+  // зміни анкети flow: нижче сам поведе до телефону й оплати (afterProfile).
+  const review = (cbq.data || '').match(/^review:(ok|edit|add)$/);
+  if (review) {
+    const chatId = String(cbq.message.chat.id);
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    await bot.answerCallback(cbq.id);
+    if (!sub?.consent_at) { await bot.sendMessage(chatId, 'Почніть з /start'); return new Response('ok'); }
+    if (review[1] === 'ok') await afterProfile(bot, supabase, sub, chatId);
+    else if (review[1] === 'edit') await beginFlow(bot, supabase, chatId, null);
+    else await beginAddChild(bot, supabase, chatId);
     return new Response('ok');
   }
 
