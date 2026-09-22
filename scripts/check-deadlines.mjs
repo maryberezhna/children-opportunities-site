@@ -466,7 +466,9 @@ function buildStoryPost(r, link = null) {
   if (typeLabel) lines.push(`📚 Формат: ${typeLabel}`);
   const place = placeText(r);
   if (place) lines.push(`📍 Де: ${escapeHtml(place)}`);
-  if (r.cost_type === 'free') lines.push('✅ Скільки коштує: нічого');
+  // «Скільки коштує: нічого» стояло в 12 постах каналу до 22.09.2026 — Марія:
+  // «як можна писати нічого… пиши безкоштовно». Той самий підпис, що в дайджестах.
+  if (r.cost_type === 'free') lines.push(`✅ ${costLabel('free')}`);
 
   // Без дати рядка немає. «Дедлайну немає — набір триває» тут писати не можна:
   // часто це означає «набір ще не оголошено» — як у «Володаря стихій» 15.09.2026,
