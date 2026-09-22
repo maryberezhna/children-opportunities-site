@@ -12,7 +12,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "scrapers"))
 
-from scrapers.eurodesk import parse_open, section_html  # noqa: E402
+from scrapers.eurodesk import parse_open, programme_url, section_html  # noqa: E402
 
 CARD = '''
 <div data-role="card" data-color="blue">
@@ -46,11 +46,26 @@ class ParseOpen(unittest.TestCase):
         self.assertEqual(len(items), 1)          # зелена картка — стажування, 18+
         it = items[0]
         self.assertEqual(it["raw_title"], "Youth Start-Up Challenge")
-        self.assertEqual(it["source_url"], "https://programmes.eurodesk.eu/20729-eu")
+        self.assertEqual(it["source_url"], "https://programmes.eurodesk.eu/search/programme/20729/eu")
         self.assertIn("Дедлайн подачі: 20/09/2026", it["raw_text"])
 
     def test_empty_html(self):
         self.assertEqual(parse_open(""), [])
+
+
+class ProgrammeUrl(unittest.TestCase):
+    """{BASE}/23225-eu віддає не програму, а весь пошук з пʼятьмастами
+    картками (22.09.2026). Картку відкриває лише /search/programme/…"""
+
+    def test_programme_page(self):
+        self.assertEqual(programme_url("23225-eu"),
+                         "https://programmes.eurodesk.eu/search/programme/23225/eu")
+        self.assertEqual(programme_url("23587-ch"),
+                         "https://programmes.eurodesk.eu/search/programme/23587/ch")
+
+    def test_garbage_is_loud(self):
+        with self.assertRaises(ValueError):
+            programme_url("23225")
 
 
 if __name__ == "__main__":
