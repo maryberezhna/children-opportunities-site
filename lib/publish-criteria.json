@@ -1,58 +1,162 @@
 {
   "version": "2026-09-22",
   "about": "Єдине визначення критеріїв публікації. Читають scraper/normalizer.py і lib/required.js; кожен ключ у «required» — одне обовʼязкове поле, «checks» — три перевірки, «colors» — світлофор. Змінювати тільки тут; tests/fixtures/publish-criteria-cases.json стереже, що Python і JS читають це однаково.",
-  "order": ["age", "date", "cost", "type", "place"],
+  "order": [
+    "age",
+    "date",
+    "cost",
+    "type",
+    "place"
+  ],
   "required": {
     "age": {
       "label": "вік",
-      "fields": ["age_from", "age_to"],
+      "fields": [
+        "age_from",
+        "age_to"
+      ],
       "rule": "all",
       "why": "Батько має зрозуміти, чи це для його дитини. 0–18 «технічно» — не відповідь."
     },
     "date": {
       "label": "дата, період або періодичність",
-      "fields": ["deadline", "event_start_date", "event_end_date", "results_date", "recurrence"],
+      "fields": [
+        "deadline",
+        "event_start_date",
+        "event_end_date",
+        "results_date",
+        "recurrence"
+      ],
       "rule": "any",
-      "except_types": ["allowance", "support_payment"],
+      "except_types": [
+        "allowance",
+        "support_payment"
+      ],
       "why": "Без дати запис не закриється сам. Виплатам дата не обовʼязкова (рішення 14.09.2026): громади платять роками, а строку подання на сторінці ради часто немає."
     },
     "cost": {
       "label": "вартість",
-      "fields": ["cost_type"],
+      "fields": [
+        "cost_type"
+      ],
       "rule": "in",
-      "allowed": ["free", "paid_affordable", "paid_premium"],
+      "allowed": [
+        "free",
+        "paid_affordable",
+        "paid_premium"
+      ],
       "why": "На сайті лише «безкоштовно» або «платно» (рішення 13.09.2026). Проміжні значення база приймає, але не публікує."
     },
     "type": {
       "label": "тип",
-      "fields": ["opportunity_type"],
+      "fields": [
+        "opportunity_type"
+      ],
       "rule": "in",
       "allowed": [
-        "course", "workshop", "summer_school", "mentorship", "club", "camp",
-        "study_program", "olympiad", "competition", "hackathon", "sport_tournament",
-        "festival", "award", "exchange", "excursion", "residency", "scholarship",
-        "grant", "allowance", "support_payment", "internship", "volunteer",
-        "conference", "medical_aid", "psychology", "rehabilitation", "humanitarian",
-        "legal_aid", "shelter", "educational_material"
+        "course",
+        "workshop",
+        "summer_school",
+        "mentorship",
+        "club",
+        "camp",
+        "study_program",
+        "olympiad",
+        "competition",
+        "hackathon",
+        "sport_tournament",
+        "festival",
+        "award",
+        "exchange",
+        "excursion",
+        "residency",
+        "scholarship",
+        "grant",
+        "allowance",
+        "support_payment",
+        "internship",
+        "volunteer",
+        "conference",
+        "medical_aid",
+        "psychology",
+        "rehabilitation",
+        "humanitarian",
+        "legal_aid",
+        "shelter",
+        "educational_material"
       ],
       "why": "Тип поза словником раніше мовчки ставав «course»."
     },
     "place": {
       "label": "формат або місце (онлайн / офлайн / за кордоном)",
-      "fields": ["format", "cities", "countries", "is_international"],
+      "fields": [
+        "format",
+        "cities",
+        "countries",
+        "is_international"
+      ],
       "rule": "any",
       "why": "Будь-що з цього відповідає батькові, куди йти дитині."
     }
   },
-  "cost_types_db": ["free", "partially_free", "paid_affordable", "paid_premium", "subsidized"],
+  "cost_types_db": [
+    "free",
+    "partially_free",
+    "paid_affordable",
+    "paid_premium",
+    "subsidized"
+  ],
   "checks": {
-    "actual": { "label": "актуальна", "how": "дати попереду або набір відкритий; «завершено» лише з дослівною цитатою" },
-    "link": { "label": "посилання відкривається", "field": "link_status", "ok": ["ok"] },
-    "ukrainian": { "label": "українською", "how": "назва й опис українською; назву програми можна лишити" }
+    "actual": {
+      "label": "актуальна",
+      "how": "дати попереду або набір відкритий; «завершено» лише з дослівною цитатою"
+    },
+    "link": {
+      "label": "посилання відкривається",
+      "field": "link_status",
+      "ok": [
+        "ok"
+      ]
+    },
+    "ukrainian": {
+      "label": "українською",
+      "how": "назва й опис українською; назву програми можна лишити"
+    }
   },
   "colors": {
     "green": "усі пʼять полів підтверджені цитатою зі сторінки і три перевірки пройдені — публікується сама",
     "yellow": "майже все є, але щось не знайдено або не підтверджено — до людини з переліком, чого бракує",
     "red": "лише слово, або стала неактуальною — не в пошуку, причина записана, машина перевіряє раз на квартал"
+  },
+  "risk": {
+    "about": "Чому запис потрапляє до людини, у порядку ваги (Марія 22.09.2026: «черга людини за ризиком, не за сумнівом машини», не більше 15–20 карток на день). Читають lib/queue-risk.js і scraper/auto_review.py.",
+    "order": [
+      "sensitive",
+      "conflict",
+      "threshold",
+      "rare"
+    ],
+    "sensitive_types": [
+      "medical_aid",
+      "psychology",
+      "rehabilitation",
+      "humanitarian",
+      "allowance"
+    ],
+    "sensitive_needs": [
+      "idp",
+      "disability",
+      "orphan",
+      "veteran_family",
+      "oncology",
+      "low_income"
+    ],
+    "labels": {
+      "sensitive": "вразлива тема",
+      "conflict": "суперечність у записі",
+      "threshold": "межа «для дітей»",
+      "rare": "рідкісне міжнародне"
+    },
+    "daily_cap": 20
   }
 }

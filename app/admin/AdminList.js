@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 // Той самий перелік, що й у конвеєрі: модератор бачить у черзі рівно те
 // формулювання, яким нормалізатор позначив запис.
 import { missingRequired, missingProof, CRITERIA } from '@/lib/required';
+import { splitQueue, DAILY_CAP } from '@/lib/queue-risk';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
 import ModerationRules from './ModerationRules';
@@ -267,7 +268,7 @@ function Btn({ children, onClick, busy, bg, fg, border }) {
 // Вкладки — кроки одного шляху, у тому порядку, у якому ним іде запис
 // (Марія, 22.09.2026). «Неповні» стоять окремо: це не крок, а підмножина
 // того, що вже на сайті.
-const TABS = ['raw', 'drafts', 'active', 'incomplete'];
+const TABS = ['raw', 'drafts', 'waiting', 'active', 'incomplete'];
 
 export default function AdminList({
   drafts, actives, raw = [], matches = {}, notes = {}, initialTab, children,
@@ -299,6 +300,12 @@ export default function AdminList({
 
   const flaggedCount = useMemo(() => actives.filter((o) => o.dup_of).length, [actives]);
 
+  // Черга людини — за ризиком, а не за сумнівом машини (Марія, 22.09.2026).
+  // Вразлива тема першою, далі суперечність, межа «для дітей», рідкісне
+  // міжнародне. Усе, чому просто бракує поля чи цитати, чекає машину й у
+  // щоденній роботі не показується.
+  const { forHuman, waiting } = useMemo(() => splitQueue(drafts), [drafts]);
+
   // Окрема вкладка для того, що вже на сайті, але без обовʼязкового мінімуму.
   // Ворота конвеєра тримають нові записи, а ці лишились з часу, коли правила
   // ще не було, — і знайти їх інакше нічим (11.09.2026).
@@ -323,12 +330,13 @@ export default function AdminList({
       <style dangerouslySetInnerHTML={{ __html: QUEUE_LAYOUT_CSS }} />
       <div className="adm-queue-head">{children}</div>
       <aside className="adm-queue-rules" aria-label="Правила модерації">
-        <ModerationRules tab={tab === 'raw' ? 'quarantine' : tab} />
+        <ModerationRules tab={tab === 'raw' ? 'quarantine' : tab === 'waiting' ? 'drafts' : tab} />
       </aside>
       <div className="adm-queue-body" style={{ marginTop: 22 }}>
         <div style={{ display: 'flex', gap: 9, marginBottom: 18, flexWrap: 'wrap' }}>
           {tabBtn('raw', `1 · Знахідки (${raw.length})`)}
-          {tabBtn('drafts', `2 · Кандидати (${drafts.length})`)}
+          {tabBtn('drafts', `2 · До рішення (${forHuman.length})`)}
+          {tabBtn('waiting', `⏳ Чекає машину (${waiting.length})`)}
           {tabBtn('active', `3 · На сайті (${actives.length})`)}
           {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
         </div>
@@ -357,13 +365,52 @@ export default function AdminList({
               </div>
             </>
           )
-        ) : tab === 'drafts' ? (
-          drafts.length === 0 ? (
-            <p style={{ color: C.ink2, fontSize: 16 }}>Немає кандидатів. Агент додасть нові після наступного щоденного прогону.</p>
+        ) : tab === 'waiting' ? (
+          waiting.length === 0 ? (
+            <p style={{ color: C.ink2, fontSize: 16 }}>Нічого не чекає машину.</p>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-              {drafts.map((o) => <Card key={o.id} o={o} mode="drafts" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
-            </div>
+            <>
+              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
+                Ці записи <b>не на сайті й не в щоденній черзі</b>: їм бракує поля або
+                цитати зі сторінки. Машина щоночі перечитує до 20 таких сторінок — і коли
+                на сторінці зʼявиться потрібна фраза, запис вийде на сайт сам. Заглядай
+                сюди, коли є час.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {waiting.slice(0, 150).map(({ row, wait }) => (
+                  <div key={row.id}>
+                    <div style={{ fontSize: 13, color: C.ink3, marginBottom: 3 }}>⏳ {wait}</div>
+                    <Card o={row} mode="drafts" onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
+                  </div>
+                ))}
+              </div>
+              {waiting.length > 150
+                ? <p style={{ color: C.ink2, fontSize: 14.5, marginTop: 14 }}>Показано перші 150 зі {waiting.length}.</p>
+                : null}
+            </>
+          )
+        ) : tab === 'drafts' ? (
+          forHuman.length === 0 ? (
+            <p style={{ color: C.ink2, fontSize: 16 }}>
+              Нічого не чекає рішення. Нові кандидати прийдуть після нічного прогону.
+            </p>
+          ) : (
+            <>
+              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
+                За ризиком: спершу вразливі теми, далі суперечності в записі, межа «для дітей»
+                і рідкісне міжнародне. {forHuman.length > DAILY_CAP
+                  ? <>Показано перші {DAILY_CAP} — решта {forHuman.length - DAILY_CAP} нікуди не дінеться.</>
+                  : null}
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
+                {forHuman.slice(0, DAILY_CAP).map(({ row, risk }) => (
+                  <div key={row.id}>
+                    {risk ? <div style={{ fontSize: 13, color: C.warnInk, fontWeight: 600, marginBottom: 3 }}>⚠ {risk.label}</div> : null}
+                    <Card o={row} mode="drafts" onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
+                  </div>
+                ))}
+              </div>
+            </>
           )
         ) : (
           <>
