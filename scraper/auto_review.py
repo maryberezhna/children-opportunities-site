@@ -14,6 +14,13 @@
 Ключове: механіка й суддя мають ПОГОДИТИСЬ на зеленому. Будь-яке «не знаю»
 з будь-якого боку опускає запис у жовтий, а не піднімає в зелений.
 
+Що саме робить запис зеленим (рішення Марії 23.09.2026): дослівна цитата зі
+сторінки на кожне з пʼяти обовʼязкових полів І три перевірки — актуальна,
+посилання відкривається, українською. Рівень довіри джерела сюди не входить:
+підтверджене цитатою йде на сайт, хай яке джерело. Рівень лишається вагою в
+причині — його видно тоді, коли запис і так тримають через брак поля, цитати
+чи непройдену перевірку.
+
 Запуск:
     python auto_review.py            # дамп: показує, що куди впало
     python auto_review.py --apply    # реально пише в базу
@@ -31,7 +38,7 @@ import api_guard  # відмова через ліміт/оплату робит
 from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
-from normalizer import missing_required, summary_says_over
+from normalizer import latin_fields, missing_required, summary_says_over
 from proof import missing_proof, PROOF_LABELS, PUBLISH_CRITERIA
 from timing import is_expired
 
@@ -52,6 +59,13 @@ SENSITIVE_NEEDS = set(PUBLISH_CRITERIA["risk"]["sensitive_needs"])
 # тож запис підтверджує людина (один раз), а не чекає доказу вічно.
 UNREADABLE_SOURCES = set(PUBLISH_CRITERIA["risk"].get("unreadable_sources", ()))
 
+# ── Рівень довіри джерела ───────────────────────────────────────────────────
+# Підписи й рівень за замовчуванням — теж зі спеки: їх показує і черга
+# в адмінці (lib/queue-risk.js), і причина тут.
+TRUST_TIER_LABELS = {int(k): v
+                     for k, v in PUBLISH_CRITERIA["risk"]["trust_tier_labels"].items()}
+DEFAULT_TIER = int(PUBLISH_CRITERIA["risk"]["trust_tier_default"])
+
 MIN_SUMMARY_LEN = 60
 MIN_TITLE_LEN = 15
 
@@ -60,7 +74,22 @@ YELLOW = "yellow"
 RED = "red"
 
 
-def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
+def tier_label(trust_tier) -> str:
+    """Підпис рівня джерела. Невідомий рівень читаємо як третій."""
+    return TRUST_TIER_LABELS.get(trust_tier, TRUST_TIER_LABELS[DEFAULT_TIER])
+
+
+def _hold(reason: str, trust_tier: int) -> tuple[str, str]:
+    """Жовтий, і в причині видно ОБИДВА: чого бракує і звідки запис.
+
+    Рівень джерела більше не тримає запис сам (див. mechanical), але
+    модератору він потрібен саме тут: «бракує вартості» з сайту міністерства
+    і те саме з перепосту в телеграмі — різна робота.
+    """
+    return YELLOW, f"{reason} · {tier_label(trust_tier)}"
+
+
+def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | None:
     """Детермінована частина. Повертає (коридор, причина) або None, якщо
     запис пройшов механіку і йде далі, до судді.
 
@@ -68,6 +97,9 @@ def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
     2 звичайні організації, 3 соцмережі й агреговані стрічки. Джерела, якого
     в реєстрі немає, вважаємо третім рівнем: так поводиться discover-агент,
     що приносить сайт, якого ми ще ніколи не бачили.
+
+    Рівень НЕ є воротами (23.09.2026): він лише дописується до причини, коли
+    запис і так тримають. Чому — див. коментар біля цитат нижче.
     """
     today = date.today().isoformat()
 
@@ -82,15 +114,9 @@ def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
         last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
         return RED, f"дата в минулому ({last})"
 
-    # ── Жовтий: джерело, якому не можна вірити наосліп ──────────────────
-    # Ворота автодопуску мали спиратись на жорсткі сигнали, і надійність
-    # джерела — один із них. До 20.09.2026 поле trust_tier у реєстрі стояло,
-    # але жоден рядок коду його не читав: агрегатор із соцмережі проходив тими
-    # самими воротами, що й сайт міністерства.
-    if trust_tier >= 3:
-        return YELLOW, "джерело третього рівня довіри (соцмережі, агрегатори, новий сайт)"
-
     # ── Жовтий: дорогі категорії ────────────────────────────────────────
+    # Єдиний запобіжник, який стоїть ПЕРЕД цитатами: тут помилка б'є по
+    # найвразливіших, тож людина дивиться навіть бездоганний запис.
     if row.get("opportunity_type") in SENSITIVE_TYPES:
         return YELLOW, f"чутлива категорія: {row['opportunity_type']}"
     needs = set(row.get("child_needs") or [])
@@ -105,25 +131,49 @@ def mechanical(row: dict, trust_tier: int = 2) -> tuple[str, str] | None:
     # платформа не зможе вчасно прибрати запис із сайту.
     missing = missing_required(row)
     if missing:
-        return YELLOW, "бракує: " + ", ".join(missing)
+        return _hold("бракує: " + ", ".join(missing), trust_tier)
+
     # ── Жовтий: поле є, а цитати на нього немає ──────────────────────────
     # Світлофор (22.09.2026): зелений лише з дослівною цитатою зі сторінки на
     # кожне обовʼязкове поле. Здогад чи дефолт цитати не має.
+    #
+    # І головне (23.09.2026). Досі тут вище стояли окремі ворота «джерело
+    # третього рівня довіри» — і вони перебивали все. Приплив у нас саме
+    # третього рівня: телеграм-канали й discover-агент, що приносить сайт,
+    # якого ми ще не бачили. Тому зелених не бувало взагалі: у ранковому
+    # зведенні «на сайт 0, притримано 3», а в логах auto-review 21 із 23
+    # жовтих трималися ЛИШЕ через рівень джерела — про якість запису в
+    # причині не було ні слова.
+    #
+    # Рішення Марії: усе, що підтверджене цитатою зі сторінки, йде на сайт,
+    # хай яке джерело (це те саме правило від 21.09 — «автопублікація лише з
+    # цитатою на все»). Рівень важить тоді, коли чогось бракує: він іде в
+    # причину поруч із тим, чого бракує, — див. _hold.
     no_proof = missing_proof(row)
     if no_proof:
         if row.get("source") in UNREADABLE_SOURCES:
             return YELLOW, ("джерело не відкривається роботу "
                             f"({row.get('source')}) — підтверджує людина")
-        return YELLOW, "без цитати: " + ", ".join(PROOF_LABELS[k] for k in no_proof)
+        return _hold("без цитати: " + ", ".join(PROOF_LABELS[k] for k in no_proof),
+                     trust_tier)
+
+    # ── Жовтий: три перевірки зі спеки (colors.green) ───────────────────
+    # Посилання перевірене вище (червоний), актуальність — там само і тут,
+    # третя — «українською». Транслітерація («Matematychnyy konkurs-hra…»)
+    # українською не є: нормалізатор ловить її на вході, але запис міг
+    # прийти в чергу й раніше, а цитати тепер самі по собі відчиняють сайт.
     if row["age_from"] < 0 or row["age_to"] > 18:
-        return YELLOW, f"вік поза 0–18 ({row['age_from']}–{row['age_to']})"
+        return _hold(f"вік поза 0–18 ({row['age_from']}–{row['age_to']})", trust_tier)
     summary = row.get("summary") or ""
     if summary_says_over(summary):
-        return YELLOW, "в описі сказано, що набір чи сезон уже завершено"
+        return _hold("в описі сказано, що набір чи сезон уже завершено", trust_tier)
     if len(summary) < MIN_SUMMARY_LEN:
-        return YELLOW, f"опис коротший за {MIN_SUMMARY_LEN} символів"
+        return _hold(f"опис коротший за {MIN_SUMMARY_LEN} символів", trust_tier)
     if len(row.get("title") or "") < MIN_TITLE_LEN:
-        return YELLOW, "назва підозріло коротка"
+        return _hold("назва підозріло коротка", trust_tier)
+    latin = latin_fields(row)
+    if latin:
+        return _hold("не українською: " + ", ".join(latin) + " латиницею", trust_tier)
 
     return None  # механіка пропускає — слово за суддею
 
@@ -239,7 +289,7 @@ MIN_CONFIDENCE = 0.8
 
 def classify(row: dict, client, trust: dict | None = None) -> tuple[str, str]:
     # Джерела немає в реєстрі — це не «нормальне», а «невідоме»: третій рівень.
-    tier = (trust or {}).get(row.get("source"), 3)
+    tier = (trust or {}).get(row.get("source"), DEFAULT_TIER)
     verdict = mechanical(row, tier)
     if verdict:
         return verdict
@@ -292,7 +342,7 @@ def run(apply: bool = False, limit: int = 500) -> dict:
             .eq("status", "draft").limit(limit).execute().data or [])
     print(f"Чернеток у черзі: {len(rows)}\n")
 
-    trust = {r["name"]: r.get("trust_tier") or 3
+    trust = {r["name"]: r.get("trust_tier") or DEFAULT_TIER
              for r in (sb.table("sources").select("name, trust_tier").execute().data or [])}
 
     buckets = {GREEN: [], YELLOW: [], RED: []}

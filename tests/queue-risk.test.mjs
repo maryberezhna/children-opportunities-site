@@ -2,7 +2,10 @@
 // Порядок і межа в добу — з lib/publish-criteria.json.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { queueReason, waitingReason, splitQueue, DAILY_CAP } from '../lib/queue-risk.js';
+import {
+  queueReason, waitingReason, splitQueue, DAILY_CAP,
+  TRUST_TIER_LABELS, DEFAULT_TRUST_TIER, trustLabel,
+} from '../lib/queue-risk.js';
 
 const ready = (over = {}) => ({
   id: Math.random().toString(36).slice(2),
@@ -54,6 +57,27 @@ test('рідкісне міжнародне — останнє в порядку
 test('бракує поля або цитати — чекає машину, не людину', () => {
   assert.match(waitingReason(ready({ cost_type: null })), /^бракує: /);
   assert.match(waitingReason(ready({ evidence: { age: 'a' } })), /^без цитати: /);
+});
+
+// 23.09.2026: рівень джерела більше не ворота (там, у auto_review, він тримав
+// усе — «на сайт 0, притримано 3»), а вага. У черзі він потрібен поруч із тим,
+// чого бракує: «бракує вартості» з сайту міністерства і те саме з перепосту
+// в телеграмі — різна робота для модератора.
+test('рівень джерела дописується до причини очікування, коли він відомий', () => {
+  const reason = waitingReason(ready({ cost_type: null }), 3);
+  assert.match(reason, /^бракує: /);
+  assert.ok(reason.includes(TRUST_TIER_LABELS['3']), reason);
+  // Рівня не передали — рядок такий самий, як був.
+  assert.equal(waitingReason(ready({ cost_type: null })), 'бракує: вартість');
+  // Запис із усіма цитатами не чекає нічого — хай яке джерело.
+  assert.equal(waitingReason(ready(), 3), null);
+});
+
+test('підписи рівнів — зі спеки, невідомий рівень читаємо як третій', () => {
+  assert.deepEqual(Object.keys(TRUST_TIER_LABELS).sort(), ['1', '2', '3']);
+  assert.equal(DEFAULT_TRUST_TIER, 3);
+  assert.equal(trustLabel(undefined), TRUST_TIER_LABELS['3']);
+  assert.equal(trustLabel(1), TRUST_TIER_LABELS['1']);
 });
 
 test('split: ризик уперед за вагою, решта чекає', () => {
