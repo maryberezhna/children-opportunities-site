@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import { reasonLabel } from '@/lib/plusOutcomes';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -100,7 +101,7 @@ export default async function PlusAdminPage() {
   if (!url || !key) return <main style={wrap}><p>Supabase не налаштований.</p></main>;
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
-  const [subsRes, kidsRes, waitRes, remindRes] = await Promise.all([
+  const [subsRes, kidsRes, waitRes, remindRes, appsRes] = await Promise.all([
     supabase.from('digest_subscribers')
       .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at')
       .order('created_at', { ascending: false }).limit(500),
@@ -109,6 +110,12 @@ export default async function PlusAdminPage() {
       .order('created_at', { ascending: false }).limit(500),
     supabase.from('digest_reminders_sent').select('id', { count: 'exact', head: true })
       .gte('sent_at', new Date(Date.now() - 7 * DAY).toISOString()),
+    // «Чим закінчилось» (23.09.2026). select('*') і сортування за updated_at
+    // навмисне: до застосування міграції 20260923_plus_outcomes.sql колонок
+    // answered_at / reason / note ще немає, і запит із їхніми іменами впав би,
+    // забравши з собою всю сторінку.
+    supabase.from('plus_applications').select('*')
+      .order('updated_at', { ascending: false }).limit(300),
   ]);
 
   const subs = subsRes.data || [];
@@ -132,6 +139,19 @@ export default async function PlusAdminPage() {
   // понад добу — їм, можливо, варто написати.
   const stuck = pending.filter((s) => new Date(s.updated_at || s.created_at).getTime() < Date.now() - DAY);
   const attention = [...paused, ...stuck];
+
+  // «Чим закінчилось»: відповіді на питання «Ви скористалися цією можливістю?»
+  // (scraper/ask_outcomes.py + /api/telegram/plus). Тут видно те, чого не
+  // видно більше ніде: що з позначеної можливості справді вийшло.
+  const outcomes = (appsRes.data || []).filter((a) => a.answered_at)
+    .sort((a, b) => new Date(b.answered_at) - new Date(a.answered_at)).slice(0, 30);
+  const askedTotal = (appsRes.data || []).filter((a) => a.asked_at).length;
+  const subById = Object.fromEntries(subs.map((s) => [s.id, s]));
+  const oppIds = [...new Set(outcomes.map((o) => o.opportunity_id))];
+  const { data: oppRows } = oppIds.length
+    ? await supabase.from('opportunities').select('id, title, slug').in('id', oppIds)
+    : { data: [] };
+  const oppById = Object.fromEntries((oppRows || []).map((o) => [o.id, o]));
 
   return (
     <main style={wrap}>
@@ -199,6 +219,48 @@ export default async function PlusAdminPage() {
                     <td style={cell}>{fmtDate(s.created_at)}</td>
                     <td style={cell}>{fmtDate(s.last_sent_at)}</td>
                     <td style={{ ...cell, color: C.ink2 }}>{whereStuck(s) || (s.wfp_order_reference ? 'оплата підключена' : '—')}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <h2 style={h2S}>Чим закінчилось · {outcomes.length}</h2>
+      {outcomes.length === 0 ? (
+        <p style={noteS}>
+          Відповідей ще немає. Бот питає «Ви скористалися цією можливістю?» через 3 дні після того,
+          як позначена можливість минула{askedTotal ? `; запитано ${askedTotal}` : ''}.
+        </p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+            <thead>
+              <tr>
+                <th style={head}>Можливість</th><th style={head}>Хто</th>
+                <th style={head}>Скористались</th><th style={head}>Причина</th>
+                <th style={head}>Що написали</th><th style={head}>Коли</th>
+              </tr>
+            </thead>
+            <tbody>
+              {outcomes.map((a) => {
+                const opp = oppById[a.opportunity_id];
+                const used = a.stage === 'used';
+                return (
+                  <tr key={`${a.subscriber_id}-${a.opportunity_id}`}>
+                    <td style={cell}>
+                      {opp ? (
+                        <a href={`/o/${opp.slug}`} target="_blank" rel="noopener noreferrer">{opp.title}</a>
+                      ) : '—'}
+                    </td>
+                    <td style={cell}>{who(subById[a.subscriber_id] || {})}</td>
+                    <td style={{ ...cell, color: used ? C.green : C.ink3, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {used ? '✅ так' : 'ні'}
+                    </td>
+                    <td style={{ ...cell, color: C.ink2 }}>{a.reason ? reasonLabel(a.reason) : '—'}</td>
+                    <td style={cell}>{a.note || '—'}</td>
+                    <td style={cell}>{fmtDate(a.answered_at)}</td>
                   </tr>
                 );
               })}
