@@ -586,7 +586,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
       ) : null}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
 
-      <div className={`container${showBar ? ' o-has-bar' : ''}${showBar && applyUrl ? ' o-has-apply' : ''}`} lang={lang}>
+      <div className={`container o-detail${showBar ? ' o-has-bar' : ''}${showBar && applyUrl ? ' o-has-apply' : ''}`} lang={lang}>
         <nav className="opportunity-breadcrumbs">
           <Link href={base || '/'}>{t.back}</Link>
           <ShareButton
@@ -612,167 +612,173 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
         ) : null}
 
         <article className={`opportunity-page${isClosed ? ' opportunity-page-closed' : ''}`}>
-          <div className="opportunity-chips">
-            {item.featured_week === isoWeek()
-              ? <span className="chip chip-top">{t.topWeek}</span> : null}
-            <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
-            {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
-            <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
-            {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
-            {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
-              ? <span className="chip chip-paid">{t.paid}</span> : null}
-            {needs.map((n) => (
-              <span key={n} className="chip chip-need">{NEEDS[n]}</span>
-            ))}
-          </div>
-
-          <div className="o-m-meta">
-            <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>
-              {TYPES[item.opportunity_type] || item.opportunity_type}
-            </span>
-            <span>{ageRangeLabel(item, lang)}</span>
-            {item.cost_type && COSTS[item.cost_type] ? (
-              <>
-                <span className="o-m-sep" aria-hidden="true">·</span>
-                <span>{COSTS[item.cost_type]}</span>
-              </>
-            ) : null}
-            {needs.map((n) => (
-              <span key={n}><span className="o-m-sep" aria-hidden="true">· </span>{NEEDS[n]}</span>
-            ))}
-          </div>
-
-          <h1 className="opportunity-title" lang={titleLang}>{field(item, 'title', lang)}</h1>
-
-          {showDeadlineBlock ? (
-            <div className="o-m-deadline">
-              <div>
-                <span className="o-m-eyebrow">{t.deadline}</span>
-                <span className="o-m-date">{formatDate(item.deadline, lang)}</span>
-              </div>
-              {deadlineDays !== null && deadlineDays >= 0 ? (
-                <span className={`o-m-days${deadlineDays <= 7 ? ' is-urgent' : ''}`}>
-                  {deadlineDays <= 7 ? '⏰' : '⏳'} {t.daysLeft(deadlineDays)}
-                </span>
-              ) : null}
+          <div className="o-main">
+            <div className="opportunity-chips">
+              {item.featured_week === isoWeek()
+                ? <span className="chip chip-top">{t.topWeek}</span> : null}
+              <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
+              {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
+              <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
+              {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
+              {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
+                ? <span className="chip chip-paid">{t.paid}</span> : null}
+              {needs.map((n) => (
+                <span key={n} className="chip chip-need">{NEEDS[n]}</span>
+              ))}
             </div>
-          ) : null}
-          {field(item, 'summary', lang) ? (
-            <p className="opportunity-summary" lang={summaryLang}>{field(item, 'summary', lang)}</p>
-          ) : null}
 
-          <dl className="opportunity-meta">
-            {formatLabel(item.format, lang) && (
-              <>
-                <dt>{t.format}</dt>
-                <dd>{formatLabel(item.format, lang)}</dd>
-              </>
-            )}
-            {(item.cities || []).length > 0 && (
-              <>
-                <dt>{t.city}</dt>
-                <dd>{item.cities.map((c) => cityLabel(c, lang)).join(', ')}</dd>
-              </>
-            )}
-            {eventDates ? (
-              <>
-                <dt>{t.when}</dt>
-                <dd>{eventDates}</dd>
-              </>
-            ) : null}
-            {/* Розіграш чи оголошення переможців — окремий факт, не подача й не
-                проведення (з 17.09.2026). */}
-            {item.results_date ? (
-              <>
-                <dt>{t.results}</dt>
-                <dd>{formatDate(item.results_date, lang)}</dd>
-              </>
-            ) : null}
-            {item.deadline && !sameDayAsEvent(item) ? (
-              <>
-                <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
-                <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>
-              </>
-            ) : applicationsNote(item) ? (
-              <>
-                <dt>{t.applications}</dt>
-                <dd>{applicationsNote(item) === 'periodic' ? t.annual : t.ongoing}</dd>
-              </>
-            ) : null}
-            {/* Один рядок «Вартість»: категорія і, якщо відомо, сума словами.
-                Коли 16.09.2026 перерозмітка заповнила price_note на ~260
-                сторінках, два окремі рядки з однаковим підписом стояли підряд:
-                «Вартість: €100 — включає проживання…» і «Вартість: Платно». */}
-            {(item.cost_type || item.price_note) && (
-              <>
-                <dt>{t.cost}</dt>
-                <dd>
-                  {[item.cost_type && (COSTS[item.cost_type] || item.cost_type), item.price_note]
-                    .filter(Boolean)
-                    .join(' — ')}
-                </dd>
-              </>
-            )}
-            {item.teen_requirement ? (
-              <>
-                <dt className="o-m-only">{t.requirement}</dt>
-                <dd className="o-m-only">{item.teen_requirement}</dd>
-              </>
-            ) : null}
-            {item.source && (
-              <>
-                <dt>{t.source}</dt>
-                <dd>
-                  {item.source_url ? (
-                    <>
-                      <span className="o-d-only">{item.source}</span>
-                      <a className="o-m-only" href={item.source_url} target="_blank" rel="noopener noreferrer">
-                        {item.source} ↗
-                      </a>
-                    </>
-                  ) : item.source}
-                </dd>
-              </>
-            )}
-            {verifiedLabel(item, lang) && (
-              <>
-                <dt>{verifiedKind(item) === 'checked' ? t.verified : t.linkAlive}</dt>
-                <dd>✅ {verifiedLabel(item, lang)}</dd>
-              </>
-            )}
-          </dl>
+            <div className="o-m-meta">
+              <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>
+                {TYPES[item.opportunity_type] || item.opportunity_type}
+              </span>
+              <span>{ageRangeLabel(item, lang)}</span>
+              {item.cost_type && COSTS[item.cost_type] ? (
+                <>
+                  <span className="o-m-sep" aria-hidden="true">·</span>
+                  <span>{COSTS[item.cost_type]}</span>
+                </>
+              ) : null}
+              {needs.map((n) => (
+                <span key={n}><span className="o-m-sep" aria-hidden="true">· </span>{NEEDS[n]}</span>
+              ))}
+            </div>
 
-          <div className="opportunity-actions">
-            {item.source_url && (
-              <OutboundCta href={item.source_url} title={item.title} lang={lang} />
-            )}
-            {applyUrl && (
-              <a
-                href={applyUrl}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="opportunity-apply"
-              >
-                {t.apply}
-              </a>
-            )}
+            <h1 className="opportunity-title" lang={titleLang}>{field(item, 'title', lang)}</h1>
+
+            {showDeadlineBlock ? (
+              <div className="o-m-deadline">
+                <div>
+                  <span className="o-m-eyebrow">{t.deadline}</span>
+                  <span className="o-m-date">{formatDate(item.deadline, lang)}</span>
+                </div>
+                {deadlineDays !== null && deadlineDays >= 0 ? (
+                  <span className={`o-m-days${deadlineDays <= 7 ? ' is-urgent' : ''}`}>
+                    {deadlineDays <= 7 ? '⏰' : '⏳'} {t.daysLeft(deadlineDays)}
+                  </span>
+                ) : null}
+              </div>
+            ) : null}
+            {field(item, 'summary', lang) ? (
+              <p className="opportunity-summary" lang={summaryLang}>{field(item, 'summary', lang)}</p>
+            ) : null}
+
+            <div lang={detailsLang} className={`o-body${isClosed ? ' closed-dim' : ''}`}>
+              <Details text={detailsText} />
+            </div>
+
+            {/* Сторінки обмінів Erasmus+ приводять найбільше людей із пошуку, а
+                картка не пояснює, що це за програма. Путівник поки лише
+                українською. */}
+            {lang === 'uk' && isErasmus(item) ? (
+              <p className="o-guide-link">
+                <Link href={ERASMUS_PATH}>
+                  Вперше про Erasmus+? Путівник: хто з України може поїхати, скільки це коштує і як подати заявку →
+                </Link>
+              </p>
+            ) : null}
+          </div>
+
+          {/* Факти і кнопки — одним блоком: на широкому екрані він стає правою
+              колонкою, що прилипає до верху, поки людина читає опис. */}
+          <div className="o-aside">
+            <dl className="opportunity-meta">
+              {formatLabel(item.format, lang) && (
+                <>
+                  <dt>{t.format}</dt>
+                  <dd>{formatLabel(item.format, lang)}</dd>
+                </>
+              )}
+              {(item.cities || []).length > 0 && (
+                <>
+                  <dt>{t.city}</dt>
+                  <dd>{item.cities.map((c) => cityLabel(c, lang)).join(', ')}</dd>
+                </>
+              )}
+              {eventDates ? (
+                <>
+                  <dt>{t.when}</dt>
+                  <dd>{eventDates}</dd>
+                </>
+              ) : null}
+              {/* Розіграш чи оголошення переможців — окремий факт, не подача й не
+                  проведення (з 17.09.2026). */}
+              {item.results_date ? (
+                <>
+                  <dt>{t.results}</dt>
+                  <dd>{formatDate(item.results_date, lang)}</dd>
+                </>
+              ) : null}
+              {item.deadline && !sameDayAsEvent(item) ? (
+                <>
+                  <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
+                  <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>
+                </>
+              ) : applicationsNote(item) ? (
+                <>
+                  <dt>{t.applications}</dt>
+                  <dd>{applicationsNote(item) === 'periodic' ? t.annual : t.ongoing}</dd>
+                </>
+              ) : null}
+              {/* Один рядок «Вартість»: категорія і, якщо відомо, сума словами.
+                  Коли 16.09.2026 перерозмітка заповнила price_note на ~260
+                  сторінках, два окремі рядки з однаковим підписом стояли підряд:
+                  «Вартість: €100 — включає проживання…» і «Вартість: Платно». */}
+              {(item.cost_type || item.price_note) && (
+                <>
+                  <dt>{t.cost}</dt>
+                  <dd>
+                    {[item.cost_type && (COSTS[item.cost_type] || item.cost_type), item.price_note]
+                      .filter(Boolean)
+                      .join(' — ')}
+                  </dd>
+                </>
+              )}
+              {item.teen_requirement ? (
+                <>
+                  <dt className="o-m-only">{t.requirement}</dt>
+                  <dd className="o-m-only">{item.teen_requirement}</dd>
+                </>
+              ) : null}
+              {item.source && (
+                <>
+                  <dt>{t.source}</dt>
+                  <dd>
+                    {item.source_url ? (
+                      <>
+                        <span className="o-d-only">{item.source}</span>
+                        <a className="o-m-only" href={item.source_url} target="_blank" rel="noopener noreferrer">
+                          {item.source} ↗
+                        </a>
+                      </>
+                    ) : item.source}
+                  </dd>
+                </>
+              )}
+              {verifiedLabel(item, lang) && (
+                <>
+                  <dt>{verifiedKind(item) === 'checked' ? t.verified : t.linkAlive}</dt>
+                  <dd>✅ {verifiedLabel(item, lang)}</dd>
+                </>
+              )}
+            </dl>
+
+            <div className="opportunity-actions">
+              {item.source_url && (
+                <OutboundCta href={item.source_url} title={item.title} lang={lang} />
+              )}
+              {applyUrl && (
+                <a
+                  href={applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow"
+                  className="opportunity-apply"
+                >
+                  {t.apply}
+                </a>
+              )}
+            </div>
           </div>
         </article>
-
-        <div lang={detailsLang} className={isClosed ? 'closed-dim' : undefined}>
-          <Details text={detailsText} />
-        </div>
-
-        {/* Сторінки обмінів Erasmus+ приводять найбільше людей із пошуку, а
-            картка не пояснює, що це за програма. Путівник поки лише
-            українською. */}
-        {lang === 'uk' && isErasmus(item) ? (
-          <p className="o-guide-link">
-            <Link href={ERASMUS_PATH}>
-              Вперше про Erasmus+? Путівник: хто з України може поїхати, скільки це коштує і як подати заявку →
-            </Link>
-          </p>
-        ) : null}
 
         <TelegramSubscribeBlock place="detail_page" lang={lang} />
 
