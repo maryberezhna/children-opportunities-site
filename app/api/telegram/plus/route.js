@@ -20,6 +20,10 @@ import {
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN } from '@/lib/plus';
+import {
+  parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
+  ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
+} from '@/lib/plusOutcomes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -363,6 +367,37 @@ async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
   return true;
 }
 
+// --- «Чим закінчилось» ------------------------------------------------------
+//
+// Питання про можливість, яка минула, шле scraper/ask_outcomes.py; тут ми
+// приймаємо відповідь. Марія 23.09.2026: «Так чи ні. Якщо так — то розкажіть,
+// як вам. Якщо ні — то чому, і дропдаун з опціями». Проміжного кроку
+// «Тримаємо кулаки 🤞» немає свідомо — Марія його відхилила.
+
+// Відповідь із новими колонками. Якщо міграції 20260923_plus_outcomes.sql ще
+// немає, PostgREST відповість помилкою про невідому колонку — тоді пишемо
+// саму стадію, щоб людина бачила «Дякуємо», а не збій.
+async function saveOutcome(supabase, subId, opportunityId, patch) {
+  const base = {
+    subscriber_id: subId, opportunity_id: opportunityId,
+    updated_at: new Date().toISOString(),
+  };
+  const opts = { onConflict: 'subscriber_id,opportunity_id' };
+  const { error } = await supabase.from('plus_applications').upsert({ ...base, ...patch }, opts);
+  if (!error) return true;
+  const { error: retry } = await supabase.from('plus_applications')
+    .upsert({ ...base, stage: patch.stage }, opts);
+  return !retry;
+}
+
+// Тільки вільний текст: update, а не upsert, щоб не затерти стадію, яку
+// поставили кнопкою («Так» → used, «Ні» → not_used).
+async function saveNote(supabase, subId, opportunityId, note) {
+  await supabase.from('plus_applications')
+    .update({ note, updated_at: new Date().toISOString() })
+    .eq('subscriber_id', subId).eq('opportunity_id', opportunityId);
+}
+
 export async function POST(request) {
   if (!SECRET) return new Response('secret not configured', { status: 500 });
   if (request.headers.get('x-telegram-bot-api-secret-token') !== SECRET) return new Response('forbidden', { status: 403 });
@@ -516,6 +551,31 @@ export async function POST(request) {
         return new Response('ok');
       }
 
+      // Вільний текст як відповідь на «чим закінчилось» (23.09.2026).
+      //
+      // Стан НЕ в digest_subscribers.flow_step: там крокує анкета
+      // (lib/digestFlow.js), і стороннє значення або обірвало б її на
+      // півслові, або саме загубилось би від наступного /start. Замість
+      // прапорця — сам рядок plus_applications: «відповідь є (answered_at),
+      // тексту ще немає (note is null), і текст справді просили» (pendingNote).
+      // Перевірка після анкети й промокоду: місто посеред анкети й код від
+      // того, хто ще не платить, важливіші — і взаємно виключні з цим.
+      if (sub?.id) {
+        const { data: apps } = await supabase.from('plus_applications')
+          // select('*') навмисне: до застосування міграції колонок note й
+          // answered_at ще немає, а перелік полів у запиті впав би.
+          .select('*').eq('subscriber_id', sub.id)
+          .order('updated_at', { ascending: false }).limit(20);
+        const waiting = pendingNote(apps || []);
+        if (waiting) {
+          await saveNote(supabase, sub.id, waiting.opportunity_id, text.slice(0, 700));
+          // Кінцівка різна: після розповіді — «підбиратимемо точніше»,
+          // після причини — «менше зайвого».
+          await bot.sendMessage(chatId, thanksFor(waiting.stage));
+          return new Response('ok');
+        }
+      }
+
       // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
       if (sub?.status === 'active') {
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
@@ -604,6 +664,61 @@ export async function POST(request) {
         await afterProfile(bot, supabase, sub, chatId); // далі телефон і оплата
       }
     }
+    return new Response('ok');
+  }
+
+  // «Чим закінчилось»: відповідь на питання від scraper/ask_outcomes.py.
+  // Стоїть до pfb:/papp: — префікси різні, але правило «наша кнопка
+  // розбирається в одному місці» тримає parseOutcome (lib/plusOutcomes.js).
+  const pout = parseOutcome(cbq.data);
+  if (pout) {
+    const chatId = String(cbq.message.chat.id);
+    const mid = cbq.message.message_id;
+    const { data: sub } = await supabase.from('digest_subscribers')
+      .select('id').eq('telegram_chat_id', chatId).maybeSingle();
+    // Статус тут не перевіряємо: людина могла відписатись між питанням і
+    // відповіддю, і мовчки викинути її відповідь було б нечесно — ми самі
+    // спитали.
+    if (!sub) { await bot.answerCallback(cbq.id, 'Почніть з /start'); return new Response('ok'); }
+    const now = new Date().toISOString();
+    // Луна питання, щоб після зникнення кнопок було видно, про що мова.
+    // cbq.message.text — це вже готовий текст без розмітки, тож екрануємо.
+    const asked = esc(cbq.message.text || 'Ви скористалися цією можливістю?');
+
+    if (pout.action === 'yes') {
+      await saveOutcome(supabase, sub.id, pout.id, { stage: 'used', answered_at: now, note: null });
+      await bot.answerCallback(cbq.id);
+      await bot.editMessage(chatId, mid, `${asked}\n\n<b>Так</b> ✅`);
+      // Одразу просимо розповісти — без проміжного «Уже є відповідь?».
+      await bot.sendMessage(chatId, ASK_STORY, skipKeyboard(pout.id));
+      return new Response('ok');
+    }
+
+    if (pout.action === 'no') {
+      await saveOutcome(supabase, sub.id, pout.id, { stage: 'not_used', answered_at: now, note: '' });
+      await bot.answerCallback(cbq.id);
+      await bot.editMessage(chatId, mid, `${asked}\n\n<b>Ні</b>`);
+      await bot.sendMessage(chatId, ASK_WHY, whyKeyboard(pout.id));
+      return new Response('ok');
+    }
+
+    if (pout.action === 'why') {
+      const other = pout.reason === 'other';
+      // «Інша причина» → чекаємо на текст, тож note знову null.
+      await saveOutcome(supabase, sub.id, pout.id, {
+        stage: 'not_used', answered_at: now, reason: pout.reason, note: other ? null : '',
+      });
+      await bot.answerCallback(cbq.id);
+      await bot.editMessage(chatId, mid, `${ASK_WHY} <b>${esc(reasonLabel(pout.reason))}</b> ✅`);
+      await bot.sendMessage(chatId, other ? ASK_OTHER : thanksFor('not_used'), other ? skipKeyboard(pout.id) : undefined);
+      return new Response('ok');
+    }
+
+    // «Пропустити» — завершуємо без тексту. Порожній рядок (а не null) каже
+    // pendingNote, що тексту більше не чекаємо.
+    await saveNote(supabase, sub.id, pout.id, '');
+    await bot.answerCallback(cbq.id);
+    await bot.editMessage(chatId, mid, THANKS_SKIP);
     return new Response('ok');
   }
 

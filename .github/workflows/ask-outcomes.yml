@@ -1,0 +1,70 @@
+name: Dityam+ — чим закінчилось (daily)
+
+# Через три дні після того, як позначена можливість минула, @DityamPlusBot
+# питає підписника: «Ви скористалися цією можливістю?» (Марія, 23.09.2026).
+# Якщо питати нема про що — нічого не надсилає.
+#
+# Два записи cron із тієї ж причини, що в personal-digest і deadline-reminders:
+# розклад GitHub Actions тут запізнюється на 4-5 годин (заміряно 11.09.2026,
+# подробиці в scraper/send_window.py). Ворота SEND_AFTER_HOUR відсікають
+# запуски раніше 11:00 за Києвом — питання «як вам?» має приходити пізніше за
+# добірку, а не разом із нею. Повтору не буде: одне питання на людину на добу
+# тримає asked_at (див. pick_for_subscriber).
+#
+# Ручний запуск за замовчуванням СУХИЙ: кнопку тиснуть, щоб подивитись, кому
+# що пішло б, а не щоб розіслати.
+on:
+  schedule:
+    - cron: '17 6 * * *'
+    - cron: '17 8 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = нічого не слати, лише лог'
+        required: false
+        default: 'true'
+      any_time:
+        description: 'true = слати негайно, не чекати вікна 11:00 Київ'
+        required: false
+        default: 'true'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Ask what came of it
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Питає той самий бот, що надсилав добірку: підписник оформлює
+          # Dityam+ у @DityamPlusBot, і Telegram не дає писати з іншого.
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SITE_URL: https://dityam.com.ua
+          SEND_AFTER_HOUR: '11'
+        run: |
+          ANY=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.any_time }}" != "false" ]; then
+            ANY="--any-time"
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.dry_run }}" != "false" ]; then
+            python ask_outcomes.py --dry-run
+          else
+            python ask_outcomes.py $ANY
+          fi
