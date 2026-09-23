@@ -38,6 +38,17 @@ async function count(build) {
   if (error) throw new Error(error.message);
   return c || 0;
 }
+// Те саме, але збій не валить зведення: для таблиці, якої може ще не бути
+// (discover_deficit_runs — міграція застосовується руками). Немає даних —
+// немає рядка.
+async function softRows(build) {
+  try {
+    const { data, error } = await build;
+    return error ? [] : (data || []);
+  } catch {
+    return [];
+  }
+}
 
 const base = () => supabase.from('opportunities');
 
@@ -54,7 +65,7 @@ const since = `${inDays(-1)}T00:00:00Z`;
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
   inReview, reviewTop, notesOpen, notesTop, autoCount, autoTop, reviewNewCount,
-  heldCount, passed48,
+  heldCount, passed48, deficitRuns,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -125,6 +136,13 @@ const [
   count(base().select('id', { count: 'exact', head: true })
     .eq('status', 'active').is('canonical_slug', null).is('verified_at', null)
     .gte('created_at', `${inDays(-2)}T00:00:00Z`)),
+  // Де розвідник шукав за дефіцитом (з 23.09.2026) і що з того вийшло.
+  // Попит родин ділимо на надходження: обмінів хочуть 687 переглядів за 28
+  // днів, конкурсів 566, а приходить на тиждень 2,9 обміну й 1,6 конкурсу
+  // проти 27,6 гуртків. Цей рядок — єдине місце, де видно, чи допомогло.
+  softRows(supabase.from('discover_deficit_runs')
+    .select('family, age_band, keyword, candidates_found, saved')
+    .gte('ran_at', since).order('ran_at', { ascending: false }).limit(1)),
 ]);
 
 const blocks = [];
@@ -143,6 +161,14 @@ const blocks = [];
       + 'якщо так буде і завтра, зведення про це скаже.');
   }
   blocks.push(gate.join('\n'));
+}
+
+// Один рядок про те, куди дивився розвідник. Немає прогону — немає рядка.
+if (deficitRuns.length) {
+  const r = deficitRuns[0];
+  const what = r.keyword || `${r.family} × ${r.age_band}`;
+  blocks.push(`🎯 <b>Розвідник шукав за дефіцитом:</b> ${esc(cut(what, 70))} — `
+    + `знайдено ${r.candidates_found ?? 0}, у базі ${r.saved ?? 0}.`);
 }
 
 if (autoCount) {
