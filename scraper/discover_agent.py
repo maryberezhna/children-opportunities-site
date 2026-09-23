@@ -64,6 +64,7 @@ from keywords import (
     RARE_ABROAD_REGIONS, REGION_ROTATION,
 )
 from normalizer import _sanitize, summary_says_over
+from proof import PROOF_KEYS, PROOF_LABELS, missing_proof, verify_evidence
 from recheck_dates import fetch_text
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
@@ -160,6 +161,30 @@ CHECK_CURRENT = not RARE and (os.environ.get("DISCOVER_CHECK_CURRENT") or "true"
 VERIFY_MODEL = os.environ.get("DISCOVER_VERIFY_MODEL") or "claude-haiku-4-5-20251001"
 MIN_QUOTE = 12
 
+# ── Цитати на пʼять обовʼязкових полів ──────────────────────────────────────
+#
+# 23.09.2026. Сухий прогін по живій черзі показав, що зелених буде НУЛЬ: 18 із
+# 25 чернеток прийшли від агента, і в усіх 18 поле `evidence` було порожнє.
+# Агент цитат не клав узагалі — а світлофор пускає на сайт лише поле,
+# підтверджене дослівною цитатою зі сторінки. Тобто запис від агента не міг
+# стати зеленим структурно, хай яким гарним він був.
+#
+# Окремого запиту до моделі це не коштує: сторінку вона вже читає тут-таки, у
+# verify_candidate. Ключі беремо з proof.PROOF_KEYS — це ті самі ключі, які
+# читає auto_review; під власною назвою цитата не зарахувалась би.
+EVIDENCE_HINTS = {
+    "age": "Фраза про вік або клас учасників («для дітей 10–14 років», «учні 8–11 класів»).",
+    "date": "Фраза про строк подачі, дати проведення або періодичність («щороку», «набір триває»).",
+    "cost": "Фраза про гроші: безкоштовно, вартість, внесок.",
+    "type": "Фраза, з якої видно вид: конкурс, табір, гурток, стипендія…",
+    "place": "Фраза про місто, країну або онлайн.",
+}
+# KeyError тут — це навмисно гучний збій на імпорті: зʼявиться шосте
+# обовʼязкове поле в lib/publish-criteria.json — агент мусить дізнатись про
+# нього одразу, а не мовчки носити чотири цитати з пʼяти.
+EVIDENCE_PROPS = {k: {"type": "string", "description": EVIDENCE_HINTS[k]}
+                  for k in PROOF_KEYS}
+
 VERIFY_TOOL = {
     "name": "verify",
     "description": "Що сторінка каже про програму: для кого вона і чи можуть подаватися діти з України",
@@ -188,10 +213,19 @@ VERIFY_TOOL = {
             "date_evidence": {"type": "string",
                               "description": "ДОСЛІВНА цитата з датою чи роком (дедлайн, дати "
                                              "проведення, «сезон 2026/27»). Немає — порожньо."},
+            "evidence": {
+                "type": "object",
+                "description": "ДОСЛІВНІ цитати зі сторінки на пʼять обовʼязкових полів, "
+                               "до 200 знаків кожна. Копіюй слово в слово, мовою "
+                               "оригіналу, без перефразування й без власних висновків. "
+                               "Немає такої фрази на сторінці → порожній рядок.",
+                "properties": EVIDENCE_PROPS,
+                "required": list(PROOF_KEYS),
+            },
         },
         "required": ["page_kind", "for_children", "children_evidence", "eligibility",
                      "eligibility_evidence", "kind", "residency", "residency_evidence",
-                     "is_current", "date_evidence"],
+                     "is_current", "date_evidence", "evidence"],
         "additionalProperties": False,
     },
 }
@@ -223,7 +257,18 @@ VERIFY_SYSTEM = """Тобі дають сторінку, яку агент за�
    у тексті вимога жити в країні: місцева школа, реєстрація, тимчасовий
    захист, «для родин, які перебувають у країні». open_from_ukraine — програма
    запрошує чи привозить дітей з України або приймає заявки з будь-якої
-   країни. residency_evidence — цитата."""
+   країни. residency_evidence — цитата.
+7. evidence — цитати на пʼять полів, без яких запис не публікується: вік,
+   дата (або періодичність), вартість, тип і місце-або-формат. Сторінка перед
+   тобою, тож витягай їх ти:
+   - age — фраза про вік чи клас учасників;
+   - date — фраза про строк подачі, дати проведення або періодичність;
+   - cost — фраза про гроші («участь безкоштовна», «1200 грн на місяць»);
+   - type — фраза, з якої видно вид: конкурс, табір, гурток, стипендія;
+   - place — фраза про місто, країну або онлайн.
+   Копіюй слово в слово з тексту сторінки, мовою оригіналу. Немає такої фрази
+   — порожній рядок. Вигадана цитата гірша за порожню: її все одно звіряють зі
+   сторінкою, а поле без цитати просто дивиться людина."""
 
 
 def _norm_text(s: str) -> str:
@@ -294,16 +339,40 @@ def decide_current(out: dict, page: str, today: date | None = None) -> tuple[boo
                   else "⚠️ дату на сторінці не видно — перевірити актуальність")
 
 
-def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str]:
-    """full=True — повна перевірка «рідкісного» флоу; False — лише актуальність."""
+def page_evidence(out: dict, page: str) -> dict:
+    """Цитати на пʼять полів, звірені зі сторінкою. Чиста функція — під тести.
+
+    Нічого не вигадувати — головне правило: цитати, якої на сторінці немає,
+    для нас не існує. verify_evidence мовчки викидає такі рядки, тож у запис
+    потрапляє лише те, що джерело справді написало.
+    """
+    return verify_evidence(out.get("evidence"), page)
+
+
+def quotes_line(evidence: dict) -> str:
+    """Рядок для логу: скільки полів підтверджено і яких саме бракує."""
+    got = [k for k in PROOF_KEYS if (evidence or {}).get(k)]
+    miss = [PROOF_LABELS[k] for k in PROOF_KEYS if k not in got]
+    line = f"цитати {len(got)}/{len(PROOF_KEYS)}"
+    return line + (f" · без цитати: {', '.join(miss)}" if miss else " · усі поля")
+
+
+def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str, dict, str]:
+    """Перевірка кандидата сторінкою: (пустити, чому, цитати, текст сторінки).
+
+    full=True — повна перевірка «рідкісного» флоу; False — лише актуальність.
+    Цитати повертаємо в обох випадках: модель однаково читає всю сторінку, і
+    друга модель по неї не ходить (23.09.2026 — до цього агент не збирав
+    цитат узагалі, і 18 із 25 чернеток у черзі не мали жодної).
+    """
     page, status, _kind = fetch_text(rec["source_url"])
     if not page:
         if full:
-            return False, f"сторінка не відкривається ({status})"
+            return False, f"сторінка не відкривається ({status})", {}, ""
         # Частина сайтів не пускає сервери GitHub (403), хоча з браузера
         # відкривається. Звичайного кандидата через це не губимо — модератор
         # бачить, що актуальність ніхто не перевірив.
-        return True, f"⚠️ актуальність не перевірено: сторінка не відкрилась ({status})"
+        return True, f"⚠️ актуальність не перевірено: сторінка не відкрилась ({status})", {}, ""
     try:
         llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         resp = llm.messages.create(
@@ -318,9 +387,10 @@ def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str]:
         out = block.input if block else {}
     except Exception as e:
         if full:
-            return False, f"перевірка впала: {type(e).__name__}"
-        return True, f"⚠️ актуальність не перевірено: {type(e).__name__}"
-    return decide_verified(out, page) if full else decide_current(out, page)
+            return False, f"перевірка впала: {type(e).__name__}", {}, ""
+        return True, f"⚠️ актуальність не перевірено: {type(e).__name__}", {}, ""
+    ok, why = decide_verified(out, page) if full else decide_current(out, page)
+    return ok, why, page_evidence(out, page), page
 
 
 def keyword_of_day() -> str:
@@ -560,7 +630,20 @@ def _clean_cities(raw) -> list:
     return out
 
 
-def to_record(c: dict, kw: str, region: dict) -> dict | None:
+def build_record(c: dict, kw: str, region: dict) -> dict | None:
+    """Кандидат від моделі → запис БЕЗ нормалізації.
+
+    Чому нормалізація окремо (23.09.2026). `_sanitize()` з цього дня стирає
+    вік, на який немає цитати: лишає технічний 0–18 і пише «здогад без цитати,
+    не збережено». Цитати ж агент отримує ПІЗНІШЕ — коли відкриє сторінку в
+    verify_candidate. Поки санітайзер ішов першим, гурток «8–14 років» від
+    агента виходив як 0–18, і жоден його запис не міг стати зеленим
+    структурно: 18 із 25 чернеток у черзі не мали жодної цитати.
+
+    Сторінку відкриваємо не тут, а в main(): спершу дедуп. Інакше агент
+    ходив би по сторінках кандидатів, які й так відкинуть як дублі, — зайві
+    запити і до сайтів, і до моделі.
+    """
     title = (c.get("title") or "").strip()
     url = (c.get("url") or "").strip()
     if not title or not url.startswith("http"):
@@ -599,15 +682,6 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
         "canonical_url": canonical_url(url),
         "status": "draft",
     }
-    rec = _sanitize(rec)
-    # «Онлайн» у cities — теж відповідь на питання «де», і фільтр міст на
-    # сайті вміє її читати. Та сама умова, що в main.py: без неї
-    # онлайн-можливість випадала з фільтра зовсім.
-    if not rec.get("cities") and rec.get("format") == "online":
-        rec["cities"] = ["Онлайн"]
-    if rec["age_from"] > rec["age_to"]:
-        rec["age_from"], rec["age_to"] = 0, 18
-
     short = hashlib.md5(f"{title}{url}".encode()).hexdigest()[:6]
     rec["slug"] = f"{slugify(title, max_length=80, word_boundary=True)}-{short}"
     # Ключ — той самий, що в нормалізатора (hubs.content_hash): до 20.09.2026
@@ -616,6 +690,40 @@ def to_record(c: dict, kw: str, region: dict) -> dict | None:
     rec["content_hash"] = hubs.content_hash(title, url)
     rec["canonical_url"] = canonical_url(url)
     return rec
+
+
+def finalize_record(rec: dict, evidence: dict | None = None, page_text: str = "") -> dict:
+    """Нормалізація — уже з цитатами й текстом прочитаної сторінки.
+
+    Цитати кладемо ДО `_sanitize()`, і саме в цьому вся зміна 23.09.2026:
+    санітайзер лишає поле, підтверджене цитатою, і стирає лише здогад. Текст
+    сторінки йому теж потрібен — з нього він бере цитату на «де» там, де її
+    не дала модель (вебінар без окремої фрази про онлайн).
+
+    Без цитат і без сторінки (перевірку вимкнено, тести) поводиться точно як
+    раніше: порожній evidence, `_sanitize` без тексту.
+    """
+    rec["evidence"] = dict(evidence or {})
+    rec = _sanitize(rec, page_text)
+    # «Онлайн» у cities — теж відповідь на питання «де», і фільтр міст на
+    # сайті вміє її читати. Та сама умова, що в main.py: без неї
+    # онлайн-можливість випадала з фільтра зовсім.
+    if not rec.get("cities") and rec.get("format") == "online":
+        rec["cities"] = ["Онлайн"]
+    if rec["age_from"] > rec["age_to"]:
+        rec["age_from"], rec["age_to"] = 0, 18
+    return rec
+
+
+def to_record(c: dict, kw: str, region: dict,
+              evidence: dict | None = None, page_text: str = "") -> dict | None:
+    """Повний шлях кандидата в запис — для тестів і разових прогонів.
+
+    У main() ці два кроки розведені навмисно: між ними стоїть дедуп і читання
+    сторінки, звідки й беруться цитати.
+    """
+    rec = build_record(c, kw, region)
+    return finalize_record(rec, evidence, page_text) if rec else None
 
 
 def _norm_title(t: str) -> str:
@@ -738,8 +846,13 @@ def main() -> int:
 
     added, skipped, dup_skipped, flagged = 0, 0, 0, 0
     unverified = 0
+    # Скільки записів вийшло з цитатою на ВСІ пʼять полів — тобто скільки з них
+    # може опублікуватись само. 23.09.2026 таких було нуль із 18.
+    full_proof = 0
     for c in candidates:
-        rec = to_record(c, kw, region)
+        # Спершу сирий запис — нормалізація буде після сторінки (див.
+        # build_record: санітайзер стирає вік без цитати, а цитати ще попереду).
+        rec = build_record(c, kw, region)
         if not rec:
             skipped += 1
             continue
@@ -774,14 +887,22 @@ def main() -> int:
             logger.info("  ✗ в описі сказано, що вже завершено: %s", rec["title"][:55])
             continue
 
+        evidence, page_text = {}, ""
         if VERIFY or CHECK_CURRENT:
-            ok, why = verify_candidate(rec, full=VERIFY)
+            ok, why, evidence, page_text = verify_candidate(rec, full=VERIFY)
             if not ok:
                 unverified += 1
                 logger.info("  ✗ не підтверджено сторінкою (%s): %s", why, rec["title"][:55])
                 continue
             rec["admin_comment"] = f"{rec['admin_comment']} · {why}"[:500]
             logger.info("  ✓ підтверджено: %s", why[:120])
+            logger.info("  📎 %s", quotes_line(evidence))
+
+        # Нормалізація — останньою, коли цитати вже є: поле з цитатою
+        # санітайзер лишає, а без цитати стирає (вік 0–18, тип «course»).
+        rec = finalize_record(rec, evidence, page_text)
+        if not missing_proof(rec):
+            full_proof += 1
 
         if DRY_RUN:
             tag = f"  ⚠ схоже на {best_slug} ({score:.0%})" if rec.get("dup_of") else ""
@@ -827,8 +948,9 @@ def main() -> int:
 
     notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "
-                "%d інших пропущено. Модерація — на /admin або в боті.",
-                added, flagged, dup_skipped, skipped)
+                "%d інших пропущено. З цитатою на всі пʼять полів: %d. "
+                "Модерація — на /admin або в боті.",
+                added, flagged, dup_skipped, skipped, full_proof)
     return 0
 
 
