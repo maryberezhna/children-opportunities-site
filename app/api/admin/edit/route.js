@@ -4,6 +4,7 @@ import { safeEqual } from '@/lib/adminAuth';
 import { isoWeek } from '@/lib/week';
 import { missingRequired } from '@/lib/required';
 import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
+import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -91,17 +92,35 @@ export async function POST(request) {
   if (!url || !key) return Response.json({ ok: false, error: 'server' }, { status: 500 });
   const supabase = createClient(url, key, { auth: { persistSession: false } });
 
+  // Значення ДО збереження. 23.09.2026: ми не зберігали, ЩО саме виправила
+  // людина, тож конвеєр повторював ті самі помилки — після update старе
+  // значення зникає назавжди, і прочитати його можна лише тут.
+  const { data: cur } = await supabase.from('opportunities')
+    .select(`admin_comment, ${TRACKED_FIELDS.join(', ')}`)
+    .eq('id', b.id).maybeSingle();
+
   // Людина сама обрала тип і вік — заглушка з пропозиції стала фактом, знімаємо
   // позначку, і форма далі показує збережені значення.
-  if (hasAges && TYPES.includes(b.opportunity_type)) {
-    const { data: cur } = await supabase.from('opportunities')
-      .select('admin_comment').eq('id', b.id).maybeSingle();
-    if (cur && String(cur.admin_comment || '').includes(STUB_MARK)) {
-      patch.admin_comment = withoutStubMark(cur.admin_comment);
-    }
+  if (hasAges && TYPES.includes(b.opportunity_type)
+      && cur && String(cur.admin_comment || '').includes(STUB_MARK)) {
+    patch.admin_comment = withoutStubMark(cur.admin_comment);
   }
 
   const { error } = await supabase.from('opportunities').update(patch).eq('id', b.id).select('id').maybeSingle();
   if (error) return Response.json({ ok: false, error: error.message }, { status: 500 });
+
+  // Телеметрія навчання: один рядок на кожне змінене поле, разом із «модель не
+  // знайшла — людина знайшла». Пишемо ПІСЛЯ вдалого збереження (не зберегли —
+  // не було й виправлення) і мовчки: таблиці може ще не бути (міграція
+  // 20260923_moderation_corrections.sql), а правка людини цінніша за лічильник.
+  // Без `cur` не пишемо зовсім: читання могло не вдатись, і тоді вийшло б, що
+  // людина «заповнила» весь запис із порожнечі — вигадана закономірність.
+  if (cur) {
+    try {
+      const rows = correctionRows(b.id, cur, patch, 'edit');
+      if (rows.length) await supabase.from('moderation_corrections').insert(rows);
+    } catch { /* телеметрія мовчить і нічого не ламає */ }
+  }
+
   return Response.json({ ok: true, published: !!b.publish });
 }
