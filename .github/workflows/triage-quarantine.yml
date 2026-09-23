@@ -1,0 +1,60 @@
+name: Розбір карантину (вручну)
+
+# Карантин — це raw_items зі status='review': там, де класифікатор завагався
+# (впевненість 0,25–0,55). Черга росла швидше, ніж Марія встигала розбирати її
+# руками (13 записів 21.09 → 97 записів 23.09), а дедлайн у черзі згорає так
+# само тихо, як і при відхиленні. Див. scraper/triage_quarantine.py.
+#
+# Два кроки, і другий робиться лише після того, як людина прочитала перший:
+#   1. apply=false — сухий прогін: у базі не змінюється НІЧОГО, рішення видно
+#      в лозі й в артефакті «triage-report» (id, вердикт, причина, цитата).
+#   2. apply=true — записати вердикти. accept повертає запис у чергу розбору
+#      (нічний прогін нормалізує його без порога впевненості), reject закриває.
+#      Записи з вердиктом human не чіпаються взагалі й лишаються людині.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'true = записати вердикти; false = сухий прогін'
+        required: false
+        default: 'false'
+      limit:
+        description: 'скільки записів карантину взяти за прогін'
+        required: false
+        default: '100'
+
+permissions:
+  contents: read
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Розбір карантину
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: >-
+          python triage_quarantine.py
+          --limit ${{ github.event.inputs.limit || '100' }}
+          ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}
+      - name: Зберегти звіт
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: triage-report
+          path: scraper/triage-report.json
+          retention-days: 14
+          if-no-files-found: ignore
