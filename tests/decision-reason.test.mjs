@@ -3,7 +3,9 @@
 // «сортувати за найближчим дедлайном», «показувати, чого саме не вистачає»).
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { decisionReason, gapReason, deadlineNote, sortByDeadline } from '../lib/decision-reason.js';
+import {
+  decisionReason, gapReason, deadlineNote, sortByDeadline, isOverdue,
+} from '../lib/decision-reason.js';
 
 const ready = (over = {}) => ({
   id: Math.random().toString(36).slice(2),
@@ -141,4 +143,20 @@ test('сортування вміє діставати дедлайн зі ск�
     sortByDeadline(list, (x) => x.row.deadline).map((x) => x.row.id),
     ['b', 'a'],
   );
+});
+
+// Марія 23.09.2026: «те що прострочене прибирай вже». Прострочене не має
+// стояти першим у черзі лише тому, що минулий дедлайн — «найближчий».
+test('прострочене: остання дата в минулому', () => {
+  const today = '2026-09-23';
+  assert.equal(isOverdue({ deadline: '2026-09-20' }, today), true);
+  assert.equal(isOverdue({ deadline: '2026-09-23' }, today), false, 'сьогодні ще не минуло');
+  assert.equal(isOverdue({ deadline: '2026-10-05' }, today), false);
+  // Вирішує НАЙПІЗНІША дата: подача минула, а подія ще попереду.
+  assert.equal(isOverdue({ deadline: '2026-09-01', event_end_date: '2026-11-08' }, today), false);
+  assert.equal(isOverdue({ event_end_date: '2026-09-22' }, today), true);
+  assert.equal(isOverdue({ results_date: '2026-09-22' }, today), true);
+  // Без дат прострочення не буває: постійні й періодичні.
+  assert.equal(isOverdue({ recurrence: 'ongoing' }, today), false);
+  assert.equal(isOverdue({}, today), false);
 });
