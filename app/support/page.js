@@ -41,7 +41,7 @@ export default function SupportPage() {
         <h1>Support dityam.com.ua</h1>
 
         <p className="lead">
-          Dityam is a free catalog of verified opportunities for children
+          Dityam is a free platform of verified opportunities for children
           aged 0–18 in Ukraine: courses, olympiads, scholarships, summer camps,
           medical aid, and government benefits. Everything in one place.
         </p>
@@ -51,7 +51,7 @@ export default function SupportPage() {
         </p>
         <ul>
           <li>verify and add new programs</li>
-          <li>keep the catalog up-to-date and free for every family</li>
+          <li>keep the platform up to date and free for every family</li>
           <li>develop the platform and make it easier to use</li>
         </ul>
 
@@ -89,7 +89,7 @@ export default function SupportPage() {
         </div>
 
         <p className="modal-footer">
-          Сайт створений однією людиною. Реклами немає, доступ до можливостей безкоштовний.
+          Доступ до можливостей безкоштовний для кожної родини.
         </p>
       </article>
     </div>
