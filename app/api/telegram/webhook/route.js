@@ -505,9 +505,22 @@ export async function POST(request) {
       const { data: st } = await supabase.from('admin_state')
         .select('awaiting_note_for').eq('chat_id', String(msg.chat.id)).maybeSingle();
       if (st?.awaiting_note_for) {
-        await supabase.from('opportunities')
-          .update({ moderation_note: text.slice(0, 1000), note_status: 'pending', updated_at: new Date().toISOString() })
-          .eq('id', st.awaiting_note_for);
+        // Нотатка з бота йде туди ж, куди коментар із /admin — у
+        // moderation_notes. До 23.09.2026 вона лягала в
+        // opportunities.moderation_note + note_status='pending': два
+        // механізми, зроблені паралельно, не бачили один одного, тож
+        // коментарі з адмінки ніхто не обробляв, а нотатки з бота не
+        // показувались ні на картці, ні в ранковому зведенні.
+        const { error: noteError } = await supabase.from('moderation_notes').insert({
+          opportunity_id: st.awaiting_note_for,
+          body: text.slice(0, 2000),
+          action: 'comment',
+        });
+        if (noteError) {
+          await sendMessage(msg.chat.id,
+            '⚠️ Нотатку не вдалося зберегти — напишіть ще раз.');
+          return new Response('ok');
+        }
         await supabase.from('admin_state').delete().eq('chat_id', String(msg.chat.id));
         await sendMessage(msg.chat.id,
           '✍️ Нотатку збережено. Опрацюю і поверну оновлену картку на апрув — зазвичай протягом години.');
