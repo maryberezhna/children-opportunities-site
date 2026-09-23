@@ -20,6 +20,11 @@ const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 // посилання — що додає підписка. Формулювання дослівно те саме, що в блоці
 // PlusSection на сторінках, щоб обіцянка в шапці не розходилась із рештою
 // сайту.
+//
+// 23.09.2026 Марія попросила прибрати її з сайту («поки hide це») — верстка
+// і тексти лишаються тут, вмикається одним словом.
+const PLUS_STRIP_ON = false;
+
 const PLUS_STRIP = {
   uk: {
     lead: 'Платформа показує все, що існує.',
@@ -248,7 +253,7 @@ export default function Header() {
           платформу і підкреслене посилання про підписку. На самій сторінці
           Dityam+ її немає — там про неї й так уся сторінка. На телефоні теж:
           прибита шапка і так з'їдає екран, а Dityam+ живе в меню. */}
-      {pathname.startsWith(PLUS_HREF) ? null : (
+      {!PLUS_STRIP_ON || pathname.startsWith(PLUS_HREF) ? null : (
         <div className="v2-plus-strip">
           <div className="v2-plus-strip-inner">
             <span className="v2-plus-strip-lead">{strip.lead}</span>
