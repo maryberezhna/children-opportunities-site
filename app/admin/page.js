@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { quarantineCriteria, quarantineSnippet } from '@/lib/quarantine';
+import { kyivToday } from '@/lib/dates';
 import AdminList from './AdminList';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
@@ -16,8 +17,13 @@ export const metadata = {
 // Карантин переїхав сюди з окремої сторінки (Марія, 22.09.2026: «зроби так,
 // щоб карантин і черга були 1 сторінкою»; до того — «чим відрізняється
 // карантин і черга, я нічого не розумію»). Це не два види записів, а два
-// кроки одного шляху: сира знахідка → кандидат із полями → сайт. Тепер вони
-// стоять вкладками в тому порядку, у якому запис ними йде.
+// кроки одного шляху: сира знахідка → кандидат із полями → сайт.
+//
+// 23.09.2026 Марія намалювала на папері, як ця сторінка має виглядати:
+// «Потребує рішення» — і показувати, ЧОМУ саме цей запис сюди потрапив,
+// сортувати за найближчим дедлайном; «Активні» — те, що зараз на сайті,
+// просто продивлятися. Тож замість пʼяти вкладок тут два розділи, а знахідки,
+// «чекає машину» й неповні — рядком під заголовком.
 const QUARANTINE_LIMIT = 150;
 
 // format/cities/countries/is_international і event_end_date тягнемо не для
@@ -25,7 +31,10 @@ const QUARANTINE_LIMIT = 150;
 // картка не знала б, що запису бракує «де» або дати (11.09.2026).
 // child_needs — щоб черга впізнала вразливу тему (статусні групи дітей)
 // і поставила такий запис першим (22.09.2026).
-const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international, evidence, child_needs';
+// link_status — щоб причина на картці могла сказати «посилання не
+// відкривається»: конвеєр це знав (scraper/auto_review.py), а людина в черзі
+// не бачила ніде (23.09.2026).
+const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international, evidence, child_needs, link_status';
 const DRAFT_FIELDS =
   `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at, ${REQUIRED_EXTRA}`;
 const ACTIVE_FIELDS =
@@ -126,13 +135,16 @@ export default async function AdminPage({ searchParams }) {
         raw={raw}
         matches={matches}
         notes={notes}
+        // «Сьогодні» рахуємо на сервері за Києвом і передаємо пропом: інакше
+        // сервер і браузер порахують «скільки лишилось» по-різному й React
+        // перемалює список заново (див. lib/dates.js).
+        today={kyivToday()}
         initialTab={searchParams?.tab}
       >
         <AdminNav current="queue" />
         <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
         <p style={{ color: '#54617a', fontSize: 16, margin: 0, lineHeight: 1.5 }}>
-          Один шлях у трьох кроках: знахідка скрапера → кандидат із полями → сайт.
-          Вкладки стоять у тому ж порядку.
+          Два питання: що від тебе хочуть і що вже живе на сайті.
         </p>
       </AdminList>
     </main>
