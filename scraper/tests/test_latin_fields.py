@@ -35,5 +35,11 @@ class LatinFields(unittest.TestCase):
                            "проїзд і проживання покриває приймальна сторона."}
         self.assertEqual(latin_fields(data), [])
 
-    def test_short_name_not_judged(self):
-        self.assertEqual(latin_fields({"title": "Hello English"}), [])
+    def test_latin_only_title_is_caught(self):
+        """Назва без жодної української літери — навіть коротка."""
+        self.assertEqual(latin_fields({"title": "Hello English"}), ["title"])
+        self.assertEqual(latin_fields({"title": "Bisons"}), ["title"])
+
+    def test_title_with_ukrainian_explanation_passes(self):
+        self.assertEqual(
+            latin_fields({"title": "English Sky — мовна школа англійської"}), [])
