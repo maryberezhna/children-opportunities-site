@@ -83,7 +83,6 @@ const L = {
     when: 'Коли',
     results: 'Результати',
     deadline: 'Заявки до',
-    apply: '📝 Подати заявку',
     applications: 'Подача',
     annual: 'Щорічно — стежте за новим набором',
     ongoing: 'Постійно відкрита',
@@ -118,7 +117,6 @@ const L = {
     when: 'When',
     results: 'Results',
     deadline: 'Apply by',
-    apply: '📝 Apply',
     applications: 'Applications',
     annual: 'Every year — watch for the next intake',
     ongoing: 'Always open',
@@ -575,6 +573,11 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // бути обидві дати, одна з них або жодної.
   const eventDates = formatEventDates(item, lang);
   const showBar = Boolean(item.source_url) && !isClosed;
+  // Пряме посилання на подачу, коли воно відоме й відрізняється від адреси
+  // джерела. У пості про сесію ЄМП у Мальме це була Google-форма — єдине,
+  // що людині насправді потрібне, і саме воно не зберігалось, бо колонки
+  // для нього не існувало.
+  const applyUrl = item.apply_url && item.apply_url !== item.source_url ? item.apply_url : null;
 
   return (
     <>
@@ -583,7 +586,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
       ) : null}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
 
-      <div className={`container${showBar ? ' o-has-bar' : ''}`} lang={lang}>
+      <div className={`container${showBar ? ' o-has-bar' : ''}${showBar && applyUrl ? ' o-has-apply' : ''}`} lang={lang}>
         <nav className="opportunity-breadcrumbs">
           <Link href={base || '/'}>{t.back}</Link>
           <ShareButton
@@ -743,16 +746,12 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             {item.source_url && (
               <OutboundCta href={item.source_url} title={item.title} lang={lang} />
             )}
-            {/* Пряме посилання на подачу, коли воно відоме й відрізняється від
-                адреси джерела. У пості про сесію ЄМП у Мальме це була
-                Google-форма — єдине, що людині насправді потрібне, і саме
-                воно не зберігалось, бо колонки для нього не існувало. */}
-            {item.apply_url && item.apply_url !== item.source_url && (
+            {applyUrl && (
               <a
-                href={item.apply_url}
+                href={applyUrl}
                 target="_blank"
                 rel="noopener noreferrer nofollow"
-                className="cal-btn"
+                className="opportunity-apply"
               >
                 {t.apply}
               </a>
@@ -854,8 +853,12 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           >
             <span aria-hidden="true">🧡</span>
           </a>
+          {/* Панель несе саме подачу: коли пряме посилання відоме — веде на
+              нього, а не на пост у джерелі. У тексті тоді лишається чорна
+              кнопка на офіційний сайт (opportunity-mobile.css), інакше на
+              телефоні дві однакові «Подати заявку» вели б у різні місця. */}
           <OutboundCta
-            href={item.source_url}
+            href={applyUrl || item.source_url}
             title={item.title}
             lang={lang}
             className="o-m-apply"

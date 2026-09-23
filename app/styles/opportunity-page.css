@@ -88,6 +88,110 @@
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
+/* Дві кнопки в ряд: «Перейти до офіційного сайту» і, коли відоме пряме
+   посилання на подачу, «Подати заявку». На вузькому екрані переносяться. */
+.opportunity-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Друга дія — світла кнопка тієї ж висоти. Донедавна тут стояв клас
+   .cal-btn, стилі якого прибрали разом із «Додати в календар» (#314), і
+   пряме посилання на подачу рендерилось голим синім підкресленим
+   текстом — на 63 сторінках. */
+.opportunity-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border-hover);
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.opportunity-apply:hover {
+  border-color: var(--ink);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ---- «Додати в календар» (/events/<slug>/add, лише для Dityam+) ---- */
+/* Стилі .cal-* прибрали разом із кнопкою в каталозі (#314), але сама
+   сторінка лишилась — і відтоді віддавала два голі посилання впритул одне
+   до одного, без заголовка й відступів. */
+.cal-add-wrap {
+  max-width: 560px;
+  margin: 8px auto 60px;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+}
+
+.cal-add-event-name {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cal-add-deadline {
+  margin: 0 0 20px;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+
+.cal-add-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cal-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 22px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border-hover);
+  border-radius: 14px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  transition: all 0.2s;
+}
+
+.cal-add-btn:hover { border-color: var(--ink); transform: translateY(-1px); }
+
+.cal-add-btn-primary {
+  background: var(--ink);
+  color: #ffffff;
+  border-color: var(--ink);
+}
+
+.cal-add-btn-primary:hover { background: #000; border-color: #000; }
+
+.cal-add-note {
+  margin: 18px 0 0;
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+
+@media (max-width: 640px) {
+  .cal-add-wrap { padding: 22px 18px; }
+  .cal-add-buttons { display: grid; gap: 10px; }
+  .cal-add-btn { justify-content: center; }
+}
+
 @media (max-width: 640px) {
   .opportunity-page { padding: 24px 20px; }
   .opportunity-meta { grid-template-columns: 1fr; gap: 4px 0; padding: 18px; }
@@ -274,6 +378,11 @@
 .opportunity-page-closed .opportunity-cta {
   background: var(--ink-muted);
   border-color: var(--ink-muted);
+}
+
+.opportunity-page-closed .opportunity-apply {
+  color: var(--ink-muted);
+  border-color: var(--border);
 }
 
 /* ---- Розгорнутий матеріал (поле details) ---- */
