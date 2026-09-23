@@ -7,6 +7,7 @@ import OpportunitiesList from '../OpportunitiesList';
 import HomeHero from '../HomeHero';
 import HomeBlocks from '../HomeBlocks';
 import Footer from '../Footer';
+import SubscribePopup from '../SubscribePopup';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -121,6 +122,12 @@ export default async function EnglishPage() {
 
         <HomeBlocks lang="en" />
       </main>
+
+      {/* Підказка «Давайте бути на звʼязку». На головній її не було з
+          редизайну (#181): найвідвідуваніша сторінка сайту лишалась єдиною,
+          де підказка не зʼявлялась узагалі. Повернуто на прохання Марії
+          23.09.2026. Тригери й ліміти спільні з рештою сторінок. */}
+      <SubscribePopup />
 
       <Footer lang="en" />
     </div>

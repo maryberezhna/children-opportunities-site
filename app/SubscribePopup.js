@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL } from '@/lib/social';
 import { PLUS_WAITLIST_URL } from '@/lib/plus';
 import { trackConversion, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
@@ -76,16 +77,43 @@ const VALUE_SETTLE_MS = 800;
 // (Марія, 22.09.2026: «розділи на 2 частини… зліва телеграм канал і справа
 // waitlist Dityam+»). До того підказка пропонувала лише канал, а список
 // очікування Dityam+ за два тижні зібрав 7 кліків на весь сайт.
+// Мову беремо зі шляху, як у нижній панелі (StickyBar): підказка стоїть і на
+// англійських сторінках, а нести lang через чотири компоненти нема потреби.
+// До 23.09.2026 англійські міські сторінки показували цей текст українською.
 const COPY = {
-  default: {
-    title: 'Давайте бути на звʼязку',
-    text: 'Оберіть, як зручніше',
+  uk: {
+    default: {
+      title: 'Давайте бути на звʼязку',
+      text: 'Оберіть, як зручніше',
+    },
+    // Людина щойно перейшла до організатора: говоримо не «підпишіться», а про
+    // те, що таких знахідок буде більше й вони швидко зникають.
+    value: {
+      title: 'Знайшли потрібне?',
+      text: 'Щодня зʼявляються нові — не пропустіть',
+    },
+    channel: { title: 'Telegram-канал', text: 'Нові можливості щодня, безкоштовно', cta: 'Долучитися' },
+    plus: { title: 'Dityam+', text: 'Добірка під вашу дитину — скоро', cta: 'Стати в список' },
+    region: (c) => `${c.title}. ${c.text}: Telegram-канал або список Dityam+.`,
+    label: 'Лишитись на звʼязку',
+    close: 'Закрити',
+    already: 'Ви вже з нами — і в каналі, і в списку Dityam+ 🧡',
   },
-  // Людина щойно перейшла до організатора: говоримо не «підпишіться», а про
-  // те, що таких знахідок буде більше й вони швидко зникають.
-  value: {
-    title: 'Знайшли потрібне?',
-    text: 'Щодня зʼявляються нові — не пропустіть',
+  en: {
+    default: {
+      title: 'Let’s keep in touch',
+      text: 'Pick what suits you',
+    },
+    value: {
+      title: 'Found something?',
+      text: 'New ones appear daily — don’t miss them',
+    },
+    channel: { title: 'Telegram channel', text: 'New opportunities daily, free', cta: 'Join' },
+    plus: { title: 'Dityam+', text: 'A shortlist for your child — soon', cta: 'Join the list' },
+    region: (c) => `${c.title}. ${c.text}: Telegram channel or the Dityam+ list.`,
+    label: 'Keep in touch',
+    close: 'Close',
+    already: 'You are already with us — in the channel and on the Dityam+ list 🧡',
   },
 };
 
@@ -122,6 +150,8 @@ const writeSession = (key, value) => {
 };
 
 export default function SubscribePopup() {
+  const pathname = usePathname() || '/';
+  const t = COPY[pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'uk'];
   const [isOpen, setIsOpen] = useState(false);
   const [variant, setVariant] = useState('default');
 
@@ -317,14 +347,14 @@ export default function SubscribePopup() {
   useEffect(() => {
     const handleOpen = () => {
       if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) {
-        alert('Ви вже з нами — і в каналі, і в списку Dityam+ 🧡');
+        alert(t.already);
         return;
       }
       open('manual', 'default', { force: true });
     };
     window.addEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
     return () => window.removeEventListener(OPEN_SUBSCRIBE_EVENT, handleOpen);
-  }, [open]);
+  }, [open, t]);
 
   // Ховаємо самі через 10 секунд — але не поки на підказці курсор: інакше
   // вона зникала б просто тоді, коли людина тягнеться до кнопки.
@@ -346,13 +376,13 @@ export default function SubscribePopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, hide]);
 
-  const copy = COPY[variant] || COPY.default;
+  const copy = t[variant] || t.default;
 
   // Область лишається в розмітці завжди: браузер озвучує зміну тексту в ній,
   // а не появу нового вузла. Порожня — мовчить.
   const liveRegion = (
     <div className="sr-only" role="status" aria-live="polite">
-      {isOpen ? `${copy.title}. ${copy.text}: Telegram-канал або список Dityam+.` : ''}
+      {isOpen ? t.region(copy) : ''}
     </div>
   );
 
@@ -364,7 +394,7 @@ export default function SubscribePopup() {
     <div
       className="tg-callout"
       role="complementary"
-      aria-label="Лишитись на звʼязку"
+      aria-label={t.label}
       onMouseEnter={() => clearTimeout(hideTimer.current)}
       onMouseLeave={startHideTimer}
     >
@@ -378,8 +408,8 @@ export default function SubscribePopup() {
           рішення Марії 22.09.2026. */}
       <div className="tg-callout-options">
         <div className="tg-callout-option">
-          <span className="tg-callout-opt-title">Telegram-канал</span>
-          <span className="tg-callout-opt-text">Нові можливості щодня, безкоштовно</span>
+          <span className="tg-callout-opt-title">{t.channel.title}</span>
+          <span className="tg-callout-opt-text">{t.channel.text}</span>
           <a
             href={TELEGRAM_URL}
             target="_blank"
@@ -387,13 +417,13 @@ export default function SubscribePopup() {
             className="tg-cta tg-callout-cta"
             onClick={handleJoinClick}
           >
-            Долучитися
+            {t.channel.cta}
           </a>
         </div>
 
         <div className="tg-callout-option">
-          <span className="tg-callout-opt-title">Dityam+</span>
-          <span className="tg-callout-opt-text">Добірка під вашу дитину — скоро</span>
+          <span className="tg-callout-opt-title">{t.plus.title}</span>
+          <span className="tg-callout-opt-text">{t.plus.text}</span>
           <a
             href={PLUS_WAITLIST_URL}
             target="_blank"
@@ -401,7 +431,7 @@ export default function SubscribePopup() {
             className="tg-callout-cta tg-callout-cta-plus"
             onClick={handlePlusClick}
           >
-            Стати в список
+            {t.plus.cta}
           </a>
         </div>
       </div>
@@ -409,7 +439,7 @@ export default function SubscribePopup() {
       <button
         className="tg-callout-close"
         onClick={() => hide('closed')}
-        aria-label="Закрити"
+        aria-label={t.close}
       >
         ✕
       </button>
