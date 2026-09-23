@@ -22,7 +22,7 @@ import {
 import { PLUS_SALES_OPEN } from '@/lib/plus';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
-  ASK_STORY, ASK_WHY, ASK_OTHER, THANKS,
+  ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
 } from '@/lib/plusOutcomes';
 
 export const runtime = 'nodejs';
@@ -569,7 +569,9 @@ export async function POST(request) {
         const waiting = pendingNote(apps || []);
         if (waiting) {
           await saveNote(supabase, sub.id, waiting.opportunity_id, text.slice(0, 700));
-          await bot.sendMessage(chatId, THANKS);
+          // Кінцівка різна: після розповіді — «підбиратимемо точніше»,
+          // після причини — «менше зайвого».
+          await bot.sendMessage(chatId, thanksFor(waiting.stage));
           return new Response('ok');
         }
       }
@@ -708,7 +710,7 @@ export async function POST(request) {
       });
       await bot.answerCallback(cbq.id);
       await bot.editMessage(chatId, mid, `${ASK_WHY} <b>${esc(reasonLabel(pout.reason))}</b> ✅`);
-      await bot.sendMessage(chatId, other ? ASK_OTHER : THANKS, other ? skipKeyboard(pout.id) : undefined);
+      await bot.sendMessage(chatId, other ? ASK_OTHER : thanksFor('not_used'), other ? skipKeyboard(pout.id) : undefined);
       return new Response('ok');
     }
 
@@ -716,7 +718,7 @@ export async function POST(request) {
     // pendingNote, що тексту більше не чекаємо.
     await saveNote(supabase, sub.id, pout.id, '');
     await bot.answerCallback(cbq.id);
-    await bot.editMessage(chatId, mid, THANKS);
+    await bot.editMessage(chatId, mid, THANKS_SKIP);
     return new Response('ok');
   }
 
