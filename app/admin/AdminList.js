@@ -2,26 +2,15 @@
 import { useState, useMemo } from 'react';
 // Той самий перелік, що й у конвеєрі: модератор бачить у черзі рівно те
 // формулювання, яким нормалізатор позначив запис.
-import { missingRequired, missingProof, CRITERIA } from '@/lib/required';
+import { missingRequired, CRITERIA } from '@/lib/required';
 import { splitQueue, DAILY_CAP } from '@/lib/queue-risk';
+import { decisionReason, gapReason, deadlineNote, sortByDeadline } from '@/lib/decision-reason';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
+import { TYPE_LABELS } from '@/lib/labels';
 import ModerationRules from './ModerationRules';
 import QuarantineList from './QuarantineList';
-import { QUEUE_LAYOUT_CSS } from './queueLayout';
-
-const TYPE_LABELS = {
-  course: 'Курс', workshop: 'Майстер-клас', summer_school: 'Літня школа',
-  study_program: 'Навчальна програма', mentorship: 'Менторство', club: 'Гурток',
-  camp: 'Табір', olympiad: 'Олімпіада', competition: 'Конкурс', hackathon: 'Хакатон',
-  sport_tournament: 'Спорт. турнір', festival: 'Фестиваль', award: 'Премія',
-  exchange: 'Обмін', excursion: 'Екскурсія', residency: 'Резиденція',
-  scholarship: 'Стипендія', grant: 'Грант', allowance: 'Виплата',
-  support_payment: 'Соц. виплата', internship: 'Стажування', volunteer: 'Волонтерство',
-  conference: 'Конференція', medical_aid: 'Мед. допомога', psychology: 'Психологія',
-  rehabilitation: 'Реабілітація', humanitarian: 'Гум. допомога', legal_aid: 'Правова допомога',
-  shelter: 'Прихисток', educational_material: 'Навч. матеріали',
-};
+import { QUEUE_LAYOUT_CSS, ADMIN_CARD_CSS } from './queueLayout';
 
 function ageLabel(o) {
   if (o.age_from == null && o.age_to == null) return '';
@@ -30,11 +19,14 @@ function ageLabel(o) {
   return `${o.age_from}–${o.age_to} р.`;
 }
 
-const C = {
-  border: '#e2e8f2', border2: '#d3dbe9', ink: '#131b28', ink2: '#54617a', ink3: '#8a95a9',
-  green: '#15803d', greenBg: '#e7f6ec', greyBg: '#f3f4f6', link: '#1e4fd6',
-  typeBg: '#f0e9fd', typeInk: '#4c3d8c', warnBg: '#fef1e2', warnInk: '#b4530a',
-};
+// Вартість на сайті буває лише двох видів (рішення Марії 13.09.2026): родина
+// платить хоч щось — «платно», не платить нічого — «безкоштовно».
+function costLabel(o) {
+  if (!o.cost_type) return null;
+  return o.cost_type === 'free' ? 'безкоштовно' : 'платно';
+}
+
+const WHY_ICON = { stop: '⛔', check: '⚠️', ready: '✅' };
 
 function MiniCol({ label, item, accent }) {
   const meta = [
@@ -47,20 +39,29 @@ function MiniCol({ label, item, accent }) {
       : '⚠️ без дати',
   ].filter(Boolean).join(' · ');
   return (
-    <div style={{ background: '#fff', border: `1px solid ${accent || C.border2}`, borderRadius: 8, padding: '8px 10px' }}>
-      <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: accent || C.ink3, marginBottom: 4 }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, lineHeight: 1.3, marginBottom: 4 }}>{item.title}</div>
-      <div style={{ fontSize: 12, color: C.ink2, marginBottom: meta ? 5 : 0 }}>
+    <div style={{ background: '#fff', border: `1px solid ${accent || '#d3dbe9'}`, borderRadius: 8, padding: '8px 10px' }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: accent || '#54617a', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.3, marginBottom: 4 }}>{item.title}</div>
+      <div style={{ fontSize: 14, color: '#54617a', marginBottom: meta ? 5 : 0 }}>
         {item.source || '—'}{meta ? ` · ${meta}` : ''}
       </div>
       {item.source_url
-        ? <a href={item.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: C.link, fontWeight: 600 }}>🔗 відкрити ↗</a>
+        ? <a href={item.source_url} target="_blank" rel="noreferrer" style={{ fontSize: 14, color: '#1e4fd6', fontWeight: 600 }}>🔗 відкрити ↗</a>
         : null}
     </div>
   );
 }
 
-function Card({ o, mode, onAction, match, notes = [] }) {
+/**
+ * Картка читається згори вниз одним рухом (Марія, 23.09.2026: «абсолютно
+ * нічого не зрозуміло»):
+ *   1. ЧОМУ вона тут — один рядок, найбільший на картці;
+ *   2. ЩО це за можливість — назва й один рядок фактів;
+ *   3. ЩО зробити — кнопки.
+ * Усе службове (цитати зі сторінки, позначки конвеєра) — під «Що знайшла
+ * машина»: воно потрібне, коли щось не сходиться, і заважає, коли сходиться.
+ */
+function Card({ o, mode, reason, today, onAction, match, notes = [] }) {
   // Поле — лише для нового коментаря людини. Позначки конвеєра
   // (admin_comment) показуємо окремо й не даємо затерти (22.09.2026).
   const [comment, setComment] = useState('');
@@ -87,177 +88,153 @@ function Card({ o, mode, onAction, match, notes = [] }) {
   }
 
   // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
-  // сайт (вимога Марії 11.09.2026). Неповний запис показуємо з переліком
-  // того, чого бракує, і з прямим лінком, де це дозаповнити.
+  // сайт (вимога Марії 11.09.2026).
   const missing = missingRequired(o);
-  // Світлофор (22.09.2026): поле є, а цитати зі сторінки на нього немає —
-  // запис жовтий. Показуємо лише кандидатам: для тих, що вже на сайті,
-  // це окремий список «коли буде час» (рішення 21), не щоденна черга.
-  const noProof = mode === 'drafts' ? missingProof(o).filter((l) => !missing.includes(l)) : [];
+  // Цитати зі сторінки — доказ, що поле не вигадане. Тут вони не на видноті:
+  // коли все підтверджено, дивитись на них нема потреби.
   const quotes = mode === 'drafts'
     ? CRITERIA.order.filter((k) => o.evidence?.[k]).map((k) => [CRITERIA.required[k].label, o.evidence[k]])
     : [];
   const warnings = dateWarnings(o);
   const when = formatEventDates(o);
+  const dl = deadlineNote(o, today);
   const gone = done === 'approved' || done === 'skipped' || done === 'removed';
-  const bg = done === 'approved' || done === 'verified' ? C.greenBg
-    : done === 'skipped' || done === 'removed' ? C.greyBg : '#fff';
 
   return (
-    <article style={{
-      border: `1px solid ${C.border}`, borderRadius: 14, padding: '15px 17px', background: bg,
-      boxShadow: '0 1px 2px rgba(20,30,60,.05)', transition: 'background .2s, opacity .3s',
-      opacity: gone ? 0.6 : 1,
-    }}>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 14.5, color: C.ink2, marginBottom: 7, alignItems: 'center' }}>
-        <span style={{ background: C.typeBg, color: C.typeInk, padding: '2px 10px', borderRadius: 20 }}>
-          {TYPE_LABELS[o.opportunity_type] || o.opportunity_type}
-        </span>
+    <article className={`adm-card${gone ? ' gone' : ''}${done === 'approved' || done === 'verified' ? ' ok' : ''}${done === 'skipped' || done === 'removed' ? ' off' : ''}`}>
+      {reason ? (
+        <p className={`adm-why ${reason.tone}`}>
+          <span aria-hidden="true">{WHY_ICON[reason.tone]}</span>
+          <span>
+            {reason.text}
+            {/* Другий рядок — чого бракує, коли головна причина інша: без
+                нього людина бачила сіру кнопку «Додати на сайт» і не знала,
+                чому вона сіра. */}
+            {reason.gap ? <span className="gap">{reason.gap}</span> : null}
+          </span>
+        </p>
+      ) : null}
+
+      <h3 className="adm-title">
+        <a href={`/admin/edit/${o.id}`}>{o.title}</a>
+      </h3>
+
+      {/* Один рядок фактів: тип, вік, вартість, коли, дедлайн зі строком.
+          Раніше ці самі факти стояли в трьох місцях картки. */}
+      <p className="adm-facts">
+        <span className="chip">{TYPE_LABELS[o.opportunity_type] || o.opportunity_type || 'тип не вказано'}</span>
         {/* Вік без цитати зі сторінки — не факт, а здогад машини, і читався
-            він у цьому рядку так само впевнено, як прочитаний у тексті
-            (Марія, 23.09.2026). Тепер на його місці стоїть правда. */}
+            він тут так само впевнено, як прочитаний у тексті (Марія,
+            23.09.2026). Тепер на його місці стоїть правда. */}
         {mode === 'drafts' && !o.evidence?.age
-          ? <span style={{ color: C.ink3 }}>вік у джерелі не названий</span>
+          ? <span className="soft">вік у джерелі не названий</span>
           : ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
-        {o.cost_type === 'free' ? <span style={{ color: C.green }}>безкоштовно</span> : null}
-        {/* Коли відбувається і до коли подати — два різні факти й два підписи.
-            Раніше тут стояв голий «⏰ 2026-10-27»: так перший день події
-            читався як дедлайн, а дат проведення картка не показувала взагалі. */}
-        {when ? <span>📅 коли: {when}</span> : null}
-        {o.deadline ? <span>⏰ подача до {formatDate(o.deadline)}</span> : null}
-        {mode === 'active' && o.verified_at
-          ? <span style={{ color: C.green, fontWeight: 600 }}>✓ перевірено</span> : null}
-      </div>
+        {costLabel(o) ? <span className={o.cost_type === 'free' ? 'good' : ''}>{costLabel(o)}</span> : null}
+        {/* Коли відбувається і до коли подати — два різні факти й два підписи
+            (17.09.2026). */}
+        {when ? <span>коли: {when}</span> : null}
+        {dl ? <span className={dl.past || dl.days <= 7 ? 'hot' : ''}>подача {dl.text}</span> : null}
+        {!when && !dl && o.recurrence === 'annual' ? <span className="soft">щорічна</span> : null}
+        {!when && !dl && o.recurrence === 'ongoing' ? <span className="soft">постійна</span> : null}
+        {mode === 'active' && o.verified_at ? <span className="good">✓ перевірено</span> : null}
+      </p>
 
-      {/* Один блок, а не два (Марія, 22.09.2026: «давай шось одне»). Обидві
-          причини кажуть читачеві те саме — «на сайт не піде» — тож і рамка
-          одна, з двома рядками. Червона, коли поля бракує зовсім; жовта,
-          коли поле є, а цитати на нього немає. */}
-      {missing.length || noProof.length ? (
-        <div style={{
-          background: missing.length ? '#fdecec' : C.warnBg,
-          border: `1px solid ${missing.length ? '#f3bcbc' : '#f3d3ad'}`,
-          borderRadius: 10, padding: '9px 11px', marginBottom: 10,
-        }}>
-          <div style={{ color: missing.length ? '#a11b1b' : C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
-            {missing.length ? '⛔' : '🟡'} {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'}
-          </div>
-          {missing.length ? (
-            <div style={{ fontSize: 14.5, color: C.ink, marginBottom: noProof.length ? 3 : 5 }}>
-              Бракує: {missing.join(', ')}
-            </div>
-          ) : null}
-          {noProof.length ? (
-            <div style={{ fontSize: 14.5, color: C.ink, marginBottom: 5 }}>
-              Без цитати зі сторінки: {noProof.join(', ')} — поле заповнене, але машина
-              не знайшла на нього дослівної фрази.
-            </div>
-          ) : null}
-          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>
-            перевірити по джерелу →
-          </a>
-        </div>
-      ) : null}
+      {o.summary ? <p className="adm-sum">{o.summary}</p> : null}
 
-      {quotes.length ? (
-        <div style={{ border: `1px solid ${C.border2}`, borderRadius: 10, padding: '9px 11px', marginBottom: 10, fontSize: 14, color: C.ink2 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 700, letterSpacing: '.04em', textTransform: 'uppercase', color: C.ink3, marginBottom: 4 }}>Цитати зі сторінки</div>
-          {quotes.map(([label, q]) => (
-            <div key={label} style={{ marginBottom: 3 }}><b style={{ color: C.ink }}>{label}:</b> «{q}»</div>
-          ))}
-        </div>
-      ) : null}
+      <p className="adm-src">
+        {o.source ? <span>{o.source}</span> : null}
+        {o.source_url
+          ? <a href={o.source_url} target="_blank" rel="noreferrer">🔗 відкрити джерело ↗</a>
+          : <span>⚠ немає посилання</span>}
+      </p>
 
-      {warnings.length ? (
-        <div style={{ background: C.warnBg, border: '1px solid #f3d3ad', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
-          {warnings.map((w) => (
-            <div key={w} style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>⚠ {w}</div>
-          ))}
-          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>виправити →</a>
-        </div>
-      ) : null}
-
+      {/* Те, що людина має звірити руками. Заголовок не дублює причину:
+          вона вже сказана вгорі, тут — самі факти для порівняння. */}
       {o.dup_of ? (
-        <div style={{ background: C.warnBg, borderRadius: 10, padding: '9px 11px', marginBottom: 10, border: '1px solid #f3d3ad' }}>
-          <div style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 7 }}>
-            ⚠ Можливий дублікат{o.dup_score ? ` (~${Math.round(o.dup_score * 100)}%)` : ''} — порівняй обидва:
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
-            <MiniCol label="Ця" item={o} accent="#e0a763" />
+        <div className="adm-note warn">
+          <div className="h">Порівняй обидва{o.dup_score ? ` (схожість ~${Math.round(o.dup_score * 100)}%)` : ''}:</div>
+          <div className="adm-pair">
+            <MiniCol label="Ця" item={o} accent="#b4530a" />
             {match
               ? <MiniCol label="Схожа (вже в базі)" item={match} />
-              : <div style={{ fontSize: 12.5, color: C.ink2, alignSelf: 'center', padding: '0 4px' }}>
-                  <a href={`/o/${o.dup_of}`} target="_blank" rel="noreferrer" style={{ color: C.warnInk, fontWeight: 600 }}>переглянути схожу ↗</a>
+              : <div style={{ alignSelf: 'center', padding: '0 4px' }}>
+                  <a href={`/o/${o.dup_of}`} target="_blank" rel="noreferrer">переглянути схожу ↗</a>
                 </div>}
           </div>
         </div>
       ) : null}
 
-      <h3 style={{ margin: '0 0 7px', fontSize: 18, lineHeight: 1.3 }}>
-        <a href={`/admin/edit/${o.id}`} style={{ color: 'inherit', textDecoration: 'none' }}>{o.title}</a>
-      </h3>
-      {o.summary ? <p style={{ margin: '0 0 10px', fontSize: 15.5, color: C.ink2, lineHeight: 1.55 }}>{o.summary}</p> : null}
+      {warnings.length ? (
+        <div className="adm-note warn">
+          {warnings.map((w) => <div key={w} style={{ marginBottom: 5 }}>{w}</div>)}
+        </div>
+      ) : null}
 
-      <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontSize: 14.5, color: C.ink2, marginBottom: 11, flexWrap: 'wrap' }}>
-        {o.source ? <span>{o.source}</span> : null}
-        {o.source_url
-          ? <a href={o.source_url} target="_blank" rel="noreferrer" style={{ color: C.link, fontWeight: 600 }}>🔗 відкрити джерело ↗</a>
-          : <span style={{ color: C.warnInk }}>⚠ немає посилання</span>}
-      </div>
+      {/* На сайті причина не показується (там просто дивляться), тож
+          неповноту такого запису кажемо окремим рядком. */}
+      {!reason && missing.length ? (
+        <div className="adm-note warn">
+          <div className="h">⛔ Уже на сайті, але неповна — бракує: {missing.join(', ')}</div>
+          <a href={`/admin/edit/${o.id}`}>дозаповнити →</a>
+        </div>
+      ) : null}
+
+      {openNotes.length ? (
+        <div className="adm-note info">
+          <div className="h">💬 Коментар чекає на обробку</div>
+          {openNotes.map((n) => (
+            <div key={n.id}>
+              <span style={{ color: '#54617a' }}>{formatDate(String(n.created_at).slice(0, 10))}:</span> {n.body}
+            </div>
+          ))}
+        </div>
+      ) : null}
+
+      {quotes.length || o.admin_comment ? (
+        <details className="adm-more">
+          <summary>Що знайшла машина</summary>
+          <div className="in">
+            {quotes.map(([label, q]) => (
+              <div key={label}><b>{label}:</b> «{q}»</div>
+            ))}
+            {o.admin_comment ? <div><b>Позначки конвеєра:</b> {o.admin_comment}</div> : null}
+          </div>
+        </details>
+      ) : null}
 
       {done ? (
-        <div style={{ fontWeight: 600, fontSize: 15, color: gone || done === 'skipped' ? C.ink2 : C.green }}>
+        <p className="adm-done">
           {{ approved: '✅ Додано на сайт', skipped: '❌ Пропущено', verified: '✓ Перевірено',
              removed: '🗑 Прибрано' }[done]}
-        </div>
+        </p>
       ) : (
         <>
-          {o.admin_comment ? (
-            <p style={{ margin: '0 0 10px', fontSize: 14, color: C.ink2, lineHeight: 1.5 }}>
-              <b style={{ fontWeight: 600 }}>Позначки конвеєра:</b> {o.admin_comment}
-            </p>
-          ) : null}
-          {openNotes.length ? (
-            <div style={{ background: '#eef4ff', border: '1px solid #cddcfb', borderRadius: 10, padding: '8px 11px', marginBottom: 9 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: C.link, marginBottom: 4 }}>
-                💬 Коментар чекає на обробку
-              </div>
-              {openNotes.map((n) => (
-                <div key={n.id} style={{ fontSize: 15, color: C.ink, lineHeight: 1.5 }}>
-                  <span style={{ color: C.ink2 }}>{formatDate(String(n.created_at).slice(0, 10))}:</span> {n.body}
-                </div>
-              ))}
-            </div>
-          ) : null}
           <textarea
+            className="adm-ta"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Коментар: питання, сумнів або причина рішення…"
             rows={2}
-            style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'inherit', fontSize: 15,
-              padding: '9px 12px', borderRadius: 9, border: `1px solid ${C.border2}`, resize: 'vertical', marginBottom: 10 }}
           />
-          <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap' }}>
+          <div className="adm-acts">
             {mode === 'drafts' ? (
               <>
-                <Btn onClick={() => act('approve')} busy={busy || missing.length > 0} bg={C.green} fg="#fff">✅ Додати на сайт</Btn>
-                <Btn onClick={() => act('skip')} busy={busy} border>❌ Пропустити</Btn>
+                <button type="button" className="adm-btn go" onClick={() => act('approve')} disabled={busy || missing.length > 0}>✅ Додати на сайт</button>
+                <button type="button" className="adm-btn" onClick={() => act('skip')} disabled={busy}>❌ Пропустити</button>
               </>
             ) : (
               <>
-                <Btn onClick={() => act('verify')} busy={busy} bg={C.green} fg="#fff">🔗 Посилання робоче</Btn>
-                <Btn onClick={() => act('remove')} busy={busy} bg="#d92c2c" fg="#fff">🗑 Прибрати</Btn>
+                <button type="button" className="adm-btn go" onClick={() => act('verify')} disabled={busy}>🔗 Посилання робоче</button>
+                <button type="button" className="adm-btn del" onClick={() => act('remove')} disabled={busy}>🗑 Прибрати</button>
               </>
             )}
             {/* Редагування жило лише під назвою картки, і знайти його було
                 неможливо (22.09.2026). */}
-            <a href={`/admin/edit/${o.id}`} style={{ ...btnStyle(false, { border: true }), textDecoration: 'none' }}>
-              ✏️ Редагувати
-            </a>
+            <a className="adm-btn" href={`/admin/edit/${o.id}`}>✏️ Редагувати</a>
             {/* Питання без рішення: запис лишається в черзі, коментар — у
                 moderation_notes відкритим, доки його не оброблять; його
                 показує ранкове зведення (Марія, 22.09.2026). */}
-            <Btn onClick={() => act('comment')} busy={busy || !comment.trim()} border>💬 Залишити коментар</Btn>
+            <button type="button" className="adm-btn" onClick={() => act('comment')} disabled={busy || !comment.trim()}>💬 Залишити коментар</button>
           </div>
         </>
       )}
@@ -265,33 +242,30 @@ function Card({ o, mode, onAction, match, notes = [] }) {
   );
 }
 
-const btnStyle = (busy, { bg, fg, border }) => ({
-  padding: '10px 17px', fontSize: 15, fontWeight: 600, borderRadius: 9, cursor: busy ? 'default' : 'pointer',
-  fontFamily: 'inherit', opacity: busy ? 0.55 : 1,
-  background: border ? '#fff' : bg, color: border ? C.ink2 : fg,
-  border: border ? `1px solid ${C.border2}` : 'none',
-});
-
-function Btn({ children, onClick, busy, bg, fg, border }) {
-  return (
-    <button onClick={onClick} disabled={busy} style={btnStyle(busy, { bg, fg, border })}>
-      {children}
-    </button>
-  );
-}
-
-// Вкладки — кроки одного шляху, у тому порядку, у якому ним іде запис
-// (Марія, 22.09.2026). «Неповні» стоять окремо: це не крок, а підмножина
-// того, що вже на сайті.
-const TABS = ['raw', 'drafts', 'waiting', 'active', 'incomplete'];
+// Два розділи, як Марія намалювала на папері 23.09.2026: «Потребує рішення»
+// (і показувати, ЧОМУ саме цей запис сюди потрапив) і «Активні» — те, що
+// зараз на сайті, просто продивлятися. Решта — знахідки скраперів, те, що
+// чекає машину, і неповні записи на сайті — нікуди не поділась: вона одним
+// кліком у рядку під заголовком. Вкладок було пʼять, і людина мусила
+// тримати в голові, чим вони відрізняються.
+const MAIN = ['decision', 'active'];
+const ALSO = [
+  { key: 'raw', label: 'Знахідки скраперів' },
+  { key: 'waiting', label: 'Чекає машину' },
+  { key: 'incomplete', label: 'Неповні на сайті' },
+];
+const ALL = [...MAIN, ...ALSO.map((x) => x.key)];
+// Старі адреси: /admin/quarantine → ?tab=raw, а закладка на ?tab=drafts
+// (колишня «До рішення») має відкривати той самий список.
+const ALIAS = { drafts: 'decision' };
 
 export default function AdminList({
-  drafts, actives, raw = [], matches = {}, notes = {}, initialTab, children,
+  drafts, actives, raw = [], matches = {}, notes = {}, today, initialTab, children,
 }) {
-  // Стару адресу /admin/quarantine перенаправлено на /admin?tab=raw, тож
-  // закладки й посилання з листів відкривають саме ту вкладку.
-  const [tab, setTab] = useState(TABS.includes(initialTab) ? initialTab : 'drafts');
+  const start = ALIAS[initialTab] || initialTab;
+  const [tab, setTab] = useState(ALL.includes(start) ? start : 'decision');
   const [search, setSearch] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   async function onAction(id, action, comment) {
     try {
@@ -316,12 +290,16 @@ export default function AdminList({
   const flaggedCount = useMemo(() => actives.filter((o) => o.dup_of).length, [actives]);
 
   // Черга людини — за ризиком, а не за сумнівом машини (Марія, 22.09.2026).
-  // Вразлива тема першою, далі суперечність, межа «для дітей», рідкісне
-  // міжнародне. Усе, чому просто бракує поля чи цитати, чекає машину й у
-  // щоденній роботі не показується.
+  // Усе, чому просто бракує поля чи цитати, чекає машину.
   const { forHuman, waiting } = useMemo(() => splitQueue(drafts), [drafts]);
 
-  // Окрема вкладка для того, що вже на сайті, але без обовʼязкового мінімуму.
+  // А всередині черги порядок задає дедлайн (Марія, 23.09.2026: «сортувати
+  // за найближчим дедлайном»): спершу те, у чого дата горить, потім усе інше
+  // — у тому ж порядку ваги ризику, бо сортування стабільне.
+  const queue = useMemo(() => sortByDeadline(forHuman, (x) => x.row.deadline), [forHuman]);
+  const waitingSorted = useMemo(() => sortByDeadline(waiting, (x) => x.row.deadline), [waiting]);
+
+  // Окремий список для того, що вже на сайті, але без обовʼязкового мінімуму.
   // Ворота конвеєра тримають нові записи, а ці лишились з часу, коли правила
   // ще не було, — і знайти їх інакше нічим (11.09.2026).
   const incomplete = useMemo(
@@ -329,123 +307,133 @@ export default function AdminList({
     [actives],
   );
 
-  const tabBtn = (id, label) => (
-    <button onClick={() => setTab(id)}
-      style={{
-        padding: '10px 18px', fontSize: 16, fontWeight: 600, borderRadius: 10, cursor: 'pointer', fontFamily: 'inherit',
-        border: `1px solid ${tab === id ? C.ink : C.border2}`,
-        background: tab === id ? C.ink : '#fff', color: tab === id ? '#fff' : C.ink2,
-      }}>
-      {label}
+  const counts = {
+    decision: queue.length, active: actives.length,
+    raw: raw.length, waiting: waitingSorted.length, incomplete: incomplete.length,
+  };
+
+  const go = (id) => { setTab(id); setShowAll(false); };
+  const sec = (id, label) => (
+    <button type="button" className="adm-sec" aria-pressed={tab === id} onClick={() => go(id)}>
+      {label} <span className="n">({counts[id]})</span>
     </button>
   );
 
+  const shown = showAll ? queue : queue.slice(0, DAILY_CAP);
+
   return (
     <div className="adm-queue">
-      <style dangerouslySetInnerHTML={{ __html: QUEUE_LAYOUT_CSS }} />
-      <div className="adm-queue-head">{children}</div>
+      <style dangerouslySetInnerHTML={{ __html: QUEUE_LAYOUT_CSS + ADMIN_CARD_CSS }} />
+      <div className="adm-queue-head">
+        {children}
+        {/* Рядок під заголовком: усе, що пішло з головного ряду вкладок. */}
+        <p className="adm-also">
+          <span className="lbl">Також:</span>
+          {ALSO.map((x) => (
+            <button key={x.key} type="button" aria-pressed={tab === x.key} onClick={() => go(x.key)}>
+              {x.label} <span className="n">({counts[x.key]})</span>
+            </button>
+          ))}
+        </p>
+      </div>
       <aside className="adm-queue-rules" aria-label="Правила модерації">
-        <ModerationRules tab={tab === 'raw' ? 'quarantine' : tab === 'waiting' ? 'drafts' : tab} />
+        <ModerationRules section={tab} />
       </aside>
       <div className="adm-queue-body" style={{ marginTop: 22 }}>
-        <div style={{ display: 'flex', gap: 9, marginBottom: 18, flexWrap: 'wrap' }}>
-          {tabBtn('raw', `1 · Знахідки (${raw.length})`)}
-          {tabBtn('drafts', `2 · До рішення (${forHuman.length})`)}
-          {tabBtn('waiting', `⏳ Чекає машину (${waiting.length})`)}
-          {tabBtn('active', `3 · На сайті (${actives.length})`)}
-          {tabBtn('incomplete', `⛔ Неповні (${incomplete.length})`)}
+        <div className="adm-secs">
+          {sec('decision', '🙋 Потребує рішення')}
+          {sec('active', '🌍 На сайті')}
         </div>
 
-        {tab === 'raw' ? (
+        {tab === 'decision' ? (
+          queue.length === 0 ? (
+            <p className="adm-lead">Нічого не чекає рішення. Нові кандидати прийдуть після нічного прогону.</p>
+          ) : (
+            <>
+              <p className="adm-lead">
+                Кожна картка починається з рядка, <b>чому вона тут</b>. Спершу те, у чого
+                найближчий дедлайн; без дедлайну — нижче, за вагою ризику.
+              </p>
+              {shown.map(({ row }) => (
+                <Card key={row.id} o={row} mode="drafts" reason={decisionReason(row)}
+                  today={today} onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
+              ))}
+              {/* Межа в добу лишається підказкою «на сьогодні вистачить», а
+                  не ситом: решта відкривається одним кліком, нічого не
+                  зникає (Марія, 22.09.2026 — не більше 15–20 на день). */}
+              {!showAll && queue.length > DAILY_CAP ? (
+                <p style={{ marginTop: 14 }}>
+                  <button type="button" className="adm-btn" onClick={() => setShowAll(true)}>
+                    Показати решту ({queue.length - DAILY_CAP})
+                  </button>
+                </p>
+              ) : null}
+            </>
+          )
+        ) : tab === 'active' ? (
           <>
-            <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
+            <input
+              className="adm-search"
+              value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Пошук за назвою або джерелом…"
+            />
+            <p className="adm-lead">
+              Те, що зараз на сайті. Показано {activeFiltered.length} із {actives.length}.
+              {flaggedCount > 0 ? <> <b>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
+            </p>
+            {activeFiltered.slice(0, 150).map((o) => (
+              <Card key={o.id} o={o} mode="active" reason={null} today={today}
+                onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />
+            ))}
+            {activeFiltered.length > 150
+              ? <p className="adm-lead" style={{ marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
+              : null}
+          </>
+        ) : tab === 'raw' ? (
+          <>
+            <p className="adm-lead">
               Сирий текст зі скраперів, де модель не певна, що це можливість для дитини.
               Одне питання: <b>це для дітей?</b> «Завести можливість» віддає текст у нічний
-              розбір — модель заповнить поля, і запис прийде на вкладку «Кандидати».
+              розбір — модель заповнить поля, і запис прийде в «Потребує рішення».
               «Відхилити» — назавжди.
             </p>
             <QuarantineList rows={raw} />
           </>
-        ) : tab === 'incomplete' ? (
-          incomplete.length === 0 ? (
-            <p style={{ color: C.ink2, fontSize: 16 }}>Усі активні записи мають дату, тип, вік, вартість і місце. </p>
-          ) : (
-            <>
-              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px' }}>
-                Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
-                не стають — ворота конвеєра їх не пускають.
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-                {incomplete.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
-              </div>
-            </>
-          )
         ) : tab === 'waiting' ? (
-          waiting.length === 0 ? (
-            <p style={{ color: C.ink2, fontSize: 16 }}>Нічого не чекає машину.</p>
+          waitingSorted.length === 0 ? (
+            <p className="adm-lead">Нічого не чекає машину.</p>
           ) : (
             <>
-              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
+              <p className="adm-lead">
                 Ці записи <b>не на сайті й не в щоденній черзі</b>: їм бракує поля або
                 цитати зі сторінки. Машина щоночі перечитує до 20 таких сторінок — і коли
                 на сторінці зʼявиться потрібна фраза, запис вийде на сайт сам. Заглядай
                 сюди, коли є час.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-                {waiting.slice(0, 150).map(({ row, wait }) => (
-                  <div key={row.id}>
-                    <div style={{ fontSize: 13, color: C.ink3, marginBottom: 3 }}>⏳ {wait}</div>
-                    <Card o={row} mode="drafts" onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
-                  </div>
-                ))}
-              </div>
-              {waiting.length > 150
-                ? <p style={{ color: C.ink2, fontSize: 14.5, marginTop: 14 }}>Показано перші 150 зі {waiting.length}.</p>
+              {waitingSorted.slice(0, 150).map(({ row }) => (
+                <Card key={row.id} o={row} mode="drafts" reason={decisionReason(row)}
+                  today={today} onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
+              ))}
+              {waitingSorted.length > 150
+                ? <p className="adm-lead" style={{ marginTop: 14 }}>Показано перші 150 зі {waitingSorted.length}.</p>
                 : null}
             </>
           )
-        ) : tab === 'drafts' ? (
-          forHuman.length === 0 ? (
-            <p style={{ color: C.ink2, fontSize: 16 }}>
-              Нічого не чекає рішення. Нові кандидати прийдуть після нічного прогону.
-            </p>
+        ) : (
+          incomplete.length === 0 ? (
+            <p className="adm-lead">Усі записи на сайті мають дату, тип, вік, вартість і місце.</p>
           ) : (
             <>
-              <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px', lineHeight: 1.5 }}>
-                За ризиком: спершу вразливі теми, далі суперечності в записі, межа «для дітей»
-                і рідкісне міжнародне. {forHuman.length > DAILY_CAP
-                  ? <>Показано перші {DAILY_CAP} — решта {forHuman.length - DAILY_CAP} нікуди не дінеться.</>
-                  : null}
+              <p className="adm-lead">
+                Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
+                не стають — ворота конвеєра їх не пускають.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-                {forHuman.slice(0, DAILY_CAP).map(({ row, risk }) => (
-                  <div key={row.id}>
-                    {risk ? <div style={{ fontSize: 13, color: C.warnInk, fontWeight: 600, marginBottom: 3 }}>⚠ {risk.label}</div> : null}
-                    <Card o={row} mode="drafts" onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
-                  </div>
-                ))}
-              </div>
+              {incomplete.slice(0, 150).map((o) => (
+                <Card key={o.id} o={o} mode="active" reason={gapReason(o)} today={today}
+                  onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />
+              ))}
             </>
           )
-        ) : (
-          <>
-            <input
-              value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder="Пошук за назвою або джерелом…"
-              style={{ width: '100%', boxSizing: 'border-box', fontSize: 16, padding: '11px 14px',
-                borderRadius: 10, border: `1px solid ${C.border2}`, marginBottom: 14, fontFamily: 'inherit' }}
-            />
-            <p style={{ color: C.ink2, fontSize: 14.5, margin: '0 0 12px' }}>
-              Показано {activeFiltered.length} із {actives.length}.
-              {flaggedCount > 0 ? <> <b style={{ color: C.warnInk }}>⚠ {flaggedCount} можливих дублікатів</b> — вгорі списку.</> : null}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-              {activeFiltered.slice(0, 150).map((o) => <Card key={o.id} o={o} mode="active" onAction={onAction} match={matches[o.dup_of]} notes={notes[o.id]} />)}
-            </div>
-            {activeFiltered.length > 150
-              ? <p style={{ color: C.ink2, fontSize: 14.5, marginTop: 14 }}>Показано перші 150 — звузь пошук, щоб побачити решту.</p>
-              : null}
-          </>
         )}
       </div>
     </div>
