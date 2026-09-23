@@ -208,12 +208,16 @@
    як недоведена верстка. Тепер сторінка тримає одну ширину: ліворуч текст,
    праворуч факти й кнопки, що прилипають до верху, поки людина читає. */
 @media (min-width: 1100px) {
-  .container.o-detail { max-width: 1240px; }
+  /* Ширина підібрана так, щоб текст ліворуч сам виходив ~720px — рядок
+     довший за ~90 символів око губить на переході. Обмежувати текст
+     окремо не треба: інакше праворуч від нього лишалась порожня смуга,
+     а лінія під підсумком обривалась на півдорозі. */
+  .container.o-detail { max-width: 1160px; }
 
   .opportunity-page {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 360px;
-    column-gap: 48px;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    column-gap: 36px;
     align-items: start;
     max-width: none;
     margin-bottom: 8px;
@@ -224,9 +228,13 @@
 
   .o-main { min-width: 0; }
 
-  /* Рядок довший за ~90 символів око губить на переході. */
-  .opportunity-summary,
-  .opportunity-details { max-width: 720px; }
+  /* Щільніше по вертикалі: з рамки картки сторінка вийшла в повітря, і
+     старі відступи, розраховані на 36px паддингу, читались як розтягнуті. */
+  .opportunity-breadcrumbs { margin: 14px 0 18px; }
+  .opportunity-chips { margin-bottom: 14px; }
+  .opportunity-title { margin-bottom: 10px; }
+  .opportunity-summary { margin-bottom: 0; }
+  .opportunity-details { margin-top: 22px; padding-top: 18px; }
 
   /* Факти їдуть за людиною, поки вона читає опис: кнопка «Подати заявку»
      лишається на екрані, а не в початку сторінки. Відступ рахується від
@@ -237,19 +245,32 @@
     top: calc(var(--v2-header-h, 69px) + 16px);
   }
 
-  /* У вузькій колонці підпис стоїть над значенням, а не поруч. */
+  /* У вузькій колонці підпис стоїть над значенням, а не поруч. Рядки
+     щільні: шість фактів із повітрям між ними розтягували колонку на пів
+     екрана, і картка важила більше за сам опис. */
   .o-aside .opportunity-meta {
     grid-template-columns: 1fr;
     gap: 0;
-    padding: 20px 22px;
-    margin-bottom: 14px;
+    padding: 16px 18px;
+    margin-bottom: 12px;
+    line-height: 1.35;
   }
 
-  .o-aside .opportunity-meta dt { margin-top: 14px; }
-  .o-aside .opportunity-meta dt:first-child { margin-top: 0; }
+  .o-aside .opportunity-meta dt {
+    margin-top: 10px;
+    font-size: 0.8125rem;
+  }
 
-  .o-aside .opportunity-actions { display: grid; gap: 10px; }
-  .o-aside .opportunity-actions > * { justify-content: center; }
+  .o-aside .opportunity-meta dt:first-child { margin-top: 0; }
+  .o-aside .opportunity-meta dd { font-size: 0.9375rem; }
+
+  .o-aside .opportunity-actions { display: grid; gap: 8px; }
+
+  .o-aside .opportunity-actions > * {
+    justify-content: center;
+    padding: 12px 20px;
+    font-size: 0.9375rem;
+  }
 }
 
 /* Вужче за дві колонки сторінка лишається такою, як була: обгортки
