@@ -297,6 +297,33 @@ def _fill_from_text(data: dict, age_missing: bool) -> bool:
     return age_missing
 
 
+PSEUDO_CITIES = ("Онлайн", "Вся Україна", "Міжнародні", "Україна")
+
+
+def _drop_international_for_local(data: dict) -> None:
+    """Подія в конкретному українському місті — не міжнародна.
+
+    23.09.2026 Марія показала картку English Club у Києві з підписом «За
+    кордоном»: модель ставила is_international=True за «учасники з різних
+    країн» (американці в гостях), а підпис на картці рахувався саме з цього
+    прапорця. Таких записів у базі було сім — вокальна школа й гурток боксу
+    серед них. Місто конкретніше за прапорець: якщо країна лише Україна і є
+    справжнє місто, поїздки за кордон немає.
+    """
+    if not data.get("is_international"):
+        return
+    countries = [str(c).lower() for c in (data.get("countries") or [])]
+    if countries != ["ua"]:
+        return
+    real = [c for c in (data.get("cities") or []) if c not in PSEUDO_CITIES]
+    if not real:
+        return
+    data["is_international"] = False
+    note = ("позначку «міжнародна» знято: подія в місті "
+            + ", ".join(real[:2]) + ", країна лише Україна")
+    data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+
+
 def _apply_format_from_text(data: dict) -> None:
     """Формат, який прямо написаний у назві чи описі, — факт, а не здогад.
 
@@ -480,6 +507,7 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
     # Прапорець міжнародності приходить від моделі й мусить бути булевим:
     # порожньо чи текст → False, інакше значення поламає NOT NULL у базі.
     data["is_international"] = bool(data.get("is_international"))
+    _drop_international_for_local(data)
     _apply_format_from_text(data)
     _apply_place_quote(data, source_text)
     age_missing = _fill_from_text(data, age_missing)
