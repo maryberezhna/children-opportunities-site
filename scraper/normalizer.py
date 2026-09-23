@@ -211,6 +211,32 @@ _FOR_THE_CHILD_TYPES = {"allowance", "support_payment", "humanitarian", "medical
                         "shelter", "legal_aid"}
 
 
+# Програма, куди беруть лише зарахованих студентів ЗВО (Марія, 23.09.2026:
+# «не наше, прибрати» про BEST і IAESTE). Це НЕ про вік: «18+ — наша
+# авдиторія», і молодіжний обмін Erasmus+ для 18-річних лишається нашим.
+# Різниця в тому, ким треба БУТИ: випускник 11 класу, якому щойно виповнилось
+# 18, у BEST чи IAESTE не потрапить — туди треба вже бути студентом
+# інженерної спеціальності, а до IAESTE ще й колишнім стажистом.
+#
+# Поміряно на всій базі (1 687 записів): правило ловить рівно ці два записи
+# і жодного зайвого. Тому винятки перелічені явно — «для учнів та студентів»,
+# «старшокласники», знижка для студентів — це наші записи, не чужі.
+_UNI_ONLY = re.compile(
+    r"студент\w*[- ]?(університет|зво|вишу|інженер|технічн|медичн)"
+    r"|бакалавр\w*\s+університет"
+    r"|(?:лише|тільки)\s+для\s+студент",
+    re.IGNORECASE)
+# Будь-яка згадка школи означає, що програма відкрита й дитині.
+_FOR_SCHOOL = re.compile(
+    r"учн\w*|школяр|старшокласник|клас\w*|дошкіл|підліт|знижк", re.IGNORECASE)
+
+
+def looks_university_only(data: dict) -> bool:
+    """Чи потрапити можна лише зарахованому студентові ЗВО."""
+    text = " ".join(str(data.get(k) or "") for k in ("title", "summary", "details"))
+    return bool(_UNI_ONLY.search(text) and not _FOR_SCHOOL.search(text))
+
+
 def looks_adult_participant(data: dict) -> bool:
     if data.get("opportunity_type") in _FOR_THE_CHILD_TYPES:
         return False
@@ -470,6 +496,10 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
         data["status"] = "draft"
         _note(data, "auto: схоже, учасник — дорослий (батьки, жінки, підприємці), "
                     "а діти лише умова участі; не для дітей — перевір")
+    if looks_university_only(data):
+        data["status"] = "draft"
+        _note(data, "auto: схоже, лише для зарахованих студентів ЗВО — школяр "
+                    "туди не потрапить; не наше (рішення 23.09.2026) — перевір")
     missing = missing_required(data, age_missing=age_missing)
     if missing:
         data["status"] = "draft"
