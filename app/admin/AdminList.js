@@ -124,23 +124,33 @@ function Card({ o, mode, onAction, match, notes = [] }) {
           ? <span style={{ color: C.green, fontWeight: 600 }}>✓ перевірено</span> : null}
       </div>
 
-      {missing.length ? (
-        <div style={{ background: '#fdecec', border: '1px solid #f3bcbc', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
-          <div style={{ color: '#a11b1b', fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
-            ⛔ {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'} — бракує: {missing.join(', ')}
+      {/* Один блок, а не два (Марія, 22.09.2026: «давай шось одне»). Обидві
+          причини кажуть читачеві те саме — «на сайт не піде» — тож і рамка
+          одна, з двома рядками. Червона, коли поля бракує зовсім; жовта,
+          коли поле є, а цитати на нього немає. */}
+      {missing.length || noProof.length ? (
+        <div style={{
+          background: missing.length ? '#fdecec' : C.warnBg,
+          border: `1px solid ${missing.length ? '#f3bcbc' : '#f3d3ad'}`,
+          borderRadius: 10, padding: '9px 11px', marginBottom: 10,
+        }}>
+          <div style={{ color: missing.length ? '#a11b1b' : C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
+            {missing.length ? '⛔' : '🟡'} {mode === 'drafts' ? 'Не піде на сайт' : 'Уже на сайті, але неповна'}
           </div>
-          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>дозаповнити →</a>
-        </div>
-      ) : null}
-
-      {noProof.length ? (
-        <div style={{ background: C.warnBg, border: '1px solid #f3d3ad', borderRadius: 10, padding: '9px 11px', marginBottom: 10 }}>
-          <div style={{ color: C.warnInk, fontSize: 14.5, fontWeight: 600, marginBottom: 4 }}>
-            🟡 Без цитати зі сторінки: {noProof.join(', ')}
-          </div>
-          <div style={{ fontSize: 14, color: C.ink2 }}>
-            Поле заповнене, але машина не знайшла на нього дослівної фрази. Перевір по джерелу — або додай сам, або поправ.
-          </div>
+          {missing.length ? (
+            <div style={{ fontSize: 14.5, color: C.ink, marginBottom: noProof.length ? 3 : 5 }}>
+              Бракує: {missing.join(', ')}
+            </div>
+          ) : null}
+          {noProof.length ? (
+            <div style={{ fontSize: 14.5, color: C.ink, marginBottom: 5 }}>
+              Без цитати зі сторінки: {noProof.join(', ')} — поле заповнене, але машина
+              не знайшла на нього дослівної фрази.
+            </div>
+          ) : null}
+          <a href={`/admin/edit/${o.id}`} style={{ fontSize: 14.5, color: C.link, fontWeight: 600 }}>
+            перевірити по джерелу →
+          </a>
         </div>
       ) : null}
 
