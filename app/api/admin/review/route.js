@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { safeEqual } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
+import { DECISION_FIELD } from '@/lib/corrections';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -64,6 +65,17 @@ export async function POST(request) {
   // позначки конвеєра, і людський текст або затирав їх, або тонув серед них
   // (22.09.2026). «Лише коментар» — питання без рішення, лишається
   // відкритим, доки його не оброблять; коментар до рішення — його причина.
+  // Статус ДО рішення. 23.09.2026: «пропустити» й «прибрати» — теж сигнал
+  // моделі («принесла не те»), а ми його не зберігали; після update статус уже
+  // 'closed', і чим він був — чернеткою чи живим записом — не дізнатись.
+  const isDecision = action === 'skip' || action === 'remove';
+  let statusBefore = null;
+  if (isDecision) {
+    const { data: cur } = await supabase
+      .from('opportunities').select('status').eq('id', id).maybeSingle();
+    statusBefore = cur?.status ?? null;
+  }
+
   const patch = { updated_at: new Date().toISOString() };
   if (spec.status) patch.status = spec.status;
   if (spec.verify) patch.verified_at = new Date().toISOString();
@@ -92,6 +104,22 @@ export async function POST(request) {
     // щоб людина не думала, що її питання хтось побачить.
     if (noteError) return Response.json({ ok: false, error: 'note_not_saved' }, { status: 500 });
     note = saved;
+  }
+
+  // Телеметрія навчання: рішення людини поруч із виправленнями полів. Причину
+  // кладемо в той самий рядок — без неї «прибрано» не пояснює нічого, а за
+  // парою before→after рахується закономірність («на сайті → прибрати ×14»).
+  // Мовчки: таблиці може ще не бути, а рішення вже записане.
+  if (isDecision) {
+    try {
+      await supabase.from('moderation_corrections').insert({
+        opportunity_id: id,
+        field: DECISION_FIELD,
+        before: statusBefore,
+        after: text ? { action, comment: text } : { action },
+        source: 'review',
+      });
+    } catch { /* телеметрія мовчить і нічого не ламає */ }
   }
 
   // Mirror to Notion (best-effort; no-op if not configured).

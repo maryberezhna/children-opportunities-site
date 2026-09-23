@@ -1,0 +1,50 @@
+name: Що людина виправляє за моделлю (тижневий звіт)
+
+# Раз на тиждень в адмін-чат: яке поле модерація виправляє найчастіше і які
+# пари before→after повторюються. Привід (23.09.2026): ми не зберігали, ЩО
+# саме виправила людина, тож конвеєр повторював ті самі помилки, а правила в
+# промпт доводилось вписувати руками. Виправлень за тиждень немає — нічого
+# не надсилаємо.
+#
+# Понеділок, 06:00 UTC. Розклад GitHub запізнюється на 4–6 годин (пам'ять
+# «Розклад GitHub бреше»), тож звіт реально приходить у понеділок пополудні —
+# точнішого часу цим механізмом не буває.
+on:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        # Для ручного запуску за замовчуванням true: подивитись текст, не
+        # надсилаючи його в чат посеред тижня.
+        description: 'true = лише показати текст, нічого не слати'
+        required: false
+        default: 'true'
+      period_days:
+        description: 'За скільки днів рахувати (типово 7)'
+        required: false
+        default: '7'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save @supabase/supabase-js
+      - name: Зібрати й надіслати
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SITE_URL: https://dityam.com.ua
+          PERIOD_DAYS: ${{ github.event.inputs.period_days || '7' }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+        run: node scripts/corrections-digest.mjs
