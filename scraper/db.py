@@ -23,7 +23,8 @@ KEEP_IF_KNOWN = (
     "deadline", "event_start_date", "event_end_date", "recurrence",
     "timing_kind", "season_months", "details", "apply_url", "price_note",
 )
-EXISTING_FIELDS = "id, verified_at, status, timing_assumed, evidence, " + ", ".join(KEEP_IF_KNOWN)
+EXISTING_FIELDS = ("id, verified_at, status, timing_assumed, evidence, age_from, age_to, "
+                   + ", ".join(KEEP_IF_KNOWN))
 
 
 def merge_patch(existing: dict, record: dict) -> dict:
@@ -46,6 +47,16 @@ def merge_patch(existing: dict, record: dict) -> dict:
     for key in KEEP_IF_KNOWN:
         if key in patch and patch[key] in (None, "", []) and existing.get(key) not in (None, "", []):
             patch.pop(key)
+    # Технічний 0–18 не затирає вже названий вік. Ворота правди (23.09.2026)
+    # знімають вік, на який немає цитати зі сторінки, — і без цього
+    # запобіжника перша ж повторна розмітка стерла б вік у сотнях записів,
+    # які вже стоять на сайті. Фільтр «скільки років дитині» показав би їх
+    # усім підряд. Зняти здогад із тих записів — окрема, видима робота, а не
+    # побічний ефект розмітки.
+    if patch.get("age_from") == 0 and patch.get("age_to") == 18 \
+            and (existing.get("age_from"), existing.get("age_to")) not in ((0, 18), (None, None)):
+        patch.pop("age_from", None)
+        patch.pop("age_to", None)
     if "status" in patch and patch["status"] != "closed" and existing.get("status"):
         patch.pop("status")
     # Архів (прибрані неперевірні гуртки, 21.09.2026) розмітка не чіпає зовсім:

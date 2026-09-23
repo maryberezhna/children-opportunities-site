@@ -111,6 +111,19 @@ ONLINE_TITLE = re.compile(r"^\W*(?:online|онлайн)\b", re.IGNORECASE)
 OFFLINE_IN_TEXT = re.compile(r"\bочн(?:о|ий|і|а|их)\b|офлайн|offline|наживо", re.IGNORECASE)
 
 
+def phrase_around(text: str, start: int, end: int) -> str:
+    """Речення навколо збігу, але не довше за вікно: довга цитата ніколи не
+    буває кориснішою за фразу, у якій стоїть саме слово. Спільна для цитат,
+    які збирає не модель, а наші ж правила (формат — тут, вік — text_fill)."""
+    left = max(text.rfind(".", 0, start), text.rfind("\n", 0, start), start - 90) + 1
+    right = min(len(text), end + 90)
+    for stop in (".", "\n"):
+        pos = text.find(stop, end)
+        if pos != -1:
+            right = min(right, pos)
+    return re.sub(r"\s+", " ", text[left:right]).strip(" .,:;«»–—-")[:MAX_QUOTE]
+
+
 def place_quote(text) -> str | None:
     """Шматок сторінки, який сам називає формат участі, — цитата на «де».
 
@@ -122,16 +135,7 @@ def place_quote(text) -> str | None:
     m = ONLINE_IN_TEXT.search(src)
     if not m:
         return None
-    # Речення навколо збігу, але не довше за вікно: довга цитата ніколи не
-    # буває кориснішою за фразу, у якій стоїть саме слово.
-    left = max(src.rfind(".", 0, m.start()), src.rfind("\n", 0, m.start()),
-               m.start() - 90) + 1
-    right = min(len(src), m.end() + 90)
-    for stop in (".", "\n"):
-        pos = src.find(stop, m.end())
-        if pos != -1:
-            right = min(right, pos)
-    quote = re.sub(r"\s+", " ", src[left:right]).strip(" .,:;«»–—-")[:MAX_QUOTE]
+    quote = phrase_around(src, m.start(), m.end())
     return quote if quote_in_text(quote, text) else None
 
 

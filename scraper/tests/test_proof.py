@@ -141,6 +141,43 @@ class CorridorNeedsProof(unittest.TestCase):
         self.assertIsNone(auto_review.mechanical(self._row(), trust_tier=2))
 
 
+class AgeNeedsQuote(unittest.TestCase):
+    """Крок 2 (23.09.2026, Марія: «здогад машини — заборонити»). Вік, під який
+    немає дослівної фрази джерела, не зберігається зовсім: у картці він
+    читався як факт нарівні з віком, прочитаним у тексті."""
+
+    # Справжня сторінка, з якої почалась розмова: Eurodesk про EPAS. Віку на
+    # ній немає — лише «students». Модель віддала 12–18, а в іншому проході
+    # тієї самої сторінки 14–17.
+    EPAS = ("European Parliament Ambassador School (EPAS). Free school programme on EU topics "
+            "funded by the European Parliament. Open to motivated students and teachers across "
+            "the EU. Ongoing.")
+
+    def _epas(self, **over):
+        row = full(title="European Parliament Ambassador School (EPAS)",
+                   summary="Безкоштовна шкільна програма про ЄС для учнів і вчителів.",
+                   age_from=12, age_to=18, deadline=None, recurrence="ongoing",
+                   opportunity_type="course", format="offline", cities=[],
+                   evidence={"cost": "Free school programme", "type": "school programme"})
+        row.update(over)
+        return row
+
+    def test_model_guess_is_not_stored(self):
+        out = _sanitize(self._epas(), self.EPAS)
+        self.assertEqual((out["age_from"], out["age_to"]), (0, 18))
+        self.assertNotIn("age", out["evidence"])
+        # Модератор бачить, що саме машина припускала, — і що це не збережено.
+        self.assertIn("вік 12–18 — здогад без цитати", out["admin_comment"])
+        self.assertEqual(out["status"], "draft")
+
+    def test_quoted_age_survives(self):
+        page = self.EPAS.replace("motivated students", "students (14-18 years old)")
+        out = _sanitize(self._epas(age_from=14, age_to=18,
+                                   evidence={"age": "students (14-18 years old)"}), page)
+        self.assertEqual((out["age_from"], out["age_to"]), (14, 18))
+        self.assertEqual(out["evidence"]["age"], "students (14-18 years old)")
+
+
 class MergeKeepsQuotes(unittest.TestCase):
     def test_new_quotes_merge_into_old(self):
         patch = merge_patch({"status": "active", "evidence": {"age": "7–12 років", "cost": "безкоштовно"}},
