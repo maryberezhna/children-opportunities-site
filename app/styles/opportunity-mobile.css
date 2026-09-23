@@ -144,9 +144,17 @@
     text-decoration: none;
   }
 
-  /* Коли є нижня панель, кнопка в тексті зайва — лишається «Додати в
-     календар». Відступ знизу = висота панелі + safe-area. */
-  .o-has-bar .opportunity-actions .opportunity-cta { display: none; }
+  /* Панель під пальцем дублює кнопку з тексту — у тексті лишається та, якої
+     в панелі немає. Без прямого посилання на подачу це «Подати заявку» в
+     панелі й нічого в тексті; з ним — «Подати заявку» в панелі й «Перейти до
+     офіційного сайту» в тексті. Відступ знизу = висота панелі + safe-area. */
+  .o-has-bar:not(.o-has-apply) .opportunity-actions .opportunity-cta { display: none; }
+  .o-has-apply .opportunity-actions .opportunity-apply { display: none; }
+
+  /* На телефоні кнопка стає на всю ширину: два прямокутники впритул одне до
+     одного читались гірше за стовпчик. */
+  .opportunity-actions { display: grid; gap: 10px; }
+  .opportunity-actions > * { justify-content: center; min-height: 52px; }
   .o-has-bar { padding-bottom: calc(104px + env(safe-area-inset-bottom, 0px)); }
   /* Під сторінкою тепер футер: відступ під панель переходить до нього, інакше
      панель закриває копірайт, а над футером зяє порожнеча. */
