@@ -14,6 +14,14 @@ export const JOINED_KEY = 'dityam_subscribed';
 // інша дія, і TelegramCard у списках його не читає.
 export const PLUS_KEY = 'dityam_plus_waitlist';
 
+// localStorage: закрив хрестиком — не показуємо 30 днів. Досі памʼятали лише
+// сесію, тож наступного дня людина, яка сказала «ні», бачила підказку знову
+// (NN/g, «Popups: 10 Problematic Trends»: повторний показ тому, хто вже
+// відмовився, читається як переслідування). Явне «ні» живе довше за сесію,
+// але не вічно: за місяць і сайт, і пропозиція вже інші.
+export const DISMISSED_KEY = 'dityam_popup_dismissed';
+const DISMISS_DAYS = 30;
+
 // sessionStorage: ЗАКРИВ ХРЕСТИКОМ. Автоприховування сюди навмисно не пише.
 // Раніше писало — і «не хочу» та «не помітив» були злиті в один стан: підказка
 // згорала на 18-й секунді назавжди, при середній сесії 4,6 хвилини. З 368
@@ -34,6 +42,13 @@ const SESSION_HIDDEN_AT_KEY = 'dityam_popup_hidden_at';
 // картка в самому списку (TelegramCard.js), а підказка лишається для моментів,
 // коли вже є інтерес: 15 карток, повернення від організатора, кнопка.
 const CARDS_TRIGGER = 15;
+
+// Класи карток у списках. Були просто '.card', але редизайн перейменував їх на
+// 'v2-card' (головна, міські сторінки) і 'tp-card' (тематичні), а '.card'
+// лишився тільки в «схожих можливостях» — і тригер тихо помер: за 14 днів усі
+// 1 896 показів дала не прокрутка, а повернення від організатора. Додаючи
+// новий список карток, додай сюди його клас (стереже tests/subscribePopupCards).
+const CARD_SELECTOR = '.card, .v2-card, .tp-card';
 
 // Скільки висить, перш ніж сховатись. Смуга внизу губилась серед карток —
 // підказка біля кнопки помітна, але саме тому не має стояти вічно.
@@ -89,6 +104,17 @@ const readNumber = (key) => {
     return 0;
   }
 };
+
+/** Чи діє ще відмова хрестиком. Зіпсована або чужа мітка — наче її немає. */
+const dismissedRecently = () => {
+  try {
+    const at = Number(window.localStorage.getItem(DISMISSED_KEY));
+    if (!at) return false;
+    return Date.now() - at < DISMISS_DAYS * 24 * 60 * 60 * 1000;
+  } catch (e) {
+    return false;
+  }
+};
 const writeSession = (key, value) => {
   try {
     window.sessionStorage.setItem(key, String(value));
@@ -110,6 +136,7 @@ export default function SubscribePopup() {
   const isSuppressed = useCallback(() => (
     (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY))
     || readFlag('sessionStorage', SESSION_CLOSED_KEY)
+    || dismissedRecently()
   ), []);
 
   // force — показ на явну дію людини («Підписатись» у хедері чи нижній панелі).
@@ -119,8 +146,10 @@ export default function SubscribePopup() {
     if (typeof window === 'undefined') return false;
     if (openRef.current) return false;
     if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) return false;
+    // Натиснули «Підписатись» самі — показуємо, навіть якщо колись закрили.
     if (force) return true;
     if (readFlag('sessionStorage', SESSION_CLOSED_KEY)) return false;
+    if (dismissedRecently()) return false;
     if (readNumber(SESSION_SHOWS_KEY) >= MAX_SHOWS_PER_SESSION) return false;
     if (!ignoreCooldown) {
       const hiddenAt = readNumber(SESSION_HIDDEN_AT_KEY);
@@ -153,7 +182,12 @@ export default function SubscribePopup() {
     setIsOpen(false);
     writeSession(SESSION_HIDDEN_AT_KEY, Date.now());
 
-    if (reason === 'closed') writeSession(SESSION_CLOSED_KEY, Date.now());
+    if (reason === 'closed') {
+      writeSession(SESSION_CLOSED_KEY, Date.now());
+      try {
+        localStorage.setItem(DISMISSED_KEY, Date.now().toString());
+      } catch (e) {}
+    }
 
     if (reason !== 'joined' && typeof window !== 'undefined' && window.gtag) {
       window.gtag(
@@ -200,7 +234,7 @@ export default function SubscribePopup() {
 
     const checkScroll = () => {
       if (openRef.current) return;
-      const cards = document.querySelectorAll('.card');
+      const cards = document.querySelectorAll(CARD_SELECTOR);
       if (cards.length === 0) return;
 
       const viewportBottom = window.scrollY + window.innerHeight;
@@ -304,11 +338,21 @@ export default function SubscribePopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, hide]);
 
-  if (!isOpen) return null;
-
   const copy = COPY[variant] || COPY.default;
 
+  // Область лишається в розмітці завжди: браузер озвучує зміну тексту в ній,
+  // а не появу нового вузла. Порожня — мовчить.
+  const liveRegion = (
+    <div className="sr-only" role="status" aria-live="polite">
+      {isOpen ? `${copy.title}. ${copy.text}: Telegram-канал або список Dityam+.` : ''}
+    </div>
+  );
+
+  if (!isOpen) return liveRegion;
+
   return (
+    <>
+      {liveRegion}
     <div
       className="tg-callout"
       role="complementary"
@@ -362,5 +406,6 @@ export default function SubscribePopup() {
         ✕
       </button>
     </div>
+    </>
   );
 }
