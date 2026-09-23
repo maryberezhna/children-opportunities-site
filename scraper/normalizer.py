@@ -32,7 +32,8 @@ class NormalizeError(Exception):
 # обовʼязкових полів були двома копіями, Python і JS, і їх правили руками
 # синхронно (уніфіковано 22.09.2026). Спільні приклади для обох мов —
 # tests/fixtures/publish-criteria-cases.json.
-from proof import PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof, drop_proof  # noqa: E402
+from proof import (PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof,  # noqa: E402
+                   drop_proof, place_quote, ONLINE_IN_TEXT, ONLINE_TITLE, OFFLINE_IN_TEXT)
 _REQUIRED = PUBLISH_CRITERIA["required"]
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
@@ -181,21 +182,11 @@ def _apply_state_support_free(data: dict) -> None:
     data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
 
 
-# «Онлайн» як формат САМОЇ участі. Слова після нього — те, що людина робить:
-# школа, курс, заняття, табір. «Онлайн-реєстрація», «онлайн-заявка», «подати
-# онлайн» сюди не потрапляють навмисно: це спосіб подати документи, а не
-# формат можливості — табір, куди записуються онлайн, лишається табором наживо.
-_ONLINE_WHAT = (r"школ|курс|урок|занятт|навчанн|формат|режим|марафон|табір|табор|"
-                r"клуб|гурт|лекці|програм|олімпіад|конкурс|інтенсив|вебінар|майстер|"
-                r"челендж|хакатон|консультац|студі|академі")
-_ONLINE_IN_TEXT = re.compile(
-    rf"онлайн[-‑\s]?(?:{_ONLINE_WHAT})"
-    rf"|(?:у|в)\s+форматі\s+онлайн"
-    rf"|дистанційн\w*\s+(?:{_ONLINE_WHAT})"
-    rf"|\bonline[-\s]?(?:school|course|class|lesson|program|camp)",
-    re.IGNORECASE)
-_ONLINE_TITLE = re.compile(r"^\W*(?:online|онлайн)\b", re.IGNORECASE)
-_OFFLINE_IN_TEXT = re.compile(r"\bочн(?:о|ий|і|а|их)\b|офлайн|offline|наживо", re.IGNORECASE)
+# Вокабуляр формату живе в proof.py: одне визначення «що таке онлайн» і для
+# заповнення поля, і для цитати на «де».
+_ONLINE_IN_TEXT = ONLINE_IN_TEXT
+_ONLINE_TITLE = ONLINE_TITLE
+_OFFLINE_IN_TEXT = OFFLINE_IN_TEXT
 
 
 def _note(data: dict, text: str) -> None:
@@ -305,6 +296,28 @@ def _apply_format_from_text(data: dict) -> None:
         data["cities"] = ["Онлайн"]
 
 
+def _apply_place_quote(data: dict, source_text: str) -> None:
+    """Слово, яке саме називає формат, — і є цитата на «де».
+
+    23.09.2026 у карантині стояв вебінар «Як жити в кайф і сьогодні, і потім»
+    із причиною «без цитати: формат або місце», хоча слово «вебінар» було і в
+    тексті, і в цитаті на тип. Дата минула, поки він чекав людину. Вебінар не
+    буває офлайн — окремої фрази про «онлайн» джерело не пише й не писатиме.
+
+    Цитату беремо дослівно зі сторінки (place_quote звіряє її з текстом), тож
+    вигадати тут нічого не можна. Якщо слова про формат на сторінці немає —
+    запис і далі чекає людину.
+    """
+    ev = data.get("evidence")
+    if not isinstance(ev, dict) or (ev.get("place") or "").strip():
+        return
+    if data.get("format") not in ("online", "hybrid"):
+        return
+    quote = place_quote(source_text)
+    if quote:
+        ev["place"] = quote
+
+
 def _apply_club_default(data: dict) -> None:
     """Гурток, про набір якого текст мовчить, — постійний (рішення Марії 17.09.2026).
 
@@ -349,9 +362,13 @@ def strip_foreign_script(text):
     return cleaned, cleaned != text
 
 
-def _sanitize(data: dict) -> dict:
+def _sanitize(data: dict, source_text: str = "") -> dict:
     """Coerce AI output to values the DB accepts, so a bad field never sinks
-    the whole record."""
+    the whole record.
+
+    `source_text` — текст сторінки: з нього беремо цитату на формат, коли її
+    не дала модель. Без нього (discover_agent, тести) ворота працюють як досі.
+    """
     stripped = False
     for key in ("title", "summary", "details"):
         data[key], hit = strip_foreign_script(data.get(key))
@@ -438,6 +455,7 @@ def _sanitize(data: dict) -> dict:
     # порожньо чи текст → False, інакше значення поламає NOT NULL у базі.
     data["is_international"] = bool(data.get("is_international"))
     _apply_format_from_text(data)
+    _apply_place_quote(data, source_text)
     age_missing = _fill_from_text(data, age_missing)
 
     # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
@@ -1166,9 +1184,9 @@ URL: {source_url}
             # Цитати приймаємо лише ті, що справді є в тексті: решта —
             # висновки моделі, а не докази (світлофор, 22.09.2026).
             data = dict(data)
-            data["evidence"] = verify_evidence(data.get("evidence"),
-                                               f"{raw_text or ''} {raw_title or ''}")
-            data = _sanitize(data)
+            page_text = f"{raw_text or ''} {raw_title or ''}"
+            data["evidence"] = verify_evidence(data.get("evidence"), page_text)
+            data = _sanitize(data, page_text)
             if human_accepted:
                 data["admin_comment"] = ((data.get("admin_comment") or "")
                                          + f" · людина прийняла з карантину (впевненість моделі "

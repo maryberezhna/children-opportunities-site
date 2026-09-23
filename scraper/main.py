@@ -313,7 +313,13 @@ def process_pending(normalizer, sb_client, limit=500):
             # шум, вище — модель і так пропускає. Такий запис лягає в карантин
             # (status='review') і чекає людини, а не зникає мовчки: саме там
             # губилось рідкісне закордонне, якого мало в тексті сторінки.
-            verdict = raw_store.triage_status(code, conf)
+            # …але в чергу людини — лише те, де є бодай слово про дитину, вік
+            # чи школу: решту вона однаково відхилить (23.09.2026).
+            page_text = f"{item.get('raw_title') or ''} {item.get('raw_text') or ''}"
+            verdict = raw_store.triage_status(code, conf, page_text)
+            if verdict == "rejected" and code == "low_confidence" \
+                    and not raw_store.CHILD_MARKER.search(page_text):
+                reason = raw_store.NOT_FOR_CHILDREN
             raw_store.mark(sb_client, item["id"], verdict,
                            error=reason or "відхилено екстракцією (причина не вказана)",
                            confidence=conf, reason_code=code)

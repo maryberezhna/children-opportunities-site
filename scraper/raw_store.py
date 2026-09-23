@@ -178,8 +178,39 @@ GREY_LOW = 0.25
 GREY_HIGH = 0.55
 
 
-def triage_status(reason_code: str | None, confidence: float | None) -> str:
-    """'review' для сірої смуги, інакше 'rejected'. Чиста функція — під тест."""
+# Слово про того, для кого можливість. Карантин — черга ЛЮДИНИ, і в ній має
+# лежати лише те, що бодай може виявитись дитячим.
+#
+# 23.09.2026 Марія відкрила чергу й побачила «Дякуємо, що пройшли цей квіз»,
+# «#освіта», «Київ», «Yoga with an American» і Erasmus+ для студентів: «нас
+# приходить якийсь смітник». Модель на такому вагається (0,25–0,55), і сіра
+# смуга чесно клала все це їй на стіл.
+#
+# Перевірка стоїть ЛИШЕ на сумнівній купі — на тому, що екстракція вже не
+# пропустила. Усе, що модель витягла впевнено, її не бачить: на 1 339 уже
+# опублікованих записів це правило не впливає (перевірено на базі 23.09.2026,
+# зокрема гуртки ЦПР і Eurodesk, де слова «діти» в сирому тексті немає).
+CHILD_MARKER = re.compile(
+    r"дітей|дитин|дитяч|підліт|школяр|школи|школа|учн|юнац|клас|"
+    r"молод|teen|kid|child|pupil|student|youth|"
+    r"\d{1,2}\s*[–—-]\s*\d{1,2}\s*рок",
+    re.IGNORECASE)
+
+NOT_FOR_CHILDREN = "у тексті нічого про дітей, підлітків, школу чи вік"
+
+
+def triage_status(reason_code: str | None, confidence: float | None,
+                  text: str = None) -> str:
+    """'review' для сірої смуги, інакше 'rejected'. Чиста функція — під тест.
+
+    `text` — сирий текст сторінки. Якщо в ньому немає жодного слова про
+    дитину, вік чи школу, запис не потрапляє в чергу людини навіть із сірої
+    смуги: розбирати там нічого. Без тексту (старі виклики) поводиться як досі.
+    """
     if reason_code != "low_confidence" or confidence is None:
         return "rejected"
-    return "review" if GREY_LOW <= confidence < GREY_HIGH else "rejected"
+    if not (GREY_LOW <= confidence < GREY_HIGH):
+        return "rejected"
+    if text is not None and not CHILD_MARKER.search(text):
+        return "rejected"
+    return "review"

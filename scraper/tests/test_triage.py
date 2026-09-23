@@ -38,5 +38,34 @@ class GreyBand(unittest.TestCase):
         self.assertEqual(triage_status("low_confidence", None), "rejected")
 
 
+
+
+class GreyNeedsAChild(unittest.TestCase):
+    """У чергу людини — лише те, що бодай може бути дитячим (23.09.2026).
+
+    Марія відкрила карантин і побачила «Дякуємо, що пройшли цей квіз»,
+    «Yoga with an American» і Erasmus+ для студентів: «нас приходить якийсь
+    смітник». Модель на такому вагається, і сіра смуга клала все це їй на стіл.
+    """
+
+    def test_grey_without_a_child_word_is_rejected(self):
+        for text in ("Дякуємо, що пройшли цей квіз разом з нами. Волонтерство ширше.",
+                     "Yoga with an American. Ready to stretch? Join us at America House.",
+                     "#освіта", "Київ"):
+            with self.subTest(text=text[:20]):
+                self.assertEqual(triage_status("low_confidence", 0.4, text), "rejected")
+
+    def test_grey_with_a_child_word_still_waits_for_a_human(self):
+        for text in ("Гуртки для дітей у ЦТДЮГ Галичини",
+                     "Безкоштовна арттерапія для школярів Запоріжжя",
+                     "Математична олімпіада для учнів 5-11 класів",
+                     "Summer camp for children aged 7-14"):
+            with self.subTest(text=text[:20]):
+                self.assertEqual(triage_status("low_confidence", 0.4, text), "review")
+
+    def test_old_calls_without_text_behave_as_before(self):
+        self.assertEqual(triage_status("low_confidence", 0.4), "review")
+
+
 if __name__ == "__main__":
     unittest.main()
