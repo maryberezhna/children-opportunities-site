@@ -33,7 +33,8 @@ class NormalizeError(Exception):
 # синхронно (уніфіковано 22.09.2026). Спільні приклади для обох мов —
 # tests/fixtures/publish-criteria-cases.json.
 from proof import (PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof,  # noqa: E402
-                   drop_proof, place_quote, ONLINE_IN_TEXT, ONLINE_TITLE, OFFLINE_IN_TEXT)
+                   drop_proof, place_quote, quote_in_text, ONLINE_IN_TEXT, ONLINE_TITLE,
+                   OFFLINE_IN_TEXT)
 _REQUIRED = PUBLISH_CRITERIA["required"]
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
@@ -244,19 +245,33 @@ def looks_adult_participant(data: dict) -> bool:
     return bool(_ADULT_AUDIENCE.search(text) and _ADULT_ACTIVITY.search(text))
 
 
-def _fill_from_text(data: dict, age_missing: bool) -> bool:
+def _fill_from_text(data: dict, age_missing: bool, page_text: str = "") -> bool:
     """Порожні поля — з назви й опису (scraper/text_fill.py). Повертає, чи вік
     тепер відомий. Модельна відповідь має пріоритет: правила чіпають лише
-    порожнє, і кожне лишає позначку, звідки взялось значення."""
+    порожнє, і кожне лишає позначку, звідки взялось значення.
+
+    `page_text` — сирий текст сторінки, коли він у нас є (нормалізатор). Вік,
+    фраза про який стоїть і на самій сторінці, стає цитатою: правило дає і
+    значення, і доказ. Без сирого тексту (fill_from_text.py дозаповнює вже
+    збережені чернетки) цитати не буде — і запис лишиться жовтим."""
     title = data.get("title") or ""
-    text = " ".join(str(data.get(k) or "") for k in ("title", "summary"))
+    # Назву й опис розділяємо крапкою, а не пробілом: інакше фраза, зібрана на
+    # їхній межі, склеює два речення в одне й зі сторінкою вже не збігається —
+    # доказ, якого немає лише через спосіб склейки.
+    text = ". ".join(s for s in (str(data.get(k) or "").strip(" .") for k in ("title", "summary")) if s)
 
     if age_missing:
-        ages = text_fill.age_from_text(text)
-        if ages:
-            data["age_from"], data["age_to"] = ages
+        got = text_fill.age_span(text)
+        if got:
+            lo, hi, quote = got
+            data["age_from"], data["age_to"] = lo, hi
             age_missing = False
-            _note(data, f"auto: вік {ages[0]}–{ages[1]} — з тексту")
+            _note(data, f"auto: вік {lo}–{hi} — з тексту")
+            if page_text and quote_in_text(quote, page_text):
+                ev = data.get("evidence")
+                if not isinstance(ev, dict):
+                    ev = data["evidence"] = {}
+                ev["age"] = quote
 
     if data.get("opportunity_type") not in VALID_OPP_TYPES:
         typ = text_fill.type_from_title(title)
@@ -510,7 +525,21 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
     _drop_international_for_local(data)
     _apply_format_from_text(data)
     _apply_place_quote(data, source_text)
-    age_missing = _fill_from_text(data, age_missing)
+    age_missing = _fill_from_text(data, age_missing, source_text)
+
+    # ── Вік — лише зі слів джерела ──────────────────────────────────────────
+    # Рішення Марії 23.09.2026: «здогад машини — заборонити». Схема змушує
+    # модель віддати число 0..18, тож «не знаю» вона висловлює правдоподібним
+    # діапазоном, виведеним із загальних слів. European Parliament Ambassador
+    # School приїхав з Eurodesk двічі й отримав 12–18 і 14–17 з тієї самої
+    # сторінки, де про вік сказано лише «open to motivated students»: у картці
+    # обидва числа виглядали таким самим фактом, як вік, прочитаний у тексті.
+    # Тепер вік без дослівної фрази джерела не зберігається — лишається
+    # технічний 0–18, а запис іде до людини.
+    if not age_missing and not (data.get("evidence") or {}).get("age"):
+        _note(data, f"auto: вік {data['age_from']}–{data['age_to']} — здогад без цитати, не збережено")
+        data["age_from"], data["age_to"] = 0, 18
+        age_missing = True
 
     # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
     # Вимога Марії 11.09.2026: дата, тип, вік, вартість і місце-або-формат

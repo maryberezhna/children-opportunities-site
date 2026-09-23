@@ -31,6 +31,21 @@ class MergePatch(unittest.TestCase):
     def test_extraction_can_close(self):
         self.assertEqual(merge_patch({"status": "active"}, {"status": "closed"})["status"], "closed")
 
+    def test_technical_age_does_not_wipe_a_known_one(self):
+        # Ворота правди (23.09.2026) віддають 0–18 замість здогаду. Для запису,
+        # який уже стоїть на сайті з віком, це означало б «для всіх дітей» у
+        # фільтрі — знімати здогади зі старих записів треба окремо й видимо.
+        patch = merge_patch({"status": "active", "age_from": 14, "age_to": 17},
+                            {"age_from": 0, "age_to": 18, "summary": "новий опис"})
+        self.assertNotIn("age_from", patch)
+        self.assertNotIn("age_to", patch)
+        self.assertEqual(patch["summary"], "новий опис")
+
+    def test_real_age_still_overwrites(self):
+        patch = merge_patch({"status": "active", "age_from": 0, "age_to": 18},
+                            {"age_from": 7, "age_to": 12})
+        self.assertEqual((patch["age_from"], patch["age_to"]), (7, 12))
+
     def test_archived_stays_archived(self):
         # «Закрито» — публічна сторінка з плашкою; архів — прихований запис.
         self.assertNotIn("status", merge_patch({"status": "archived"}, {"status": "closed"}))

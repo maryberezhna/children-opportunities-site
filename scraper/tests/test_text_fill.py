@@ -89,6 +89,16 @@ class Age(unittest.TestCase):
     def test_dates_are_not_age(self):
         self.assertIsNone(tf.age_from_text("Реєстрація 15–20 жовтня."))
 
+    def test_span_carries_the_phrase_it_read(self):
+        # Правило віддає не лише числа, а й фразу, з якої їх узяло: без неї
+        # нормалізатор не має чим довести вік (23.09.2026).
+        self.assertEqual(
+            tf.age_span("Гурток «Вітрила». Запрошуємо дітей 8–12 років. Заняття щосуботи."),
+            (8, 12, "Запрошуємо дітей 8–12 років"))
+        self.assertEqual(tf.age_span("для учнів 5–11 класів")[2], "для учнів 5–11 класів")
+        self.assertEqual(tf.age_span("Приймаємо з 7 років")[2], "Приймаємо з 7 років")
+        self.assertIsNone(tf.age_span("Термін навчання 6-8 років."))
+
 
 class TypeByTitle(unittest.TestCase):
     def test_reliable_words_only(self):
@@ -101,6 +111,10 @@ class TypeByTitle(unittest.TestCase):
 class InSanitize(unittest.TestCase):
     """Разом у нормалізаторі: заповнюється лише порожнє, з позначкою."""
 
+    # Сторінка джерела: з нею звіряється вік, який правило прочитало в описі.
+    PAGE = ("Музична школа №5 (Кривий Ріг). Навчання безкоштовне для дітей 6–15 років. "
+            "Запис за телефоном.")
+
     def base(self, **over):
         d = {"title": "Музична школа №5 (Кривий Ріг)",
              "summary": "Навчання безкоштовне для дітей 6–15 років.",
@@ -111,12 +125,22 @@ class InSanitize(unittest.TestCase):
         return d
 
     def test_fills_what_the_text_says(self):
-        d = _sanitize(self.base())
+        d = _sanitize(self.base(), self.PAGE)
         self.assertEqual(d["cities"], ["Кривий Ріг"])
         self.assertEqual(d["cost_type"], "free")
         self.assertEqual((d["age_from"], d["age_to"]), (6, 15))
         self.assertIn("з тексту", d["admin_comment"])
         self.assertNotIn("бракує", d["admin_comment"])
+        # Правило прочитало вік у тексті, який є і на сторінці, — отже воно
+        # дає не лише число, а й доказ.
+        self.assertEqual(d["evidence"]["age"], "Навчання безкоштовне для дітей 6–15 років")
+
+    def test_age_the_page_does_not_say_is_not_kept(self):
+        # Та сама назва й опис, але сторінка про вік мовчить: числа з опису
+        # лишаються здогадом, і зберігати їх нема за чим.
+        d = _sanitize(self.base(), "Музична школа №5 (Кривий Ріг). Запис за телефоном.")
+        self.assertEqual((d["age_from"], d["age_to"]), (0, 18))
+        self.assertNotIn("age", d["evidence"])
 
     def test_in_between_cost_counts_as_empty(self):
         # «Частково безкоштовно» сайт не показує — запис висів із «бракує: вартість».
@@ -132,7 +156,8 @@ class InSanitize(unittest.TestCase):
 
     def test_model_answer_wins(self):
         d = _sanitize(self.base(cost_type="paid_affordable", cities=["Київ"],
-                                age_from=10, age_to=12))
+                                age_from=10, age_to=12,
+                                evidence={"age": "для дітей 6–15 років"}), self.PAGE)
         self.assertEqual(d["cost_type"], "paid_affordable")
         self.assertEqual(d["cities"], ["Київ"])
         self.assertEqual((d["age_from"], d["age_to"]), (10, 12))

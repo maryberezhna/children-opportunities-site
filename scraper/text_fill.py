@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import re
 
+from proof import phrase_around
 from timing import has_repeat_signal
 
 # ── Вартість ──────────────────────────────────────────────────────────────
@@ -201,9 +202,16 @@ def _is_duration(text: str, start: int) -> bool:
     return bool(_DURATION.search(text[max(0, start - 30):start]))
 
 
-def age_from_text(text: str) -> tuple[int, int] | None:
+def age_span(text: str) -> tuple[int, int, str] | None:
+    """Вік із тексту РАЗОМ із фразою, з якої його взято.
+
+    Фраза потрібна нормалізаторові: вік, під яким немає дослівних слів
+    джерела, ми більше не зберігаємо взагалі (рішення Марії 23.09.2026).
+    Діапазон рахується так само, як і раніше, — з усіх збігів у тексті;
+    цитатою стає речення навколо першого з них.
+    """
     t = text or ""
-    lows, highs = [], []
+    lows, highs, first = [], [], None
     for m in _AGE_RANGES.finditer(t):
         if _is_duration(t, m.start()):
             continue
@@ -211,20 +219,27 @@ def age_from_text(text: str) -> tuple[int, int] | None:
         if a <= b <= 30:
             lows.append(a)
             highs.append(b)
+            first = first or m
     if lows:
-        return max(0, min(lows)), min(18, max(highs))
+        return max(0, min(lows)), min(18, max(highs)), phrase_around(t, first.start(), first.end())
     for m in _GRADES.finditer(t):
         a, b = int(m.group(1)), int(m.group(2))
         if 1 <= a <= b <= 11:
             # 5 клас → 10 років, 11 клас → 17: найширший чесний діапазон.
             lows.append(a + 5)
             highs.append(b + 6)
+            first = first or m
     if lows:
-        return min(lows), min(18, max(highs))
+        return min(lows), min(18, max(highs)), phrase_around(t, first.start(), first.end())
     m = _FROM_AGE.search(t)
     if m and not _is_duration(t, m.start()) and int(m.group(1)) <= 18:
-        return int(m.group(1)), 18
+        return int(m.group(1)), 18, phrase_around(t, m.start(), m.end())
     return None
+
+
+def age_from_text(text: str) -> tuple[int, int] | None:
+    got = age_span(text)
+    return (got[0], got[1]) if got else None
 
 
 # ── Тип за назвою ─────────────────────────────────────────────────────────

@@ -128,7 +128,10 @@ class StateSupportIsFree(unittest.TestCase):
         d = {"title": "Державна цільова підтримка для здобуття вищої освіти",
              "summary": "Повна оплата навчання за державним замовленням, соціальна стипендія.",
              "age_from": 15, "age_to": 18, "opportunity_type": "scholarship",
-             "cost_type": None, "format": "offline", "cities": ["Київ"], "recurrence": "ongoing"}
+             "cost_type": None, "format": "offline", "cities": ["Київ"], "recurrence": "ongoing",
+             # Вік без цитати нормалізатор більше не зберігає (23.09.2026), а
+             # тут перевіряється вартість — тож вік приходить із доказом.
+             "evidence": {"age": "для вступників 15–18 років"}}
         d.update(over)
         return d
 

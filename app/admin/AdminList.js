@@ -113,7 +113,12 @@ function Card({ o, mode, onAction, match, notes = [] }) {
         <span style={{ background: C.typeBg, color: C.typeInk, padding: '2px 10px', borderRadius: 20 }}>
           {TYPE_LABELS[o.opportunity_type] || o.opportunity_type}
         </span>
-        {ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
+        {/* Вік без цитати зі сторінки — не факт, а здогад машини, і читався
+            він у цьому рядку так само впевнено, як прочитаний у тексті
+            (Марія, 23.09.2026). Тепер на його місці стоїть правда. */}
+        {mode === 'drafts' && !o.evidence?.age
+          ? <span style={{ color: C.ink3 }}>вік у джерелі не названий</span>
+          : ageLabel(o) ? <span>{ageLabel(o)}</span> : null}
         {o.cost_type === 'free' ? <span style={{ color: C.green }}>безкоштовно</span> : null}
         {/* Коли відбувається і до коли подати — два різні факти й два підписи.
             Раніше тут стояв голий «⏰ 2026-10-27»: так перший день події
