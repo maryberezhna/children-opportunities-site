@@ -1,12 +1,20 @@
 """discover_agent.py — щоденний агент веб-пошуку можливостей (Claude).
 
-Бере пару «тема дня × регіон дня» (дві незалежні детерміновані ротації), просить
-Claude пошукати в інтернеті СВІЖІ конкретні можливості для дітей 0–18 і зберігає
-знайдених кандидатів зі статусом ``draft``.
+Бере пару «тема дня × регіон дня», просить Claude пошукати в інтернеті СВІЖІ
+конкретні можливості для дітей 0–18 і зберігає знайдених кандидатів зі
+статусом ``draft``.
+
+Тему дня з 23.09.2026 дає не ротація слів, а ДЕФІЦИТ (scraper/deficit.py):
+попит родин ділимо на надходження нових записів у клітинку «родина типів ×
+вік». Воркфлоу рахує його перед запуском і передає через DISCOVER_KEYWORD,
+DISCOVER_AGE_BAND і DISCOVER_DEFICIT_CELL. Не порахувався (немає бази, збій) —
+лишається стара ротація keywords.DISCOVER_KEYWORDS.
 
 Регіон — Україна або країна з великою українською громадою (Польща, Німеччина,
 Чехія та ін., див. keywords.REGION_ROTATION). Україна чергується з кожною
-країною, тож лишається половиною запусків. Для закордонних регіонів у джерелі
+країною, тож лишається половиною запусків. Коли тему дав дефіцит, міста з
+ротації випадають зовсім (keywords.NATIONWIDE_ROTATION): міський запис
+дефіциту країни не закриває. Для закордонних регіонів у джерелі
 (``source``) дописується назва країни — видно на /admin. На сайті
 драфти не показуються (сайт фільтрує status='active') — їх схвалюють вручну на
 /admin.
@@ -23,6 +31,13 @@ Env:
                              де в нас нуль, не чекаючи його дня в циклі.
   DISCOVER_KEYWORD          — опц., перебити тему дня («діти ветеранів»).
                              Ротація триває 161 день, а кампанія має дату.
+                             Ручне слово перебиває і дефіцит (deficit.py).
+  DISCOVER_AGE_BAND         — опц., вік дня («7-10»): звужує пошук до одного
+                             діапазону з plus_profile.AGE_RANGES. Ставить
+                             deficit.py — вік є другою віссю клітинки.
+  DISCOVER_DEFICIT_CELL     — опц., «contests:7-10»: клітинка, яку обрав
+                             дефіцит. Потрібна, щоб після прогону записати в
+                             discover_deficit_runs, скільки там знайшлось.
   DRY_RUN=true              — лише вивести, нічого не писати
 """
 import os
@@ -42,9 +57,11 @@ from canonical import canonical_url
 from db import get_client, record_crawl_result
 import anthropic
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import deficit  # клітинка дня: попит ÷ надходження (23.09.2026)
 import hubs
 from keywords import (
-    DISCOVER_KEYWORDS, RARE_ABROAD_KEYWORDS, RARE_ABROAD_REGIONS, REGION_ROTATION,
+    DISCOVER_KEYWORDS, NATIONWIDE_ROTATION, RARE_ABROAD_KEYWORDS,
+    RARE_ABROAD_REGIONS, REGION_ROTATION,
 )
 from normalizer import _sanitize, summary_says_over
 from recheck_dates import fetch_text
@@ -68,6 +85,11 @@ DUP_TAG = float(os.environ.get("DUP_TAG") or "0.60")
 
 # Лише пріоритетні теми, категорії чергуються щодня — див. keywords.DISCOVER_KEYWORDS.
 KEYWORDS = DISCOVER_KEYWORDS
+
+# Вік і клітинка дня — від deficit.py (23.09.2026). Порожньо означає, що тему
+# дала ротація або людина: тоді вік не звужуємо й памʼять прогонів не чіпаємо.
+AGE_BAND = (os.environ.get("DISCOVER_AGE_BAND") or "").strip()
+CELL = deficit.cell_from_env(os.environ.get("DISCOVER_DEFICIT_CELL"))
 
 # Профіль «рідкісне за кордоном» (discover-rare.yml): свої теми, лише закордонні
 # регіони й окремий фокус у промпті. Решта конвеєра — та сама: дедуп, п'ять
@@ -104,7 +126,22 @@ RARE_FOCUS = (
 
 
 def _regions() -> list[dict]:
+    """Усі регіони, які можна назвати вручну (DISCOVER_REGION)."""
     return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
+
+
+def _rotation() -> list[dict]:
+    """З чого береться регіон дня.
+
+    Пошук за дефіцитом у місто не спускається (23.09.2026): дефіцит рахується
+    лише по записах, що доходять до всіх, а міський запис доходить тільки до
+    свого міста. Контрольний прогін 23.09 показав це дослівно: клітинка
+    «конкурси × 7–10» дісталась регіону дня «Житомир», і агент шукав би палац
+    дітей та юнацтва там, де бракує конкурсів на всю країну.
+    """
+    if RARE:
+        return RARE_ABROAD_REGIONS
+    return NATIONWIDE_ROTATION if CELL else REGION_ROTATION
 
 
 # ── Перевірка кандидата сторінкою (лише «рідкісне за кордоном») ─────────────
@@ -318,7 +355,7 @@ def region_of_day() -> dict:
             f"DISCOVER_REGION={forced!r} — такого регіону немає.\nДоступні: {known}"
         )
     doy = date.today().timetuple().tm_yday
-    regions = _regions()
+    regions = _rotation()
     return regions[doy % len(regions)]
 
 
@@ -328,7 +365,14 @@ def _prompt(kw: str, region: dict) -> str:
         f"Сьогодні {date.today().isoformat()}.\n"
         f"Знайди в інтернеті до {MAX_CANDIDATES} КОНКРЕТНИХ, актуальних можливостей "
         f"{region['audience']} за темою «{kw}». Використай веб-пошук.\n"
-        f"Мова пошуку: {region['hint']}.\n\n"
+        f"Мова пошуку: {region['hint']}.\n"
+        # Вік — друга вісь клітинки дефіциту (23.09.2026). Без цього рядка
+        # запит «конкурси для дітей 7–10» приносив би те саме, що й завжди:
+        # старшокласників, бо їх у мережі більше.
+        + (f"ВІК: шукай саме для дітей {deficit.band_label(AGE_BAND)}. Можливість "
+           f"має підходити дитині цього віку — програму для інших вікових груп "
+           f"не бери.\n" if AGE_BAND in deficit.AGE_RANGES else "")
+        + "\n"
         "Кожна має бути:\n"
         "- для дітей/підлітків 0–18, зокрема «з 18 років» (18-річні — наша\n"
         "  аудиторія); НЕ для тих, кому вже більше 18, і НЕ для студентів ВНЗ,\n"
@@ -630,6 +674,22 @@ def notify_new(added: int, kw: str) -> None:
         logger.warning("  Telegram notify failed: %s", e)
 
 
+def remember_cell(kw: str, found: int, saved: int) -> None:
+    """Записати прогін у памʼять дефіциту — якщо тему обрав саме дефіцит.
+
+    Порожній прогін записувати ВАЖЛИВІШЕ за вдалий: саме з марних спроб
+    береться єдиний запобіжник, який знижує пріоритет клітинки. Інакше
+    клітинка, де можливостей просто не існує, лишалась би найдефіцитнішою
+    назавжди (попит є, надходжень нуль) і агент довбав би її щодня.
+    """
+    if not CELL or DRY_RUN:
+        return
+    try:
+        deficit.record_run(get_client(), CELL[0], CELL[1], kw, found, saved)
+    except Exception as e:
+        logger.warning("  Памʼять дефіциту не оновлено: %s", e)
+
+
 def main() -> int:
     kw = keyword_of_day()
     region = region_of_day()
@@ -637,10 +697,13 @@ def main() -> int:
         logger.info("🌍 Профіль: рідкісне за кордоном")
     logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
                 kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
+    if CELL:
+        logger.info("🎯 Клітинка дефіциту: %s:%s", CELL[0], CELL[1])
 
     candidates = search_candidates(kw, region)
     logger.info("  Знайдено кандидатів: %d", len(candidates))
     if not candidates:
+        remember_cell(kw, 0, 0)
         return 0
 
     client = get_client()
@@ -759,6 +822,8 @@ def main() -> int:
         record_crawl_result(client, "discover-agent", ok=True, new_items=added)
     except Exception as e:
         logger.error("Не вдалось записати здоров'я discover-agent: %s", e)
+
+    remember_cell(kw, len(candidates), added)
 
     notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "

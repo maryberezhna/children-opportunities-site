@@ -43,6 +43,24 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      # Куди дивитись сьогодні. З 23.09.2026 тему дня дає не сліпа ротація
+      # слів, а дефіцит: попит родин (перегляди підбірок у GA4) ділимо на
+      # надходження нових записів у клітинку «родина типів × вік». Заміряно
+      # 23.09.2026: обмінів хочуть 687 переглядів за 28 днів, конкурсів 566,
+      # а приходить на тиждень 2,9 обміну й 1,6 конкурсу проти 27,6 гуртків.
+      #
+      # Крок пише DISCOVER_KEYWORD / DISCOVER_AGE_BAND / DISCOVER_DEFICIT_CELL
+      # у $GITHUB_ENV, тому в самого агента цих змінних у env немає: змінна
+      # кроку перебила б значення з $GITHUB_ENV порожнім рядком. Ручне слово
+      # (inputs.keyword) сюди й приходить — deficit.py віддає його як є,
+      # нічого не рахуючи.
+      - name: Куди дивитись сьогодні (дефіцит = попит ÷ надходження)
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DISCOVER_KEYWORD: ${{ github.event.inputs.keyword }}
+        run: python deficit.py --print >> "$GITHUB_ENV"
+
       - name: Run discovery agent
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
@@ -54,7 +72,9 @@ jobs:
           # Optional: override the model if web search isn't supported on the default.
           DISCOVER_MODEL: ${{ vars.DISCOVER_MODEL }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          DISCOVER_KEYWORD: ${{ github.event.inputs.keyword }}
+          # DISCOVER_KEYWORD, DISCOVER_AGE_BAND і DISCOVER_DEFICIT_CELL
+          # приходять із попереднього кроку через $GITHUB_ENV — тут їх
+          # називати не можна: порожня змінна кроку перебила б їх.
           DISCOVER_MAX: ${{ github.event.inputs.max_candidates }}
           # Регіон дня — окрема ротація від теми, і при прицільному запуску
           # вона зводить нанівець сенс: тема «для дітей загиблих захисників»
