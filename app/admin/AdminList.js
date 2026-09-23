@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 // формулювання, яким нормалізатор позначив запис.
 import { missingRequired, CRITERIA } from '@/lib/required';
 import { splitQueue, DAILY_CAP } from '@/lib/queue-risk';
-import { decisionReason, gapReason, deadlineNote, sortByDeadline } from '@/lib/decision-reason';
+import { decisionReason, gapReason, deadlineNote, sortByDeadline, isOverdue } from '@/lib/decision-reason';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { dateWarnings } from '@/lib/date-warnings';
 import { TYPE_LABELS } from '@/lib/labels';
@@ -253,6 +253,7 @@ const ALSO = [
   { key: 'raw', label: 'Знахідки скраперів' },
   { key: 'waiting', label: 'Чекає машину' },
   { key: 'incomplete', label: 'Неповні на сайті' },
+  { key: 'overdue', label: 'Прострочені' },
 ];
 const ALL = [...MAIN, ...ALSO.map((x) => x.key)];
 // Старі адреси: /admin/quarantine → ?tab=raw, а закладка на ?tab=drafts
@@ -291,7 +292,13 @@ export default function AdminList({
 
   // Черга людини — за ризиком, а не за сумнівом машини (Марія, 22.09.2026).
   // Усе, чому просто бракує поля чи цитати, чекає машину.
-  const { forHuman, waiting } = useMemo(() => splitQueue(drafts), [drafts]);
+  // Прострочене не показуємо людині взагалі: вночі його закриє auto_review
+  // («дата в минулому»), а до ночі воно стояло першим у черзі — минулий
+  // дедлайн сортується як найближчий (Марія 23.09.2026: «прибирай вже»).
+  // Не видаляємо: лишається окремим тихим пунктом, поки машина не закриє.
+  const overdue = useMemo(() => drafts.filter((o) => isOverdue(o, today)), [drafts, today]);
+  const fresh = useMemo(() => drafts.filter((o) => !isOverdue(o, today)), [drafts, today]);
+  const { forHuman, waiting } = useMemo(() => splitQueue(fresh), [fresh]);
 
   // А всередині черги порядок задає дедлайн (Марія, 23.09.2026: «сортувати
   // за найближчим дедлайном»): спершу те, у чого дата горить, потім усе інше
@@ -310,6 +317,7 @@ export default function AdminList({
   const counts = {
     decision: queue.length, active: actives.length,
     raw: raw.length, waiting: waitingSorted.length, incomplete: incomplete.length,
+    overdue: overdue.length,
   };
 
   const go = (id) => { setTab(id); setShowAll(false); };
@@ -345,7 +353,23 @@ export default function AdminList({
           {sec('active', '🌍 На сайті')}
         </div>
 
-        {tab === 'decision' ? (
+        {tab === 'overdue' ? (
+          overdue.length === 0 ? (
+            <p className="adm-lead">Прострочених немає.</p>
+          ) : (
+            <>
+              <p className="adm-lead">
+                Дати цих записів уже минули. Рішення від вас не треба: нічний прогін
+                закриє їх сам із причиною «дата в минулому». Список тут, щоб вони
+                не зникали мовчки.
+              </p>
+              {sortByDeadline(overdue, (x) => x.deadline).map((row) => (
+                <Card key={row.id} o={row} mode="drafts" reason={decisionReason(row)}
+                  today={today} onAction={onAction} match={matches[row.dup_of]} notes={notes[row.id]} />
+              ))}
+            </>
+          )
+        ) : tab === 'decision' ? (
           queue.length === 0 ? (
             <p className="adm-lead">Нічого не чекає рішення. Нові кандидати прийдуть після нічного прогону.</p>
           ) : (
