@@ -56,6 +56,46 @@
   gap: 20px;
 }
 
+/* Смужка про Dityam+ під навігацією (референс — шапка MIT Sloan): речення
+   про платформу і підкреслене посилання про підписку. Помаранчеве
+   підкреслення замість кнопки: у шапці вже є помаранчева пігулка, і другий
+   такий самий блок сперечався б із нею за увагу. */
+.v2-plus-strip {
+  border-top: 1px solid var(--v2-line);
+}
+
+.v2-plus-strip-inner {
+  max-width: var(--v2-max-w);
+  margin: 0 auto;
+  padding: 8px 32px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.v2-plus-strip-lead { color: var(--v2-ink-2); }
+
+.v2-plus-strip-link {
+  color: var(--v2-ink);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: var(--v2-accent-strong);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+  transition: color 0.15s;
+}
+
+.v2-plus-strip-link:hover { color: var(--v2-accent-strong); }
+
+/* На телефоні смужки немає: прибита шапка і так з'їдає екран, а Dityam+
+   живе в меню й у блоці на сторінці. */
+@media (max-width: 900px) {
+  .v2-plus-strip { display: none; }
+}
+
 .v2-logo {
   display: flex;
   align-items: center;

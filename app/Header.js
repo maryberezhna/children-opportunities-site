@@ -16,6 +16,21 @@ import { readMode, writeMode, onModeChange } from '@/lib/mode';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 
+// Тонка смужка під навігацією: перше речення — що робить платформа, друге
+// посилання — що додає підписка. Формулювання дослівно те саме, що в блоці
+// PlusSection на сторінках, щоб обіцянка в шапці не розходилась із рештою
+// сайту.
+const PLUS_STRIP = {
+  uk: {
+    lead: 'Платформа показує все, що існує.',
+    link: 'Dityam+ надсилає те, що підходить саме вашій дитині.',
+  },
+  en: {
+    lead: 'The platform shows everything that exists.',
+    link: 'Dityam+ sends what fits your child.',
+  },
+};
+
 const isEn = (p) => p === '/en' || p.startsWith('/en/');
 
 // Перемикач мови зник із шапки, але LangSuggest досі веде людей на «ту саму
@@ -121,6 +136,7 @@ export default function Header() {
     ? [{ href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') }]
     : [{ href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') }];
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
+  const strip = isEnglish ? PLUS_STRIP.en : PLUS_STRIP.uk;
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
   const topicLinks = TOPIC_NAV.flatMap((t) => {
     const link = { href: topicPath(t, isEnglish ? 'en' : 'uk'), label: isEnglish ? t.labelEn : t.label };
@@ -227,6 +243,21 @@ export default function Header() {
           <span aria-hidden="true" className={menuOpen ? 'v2-burger-lines is-open' : 'v2-burger-lines'} />
         </button>
       </div>
+
+      {/* Смужка під навігацією (референс — шапка MIT Sloan): одне речення про
+          платформу і підкреслене посилання про підписку. На самій сторінці
+          Dityam+ її немає — там про неї й так уся сторінка. На телефоні теж:
+          прибита шапка і так з'їдає екран, а Dityam+ живе в меню. */}
+      {pathname.startsWith(PLUS_HREF) ? null : (
+        <div className="v2-plus-strip">
+          <div className="v2-plus-strip-inner">
+            <span className="v2-plus-strip-lead">{strip.lead}</span>
+            <Link href={PLUS_HREF} className="v2-plus-strip-link" onClick={track('plus_strip')}>
+              {strip.link}
+            </Link>
+          </div>
+        </div>
+      )}
 
       {menuOpen ? (
         <nav id="v2-mobile-menu" className="v2-mmenu" aria-label={isEnglish ? 'Menu' : 'Меню'}>
