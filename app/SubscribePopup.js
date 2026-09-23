@@ -166,9 +166,13 @@ export default function SubscribePopup() {
     setVariant(nextVariant);
     setIsOpen(true);
     if (typeof window !== 'undefined' && window.gtag) {
+      // popup_trigger — той самий параметр, що й у кліках: у звіті один
+      // стовпчик означає одне («чим викликано показ»), хай яка подія.
+      // event_label лишаємо для сумісності з наявними звітами.
       window.gtag('event', 'telegram_popup_shown', {
         event_category: 'engagement',
         event_label: trigger,
+        popup_trigger: trigger,
       });
     }
   }, [canShow]);
@@ -193,7 +197,11 @@ export default function SubscribePopup() {
       window.gtag(
         'event',
         reason === 'closed' ? 'telegram_popup_dismissed' : 'telegram_popup_autohidden',
-        { event_category: 'engagement', event_label: lastTrigger.current },
+        {
+          event_category: 'engagement',
+          event_label: lastTrigger.current,
+          popup_trigger: lastTrigger.current,
+        },
       );
     }
   }, []);
