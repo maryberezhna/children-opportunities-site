@@ -30,6 +30,17 @@ class RiskListsComeFromSpec(unittest.TestCase):
     def test_daily_cap_is_a_days_work(self):
         self.assertTrue(15 <= self.risk["daily_cap"] <= 20, self.risk["daily_cap"])
 
+    def test_trust_tiers_come_from_the_spec(self):
+        """Рівні джерела теж живуть у спеці: підписи читають і Python, і JS
+        (lib/queue-risk.js). Розійдуться — модератор побачить різні слова про
+        те саме джерело в черзі та в логах коридорів (23.09.2026)."""
+        self.assertEqual(sorted(self.risk["trust_tier_labels"]), ["1", "2", "3"])
+        self.assertEqual(auto_review.TRUST_TIER_LABELS,
+                         {int(k): v for k, v in self.risk["trust_tier_labels"].items()})
+        # Джерело, якого немає в реєстрі, читаємо як найменш надійне.
+        self.assertEqual(auto_review.DEFAULT_TIER, 3)
+        self.assertEqual(auto_review.tier_label(None), self.risk["trust_tier_labels"]["3"])
+
 
 if __name__ == "__main__":
     unittest.main()
