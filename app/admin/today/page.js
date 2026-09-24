@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { missingRequired } from '@/lib/required';
-import { planEntryFor, kyivIso, addDays } from '../../../scripts/channel-plan.mjs';
+import { planEntryFor, kyivIso, addDays, SITUATION_TEXTS } from '../../../scripts/channel-plan.mjs';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -55,7 +55,13 @@ const FILE_LABEL = {
 
 function planLabel(entry) {
   if (entry.heading) return entry.heading.replace(/<[^>]+>/g, '');
-  if (entry.kind === 'situation') return 'життєва ситуація';
+  // «життєва ситуація» нічого не казала про завтрашній пост — показуємо сам
+  // рядок, з якого він почнеться, скорочений до першої коми.
+  if (entry.kind === 'situation') {
+    const text = (SITUATION_TEXTS[entry.situation] || '').replace(/[«»]/g, '');
+    const short = text.split(',')[0];
+    return short && short.length < text.length ? `${short}…` : text;
+  }
   if (entry.kind === 'number') return 'цифра дня';
   if (entry.kind === 'file') return FILE_LABEL[entry.file] || `готовий пост: ${entry.file}`;
   return entry.key;

@@ -23,7 +23,7 @@ import { opportunitiesWord } from '../lib/plural.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC } from './channel-plan.mjs';
+import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
@@ -192,19 +192,20 @@ const POOL_COLUMNS = 'id, slug, title, summary, details, source, opportunity_typ
 // онкохворим дітям: фільтр перевіряв тільки «безкоштовно» і «до 14+», а тип
 // запису — ні. Під пост пишемо «за які не треба платити», тож безкоштовність
 // перевіряється окремо для всіх ситуацій у sendDailyDigest.
+// Рядки — у channel-plan.mjs (їх читає ще й адмінка), тут лише фільтри.
 const SITUATIONS = [
   {
-    text: '«Дитині 15, хоче спробувати щось своє, а грошей на гуртки зараз немає»',
+    text: SITUATION_TEXTS[0],
     filter: (r) => r.age_from <= 15 && r.age_to >= 15
       && ['club', 'course', 'workshop', 'competition', 'hackathon', 'festival', 'mentorship', 'volunteer']
         .includes(r.opportunity_type),
   },
   {
-    text: '«Переїхали в іншу область, дитина ні з ким не знайома і сидить у телефоні»',
+    text: SITUATION_TEXTS[1],
     filter: (r) => r.cost_type === 'free' && ['club', 'camp', 'course', 'competition'].includes(r.opportunity_type),
   },
   {
-    text: '«Дитина здібна до математики, а в нашій школі це нікому не потрібно»',
+    text: SITUATION_TEXTS[2],
     // Тип «конкурс» надто широкий — під нього підпадають і спортивні
     // змагання. Тому додатково звіряємося зі словами в назві й описі.
     filter: (r) => ['olympiad', 'competition', 'hackathon'].includes(r.opportunity_type)
@@ -212,15 +213,15 @@ const SITUATIONS = [
         .test(`${r.title || ''} ${r.summary || ''}`),
   },
   {
-    text: '«Хочемо, щоб дитина побачила світ, але бюджету на поїздки немає»',
+    text: SITUATION_TEXTS[3],
     filter: (r) => ['exchange', 'study_abroad', 'scholarship'].includes(r.opportunity_type),
   },
   {
-    text: '«Щойно народилась дитина — і незрозуміло, що взагалі належить родині»',
+    text: SITUATION_TEXTS[4],
     filter: (r) => r.age_from <= 3 && r.cost_type === 'free',
   },
   {
-    text: '«Дитина цілий день малює, а куди з цим піти — не знаємо»',
+    text: SITUATION_TEXTS[5],
     filter: (r) => ['festival', 'competition', 'club', 'workshop'].includes(r.opportunity_type),
   },
 ];
