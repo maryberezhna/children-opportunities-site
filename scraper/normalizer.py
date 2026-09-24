@@ -1213,6 +1213,7 @@ class Normalizer:
         # сотнях викликів — кешування зламалось (див. _call_api) і ми знову
         # платимо повну ціну за той самий префікс.
         self.cache_read_tokens = 0
+        self.output_tokens = 0
         self.cache_write_tokens = 0
         self.uncached_input_tokens = 0
 
@@ -1384,6 +1385,7 @@ URL: {source_url}
                     self.cache_read_tokens += getattr(u, "cache_read_input_tokens", 0) or 0
                     self.cache_write_tokens += getattr(u, "cache_creation_input_tokens", 0) or 0
                     self.uncached_input_tokens += getattr(u, "input_tokens", 0) or 0
+                    self.output_tokens += getattr(u, "output_tokens", 0) or 0
                 return resp
             except anthropic.APIStatusError as e:
                 if e.status_code not in (429, 500, 502, 503, 529):

@@ -21,6 +21,7 @@ import link_check
 import notifier
 import raw_store
 import ttl_requeue
+import usage
 import proof_recheck
 from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
                 get_new_today, get_source_configs, get_source_registry,
@@ -558,6 +559,18 @@ async def amain():
             print(f"   💾 Кеш промпта LLM: read {normalizer.cache_read_tokens:,} · "
                   f"write {normalizer.cache_write_tokens:,} · "
                   f"без кешу {normalizer.uncached_input_tokens:,} ({hit}% hit)")
+        # Той самий підсумок — у базу: лог Actions зникає, а питання «скільки
+        # коштував учорашній конвеєр» лишається (24.09.2026).
+        meter = usage.Meter(workflow="scrape-extract", model=normalizer.model)
+        meter.add_totals(calls=stats.get("processed", 0) + stats.get("rejected", 0)
+                         + stats.get("review", 0),
+                         uncached_in=normalizer.uncached_input_tokens,
+                         cache_read=normalizer.cache_read_tokens,
+                         cache_write=normalizer.cache_write_tokens,
+                         output=normalizer.output_tokens)
+        if meter.calls:
+            print(f"   {meter.line()}")
+            usage.record(sb_client, meter)
         llm_alert = None
         if normalizer.api_failures:
             llm_alert = {
