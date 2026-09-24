@@ -21,6 +21,16 @@ const TYPES = [
 const L = { display: 'block', fontSize: 13, color: '#54617a', margin: '13px 0 4px', fontWeight: 600 };
 const I = { width: '100%', boxSizing: 'border-box', fontSize: 15, padding: '9px 12px', borderRadius: 9, border: '1px solid #d3dbe9', fontFamily: 'inherit' };
 
+// Домен джерела поруч із кнопкою: модератор одразу бачить, чи запис веде на
+// сайт організатора, чи в телеграм-канал.
+function sourceHost(url) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return '';
+  }
+}
+
 export default function EditForm({ opp, stub = false }) {
   const [f, setF] = useState({
     title: opp.title || '', summary: opp.summary || '', deadline: opp.deadline || '',
@@ -86,6 +96,27 @@ export default function EditForm({ opp, stub = false }) {
     <div style={{ marginTop: 18 }}>
       <label style={L}>Назва</label>
       <input style={I} value={f.title} onChange={up('title')} />
+      {/* Джерело — одразу під назвою і помітним блоком (Марія, 24.09.2026).
+          Доти це був дрібний рядок аж під кнопками: щоб звірити запис зі
+          сторінкою, треба було спершу прокрутити всю форму. Домен показуємо
+          поруч — видно, чи це сайт організатора, чи допис у каналі. */}
+      {opp.source_url ? (
+        <a
+          href={opp.source_url}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8, alignSelf: 'flex-start',
+            margin: '2px 0 6px', padding: '9px 14px', borderRadius: 10,
+            border: '1px solid #b9c9f2', background: '#eef3fe', color: '#1e4fd6',
+            fontSize: 14.5, fontWeight: 600, textDecoration: 'none',
+          }}
+        >
+          🔗 Відкрити джерело
+          <span style={{ fontWeight: 400, color: '#54617a' }}>{sourceHost(opp.source_url)}</span>
+          <span aria-hidden="true">↗</span>
+        </a>
+      ) : null}
       <label style={L}>Опис</label>
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -131,7 +162,6 @@ export default function EditForm({ opp, stub = false }) {
           ⛔ Не можна опублікувати — бракує: {missing.join(', ')}
         </p>
       ) : null}
-      {opp.source_url ? <p style={{ marginTop: 12, fontSize: 13 }}><a href={opp.source_url} target="_blank" rel="noreferrer" style={{ color: '#1e4fd6' }}>🔗 відкрити джерело ↗</a></p> : null}
       <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap', alignItems: 'center' }}>
         <button onClick={() => save(false)} disabled={busy} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>💾 Зберегти чернеткою</button>
         <button onClick={() => save(true)} disabled={busy || missing.length > 0} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: 'none', background: '#15803d', color: '#fff', cursor: busy || missing.length ? 'default' : 'pointer', opacity: busy || missing.length ? 0.45 : 1 }}>✅ Зберегти й опублікувати</button>
