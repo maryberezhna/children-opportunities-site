@@ -39,8 +39,8 @@ jobs:
       - run: pip install -r requirements.txt
       - name: Замінити адресу допису на сторінку
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           python backfill_source_link.py \
             --status "${{ github.event.inputs.status }}" \
