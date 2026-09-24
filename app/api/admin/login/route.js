@@ -1,23 +1,26 @@
 import { cookies } from 'next/headers';
-import { safeEqual } from '@/lib/adminAuth';
+import { adminAccounts, adminConfigured, isAdmin } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-// Simple shared-secret login for the solo admin. The cookie stores the token
-// itself (httpOnly), which /admin and /api/admin/review compare to ADMIN_TOKEN.
-// NOTE: security depends on ADMIN_TOKEN being a long, random value (there is no
-// per-IP rate limiting on this endpoint).
+// Вхід за спільним секретом. Кука зберігає сам токен (httpOnly), і всі
+// сторінки та ручки адмінки звіряють її через isAdmin().
+//
+// Акаунтів два: ADMIN_TOKEN і ADMIN_TOKEN_2 (див. lib/adminAuth.js). Пароль
+// у кожного свій, тож відкликати доступ одному можна, не міняючи інший.
+// NOTE: надійність тримається на тому, що токени довгі й випадкові —
+// обмеження спроб на цій ручці немає.
 export async function POST(request) {
-  const token = process.env.ADMIN_TOKEN;
-  if (!token) {
+  if (!adminConfigured()) {
     return Response.json({ ok: false, error: 'not_configured' }, { status: 500 });
   }
   const { password } = await request.json().catch(() => ({}));
-  if (!password || !safeEqual(password, token)) {
+  if (!isAdmin(password)) {
     return Response.json({ ok: false }, { status: 401 });
   }
-  cookies().set('dityam_admin', token, {
+  const matched = adminAccounts().find((a) => a.token === password);
+  cookies().set('dityam_admin', matched.token, {
     httpOnly: true,
     secure: true,
     sameSite: 'lax',

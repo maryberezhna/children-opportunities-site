@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -44,14 +44,14 @@ async function count(supabase, table, filter = (q) => q, col = 'id') {
 }
 
 export default async function MetricsPage() {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
   if (!authed) {
     return (
       <main style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
         <h1 style={{ fontSize: 22 }}>Метрики</h1>
-        {token ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
+        {configured ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
       </main>
     );
   }
@@ -66,7 +66,7 @@ export default async function MetricsPage() {
   const [
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
-    subsRes, snapshotsRes, promoRes,
+    subsRes, snapshotsRes, promoRes, actionsRes,
   ] = await Promise.all([
     count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -81,6 +81,9 @@ export default async function MetricsPage() {
     supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
     supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
     supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
+    // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
+    supabase.from('moderation_actions').select('actor, action, created_at')
+      .gte('created_at', iso(30)).limit(5000),
   ]);
 
   const subs = subsRes.data || [];
@@ -101,6 +104,19 @@ export default async function MetricsPage() {
   }
   const promoCodes = [...byCode.values()].sort((a, b) => b.entered - a.entered);
   const dt = (iso) => (iso ? new Date(iso).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+
+  // Робота модераторів: хто скільки схвалив, пропустив і поставив питань.
+  // До 24.09.2026 імені в базі не було зовсім, тож рядки почнуть зʼявлятись
+  // лише з цієї дати — старі рішення в статистику не потраплять.
+  const actions = actionsRes?.data || [];
+  const byActor = new Map();
+  for (const a of actions) {
+    const row = byActor.get(a.actor) || { actor: a.actor, approve: 0, skip: 0, comment: 0, other: 0, week: 0 };
+    if (a.action in row) row[a.action] += 1; else row.other += 1;
+    if (new Date(a.created_at) >= new Date(iso(7))) row.week += 1;
+    byActor.set(a.actor, row);
+  }
+  const moderators = [...byActor.values()].sort((a, b) => b.approve - a.approve);
 
   const snaps = snapshotsRes.data || [];
   const latest = snaps[0];
@@ -124,6 +140,34 @@ export default async function MetricsPage() {
           ? 'підписників Telegram-каналу (Δ буде за тиждень знімків)'
           : 'підписників Telegram-каналу (Δ за 7 днів)'} />
       </div>
+
+      <h2 style={h2S}>🧑‍⚖️ Робота в черзі, 30 днів</h2>
+      {moderators.length ? (
+        <table style={{ borderCollapse: 'collapse', fontSize: 14, marginTop: 10 }}>
+          <thead>
+            <tr style={{ textAlign: 'left', color: '#54617a' }}>
+              <th style={{ padding: '6px 18px 6px 0' }}>Хто</th>
+              <th style={{ padding: '6px 18px 6px 0' }}>Схвалив</th>
+              <th style={{ padding: '6px 18px 6px 0' }}>Пропустив</th>
+              <th style={{ padding: '6px 18px 6px 0' }}>Питань</th>
+              <th style={{ padding: '6px 0' }}>За 7 днів</th>
+            </tr>
+          </thead>
+          <tbody>
+            {moderators.map((m) => (
+              <tr key={m.actor} style={{ borderTop: '1px solid #e2e8f2' }}>
+                <td style={{ padding: '7px 18px 7px 0', fontWeight: 600 }}>{m.actor}</td>
+                <td style={{ padding: '7px 18px 7px 0' }}>{m.approve}</td>
+                <td style={{ padding: '7px 18px 7px 0' }}>{m.skip}</td>
+                <td style={{ padding: '7px 18px 7px 0' }}>{m.comment}</td>
+                <td style={{ padding: '7px 0' }}>{m.week}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p style={noteS}>Журнал порожній: рішення в черзі почали записуватись з іменем 24.09.2026.</p>
+      )}
 
       <h2 style={h2S}>📣 Маркетинг</h2>
       <div style={grid}>

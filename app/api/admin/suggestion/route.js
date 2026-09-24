@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin } from '@/lib/adminAuth';
 import { canonicalUrl } from '@/lib/canonical.mjs';
 import {
   STUB_MARK, slugFromTitle, contentHash, ORIGINS, originOf, sourceFor,
@@ -25,9 +25,8 @@ export const dynamic = 'force-dynamic';
  * сайт, крім як переписати її руками в базу.
  */
 export async function POST(request) {
-  const token = process.env.ADMIN_TOKEN;
   const cookie = cookies().get('dityam_admin')?.value;
-  if (!token || !cookie || !safeEqual(cookie, token)) {
+  if (!isAdmin(cookie)) {
     return Response.json({ ok: false }, { status: 403 });
   }
 

@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../../AdminNav';
 import LoginForm from '../../LoginForm';
 import EditForm from './EditForm';
@@ -18,15 +18,15 @@ const wrap = (children) => (
 );
 
 export default async function EditPage({ params }) {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
 
   if (!authed) {
     return wrap(
       <>
         <h1 style={{ fontSize: 22 }}>Редагування</h1>
-        {token ? <LoginForm /> : <p style={{ color: '#b4530a' }}>Задайте <code>ADMIN_TOKEN</code>.</p>}
+        {configured ? <LoginForm /> : <p style={{ color: '#b4530a' }}>Задайте <code>ADMIN_TOKEN</code>.</p>}
       </>,
     );
   }

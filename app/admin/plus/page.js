@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { PRICE, PRICE_YEAR } from '@/lib/wayforpay';
 import { reasonLabel } from '@/lib/plusOutcomes';
 import AdminNav from '../AdminNav';
@@ -84,14 +84,14 @@ function Card({ value, label, tone }) {
 }
 
 export default async function PlusAdminPage() {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
   if (!authed) {
     return (
       <main style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
         <h1 style={{ fontSize: 22 }}>Dityam+</h1>
-        {token ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
+        {configured ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
       </main>
     );
   }
