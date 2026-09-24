@@ -247,3 +247,54 @@ test('нагадування: чужий чат нічого не перемик
   const db = fakeDb();
   assert.equal(await toggleReminders(db, '404'), null);
 });
+
+// Кнопка «підходить усе» (24.09.2026). До неї в тексті питання стояло
+// «Якщо цікаво все — просто «Далі»»: єдиним способом сказати «підходить
+// будь-що» було нічого не натиснути й сподіватись, що це зарахується.
+test('«Цікаво все» є на темах, форматі й місці — і немає на обставинах', async () => {
+  const { db, bot } = await setup();
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  assert.ok(buttons(bot.last()).includes('flow:like:__all'), 'теми');
+
+  await handleFlowCallback(bot, db, click('flow:like:__done'));
+  assert.ok(buttons(bot.last()).includes('flow:fmt:__all'), 'формат');
+
+  await handleFlowCallback(bot, db, click('flow:fmt:__done'));
+  // Обставини: «все підходить» там означало б позначити дитині разом
+  // інвалідність, онкозахворювання й сирітство.
+  assert.ok(!buttons(bot.last()).includes('flow:need:__all'), 'обставини — без «все»');
+
+  await handleFlowCallback(bot, db, click('flow:need:__done'));
+  assert.ok(buttons(bot.last()).includes('flow:place:__all'), 'місце');
+});
+
+test('«Цікаво все» скидає вже обране й веде далі', async () => {
+  const { db, bot } = await setup();
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+
+  // Спершу людина тицьнула дві теми, потім передумала: «та хай буде все».
+  const [firstLike] = buttons(bot.last());
+  await handleFlowCallback(bot, db, click(firstLike));
+  assert.equal(db._rows.plus_children[0].likes.length, 1);
+
+  await handleFlowCallback(bot, db, click('flow:like:__all'));
+  assert.deepEqual(db._rows.plus_children[0].likes, [], 'порожній список = без фільтра');
+  assert.match(bot.last().text, /Який формат підходить/);
+});
+
+test('«Підходить будь-де» чистить міста й показує чесний підсумок', async () => {
+  const { db, bot } = await setup();
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:like:__done'));
+  await handleFlowCallback(bot, db, click('flow:fmt:__done'));
+  await handleFlowCallback(bot, db, click('flow:need:__done'));
+
+  await handleFlowCallback(bot, db, click('flow:place:__all'));
+  assert.deepEqual(db._rows.digest_subscribers[0].places, []);
+  const summary = bot.sent.filter((m) => m.kind === 'edit').at(-1);
+  assert.match(summary.text, /Де: <b>будь-де<\/b>/);
+  assert.match(bot.last().text, /платні можливості чи лише безкоштовні/);
+});
