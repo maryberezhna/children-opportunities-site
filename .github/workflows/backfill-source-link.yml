@@ -1,0 +1,48 @@
+name: Джерело замість допису — разовий прогін
+
+# Записи, зроблені до 24.09.2026, лишились із адресою t.me: людина тисне
+# «відкрити джерело» і потрапляє в канал, де того допису може вже й не бути.
+# Скрипт читає допис, бере з нього посилання тими самими правилами, що й
+# скрапер, і замінює адресу. Опис, вік і дати не чіпає.
+#
+# Лише вручну: це разова робота, а не розклад.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'true = записати в базу (інакше лише показати)'
+        required: false
+        default: 'false'
+      status:
+        description: 'active, draft або all'
+        required: false
+        default: 'active'
+      limit:
+        description: 'Скільки записів за прогін'
+        required: false
+        default: '200'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements.txt
+      - name: Замінити адресу допису на сторінку
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: |
+          python backfill_source_link.py \
+            --status "${{ github.event.inputs.status }}" \
+            --limit "${{ github.event.inputs.limit }}" \
+            ${{ github.event.inputs.apply == 'true' && '--apply' || '' }}

@@ -37,6 +37,14 @@ class ExternalLinks(unittest.TestCase):
         # Куди привів — перевіряє usable_destination уже після редиректу.
         self.assertEqual(external_links(["https://bit.ly/xyz"]), ["https://bit.ly/xyz"])
 
+    def test_html_escaping_in_href_is_undone(self):
+        # Реальне посилання з допису @Mozhlyvosti: через «&amp;» адреса була
+        # бита, і сторінка курсу просто не відкривалась.
+        self.assertEqual(
+            external_links(["https://skvot.io/uk/course/3769-t-adobe-premiere"
+                            "?utm_source=tg&amp;utm_term=sio_200"]),
+            ["https://skvot.io/uk/course/3769-t-adobe-premiere"])
+
     def test_utm_tail_is_trimmed_so_the_same_page_is_one_link(self):
         self.assertEqual(
             external_links(["https://childrenkinofest.com/ua/contest?utm_source=telegram"]),
@@ -119,6 +127,66 @@ class RealPostLinks(unittest.TestCase):
         self.assertTrue(usable_destination("https://school.example.ua/camp"))
         self.assertFalse(usable_destination("https://forms.gle/uBfQg1knM4tybJJK6"))
         self.assertFalse(usable_destination("https://www.instagram.com/p/abc"))
+
+
+class Chain(unittest.TestCase):
+    """Ланцюг переказів: канал → znayshov → childrenkinofest (24.09.2026)."""
+
+    # Кінець статті на znayshov.com.
+    ZNAYSHOV = ("Дітей безкоштовно навчатимуть створювати кіно… для дітей віком "
+                "від 6 до 14 років… Джерело: НУШ")
+    # Посилання з тієї сторінки, у порядку появи.
+    ZNAYSHOV_LINKS = [
+        "https://www.youtube.com/playlist?list=PLPF2sh78dxCs",
+        "https://childrenkinofest.com/ua/contest/u-kadri-kriz-ditjachii-obektiv-kinoprograma.htm",
+        "https://nus.org.ua/2026/09/04/ditej-bezkoshtovno-navchatymut-stvoryuvaty-kino",
+        "https://t.me/novashkola",
+    ]
+
+    def test_retelling_is_recognised(self):
+        from first_source import is_retelling
+        self.assertTrue(is_retelling(self.ZNAYSHOV))
+        self.assertFalse(is_retelling("Реєстрація триває до 20 жовтня. Вік: 6–14 років."))
+
+    def test_deeper_goes_to_the_organiser_not_to_another_retelling(self):
+        from first_source import deeper_link
+        # Під написом «Джерело» стоїть НУШ — теж переказ. Беремо сайт
+        # організатора, який у тексті згаданий раніше.
+        self.assertEqual(
+            deeper_link(self.ZNAYSHOV, self.ZNAYSHOV_LINKS, ("znayshov.com",)),
+            "https://childrenkinofest.com/ua/contest/u-kadri-kriz-ditjachii-obektiv-kinoprograma.htm")
+
+    def test_page_that_is_not_a_retelling_ends_the_chain(self):
+        from first_source import deeper_link
+        self.assertIsNone(deeper_link("Реєстрація до 20 жовтня", self.ZNAYSHOV_LINKS, ()))
+
+    def test_visited_host_is_not_revisited(self):
+        from first_source import deeper_link
+        links = ["https://znayshov.com/News/Details/inshe", "https://school.ua/camp"]
+        self.assertEqual(deeper_link(self.ZNAYSHOV, links, ("znayshov.com",)),
+                         "https://school.ua/camp")
+
+
+class MentionedLinks(unittest.TestCase):
+    def test_forms_are_kept_for_apply_url(self):
+        from first_source import mentioned_links
+        # Тут форма ПОТРІБНА: модель бачить текст, а не href, і без цього
+        # рядка вона не знайде, куди подаватись.
+        self.assertEqual(
+            mentioned_links(["https://forms.gle/abc", "https://t.me/channel"]),
+            ["https://forms.gle/abc"])
+
+    def test_own_host_and_social_are_skipped(self):
+        from first_source import mentioned_links
+        self.assertEqual(
+            mentioned_links(["https://znayshov.com/News/x", "https://childrenkinofest.com/ua"],
+                            skip_hosts=("znayshov.com",)),
+            ["https://childrenkinofest.com/ua"])
+
+    def test_limit(self):
+        from first_source import mentioned_links
+        links = [f"https://a{i}.ua/x" for i in range(9)]
+        self.assertEqual(len(mentioned_links(links)), 3)
 
 
 if __name__ == "__main__":

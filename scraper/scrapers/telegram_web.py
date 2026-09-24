@@ -223,30 +223,59 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
     Сторінка не відкрилась — лишаємо допис як був: краще запис із адресою
     каналу, ніж жодного.
     """
+    async def _read(url: str):
+        """Сторінка: (кінцева адреса, текст, посилання) або None."""
+        async with semaphore:
+            try:
+                r = await client.get(url)
+                r.raise_for_status()
+            except Exception as e:                           # noqa: BLE001
+                logger.info("не пішли за посиланням %s: %s", url, e)
+                return None
+        if not first_source.usable_destination(str(r.url)):
+            logger.info("редирект привів не туди (%s)", r.url)
+            return None
+        soup = BeautifulSoup(r.text, "lxml")
+        links = [a.get("href") for a in soup.select("a[href]")]
+        for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
+            tag.decompose()
+        text = " ".join(soup.get_text(" ").split())[:8000]
+        if not first_source.looks_like_page(text):
+            logger.info("сторінка %s порожня (%d знаків)", url, len(text))
+            return None
+        return first_source.strip_tracking(str(r.url)), text, links
+
     async def _one(item: dict):
         target = first_source.pick(item.pop("_links", None))
         if not target:
             return
-        async with semaphore:
-            try:
-                r = await client.get(target)
-                r.raise_for_status()
-            except Exception as e:                           # noqa: BLE001
-                logger.info("не пішли за посиланням %s: %s", target, e)
-                return
-        if not first_source.usable_destination(str(r.url)):
-            logger.info("редирект привів не туди (%s) — лишаю допис", r.url)
+        # Ланцюг переказів: канал → znayshov («Джерело: НУШ») →
+        # childrenkinofest. Зупиняємось на сторінці, яка вже нікого не
+        # переказує, або коли вичерпали кроки. Кожен наступний крок беремо
+        # лише тоді, коли попередня сторінка справді прочиталась: зникне
+        # сайт організатора — лишиться переказ, а не порожнеча.
+        visited: tuple = ()
+        best = None
+        for _ in range(first_source.MAX_HOPS + 1):
+            got = await _read(target)
+            if not got:
+                break
+            url, text, links = got
+            best = (url, text, links)
+            visited += (first_source.host_of(url),)
+            deeper = first_source.deeper_link(text, links, visited)
+            if not deeper:
+                break
+            logger.info("%s переказує — іду глибше: %s", url, deeper)
+            target = deeper
+        if not best:
             return
-        soup = BeautifulSoup(r.text, "lxml")
-        for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
-            tag.decompose()
-        page = " ".join(soup.get_text(" ").split())[:8000]
-        if not first_source.looks_like_page(page):
-            logger.info("сторінка %s порожня (%d знаків) — лишаю допис", target, len(page))
-            return
-        item["raw_text"] = first_source.merge_text(item["raw_text"], page, target)
-        item["source_url"] = first_source.strip_tracking(str(r.url))
-        item["followed_from"] = target
+        url, text, links = best
+        item["raw_text"] = first_source.merge_text(
+            item["raw_text"], text, url,
+            first_source.mentioned_links(links, skip_hosts=(first_source.host_of(url),)))
+        item["source_url"] = url
+        item["followed_from"] = url
 
     await asyncio.gather(*[_one(it) for it in items])
     for it in items:
