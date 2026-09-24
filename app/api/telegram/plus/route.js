@@ -20,7 +20,7 @@ import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
-import { PLUS_SALES_OPEN } from '@/lib/plus';
+import { PLUS_SALES_OPEN, parseSourceArg } from '@/lib/plus';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
   ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
@@ -545,8 +545,12 @@ export async function POST(request) {
       }
 
       if (!sub) {
+        // Звідки людина прийшла — пишемо лише при СТВОРЕННІ рядка: перший
+        // дотик важливіший за останній, інакше повернення через інший пост
+        // затре справжнє джерело. `from_<звідки>` ставлять пости каналу.
         const { data: ins } = await supabase.from('digest_subscribers')
-          .insert({ telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle, status: 'pending' })
+          .insert({ telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle,
+                    status: 'pending', source: parseSourceArg(startArg) })
           .select('*').single();
         sub = ins;
       }

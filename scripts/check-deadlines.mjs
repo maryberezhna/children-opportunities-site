@@ -177,7 +177,12 @@ const SUPPORT_LINE = '🧡 Платформа безкоштовна і живе
 // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
 // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
 // з людини рутину. Усе з поста лишається відкритим для всіх.
-const PLUS_LINE = '⚡ Не встигаєте стежити за дедлайнами? <a href="https://dityam.com.ua/plus">Dityam+</a> відбере ваші й нагадає вчасно.';
+// Веде ПРЯМО в бот, а не на сторінку /plus: доти людина з поста мусила
+// відкрити сайт, знайти там кнопку й аж тоді дійти до бота — три кліки на
+// рівному місці (Марія, 25.09.2026). Мітка `from_<звідки>` показує, який
+// формат поста приводить людей: бот записує її в digest_subscribers.source.
+const plusLine = (where) => '⚡ Не встигаєте стежити за дедлайнами? '
+  + `<a href="https://t.me/DityamPlusBot?start=from_${where}">Dityam+</a> відбере ваші й нагадає вчасно.`;
 // Теги, які Telegram приймає в parse_mode=HTML (як у post-message.mjs).
 const ALLOWED_TAGS = /^(b|strong|i|em|u|s|code|pre|a|blockquote|tg-spoiler)$/;
 const POOL_COLUMNS = 'id, slug, title, summary, details, source, opportunity_type, age_from, age_to, '
@@ -312,7 +317,7 @@ async function buildPlannedPost(entry, pool, eligible) {
       lines.push(formatLine(r, i));
       if (i < items.length - 1) lines.push('');
     });
-    lines.push('', `👉 Більше — <a href="${entry.link}">на dityam.com.ua</a>`, '', PLUS_LINE);
+    lines.push('', `👉 Більше — <a href="${entry.link}">на dityam.com.ua</a>`, '', plusLine('channel_topic'));
     return { lines, items, label: `digest ${items.length}` };
   }
 
@@ -333,7 +338,7 @@ async function buildPlannedPost(entry, pool, eligible) {
       lines.push(formatLine(r, i));
       if (i < items.length - 1) lines.push('');
     });
-    lines.push('', `👉 Усі дедлайни — <a href="${entry.link}">на dityam.com.ua</a>`, '', PLUS_LINE);
+    lines.push('', `👉 Усі дедлайни — <a href="${entry.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
     return { lines, items, label: `deadlines ${items.length}` };
   }
 
