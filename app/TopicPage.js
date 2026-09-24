@@ -63,7 +63,7 @@ const CHROME = {
     cards: {
       all: 'Усі',
       sort: 'за дедлайном, найближчі спочатку',
-      details: 'Детальніше ↗',
+      details: 'Детальніше →',
       emptyTitle: 'Нічого не знайдено',
       emptyText: 'Спробуйте інший фільтр.',
       listLabel: 'Можливості підбірки',
@@ -100,7 +100,7 @@ const CHROME = {
     cards: {
       all: 'All',
       sort: 'by deadline, soonest first',
-      details: 'Details ↗',
+      details: 'Details →',
       emptyTitle: 'Nothing found',
       emptyText: 'Try a different filter.',
       listLabel: 'Opportunities in this collection',
