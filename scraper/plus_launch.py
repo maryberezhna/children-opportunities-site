@@ -67,15 +67,37 @@ def telegram_text() -> str:
     )
 
 
+def wrong_chat_text() -> str:
+    """Тим, хто записався через @DityamComUABot (пости в каналі до 15.09.2026).
+
+    Цей бот зветься «Dityam Адмінка 🛠» — службовий, і стороння людина не має
+    бачити його взагалі (правило Марії, 24.09.2026). Слати їй звідси повний
+    лист про запуск означало б закріпити помилку. Тому звідси йде одне
+    коротке повідомлення: перепрошуємо, вам сюди, а цей чат видаляйте.
+    Промокод називаємо, щоб людина не втратила обіцяну знижку по дорозі.
+    """
+    return (
+        "🧡 <b>Dityam+ запустився</b>\n\n"
+        "І одразу вибачення: ми переплутали чат. Ви записувались у список перших, "
+        "але цей бот службовий — він для адміністрування сайту, писати вам сюди не "
+        "мали.\n\n"
+        f"Усе про Dityam+ — у @{PLUS_BOT}. Там і ваш промокод <b>{PROMO}</b>, як "
+        f"обіцяли: перший місяць за {PROMO_PRICE} грн замість {PRICE}, перший рік — "
+        f"за {PROMO_PRICE_YEAR} грн замість {PRICE_YEAR}.\n\n"
+        "Кнопка нижче застосує код сама. А цей чат сміливо видаляйте — більше ми "
+        "сюди не напишемо."
+    )
+
+
 def via_plus_bot(row: dict) -> bool:
     """Записалась у @DityamPlusBot (з 15.09.2026) — писати треба ним."""
     return str(row.get("source") or "").startswith("plus_bot")
 
 
-def send_telegram_launch(chat_id: str, token: str) -> bool:
+def send_telegram_launch(chat_id: str, token: str, text: str | None = None) -> bool:
     r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json={
         "chat_id": chat_id,
-        "text": telegram_text(),
+        "text": text or telegram_text(),
         "parse_mode": "HTML",
         "disable_web_page_preview": True,
         "reply_markup": {"inline_keyboard": [[
@@ -118,7 +140,10 @@ def main() -> int:
                     len(rows) - len(tg))
 
     if not args.send:
-        logger.info("[dry] Telegram-текст:\n%s", telegram_text())
+        logger.info("[dry] Текст для @%s:\n%s", PLUS_BOT, telegram_text())
+        if any(not via_plus_bot(r) for r in tg):
+            logger.info("[dry] Текст для тих, хто записався через службовий бот:\n%s",
+                        wrong_chat_text())
         logger.info("[dry] Нічого не надіслано. Щоб надіслати — confirm = SEND.")
         return 0
 
@@ -131,8 +156,11 @@ def main() -> int:
 
     sent_tg = 0
     for r in tg:
-        token = PLUS_BOT_TOKEN if via_plus_bot(r) else MAIN_BOT_TOKEN
-        sent_tg += send_telegram_launch(r["telegram_chat_id"], token)
+        plus = via_plus_bot(r)
+        token = PLUS_BOT_TOKEN if plus else MAIN_BOT_TOKEN
+        # Зі службового бота — лише «переплутали чат», ніколи повний лист.
+        text = None if plus else wrong_chat_text()
+        sent_tg += send_telegram_launch(r["telegram_chat_id"], token, text)
         time.sleep(0.05)          # ліміт Telegram — ~30 повідомлень на секунду
     logger.info("Готово. Telegram: %d/%d", sent_tg, len(tg))
     return 0
