@@ -32,11 +32,12 @@ import html
 import logging
 import os
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 import httpx
 
+import calendar_link
 import plus_profile
 import send_window
 
@@ -382,11 +383,21 @@ def _meta(o) -> str:
     return " · ".join(b for b in bits if b)
 
 
-def calendar_url(o):
-    """«Додати в календар» — коли є дедлайн або дати самої події: без жодної
-    дати подію немає куди поставити, і /api/events/<slug>/ics відповідає 422."""
-    has_date = o.get("deadline") or o.get("event_start_date") or o.get("event_end_date")
-    return f"{SITE_URL}/events/{o['slug']}/add" if has_date else None
+def calendar_url(o, today=None):
+    """«У календар» — пряма адреса Google Calendar із заповненою подією.
+
+    До 25.09.2026 тут була сторінка сайту /events/<slug>/add: людина тиснула
+    посилання, потрапляла на сайт і мусила клікнути ще раз (Марія: «чому він
+    відкриває сайт, коли можна напряму дати те посилання»). Тепер календар
+    відкривається одразу.
+
+    Умова та сама, що на сайті (calendar_link.calendar_target): дедлайн, поки
+    він попереду, інакше дати самої події. Раніше кнопка з'являлась за будь-якої
+    дати, навіть торішньої, а сторінка на таке відповідала редиректом на саму
+    можливість — клік у нікуди.
+    """
+    target = calendar_link.calendar_target(o, today or date.today())
+    return calendar_link.google_calendar_url(o, target, SITE_URL) if target else None
 
 
 def telegram_keyboard(items) -> dict:
