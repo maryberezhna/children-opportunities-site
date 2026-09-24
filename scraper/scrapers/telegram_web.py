@@ -132,11 +132,55 @@ def _parse_channel(html: str, handle: str, display: str, since: datetime) -> lis
     return out
 
 
+def channels_from_registry(rows) -> list[tuple[str, str]] | None:
+    """Канали з реєстру джерел: [(handle, назва)] або None, якщо реєстру нема.
+
+    Чиста функція — під тести. Рядок без handle у config пропускаємо: канал,
+    якого нема куди піти читати, це помилка даних, а не привід упасти.
+    """
+    if not rows:
+        return None
+    out = []
+    for name, row in sorted(rows.items()):
+        if not row.get("enabled", True):
+            continue
+        handle = ((row.get("config") or {}).get("handle") or "").strip().lstrip("@")
+        if handle:
+            out.append((handle, name))
+    return out
+
+
+def channels() -> list[tuple[str, str]]:
+    """Які канали обходити цього разу.
+
+    Кожен канал — окремий рядок `sources` (pipeline='telegram', handle у
+    config), щоб вимкнути ОДИН канал можна було рядком у базі, без деплою.
+    До 24.09.2026 вимикач був один на всі: @unicef_ukraine за 10 днів дав 6
+    сторінок у LLM і жодного запису, @volunteercountry — 7 і 0, а прибрати
+    їх можна було лише разом із «Твоїм космосом» (33% прийнятих) — тобто
+    тільки через деплой, руками в цьому файлі.
+
+    Реєстр недоступний чи порожній — працюємо за вбудованим переліком:
+    реєстр не сміє зупинити скрапінг власною недоступністю (як у main.py).
+    """
+    try:
+        from db import get_client, get_source_registry
+        from_registry = channels_from_registry(get_source_registry(get_client(), "telegram"))
+    except Exception as e:                                   # noqa: BLE001
+        logger.warning("реєстр каналів недоступний (%s) — вбудований перелік", e)
+        return CHANNELS
+    if from_registry is None:
+        logger.info("у реєстрі каналів немає — вбудований перелік (%d)", len(CHANNELS))
+        return CHANNELS
+    return from_registry
+
+
 async def fetch_all() -> list[dict]:
     since = datetime.now(timezone.utc) - timedelta(days=LOOKBACK_DAYS)
     seen: set[str] = set()
     results: list[dict] = []
     semaphore = asyncio.Semaphore(CONCURRENCY)
+    active = channels()
 
     async with httpx.AsyncClient(headers=_BROWSER, timeout=25.0, follow_redirects=True) as client:
 
@@ -156,8 +200,8 @@ async def fetch_all() -> list[dict]:
                     results.append(it)
                 logger.info("t.me/s/%s: %d relevant", handle, len(items))
 
-        await asyncio.gather(*[_fetch(h, d) for h, d in CHANNELS])
+        await asyncio.gather(*[_fetch(h, d) for h, d in active])
 
     logger.info("Telegram (web): %d relevant messages across %d channels",
-                len(results), len(CHANNELS))
+                len(results), len(active))
     return results
