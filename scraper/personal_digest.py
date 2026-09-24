@@ -312,6 +312,12 @@ def notify_empty_profile(client, sub: dict) -> None:
         logger.info("sub %s — надіслано нагадування про порожній профіль", sub["id"])
 
 
+def _neg_created(o: dict):
+    """Ключ «новіші спершу» для сортування за зростанням: рядок дати з мінусом
+    не працює, тож повертаємо його перевернутим через кортеж-заглушку."""
+    return tuple(-ord(c) for c in (o.get("created_at") or ""))
+
+
 def pick_for(sub: dict, opps: list, since=None, children=None) -> list:
     """Можливості під профіль родини. since (datetime) — лише новіші за цей момент.
 
@@ -321,7 +327,13 @@ def pick_for(sub: dict, opps: list, since=None, children=None) -> list:
     kids = children if children is not None else plus_profile.children_of(sub, [])
     fresh = [o for o in opps
              if not (since and (o["_created"] is None or o["_created"] <= since))]
-    fresh.sort(key=lambda o: o.get("created_at") or "", reverse=True)
+    # Спершу те, чого не було в каналі. Добірка — те, за що платять, і вона не
+    # має читатись як переказ безкоштовного каналу (Марія, 25.09.2026:
+    # «розвести за змістом»). Опубліковане не викидаємо: канал читають не всі,
+    # і пропустити доречну можливість гірше, ніж побачити її вдруге — вона
+    # просто йде нижче й з позначкою.
+    fresh.sort(key=lambda o: (bool(o.get("telegram_posted_at")),
+                              _neg_created(o)))
     matches = plus_profile.match_family(sub, kids, fresh)
     picked = plus_profile.pick_fair(matches, kids, MAX_ITEMS)
     return [dict(m["o"], _for=plus_profile.for_line(m, len(kids))) for m in picked]
@@ -379,6 +391,10 @@ def _meta(o) -> str:
     event = _event(o)
     if event:
         bits.append(f"проходить {event}")
+    # Чесно кажемо, що це вже бачили в каналі: інакше платна добірка виглядає
+    # переказом безкоштовного (Марія, 25.09.2026).
+    if o.get("telegram_posted_at"):
+        bits.append("було в каналі")
     return " · ".join(b for b in bits if b)
 
 
@@ -535,7 +551,7 @@ def main():
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
             "event_start_date, event_end_date, timing_kind, timing_assumed, "
             "opportunity_type, format, cities, countries, is_international, child_needs, "
-            "categories"
+            "categories, telegram_posted_at"
         ).eq("status", "active").is_("canonical_slug", "null") \
             .order("id").range(start, start + 999).execute().data or []
         opps.extend(page)
