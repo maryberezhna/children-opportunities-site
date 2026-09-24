@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import {
   verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef,
-  FAILED_STATUSES, describeFailure,
+  FAILED_STATUSES, describeFailure, failureStopsSubscription,
 } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
 
@@ -112,6 +112,27 @@ export async function POST(request) {
         reasonCode: Number(b.reasonCode) || null,
         reason: b.reason ? String(b.reason) : null,
       };
+
+      // КРИТИЧНО: спершу дивимось, ПРО ЯКИЙ рахунок ідеться. Колбек шукає
+      // людину за unsub_token, а токен один на людину, не на рахунок. Людина
+      // легко лишає по дорозі кілька неоплачених рахунків, і кожен через
+      // ~16 хвилин сам присилає Declined 1124. Без цієї перевірки така
+      // покинута вкладка знімала оплачену підписку в paused+free — саме це
+      // сталося 24.09.2026 о 12:12 з першою підписницею Dityam+.
+      const { data: existing } = await supabase.from('digest_subscribers')
+        .select('id, status, wfp_order_reference, telegram_handle, telegram_chat_id')
+        .eq('unsub_token', token).maybeSingle();
+
+      if (existing && !failureStopsSubscription({
+        status: existing.status,
+        storedRef: existing.wfp_order_reference,
+        failedRef: b.orderReference,
+      })) {
+        console.warn(`[wayforpay] ${b.transactionStatus} ${b.reasonCode} на покинутому рахунку `
+          + `${b.orderReference}; підписка ${existing.id} працює на ${existing.wfp_order_reference} — не чіпаємо`);
+        return Response.json(acceptResponse(b.orderReference));
+      }
+
       const { data: sub } = await supabase.from('digest_subscribers')
         .update({
           status: 'paused',
