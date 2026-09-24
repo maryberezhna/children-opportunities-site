@@ -145,7 +145,7 @@ export default async function TodayPage() {
 
   // Що зробити — від найтерміновішого: гроші й люди раніше за контент.
   const todo = [
-    paused && { text: `${paused} ${paused === 1 ? 'підписка' : 'підписок'} Dityam+ на паузі — оплата не пройшла`, href: '/admin/plus', tone: C.accent },
+    paused && { text: `${paused} ${paused === 1 ? 'підписка' : 'підписок'} Dityam+ на паузі — платіж не завершився`, href: '/admin/plus', tone: C.accent },
     (newMessages + waitingSuggestions) && { text: `${newMessages} нових звернень і ${waitingSuggestions} пропозицій чекають на рішення`, href: '/admin/messages', tone: C.accent },
     ready && { text: `${ready} чернеток готові до публікації — усі поля є`, href: '/admin', tone: C.green },
     stuck && { text: `${stuck} людей застрягли в оформленні Dityam+ понад добу`, href: '/admin/plus', tone: C.amber },
@@ -188,7 +188,7 @@ export default async function TodayPage() {
         <Card title="💎 Dityam+" href="/admin/plus" linkText="Підписники">
           <Row label="активних підписок" value={activeSubs} tone={activeSubs ? C.green : undefined} />
           <Row label="застрягли в оформленні понад добу" value={stuck} tone={stuck ? C.amber : undefined} />
-          <Row label="пауза — оплата не пройшла" value={paused} tone={paused ? C.accent : undefined} />
+          <Row label="пауза — платіж не завершився" value={paused} tone={paused ? C.accent : undefined} />
         </Card>
 
         <Card title="📣 Telegram-канал" href={PLAN_URL} linkText="План">

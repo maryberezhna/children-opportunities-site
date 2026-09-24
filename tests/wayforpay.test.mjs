@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_YEAR;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 14, 12, 0, 0);   // 14.09.2026
@@ -72,4 +72,44 @@ test('річна підписка з промокодом — річна, а н�
 test('старі номери замовлень без позначки — за сумою, як раніше', () => {
   assert.equal(periodFromOrderRef('abc123def456-1789900000000', 999), 'yearly');
   assert.equal(periodFromOrderRef('abc123def456-1789900000000', 119), 'monthly');
+});
+
+// Причина відмови. Регресія, проти якої стоїть тест: 24.09.2026 перший же
+// DECLINE у WayForPay ліг у базу як голе «paused» — reasonCode ми викидали,
+// і чому людина не оплатила, можна було дізнатись лише в кабінеті WayForPay.
+test('describeFailure: код WayForPay перекладається на причину', () => {
+  assert.equal(describeFailure({ status: 'Declined', reasonCode: 1104 }), 'недостатньо коштів на картці (1104)');
+  assert.equal(describeFailure({ status: 'Declined', reasonCode: '1108' }), '3-D Secure не пройдено (1108)');
+});
+
+// Саме той випадок, з якого почався цей код: WayForPay прислав Declined,
+// але Payment type = NO PAYMENT — картку не вводили, банк нічого не відхиляв.
+test('describeFailure: 1124 не називається відмовою банку', () => {
+  const t = describeFailure({ status: 'Declined', reasonCode: 1124, reason: 'Cardholder session expired' });
+  assert.equal(t, 'сесія на сторінці оплати збігла — оплату не завершили (1124)');
+  assert.doesNotMatch(t, /банк/);
+});
+
+test('describeFailure: Expired — це не відмова банку', () => {
+  assert.doesNotMatch(describeFailure({ status: 'Expired' }), /відхилив/);
+  assert.match(describeFailure({ status: 'Expired' }), /протермінувався/);
+});
+
+test('describeFailure: незнайомий код не ковтаємо — показуємо текст WayForPay', () => {
+  assert.equal(
+    describeFailure({ status: 'Voided', reasonCode: 9999, reason: 'Some New Thing' }),
+    'платіж скасовано — Some New Thing (9999)',
+  );
+});
+
+test('describeFailure: без причини — загальний рядок, не «undefined»', () => {
+  assert.equal(describeFailure({}), 'оплата не пройшла');
+  assert.equal(describeFailure({ status: 'Declined' }), 'банк відхилив оплату');
+});
+
+test('FAILED_STATUSES накриває всі невдалі статуси колбека', () => {
+  assert.deepEqual(
+    Object.keys(FAILED_STATUSES),
+    ['Declined', 'Expired', 'Refunded', 'Voided', 'RefundInProcessing'],
+  );
 });
