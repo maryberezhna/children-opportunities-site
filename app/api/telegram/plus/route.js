@@ -10,7 +10,7 @@ import {
   saveCustomCity, FLOW_FREQ, freqOf, toggleReminders, remindersLabel, remindersToast,
 } from '@/lib/digestFlow';
 import {
-  createInvoice, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
+  payStartUrl, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
 } from '@/lib/wayforpay';
 import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
@@ -88,7 +88,9 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     + '• Допомога із заявкою — скоро\n'
     + '• Свіжі можливості на вимогу — будь-коли, одним дотиком у меню\n'
     + '• Усе приходить сюди, у Telegram';
-  if (wayforpayConfigured && sub) {
+  // unsub_token — адреса переходу на оплату. Усі виклики сюди приходять із
+  // select('*'), але дострахуватись дешевше, ніж показати кнопку без токена.
+  if (wayforpayConfigured && sub?.unsub_token) {
     // Єдина підстава для знижки — промокод (рішення Марії 19.09.2026).
     // Раніше бот сам давав перший місяць за 1 грн тому, кого знаходив у
     // plus_waitlist за chat_id. Механіка мовчки обходила трьох людей, що
@@ -99,24 +101,22 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
     const firstMonth = promoOk ? Number(promo.first_amount) : null;
     const firstYear = promoOk && promo.yearly_amount != null ? Number(promo.yearly_amount) : null;
-    const [m, y] = await Promise.all([
-      createInvoice(sub, 'monthly', { firstAmount: firstMonth }),
-      createInvoice(sub, 'yearly', { firstAmount: firstYear }),
-    ]);
-    const rows = [];
-    if (m.url) {
-      const monthText = firstMonth != null
-        ? `Перший місяць за ${fmtPrice(firstMonth)} грн, далі ${PRICE} грн/міс`
-        : `Оформити за ${PRICE} грн/міс`;
-      rows.push([{ text: monthText, url: m.url }]);
-    }
-    if (y.url) {
-      rows.push([{
+    // Кнопка веде на наш перехід, а не на готовий рахунок WayForPay: рахунок
+    // живе годину, а повідомлення лишається в чаті назавжди — 24.09.2026
+    // кнопки в боті вже були мертві, бо створились годиною раніше.
+    const rows = [
+      [{
+        text: firstMonth != null
+          ? `Перший місяць за ${fmtPrice(firstMonth)} грн, далі ${PRICE} грн/міс`
+          : `Оформити за ${PRICE} грн/міс`,
+        url: payStartUrl(sub.unsub_token, 'monthly'),
+      }],
+      [{
         text: firstYear != null ? `Перший рік за ${fmtPrice(firstYear)} грн замість ${PRICE_YEAR}`
           : `Рік за ${PRICE_YEAR} грн — вигідніше`,
-        url: y.url,
-      }]);
-    }
+        url: payStartUrl(sub.unsub_token, 'yearly'),
+      }],
+    ];
     // Кнопку «У мене є промокод» показуємо, поки коду немає: інакше людина
     // не здогадається, що код узагалі можна ввести, і введе його в чат
     // навмання (або не введе зовсім).

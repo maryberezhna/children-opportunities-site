@@ -11,7 +11,8 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_YEAR;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 14, 12, 0, 0);   // 14.09.2026
@@ -112,4 +113,30 @@ test('FAILED_STATUSES накриває всі невдалі статуси ко
     Object.keys(FAILED_STATUSES),
     ['Declined', 'Expired', 'Refunded', 'Voided', 'RefundInProcessing'],
   );
+});
+
+// Посилання на оплату. Регресія, проти якої стоять ці тести: 24.09.2026
+// кнопка в @DityamPlusBot несла готовий invoiceUrl, зроблений у мить
+// відправки повідомлення. Рахунок WayForPay живе годину, повідомлення в чаті
+// — вічно, тож кнопки просто вмирали, і людина бачила «посилання застаріло».
+test('payStartUrl веде на наш перехід, а не на WayForPay', () => {
+  const u = payStartUrl('abc123def456', 'monthly');
+  assert.match(u, /\/api\/pay\/start\?t=abc123def456&plan=monthly$/);
+  assert.doesNotMatch(u, /wayforpay/);
+});
+
+test('payStartUrl: план тільки з двох відомих, сміття — місяць', () => {
+  assert.match(payStartUrl('t', 'yearly'), /plan=yearly$/);
+  assert.match(payStartUrl('t', 'хтозна'), /plan=monthly$/);
+  assert.match(payStartUrl('t'), /plan=monthly$/);
+});
+
+test('payStartUrl екранує токен', () => {
+  assert.match(payStartUrl('a b&c'), /t=a%20b%26c&/);
+});
+
+test('бот не зашиває рахунок у кнопку', () => {
+  const src = readFileSync(new URL('../app/api/telegram/plus/route.js', import.meta.url), 'utf8');
+  assert.ok(src.includes('payStartUrl('), 'кнопки мають вести на /api/pay/start');
+  assert.ok(!src.includes('createInvoice'), 'рахунок створюється в мить кліку, не при показі кнопки');
 });
