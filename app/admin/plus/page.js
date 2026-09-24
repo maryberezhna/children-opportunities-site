@@ -79,9 +79,12 @@ function failure(s) {
   });
 }
 
+// І digest_subscribers.telegram_handle, і plus_waitlist.telegram_username
+// лежать у базі вже з «собакою» — друга робила з них «@@name».
+const at = (handle) => `@${String(handle).replace(/^@+/, '')}`;
+
 function who(s) {
-  // У базі handle лежить уже з «собакою» — друга робила з нього «@@name».
-  if (s.telegram_handle) return `@${String(s.telegram_handle).replace(/^@+/, '')}`;
+  if (s.telegram_handle) return at(s.telegram_handle);
   return s.telegram_chat_id ? `Telegram · …${String(s.telegram_chat_id).slice(-4)}` : '—';
 }
 
@@ -292,7 +295,7 @@ export default async function PlusAdminPage() {
             <tbody>
               {waitlist.map((w) => (
                 <tr key={w.id}>
-                  <td style={cell}>{w.telegram_username ? `@${w.telegram_username}` : w.telegram_chat_id ? 'Telegram' : `📧 ${w.email || '—'} · без Telegram`}</td>
+                  <td style={cell}>{w.telegram_username ? at(w.telegram_username) : w.telegram_chat_id ? 'Telegram' : `📧 ${w.email || '—'} · без Telegram`}</td>
                   <td style={{ ...cell, color: C.ink2 }}>{w.source || '—'}</td>
                   <td style={cell}>{fmtDate(w.created_at)}</td>
                   <td style={cell}>{w.telegram_chat_id && activeChats.has(String(w.telegram_chat_id)) ? '✅' : '—'}</td>
