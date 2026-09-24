@@ -2,7 +2,10 @@
 // Approved → active + запуск форми в боті; Declined/Expired/... → paused.
 import { createClient } from '@supabase/supabase-js';
 import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
-import { verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef } from '@/lib/wayforpay';
+import {
+  verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef,
+  FAILED_STATUSES, describeFailure,
+} from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
 
 export const runtime = 'nodejs';
@@ -13,7 +16,9 @@ const SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const PLUS_TOKEN = process.env.TELEGRAM_PLUS_BOT_TOKEN;
 const MAIN_TOKEN = process.env.TELEGRAM_BOT_TOKEN;           // сповіщення адміну
 const ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
-const FAILED = ['Declined', 'Expired', 'Refunded', 'Voided', 'RefundInProcessing'];
+const FAILED = Object.keys(FAILED_STATUSES);
+const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 // WayForPay шле JSON — інколи як raw body, інколи як єдиний ключ форми.
 async function parseBody(request) {
@@ -90,9 +95,38 @@ export async function POST(request) {
     } else if (FAILED.includes(b.transactionStatus)) {
       // План знижуємо разом зі статусом, інакше в базі лишається paused+premium
       // і статистика рахує таку людину як платну.
-      await supabase.from('digest_subscribers')
-        .update({ status: 'paused', plan: 'free', updated_at: now })
-        .eq('unsub_token', token);
+      //
+      // Причину зберігаємо тут і ніде більше: reasonCode приходить лише в
+      // цьому колбеку. Загубимо його — і «чому не оплатила» доведеться шукати
+      // руками в кабінеті WayForPay (саме так було 24.09.2026).
+      const failure = {
+        status: b.transactionStatus,
+        reasonCode: Number(b.reasonCode) || null,
+        reason: b.reason ? String(b.reason) : null,
+      };
+      const { data: sub } = await supabase.from('digest_subscribers')
+        .update({
+          status: 'paused',
+          plan: 'free',
+          updated_at: now,
+          wfp_last_status: failure.status,
+          wfp_last_reason: failure.reason,
+          wfp_last_reason_code: failure.reasonCode,
+          wfp_last_failed_at: now,
+        })
+        .eq('unsub_token', token)
+        .select('telegram_handle, telegram_chat_id')
+        .maybeSingle();
+
+      // Сповіщення адміну: людина щойно дійшла до кінця анкети й лишилась без
+      // підписки. Без цього рядок мовчки висить у «Потребує уваги».
+      if (sub && MAIN_TOKEN && ADMIN_CHAT_ID) {
+        await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+          '⚠️ <b>Оплата Dityam+ не пройшла</b>\n'
+          + `${esc(sub.telegram_handle || sub.telegram_chat_id || '—')} · ${esc(b.amount)} ${esc(b.currency || 'UAH')}\n`
+          + `${esc(describeFailure(failure))}\n`
+          + `<a href="${SITE_URL}/admin/plus">Хто саме →</a>`);
+      }
     }
   }
 

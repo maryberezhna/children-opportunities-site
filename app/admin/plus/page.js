@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
-import { PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import { PRICE, PRICE_YEAR, describeFailure } from '@/lib/wayforpay';
 import { reasonLabel } from '@/lib/plusOutcomes';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -69,8 +69,19 @@ function whereStuck(s) {
   return 'дійшов до оплати';
 }
 
+// Чому зірвалась оплата. Рядки, що стали paused до 24.09.2026, причини не
+// мають — там describeFailure поверне загальне «оплата не пройшла».
+function failure(s) {
+  return describeFailure({
+    status: s.wfp_last_status,
+    reasonCode: s.wfp_last_reason_code,
+    reason: s.wfp_last_reason,
+  });
+}
+
 function who(s) {
-  if (s.telegram_handle) return `@${s.telegram_handle}`;
+  // У базі handle лежить уже з «собакою» — друга робила з нього «@@name».
+  if (s.telegram_handle) return `@${String(s.telegram_handle).replace(/^@+/, '')}`;
   return s.telegram_chat_id ? `Telegram · …${String(s.telegram_chat_id).slice(-4)}` : '—';
 }
 
@@ -103,7 +114,7 @@ export default async function PlusAdminPage() {
 
   const [subsRes, kidsRes, waitRes, remindRes, appsRes] = await Promise.all([
     supabase.from('digest_subscribers')
-      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at')
+      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at, wfp_last_status, wfp_last_reason, wfp_last_reason_code')
       .order('created_at', { ascending: false }).limit(500),
     supabase.from('plus_children').select('subscriber_id'),
     supabase.from('plus_waitlist').select('id, email, telegram_username, telegram_chat_id, source, created_at')
@@ -166,7 +177,7 @@ export default async function PlusAdminPage() {
         <Card value={active.length} label={`активних підписок (${monthly} міс · ${yearly} річн)`} tone={active.length ? C.green : undefined} />
         <Card value={`${mrr} грн`} label="на місяць (річні — поділено на 12)" />
         <Card value={pending.length} label="почали оформлення, ще не оплатили" tone={pending.length ? C.amber : undefined} />
-        <Card value={paused.length} label="на паузі — оплата не пройшла" tone={paused.length ? C.accent : undefined} />
+        <Card value={paused.length} label="на паузі — платіж не завершився" tone={paused.length ? C.accent : undefined} />
         <Card value={unsub30.length} label="відписались за 30 днів" />
         <Card value={waitlist.length} label={`у списку очікування · оформили ${converted}`} />
       </div>
@@ -185,7 +196,7 @@ export default async function PlusAdminPage() {
               {attention.map((s) => (
                 <tr key={s.id}>
                   <td style={cell}>{who(s)}</td>
-                  <td style={cell}>{s.status === 'paused' ? '⚠️ оплата не пройшла' : `⏳ зупинився: ${whereStuck(s)}`}</td>
+                  <td style={cell}>{s.status === 'paused' ? `⚠️ ${failure(s)}` : `⏳ зупинився: ${whereStuck(s)}`}</td>
                   <td style={cell}>{fmtDate(s.updated_at || s.created_at)}</td>
                 </tr>
               ))}
@@ -218,7 +229,9 @@ export default async function PlusAdminPage() {
                     <td style={cell}>{s.status === 'active' ? (s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
                     <td style={cell}>{fmtDate(s.created_at)}</td>
                     <td style={cell}>{fmtDate(s.last_sent_at)}</td>
-                    <td style={{ ...cell, color: C.ink2 }}>{whereStuck(s) || (s.wfp_order_reference ? 'оплата підключена' : '—')}</td>
+                    <td style={{ ...cell, color: C.ink2 }}>
+                      {whereStuck(s) || (s.status === 'paused' ? failure(s) : s.wfp_order_reference ? 'оплата підключена' : '—')}
+                    </td>
                   </tr>
                 );
               })}
