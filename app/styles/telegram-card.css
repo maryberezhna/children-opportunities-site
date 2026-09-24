@@ -1,13 +1,18 @@
 /* Картка Telegram-каналу всередині списку карток (TelegramCard.js).
-   Біла, як сусідні картки, щоб читатись як частина списку; на всю ширину
-   ряду, щоб не лишати порожньої клітинки в сітці. Кнопка темна, а не
-   блакитна: білий текст на #229ED9 не проходить WCAG AA. */
+   На всю ширину ряду, щоб не лишати порожньої клітинки в сітці. Кнопка
+   темна, а не блакитна: білий текст на #229ED9 не проходить WCAG AA.
+
+   Тло тепле, а не біле. До 24.09.2026 картка була білою з такою самою
+   рамкою, як у сусідніх — «щоб читалась як частина списку». Саме через це
+   її й не було видно: між двома рядами білих карток вона читалась як
+   порожнє місце, а не як пропозиція. */
 .tg-card {
   grid-column: 1 / -1;
-  background: #ffffff;
-  border: 1px solid #e8e3d6;
+  background: var(--accent-soft, #fef2eb);
+  border: 1px solid var(--frame, #f0e0d8);
   border-radius: 16px;
-  padding: 22px 24px;
+  padding: 24px;
+  margin: 4px 0;
   display: flex;
   align-items: center;
   gap: 24px;
@@ -27,7 +32,7 @@
   letter-spacing: 0.05em;
   padding: 5px 10px;
   border-radius: 6px;
-  background: #e6f4fb;
+  background: #ffffff;
   color: #0b6f9e;
 }
 .tg-card-title {
