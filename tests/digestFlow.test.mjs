@@ -298,3 +298,24 @@ test('«Підходить будь-де» чистить міста й пока
   assert.match(summary.text, /Де: <b>будь-де<\/b>/);
   assert.match(bot.last().text, /платні можливості чи лише безкоштовні/);
 });
+
+// Закріплені міста (24.09.2026). Кнопки міст — дзеркало бази: місто
+// зʼявляється, коли в ньому назбиралось 20 активних записів. Одесу Марія
+// попросила показувати попри те, що активний запис у ній один.
+test('Одеса є в кнопках навіть з одним записом', async () => {
+  const { db, bot } = await setup();
+  const opp = (cities) => ({ status: 'active', canonical_slug: null, cities });
+  for (let i = 0; i < 20; i += 1) db._rows.opportunities.push(opp(['Київ']));
+  db._rows.opportunities.push(opp(['Одеса']));
+
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:like:__done'));
+  await handleFlowCallback(bot, db, click('flow:fmt:__done'));
+  await handleFlowCallback(bot, db, click('flow:need:__done'));
+
+  const shown = buttons(bot.last());
+  assert.ok(shown.includes('flow:place:Київ'), 'Київ — за кількістю');
+  assert.ok(shown.includes('flow:place:Одеса'), 'Одеса — закріплена');
+});
+

@@ -48,7 +48,15 @@ export async function POST(request) {
       // перезаписуємо — саме за ним WayForPay скасовує регулярне списання
       // (REMOVE у /stop), — і не шлемо щоразу «Оплата пройшла, профіль готовий».
       const renewal = existing?.status === 'active' && Boolean(existing?.wfp_order_reference);
-      const patch = { status: 'active', plan: 'premium', updated_at: now };
+      // Причину минулої невдачі стираємо: з першої спроби платіж проходить не
+      // завжди (24.09.2026 — спершу 1101 «банк відхилив», потім успіх), і
+      // лишити її означало б показувати в адмінці відмову там, де людина вже
+      // платить. Поле зветься «остання», а не «колись була».
+      const patch = {
+        status: 'active', plan: 'premium', updated_at: now,
+        wfp_last_status: null, wfp_last_reason: null,
+        wfp_last_reason_code: null, wfp_last_failed_at: null,
+      };
       if (!renewal) {
         // orderReference зберігаємо обовʼязково — без нього неможливо скасувати
         // рекурентне списання, коли людина відпишеться.
