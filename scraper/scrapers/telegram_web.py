@@ -18,6 +18,7 @@ from raw_store import with_published
 import httpx
 from bs4 import BeautifulSoup
 
+import first_source
 from keywords import is_relevant
 
 logger = logging.getLogger(__name__)
@@ -128,6 +129,9 @@ def _parse_channel(html: str, handle: str, display: str, since: datetime) -> lis
             "source_url": url,
             "raw_title": title,
             "raw_text": with_published(text[:6000], published),
+            # Куди допис посилається: якщо там сторінка можливості, джерелом
+            # стане вона, а не допис (див. first_source).
+            "_links": [a.get("href") for a in text_el.select("a[href]")],
         })
     return out
 
@@ -201,7 +205,54 @@ async def fetch_all() -> list[dict]:
                 logger.info("t.me/s/%s: %d relevant", handle, len(items))
 
         await asyncio.gather(*[_fetch(h, d) for h, d in active])
+        results = await _follow_sources(client, results, semaphore)
 
     logger.info("Telegram (web): %d relevant messages across %d channels",
                 len(results), len(active))
     return results
+
+
+async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
+    """Джерелом стає сторінка, на яку допис посилається, а не сам допис.
+
+    Допис @novashkola про відеокурс Чілдрен Кінофесту має два речення й
+    жодної дати; сторінка за посиланням — вік «від 6 до 14 років», дедлайн
+    20 жовтня, показ 20 листопада. Тобто перехід дає і чесну адресу
+    «відкрити джерело», і цитати на обовʼязкові поля (Марія, 24.09.2026).
+
+    Сторінка не відкрилась — лишаємо допис як був: краще запис із адресою
+    каналу, ніж жодного.
+    """
+    async def _one(item: dict):
+        target = first_source.pick(item.pop("_links", None))
+        if not target:
+            return
+        async with semaphore:
+            try:
+                r = await client.get(target)
+                r.raise_for_status()
+            except Exception as e:                           # noqa: BLE001
+                logger.info("не пішли за посиланням %s: %s", target, e)
+                return
+        if not first_source.usable_destination(str(r.url)):
+            logger.info("редирект привів не туди (%s) — лишаю допис", r.url)
+            return
+        soup = BeautifulSoup(r.text, "lxml")
+        for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
+            tag.decompose()
+        page = " ".join(soup.get_text(" ").split())[:8000]
+        if not first_source.looks_like_page(page):
+            logger.info("сторінка %s порожня (%d знаків) — лишаю допис", target, len(page))
+            return
+        item["raw_text"] = first_source.merge_text(item["raw_text"], page, target)
+        item["source_url"] = first_source.strip_tracking(str(r.url))
+        item["followed_from"] = target
+
+    await asyncio.gather(*[_one(it) for it in items])
+    for it in items:
+        it.pop("_links", None)
+    followed = sum(1 for it in items if it.get("followed_from"))
+    if followed:
+        logger.info("Telegram: %d із %d дописів замінено сторінкою джерела",
+                    followed, len(items))
+    return items
