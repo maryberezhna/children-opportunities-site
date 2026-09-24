@@ -15,6 +15,7 @@ import {
 import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
 import { cutTitle } from '@/lib/text';
+import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, placeSummary,
@@ -206,7 +207,7 @@ function pickedBy(sub, kids) {
 
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
-    .select('title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories')
+    .select('id, title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories, deadline, event_start_date, event_end_date')
     .eq('status', 'active').is('canonical_slug', null)
     .order('created_at', { ascending: false }).limit(300);
   const kids = await loadKids(supabase, sub);
@@ -219,14 +220,35 @@ async function sendLatest(bot, supabase, sub, chatId) {
       'Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».'].join('\n'));
     return;
   }
-  const lines = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>'];
-  for (const l of pickedBy(sub, kids)) lines.push(`<i>${esc(l)}</i>`);
-  lines.push('');
+  const head = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>'];
+  for (const l of pickedBy(sub, kids)) head.push(`<i>${esc(l)}</i>`);
+  await bot.sendMessage(chatId, head.join('\n'));
+
+  // Кожна можливість — окремим повідомленням (Марія, 24.09.2026). Одним
+  // списком кнопки під нею не працюють: або їх немає взагалі, як тут було,
+  // або вони злипаються в стіну з номерами, як у добірці. Окрема картка
+  // знімає й номери: кнопка стосується того, що просто над нею.
   for (const m of picked) {
-    lines.push(`🔸 <a href="${SITE_URL}/o/${m.o.slug}">${esc(m.o.title)}</a>`);
-    if (kids.length > 1) lines.push(`<i>для: ${esc(m.kids.map((k) => childLabel(k, kids.length)).join(', '))}</i>`);
+    const card = [`🔸 <a href="${SITE_URL}/o/${m.o.slug}">${esc(m.o.title)}</a>`];
+    const meta = [
+      TYPE_LABELS[m.o.opportunity_type] || null,
+      ageLabel(m.o.age_from, m.o.age_to),
+      COST_LABELS[m.o.cost_type] || null,
+    ].filter(Boolean).join(' · ');
+    if (meta) card.push(esc(meta));
+    if (kids.length > 1) card.push(`<i>для: ${esc(m.kids.map((k) => childLabel(k, kids.length)).join(', '))}</i>`);
+    // Календар — посиланням, як у добірці: кнопкою він з'їдав би третину
+    // картки, а без дати ставити подію нікуди.
+    if (m.o.deadline || m.o.event_start_date || m.o.event_end_date) {
+      card.push(`<a href="${SITE_URL}/events/${m.o.slug}/add">📅 у календар</a>`);
+    }
+    await bot.sendMessage(chatId, card.join('\n'), {
+      inline_keyboard: [[
+        { text: '✍️ Подаюсь', callback_data: `papp:${m.o.id}` },
+        { text: '👎 Не цікаво', callback_data: `pfb:no:${m.o.id}` },
+      ]],
+    });
   }
-  await bot.sendMessage(chatId, lines.join('\n'));
 }
 
 async function askPhone(bot, supabase, sub, chatId) {
