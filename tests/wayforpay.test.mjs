@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_YEAR;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, isOurOrderRef, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
@@ -140,3 +140,46 @@ test('бот не зашиває рахунок у кнопку', () => {
   assert.ok(src.includes('payStartUrl('), 'кнопки мають вести на /api/pay/start');
   assert.ok(!src.includes('createInvoice'), 'рахунок створюється в мить кліку, не при показі кнопки');
 });
+
+// Чи невдача зупиняє підписку. Регресія, проти якої стоять ці тести: 24.09.2026
+// перша підписниця Dityam+ заплатила об 11:56, а о 12:12 прийшов Declined 1124
+// від ІНШОГО, покинутого рахунку — і колбек зняв її з active у paused+free.
+// Колбек шукав людину за unsub_token і не дивився, про який рахунок ідеться.
+const LIVE = '638f707a19d7d2299df51ce5f2d66a9c-1790250913830-m';
+const ABANDONED = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-1790250999999-m';
+
+test('покинутий рахунок НЕ знімає оплачену підписку', () => {
+  assert.equal(
+    failureStopsSubscription({ status: 'active', storedRef: LIVE, failedRef: ABANDONED }),
+    false,
+  );
+});
+
+test('невдача на власному рахунку підписку зупиняє', () => {
+  assert.equal(failureStopsSubscription({ status: 'active', storedRef: LIVE, failedRef: LIVE }), true);
+  // WayForPay може дослати спробу з суфіксом до того самого номера.
+  assert.equal(failureStopsSubscription({ status: 'active', storedRef: LIVE, failedRef: `${LIVE}#2` }), true);
+});
+
+test('невдале регулярне списання зупиняє: номер не нашого вигляду', () => {
+  assert.equal(
+    failureStopsSubscription({ status: 'active', storedRef: LIVE, failedRef: 'WFP-REGULAR-55512' }),
+    true,
+  );
+});
+
+test('ще не підписник — пауза як і раніше', () => {
+  assert.equal(failureStopsSubscription({ status: 'pending', storedRef: null, failedRef: ABANDONED }), true);
+  assert.equal(failureStopsSubscription({ status: 'paused', storedRef: null, failedRef: ABANDONED }), true);
+  // Активна без збереженого номера: звіряти нічим, поводимось обережно.
+  assert.equal(failureStopsSubscription({ status: 'active', storedRef: null, failedRef: ABANDONED }), true);
+});
+
+test('isOurOrderRef впізнає лише наші номери', () => {
+  assert.equal(isOurOrderRef(LIVE), true);
+  assert.equal(isOurOrderRef('638f707a19d7d2299df51ce5f2d66a9c-1790250913830'), true);
+  assert.equal(isOurOrderRef('WFP-REGULAR-55512'), false);
+  assert.equal(isOurOrderRef(''), false);
+  assert.equal(isOurOrderRef(null), false);
+});
+

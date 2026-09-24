@@ -54,13 +54,39 @@ class TelegramKeyboard(unittest.TestCase):
         self.pd = load_personal_digest()
 
     def test_row_per_item_numbered_like_the_text(self):
+        """Дві кнопки на можливість, не чотири: на восьми записах чотири —
+        це 29 кнопок суцільною стіною (Марія, 24.09.2026)."""
         other = item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)
         rows = self.pd.telegram_keyboard([item(), other])["inline_keyboard"]
-        self.assertEqual([b["text"] for b in rows[0]], ["👍 1", "👎 1", "✍️ 1", "📅 1"])
-        self.assertEqual([b["text"] for b in rows[1]], ["👍 2", "👎 2", "✍️ 2"])  # без дедлайну — без календаря
+        self.assertEqual([b["text"] for b in rows[0]], ["✍️ 1", "👎 1"])
+        self.assertEqual([b["text"] for b in rows[1]], ["✍️ 2", "👎 2"])
         text = self.pd.build_telegram(SUB, [item(), other])
         self.assertIn("1. <a", text)
         self.assertIn("2. <a", text)
+
+    def test_no_thumbs_up_button(self):
+        """👍 був слабшим дублем ✍️: єдиний споживач — ask_outcomes, де
+        marked_by = 👍 або ✍️."""
+        for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
+            for button in row:
+                self.assertNotIn("pfb:yes", button.get("callback_data", ""))
+
+    def test_calendar_moved_from_button_to_text(self):
+        """Календар прибрано з клавіатури, але не з добірки: на сторінці
+        можливості його немає, тож він мусить лишитись хоч десь."""
+        for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
+            self.assertEqual([b for b in row if "url" in b], [])
+        text = self.pd.build_telegram(SUB, [item()])
+        self.assertIn("/events/", text)
+        self.assertIn("у календар", text)
+        # Без дати ставити подію нікуди — і посилання не буде.
+        no_date = self.pd.build_telegram(SUB, [item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)])
+        self.assertNotIn("у календар", no_date)
+
+    def test_digest_does_not_offer_unsubscribe_every_time(self):
+        """«Відписатись — /stop» у кожній добірці — це не турбота."""
+        text = self.pd.build_telegram(SUB, [item()])
+        self.assertNotIn("/stop", text)
 
     def test_apply_button_carries_the_opportunity_id(self):
         """«✍️ Подаємося» — памʼять про пройдене: бот має знати, що саме позначили."""

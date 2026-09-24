@@ -298,3 +298,41 @@ test('«Підходить будь-де» чистить міста й пока
   assert.match(summary.text, /Де: <b>будь-де<\/b>/);
   assert.match(bot.last().text, /платні можливості чи лише безкоштовні/);
 });
+
+// Закріплені міста (24.09.2026). Кнопки міст — дзеркало бази: місто
+// зʼявляється, коли в ньому назбиралось 20 активних записів. Одесу Марія
+// попросила показувати попри те, що активний запис у ній один.
+test('Одеса є в кнопках навіть з одним записом', async () => {
+  const { db, bot } = await setup();
+  const opp = (cities) => ({ status: 'active', canonical_slug: null, cities });
+  for (let i = 0; i < 20; i += 1) db._rows.opportunities.push(opp(['Київ']));
+  db._rows.opportunities.push(opp(['Одеса']));
+
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:like:__done'));
+  await handleFlowCallback(bot, db, click('flow:fmt:__done'));
+  await handleFlowCallback(bot, db, click('flow:need:__done'));
+
+  const shown = buttons(bot.last());
+  assert.ok(shown.includes('flow:place:Київ'), 'Київ — за кількістю');
+  assert.ok(shown.includes('flow:place:Одеса'), 'Одеса — закріплена');
+});
+
+// Після оплати людина не має лишатись сам на сам із очікуванням наступної
+// добірки (Марія, 24.09.2026): на «Профіль готовий» є кнопка подивитись те,
+// що вже є. Дія та сама, що в меню.
+test('«Профіль готовий» після оплати пропонує показати можливості', async () => {
+  const bot = fakeBot();
+  await finishFlow(bot, '77', { active: true });
+  assert.match(bot.last().text, /вже є під вашу дитину/);
+  assert.deepEqual(buttons(bot.last()), ['menu:latest']);
+});
+
+test('без підписки кнопки «показати» немає — спершу оплата', async () => {
+  const bot = fakeBot();
+  await finishFlow(bot, '77', { active: false });
+  assert.match(bot.last().text, /оформити підписку/i);
+  assert.deepEqual(buttons(bot.last()), []);
+});
+
