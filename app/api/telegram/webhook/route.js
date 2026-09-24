@@ -310,7 +310,7 @@ async function handleDigestStop(msg) {
 
   // Сама зміна статусу списання не зупиняє: WayForPay про неї не знає. До
   // 14.09.2026 /stop тут лише ставив «unsubscribed», і картку списували далі —
-  // а кожна добірка закінчується «Відписатись — /stop». Тому спершу REMOVE,
+  // а /stop людині лишався єдиним видимим виходом. Тому спершу REMOVE,
   // як у платному боті (app/api/telegram/plus/route.js), і лише потім статус.
   const { data: subs } = await supabase.from('digest_subscribers')
     .select('id, status, wfp_order_reference').eq('telegram_chat_id', chatId);

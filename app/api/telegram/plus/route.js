@@ -183,6 +183,27 @@ async function hasProfile(supabase, sub) {
 
 // Останні можливості під профіль дітей (на вимогу, топ-5). Якщо дітей кілька,
 // місця діляться по черзі, а біля кожної можливості видно, кому вона.
+// За чим дібрано. 24.09.2026, Марія: «тут було б не погано показувати, що я
+// вибрала» — без цього добірка виглядає випадковим списком, а не відповіддю
+// на анкету. Порожній вибір означає «будь-що», і тут це треба назвати
+// словами: у профілі на його місці стоїть прочерк, а «—» людині нічого
+// не каже.
+const anyOr = (value, fallback) => (value && value !== '—' ? value : fallback);
+
+function pickedBy(sub, kids) {
+  const out = kids.map((k, i) => {
+    const bits = [
+      anyOr(labels(AGE_OPTIONS, k.age_bands), 'будь-який вік'),
+      anyOr(labels(LIKE_OPTIONS, k.likes), 'будь-які теми'),
+      anyOr(labels(FORMAT_OPTIONS, k.formats), 'будь-який формат'),
+    ];
+    const who = kids.length > 1 ? `${childLabel(k, kids.length)}: ` : '';
+    return `${i === 0 && kids.length === 1 ? 'Дібрано за: ' : ''}${who}${bits.join(' · ')}`;
+  });
+  out.push(`${placeSummary(sub.places)} · ${sub.cost_pref === 'free_only' ? 'лише безкоштовні' : 'будь-які за вартістю'}`);
+  return out;
+}
+
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
     .select('title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories')
@@ -191,10 +212,16 @@ async function sendLatest(bot, supabase, sub, chatId) {
   const kids = await loadKids(supabase, sub);
   const picked = pickFair(matchFamily(sub, kids, opps || [], themesOf), kids, 5);
   if (!picked.length) {
-    await bot.sendMessage(chatId, 'Поки немає нічого під профіль — коли зʼявиться, напишемо першими. Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».');
+    // Порожня добірка — саме та мить, коли треба бачити, за чим шукали:
+    // інакше незрозуміло, що саме розширювати.
+    await bot.sendMessage(chatId, ['Поки немає нічого під профіль — коли зʼявиться, напишемо першими.', '',
+      ...pickedBy(sub, kids).map((l) => `<i>${esc(l)}</i>`), '',
+      'Можна розширити вподобання чи місто через «✏️ Заповнити анкету заново».'].join('\n'));
     return;
   }
-  const lines = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>', ''];
+  const lines = [kids.length > 1 ? '🔎 <b>Останні можливості для ваших дітей</b>' : '🔎 <b>Останні можливості під вашу дитину</b>'];
+  for (const l of pickedBy(sub, kids)) lines.push(`<i>${esc(l)}</i>`);
+  lines.push('');
   for (const m of picked) {
     lines.push(`🔸 <a href="${SITE_URL}/o/${m.o.slug}">${esc(m.o.title)}</a>`);
     if (kids.length > 1) lines.push(`<i>для: ${esc(m.kids.map((k) => childLabel(k, kids.length)).join(', '))}</i>`);
