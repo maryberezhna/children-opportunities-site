@@ -236,18 +236,26 @@ async function sendLatest(bot, supabase, sub, chatId) {
       COST_LABELS[m.o.cost_type] || null,
     ].filter(Boolean).join(' · ');
     if (meta) card.push(esc(meta));
+    // Опис (Марія, 24.09.2026: «додай і опис до кожної»). Обрізаємо: у базі
+    // трапляються описи на кілька абзаців, і пʼять таких карток підряд
+    // перетворюють /new на полотно. cutTitle ріже по межі слова й закриває
+    // лапки, тож обрив не виглядає поламаним.
+    const summary = cutTitle(m.o.summary || '', 220);
+    if (summary) card.push(esc(summary));
     if (kids.length > 1) card.push(`<i>для: ${esc(m.kids.map((k) => childLabel(k, kids.length)).join(', '))}</i>`);
-    // Календар — посиланням, як у добірці: кнопкою він з'їдав би третину
-    // картки, а без дати ставити подію нікуди.
+
+    // Календар — окремою кнопкою-посиланням. У добірці він лишається текстом,
+    // бо там одна клавіатура на всі можливості й кнопки злипаються в стіну;
+    // тут у кожної картки клавіатура своя, і третя кнопка нічому не заважає.
+    // Без дати ставити подію нікуди — і кнопки тоді немає.
+    const rows = [[
+      { text: '✍️ Подаюсь', callback_data: `papp:${m.o.id}` },
+      { text: '👎 Не цікаво', callback_data: `pfb:no:${m.o.id}` },
+    ]];
     if (m.o.deadline || m.o.event_start_date || m.o.event_end_date) {
-      card.push(`<a href="${SITE_URL}/events/${m.o.slug}/add">📅 у календар</a>`);
+      rows.push([{ text: '📅 Додати в календар', url: `${SITE_URL}/events/${m.o.slug}/add` }]);
     }
-    await bot.sendMessage(chatId, card.join('\n'), {
-      inline_keyboard: [[
-        { text: '✍️ Подаюсь', callback_data: `papp:${m.o.id}` },
-        { text: '👎 Не цікаво', callback_data: `pfb:no:${m.o.id}` },
-      ]],
-    });
+    await bot.sendMessage(chatId, card.join('\n'), { inline_keyboard: rows });
   }
 }
 
