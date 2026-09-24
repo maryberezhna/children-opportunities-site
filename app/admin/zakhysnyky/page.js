@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { missingRequired } from '@/lib/required';
 import { DEFENDERS_WATCH, WATCH_CHECKED } from '@/lib/defendersWatch';
 import AdminNav from '../AdminNav';
@@ -53,14 +53,14 @@ const LINKS = [
 ];
 
 export default async function DefendersAdminPage() {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
   if (!authed) {
     return (
       <main style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
         <h1 style={{ fontSize: 22 }}>Дітям захисників</h1>
-        {token ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
+        {configured ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
       </main>
     );
   }

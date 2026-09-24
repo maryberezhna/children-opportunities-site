@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { quarantineCriteria, quarantineSnippet } from '@/lib/quarantine';
 import { kyivToday } from '@/lib/dates';
 import AdminList from './AdminList';
@@ -41,9 +41,9 @@ const ACTIVE_FIELDS =
   `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, verified_at, admin_comment, dup_of, dup_score, created_at, ${REQUIRED_EXTRA}`;
 
 export default async function AdminPage({ searchParams }) {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
 
   if (!authed) {
     return (

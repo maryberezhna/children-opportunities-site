@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,9 +9,8 @@ const STATUSES = new Set(['new', 'in_progress', 'done']);
 
 /** Зміна статусу звернення в адмінці (/admin/messages). */
 export async function POST(request) {
-  const token = process.env.ADMIN_TOKEN;
   const cookie = cookies().get('dityam_admin')?.value;
-  if (!token || !cookie || !safeEqual(cookie, token)) {
+  if (!isAdmin(cookie)) {
     return Response.json({ ok: false }, { status: 403 });
   }
 

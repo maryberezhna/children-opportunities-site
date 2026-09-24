@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminName } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
 import { DECISION_FIELD } from '@/lib/corrections';
@@ -18,9 +18,8 @@ const ACTIONS = {
 };
 
 export async function POST(request) {
-  const token = process.env.ADMIN_TOKEN;
   const cookie = cookies().get('dityam_admin')?.value;
-  if (!token || !cookie || !safeEqual(cookie, token)) {
+  if (!isAdmin(cookie)) {
     return Response.json({ ok: false }, { status: 403 });
   }
 
@@ -121,6 +120,20 @@ export async function POST(request) {
       });
     } catch { /* телеметрія мовчить і нічого не ламає */ }
   }
+
+  // Журнал: хто саме натиснув. Досі цього не було ніде — moderation_notes
+  // зберігає лише коментарі, moderation_corrections лише «пропустити» й
+  // «прибрати», і обидві без імені. З 24.09.2026 чергу розбирає не одна
+  // людина, тож і статистика роботи, і відповідь на «хто це опублікував»
+  // беруться звідси. Мовчки: рішення вже записане, і збій журналу не привід
+  // його скасовувати.
+  try {
+    await supabase.from('moderation_actions').insert({
+      opportunity_id: id,
+      action,
+      actor: adminName(cookie) || 'невідомий',
+    });
+  } catch { /* журнал мовчить і нічого не ламає */ }
 
   // Mirror to Notion (best-effort; no-op if not configured).
   await pushModeration({

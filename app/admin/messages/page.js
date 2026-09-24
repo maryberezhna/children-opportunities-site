@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { canonicalUrl } from '@/lib/canonical.mjs';
-import { safeEqual } from '@/lib/adminAuth';
+import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { originOf, broughtBy, letterNote } from '@/lib/suggestions';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -17,14 +17,14 @@ export const metadata = {
 const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
 
 export default async function MessagesPage() {
-  const token = process.env.ADMIN_TOKEN;
+  const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = Boolean(token) && Boolean(cookie) && safeEqual(cookie, token);
+  const authed = isAdmin(cookie);
   if (!authed) {
     return (
       <main style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif' }}>
         <h1 style={{ fontSize: 22 }}>Звернення</h1>
-        {token ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
+        {configured ? <LoginForm /> : <p>Задайте ADMIN_TOKEN.</p>}
       </main>
     );
   }
