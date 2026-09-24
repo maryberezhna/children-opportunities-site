@@ -275,6 +275,18 @@ def process_pending(normalizer, sb_client, limit=500):
             stats["skipped_prefilter"] = stats.get("skipped_prefilter", 0) + 1
             continue
 
+        # Головна сторінка, яку вже читали намарно: щоденний kmstudio.com.ua
+        # з'їдав 184 тис. знаків за 30 днів і не дав жодного запису. Перше
+        # читання завжди пропускаємо — саме так прийшли ProCamp і Docudays.
+        wasted = raw_store.homepage_already_failed(sb_client, item)
+        if wasted:
+            raw_store.mark(sb_client, item["id"], "rejected",
+                           error=f"головну цього сайту вже читали {wasted} раз(и) без жодного "
+                                 f"запису — до LLM не йшло",
+                           reason_code="homepage_no_yield")
+            stats["skipped_homepage"] = stats.get("skipped_homepage", 0) + 1
+            continue
+
         try:
             normalized = normalizer.normalize(
                 raw_text=item.get("raw_text", ""),
@@ -382,6 +394,7 @@ def process_pending(normalizer, sb_client, limit=500):
           f"({stats['closed']} закритих за текстом, {stats['drafts']} чернеток), "
           f"{stats['skipped_dup']} пропущено до LLM (вже є), "
           f"{stats.get('skipped_prefilter', 0)} — тендери й вакансії (до LLM не йшли), "
+          f"{stats.get('skipped_homepage', 0)} — головні сторінки без віддачі (до LLM не йшли), "
           f"{stats['rejected']} відхилено, {stats['review']} у карантин, "
           f"{stats['retry']} на повтор, "
           f"{stats['failed']} вичерпали спроби")

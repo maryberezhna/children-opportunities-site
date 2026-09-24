@@ -128,6 +128,59 @@ def not_an_opportunity(raw_title: str) -> bool:
     return bool(_NOT_AN_OPPORTUNITY_TITLE.search(raw_title or ""))
 
 
+# ── Головна сторінка, яка вже показала, що нічого не дає ────────────────────
+# Заміри 24.09.2026 по всій історії raw_items:
+#   сторінка зі шляхом   2 483 → 1 337 записів (54%), 2 444 тис. знаків
+#   URL без шляху          321 →    21 (6.5%),        1 057 тис. знаків
+# Тобто головні сторінки — 30% усього, що ми віддали моделі, і 1.5% користі.
+# Причина видна в одному рядку: kmstudio.com.ua прочитано 23 рази за 30 днів,
+# ureport.in — 24, mms.gov.ua — 24, і щоразу з новим хешем (головна щодня
+# інша), тож хеш-гейт їх не спиняв. Жодна не дала запису.
+#
+# Але ЗАБОРОНЯТИ головні сторінки не можна: ProCamp, Docudays, Atlas Weekend,
+# Гоголь-fest, English Camp Ukraine прийшли саме так — з першого читання
+# головної. Тому правило про повтор, а не про адресу: перше читання
+# пропускаємо завжди, друге й наступні — лише якщо перше щось дало.
+_HOMEPAGE = re.compile(r"^https?://[^/]+/?$", re.IGNORECASE)
+
+
+def is_homepage(url: str) -> bool:
+    return bool(_HOMEPAGE.match((url or "").strip()))
+
+
+def homepage_wasted(rows: list) -> bool:
+    """Чи цю головну вже читали намарно. Чиста функція — під тести.
+
+    `rows` — попередні raw_items із тією самою канонічною адресою. Хоч один
+    із них став записом — сторінка робоча, читаємо далі.
+    """
+    return bool(rows) and not any(r.get("opportunity_id") for r in rows)
+
+
+def homepage_already_failed(client, item: dict) -> int:
+    """Скільки разів головну цього домену вже читали намарно (0 = читаємо).
+
+    Помилка запиту → 0: ворота не сміють зупинити екстракцію власним збоєм.
+    """
+    url = (item.get("canonical_url") or item.get("source_url") or "").strip()
+    if not is_homepage(url):
+        return 0
+    try:
+        rows = (
+            client.table("raw_items")
+            .select("id, opportunity_id")
+            .eq("canonical_url", url)
+            .neq("id", item["id"])
+            .limit(50)
+            .execute()
+            .data
+        ) or []
+    except Exception as e:
+        logger.error(f"homepage_already_failed failed: {e}")
+        return 0
+    return len(rows) if homepage_wasted(rows) else 0
+
+
 def mark(client, raw_id: str, status: str, *, error: str = None,
          opportunity_id: str = None, attempts: int = None,
          confidence: float = None, reason_code: str = None) -> None:
