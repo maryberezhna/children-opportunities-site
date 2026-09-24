@@ -156,7 +156,7 @@ const slim = (o) => ({
 const CARD_LABELS = {
   all: 'Усі',
   sort: 'за дедлайном, найближчі спочатку',
-  details: 'Детальніше ↗',
+  details: 'Детальніше →',
   emptyTitle: 'Нічого не знайдено',
   emptyText: 'Спробуйте інший фільтр.',
   listLabel: 'Відкриті набори Erasmus+',

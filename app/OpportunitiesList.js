@@ -10,7 +10,6 @@ import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
-import { trackOpportunityClick } from '@/lib/track';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardAfter } from '@/lib/inline-card';
@@ -39,7 +38,7 @@ const UI = {
     nothingTitle: 'Нічого не знайдено',
     nothingText: 'Спробуйте інший фільтр.',
     showMore: 'Показати ще',
-    details: 'Детальніше ↗',
+    details: 'Детальніше →',
     topTitle: '⏰ Топ тижня',
     annual: '🔄 щорічно',
     open: 'набір відкритий',
@@ -85,7 +84,7 @@ const UI = {
     nothingTitle: 'Nothing found',
     nothingText: 'Try a different filter.',
     showMore: 'Show more',
-    details: 'Details ↗',
+    details: 'Details →',
     topTitle: '⏰ Top this week',
     annual: '🔄 every year',
     open: 'enrolment open',
@@ -738,17 +737,19 @@ export default function OpportunitiesList({
     const dlHead = dl.kind === 'calm' && daysUntil(item.deadline, todayIso) > 30
       ? t.until(formatDeadline(item.deadline, lang).replace(` ${todayIso.slice(0, 4)}`, ''))
       : dl.text;
-    const moreLink = item.source_url ? (
-      <a
-        href={item.source_url}
-        target="_blank"
-        rel="noopener noreferrer"
+    // «Детальніше» веде на сторінку можливості, а не до джерела. До 24.09.2026
+    // тут стояв source_url із target="_blank": людина з каталогу потрапляла
+    // одразу в чужий телеграм-канал, а наша сторінка з умовами, віком і
+    // дедлайном лишалась збоку. Перехід до організатора живе на ній.
+    const moreLink = (
+      <Link
+        href={`${isEn ? '/en' : ''}/o/${item.slug}`}
         className="v2-card-more"
-        onClick={() => trackOpportunityClick(item.title, 'list')}
+        prefetch={false}
       >
         {t.details}
-      </a>
-    ) : null;
+      </Link>
+    );
 
     return (
       <article key={item.id} className="v2-card">
