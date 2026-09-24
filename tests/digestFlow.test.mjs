@@ -319,3 +319,20 @@ test('Одеса є в кнопках навіть з одним записом'
   assert.ok(shown.includes('flow:place:Одеса'), 'Одеса — закріплена');
 });
 
+// Після оплати людина не має лишатись сам на сам із очікуванням наступної
+// добірки (Марія, 24.09.2026): на «Профіль готовий» є кнопка подивитись те,
+// що вже є. Дія та сама, що в меню.
+test('«Профіль готовий» після оплати пропонує показати можливості', async () => {
+  const bot = fakeBot();
+  await finishFlow(bot, '77', { active: true });
+  assert.match(bot.last().text, /вже є під вашу дитину/);
+  assert.deepEqual(buttons(bot.last()), ['menu:latest']);
+});
+
+test('без підписки кнопки «показати» немає — спершу оплата', async () => {
+  const bot = fakeBot();
+  await finishFlow(bot, '77', { active: false });
+  assert.match(bot.last().text, /оформити підписку/i);
+  assert.deepEqual(buttons(bot.last()), []);
+});
+
