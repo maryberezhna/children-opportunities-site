@@ -74,11 +74,14 @@ test('календар: дедлайн, поки попереду, інакше 
   assert.equal(calendarTarget({}, TODAY), null);
 });
 
-test('Google: кінець цілоденної події — наступний день', () => {
+test('Google: подія — цілі дні, дедлайн — зустріч, і жодного порожнього проміжку', () => {
   const url = googleCalendarUrl({ title: 't', date: '2026-11-06', endDate: '2026-11-08', url: 'https://x' });
   assert.match(decodeURIComponent(url), /dates=20261106\/20261109/);
+  // Дедлайн раніше давав «20260930/20260930» — початок і кінець в один день.
+  // Google таку подію не створює, і кнопка «📅» в добірці не працювала
+  // (Марія, 25.09.2026). Тепер це зустріч о 09:00, як у .ics.
   const dl = googleCalendarUrl({ title: 't', date: '2026-09-30', url: 'https://x' });
-  assert.match(decodeURIComponent(dl), /dates=20260930\/20260930/);
+  assert.match(decodeURIComponent(dl), /dates=20260930T090000\/20260930T095900/);
 });
 
 test('лише дата розіграшу — стан results і закриття після неї', () => {
