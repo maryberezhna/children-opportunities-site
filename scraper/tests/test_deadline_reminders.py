@@ -76,3 +76,31 @@ class RemindersToggle(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class MarkedLine(unittest.TestCase):
+    """Підпис під записом каже рівно те, що людина натиснула (27.09.2026).
+
+    До 27.09 під карткою стояла кнопка «✍️ Подаюсь», і нагадування писало «ви
+    позначили, що подаєтеся». Кнопка стала «👍 Цікаво» — і писати ту саму фразу
+    означало б вигадати за людину заявку, якої вона не подавала.
+    """
+
+    def _lines(self, stage):
+        item = {"id": "o-1", "slug": "x", "title": "Конкурс", "deadline": "2026-10-01",
+                "_applying": stage}
+        return dr.build_text([item], 3)
+
+    def test_interested_says_interested(self):
+        text = self._lines("interested")
+        self.assertIn("ви позначили як цікаве", text)
+        self.assertNotIn("подаєтеся", text)
+
+    def test_old_applying_rows_keep_their_wording(self):
+        self.assertIn("ви позначили, що подаєтеся", self._lines("applying"))
+
+    def test_unmarked_gets_no_line(self):
+        for stage in (None, ""):
+            with self.subTest(stage=stage):
+                text = self._lines(stage)
+                self.assertNotIn("ви позначили", text)

@@ -446,19 +446,23 @@ def load_disliked(client, subs) -> dict:
 
 
 def load_applications(client, subs) -> dict:
-    """«✍️ Подаємося» під карткою → памʼять про пройдене. Повертає
-    {subscriber_id: {opportunity_id}}.
+    """Позначене під карткою → памʼять про пройдене. Повертає
+    {subscriber_id: {opportunity_id: stage}}.
 
-    Навіщо. Обіцянка Dityam+ — «памʼятаємо пройдене»: те, на що родина вже
-    подає заявку, не має приходити ще раз як свіжа знахідка."""
+    Навіщо. Обіцянка Dityam+ — «памʼятаємо пройдене»: те, що родина вже
+    позначила, не має приходити ще раз як свіжа знахідка.
+
+    Стадія їде разом з id, бо нагадування про дедлайн пише різне: «👍 Цікаво»
+    (stage='interested') — це інтерес, а «✍️ Подаюсь» (stage='applying', кнопка
+    20–27.09.2026) — заявка. Одне замість іншого було б вигадкою за людину."""
     ids = [s["id"] for s in subs if s.get("id")]
     if not ids:
         return {}
-    rows = (client.table("plus_applications").select("subscriber_id, opportunity_id")
+    rows = (client.table("plus_applications").select("subscriber_id, opportunity_id, stage")
             .in_("subscriber_id", ids).execute().data or [])
     out = {}
     for r in rows:
-        out.setdefault(str(r["subscriber_id"]), set()).add(r["opportunity_id"])
+        out.setdefault(str(r["subscriber_id"]), {})[r["opportunity_id"]] = r.get("stage")
     return out
 
 
@@ -604,7 +608,7 @@ def main():
                       .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
     disliked = {} if args.demo else load_disliked(client, subs)
-    # Памʼять про пройдене: на що родина вже подає заявку (кнопка «✍️ Подаємося»).
+    # Памʼять про пройдене: що родина вже позначила кнопкою під карткою.
     applied = {} if args.demo else load_applications(client, subs)
 
     sent = 0
@@ -623,10 +627,10 @@ def main():
         since = None if (args.force or args.demo) else parse_ts(sub.get("last_sent_at"))
         kids = plus_profile.children_of(sub, child_rows)
         # «👎 Не цікаво» — цю можливість підписнику більше не пропонуємо.
-        # Не показуємо вдруге ні те, що позначили «не цікаво», ні те, на що
-        # вже подаються: перше людина відкинула, про друге вона й так памʼятає.
+        # Не показуємо вдруге ні те, що позначили «не цікаво», ні те, що вже
+        # позначили «цікаво»: перше людина відкинула, друге вона вже бачила.
         skip = disliked.get(str(sub.get("telegram_chat_id")), set()) \
-            | applied.get(str(sub["id"]), set())
+            | set(applied.get(str(sub["id"]), {}))
         pool = [o for o in opps if o["id"] not in skip] if skip else opps
         items = pick_for(sub, pool, since, kids)
 

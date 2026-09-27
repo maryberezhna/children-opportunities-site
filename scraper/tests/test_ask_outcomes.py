@@ -69,7 +69,9 @@ class ThreeDayRule(unittest.TestCase):
     def test_the_question_names_what_exactly_passed(self):
         text = ao.build_question("Конкурс «Дивосвіт»", date(2026, 9, 20), "deadline", TODAY)
         self.assertIn("подача закрилась 20 вересня", text)
-        self.assertIn("Ви скористалися цією можливістю?", text)
+        # 27.09.2026 питання змінилось разом із кнопкою під карткою: там тепер
+        # «👍 Цікаво», тож питаємо саме те, чого не знаємо, — чи подавалися.
+        self.assertIn("Ви подавалися?", text)
         self.assertIn("<b>Конкурс «Дивосвіт»</b>", text)
         self.assertIn("подія пройшла", ao.build_question("X", date(2026, 9, 1), "event", TODAY))
         self.assertIn("результати оголосили", ao.build_question("X", date(2026, 9, 1), "results", TODAY))
@@ -144,14 +146,24 @@ class PickForSubscriber(unittest.TestCase):
 
 
 class MarkedBy(unittest.TestCase):
-    """Ключі різні: 👍 лежить за telegram_user_id, «Подаємося» — за uuid підписника."""
+    """Ключі різні: 👍 під постом лежить за telegram_user_id, під карткою — за
+    uuid підписника."""
 
-    def test_thumbs_up_and_applying_both_count(self):
+    def test_thumbs_up_and_interested_both_count(self):
         sub = {"id": "sub-1", "telegram_chat_id": "42"}
-        rows = [{"opportunity_id": OPP, "stage": "applying"},
+        # 'used' — це вже наша відповідь, а не позначка людини: питати вдруге
+        # про те саме не можна.
+        rows = [{"opportunity_id": OPP, "stage": "interested"},
                 {"opportunity_id": OPP3, "stage": "used"}]
         liked = {"42": {OPP2}}
         self.assertEqual(ao.marked_by(sub, rows, liked), {OPP, OPP2})
+
+    def test_old_applying_rows_still_count(self):
+        # Кнопка «✍️ Подаюсь» жила 20–27.09.2026. Люди її тиснули — і їхню
+        # позначку ми не втрачаємо разом із кнопкою.
+        sub = {"id": "sub-1", "telegram_chat_id": "42"}
+        self.assertEqual(
+            ao.marked_by(sub, [{"opportunity_id": OPP, "stage": "applying"}], {}), {OPP})
 
     def test_someone_elses_thumbs_up_is_not_ours(self):
         sub = {"id": "sub-1", "telegram_chat_id": "42"}
