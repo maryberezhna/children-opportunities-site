@@ -120,3 +120,24 @@ class ThreeChecksStillGate(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForeignTelegramOnlyStaysWithHuman(unittest.TestCase):
+    """Марія, 27.09.2026: чужі Telegram-канали ніколи не показуємо."""
+
+    def test_only_foreign_post_is_yellow(self):
+        corridor, reason = auto_review.mechanical(
+            row(source_url="https://t.me/Mozhlyvosti/10521", apply_url=None), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("чужого Telegram", reason)
+
+    def test_foreign_post_with_own_form_is_not_blocked_by_this_rule(self):
+        verdict = auto_review.mechanical(
+            row(source_url="https://t.me/tviyspace/11797",
+                apply_url="https://forms.gle/1uvoZqQJCMc7pztHA"), 3)
+        self.assertTrue(verdict is None or "чужого Telegram" not in verdict[1])
+
+    def test_our_channel_is_fine(self):
+        verdict = auto_review.mechanical(
+            row(source_url="https://t.me/dityam_com_ua/512", apply_url=None), 3)
+        self.assertTrue(verdict is None or "чужого Telegram" not in verdict[1])
