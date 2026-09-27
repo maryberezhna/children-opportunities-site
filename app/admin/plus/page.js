@@ -1,7 +1,10 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
-import { PRICE, PRICE_YEAR, describeFailure } from '@/lib/wayforpay';
+import { PRICE, PRICE_HALF, describeFailure } from '@/lib/wayforpay';
+
+// Річну не продаємо з 27.09.2026; старі річні рядки (їх 0) рахуємо за старою ціною.
+const PRICE_YEAR_OLD = 999;
 import { reasonLabel } from '@/lib/plusOutcomes';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -138,9 +141,10 @@ export default async function PlusAdminPage() {
   for (const k of kidsRes.data || []) kidsBySub[k.subscriber_id] = (kidsBySub[k.subscriber_id] || 0) + 1;
 
   const active = subs.filter((s) => s.status === 'active');
+  const half = active.filter((s) => s.billing_period === 'halfyear').length;
   const yearly = active.filter((s) => s.billing_period === 'yearly').length;
-  const monthly = active.length - yearly;
-  const mrr = Math.round(monthly * PRICE + yearly * (PRICE_YEAR / 12));
+  const monthly = active.length - half - yearly;
+  const mrr = Math.round(monthly * PRICE + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
   const pending = subs.filter((s) => s.status === 'pending');
   const paused = subs.filter((s) => s.status === 'paused');
   const unsub30 = subs.filter((s) => s.status === 'unsubscribed'
@@ -177,8 +181,8 @@ export default async function PlusAdminPage() {
       </p>
 
       <div style={{ ...grid, marginTop: 16 }}>
-        <Card value={active.length} label={`активних підписок (${monthly} міс · ${yearly} річн)`} tone={active.length ? C.green : undefined} />
-        <Card value={`${mrr} грн`} label="на місяць (річні — поділено на 12)" />
+        <Card value={active.length} label={`активних підписок (${monthly} міс · ${half} пів року${yearly ? ` · ${yearly} річн` : ''})`} tone={active.length ? C.green : undefined} />
+        <Card value={`${mrr} грн`} label="на місяць (пів року — поділено на 6)" />
         <Card value={pending.length} label="почали оформлення, ще не оплатили" tone={pending.length ? C.amber : undefined} />
         <Card value={paused.length} label="на паузі — платіж не завершився" tone={paused.length ? C.accent : undefined} />
         <Card value={unsub30.length} label="відписались за 30 днів" />
@@ -229,7 +233,7 @@ export default async function PlusAdminPage() {
                     <td style={{ ...cell, color: st.color, fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</td>
                     <td style={cell}>{who(s)}</td>
                     <td style={cell}>{kidsBySub[s.id] || 0}</td>
-                    <td style={cell}>{s.status === 'active' ? (s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
+                    <td style={cell}>{s.status === 'active' ? (s.billing_period === 'halfyear' ? 'пів року' : s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
                     <td style={cell}>{fmtDate(s.created_at)}</td>
                     <td style={cell}>{fmtDate(s.last_sent_at)}</td>
                     <td style={{ ...cell, color: C.ink2 }}>

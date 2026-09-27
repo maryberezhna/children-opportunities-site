@@ -11,7 +11,9 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const BOT = process.env.TELEGRAM_BOT_TOKEN;
 const CHANNEL = process.env.TELEGRAM_CHAT_ID;
 const PRICE_MONTH = Number(process.env.WAYFORPAY_AMOUNT || 119);
-const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 999);
+// Пів року замість року з 27.09.2026; річні — лише старі рядки (їх 0).
+const PRICE_HALF = Number(process.env.WAYFORPAY_AMOUNT_HALF || 549);
+const PRICE_YEAR_OLD = 999;
 
 if (!SUPABASE_URL || !KEY) {
   console.error('Missing env: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
@@ -94,9 +96,11 @@ const { data: subs, error: subsError } = await supabase
   .select('status, billing_period')
   .eq('status', 'active');
 if (subsError) console.error(`digest_subscribers (paid) failed: ${subsError.message}`);
+const half = subsError ? null : subs.filter((s) => s.billing_period === 'halfyear').length;
 const yearly = subsError ? null : subs.filter((s) => s.billing_period === 'yearly').length;
-const monthly = subsError ? null : subs.length - yearly;
-const mrr = subsError ? null : Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+const monthly = subsError ? null : subs.length - half - yearly;
+const mrr = subsError ? null
+  : Math.round(monthly * PRICE_MONTH + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
 
 const row = {
   day: today,

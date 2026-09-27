@@ -3,15 +3,17 @@ import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
 import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
-import { PRICE, PRICE_YEAR } from '@/lib/wayforpay';
+import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
 
 // Ціни й вигода рахуються з того самого джерела, що й рахунок у боті
-// (WAYFORPAY_AMOUNT / WAYFORPAY_AMOUNT_YEAR), а не вписані в текст руками.
+// (WAYFORPAY_AMOUNT / WAYFORPAY_AMOUNT_HALF), а не вписані в текст руками.
 // 20.09.2026 сторінка місяцями казала «вигідніше на 16%»: число рахувалось
 // від старих 99 грн і після переходу на 119 грн перестало бути правдою —
 // сайт применшував власну вигоду майже вдвічі.
-const PER_MONTH = Math.round(PRICE_YEAR / 12);
-const YEAR_SAVING = Math.round((1 - PRICE_YEAR / (PRICE * 12)) * 100);
+// З 27.09.2026 довгий план — пів року замість року (Марія, 24.09.2026: «у мене
+// не буде річної підписки, зроби піврічну»).
+const PER_MONTH = Math.round(PRICE_HALF / 6);
+const HALF_SAVING = Math.round((1 - PRICE_HALF / (PRICE * 6)) * 100);
 import { opportunitiesWord } from '@/lib/plural';
 
 /**
@@ -55,6 +57,20 @@ const L = {
       ['Україна', 'Мала академія наук'],
       ['Відбір', 'ISEF Ukraine'],
       ['Світ', 'Regeneron ISEF'],
+    ],
+
+    // Коротке визначення одразу під хіро (Марія 27.09.2026: «не вистачає
+    // короткого блоку, що це таке»). Кожен факт — з коду: щоденна перевірка
+    // нових записів (personal_digest), частоту надсилання обирають батьки,
+    // бот @DityamPlusBot, ціна — з lib/wayforpay.js. Це ж речення — опис
+    // Service у JSON-LD, тож асистенти цитують визначення, а не рекламу.
+    whatTitle: 'Що таке Dityam+',
+    whatText: 'Dityam+ — платна підписка від Dityam.com.ua для батьків. Ви один раз розповідаєте про кожну дитину, а ми щодня перевіряємо нові можливості на платформі й надсилаємо в Telegram ті, що підходять саме їй, — разом із нагадуваннями про дедлайни.',
+    whatFacts: [
+      ['Для кого', 'Батьки дітей від 0 до 18 років — окремий профіль на кожну дитину'],
+      ['Де', 'У Telegram, через бот @DityamPlusBot'],
+      ['Що приходить', 'Нові можливості під профіль дитини й нагадування про дедлайни'],
+      ['Скільки коштує', `${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року`],
     ],
 
     contrastTitle: 'Шукати щоразу з нуля — чи отримувати готове',
@@ -176,10 +192,10 @@ const L = {
     priceTitle: 'Скільки коштує',
     month: `${PRICE} грн`,
     monthPer: ' / місяць',
-    year: `${PRICE_YEAR} грн`,
-    yearPer: ' / рік',
-    yearNote: `≈ ${PER_MONTH} грн на місяць`,
-    yearRibbon: `вигідніше на ${YEAR_SAVING}%`,
+    half: `${PRICE_HALF} грн`,
+    halfPer: ' / пів року',
+    halfNote: `≈ ${PER_MONTH} грн на місяць`,
+    halfRibbon: `вигідніше на ${HALF_SAVING}%`,
     includedTitle: 'У підписку входить',
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, формат, місто',
@@ -223,6 +239,15 @@ const L = {
       ['Ukraine', 'Junior Academy of Sciences'],
       ['Selection', 'ISEF Ukraine'],
       ['World', 'Regeneron ISEF'],
+    ],
+
+    whatTitle: 'What is Dityam+',
+    whatText: 'Dityam+ is a paid subscription from Dityam.com.ua for parents. You tell us about each child once, and every day we check new opportunities on the platform and send the ones that fit your child to you on Telegram — together with deadline reminders.',
+    whatFacts: [
+      ['Who it is for', 'Parents of children aged 0–18 — a separate profile for each child'],
+      ['Where', 'On Telegram, via the @DityamPlusBot bot'],
+      ['What arrives', 'New opportunities that fit your child’s profile, and deadline reminders'],
+      ['Price', `UAH ${PRICE} a month or UAH ${PRICE_HALF} for six months`],
     ],
 
     contrastTitle: 'Search from zero every time — or get it delivered',
@@ -331,10 +356,10 @@ const L = {
     priceTitle: 'Pricing',
     month: `UAH ${PRICE}`,
     monthPer: ' / month',
-    year: `UAH ${PRICE_YEAR}`,
-    yearPer: ' / year',
-    yearNote: `≈ UAH ${PER_MONTH} a month`,
-    yearRibbon: `${YEAR_SAVING}% cheaper`,
+    half: `UAH ${PRICE_HALF}`,
+    halfPer: ' / 6 months',
+    halfNote: `≈ UAH ${PER_MONTH} a month`,
+    halfRibbon: `${HALF_SAVING}% cheaper`,
     includedTitle: 'The subscription includes',
     included: [
       'a selection for each child’s profile — age, likes, format, city',
@@ -404,7 +429,7 @@ function jsonLd(t, lang) {
         serviceType: en
           ? 'Personal selection of opportunities for children and deadline reminders'
           : 'Персональна добірка можливостей для дітей і нагадування про дедлайни',
-        description: strip(t.lead),
+        description: strip(t.whatText),
         provider: { '@id': `${SITE}/#org` },
         areaServed: [{ '@type': 'Country', name: en ? 'Ukraine' : 'Україна' }],
         audience: { '@type': 'PeopleAudience', suggestedMinAge: 0, suggestedMaxAge: 18 },
@@ -414,8 +439,8 @@ function jsonLd(t, lang) {
           serviceUrl: 'https://t.me/DityamPlusBot',
         },
         offers: [
-          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: '119', priceCurrency: 'UAH' },
-          { '@type': 'Offer', name: en ? 'Yearly' : 'Річна підписка', price: '999', priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: String(PRICE), priceCurrency: 'UAH' },
+          { '@type': 'Offer', name: en ? 'Six months' : 'Підписка на пів року', price: String(PRICE_HALF), priceCurrency: 'UAH' },
         ],
       },
       {
@@ -483,6 +508,24 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
             </ol>
             <figcaption className="pl-stairs-cap">{t.stairsCaption}</figcaption>
           </figure>
+        </div>
+      </section>
+
+      {/* ── Що таке Dityam+: визначення й чотири факти ── */}
+      <section className="pl-sec pl-what-sec" aria-labelledby="pl-what-title">
+        <div className="pl-wrap pl-what">
+          <div className="pl-what-copy">
+            <h2 className="pl-h2" id="pl-what-title">{t.whatTitle}</h2>
+            <p className="pl-what-text">{t.whatText}</p>
+          </div>
+          <dl className="pl-what-facts">
+            {t.whatFacts.map(([term, desc]) => (
+              <div key={term} className="pl-what-fact">
+                <dt>{term}</dt>
+                <dd>{desc}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
@@ -583,9 +626,9 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
               {t.monthNote ? <div className="pl-price-note">{t.monthNote}</div> : null}
             </div>
             <div className="pl-price pl-price-best">
-              <span className="pl-ribbon">{t.yearRibbon}</span>
-              <div className="pl-price-amount">{t.year}<span>{t.yearPer}</span></div>
-              <div className="pl-price-note">{t.yearNote}</div>
+              <span className="pl-ribbon">{t.halfRibbon}</span>
+              <div className="pl-price-amount">{t.half}<span>{t.halfPer}</span></div>
+              <div className="pl-price-note">{t.halfNote}</div>
             </div>
           </div>
           <p className="pl-included-title">{t.includedTitle}</p>

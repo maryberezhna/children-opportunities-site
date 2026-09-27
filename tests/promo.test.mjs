@@ -1,16 +1,17 @@
 // Промокоди Dityam+ (19.09.2026). Ціна за кодом `first`: місяць 1 грн
-// замість 119, рік 799 замість 999 — і лише на ПЕРШИЙ платіж.
+// замість 119, пів року 439 замість 549 (з 27.09.2026; до того — рік 799
+// замість 999) — і лише на ПЕРШИЙ платіж.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 process.env.WAYFORPAY_MERCHANT_ACCOUNT = 'test_merchant';
 process.env.WAYFORPAY_SECRET_KEY = 'test_secret';
 delete process.env.WAYFORPAY_AMOUNT;
-delete process.env.WAYFORPAY_AMOUNT_YEAR;
+delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
 const { normalizeCode, parseStartArg, promoUsable } = await import('../lib/promo.js');
-const { invoiceBody, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 19, 12, 0, 0);
@@ -53,13 +54,13 @@ test('місяць за кодом: 1 грн зараз, 119 далі', () => {
   assert.equal(b.dateNext, '19.10.2026');
 });
 
-test('рік за кодом: 799 зараз, 999 через рік', () => {
-  const b = invoiceBody(sub, 'yearly', { firstAmount: 799, now });
-  assert.equal(b.amount, 799);
-  assert.deepEqual(b.productPrice, [799]);
-  assert.equal(b.regularAmount, PRICE_YEAR);
-  assert.equal(b.regularMode, 'yearly');
-  assert.equal(b.dateNext, '19.09.2027');
+test('пів року за кодом: 439 зараз, 549 через пів року', () => {
+  const b = invoiceBody(sub, 'halfyear', { firstAmount: 439, now });
+  assert.equal(b.amount, 439);
+  assert.deepEqual(b.productPrice, [439]);
+  assert.equal(b.regularAmount, PRICE_HALF);
+  assert.equal(b.regularMode, 'halfyearly');
+  assert.equal(b.dateNext, '19.03.2027');
 });
 
 test('знижка не може бути більшою за ціну — «код» на 5000 грн ігнорується', () => {
@@ -72,7 +73,7 @@ test('без коду нічого не змінилось', () => {
   const b = invoiceBody(sub, 'monthly', { now });
   assert.equal(b.amount, PRICE);
   assert.equal(b.regularAmount, PRICE);
-  const y = invoiceBody(sub, 'yearly', { now });
-  assert.equal(y.amount, PRICE_YEAR);
-  assert.equal(y.regularAmount, PRICE_YEAR);
+  const h = invoiceBody(sub, 'halfyear', { now });
+  assert.equal(h.amount, PRICE_HALF);
+  assert.equal(h.regularAmount, PRICE_HALF);
 });

@@ -6,7 +6,7 @@
 // чаті назавжди — тож будь-хто, хто відкрив бота пізніше, тиснув мертву
 // кнопку й бачив «посилання застаріло». Тепер кнопка веде сюди.
 //
-// Заразом: /start більше не створює наосліп два рахунки (місяць + рік) на
+// Заразом: /start більше не створює наосліп два рахунки (місяць + довший план) на
 // кожен свій виклик, а промокод і ціна беруться на момент кліку, а не на
 // момент показу.
 import { createClient } from '@supabase/supabase-js';
@@ -33,8 +33,13 @@ export async function GET(request) {
 
   const { searchParams } = new URL(request.url);
   const token = searchParams.get('t');
-  const plan = searchParams.get('plan') === 'yearly' ? 'yearly' : 'monthly';
+  const asked = searchParams.get('plan');
   if (!token) return backToBot('no token');
+  // Кнопки «Рік за 999» лишились у старих повідомленнях бота (до 27.09.2026).
+  // Річну більше не продаємо, а підмінити її мовчки іншою сумою — обдурити
+  // людину на сторінці оплати. Тож ведемо в бот, де вона побачить чинні ціни.
+  if (asked === 'yearly') return backToBot('yearly plan retired — old button');
+  const plan = asked === 'halfyear' ? 'halfyear' : 'monthly';
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const { data: sub } = await supabase.from('digest_subscribers')
@@ -45,7 +50,7 @@ export async function GET(request) {
   // код могли ввести, вичерпати або він міг протермінуватись.
   const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
   const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
-  const firstRaw = plan === 'yearly' ? promo?.yearly_amount : promo?.first_amount;
+  const firstRaw = plan === 'halfyear' ? promo?.halfyear_amount : promo?.first_amount;
   const firstAmount = promoOk && firstRaw != null ? Number(firstRaw) : null;
 
   const inv = await createInvoice(sub, plan, { firstAmount });

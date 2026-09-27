@@ -14,7 +14,7 @@ export const metadata = {
 
 // Дата збігається з українською сторінкою свідомо: це той самий документ,
 // і розбіжність у датах читалась би як дві різні редакції умов.
-const UPDATED = '14 September 2026';
+const UPDATED = '27 September 2026';
 
 export default function RefundPage() {
   return (
@@ -45,7 +45,7 @@ export default function RefundPage() {
         <p>
           The service is digital and is delivered immediately after payment, so{' '}
           <strong>fees for a paid period are not refunded</strong> — for either the
-          monthly or the annual plan, including after cancellation.
+          monthly or the six-month plan, including after cancellation.
         </p>
         <p>
           The exception is <strong>mistaken or duplicated charges</strong>: these are

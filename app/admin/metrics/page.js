@@ -12,7 +12,9 @@ export const metadata = {
 };
 
 const PRICE_MONTH = 119;
-const PRICE_YEAR = 999;
+// Пів року замість року з 27.09.2026. Річні рахуємо лише для старих рядків (їх 0).
+const PRICE_HALF = 549;
+const PRICE_YEAR_OLD = 999;
 
 const wrap = { maxWidth: 980, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' };
 const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, margin: '14px 0 6px' };
@@ -87,9 +89,10 @@ export default async function MetricsPage() {
   ]);
 
   const subs = subsRes.data || [];
+  const half = subs.filter((s) => s.billing_period === 'halfyear').length;
   const yearly = subs.filter((s) => s.billing_period === 'yearly').length;
-  const monthly = subs.length - yearly;
-  const mrr = Math.round(monthly * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+  const monthly = subs.length - half - yearly;
+  const mrr = Math.round(monthly * PRICE_MONTH + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
 
   // Промокоди: рахуємо і введення, і оплати. Різниця між ними — головне,
   // що тут видно: код привів людей, але ціна їх не вмовила (або навпаки).
@@ -183,7 +186,7 @@ export default async function MetricsPage() {
 
       <h2 style={h2S}>💰 Dityam+</h2>
       <div style={grid}>
-        <Card value={subs.length} label={`активних платних підписок (${monthly} міс · ${yearly} річн)`} />
+        <Card value={subs.length} label={`активних платних підписок (${monthly} міс · ${half} пів року${yearly ? ` · ${yearly} річн` : ''})`} />
         <Card value={`${mrr} грн`} label="MRR (місячний еквівалент)" />
         <Card value={waitlist ? `${Math.round((subs.length / waitlist) * 100)}%` : '—'} label="конверсія waitlist → оплата" />
       </div>

@@ -146,7 +146,9 @@ const ADMIN_MENU = {
 };
 
 const PRICE_MONTH = 119;
-const PRICE_YEAR = 999;
+// Пів року замість року з 27.09.2026. Річні — лише старі рядки (їх 0).
+const PRICE_HALF = 549;
+const PRICE_YEAR_OLD = 999;
 
 function daysAgoIso(days) {
   return new Date(Date.now() - days * 86400000).toISOString();
@@ -172,8 +174,10 @@ async function adminStats(supabase) {
     ]);
 
   const subs = subsRes.data || [];
+  const half = subs.filter((x) => x.billing_period === 'halfyear').length;
   const yearly = subs.filter((x) => x.billing_period === 'yearly').length;
-  const mrr = Math.round((subs.length - yearly) * PRICE_MONTH + yearly * (PRICE_YEAR / 12));
+  const mrr = Math.round((subs.length - half - yearly) * PRICE_MONTH
+    + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
   const snaps = snapsRes.data || [];
   const weekAgo = snaps.find((x) => x.day <= daysAgoIso(7).slice(0, 10));
   const tg = snaps[0]?.telegram_members ?? null;
