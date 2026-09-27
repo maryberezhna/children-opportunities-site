@@ -4,6 +4,11 @@
 питання: ви скористалися цією можливістю? Так чи ні. Якщо так — то розкажіть,
 як вам. Якщо ні — то чому, і дропдаун з опціями».
 
+Уточнення 27.09.2026, коли кнопка під карткою стала «👍 Цікаво»: «якщо людина
+натиснула цікаво, то ми будемо запитувати, чи вона подавалася». Тому питання
+звучить «Ви подавалися?», а не «Ви скористалися цією можливістю?» — цікавість
+і заявка це різні речі, і плутати їх означало б вигадати за людину.
+
 Памʼять Dityam+ досі обривалась на вході: 👍 під карткою і «✍️ Подаємося»
 лягали в базу, а що з того вийшло — не знав ніхто. Цей скрипт замикає коло:
 через три дні після того, як можливість минула, @DityamPlusBot питає, і
@@ -14,9 +19,10 @@
     deadline, event_end_date/event_start_date або results_date;
   • постійні й безстрокові не питаємо НІКОЛИ: timing_kind='permanent' або
     recurrence='ongoing' без жодної дати. Там нічого не «минуло»;
-  • кого: активні підписники, які по цій можливості натиснули 👍
-    (opportunity_feedback.value='yes') або «✍️ Подаємося»
-    (plus_applications.stage='applying');
+  • кого: активні підписники, які по цій можливості натиснули 👍 — під постом
+    у каналі (opportunity_feedback.value='yes') або під карткою в добірці
+    (plus_applications.stage='interested'; 'applying' — те саме з кнопки
+    «✍️ Подаюсь», яка була з 20 по 27.09.2026);
   • не більше ОДНОГО питання на людину на день;
   • про одну можливість питаємо рівно один раз (asked_at). Якщо за тиждень
     минуло кілька — питаємо про найсвіжішу, решту глушимо позначкою asked_at,
@@ -175,7 +181,7 @@ def pick_for_subscriber(marked: set, rows: list, due: dict, now: datetime):
 
 def build_question(title: str, day: date, kind: str, today: date | None = None) -> str:
     return (f"<b>{html.escape(title or '')}</b> — {WHEN_PHRASE[kind]} "
-            f"{human_date(day, today)}.\n\nВи скористалися цією можливістю?")
+            f"{human_date(day, today)}.\n\nВи подавалися?")
 
 
 def keyboard(opportunity_id: str) -> dict:
@@ -221,18 +227,24 @@ def load_liked(client, subs: list) -> dict:
     return out
 
 
+# Стадії, які означають «людина сама це позначила»: 'interested' — «👍 Цікаво»
+# під карткою (з 27.09.2026), 'applying' — «✍️ Подаюсь», кнопка 20–27.09.2026.
+# Решта стадій ('asked', 'used', 'not_used'…) — це вже наш власний слід, і
+# питати за ним удруге не можна.
+MARKED_STAGES = ("interested", "applying")
+
+
 def marked_by(sub: dict, rows: list, liked: dict) -> set:
-    """Що ця людина позначила: 👍 або «✍️ Подаємося»."""
-    mine = {r["opportunity_id"] for r in rows if r.get("stage") == "applying"}
+    """Що ця людина позначила сама: 👍 під постом або 👍 під карткою."""
+    mine = {r["opportunity_id"] for r in rows if r.get("stage") in MARKED_STAGES}
     return mine | liked.get(str(sub.get("telegram_chat_id")), set())
 
 
 def mark_asked(client, sub_id: str, opportunity_id: str, exists: bool) -> None:
     """asked_at = зараз. Рядок створюємо, якщо його ще немає — це випадок 👍
-    без «Подаємося».
+    під постом у каналі, де рядка в plus_applications ще не було.
 
-    stage='asked', а не 'applying': 👍 означає «цікаво», і записати людині
-    «подаємося» означало б вигадати за неї (правило «нічого не вигадувати»)."""
+    stage='asked', а не 'interested': тут слід НАШ (ми спитали), а не людини."""
     now = datetime.now(timezone.utc).isoformat()
     try:
         if exists:

@@ -250,7 +250,7 @@ async function sendLatest(bot, supabase, sub, chatId) {
     // тут у кожної картки клавіатура своя, і третя кнопка нічому не заважає.
     // Без дати ставити подію нікуди — і кнопки тоді немає.
     const rows = [[
-      { text: '✍️ Подаюсь', callback_data: `papp:${m.o.id}` },
+      { text: '👍 Цікаво', callback_data: `papp:${m.o.id}` },
       { text: '👎 Не цікаво', callback_data: `pfb:no:${m.o.id}` },
     ]];
     if (m.o.deadline || m.o.event_start_date || m.o.event_end_date) {
@@ -858,9 +858,14 @@ export async function POST(request) {
     return new Response('ok');
   }
 
-  // «✍️ Подаємося» під карткою добірки (personal_digest.telegram_keyboard).
-  // Памʼять про пройдене: цю можливість більше не пропонуємо як нову, а
-  // нагадування про її дедлайн звучить інакше — «ви позначили, що подаєтеся».
+  // «👍 Цікаво» під карткою добірки. Памʼять про пройдене: цю можливість
+  // більше не пропонуємо як нову, нагадування про її дедлайн додає рядок «ви
+  // позначили як цікаве», а через три дні після того, як вона минула,
+  // scraper/ask_outcomes.py питає «Ви подавалися?».
+  //
+  // Префікс `papp:` лишився від кнопки «✍️ Подаюсь», яка стояла тут з 20 по
+  // 27.09.2026. Не перейменовуємо: у чатах людей уже висять старі картки з цим
+  // callback_data, і після перейменування вони б мовчали.
   const papp = (cbq.data || '').match(/^papp:([0-9a-f-]{36})$/i);
   if (papp) {
     const chatId = String(cbq.message.chat.id);
@@ -870,12 +875,15 @@ export async function POST(request) {
     const { error } = await supabase.from('plus_applications').upsert({
       subscriber_id: sub.id,
       opportunity_id: papp[1],
-      stage: 'applying',
+      // 'interested', не 'applying': людина щойно побачила назву й дедлайн
+      // і ще не знає, чи подаватиметься. Що з цього вийшло — питає пізніше
+      // scraper/ask_outcomes.py («Ви подавалися?»), і відповідь лягає сюди ж.
+      stage: 'interested',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'subscriber_id,opportunity_id' });
     await bot.answerCallback(cbq.id, error
       ? 'Не вдалося зберегти, спробуйте ще раз'
-      : 'Запамʼятали: ви подаєтеся ✍️ Нагадаємо, коли дедлайн буде близько');
+      : 'Запамʼятали 👍 Нагадаємо, коли дедлайн буде близько');
     return new Response('ok');
   }
 
