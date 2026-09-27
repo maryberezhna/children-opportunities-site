@@ -1,15 +1,15 @@
 /* Картка Telegram-каналу всередині списку карток (TelegramCard.js).
-   На всю ширину ряду, щоб не лишати порожньої клітинки в сітці. Кнопка
-   темна, а не блакитна: білий текст на #229ED9 не проходить WCAG AA.
+   На всю ширину ряду, щоб не лишати порожньої клітинки в сітці.
 
-   Тло тепле, а не біле. До 24.09.2026 картка була білою з такою самою
-   рамкою, як у сусідніх — «щоб читалась як частина списку». Саме через це
-   її й не було видно: між двома рядами білих карток вона читалась як
-   порожнє місце, а не як пропозиція. */
+   Тло чорне (Марія, 27.09.2026: «стиль не гарний, зроби на чорному»). До
+   24.09.2026 картка була білою, як сусідні, і між ними читалась як порожнє
+   місце; потім — тепло-бежевою, і та зливалась із тлом сторінки. Чорна —
+   єдина пляма іншого тону серед світлих карток, як чорний хіро в напрямі A.
+   Кнопка світла на чорному; контраст тексту — WCAG AA із запасом. */
 .tg-card {
   grid-column: 1 / -1;
-  background: var(--accent-soft, #fef2eb);
-  border: 1px solid var(--frame, #f0e0d8);
+  background: #1a1a1a;
+  border: 1px solid #1a1a1a;
   border-radius: 16px;
   padding: 24px;
   margin: 4px 0;
@@ -32,8 +32,8 @@
   letter-spacing: 0.05em;
   padding: 5px 10px;
   border-radius: 6px;
-  background: #ffffff;
-  color: #0b6f9e;
+  background: rgba(255, 255, 255, 0.12);
+  color: #8fd0f0;                 /* блакить Telegram, світла — 7:1 на тлі */
 }
 .tg-card-title {
   margin: 0;
@@ -41,14 +41,14 @@
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: #1a1a1a;
+  color: #ffffff;
   text-wrap: balance;
 }
 .tg-card-text {
   margin: 0;
   font-size: 15px;
   line-height: 1.5;
-  color: #4a4a4a;
+  color: #c9c9c9;                 /* 10:1 на #1a1a1a */
 }
 .tg-card-btn {
   display: inline-flex;
@@ -57,8 +57,8 @@
   height: 46px;
   padding: 0 22px;
   border-radius: 12px;
-  background: #1a1a1a;
-  color: #ffffff;
+  background: #ffffff;
+  color: #1a1a1a;
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
@@ -67,9 +67,9 @@
 }
 /* Подвійний селектор: у підбірках загальне правило для посилань фарбує
    текст у помаранчевий і перебиває одиночний клас. */
-.tg-card .tg-card-btn { color: #ffffff; }
-.tg-card .tg-card-btn:hover { background: #333333; color: #ffffff; }
-.tg-card-btn:focus-visible { outline: 2px solid #e85d24; outline-offset: 2px; }
+.tg-card .tg-card-btn { color: #1a1a1a; }
+.tg-card .tg-card-btn:hover { background: #f1ede7; color: #1a1a1a; }
+.tg-card-btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
 
 @media (max-width: 640px) {
   .tg-card { padding: 18px; gap: 14px; }
@@ -77,5 +77,5 @@
 }
 
 /* Мобільна головна: картки там — рядки без рамок, тож Telegram-картка
-   лишається білим блоком і дістає повітря згори й знизу. */
+   лишається окремим блоком і дістає повітря згори й знизу. */
 .v2-home .v2-list .tg-card { margin: 12px 0; }
