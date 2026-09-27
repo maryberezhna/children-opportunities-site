@@ -37,6 +37,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
+import ladder
 import plus_profile
 import send_window
 
@@ -466,28 +467,46 @@ def load_applications(client, subs) -> dict:
     return out
 
 
-def build_telegram(sub, items, revival: bool = False) -> str:
-    # revival — це не нові записи, а добірка з того, що вже є в каталозі.
-    # Називати їх «новими» було б неправдою.
-    head = ("🧡 <b>Добірка під вашу дитину</b>" if revival
-            else "🧡 <b>Нові можливості для вашої дитини</b>")
-    lines = [head, ""]
-    for n, o in enumerate(items, 1):
-        url = f"{SITE_URL}/o/{o['slug']}"
-        # Номер, а не маркер: кнопки під повідомленням підписані тими самими номерами.
-        lines.append(f"{n}. <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>")
-        # Календар — посиланням у тексті, а не кнопкою: кнопкою він займав
-        # чверть клавіатури. На сторінці можливості його немає, тож прибрати
-        # зовсім не можна — тільки перенести.
-        meta = html.escape(_meta(o))
-        cal = calendar_url(o)
-        if cal:
-            link = f"<a href=\"{html.escape(cal)}\">📅 у календар</a>"
-            meta = f"{meta} · {link}" if meta else link
-        lines.append(meta)
-        if o.get("_for"):
-            lines.append(f"<i>{html.escape(o['_for'])}</i>")
-        lines.append("")
+def _item_lines(n: int, o: dict) -> list:
+    url = f"{SITE_URL}/o/{o['slug']}"
+    # Номер, а не маркер: кнопки під повідомленням підписані тими самими номерами.
+    lines = [f"{n}. <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>"]
+    # Календар — посиланням у тексті, а не кнопкою: кнопкою він займав
+    # чверть клавіатури. На сторінці можливості його немає, тож прибрати
+    # зовсім не можна — тільки перенести.
+    meta = html.escape(_meta(o))
+    cal = calendar_url(o)
+    if cal:
+        link = f"<a href=\"{html.escape(cal)}\">📅 у календар</a>"
+        meta = f"{meta} · {link}" if meta else link
+    lines.append(meta)
+    if o.get("_after"):
+        lines.append(f"<i>{html.escape(ladder.after_line(o))}</i>")
+    if o.get("_for"):
+        lines.append(f"<i>{html.escape(o['_for'])}</i>")
+    lines.append("")
+    return lines
+
+
+def build_telegram(sub, items, revival: bool = False, steps=None) -> str:
+    """steps — «наступна сходинка» (ladder.next_steps): окремий блок після
+    добірки, з тією самою нумерацією, бо кнопки під повідомленням спільні."""
+    steps = steps or []
+    lines = []
+    if items:
+        # revival — це не нові записи, а добірка з того, що вже є в каталозі.
+        # Називати їх «новими» було б неправдою.
+        head = ("🧡 <b>Добірка під вашу дитину</b>" if revival
+                else "🧡 <b>Нові можливості для вашої дитини</b>")
+        lines += [head, ""]
+        for n, o in enumerate(items, 1):
+            lines += _item_lines(n, o)
+    if steps:
+        # Сходинка — не «нове під профіль», а продовження того, що родина сама
+        # позначила. Тому окремий заголовок і рядок «Після «X»…» під кожною.
+        lines += ["🪜 <b>Наступна сходинка</b>", ""]
+        for n, o in enumerate(steps, len(items) + 1):
+            lines += _item_lines(n, o)
     lines.append("Під повідомленням: ✍️ подаюсь · 👎 не цікаво — номер як у списку.")
     lines.append("")
     # Рядка «Змінити профіль — /start · Відписатись — /stop» тут більше немає
@@ -611,6 +630,24 @@ def main():
     # Памʼять про пройдене: що родина вже позначила кнопкою під карткою.
     applied = {} if args.demo else load_applications(client, subs)
 
+    # 🪜 Наступна сходинка: підтверджені людиною звʼязки «після X → Y» для
+    # програм, які родини позначили. Збій тут не має зірвати платну добірку:
+    # її шлемо без сходинок, а запуск наприкінці стає червоним — GitHub
+    # напише листа (рішення Марії 21.09.2026: про кожен збій — сповіщення).
+    confirmed, after_titles, ladder_sent, ladder_error = {}, {}, {}, None
+    marked_ids = {oid for m in applied.values() for oid, st in m.items()
+                  if st in ladder.ACTIVE_STAGES}
+    if marked_ids:
+        try:
+            confirmed = ladder.load_confirmed(client, marked_ids)
+            if confirmed:
+                after_titles = ladder.load_titles(client, confirmed.keys())
+                ladder_sent = ladder.load_sent(client, subs)
+        except Exception as e:
+            ladder_error = e
+            confirmed = {}
+            logger.error("🔴 Наступна сходинка не завантажилась, добірки йдуть без неї: %s", e)
+
     sent = 0
     for sub in subs:
         # Частота з анкети (digest_subscribers.digest_freq): «щодня», «раз на 2
@@ -634,12 +671,25 @@ def main():
         pool = [o for o in opps if o["id"] not in skip] if skip else opps
         items = pick_for(sub, pool, since, kids)
 
+        steps = []
+        if confirmed:
+            steps = ladder.next_steps(
+                sub, kids, applied.get(str(sub["id"]), {}), confirmed,
+                {o["id"]: o for o in pool}, after_titles,
+                ladder_sent.get(str(sub["id"]), set()), skip)
+            # Та сама програма і як «нове», і як сходинка — лишаємо сходинку:
+            # у ній є пояснення, звідки вона. Місць у повідомленні не більшає.
+            step_ids = {o["id"] for o in steps}
+            items = [o for o in items if o["id"] not in step_ids][:max(0, MAX_ITEMS - len(steps))]
+
         # Немає НОВИХ збігів — ще не привід мовчати місяцями. У каталозі лише
         # кілька десятків записів з відкритою подачею, решта — довідкові
         # (курси, держпослуги), і вони не «нові» вже давно. Підписник платить,
         # тож раз на QUIET_DAYS надсилаємо добірку з усього, що йому підходить.
+        # Є сходинка — повідомлення вже є про що слати, тож без «добірки з
+        # наявного».
         revival = False
-        if not items and not (args.dry_run or args.demo):
+        if not items and not steps and not (args.dry_run or args.demo):
             all_matches = pick_for(sub, pool, None, kids)
             if not all_matches:
                 # Під профіль немає нічого взагалі (напр. вік 0-3, де контенту
@@ -651,28 +701,44 @@ def main():
                 items = all_matches
                 revival = True
 
-        if not items:
+        if not items and not steps:
             logger.info("sub %s — no new matching opportunities, skip", sub["id"])
             continue
 
         if args.dry_run or args.demo:
             titles = " | ".join(i["title"][:48] for i in items)
             logger.info("[dry] sub=%s ch=%s → %d items: %s", sub["id"], sub["channel"], len(items), titles)
+            if steps:
+                logger.info("[dry] sub=%s → 🪜 %s", sub["id"],
+                            " | ".join(f"{o['_after'][:32]} → {o['title'][:40]}" for o in steps))
             continue
 
         if not sub.get("telegram_chat_id"):
             logger.info("sub %s — Telegram not connected yet, skip", sub["id"])
             continue
-        ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival),
-                           reply_markup=telegram_keyboard(items))
+        ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival, steps),
+                           reply_markup=telegram_keyboard(items + steps))
 
         if ok:
             client.table("digest_subscribers").update(
                 {"last_sent_at": datetime.now(timezone.utc).isoformat()}
             ).eq("id", sub["id"]).execute()
+            if steps:
+                # Запамʼятати показане: та сама сходинка не приходить щоразу.
+                try:
+                    client.table("plus_ladder_sent").upsert(
+                        [{"subscriber_id": sub["id"], "ladder_id": o["_ladder_id"]} for o in steps],
+                        on_conflict="subscriber_id,ladder_id",
+                    ).execute()
+                except Exception as e:
+                    ladder_error = e
+                    logger.error("🔴 sub %s: сходинку надіслано, але не записано — прийде ще раз: %s",
+                                 sub["id"], e)
             sent += 1
 
     logger.info("Done. Digests sent: %d", sent)
+    if ladder_error:
+        return 1
 
 
 if __name__ == "__main__":

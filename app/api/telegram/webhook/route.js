@@ -409,6 +409,45 @@ async function handleModeration(action, id, cbq) {
   return new Response('ok');
 }
 
+// 🪜 Наступна сходинка: адмін вирішує, чи справді Y — наступний крок після X.
+// Пару пропонує модель (scraper/ladder_propose.py), у добірку Dityam+ іде лише
+// 'confirmed' (рішення Марії 27.09.2026). Людина права: повторне натискання
+// міняє попереднє рішення, а не впирається в нього.
+async function handleLadder(action, id, cbq) {
+  const fromId = String(cbq.from?.id || '');
+  const chatId = String(cbq.message?.chat?.id || '');
+  if (!isAdmin(fromId, chatId)) {
+    await answerCallback(cbq.id, `Лише адміністратор. Твій id: ${fromId}`);
+    return new Response('ok');
+  }
+  if (!SUPABASE_URL || !SERVICE_ROLE) {
+    await answerCallback(cbq.id, 'Сервер не налаштований');
+    return new Response('ok');
+  }
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+  const { data, error } = await supabase
+    .from('opportunity_ladder')
+    .update({
+      status: action === 'yes' ? 'confirmed' : 'rejected',
+      decided_at: new Date().toISOString(),
+      decided_by: fromId,
+    })
+    .eq('id', id)
+    .select('id')
+    .maybeSingle();
+  if (error || !data) {
+    await answerCallback(cbq.id, 'Не вдалося зберегти, спробуйте ще раз');
+    return new Response('ok');
+  }
+  const label = action === 'yes' ? '✅ Сходинка підтверджена' : '❌ Не сходинка';
+  await answerCallback(cbq.id, action === 'yes' ? 'Підтверджено ✅' : 'Відхилено');
+  if (cbq.message) {
+    const orig = cbq.message.text || '';
+    await editMessage(cbq.message.chat.id, cbq.message.message_id, `<b>${label}</b>\n\n${escapeHtml(orig)}`);
+  }
+  return new Response('ok');
+}
+
 async function answerCallback(id, text) {
   await fetch(`${TG}/answerCallbackQuery`, {
     method: 'POST',
@@ -598,6 +637,12 @@ export async function POST(request) {
       'Напр.: «вік 6–12», «це Київ, офлайн», «перепиши заголовок коротше».\n' +
       'Застосую і поверну картку на апрув.');
     return new Response('ok');
+  }
+
+  // 🪜 «Наступна сходинка?» — картки з scraper/ladder_propose.py (admin only).
+  const lad = (cbq.data || '').match(/^lad:(yes|no):([0-9a-f-]{36})$/);
+  if (lad) {
+    return handleLadder(lad[1], lad[2], cbq);
   }
 
   // Moderation buttons on agent candidates (admin only).
