@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TELEGRAM_URL } from '@/lib/social';
+import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { trackConversion } from '@/lib/track';
 import { JOINED_KEY } from './SubscribePopup';
 
@@ -8,26 +8,19 @@ import { JOINED_KEY } from './SubscribePopup';
 // спливної підказки: за 23.08–22.09 із 3 049 показів підказки 70% зникли
 // самі через 10 секунд, ніхто їх не встиг помітити. Картка в стрічці не має
 // таймера, не перекриває нічого і її бачить кожен, хто гортає.
-const COPY = {
-  uk: {
-    aria: 'Telegram-канал Dityam.com.ua',
-    title: 'Нові можливості щодня',
-    text: 'Канал Dityam.com.ua: щодня один пост — нова можливість або добірка за темою.',
-    cta: 'Долучитися',
-  },
-  en: {
-    aria: 'Dityam.com.ua Telegram channel',
-    title: 'New opportunities every day',
-    text: 'The Dityam.com.ua channel: one post a day — a new opportunity or a themed pick. Posts are in Ukrainian.',
-    cta: 'Join',
-  },
+//
+// Слова — спільні для всіх закликів до каналу (lib/social.js). До 27.09.2026
+// картка казала «щодня один пост», хоча формат каналу ще змінюється.
+const ARIA = {
+  uk: 'Telegram-канал Dityam.com.ua',
+  en: 'Dityam.com.ua Telegram channel',
 };
 
 // `place`: 'catalog' — головна й міські сторінки, 'topic' — підбірки.
 // Іде в GA4 як popup_trigger, щоб рахуватись поруч зі спливною підказкою.
 export default function TelegramCard({ lang = 'uk', place = 'catalog' }) {
   const [joined, setJoined] = useState(false);
-  const t = COPY[lang] || COPY.uk;
+  const t = { ...(CHANNEL_CTA[lang] || CHANNEL_CTA.uk), aria: ARIA[lang] || ARIA.uk };
 
   // Уже долучився (той самий прапорець, що й у підказки) — картку не показуємо.
   useEffect(() => {

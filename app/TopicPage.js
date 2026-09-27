@@ -5,7 +5,6 @@ import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -20,7 +19,7 @@ import Footer from './Footer';
  * кремовий хіро з фото, підфільтри з лічильниками, картки у дві колонки з
  * промо Dityam+ після четвертої, «Важливо знати», «Часті питання», «Інші
  * підбірки». Увесь контент — з lib/topics.js (heading, intro, note, faq,
- * heroImage, related, showPromo, subfilters) і з живої бази (лічильники,
+ * heroImage, related, subfilters) і з живої бази (лічильники,
  * картки). Тут лише рамка: підписи кнопок і заголовків блоків.
  *
  * GEO/SEO: title без хвоста шаблону layout, власні OG і Twitter з фото
@@ -56,10 +55,6 @@ const CHROME = {
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
-    promoTitle: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
-    promoText: (n) => `Щодня перебираємо ${n} ${opportunitiesWord(n)} цієї підбірки й надсилаємо вам у Telegram лише ті, `
-      + 'що підходять вашій дитині за віком, вподобаннями й містом, — з нагадуванням про дедлайн завчасно.',
-    promoCta: 'Дізнатися першим',
     cards: {
       all: 'Усі',
       sort: 'за дедлайном, найближчі спочатку',
@@ -93,10 +88,6 @@ const CHROME = {
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
-    promoTitle: 'Here we show everything that exists. Dityam+ sends what fits your child.',
-    promoText: (n) => `Every day we go through ${n} ${n === 1 ? 'opportunity' : 'opportunities'} in this collection and send you, on Telegram, `
-      + 'only the ones that fit your child by age, interests and city — with a deadline reminder in good time.',
-    promoCta: 'Tell me first',
     cards: {
       all: 'All',
       sort: 'by deadline, soonest first',
@@ -323,17 +314,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   ) : null);
   const h1Text = `${heading.lead}${heading.script ? ` ${heading.script}` : ''}${heading.tail || ''}`;
 
-  // Кнопка веде прямо в Telegram, а не на /plus (рішення Марії 20.09.2026):
-  // людина вже прочитала, що робить Dityam+, просто в цій картці — проміжна
-  // сторінка між нею і ботом лише губить частину дороги.
-  const promo = topic.showPromo === false ? null : {
-    title: ch.promoTitle,
-    text: ch.promoText(total),
-    cta: ch.promoCta,
-    href: PLUS_SALES_OPEN ? plusBotUrl(`topic_${topic.slug}`) : PLUS_WAITLIST_URL,
-    source: `topic_${topic.slug}`,
-  };
-
   // Один @graph: CollectionPage — що це за сторінка й коли оновлена;
   // ItemList — сама підбірка в тому ж порядку, що на екрані; BreadcrumbList —
   // шлях у видачі; FAQPage — відповіді, які AI-асистенти цитують дослівно.
@@ -455,7 +435,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           lang={lang}
           pinnedIds={[...pinned]}
           pinnedLabel={c.pinnedLabel || null}
-          promo={promo}
           labels={ch.cards}
         />
 

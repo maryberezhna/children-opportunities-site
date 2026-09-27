@@ -2,7 +2,8 @@ import PlusChoice from '../PlusChoice';
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
+import BotLink from './BotLink';
 import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
 
 // Ціни й вигода рахуються з того самого джерела, що й рахунок у боті
@@ -492,7 +493,13 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
               {/* Головна кнопка веде прямо в бот, а не на якір #join нижче на
                   сторінці (рішення Марії 20.09.2026): людина натиснула «хочу» —
                   далі має бути Telegram, а не ще один скрол до ще однієї кнопки. */}
-              <a href={PLUS_SALES_OPEN ? plusBotUrl(`plus_${lang}`) : PLUS_WAITLIST_URL} className="pl-btn">{t.cta}</a>
+              <BotLink
+                href={PLUS_SALES_OPEN ? plusFromUrl(`plus_${lang}`) : PLUS_WAITLIST_URL}
+                place={`plus_${lang}`}
+                className="pl-btn"
+              >
+                {t.cta}
+              </BotLink>
               <a href="#how" className="pl-link">{t.how}</a>
             </div>
           </div>

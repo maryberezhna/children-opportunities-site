@@ -1,5 +1,5 @@
 'use client';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 import { trackConversion } from '@/lib/track';
 
 /**
@@ -40,7 +40,11 @@ export default function SubscribeForm({ lang = 'uk' }) {
   if (PLUS_SALES_OPEN) {
     return (
       <div style={{ marginTop: 26 }}>
-        <a href={plusBotUrl(`form_${lang}`)} style={button}>
+        <a
+          href={plusFromUrl(`plus_form_${lang}`)}
+          style={button}
+          onClick={() => trackConversion('plus_bot_click', { event_label: `plus_form_${lang}` })}
+        >
           {t.openCta}
         </a>
         <p style={{ margin: '14px 0 0', fontSize: 13, color: C.muted, lineHeight: 1.5 }}>

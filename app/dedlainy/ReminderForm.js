@@ -1,6 +1,6 @@
 'use client';
 import { trackConversion } from '@/lib/track';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 
 /**
  * Нагадування про дедлайни — це Dityam+, і приходять вони лише в Telegram.
@@ -15,7 +15,9 @@ import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
  * немає: нагадати особисто, поки не пізно.
  */
 export default function ReminderForm() {
-  const href = PLUS_SALES_OPEN ? plusBotUrl('deadlines_calendar') : PLUS_WAITLIST_URL;
+  // `from_` — щоб бот записав джерело в digest_subscribers.source (лише ця
+  // форма мітки туди потрапляє, див. parseSourceArg у lib/plus.js).
+  const href = PLUS_SALES_OPEN ? plusFromUrl('deadlines_calendar') : PLUS_WAITLIST_URL;
   const track = () => trackConversion(
     PLUS_SALES_OPEN ? 'plus_bot_click' : 'plus_waitlist_tg_click',
     { event_label: 'deadlines_calendar' },
