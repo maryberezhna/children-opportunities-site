@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { readsUkrainian, acceptLanguageTags } from '@/lib/lang';
+import { shouldBlock } from '@/lib/bot-guard';
 
 /**
  * Хто заходить не з України — бачить англійську сторінку.
@@ -31,6 +32,19 @@ const CATALOGUE_PARAMS = ['q', 'age', 'type', 'aid', 'theme', 'need', 'cost', 'd
 
 export function middleware(request) {
   const url = request.nextUrl;
+
+  // Захист від масового копіювання (lib/bot-guard.js) — на всіх сторінках.
+  // Лише на бойовому домені: dev-сервер і превʼю Vercel працюють як були.
+  const host = request.headers.get('host') || '';
+  if (/(^|\.)dityam\.com\.ua$/i.test(host) && shouldBlock(request.headers.get('user-agent'))) {
+    return new NextResponse('Automated copying of Dityam.com.ua is not allowed.', {
+      status: 403,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    });
+  }
+
+  // Далі — лише мова головної; решта сторінок іде як є.
+  if (url.pathname !== '/') return NextResponse.next();
 
   // ?lang=uk / ?lang=en — явна вказівка з листа чи пресматеріалу.
   // Запамʼятовуємо і прибираємо параметр, щоб він не тягнувся в шер.
@@ -83,5 +97,12 @@ export function middleware(request) {
   return NextResponse.redirect(to, 307);
 }
 
-// Тільки головна. Решта сайту працює як і працювала.
-export const config = { matcher: '/' };
+// Мова — лише на головній (перевірка на початку middleware). Захист від
+// копіювання — на всіх сторінках, окрім API (вебхуки Telegram і WayForPay),
+// статики Next.js, картинок і службових файлів, які читають роботи
+// (robots.txt, карта сайту, llms.txt).
+export const config = {
+  matcher: [
+    '/((?!api/|_next/|favicon|icon|apple-icon|robots\\.txt|sitemap|llms\\.txt|press/|fonts/|.*\\.(?:png|jpe?g|gif|svg|webp|avif|ico|css|js|map|txt|xml|json|woff2?|ttf|mp4|pdf)$).*)',
+  ],
+};
