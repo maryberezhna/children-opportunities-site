@@ -20,7 +20,7 @@ import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
-import { PLUS_SALES_OPEN, parseSourceArg } from '@/lib/plus';
+import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
@@ -693,10 +693,18 @@ export async function POST(request) {
       // потрапляли лише активні підписники, а від решти текст зникав у
       // порожнечу — людина писала й не отримувала нічого (27.09.2026).
       if (sub?.id) {
-        const who = { active: 'підписника', pending: 'ще не оплаченого', paused: 'призупиненого',
-          cancelled: 'колишнього підписника' }[sub.status] || 'нового';
+        // Стан, а не людина: «ще не оплачено», а не «неоплачена». Рід тут
+        // вгадувати нізвідки, а стан однаково точний і для будь-кого.
+        const state = { active: 'підписка активна', pending: 'ще не оплачено',
+          paused: 'призупинено', cancelled: 'скасовано',
+          unsubscribed: 'відписалась' }[sub.status] || 'новий контакт';
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання ${who} Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>`);
+          // Заголовок фіксований — ЗА НИМ webhook/route.js впізнає, що це
+          // питання, і відправляє відповідь реплаєм. 27.09.2026 статус був
+          // усередині заголовка («Питання ще не оплаченого Dityam+»), і саме
+          // на цих людях — тих, хто не дійшов до оплати, — відповідь реплаєм
+          // мовчки не спрацьовувала б. Статус тепер після хендла.
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>`);
         }
         await bot.sendMessage(chatId, '📝 Отримали. Відповімо тут найближчим часом 🧡');
       }

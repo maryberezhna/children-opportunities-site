@@ -3,7 +3,7 @@ import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
 import { removeRecurring } from '@/lib/wayforpay';
 import { makeBot } from '@/lib/digestFlow';
-import { PLUS_SALES_OPEN, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, plusBotUrl, PLUS_QUESTION_MATCH, PLUS_QUESTION_MATCH_OLD } from '@/lib/plus';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -484,8 +484,12 @@ export async function POST(request) {
     // підписнику від імені платного бота. Без цього на питання не було як
     // відповісти: людина пише в @DityamPlusBot, а сповіщення приходить сюди.
     const quoted = msg.reply_to_message?.text || '';
-    if (quoted.startsWith('📝 Питання підписника Dityam+') && isAdmin(msg.from?.id, msg.chat.id)) {
-      // Перший рядок: «📝 Питання підписника Dityam+ @handle 123456789:».
+    // Два заголовки: чинний і той, що був до 27.09.2026. Старі повідомлення
+    // нікуди з чату не діваються, і реплай на них має працювати далі.
+    const isPlusQuestion = quoted.startsWith(PLUS_QUESTION_MATCH)
+      || quoted.startsWith(PLUS_QUESTION_MATCH_OLD);
+    if (isPlusQuestion && isAdmin(msg.from?.id, msg.chat.id)) {
+      // Перший рядок: «📝 Питання Dityam+ @handle · ще не оплачено 123456789:».
       const target = quoted.split('\n')[0].match(/(-?\d+):\s*$/)?.[1];
       if (!target || !PLUS_TOKEN) {
         await sendMessage(msg.chat.id, '⚠️ Не вдалося визначити, кому відповісти, — напишіть підписнику вручну.');
