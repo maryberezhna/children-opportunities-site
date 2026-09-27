@@ -27,6 +27,18 @@ const cases = [
   }],
 ];
 
+// Заразом — що зараз реально стоїть у профілі бота. У репозиторії
+// (scripts/set-bot-commands.mjs) опис БЕЗ цін, а на екрані до кнопки
+// «Запустити» Марія бачить ціни — отже, текст ставили руками в BotFather і
+// він розійшовся з кодом. Ціни в описі гниють: вони змінюються, а опис ні.
+async function profile() {
+  for (const method of ['getMyDescription', 'getMyShortDescription']) {
+    const r = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`).then((x) => x.json());
+    const v = r.result?.description ?? r.result?.short_description ?? '';
+    console.log(`\n--- ${method} (${[...v].length} симв.) ---\n${v}`);
+  }
+}
+
 const points = (s) => [...String(s)].map((ch) => {
   const cp = ch.codePointAt(0);
   return cp > 0x7f ? `U+${cp.toString(16).toUpperCase()}` : ch;
@@ -46,3 +58,5 @@ for (const [name, extra] of cases) {
   const btn = body.result.reply_markup?.inline_keyboard?.[0]?.[0]?.text;
   if (btn) console.log(`   кнопка:     ${points(btn)}`);
 }
+
+await profile();
