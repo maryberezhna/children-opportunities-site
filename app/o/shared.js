@@ -25,6 +25,9 @@ import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 import Footer from '../Footer';
 import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
+// Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
+// (Марія, 27.09.2026) — див. lib/source-link.js.
+import { publicSource } from '@/lib/source-link';
 
 const SITE = 'https://dityam.com.ua';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
@@ -404,6 +407,7 @@ export function buildMetadata(item, lang = 'uk') {
 }
 
 function buildJsonLd(item, lang) {
+  const src = publicSource(item);
   const base = basePath(lang);
   const url = `${SITE}${base}/o/${item.slug}`;
   const isFree = item.cost_type === 'free';
@@ -431,8 +435,8 @@ function buildJsonLd(item, lang) {
       inLanguage,
       provider: {
         '@type': 'Organization',
-        name: item.source || 'dityam.com.ua',
-        sameAs: item.source_url || undefined,
+        name: src.sourceName || 'dityam.com.ua',
+        sameAs: src.sourceUrl || undefined,
       },
       ...((isFree || isClosed) && {
         offers: {
@@ -474,7 +478,7 @@ function buildJsonLd(item, lang) {
         : 'https://schema.org/OfflineEventAttendanceMode',
       eventStatus: 'https://schema.org/EventScheduled',
       location: isOnline
-        ? { '@type': 'VirtualLocation', url: item.source_url || url }
+        ? { '@type': 'VirtualLocation', url: src.sourceUrl || url }
         : {
             '@type': 'Place',
             name: cityLabel(
@@ -486,8 +490,8 @@ function buildJsonLd(item, lang) {
           },
       organizer: {
         '@type': 'Organization',
-        name: item.source || 'dityam.com.ua',
-        url: item.source_url || undefined,
+        name: src.sourceName || 'dityam.com.ua',
+        url: src.sourceUrl || undefined,
       },
       ...((isFree || isClosed) && {
         offers: {
@@ -571,12 +575,13 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // «Коли відбувається» живе окремо від «до коли подати»: у записі можуть
   // бути обидві дати, одна з них або жодної.
   const eventDates = formatEventDates(item, lang);
-  const showBar = Boolean(item.source_url) && !isClosed;
+  const src = publicSource(item);
+  const showBar = Boolean(src.primaryUrl) && !isClosed;
   // Пряме посилання на подачу, коли воно відоме й відрізняється від адреси
   // джерела. У пості про сесію ЄМП у Мальме це була Google-форма — єдине,
   // що людині насправді потрібне, і саме воно не зберігалось, бо колонки
   // для нього не існувало.
-  const applyUrl = item.apply_url && item.apply_url !== item.source_url ? item.apply_url : null;
+  const applyUrl = src.applyUrl;
 
   return (
     <>
@@ -738,18 +743,18 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   <dd className="o-m-only">{item.teen_requirement}</dd>
                 </>
               ) : null}
-              {item.source && (
+              {src.sourceName && (
                 <>
                   <dt>{t.source}</dt>
                   <dd>
-                    {item.source_url ? (
+                    {src.sourceUrl ? (
                       <>
-                        <span className="o-d-only">{item.source}</span>
-                        <a className="o-m-only" href={item.source_url} target="_blank" rel="noopener noreferrer">
-                          {item.source} ↗
+                        <span className="o-d-only">{src.sourceName}</span>
+                        <a className="o-m-only" href={src.sourceUrl} target="_blank" rel="noopener noreferrer">
+                          {src.sourceName} ↗
                         </a>
                       </>
-                    ) : item.source}
+                    ) : src.sourceName}
                   </dd>
                 </>
               )}
@@ -762,8 +767,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             </dl>
 
             <div className="opportunity-actions">
-              {item.source_url && (
-                <OutboundCta href={item.source_url} title={item.title} lang={lang} />
+              {src.sourceUrl && (
+                <OutboundCta href={src.sourceUrl} title={item.title} lang={lang} />
               )}
               {applyUrl && (
                 <a
@@ -861,7 +866,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               кнопка на офіційний сайт (opportunity-mobile.css), інакше на
               телефоні дві однакові «Подати заявку» вели б у різні місця. */}
           <OutboundCta
-            href={applyUrl || item.source_url}
+            href={src.primaryUrl}
             title={item.title}
             lang={lang}
             className="o-m-apply"

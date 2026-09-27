@@ -10,6 +10,7 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from first_source import external_links, looks_like_page, merge_text, pick  # noqa: E402
+import first_source  # noqa: E402
 
 # Посилання з реального допису @novashkola/26280.
 NOVASHKOLA = [
@@ -191,3 +192,27 @@ class MentionedLinks(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+
+class ForeignTelegram(unittest.TestCase):
+    """Чужі канали не показуємо (Марія, 27.09.2026); JS-дзеркало — tests/source-link.test.mjs."""
+
+    def test_foreign(self):
+        for u in ("https://t.me/Mozhlyvosti/10521", "https://t.me/s/grantovyphishky/8881",
+                  "http://telegram.me/youth_Ukraine/2119", "https://t.me/+AbCdEf",
+                  "tg://resolve?domain=x", "https://www.t.me/lcnpubd/2622"):
+            self.assertTrue(first_source.is_foreign_telegram(u), u)
+
+    def test_own_and_not_telegram(self):
+        for u in ("https://t.me/dityam_com_ua", "https://t.me/DityamPlusBot?start=site",
+                  "https://man.gov.ua/x", "https://t.mex.com/a", "", None):
+            self.assertFalse(first_source.is_foreign_telegram(u), str(u))
+
+    def test_only_foreign(self):
+        self.assertTrue(first_source.only_foreign_telegram(
+            {"source_url": "https://t.me/tviyspace/1", "apply_url": None}))
+        self.assertFalse(first_source.only_foreign_telegram(
+            {"source_url": "https://t.me/tviyspace/1", "apply_url": "https://forms.gle/x"}))
+        self.assertFalse(first_source.only_foreign_telegram(
+            {"source_url": "https://man.gov.ua/x", "apply_url": None}))

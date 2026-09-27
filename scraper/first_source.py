@@ -70,6 +70,40 @@ def _is(url: str, hosts: tuple) -> bool:
     return any(host == h or host.endswith("." + h) for h in hosts)
 
 
+# ── Чужі Telegram-канали (Марія, 27.09.2026) ──────────────────────────────
+# «Ми ніколи не показуємо інші телеграм канали у першоджерелі, щоб люди не
+# йшли до конкурентів». За місяць із карток сайту на дописи @Mozhlyvosti і
+# @tviyspace пішло більше людей, ніж на наш канал. Допис лишається в базі
+# слідом (source_url), але сайт його не показує (lib/source-link.js — те саме
+# правило в JS), а запис, у якому окрім допису нема куди вести людину, сам не
+# публікується (auto_review.mechanical).
+_TELEGRAM_HOSTS = ("t.me", "telegram.me", "telegram.dog", "telesco.pe")
+_OWN_TELEGRAM = {"dityam_com_ua", "dityamplusbot"}
+
+
+def is_foreign_telegram(url) -> bool:
+    """Посилання веде в Telegram, але не в наш канал чи бот Dityam+."""
+    if not url:
+        return False
+    s = str(url).strip()
+    if s.lower().startswith("tg:"):
+        return True
+    if not _is(s, _TELEGRAM_HOSTS):
+        return False
+    parts = [p for p in urlparse(s).path.split("/") if p]
+    name = (parts[1] if parts and parts[0] == "s" and len(parts) > 1 else (parts[0] if parts else ""))
+    return name.lower() not in _OWN_TELEGRAM
+
+
+def only_foreign_telegram(row: dict) -> bool:
+    """Джерело — допис чужого каналу, і власного посилання на подачу немає:
+    на сайті такому запису нікуди вести людину."""
+    if not is_foreign_telegram(row.get("source_url")):
+        return False
+    apply = row.get("apply_url")
+    return not apply or is_foreign_telegram(apply)
+
+
 def is_form(url: str) -> bool:
     """Форма подачі: її адреса належить apply_url, а не source_url."""
     if _is(url, _FORM_HOSTS):

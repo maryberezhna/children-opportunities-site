@@ -41,6 +41,7 @@ from db import get_client
 from normalizer import latin_fields, missing_required, summary_says_over
 from proof import missing_proof, PROOF_LABELS, PUBLISH_CRITERIA
 from timing import is_expired
+from first_source import only_foreign_telegram
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,13 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
     if is_expired(row, date.fromisoformat(today)):
         last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
         return RED, f"дата в минулому ({last})"
+
+    # ── Жовтий: нема куди вести людину, крім чужого каналу ──────────────
+    # Марія, 27.09.2026: чужі Telegram-канали ніколи не показуємо — сайт їх
+    # ховає (lib/source-link.js). Запис, у якому окрім допису каналу немає ні
+    # сторінки, ні форми, лишається людині: знайти першоджерело або закрити.
+    if only_foreign_telegram(row):
+        return YELLOW, "джерело — лише допис чужого Telegram-каналу; першоджерела немає"
 
     # ── Жовтий: дорогі категорії ────────────────────────────────────────
     # Єдиний запобіжник, який стоїть ПЕРЕД цитатами: тут помилка б'є по
