@@ -99,7 +99,7 @@ function placeText(item, lang) {
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  labels,
+  labels, hub = null,
 }) {
   const [sub, setSub] = useState('all');
   const isEn = lang === 'en';
@@ -153,7 +153,7 @@ export default function TopicCards({
   const cells = [];
   visible.forEach((item, i) => {
     cells.push(card(item));
-    if (i === tgAfter) cells.push(<TelegramCard key="tg-card" lang={lang} place="topic" />);
+    if (i === tgAfter) cells.push(<TelegramCard key="tg-card" lang={lang} place="topic" hub={hub} />);
   });
 
   return (

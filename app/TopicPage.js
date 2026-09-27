@@ -436,6 +436,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           pinnedIds={[...pinned]}
           pinnedLabel={c.pinnedLabel || null}
           labels={ch.cards}
+          hub={topic.slug}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}

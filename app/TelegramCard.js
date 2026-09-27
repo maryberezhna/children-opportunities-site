@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
-import { trackConversion } from '@/lib/track';
+import { trackConversion, trackSubscribeClick } from '@/lib/track';
 import { JOINED_KEY } from './SubscribePopup';
 
 // Картка каналу просто в списку можливостей. Замінила 4-секундний тригер
@@ -18,7 +18,8 @@ const ARIA = {
 
 // `place`: 'catalog' — головна й міські сторінки, 'topic' — підбірки.
 // Іде в GA4 як popup_trigger, щоб рахуватись поруч зі спливною підказкою.
-export default function TelegramCard({ lang = 'uk', place = 'catalog' }) {
+// `hub` — slug підбірки з lib/topics.js: з якої саме підбірки долучаються.
+export default function TelegramCard({ lang = 'uk', place = 'catalog', hub = null }) {
   const [joined, setJoined] = useState(false);
   const t = { ...(CHANNEL_CTA[lang] || CHANNEL_CTA.uk), aria: ARIA[lang] || ARIA.uk };
 
@@ -35,9 +36,16 @@ export default function TelegramCard({ lang = 'uk', place = 'catalog' }) {
     try {
       window.localStorage.setItem(JOINED_KEY, Date.now().toString());
     } catch (e) {}
+    // Стара подія лишається як була, щоб звіти до 27.09.2026 порівнювались.
     trackConversion('telegram_join_click', {
       event_label: 'inline_card',
       popup_trigger: `inline_card_${place}`,
+    });
+    // Нова — одна на всі входи «підписатись із сайту» (lib/track.js).
+    trackSubscribeClick({
+      target: 'channel',
+      placement: place === 'topic' ? 'hub_inline' : 'catalog_inline',
+      hub: place === 'topic' ? hub : null,
     });
   };
 
@@ -45,7 +53,9 @@ export default function TelegramCard({ lang = 'uk', place = 'catalog' }) {
     <aside className="tg-card" aria-label={t.aria}>
       <div className="tg-card-copy">
         <span className="tg-card-badge">Telegram</span>
-        <h3 className="tg-card-title">{t.title}</h3>
+        {/* Не заголовок: у списку h3 — назви можливостей, і «Щоб не шукати
+            вручну» серед них читачі екрана й пошуковики брали б за ще одну. */}
+        <p className="tg-card-title">{t.title}</p>
         <p className="tg-card-text">{t.text}</p>
       </div>
       <a
