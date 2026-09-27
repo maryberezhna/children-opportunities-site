@@ -61,11 +61,13 @@ const base = () => supabase.from('opportunities');
 // 24 години лишало б дірки між запусками; вікно від півночі краще повторить
 // запис двічі, ніж пропустить.
 const since = `${inDays(-1)}T00:00:00Z`;
+// Першого числа місяця зведення додає нагадування про сплячі щорічні записи.
+const monthlyNudge = new Date().getUTCDate() === 1;
 
 const [
   draftsTotal, draftsHot, deadLinkLive, overdueChecks, dueToday, closedYesterday, needsHuman,
   inReview, reviewTop, notesOpen, notesTop, autoCount, autoTop, reviewNewCount,
-  heldCount, passed48, deficitRuns,
+  heldCount, passed48, deficitRuns, dormantCount, dormantTop,
 ] = await Promise.all([
   count(base().select('id', { count: 'exact', head: true }).eq('status', 'draft')),
   // Чернетка з дедлайном на цьому тижні — найдорожча втрата: поки вона лежить,
@@ -143,6 +145,38 @@ const [
   softRows(supabase.from('discover_deficit_runs')
     .select('family, age_band, keyword, candidates_found, saved')
     .gte('ran_at', since).order('ran_at', { ascending: false }).limit(1)),
+  // Щорічний запис, який закрили й нікому відкрити на новий сезон.
+  //
+  // Привід (27.09.2026). Олімпіади з математики, фізики, інформатики й
+  // географії пролежали закритими з липня–серпня — а 24.08 вийшов новий наказ
+  // МОН, і І етап починався 1 жовтня. Чотири найчисленніші олімпіади країни
+  // були невидимі на сайті, і побачила це людина, а не система.
+  //
+  // Причина не в даних, а в конвеєрі: lifecycle уміє закрити сезон і не вміє
+  // його відкрити. Поки цього немає — хай принаймні видно, скільки таких є.
+  //
+  // Умова проста й точна: запис повторюваний (recurrence проставлений) і
+  // жодної дати в ньому немає. Такий сам себе не відкриє НІКОЛИ — ні завтра,
+  // ні за рік. Часу тут свідомо немає: `updated_at` зсуває будь-яка
+  // автоперевірка, тож «закрито 60 днів тому» з нього не вирахуєш — 27.09.2026
+  // за цим фільтром виходив нуль при 74 реальних записах.
+  //
+  // Через це блок показується РАЗ НА МІСЯЦЬ, першого числа: щодня однакове
+  // число — це шум, який перестають читати.
+  monthlyNudge
+    ? count(base().select('id', { count: 'exact', head: true })
+      .eq('status', 'closed').is('canonical_slug', null)
+      .not('recurrence', 'is', null)
+      .is('deadline', null).is('event_start_date', null))
+    : 0,
+  monthlyNudge
+    ? rows(base().select('title, slug, opportunity_type')
+      .eq('status', 'closed').is('canonical_slug', null)
+      .not('recurrence', 'is', null)
+      .is('deadline', null).is('event_start_date', null)
+      .order('updated_at', { ascending: true }).limit(5))
+    : [],
+
 ]);
 
 const blocks = [];
@@ -221,6 +255,16 @@ if (notesOpen) {
 
 if (needsHuman) {
   blocks.push(`✉️ <b>Пропозиції від людей без відповіді:</b> ${needsHuman}.`);
+}
+
+if (dormantCount) {
+  blocks.push([
+    `🌱 <b>Щорічні записи, які самі не відкриються:</b> ${dormantCount}`,
+    ...dormantTop.map((r) => `• ${esc(cut(r.title))}\n  ${SITE}/o/${r.slug}`),
+    'Кожен із них повторюваний, але дати в ньому немає — отже, новий сезон почнеться без нас. '
+    + 'Так олімпіади з математики, фізики й інформатики пролежали схованими до 27.09.2026, '
+    + 'поки не почався перший етап. Відкрити ті, чий сезон настав, і проставити дати.',
+  ].join('\n'));
 }
 
 // Тихий рядок унизу: він не вимагає дій, але показує, що система жива.
