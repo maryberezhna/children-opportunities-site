@@ -5,7 +5,9 @@ name: Dityam+ — наступна сходинка (daily)
 # підтверджене (рішення Марії 27.09.2026). Див. scraper/ladder_propose.py.
 #
 # Скільки: 5 програм і до 5 карток за запуск, і не більше 10 карток без
-# відповіді — модерація має вкладатись у ~10 хвилин на день. Ціну кожного
+# відповіді — модерація має вкладатись у ~10 хвилин на день. Поки черга
+# повна, модель не питаємо (крім програм, позначених родинами), тож витрати
+# йдуть у темпі відповідей: ≈ $0,01 за програму на Sonnet 5. Ціну кожного
 # запуску скрипт друкує в лог.
 #
 # Ручний запуск за замовчуванням СУХИЙ: модель питаємо, а в базу нічого не
@@ -23,6 +25,10 @@ on:
         description: 'скільки програм розглянути'
         required: false
         default: '5'
+      model:
+        description: 'модель (порожньо = claude-sonnet-5) — щоб порівняти якість і ціну'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -52,6 +58,7 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           SITE_URL: https://dityam.com.ua
+          LADDER_MODEL: ${{ github.event.inputs.model }}
         run: |
           LIMIT="${{ github.event.inputs.limit || '5' }}"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] \

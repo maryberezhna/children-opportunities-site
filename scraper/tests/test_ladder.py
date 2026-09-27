@@ -141,6 +141,25 @@ class Candidates(unittest.TestCase):
         self.assertEqual([o["id"] for o in lp.candidates_for(x, [x, other])], ["o2"])
 
 
+class Cost(unittest.TestCase):
+    """Рішення Марії 27.09.2026 «можна якось дешевше»: ціну складає вхід."""
+
+    def test_candidates_capped_and_short(self):
+        x = opp("x")
+        many = [opp(f"c{i}", summary="а" * 500) for i in range(60)]
+        cands = lp.candidates_for(x, [x] + many)
+        self.assertEqual(len(cands), 25)
+        self.assertLessEqual(len(lp._card(cands[0]).split("Опис: ")[1]), 160)
+
+    def test_full_queue_asks_only_about_marked(self):
+        marked, plain = opp("m"), opp("p")
+        self.assertEqual([o["id"] for o in lp.pick_sources([plain, marked], {"m"}, {}, 5,
+                                                           marked_only=True)], ["m"])
+        self.assertEqual([o["id"] for o in lp.pick_sources([plain], set(), {}, 5,
+                                                           marked_only=True)], [])
+        self.assertEqual(len(lp.pick_sources([plain, marked], {"m"}, {}, 5)), 2)
+
+
 class DigestMessage(unittest.TestCase):
     def test_steps_block_continues_numbering(self):
         item = opp("n1", title="Нове під профіль")
