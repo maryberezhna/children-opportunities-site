@@ -92,6 +92,7 @@ export default async function sitemap() {
     { url: `${SITE_URL}/dedlainy`, changeFrequency: 'daily', priority: 0.9 },
     // Путівник Erasmus+ поки лише українською.
     { url: `${SITE_URL}/erasmus`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/olimpiady`, changeFrequency: 'weekly', priority: 0.8 },
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]
