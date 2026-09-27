@@ -13,6 +13,10 @@ on:
         description: 'true = лише показати текст, не публікувати'
         required: false
         default: 'true'
+      message_id:
+        description: 'Номер уже опублікованого поста, щоб виправити його текст (порожньо = новий пост)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -38,4 +42,5 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FILE: ${{ github.event.inputs.file }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+          MESSAGE_ID: ${{ github.event.inputs.message_id }}
         run: node scripts/post-message.mjs

@@ -13,7 +13,8 @@
  * Текст — у форматі Telegram HTML: <b>, <i>, <a href>. Решта тегів заборонена
  * самим Telegram, тож перевіряємо це до відправки, а не ловимо 400 у відповіді.
  *
- * Env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, FILE, DRY_RUN=true.
+ * Env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, FILE, DRY_RUN=true,
+ * MESSAGE_ID (необовʼязково: виправити цей пост, а не публікувати новий).
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -89,14 +90,24 @@ if (DRY) {
   process.exit(0);
 }
 
-const res = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+// MESSAGE_ID — виправити вже опублікований пост замість нового. 27.09.2026 пост
+// про конкурс вийшов із посиланням на організатора замість сторінки на сайті;
+// видалити й надіслати заново — це ще одне сповіщення підписникам того ж дня.
+const EDIT_ID = Number(process.env.MESSAGE_ID) || null;
+const method = EDIT_ID ? 'editMessageText' : 'sendMessage';
+const res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ chat_id: CHAT, text, parse_mode: 'HTML' }),
+  body: JSON.stringify({
+    chat_id: CHAT, text, parse_mode: 'HTML',
+    ...(EDIT_ID ? { message_id: EDIT_ID } : {}),
+  }),
 });
 const json = await res.json();
 if (!json.ok) {
   console.error(`\nTelegram відмовив: ${json.description}`);
   process.exit(1);
 }
-console.log(`\n✅ Опубліковано. message_id ${json.result.message_id}`);
+console.log(EDIT_ID
+  ? `\n✅ Пост ${EDIT_ID} виправлено.`
+  : `\n✅ Опубліковано. message_id ${json.result.message_id}`);
