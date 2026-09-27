@@ -48,7 +48,7 @@ const monthly = activeRows.length - half - yearly;
 const mrr = Math.round(monthly * PRICE + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
 
 const msg = [
-  '📊 <b>Dityam+ — статистика за тиждень</b>',
+  '📊 <b>Статистика Dityam+ за тиждень</b>',
   '',
   `👥 Усього профілів: <b>${rows.length}</b>`,
   `✅ Активні (платні): <b>${active}</b>`,

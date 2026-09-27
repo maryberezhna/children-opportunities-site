@@ -147,7 +147,7 @@ const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile', 'freq']);
 // згоди на обробку даних (анкета збирає й чутливі відповіді).
 const PRE_PAY_COMMANDS = new Set(['child', 'form', 'profile']);
 
-const COMMANDS_TEXT = '🧡 <b>Dityam+ — команди</b>\n\n'
+const COMMANDS_TEXT = '🧡 <b>Команди Dityam+</b>\n\n'
   + '/start — головне меню\n'
   + '/new — свіжі можливості під профіль дитини\n'
   + '/child — додати ще одну дитину\n'
@@ -378,14 +378,14 @@ function subDetails(sub, kids) {
     '', 'Додати дитину чи змінити відповіді — у меню /start. Скасувати підписку — /stop.'].join('\n');
 }
 
-// Список очікування Dityam+ — у цьому боті, а не в основному (15.09.2026):
+// Список очікування Dityam+ живе в цьому боті, а не в основному (15.09.2026):
 // основний бот зветься «Dityam Адмінка 🛠», і людина, що хотіла дізнатись про
 // Dityam+, отримувала відповідь від «адмінки». source = 'plus_bot:<звідки>' —
 // за ним plus_launch.py знає, яким ботом писати про запуск.
 const fmtPrice = (n) => Number(n).toLocaleString('uk-UA');
 const WAITLIST_WELCOME = () => `Ви в списку перших! 🧡
 
-Dityam+ — платна підписка: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
+Платна підписка Dityam+: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
 
 Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`;
 
@@ -405,7 +405,7 @@ async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
   // Сповіщення адміну — з основного бота, у ваш адмінський чат; людина його не бачить.
   if (MAIN_TOKEN && ADMIN_CHAT_ID) {
     await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
-      `🚀 <b>Dityam+ — новий у списку очікування</b>\n${esc(handle || chatId)} · через бот Dityam+ · ${esc(from)}`);
+      `🚀 <b>Новий у списку очікування Dityam+</b>\n${esc(handle || chatId)} · через бот Dityam+ · ${esc(from)}`);
   }
   await bot.sendMessage(chatId, WAITLIST_WELCOME());
 }

@@ -5,7 +5,7 @@ export const runtime = 'nodejs';
 export const revalidate = 86400;
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
-export const alt = 'Dityam+ — добірка можливостей для кожної дитини й нагадування про дедлайни';
+export const alt = 'Добірка можливостей для кожної дитини й нагадування про дедлайни — Dityam+';
 
 export default function Image() {
   return plusOgImage('uk');
