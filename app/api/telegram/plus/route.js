@@ -21,6 +21,7 @@ import {
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN, parseSourceArg } from '@/lib/plus';
+import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
   ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
@@ -259,12 +260,28 @@ async function sendLatest(bot, supabase, sub, chatId) {
   }
 }
 
+// Текст другої кнопки й водночас те, що прилітає у відповідь: reply-клавіатура
+// надсилає свій підпис звичайним повідомленням.
+const PHONE_SKIP = 'Пропустити — введу при оплаті';
+
 async function askPhone(bot, supabase, sub, chatId) {
   await supabase.from('digest_subscribers').update({ flow_step: 'phone' }).eq('id', sub.id);
-  await bot.sendMessage(chatId, '📱 Поділіться номером телефону — на нього надійде підтвердження оплати. Натисніть кнопку нижче 👇', {
-    keyboard: [[{ text: '📱 Поділитися номером', request_contact: true }]],
-    resize_keyboard: true, one_time_keyboard: true,
-  });
+  // Крок НЕ обовʼязковий: у lib/wayforpay.js номер іде як
+  // `clientPhone: sub.phone || undefined`, тобто рахунок створюється й без
+  // нього, а WayForPay усе одно питає номер на своїй сторінці. До 27.09.2026
+  // тут стояв глухий кут: номер приймався лише кнопкою, на текст бот мовчав,
+  // а `one_time_keyboard` ховав саму кнопку після першого ж набраного слова.
+  // На цьому кроці зупинилися дві людини з заповненою анкетою.
+  await bot.sendMessage(chatId,
+    '📱 Поділіться номером телефону — на нього надійде підтвердження оплати.\n\n'
+    + 'Можна натиснути кнопку, написати номер сюди (+380…) або пропустити: '
+    + 'тоді введете його на сторінці оплати.', {
+      keyboard: [
+        [{ text: '📱 Поділитися номером', request_contact: true }],
+        [{ text: PHONE_SKIP }],
+      ],
+      resize_keyboard: true,
+    });
 }
 
 async function askConsent(bot, chatId) {
@@ -605,6 +622,40 @@ export async function POST(request) {
         return new Response('ok');
       }
 
+      // Номер, написаний руками, і «пропустити» — обидва на кроці телефону.
+      // Перевірка стоїть ПЕРЕД промокодом: «0671234567» не код, а номер.
+      //
+      // `flow_step` міг і згубитись (наступний /start його скидає), тому крок
+      // визначаємо ще й по стану: згода є, номера немає, оплати немає — отже
+      // людина стоїть саме тут. Ширше не беремо: у підписника номер у профілі,
+      // і цифри від нього — питання в підтримку, а не новий телефон.
+      const onPhoneStep = sub && sub.status !== 'active'
+        && (sub.flow_step === 'phone' || (sub.consent_at && !sub.phone && !sub.flow_step));
+      if (onPhoneStep) {
+        if (text === PHONE_SKIP) {
+          await supabase.from('digest_subscribers')
+            .update({ flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
+          await bot.sendMessage(chatId, 'Гаразд — введете номер на сторінці оплати.', { remove_keyboard: true });
+          await sendPayOffer(bot, sub, chatId, supabase);
+          return new Response('ok');
+        }
+        const typed = parsePhone(text);
+        if (typed) {
+          await supabase.from('digest_subscribers')
+            .update({ phone: typed, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
+          await bot.sendMessage(chatId, `✅ Записали номер ${esc(typed)}`, { remove_keyboard: true });
+          await sendPayOffer(bot, { ...sub, phone: typed }, chatId, supabase);
+          return new Response('ok');
+        }
+        // Схоже на номер, але не склалось: краще сказати, ніж мовчати.
+        if (looksLikePhoneAttempt(text)) {
+          await bot.sendMessage(chatId,
+            'Не вдалося прочитати номер. Напишіть у форматі +380671234567 — '
+            + `або натисніть «${esc(PHONE_SKIP)}», і введете його вже при оплаті.`);
+          return new Response('ok');
+        }
+      }
+
       // Промокод, введений руками: одне слово від того, хто ще не платить.
       // Теж до звернення в підтримку, інакше «first» полетів би адміну як
       // питання.
@@ -638,10 +689,14 @@ export async function POST(request) {
         }
       }
 
-      // Підтримка у поданні: будь-який інший текст від активного підписника → адміну.
-      if (sub?.status === 'active') {
+      // Підтримка у поданні: будь-який інший текст → адміну. Раніше сюди
+      // потрапляли лише активні підписники, а від решти текст зникав у
+      // порожнечу — людина писала й не отримувала нічого (27.09.2026).
+      if (sub?.id) {
+        const who = { active: 'підписника', pending: 'ще не оплаченого', paused: 'призупиненого',
+          cancelled: 'колишнього підписника' }[sub.status] || 'нового';
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання підписника Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде підписнику від @DityamPlusBot.</i>`);
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `📝 <b>Питання ${who} Dityam+</b> ${esc(sub.telegram_handle || '')} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>`);
         }
         await bot.sendMessage(chatId, '📝 Отримали. Відповімо тут найближчим часом 🧡');
       }
