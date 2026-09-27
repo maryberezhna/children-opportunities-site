@@ -1,0 +1,36 @@
+# Разовий лист тим, хто зупинився за крок до оплати Dityam+ (27.09.2026).
+# Запускається руками. dry_run=true за замовчуванням: спершу дивимось, кому
+# саме піде, і аж потім шлемо.
+name: Telegram — лист тим, хто застряг перед оплатою (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true — лише показати, кому піде; false — надіслати'
+        required: false
+        default: 'true'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - run: npm ci --omit=dev
+
+      - name: Написати тим, хто застряг
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+        run: node scripts/notify-stuck.mjs
