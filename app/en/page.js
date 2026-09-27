@@ -93,7 +93,6 @@ export default async function EnglishPage() {
             показуємо оригінал, а не порожнечу. */}
         <OpportunitiesList
           opportunities={opportunities}
-          promoProps={{ total }}
           today={today}
           lang="en"
           modeAware

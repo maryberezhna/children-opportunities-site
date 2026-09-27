@@ -5,7 +5,6 @@ import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
 import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
-import { trackConversion } from '@/lib/track';
 import { inlineCardAfter } from '@/lib/inline-card';
 import TelegramCard from '../TelegramCard';
 
@@ -100,7 +99,7 @@ function placeText(item, lang) {
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  promo = null, labels,
+  labels,
 }) {
   const [sub, setSub] = useState('all');
   const isEn = lang === 'en';
@@ -146,34 +145,15 @@ export default function TopicCards({
     );
   };
 
-  // Telegram-картка після восьмої: Dityam+ стоїть після четвертої, і два
-  // промоблоки підряд перетворили б список на рекламу.
-  const tgAfter = inlineCardAfter(visible.length, { after: 8 });
+  // Telegram-картка після четвертої, як на головній. До 27.09.2026 вона
+  // стояла після восьмої, бо після четвертої була картка Dityam+; ту прибрано
+  // (рішення Марії, «сходинка»: сайт веде в канал, Dityam+ продає сам канал).
+  const tgAfter = inlineCardAfter(visible.length, { after: 4 });
 
   const cells = [];
   visible.forEach((item, i) => {
     cells.push(card(item));
     if (i === tgAfter) cells.push(<TelegramCard key="tg-card" lang={lang} place="topic" />);
-    if (i === 3 && promo) {
-      cells.push(
-        <aside key="promo" className="tp-promo" aria-label="Dityam+">
-          <div className="tp-promo-copy">
-            <span className="tp-promo-badge">Dityam+</span>
-            <h3 className="tp-promo-title">{promo.title}</h3>
-            <p className="tp-promo-text">{promo.text}</p>
-          </div>
-          {/* Пряме посилання в Telegram — не Link: це зовнішня адреса, і
-              клік треба порахувати як конверсію. */}
-          <a
-            href={promo.href}
-            className="tp-btn tp-btn-white"
-            onClick={() => trackConversion('plus_waitlist_tg_click', { event_label: promo.source || 'topic_promo' })}
-          >
-            {promo.cta}
-          </a>
-        </aside>,
-      );
-    }
   });
 
   return (

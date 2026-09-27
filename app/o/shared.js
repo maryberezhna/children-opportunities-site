@@ -23,7 +23,6 @@ import { plural } from '@/lib/plural';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
-import PlusSection from '../PlusSection';
 import Footer from '../Footer';
 import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 
@@ -838,12 +837,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           </section>
         )}
 
-        {/* Dityam+ і футер — як на решті сайту. До 21.09.2026 сторінка
-            можливості, куди приземляється більшість людей із пошуку,
-            закінчувалась схожими можливостями: ні пропозиції підписки, ні
-            навігації по сайту. Число можливостей не рахуємо — зайвий запит
-            на кожну з ~1100 сторінок при збірці; блок пише «сотні». */}
-        <PlusSection place="detail_page" lang={lang} />
+        {/* Блоку Dityam+ тут більше немає (рішення Марії 27.09.2026,
+            «сходинка»: сайт веде в канал, Dityam+ продає сам канал). Заклик
+            сторінки — блок каналу одразу під описом; далі схожі можливості
+            й футер із навігацією по сайту. */}
       </div>
 
       <Footer lang={lang} />

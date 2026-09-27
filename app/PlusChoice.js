@@ -1,7 +1,8 @@
 import { formatDate } from '@/lib/dates';
 import { soonestDeadlines } from '@/lib/timing';
 import { PRICE } from '@/lib/wayforpay';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusBotUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
+import BotLink from './plus/BotLink';
 
 // Заклик наприкінці сторінки Dityam+: кава чи можливість для дитини (ідея
 // Марії 19.09.2026). До 20.09.2026 блок стояв у кінці головної — Марія
@@ -59,7 +60,7 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
   const picks = soonestDeadlines(opportunities, today);
   if (!picks.length) return null;      // немає чим підтвердити — блоку немає
 
-  const href = PLUS_SALES_OPEN ? plusBotUrl('choice') : PLUS_WAITLIST_URL;
+  const href = PLUS_SALES_OPEN ? plusFromUrl('plus_choice') : PLUS_WAITLIST_URL;
 
   return (
     // Порядок читання зліва направо (Марія, 21.09.2026): чашка — питання —
@@ -83,9 +84,9 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
         </h2>
         <p>{t.text(PRICE)}</p>
         <div className="v2-panel-actions">
-          <a href={href} target="_blank" rel="noopener noreferrer" className="v2-btn-dark">
+          <BotLink href={href} place="plus_choice" target="_blank" rel="noopener noreferrer" className="v2-btn-dark">
             {PLUS_SALES_OPEN ? t.btnOpen : t.btnWait}
-          </a>
+          </BotLink>
           <span className="v2-panel-note">{t.note}</span>
         </div>
       </div>

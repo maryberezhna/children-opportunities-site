@@ -1,6 +1,6 @@
 'use client';
 import { trackConversion } from '@/lib/track';
-import { TELEGRAM_URL } from '@/lib/social';
+import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 
 /**
  * Постійний блок підписки — на відміну від підказки біля кнопки, він нікуди
@@ -10,24 +10,14 @@ import { TELEGRAM_URL } from '@/lib/social';
  *
  * `place` іде в аналітику: видно, яке саме розміщення приводить підписників.
  */
-const L = {
-  uk: {
-    aria: 'Telegram-канал Dityam',
-    title: 'Щоб не шукати вручну',
-    // Твердження про ручну перевірку прибрано 14.09.2026 на прохання Марії: записи проходять автоматичні ворота, людина дивиться лише сумнівні.
-    desc: 'Нові можливості для дітей виходять щодня в Telegram — з датами, дедлайнами й посиланням на організатора.',
-    cta: 'Долучитися до каналу',
-  },
-  en: {
-    aria: 'Dityam Telegram channel',
-    title: 'So you don’t have to keep looking',
-    desc: 'New opportunities for children go out on Telegram every day — with dates, deadlines and a link to the organiser. Posts are in Ukrainian.',
-    cta: 'Join the channel',
-  },
+const ARIA = {
+  uk: 'Telegram-канал Dityam.com.ua',
+  en: 'Dityam.com.ua Telegram channel',
 };
 
 export default function TelegramSubscribeBlock({ place = 'detail_page', lang = 'uk' }) {
-  const t = L[lang] || L.uk;
+  // Слова — спільні для всіх закликів до каналу (lib/social.js).
+  const t = { ...(CHANNEL_CTA[lang] || CHANNEL_CTA.uk), aria: ARIA[lang] || ARIA.uk };
   const handleClick = () => {
     trackConversion('telegram_join_click', { event_label: place });
   };
@@ -36,7 +26,7 @@ export default function TelegramSubscribeBlock({ place = 'detail_page', lang = '
     <aside className="tg-block" aria-label={t.aria}>
       <div className="tg-block-text">
         <h2 className="tg-block-title">{t.title}</h2>
-        <p className="tg-block-desc">{t.desc}</p>
+        <p className="tg-block-desc">{t.text}</p>
       </div>
 
       <a

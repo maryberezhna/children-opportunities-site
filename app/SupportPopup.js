@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 
-/* Плаваюче сердечко з модалкою підтримки. Смуга Dityam+ жила тут же, поки
-   була одна на сторінку; тепер вона в PlusSection і повторюється в каталозі,
-   а цей компонент лишається в одному екземплярі. */
+/* Плаваюче сердечко з модалкою підтримки. Смуга Dityam+ колись жила тут же,
+   потім окремим блоком PlusSection; з 27.09.2026 її на сторінках немає зовсім
+   (сайт веде в канал, Dityam+ — лише шапка, /plus і /dedlainy). */
 export default function SupportPopup() {
   const [isOpen, setIsOpen] = useState(false);
 

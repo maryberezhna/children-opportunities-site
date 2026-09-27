@@ -1,8 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import { TELEGRAM_URL } from '@/lib/social';
-import { PLUS_WAITLIST_URL } from '@/lib/plus';
+import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { trackConversion, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
 
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
@@ -10,10 +9,6 @@ export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 // localStorage: користувач долучився до каналу — не показуємо більше.
 // Той самий прапорець читає TelegramCard у списках.
 export const JOINED_KEY = 'dityam_subscribed';
-
-// localStorage: став у список очікування Dityam+. Окремий прапорець, бо це
-// інша дія, і TelegramCard у списках його не читає.
-export const PLUS_KEY = 'dityam_plus_waitlist';
 
 // localStorage: закрив хрестиком — не показуємо 30 днів. Досі памʼятали лише
 // сесію, тож наступного дня людина, яка сказала «ні», бачила підказку знову
@@ -73,47 +68,30 @@ const VALUE_FALLBACK_MS = 12000;
 // Пауза після повернення у вкладку: даємо людині побачити сторінку.
 const VALUE_SETTLE_MS = 800;
 
-// Заголовок підказки. Далі — два рівноцінні шляхи лишитись на звʼязку
-// (Марія, 22.09.2026: «розділи на 2 частини… зліва телеграм канал і справа
-// waitlist Dityam+»). До того підказка пропонувала лише канал, а список
-// очікування Dityam+ за два тижні зібрав 7 кліків на весь сайт.
-// Мову беремо зі шляху, як у нижній панелі (StickyBar): підказка стоїть і на
-// англійських сторінках, а нести lang через чотири компоненти нема потреби.
-// До 23.09.2026 англійські міські сторінки показували цей текст українською.
+// Одна дія — канал. З 22.09.2026 підказка пропонувала два рівні шляхи: канал
+// і список Dityam+. За 20–27.09 вона показалась 636 разів і привела одну
+// людину в канал і нуль у Dityam+; до того, з одним шляхом, — 64 долучення на
+// 1 896 показів. 27.09.2026 Марія обрала «сходинку»: сайт веде в канал, а
+// Dityam+ продає сам канал. Dityam+ на сайті лишився в шапці, на /plus і на
+// /dedlainy.
+//
+// Текст — спільний для всіх закликів до каналу (lib/social.js); заголовок
+// «Знайшли потрібне?» — лише для моменту, коли людина щойно пішла до
+// організатора. Мову беремо зі шляху, як у нижній панелі (StickyBar).
 const COPY = {
   uk: {
-    default: {
-      title: 'Давайте бути на звʼязку',
-      text: 'Оберіть, як зручніше',
-    },
-    // Людина щойно перейшла до організатора: говоримо не «підпишіться», а про
-    // те, що таких знахідок буде більше й вони швидко зникають.
-    value: {
-      title: 'Знайшли потрібне?',
-      text: 'Щодня зʼявляються нові — не пропустіть',
-    },
-    channel: { title: 'Telegram-канал', text: 'Нові можливості щодня, безкоштовно', cta: 'Долучитися' },
-    plus: { title: 'Dityam+', text: 'Добірка під вашу дитину — скоро', cta: 'Стати в список' },
-    region: (c) => `${c.title}. ${c.text}: Telegram-канал або список Dityam+.`,
-    label: 'Лишитись на звʼязку',
+    value: 'Знайшли потрібне?',
+    label: 'Долучитись до Telegram-каналу',
+    cta: 'Долучитися',
     close: 'Закрити',
-    already: 'Ви вже з нами — і в каналі, і в списку Dityam+ 🧡',
+    already: 'Ви вже в нашому Telegram-каналі 🧡',
   },
   en: {
-    default: {
-      title: 'Let’s keep in touch',
-      text: 'Pick what suits you',
-    },
-    value: {
-      title: 'Found something?',
-      text: 'New ones appear daily — don’t miss them',
-    },
-    channel: { title: 'Telegram channel', text: 'New opportunities daily, free', cta: 'Join' },
-    plus: { title: 'Dityam+', text: 'A shortlist for your child — soon', cta: 'Join the list' },
-    region: (c) => `${c.title}. ${c.text}: Telegram channel or the Dityam+ list.`,
-    label: 'Keep in touch',
+    value: 'Found something?',
+    label: 'Join the Telegram channel',
+    cta: 'Join',
     close: 'Close',
-    already: 'You are already with us — in the channel and on the Dityam+ list 🧡',
+    already: 'You are already in our Telegram channel 🧡',
   },
 };
 
@@ -151,7 +129,9 @@ const writeSession = (key, value) => {
 
 export default function SubscribePopup() {
   const pathname = usePathname() || '/';
-  const t = COPY[pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'uk'];
+  const lang = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'uk';
+  const t = COPY[lang];
+  const channel = CHANNEL_CTA[lang];
   const [isOpen, setIsOpen] = useState(false);
   const [variant, setVariant] = useState('default');
 
@@ -164,7 +144,7 @@ export default function SubscribePopup() {
 
   // Долучився або закрив хрестиком — у цій сесії підказка більше не потрібна.
   const isSuppressed = useCallback(() => (
-    (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY))
+    readFlag('localStorage', JOINED_KEY)
     || readFlag('sessionStorage', SESSION_CLOSED_KEY)
     || dismissedRecently()
   ), []);
@@ -175,7 +155,7 @@ export default function SubscribePopup() {
   const canShow = useCallback(({ force = false, ignoreCooldown = false } = {}) => {
     if (typeof window === 'undefined') return false;
     if (openRef.current) return false;
-    if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) return false;
+    if (readFlag('localStorage', JOINED_KEY)) return false;
     // Натиснули «Підписатись» самі — показуємо, навіть якщо колись закрили.
     if (force) return true;
     if (readFlag('sessionStorage', SESSION_CLOSED_KEY)) return false;
@@ -243,20 +223,6 @@ export default function SubscribePopup() {
     // event_label лишаємо 'popup' (сумісність із наявними звітами), а тригер
     // передаємо окремо: тепер видно, який саме момент приносить підписників.
     trackConversion('telegram_join_click', {
-      event_label: 'popup',
-      popup_trigger: lastTrigger.current,
-    });
-    hide('joined');
-  };
-
-  // Другий шлях: список очікування Dityam+. Подію лишаємо ту саму, що й на
-  // решті сайту (plus_waitlist_tg_click), щоб звіти не розʼїхались, а місце
-  // видно в event_label.
-  const handlePlusClick = () => {
-    try {
-      localStorage.setItem(PLUS_KEY, Date.now().toString());
-    } catch (e) {}
-    trackConversion('plus_waitlist_tg_click', {
       event_label: 'popup',
       popup_trigger: lastTrigger.current,
     });
@@ -343,10 +309,10 @@ export default function SubscribePopup() {
     };
   }, [open]);
 
-  // ТРИГЕР 3: кнопки «Підписатись» у хедері / нижній панелі.
+  // ТРИГЕР 3: явний виклик подією OPEN_SUBSCRIBE_EVENT (кнопка «Підписатись»).
   useEffect(() => {
     const handleOpen = () => {
-      if (readFlag('localStorage', JOINED_KEY) && readFlag('localStorage', PLUS_KEY)) {
+      if (readFlag('localStorage', JOINED_KEY)) {
         alert(t.already);
         return;
       }
@@ -376,13 +342,13 @@ export default function SubscribePopup() {
     return () => window.removeEventListener('keydown', handleEsc);
   }, [isOpen, hide]);
 
-  const copy = t[variant] || t.default;
+  const title = variant === 'value' ? t.value : channel.title;
 
   // Область лишається в розмітці завжди: браузер озвучує зміну тексту в ній,
   // а не появу нового вузла. Порожня — мовчить.
   const liveRegion = (
     <div className="sr-only" role="status" aria-live="polite">
-      {isOpen ? t.region(copy) : ''}
+      {isOpen ? `${title}. ${channel.short}.` : ''}
     </div>
   );
 
@@ -391,59 +357,38 @@ export default function SubscribePopup() {
   return (
     <>
       {liveRegion}
-    <div
-      className="tg-callout"
-      role="complementary"
-      aria-label={t.label}
-      onMouseEnter={() => clearTimeout(hideTimer.current)}
-      onMouseLeave={startHideTimer}
-    >
-      <p className="tg-callout-text">
-        <strong>{copy.title}</strong>
-        <span>{copy.text}</span>
-      </p>
-
-      {/* Два рівноцінні шляхи, не один із «або ще можна»: зліва безкоштовний
-          канал, справа список очікування Dityam+. Порядок і сторони —
-          рішення Марії 22.09.2026. */}
-      <div className="tg-callout-options">
-        <div className="tg-callout-option">
-          <span className="tg-callout-opt-title">{t.channel.title}</span>
-          <span className="tg-callout-opt-text">{t.channel.text}</span>
-          <a
-            href={TELEGRAM_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="tg-cta tg-callout-cta"
-            onClick={handleJoinClick}
-          >
-            {t.channel.cta}
-          </a>
-        </div>
-
-        <div className="tg-callout-option">
-          <span className="tg-callout-opt-title">{t.plus.title}</span>
-          <span className="tg-callout-opt-text">{t.plus.text}</span>
-          <a
-            href={PLUS_WAITLIST_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="tg-callout-cta tg-callout-cta-plus"
-            onClick={handlePlusClick}
-          >
-            {t.plus.cta}
-          </a>
-        </div>
-      </div>
-
-      <button
-        className="tg-callout-close"
-        onClick={() => hide('closed')}
-        aria-label={t.close}
+      <div
+        className="tg-callout"
+        role="complementary"
+        aria-label={t.label}
+        onMouseEnter={() => clearTimeout(hideTimer.current)}
+        onMouseLeave={startHideTimer}
       >
-        ✕
-      </button>
-    </div>
+        {/* Іконки тут немає навмисно: підказка визирає з-під самої кнопки
+            Telegram, і другий літачок за сантиметр від першого — шум. */}
+        <p className="tg-callout-text">
+          <strong>{title}</strong>
+          <span>{channel.short}</span>
+        </p>
+
+        <a
+          href={TELEGRAM_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="tg-cta tg-callout-cta"
+          onClick={handleJoinClick}
+        >
+          {t.cta}
+        </a>
+
+        <button
+          className="tg-callout-close"
+          onClick={() => hide('closed')}
+          aria-label={t.close}
+        >
+          ✕
+        </button>
+      </div>
     </>
   );
 }

@@ -33,7 +33,6 @@ export default async function Home() {
   // загальні — інакше воно обіцяє більше, ніж каталог під ним покаже.
   const stats = audienceStats(opportunities, today);
   const teenStats = audienceStats(opportunities, today, true);
-  const total = opportunities.length;
 
   const itemListLd = {
     '@context': 'https://schema.org',
@@ -60,7 +59,6 @@ export default async function Home() {
       <main className="v2-container">
         <OpportunitiesList
           opportunities={opportunities}
-          promoProps={{ total }}
           today={today}
           modeAware
           mobileLayout

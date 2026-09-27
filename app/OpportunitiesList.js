@@ -1,7 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import PlusSection, { PlusBanner } from './PlusSection';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
 import { cityLabel, formatLabel } from '@/lib/labels';
@@ -364,7 +363,7 @@ function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }
 }
 
 export default function OpportunitiesList({
-  opportunities, presetCity, promoProps = null, lang = 'uk', today, modeAware = false,
+  opportunities, presetCity, lang = 'uk', today, modeAware = false,
   // Закріплені підбіркою картки (напр. «Лише для дітей захисників»): першими
   // в списку й з позначкою. Без цих параметрів список поводиться як раніше.
   pinnedIds = null, pinnedLabel = null,
@@ -1453,14 +1452,8 @@ export default function OpportunitiesList({
               </button>
             </div>
           ) : null}
-
-          {/* Dityam+ у колонці каталогу — лише ≥1100px; нижче лишається
-              звичайний PlusSection після каталогу. */}
-          {sidebarLayout && promoProps ? <PlusBanner {...promoProps} lang={lang} /> : null}
         </Wrap>
       </Wrap>
-
-      {promoProps ? <PlusSection {...promoProps} lang={lang} /> : null}
 
       {mobileLayout && sheet ? (
         <div className="m-sheet-root">
