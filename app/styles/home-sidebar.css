@@ -294,13 +294,8 @@
   .v2-home .v2-side-item.is-on .v2-side-n { color: #ffffff; }
   html[data-mode="teens"] .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
 
-  .v2-home .v2-side-select {
-    width: 100%;
-    height: 44px;
-    padding-left: 12px;
-    font-size: 15px;
-    font-weight: 400;
-  }
+  /* «Де» — поле з підказками (PlaceCombobox): базовий вигляд у home-v2.css
+     зроблений саме під цю панель, окремих правил не треба. */
 
   /* Кнопка стоїть першою в панелі, а не останньою: панель прокручується
      всередині, і під сімома групами фільтрів скидання лишалось за краєм —

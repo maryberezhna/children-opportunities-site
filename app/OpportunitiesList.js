@@ -12,7 +12,9 @@ import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardAfter } from '@/lib/inline-card';
+import { PLACE_KINDS, placeOption } from '@/lib/place-search';
 import TelegramCard from './TelegramCard';
+import PlaceCombobox from './PlaceCombobox';
 
 // Каталог, версія редизайну (вересень 2026, референс «Dityam — новий дизайн
 // головної»). Один компонент обслуговує головну, /en і сторінки міст/тем.
@@ -335,21 +337,7 @@ function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }
     }
     return out;
   };
-  const places = new Set();
-  passOthers('place').forEach((item) => {
-    (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
-    if (goesAbroad(item)) places.add('abroad');
-    if (teens && isOnline(item)) places.add('online');
-  });
-  const placeOpts = [];
-  if (places.has('abroad')) placeOpts.push(['abroad', t.abroad, t.abroad]);
-  // «Україна» й «Онлайн» мобільна шторка показує поруч із «За кордоном» в обох
-  // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
-  placeOpts.push(['ukraine', t.ukraine, t.ukraine]);
-  placeOpts.push(['online', t.online, t.online]);
-  [...places].filter((p) => p !== 'abroad' && p !== 'online')
-    .sort((a, b) => a.localeCompare(b, 'uk'))
-    .forEach((c) => placeOpts.push([c, c, cityLabel(c, 'en')]));
+  const place = placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t });
   return {
     total: liveItems.filter((item) => FACETS.every((k) => dp[k](item))).length,
     type: countOpts('type', TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value)),
@@ -357,9 +345,39 @@ function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }
     deadline: countOpts('deadline', DEADLINE_OPTS.map((o) => o[0])),
     need: countOpts('need', (teens ? GIVES_OPTS : NEED_OPTS).map((o) => o[0])),
     cost: countOpts('cost', COST_OPTS.map((o) => o[0])),
-    placeOpts,
-    place: countOpts('place', placeOpts.map((o) => o[0])),
+    placeOpts: place.opts,
+    place: place.counts,
   };
+}
+
+// Лише «Де»: опції [значення, підпис, підпис англійською] і скільки дасть
+// кожна при решті фільтрів. Окремо від facetCounts, бо рядку фільтрів поза
+// головною (/en) потрібні саме ці числа, а решту груп рахувати нема чого.
+function placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t }) {
+  const ctx = { teens, todayIso, searchIndex, domestic };
+  const dp = buildPredicates(s, ctx);
+  const base = liveItems.filter((item) => FACETS.every((k) => k === 'place' || dp[k](item)));
+  const places = new Set();
+  base.forEach((item) => {
+    (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+    if (goesAbroad(item)) places.add('abroad');
+    if (teens && isOnline(item)) places.add('online');
+  });
+  const opts = [];
+  if (places.has('abroad')) opts.push(['abroad', t.abroad, t.abroad]);
+  // «Україна» й «Онлайн» мобільна шторка показує поруч із «За кордоном» в обох
+  // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
+  opts.push(['ukraine', t.ukraine, t.ukraine]);
+  opts.push(['online', t.online, t.online]);
+  [...places].filter((p) => p !== 'abroad' && p !== 'online')
+    .sort((a, b) => a.localeCompare(b, 'uk'))
+    .forEach((c) => opts.push([c, c, cityLabel(c, 'en')]));
+  const counts = { all: base.length };
+  for (const [v] of opts) {
+    const p = buildPredicates({ ...s, place: [v] }, ctx).place;
+    counts[v] = base.filter(p).length;
+  }
+  return { opts, counts };
 }
 
 export default function OpportunitiesList({
@@ -578,15 +596,8 @@ export default function OpportunitiesList({
         }
       }
     }
-    const places = new Set();
-    candidates('place').forEach((item) => {
-      (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
-      if (goesAbroad(item)) places.add('abroad');
-      // «Онлайн» — місце, а не тип: у батьківському режимі його дає пігулка,
-      // у підлітковому він живе тут.
-      if (teens && isOnline(item)) places.add('online');
-    });
-    return { chips, ages, needs, costs, deadlines, places };
+    // Місця («Де») рахує placeFacet — з числами біля кожного.
+    return { chips, ages, needs, costs, deadlines };
   }, [liveItems, predicates, teens, todayIso]);
 
   const filtered = useMemo(() => {
@@ -848,15 +859,6 @@ export default function OpportunitiesList({
 
   const ageList = AGE_OPTS[teens ? 'teens' : 'parents'];
   const needList = teens ? GIVES_OPTS : NEED_OPTS;
-  const placeList = useMemo(() => {
-    const cities = [...available.places].filter((p) => p !== 'abroad' && p !== 'online')
-      .sort((a, b) => a.localeCompare(b, 'uk'));
-    const out = [];
-    if (available.places.has('abroad') || place.includes('abroad')) out.push(['abroad', t.abroad, t.abroad]);
-    if (available.places.has('online') || place.includes('online')) out.push(['online', t.online, t.online]);
-    for (const c of cities) out.push([c, c, cityLabel(c, 'en')]);
-    return out;
-  }, [available.places, place, t.abroad, t.online]);
 
   // Топ віднімається від стрічки лише з трьома картками — тоді й додаємо його
   // назад. Інакше одна-дві картки топу вже є в стрічці й рахувались двічі.
@@ -920,7 +922,9 @@ export default function OpportunitiesList({
   // він прокручений до верху, — інакше жест належить прокрутці.
   const onSheetTouchStart = (e) => {
     const body = sheetBodyRef.current;
-    if (body && body.contains(e.target) && body.scrollTop > 0) {
+    // Підказки «Де» прокручуються самі — жест у них не тягне шторку.
+    if ((body && body.contains(e.target) && body.scrollTop > 0)
+      || e.target.closest?.('.pc-pop')) {
       drag.current = null;
       return;
     }
@@ -967,6 +971,25 @@ export default function OpportunitiesList({
     [sidebarLayout, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex, domestic],
   );
 
+  // «Де» на десктопі — у бічній панелі й у рядку фільтрів (901–1099px і /en):
+  // поле з підказками, ті самі опції й числа, що в шторці, але на застосованих
+  // фільтрах. На головній числа вже пораховані для панелі; де панелі немає —
+  // рахуємо лише «Де». На сторінці міста місце — рамка сторінки, поля немає.
+  const deskPlace = useMemo(() => {
+    if (presetCity) return null;
+    const f = side
+      ? { opts: side.placeOpts, counts: side.place }
+      : placeFacet(
+        { type, age, deadline, need, cost, place, query },
+        { teens, todayIso, searchIndex, domestic, liveItems, t },
+      );
+    // Нульові опції ховаємо, як і всюди: мертва підказка гірша за відсутню.
+    const options = f.opts.filter(([v]) => f.counts[v] > 0)
+      .map(([v, uk, en]) => placeOption(v, uk, en, lang));
+    return { options, counts: f.counts };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [side, presetCity, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex, domestic, lang]);
+
   const sheetGroup = (key, title, allLabel, opts) => {
     const counts = sheet[key];
     const cur = draft[key];
@@ -1007,10 +1030,10 @@ export default function OpportunitiesList({
   };
 
   // «Де» в шторці (Марія 14.09.2026): три чипи — «За кордоном», «Україна»,
-  // «Онлайн», — а місто окремо рідним випадним списком телефона: міст
-  // десятки, і стіна чипів вимагала довго гортати. Обрані міста — знімними
-  // чипами; у пункті списку — скільки дасть.
-  const PLACE_KINDS = ['abroad', 'ukraine', 'online'];
+  // «Онлайн», — а місто окремо: міст десятки, і стіна чипів вимагала довго
+  // гортати. Обрані міста — знімними чипами. З 27.09.2026 місто не гортають
+  // у рідному списку телефона, а вписують: підказки звужуються з кожною
+  // літерою, у підказці — скільки дасть.
   const sheetPlace = () => {
     const counts = sheet.place;
     const togglePlace = (v) => setDraft({ ...draft, place: toggle(draft.place, v) });
@@ -1019,6 +1042,10 @@ export default function OpportunitiesList({
     const cityOpts = sheet.placeOpts.filter((o) => !PLACE_KINDS.includes(o[0])
       && !draft.place.includes(o[0]) && counts[o[0]] > 0);
     if (!kinds.length && !cityOpts.length && !chosenCities.length) return null;
+    // Види місця теж у підказках, але лише коли їх вписали: на порожньому
+    // полі вони б дублювали чипи над ним.
+    const sheetOptions = sheet.placeOpts.filter(([v]) => counts[v] > 0)
+      .map(([v, uk, en]) => placeOption(v, uk, en, lang));
     return (
       <div className="m-group" role="group" aria-labelledby="m-group-place" key="place">
         <h3 id="m-group-place">{t.sel.where}</h3>
@@ -1047,17 +1074,19 @@ export default function OpportunitiesList({
           ))}
         </div>
         {cityOpts.length ? (
-          <select
-            className="m-select"
-            value=""
-            aria-label={t.pickCity}
-            onChange={(e) => { if (e.target.value) togglePlace(e.target.value); }}
-          >
-            <option value="">{chosenCities.length ? t.addCity : t.pickCity}</option>
-            {cityOpts.map((o) => (
-              <option key={o[0]} value={o[0]}>{`${isEn ? o[2] : o[1]} · ${counts[o[0]]}`}</option>
-            ))}
-          </select>
+          <PlaceCombobox
+            id="m-sheet-place"
+            className="pc--sheet"
+            inline
+            kindsWhenEmpty={false}
+            options={sheetOptions}
+            counts={counts}
+            chosen={draft.place}
+            onPick={togglePlace}
+            placeholder={chosenCities.length ? t.addCity : t.pickCity}
+            ariaLabel={t.pickCity}
+            emptyText={t.nothingTitle}
+          />
         ) : null}
       </div>
     );
@@ -1157,12 +1186,13 @@ export default function OpportunitiesList({
         needList.map((o) => [o[0], optLabel(o)]))}
       {/* Вартість і «Де» в референсі немає, але на сайті вони є: без них
           платне не відсіяти (урок #152), а закордон — пріоритет контенту.
-          Міст десятки — тому «Де» селектом, а не списком. */}
+          Міст десятки — тому «Де» полем з підказками, а не списком. */}
       {sideGroup('cost', t.sel.cost, t.anyCost,
         COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-      {/* «Де» — обрані місця списком (клік знімає), селект нижче додає ще
-          одне: міст десятки, повний список був би довшим за екран. */}
-      {!presetCity && (placeList.length || place.length) ? (
+      {/* «Де» — обрані місця списком (клік знімає), поле нижче додає ще
+          одне: місто вписують, підказки звужуються (27.09.2026). Міст
+          десятки — повний список був би довшим за екран. */}
+      {deskPlace && (deskPlace.options.length || place.length) ? (
         <div className="v2-side-group" role="group" aria-labelledby="v2-side-place-title">
           <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
           {place.length ? (
@@ -1181,17 +1211,17 @@ export default function OpportunitiesList({
               ))}
             </div>
           ) : null}
-          <select
+          <PlaceCombobox
             id="v2-side-place"
-            className="v2-select v2-side-select"
-            value=""
-            onChange={(e) => { if (e.target.value) setPlace(toggle(place, e.target.value)); }}
-          >
-            <option value="">{place.length ? t.addPlace : t.pickPlace}</option>
-            {placeList.filter((o) => !place.includes(o[0])).map((o) => (
-              <option key={o[0]} value={o[0]}>{isEn ? o[2] : o[1]}</option>
-            ))}
-          </select>
+            className="pc--side"
+            labelId="v2-side-place-title"
+            options={deskPlace.options}
+            counts={deskPlace.counts}
+            chosen={place}
+            onPick={(v) => setPlace(toggle(place, v))}
+            placeholder={place.length ? t.addPlace : t.pickPlace}
+            emptyText={t.nothingTitle}
+          />
         </div>
       ) : null}
     </aside>
@@ -1301,7 +1331,8 @@ export default function OpportunitiesList({
 
         <div className="v2-selects">
           {/* Селекти на 901–1099px лишились на одне значення; мультивибір —
-              у бічній панелі й шторці. Показуємо перше обране. */}
+              у бічній панелі й шторці. Показуємо перше обране. «Де» — виняток,
+              мультивибір і тут (поле з підказками нижче). */}
           <Select
             label={teens ? t.sel.grade : t.sel.age}
             allLabel={t.all}
@@ -1330,14 +1361,34 @@ export default function OpportunitiesList({
             onChange={setCost}
             options={selectOpts(COST_OPTS, available.costs, cost).map((o) => [o[0], optLabel(o)])}
           />
-          {!presetCity ? (
-            <Select
-              label={t.sel.where}
-              allLabel={t.all}
-              value={place[0] || 'all'}
-              onChange={(v) => setPlace(v === 'all' ? [] : [v])}
-              options={placeList.map((o) => [o[0], isEn ? o[2] : o[1]])}
-            />
+          {/* «Де» — поле з підказками, як у бічній панелі й шторці, і так
+              само мультивибір: обрані місця — чипами з ✕ перед полем. */}
+          {deskPlace ? (
+            <div className="v2-place" role="group" aria-label={t.sel.where}>
+              {place.map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className="v2-chip is-on v2-place-tag"
+                  aria-label={`${t.remove}: ${placeLabel(v)}`}
+                  onClick={() => setPlace(place.filter((x) => x !== v))}
+                >
+                  {placeLabel(v)}
+                  <span className="v2-place-x" aria-hidden="true">✕</span>
+                </button>
+              ))}
+              <PlaceCombobox
+                id="v2-bar-place"
+                className="pc--bar"
+                ariaLabel={t.sel.where}
+                options={deskPlace.options}
+                counts={deskPlace.counts}
+                chosen={place}
+                onPick={(v) => setPlace(toggle(place, v))}
+                placeholder={place.length ? t.addPlace : `${t.sel.where}: ${t.all}`}
+                emptyText={t.nothingTitle}
+              />
+            </div>
           ) : null}
           <label className="v2-search">
             <span className="v2-search-icon" aria-hidden="true">🔍</span>
