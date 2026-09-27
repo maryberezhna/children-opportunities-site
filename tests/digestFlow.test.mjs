@@ -281,7 +281,7 @@ test('«Цікаво все» скидає вже обране й веде да�
 
   await handleFlowCallback(bot, db, click('flow:like:__all'));
   assert.deepEqual(db._rows.plus_children[0].likes, [], 'порожній список = без фільтра');
-  assert.match(bot.last().text, /Який формат підходить/);
+  assert.match(bot.last().text, /Який тип можливостей підходить/);
 });
 
 test('«Підходить будь-де» чистить міста й показує чесний підсумок', async () => {

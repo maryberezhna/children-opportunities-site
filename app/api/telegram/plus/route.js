@@ -199,7 +199,7 @@ function pickedBy(sub, kids) {
     const bits = [
       anyOr(labels(AGE_OPTIONS, k.age_bands), 'будь-який вік'),
       anyOr(labels(LIKE_OPTIONS, k.likes), 'будь-які теми'),
-      anyOr(labels(FORMAT_OPTIONS, k.formats), 'будь-який формат'),
+      anyOr(labels(FORMAT_OPTIONS, k.formats), 'будь-який тип'),
     ];
     const who = kids.length > 1 ? `${childLabel(k, kids.length)}: ` : '';
     return `${i === 0 && kids.length === 1 ? 'Дібрано за: ' : ''}${who}${bits.join(' · ')}`;
@@ -271,7 +271,7 @@ const PHONE_SKIP = 'Пропустити — введу при оплаті';
 async function askConsent(bot, chatId) {
   await bot.sendMessage(chatId,
     '🧡 <b>Вітаємо в Dityam+</b>\n\n'
-    + 'Далі кілька питань про дитину: вік, вподобання, формат і, за бажанням, особливі обставини. '
+    + 'Далі кілька питань про дитину: вік, вподобання, тип можливостей і, за бажанням, особливі обставини. '
     + 'Відповіді потрібні лише для того, щоб добирати можливості.\n\n'
     + `Натискаючи «Погоджуюсь», ви приймаєте <a href="${SITE_URL}/terms">Публічну оферту</a> `
     + `і даєте згоду на обробку даних згідно з <a href="${SITE_URL}/privacy">Політикою конфіденційності</a>.`,
@@ -346,7 +346,7 @@ function profileLines(sub, kids) {
     lines.push(`<b>${kids.length > 1 ? esc(childLabel(k, kids.length)) : 'Дитина'}</b>`);
     lines.push(`Вік: ${esc(labels(AGE_OPTIONS, k.age_bands))}`);
     lines.push(`Подобається: ${esc(labels(LIKE_OPTIONS, k.likes))}`);
-    lines.push(`Формат: ${esc(labels(FORMAT_OPTIONS, k.formats))}`);
+    lines.push(`Тип: ${esc(labels(FORMAT_OPTIONS, k.formats))}`);
     if ((k.needs || []).length) lines.push(`Обставини: ${esc(labels(NEED_OPTIONS, k.needs))}`);
     if (i < kids.length - 1) lines.push('');
   });
