@@ -273,10 +273,19 @@ async function askPhone(bot, supabase, sub, chatId) {
   // тут стояв глухий кут: номер приймався лише кнопкою, на текст бот мовчав,
   // а `one_time_keyboard` ховав саму кнопку після першого ж набраного слова.
   // На цьому кроці зупинилися дві людини з заповненою анкетою.
+  // Текст переписано 27.09.2026 (Марія: «коли бот просить номер телефону, це
+  // виглядає дуже дивно»). Прохання номера одразу після питань про дитину, без
+  // пояснення навіщо, насторожує — тож спершу кажемо, що це вже оплата, далі
+  // навіщо номер і що крок можна пропустити. Лише те, що правда в коді: номер
+  // іде тільки в рахунок WayForPay (clientPhone) і підставляється на сторінці
+  // оплати. Емодзі в самому тексті немає навмисно: у цьому боті вони інколи
+  // приїжджають як \uD83E… (діагностика — #503); на кнопці малюються нормально.
   await bot.sendMessage(chatId,
-    '📱 Поділіться номером телефону — на нього надійде підтвердження оплати.\n\n'
-    + 'Можна натиснути кнопку, написати номер сюди (+380…) або пропустити: '
-    + 'тоді введете його на сторінці оплати.', {
+    '<b>Останній крок — оплата</b>\n\n'
+    + 'Щоб не вводити номер телефону на сторінці оплати вручну, можете поділитися ним тут — '
+    + 'платіжний сервіс WayForPay підставить його сам. Номер потрібен лише для оплати, '
+    + 'ні для чого іншого ми його не використовуємо.\n\n'
+    + 'Це не обовʼязково: можна натиснути «Пропустити» і ввести номер уже під час оплати.', {
       keyboard: [
         [{ text: '📱 Поділитися номером', request_contact: true }],
         [{ text: PHONE_SKIP }],
@@ -493,7 +502,7 @@ export async function POST(request) {
     const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
     if (sub && sub.status !== 'active') {
       await supabase.from('digest_subscribers').update({ phone, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
-      await bot.sendMessage(chatId, '✅ Дякую!', { remove_keyboard: true });
+      await bot.sendMessage(chatId, 'Дякуємо, номер отримали.', { remove_keyboard: true });
       await sendPayOffer(bot, { ...sub, phone }, chatId, supabase);
     }
     return new Response('ok');
@@ -644,7 +653,7 @@ export async function POST(request) {
         if (typed) {
           await supabase.from('digest_subscribers')
             .update({ phone: typed, flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
-          await bot.sendMessage(chatId, `✅ Записали номер ${esc(typed)}`, { remove_keyboard: true });
+          await bot.sendMessage(chatId, `Записали номер ${esc(typed)}.`, { remove_keyboard: true });
           await sendPayOffer(bot, { ...sub, phone: typed }, chatId, supabase);
           return new Response('ok');
         }
