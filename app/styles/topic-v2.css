@@ -458,3 +458,42 @@
   .tp-main .tp-card, .tp-main .tp-related-card { transition: none; }
   .tp-main .tp-card:hover, .tp-main .tp-related-card:hover { transform: none; }
 }
+
+/* Таблиця предметів на /olimpiady. 24 рядки на чотири колонки — саме таблиця:
+   так її читають і скрінрідер, і мовна модель. На вузькому екрані не ламаємо
+   в картки, а даємо горизонтальну прокрутку самій таблиці: у ній усі колонки
+   короткі, і рядок «предмет — класи — вік» має лишатися рядком. */
+.ol-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  display: block;
+  overflow-x: auto;
+}
+.ol-table-caption {
+  text-align: left;
+  font-size: 0.9rem;
+  color: var(--v2-muted, #6b6b6b);
+  padding-bottom: 12px;
+}
+.ol-table th,
+.ol-table td {
+  text-align: left;
+  padding: 10px 14px 10px 0;
+  border-bottom: 1px solid var(--v2-line, #e8e2d8);
+  white-space: nowrap;
+}
+.ol-table thead th {
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--v2-muted, #6b6b6b);
+  font-weight: 600;
+}
+.ol-table tbody th {
+  font-weight: 600;
+  white-space: normal;
+  min-width: 15ch;
+}
+.ol-table tbody tr:last-child th,
+.ol-table tbody tr:last-child td { border-bottom: 0; }

@@ -162,7 +162,17 @@ export default async function OlympiadsGuide() {
         isPartOf: { '@id': `${SITE_URL}/#website` },
         primaryImageOfPage: { '@type': 'ImageObject', url: `${SITE_URL}${HERO.src}.jpg` },
         breadcrumb: { '@id': `${URL}#breadcrumb` },
+        citation: {
+          '@type': 'Legislation',
+          name: `Наказ МОН ${ORDER.no} від ${ORDER.date}`,
+          legislationIdentifier: ORDER.no,
+          url: ORDER.url,
+          description: ORDER.title,
+        },
       },
+      // Предмет несе класи, вік і державний етап прямо в даних. Без цього
+      // асистент, якого спитали «з якого класу олімпіада з фізики», мав би
+      // здогадуватись із тексту сторінки — а тут відповідь однозначна.
       {
         '@type': 'ItemList',
         '@id': `${URL}#subjects`,
@@ -170,9 +180,46 @@ export default async function OlympiadsGuide() {
         numberOfItems: SUBJECTS.length,
         itemListOrder: 'https://schema.org/ItemListOrderAscending',
         itemListElement: SUBJECTS.map((s, i) => ({
-          '@type': 'ListItem', position: i + 1, name: s.name,
+          '@type': 'ListItem',
+          position: i + 1,
+          name: s.name,
+          item: {
+            '@type': 'EducationalOccupationalProgram',
+            name: `Всеукраїнська олімпіада з предмета «${s.name}»`,
+            educationalProgramMode: 'full-time',
+            typicalAgeRange: `${s.from}-${s.to}`,
+            educationalLevel: `${s.grades} класи`,
+            offers: { '@type': 'Offer', price: 0, priceCurrency: 'UAH', availability: 'https://schema.org/InStock' },
+            provider: {
+              '@type': 'GovernmentOrganization',
+              name: 'Міністерство освіти і науки України',
+              url: 'https://mon.gov.ua',
+            },
+            description: s.third
+              ? 'Проводиться на всіх трьох етапах, включно з державним.'
+              : 'Проводиться лише на І та ІІ етапах — державного етапу з цього предмета немає.',
+          },
         })),
       },
+      // Етапи окремо: «коли І етап» — найчастіше питання, і відповідь на нього
+      // має бути в даних, а не лише в реченні.
+      ...STAGES.map((st, i) => ({
+        '@type': 'Event',
+        '@id': `${URL}#stage-${i + 1}`,
+        name: `${st.n} Всеукраїнських учнівських олімпіад 2026/2027`,
+        description: `${st.who}. ${st.note}`,
+        startDate: st.startDate,
+        endDate: st.endDate,
+        eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        eventStatus: 'https://schema.org/EventScheduled',
+        location: { '@type': 'Country', name: 'Україна' },
+        isAccessibleForFree: true,
+        organizer: {
+          '@type': 'GovernmentOrganization',
+          name: 'Міністерство освіти і науки України',
+          url: 'https://mon.gov.ua',
+        },
+      })),
       {
         '@type': 'BreadcrumbList',
         '@id': `${URL}#breadcrumb`,
@@ -264,18 +311,32 @@ export default async function OlympiadsGuide() {
               Перелік і класи — за {ext(ORDER.url, `наказом МОН ${ORDER.no} від ${ORDER.date}`)}. Вік поруч
               порахований із класів, щоб було зрозуміло батькам; орієнтуватись варто саме на клас.
             </p>
-            <ul className="er-facts">
-              {SUBJECTS.map((s) => (
-                <li key={s.name} className="er-fact">
-                  <span className="er-fact-label">{s.grades} класи</span>
-                  <span className="er-fact-value">{s.name}</span>
-                  <span className="er-fact-note">
-                    орієнтовно {s.from}–{s.to} років
-                    {s.third ? '' : ' · без державного етапу'}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {/* Саме таблиця, а не список: 24 рядки на чотири колонки читають і
+                скрінрідер, і мовна модель — зі списку зі спанів звʼязок
+                «предмет ↔ клас» доводиться відновлювати здогадом. */}
+            <table className="ol-table">
+              <caption className="ol-table-caption">
+                Предмети Всеукраїнських учнівських олімпіад 2026/2027, класи участі та вік
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Предмет</th>
+                  <th scope="col">Класи</th>
+                  <th scope="col">Вік</th>
+                  <th scope="col">Державний етап</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SUBJECTS.map((s) => (
+                  <tr key={s.name}>
+                    <th scope="row">{s.name}</th>
+                    <td>{s.grades}</td>
+                    <td>{s.from}–{s.to} років</td>
+                    <td>{s.third ? 'так' : 'немає'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
 
