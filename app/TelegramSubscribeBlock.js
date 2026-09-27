@@ -1,5 +1,5 @@
 'use client';
-import { trackConversion } from '@/lib/track';
+import { trackConversion, trackSubscribeClick } from '@/lib/track';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 
 /**
@@ -15,11 +15,19 @@ const ARIA = {
   en: 'Dityam.com.ua Telegram channel',
 };
 
+// place → placement у subscribe_click: назви в одному ряду з 'popup',
+// 'hub_inline' і 'catalog_inline'.
+const PLACEMENT = {
+  detail_page: 'opportunity_block',
+};
+
 export default function TelegramSubscribeBlock({ place = 'detail_page', lang = 'uk' }) {
   // Слова — спільні для всіх закликів до каналу (lib/social.js).
   const t = { ...(CHANNEL_CTA[lang] || CHANNEL_CTA.uk), aria: ARIA[lang] || ARIA.uk };
   const handleClick = () => {
     trackConversion('telegram_join_click', { event_label: place });
+    // Одна подія на всі входи «підписатись із сайту» (lib/track.js).
+    trackSubscribeClick({ target: 'channel', placement: PLACEMENT[place] || place });
   };
 
   return (
