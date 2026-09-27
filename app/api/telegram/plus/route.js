@@ -10,7 +10,7 @@ import {
   saveCustomCity, FLOW_FREQ, freqOf, toggleReminders, remindersLabel, remindersToast,
 } from '@/lib/digestFlow';
 import {
-  payStartUrl, wayforpayConfigured, removeRecurring, PRICE, PRICE_YEAR,
+  payStartUrl, wayforpayConfigured, removeRecurring, PRICE, PRICE_HALF,
 } from '@/lib/wayforpay';
 import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
@@ -41,7 +41,7 @@ const SITE_URL = process.env.SITE_URL || 'https://dityam.com.ua';
 
 export function GET() {
   // Діагностика: яку ціну/налаштування реально бачить жива функція на Vercel.
-  return Response.json({ ok: true, price: PRICE, priceYear: PRICE_YEAR, wayforpay: wayforpayConfigured });
+  return Response.json({ ok: true, price: PRICE, priceHalf: PRICE_HALF, wayforpay: wayforpayConfigured });
 }
 
 // Скасування підписки у WayForPay. hadOrder=false — платежу не було
@@ -99,7 +99,8 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
     const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
     const firstMonth = promoOk ? Number(promo.first_amount) : null;
-    const firstYear = promoOk && promo.yearly_amount != null ? Number(promo.yearly_amount) : null;
+    // Річної підписки більше немає — пів року замість неї (Марія, 24.09.2026).
+    const firstHalf = promoOk && promo.halfyear_amount != null ? Number(promo.halfyear_amount) : null;
     // Кнопка веде на наш перехід, а не на готовий рахунок WayForPay: рахунок
     // живе годину, а повідомлення лишається в чаті назавжди — 24.09.2026
     // кнопки в боті вже були мертві, бо створились годиною раніше.
@@ -111,9 +112,9 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
         url: payStartUrl(sub.unsub_token, 'monthly'),
       }],
       [{
-        text: firstYear != null ? `Перший рік за ${fmtPrice(firstYear)} грн замість ${PRICE_YEAR}`
-          : `Рік за ${PRICE_YEAR} грн — вигідніше`,
-        url: payStartUrl(sub.unsub_token, 'yearly'),
+        text: firstHalf != null ? `Перші пів року за ${fmtPrice(firstHalf)} грн замість ${PRICE_HALF}`
+          : `Пів року за ${PRICE_HALF} грн — вигідніше`,
+        url: payStartUrl(sub.unsub_token, 'halfyear'),
       }],
     ];
     // Кнопку «У мене є промокод» показуємо, поки коду немає: інакше людина
@@ -131,7 +132,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     const offer = promoOk
       ? `${text}\n\n<b>Промокод ${esc(String(sub.promo_code).toUpperCase())} застосовано</b> — `
         + `перший місяць за ${fmtPrice(firstMonth)} грн замість ${PRICE}`
-        + (firstYear != null ? `, перший рік за ${fmtPrice(firstYear)} замість ${PRICE_YEAR}` : '')
+        + (firstHalf != null ? `, перші пів року за ${fmtPrice(firstHalf)} замість ${PRICE_HALF}` : '')
         + '. Далі — звичайна ціна.'
       : `${text}${promoHint}`;
     if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
@@ -375,7 +376,7 @@ function subDetails(sub, kids) {
 const fmtPrice = (n) => Number(n).toLocaleString('uk-UA');
 const WAITLIST_WELCOME = () => `Ви в списку перших! 🧡
 
-Dityam+ — платна підписка: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_YEAR)} грн/рік. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
+Dityam+ — платна підписка: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
 
 Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`;
 

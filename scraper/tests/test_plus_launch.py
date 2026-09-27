@@ -55,7 +55,7 @@ class WhichBot(unittest.TestCase):
         for text in (self.pl.telegram_text(), self.pl.wrong_chat_text()):
             self.assertIn(str(self.pl.PROMO), text)
             self.assertIn(f"{self.pl.PROMO_PRICE} грн замість {self.pl.PRICE}", text)
-            self.assertIn(str(self.pl.PROMO_PRICE_YEAR), text)
+            self.assertIn(str(self.pl.PROMO_PRICE_HALF), text)
 
 
 if __name__ == "__main__":

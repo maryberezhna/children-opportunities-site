@@ -8,7 +8,9 @@ const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const ADMIN = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const PRICE = Number(process.env.WAYFORPAY_AMOUNT || 119);
-const PRICE_YEAR = Number(process.env.WAYFORPAY_AMOUNT_YEAR || 999);
+// Пів року замість року з 27.09.2026; річні — лише старі рядки (їх 0).
+const PRICE_HALF = Number(process.env.WAYFORPAY_AMOUNT_HALF || 549);
+const PRICE_YEAR_OLD = 999;
 const DRY = process.argv.includes('--dry-run');
 
 if (!SUPABASE_URL || !KEY) { console.error('Missing Supabase env'); process.exit(1); }
@@ -37,12 +39,13 @@ const filled = cnt((r) => withKids.has(r.id) || (r.age_bands || []).length > 0);
 const multiKid = [...withKids].filter((id) => kids.filter((k) => k.subscriber_id === id).length > 1).length;
 const new7 = cnt((r) => now - new Date(r.created_at).getTime() <= 7 * DAY);
 const newActive7 = cnt((r) => r.status === 'active' && now - new Date(r.created_at).getTime() <= 7 * DAY);
-// Річні підписники платять PRICE_YEAR раз на рік — рахувати їх по місячній
+// Піврічні платять PRICE_HALF раз на пів року — рахувати їх по місячній
 // ціні означає завищувати MRR. Приводимо до місячного еквівалента.
 const activeRows = rows.filter((r) => r.status === 'active');
+const half = activeRows.filter((r) => r.billing_period === 'halfyear').length;
 const yearly = activeRows.filter((r) => r.billing_period === 'yearly').length;
-const monthly = activeRows.length - yearly;
-const mrr = Math.round(monthly * PRICE + yearly * (PRICE_YEAR / 12));
+const monthly = activeRows.length - half - yearly;
+const mrr = Math.round(monthly * PRICE + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
 
 const msg = [
   '📊 <b>Dityam+ — статистика за тиждень</b>',
@@ -57,7 +60,7 @@ const msg = [
   `📋 Заповнили профіль: <b>${filled}</b>`,
   `👧 Дітей у профілях: <b>${kids.length}</b> (родин із кількома дітьми: <b>${multiKid}</b>)`,
   '',
-  `💰 Орієнтовний дохід/міс: <b>~${mrr} грн</b> <i>(${monthly} міс × ${PRICE} + ${yearly} річних)</i>`,
+  `💰 Орієнтовний дохід/міс: <b>~${mrr} грн</b> <i>(${monthly} міс × ${PRICE} + ${half} за пів року${yearly ? ` + ${yearly} річних` : ''})</i>`,
 ].join('\n');
 
 if (DRY || !TOKEN || !ADMIN) {

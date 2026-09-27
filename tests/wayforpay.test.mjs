@@ -8,18 +8,18 @@ import assert from 'node:assert/strict';
 process.env.WAYFORPAY_MERCHANT_ACCOUNT = 'test_merchant';
 process.env.WAYFORPAY_SECRET_KEY = 'test_secret';
 delete process.env.WAYFORPAY_AMOUNT;
-delete process.env.WAYFORPAY_AMOUNT_YEAR;
+delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, isOurOrderRef, PRICE, PRICE_YEAR } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 14, 12, 0, 0);   // 14.09.2026
 
-test('ціни за замовчуванням — 119 / 999', () => {
+test('ціни за замовчуванням — 119 / 549 за пів року', () => {
   assert.equal(PRICE, 119);
-  assert.equal(PRICE_YEAR, 999);
+  assert.equal(PRICE_HALF, 549);
 });
 
 test('звичайна місячна: перший платіж і регулярні — 119', () => {
@@ -40,12 +40,21 @@ test('знижений перший платіж: 1 грн зараз, регу�
   assert.equal(b.dateNext, '14.10.2026');
 });
 
-test('річна без промокоду — повна ціна', () => {
+// Пів року замість року (Марія, 24.09.2026). Режим WayForPay `halfyearly` —
+// «раз на півроку» (https://wiki.wayforpay.com/view/852102).
+test('пів року без промокоду — повна ціна, списання раз на пів року', () => {
+  const b = invoiceBody(sub, 'halfyear', { now });
+  assert.equal(b.amount, 549);
+  assert.equal(b.regularAmount, 549);
+  assert.equal(b.regularMode, 'halfyearly');
+  assert.equal(b.dateNext, '14.03.2027');
+  assert.deepEqual(b.productName, ['Підписка Dityam+ (пів року)']);
+});
+
+test('річну більше не створюємо: «yearly» — це місяць', () => {
   const b = invoiceBody(sub, 'yearly', { now });
-  assert.equal(b.amount, 999);
-  assert.equal(b.regularAmount, 999);
-  assert.equal(b.regularMode, 'yearly');
-  assert.equal(b.dateNext, '14.09.2027');
+  assert.equal(b.regularMode, 'monthly');
+  assert.equal(b.regularAmount, 119);
 });
 
 test('підпис рахується від суми першого платежу', () => {
@@ -60,18 +69,24 @@ test('orderReference повертає токен підписника', () => {
   assert.equal(tokenFromOrderRef(b.orderReference), sub.unsub_token);
 });
 
-// З промокодом перший річний платіж — 799, менше за 999. Колбек визначав період
-// за сумою й записував таку підписку «місячною» (22.09.2026).
-test('річна підписка з промокодом — річна, а не місячна', () => {
-  const y = invoiceBody(sub, 'yearly', { firstAmount: 799, now });
+// З промокодом перший довгий платіж менший за звичайну ціну (439 < 549).
+// Колбек визначав період за сумою й записував таку підписку «місячною»
+// (22.09.2026, тоді ще з річною) — тож період живе в номері замовлення.
+test('пів року з промокодом — пів року, а не місяць', () => {
+  const h = invoiceBody(sub, 'halfyear', { firstAmount: 439, now });
   const m = invoiceBody(sub, 'monthly', { firstAmount: 1, now });
-  assert.equal(tokenFromOrderRef(y.orderReference), sub.unsub_token);
-  assert.equal(periodFromOrderRef(y.orderReference, y.amount), 'yearly');
+  assert.equal(tokenFromOrderRef(h.orderReference), sub.unsub_token);
+  assert.match(h.orderReference, /-h$/);
+  assert.equal(periodFromOrderRef(h.orderReference, h.amount), 'halfyear');
   assert.equal(periodFromOrderRef(m.orderReference, m.amount), 'monthly');
 });
 
-test('старі номери замовлень без позначки — за сумою, як раніше', () => {
-  assert.equal(periodFromOrderRef('abc123def456-1789900000000', 999), 'yearly');
+test('старі річні номери замовлень (`-y`) досі впізнаються як річні', () => {
+  assert.equal(periodFromOrderRef('abc123def456-1789900000000-y', 799), 'yearly');
+});
+
+test('старі номери замовлень без позначки — за сумою', () => {
+  assert.equal(periodFromOrderRef('abc123def456-1789900000000', 549), 'halfyear');
   assert.equal(periodFromOrderRef('abc123def456-1789900000000', 119), 'monthly');
 });
 
@@ -126,7 +141,8 @@ test('payStartUrl веде на наш перехід, а не на WayForPay', 
 });
 
 test('payStartUrl: план тільки з двох відомих, сміття — місяць', () => {
-  assert.match(payStartUrl('t', 'yearly'), /plan=yearly$/);
+  assert.match(payStartUrl('t', 'halfyear'), /plan=halfyear$/);
+  assert.match(payStartUrl('t', 'yearly'), /plan=monthly$/);
   assert.match(payStartUrl('t', 'хтозна'), /plan=monthly$/);
   assert.match(payStartUrl('t'), /plan=monthly$/);
 });
@@ -178,6 +194,7 @@ test('ще не підписник — пауза як і раніше', () => {
 test('isOurOrderRef впізнає лише наші номери', () => {
   assert.equal(isOurOrderRef(LIVE), true);
   assert.equal(isOurOrderRef('638f707a19d7d2299df51ce5f2d66a9c-1790250913830'), true);
+  assert.equal(isOurOrderRef('638f707a19d7d2299df51ce5f2d66a9c-1790250913830-h'), true);
   assert.equal(isOurOrderRef('WFP-REGULAR-55512'), false);
   assert.equal(isOurOrderRef(''), false);
   assert.equal(isOurOrderRef(null), false);

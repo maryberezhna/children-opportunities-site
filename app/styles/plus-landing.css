@@ -194,6 +194,39 @@
   color: var(--v2-ink-2);
 }
 
+/* ── Що таке Dityam+ ──────────────────────────────────────────────────── */
+.pl-sec.pl-what-sec { padding: 64px 0; }
+.pl-what {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 48px;
+  align-items: start;
+}
+.pl-what .pl-h2 { margin-bottom: 16px; }
+.pl-what-text {
+  margin: 0;
+  max-width: 46ch;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+}
+.pl-what-facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+}
+.pl-what-fact { padding: 18px 0; border-top: 1px solid var(--v2-line); }
+.pl-what-fact dt {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+.pl-what-fact dd { margin: 0; font-size: 1.0625rem; font-weight: 600; line-height: 1.45; color: var(--v2-ink); }
+
 /* ── Контраст ─────────────────────────────────────────────────────────── */
 .pl-contrast {
   margin-top: 32px;
@@ -875,6 +908,8 @@
   .pl-stair:nth-child(4) { margin-left: 22%; }
   .pl-contrast { grid-template-columns: minmax(0, 1fr); }
   .pl-sec { padding: 64px 0; }
+  .pl-what { grid-template-columns: minmax(0, 1fr); gap: 28px; }
+  .pl-sec.pl-what-sec { padding: 48px 0; }
 }
 
 @media (max-width: 560px) {
@@ -882,5 +917,6 @@
   .pl-lead { font-size: 1.0625rem; }
   .pl-prices, .pl-included { grid-template-columns: minmax(0, 1fr); }
   .pl-contrast-card, .pl-path { padding: 22px 20px; }
+  .pl-what-facts { grid-template-columns: minmax(0, 1fr); }
   .pl-form-card { padding: 4px 18px 20px; }
 }
