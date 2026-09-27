@@ -92,7 +92,13 @@ for (const t of targets) {
       chat_id: t.telegram_chat_id, text: MESSAGE, disable_web_page_preview: true,
     }),
   }).catch((e) => ({ ok: false, _err: e.message }));
-  const body = res.ok ? await res.json().catch(() => ({})) : {};
+  // Тіло читаємо ЗАВЖДИ, а не лише при res.ok: саме у відповіді з кодом 400
+  // чи 403 Telegram і пише, що не так («chat not found», «bot was blocked»,
+  // «Unauthorized»). Перший прогін 27.09.2026 упав на обох, і в логах було
+  // тільки «no ok» — тобто рівно нічого.
+  const body = typeof res.json === 'function'
+    ? await res.json().catch(() => ({}))
+    : {};
   if (body.ok) {
     // Позначку ставимо ТІЛЬКИ після того, як Telegram прийняв: інакше людина
     // лишилась би і без листа, і поза наступною вибіркою.
@@ -103,7 +109,8 @@ for (const t of targets) {
   } else {
     // Найчастіша причина — людина заблокувала бота. Це не помилка запуску:
     // решту листів треба дописати.
-    console.log(`⚠️ ${t.telegram_handle || t.telegram_chat_id}: ${body.description || res._err || 'no ok'}`);
+    console.log(`⚠️ ${t.telegram_handle || t.telegram_chat_id}: `
+      + `${res.status || '—'} ${body.description || res._err || 'без пояснення'}`);
   }
 }
 console.log(`Надіслано: ${sent} з ${targets.length}`);
