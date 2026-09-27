@@ -6,16 +6,18 @@ Dityam+ іде лише підтверджене кнопкою в адмін-б
 Що робить один запуск:
   1. Бере кілька програм X (спершу ті, що родини позначили «✍️ подаюсь»,
      далі — конкурси, олімпіади, табори, обміни… яких модель ще не дивилась).
-  2. Для кожної збирає з бази до 40 кандидатів того ж напряму й віку і питає
+  2. Для кожної збирає з бази до 25 кандидатів того ж напряму й віку і питає
      модель, які 0–2 з них — справжня наступна сходинка. Лише номери зі
      списку: вигадати програму модель не може, а «нічого» — законна відповідь.
   3. Пропозиції лягають в opportunity_ladder зі status='proposed'.
   4. Надсилає в адмін-бот картки «Після X → Y? ✅ / ❌» — не більше MAX_CARDS
      за раз і не більше MAX_PENDING без відповіді (модерація ~10 хв на день).
+     Коли без відповіді вже MAX_PENDING пропозицій, модель питаємо лише про
+     програми, позначені родинами: витрати йдуть у темпі відповідей.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY,
      TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_CHAT_ID (картки), SITE_URL (опц.),
-     LADDER_MODEL (опц., за замовчуванням claude-opus-5).
+     LADDER_MODEL (опц., за замовчуванням claude-sonnet-5).
 
 Прапорці:
   --limit N       скільки програм X розглянути (деф. 5)
@@ -40,12 +42,17 @@ import personal_digest as pd
 logger = logging.getLogger("ladder_propose")
 
 SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
-MODEL = os.environ.get("LADDER_MODEL") or "claude-opus-5"
+# Sonnet 5, а не Opus 5 — рішення Марії 27.09.2026 («можна якось дешевше»):
+# Opus коштував ≈ $0,04 за програму, $6 на місяць.
+MODEL = os.environ.get("LADDER_MODEL") or "claude-sonnet-5"
 # $ за мільйон токенів (вхід, вихід) — лише щоб друкувати ціну запуску
 # (рішення Марії 21.09.2026: спершу цифри витрат на AI).
 PRICES = {"claude-opus-5": (5.0, 25.0), "claude-sonnet-5": (2.0, 10.0),
           "claude-haiku-4-5": (1.0, 5.0)}
-MAX_CANDIDATES = 40
+# Ціну запуску майже цілком складає вхід — картки кандидатів. 25 коротших
+# замість 40 з довгим описом (27.09.2026: ≈ 7 тис. токенів на програму).
+MAX_CANDIDATES = 25
+SUMMARY_CHARS = 160
 MAX_PENDING = int(os.environ.get("LADDER_MAX_PENDING", "10"))
 RECHECK_DAYS = 60   # за стільки зʼявляються нові записи — варто глянути знову
 
@@ -128,10 +135,12 @@ def growth(o: dict) -> bool:
     return o.get("opportunity_type") in GROWTH_TYPES and not o.get("timing_assumed")
 
 
-def pick_sources(opps: list, marked_ids: set, checked: dict, limit: int, now=None) -> list:
+def pick_sources(opps: list, marked_ids: set, checked: dict, limit: int, now=None,
+                 marked_only: bool = False) -> list:
     """Програми X для цього запуску. Спершу позначені родинами — там сходинка
     потрібна вже зараз; далі — новіші записи, яких модель ще не дивилась або
-    дивилась понад RECHECK_DAYS тому."""
+    дивилась понад RECHECK_DAYS тому. marked_only — черга на рішення повна,
+    тож лише позначені."""
     now = now or datetime.now(timezone.utc)
     fresh_before = now - timedelta(days=RECHECK_DAYS)
 
@@ -140,6 +149,8 @@ def pick_sources(opps: list, marked_ids: set, checked: dict, limit: int, now=Non
         return at is None or at < fresh_before
 
     first = [o for o in opps if o["id"] in marked_ids and due(o)]
+    if marked_only:
+        return first[:limit]
     rest = sorted((o for o in opps if o["id"] not in marked_ids and growth(o) and due(o)),
                   key=lambda o: o.get("created_at") or "", reverse=True)
     return (first + rest)[:limit]
@@ -167,13 +178,13 @@ def candidates_for(x: dict, opps: list, limit: int = MAX_CANDIDATES) -> list:
     return [t[3] for t in scored[:limit]]
 
 
-def _card(o: dict) -> str:
+def _card(o: dict, summary_chars: int = SUMMARY_CHARS) -> str:
     where = "міжнародна" if o.get("is_international") else ", ".join((o.get("cities") or [])[:3])
     bits = [f"Назва: {o.get('title')}",
             f"Тип: {o.get('opportunity_type')} · Вік: {o.get('age_from')}–{o.get('age_to')}"
             + (f" · Де: {where}" if where else "")
             + (f" · Дедлайн: {o['deadline']}" if o.get("deadline") else ""),
-            f"Опис: {(o.get('summary') or '')[:300]}"]
+            f"Опис: {(o.get('summary') or '')[:summary_chars]}"]
     return "\n".join(bits)
 
 
@@ -204,12 +215,9 @@ def ask_model(llm, x: dict, cands: list, usage: dict) -> list:
         system=SYSTEM,
         tools=[TOOL],
         tool_choice={"type": "tool", "name": "propose_next"},
+        # Саму програму X — з довшим описом: від неї залежить, що таке «далі».
         messages=[{"role": "user", "content":
-                   f"ПРОГРАМА X:\n{_card(x)}\n\nКАНДИДАТИ:\n\n{listing}"}],
-        # Відмова класифікатора не має залишати програму без відповіді назавжди:
-        # сервер сам перезапустить запит на моделі, що погодиться.
-        extra_headers={"anthropic-beta": "server-side-fallback-2026-07-01"},
-        extra_body={"fallbacks": "default"},
+                   f"ПРОГРАМА X:\n{_card(x, 300)}\n\nКАНДИДАТИ:\n\n{listing}"}],
     )
     u = getattr(resp, "usage", None)
     usage["in"] += getattr(u, "input_tokens", 0) or 0
@@ -318,9 +326,19 @@ def main() -> int:
         existing = {(str(r["from_id"]), str(r["to_id"])) for r in (
             client.table("opportunity_ladder").select("from_id, to_id").execute().data or [])}
 
+        # Без відповіді вже MAX_PENDING пропозицій — нові пари тижнями чекали б
+        # у черзі, а гроші за них пішли б сьогодні. Тоді питаємо модель лише
+        # про програми, які позначили родини: там сходинку чекає людина.
+        backlog = (client.table("opportunity_ladder").select("id", count="exact")
+                   .eq("status", "proposed").execute().count or 0)
+        full = backlog >= MAX_PENDING
+        if full:
+            logger.info("Без відповіді вже %d пропозицій — модель питаю лише про позначені родинами",
+                        backlog)
+
         usage = {"in": 0, "out": 0}
         proposed = 0
-        for x in pick_sources(opps, marked, checked, args.limit):
+        for x in pick_sources(opps, marked, checked, args.limit, marked_only=full):
             cands = [c for c in candidates_for(x, opps)
                      if (str(x["id"]), str(c["id"])) not in existing]
             picks = ask_model(llm, x, cands, usage) if cands else []
