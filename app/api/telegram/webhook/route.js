@@ -285,7 +285,7 @@ async function handlePlusWaitlist(msg) {
   await sendMessage(msg.chat.id,
     PLUS_SALES_OPEN
       ? '🧡 Dityam+ уже працює — оформлення в боті @DityamPlusBot 👇'
-      : '🧡 Список перших Dityam+ — у боті @DityamPlusBot. Один тап 👇',
+      : '🧡 Список перших Dityam+ у боті @DityamPlusBot. Один тап 👇',
     { inline_keyboard: [[{
       text: PLUS_SALES_OPEN ? '🚀 Оформити Dityam+' : '🚀 Хочу першим',
       url: plusBotUrl('waitlist_post'),
