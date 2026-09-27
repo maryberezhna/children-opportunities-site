@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
-import { trackConversion, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
+import { trackConversion, trackSubscribeClick, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
 
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 
@@ -226,6 +226,9 @@ export default function SubscribePopup() {
       event_label: 'popup',
       popup_trigger: lastTrigger.current,
     });
+    // Одна подія на всі входи «підписатись із сайту» (lib/track.js). Який саме
+    // момент спрацював, і далі видно з popup_trigger у telegram_join_click.
+    trackSubscribeClick({ target: 'channel', placement: 'popup' });
     hide('joined');
   };
 

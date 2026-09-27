@@ -6,6 +6,7 @@ import { PRICE, PRICE_HALF, describeFailure } from '@/lib/wayforpay';
 // Річну не продаємо з 27.09.2026; старі річні рядки (їх 0) рахуємо за старою ціною.
 const PRICE_YEAR_OLD = 999;
 import { reasonLabel } from '@/lib/plusOutcomes';
+import { countBySource } from '@/lib/plusSources';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -120,7 +121,7 @@ export default async function PlusAdminPage() {
 
   const [subsRes, kidsRes, waitRes, remindRes, appsRes] = await Promise.all([
     supabase.from('digest_subscribers')
-      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at, wfp_last_status, wfp_last_reason, wfp_last_reason_code')
+      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at, wfp_last_status, wfp_last_reason, wfp_last_reason_code, source')
       .order('created_at', { ascending: false }).limit(500),
     supabase.from('plus_children').select('subscriber_id'),
     supabase.from('plus_waitlist').select('id, email, telegram_username, telegram_chat_id, source, created_at')
@@ -211,6 +212,42 @@ export default async function PlusAdminPage() {
           </table>
         </div>
       )}
+
+      {/* Яке місце на сайті чи в каналі приводить підписників (27.09.2026).
+          Мітку `from_<звідки>` бот пише при першому /start (lib/plus.js), тож
+          одна людина — один рядок, за першим дотиком. */}
+      <h2 style={h2S}>Звідки прийшли</h2>
+      {subs.length === 0 ? (
+        <p style={noteS}>Ще нікого.</p>
+      ) : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr>
+                <th style={head}>Звідки</th><th style={head}>Мітка</th>
+                <th style={{ ...head, textAlign: 'right' }}>Почали</th>
+                <th style={{ ...head, textAlign: 'right' }}>Активні</th>
+              </tr>
+            </thead>
+            <tbody>
+              {countBySource(subs).map((r) => (
+                <tr key={r.source || '—'}>
+                  <td style={cell}>{r.label}</td>
+                  <td style={{ ...cell, color: C.ink2, fontFamily: 'ui-monospace, monospace', fontSize: 13 }}>{r.source || '—'}</td>
+                  <td style={{ ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{r.started}</td>
+                  <td style={{ ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums', color: r.active ? C.green : C.ink3, fontWeight: r.active ? 700 : 400 }}>{r.active}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      <p style={noteS}>
+        «Почали» — відкрили бот за посиланням (будь-який статус зараз), «Активні» — мають оплачену
+        підписку. Мітку ставлять посилання з сайту (з 27.09.2026) і пости каналу (з 25.09.2026).
+        «Без мітки» — прийшли раніше, простим /start або за промокодом; звідки промокод — у повідомленні
+        «Промокод … ввів» в адмін-чаті.
+      </p>
 
       <h2 style={h2S}>Підписники · {subs.length}</h2>
       {subs.length === 0 ? (
