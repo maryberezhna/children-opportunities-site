@@ -368,8 +368,9 @@ def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> 
     Інтервал: нові знахідки → ÷2 (частіше, до 1 дня); нічого нового → ×2
     (рідше, до 30 днів); збій інтервал не змінює (полагодиться — надолужить).
     Сезон ділить ефективний інтервал: табори навесні скрапляться втричі
-    частіше за свій базовий ритм. pin_interval — завжди щодня (соцмережі,
-    RSS: пости зникають зі стрічки, розтягувати не можна)."""
+    частіше за свій базовий ритм. pin_interval — закріплений ритм
+    crawl_interval_days: щодня для соцмереж і RSS (пости зникають зі стрічки,
+    розтягувати не можна), щотижня для сайтів діаспори."""
     from datetime import datetime, timedelta, timezone
     now_dt = datetime.now(timezone.utc)
     now = now_dt.isoformat()
@@ -397,7 +398,10 @@ def record_crawl_result(client: Client, name: str, ok: bool, new_items: int) -> 
 
         base = row.get("crawl_interval_days") or 1
         if row.get("pin_interval"):
-            interval, effective = 1, 1
+            # Закріплений ритм: інтервал не рухається ні від знахідок, ні від
+            # сезону. Соцмережі й RSS закріплені на 1 дні, сайти діаспори — на
+            # 7 (28.09.2026: оновлюються рідко). Збій — повтор завтра.
+            interval, effective = base, (base if ok else 1)
         elif not ok:
             interval, effective = base, 1  # зламане перевіряємо щодня, поки не оживе
         else:

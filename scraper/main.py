@@ -34,6 +34,7 @@ from scrapers import (
     british_council,
     cprs_kyiv,
     diaspora_schools,
+    diaspora_sites,
     diia_osvita,
     easy_gov,
     erasmus,
@@ -95,6 +96,9 @@ SCRAPERS = [
     ("Палац творчості дітей та юнацтва Дніпра (palats.dp.ua)", palats_dp, "ukrainian"),
     # Діаспора — українські родини за кордоном
     ("Освітній Всесвіт (МІОК)", diaspora_schools, "diaspora"),
+    # Сайти самих організацій діаспори (28.09.2026): кожен сайт — окреме
+    # джерело з власним рядком у sources і тижневим обходом.
+    *diaspora_sites.scrapers(),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
     # «Дитина їде за кордон» — пріоритет 1 від 03.09.2026: попит (топ-15
@@ -375,6 +379,19 @@ def process_pending(normalizer, sb_client, limit=500):
                 default_city = (source_configs.get(item.get("source_name")) or {}).get("default_city")
                 if default_city:
                     normalized["cities"] = [default_city]
+
+        # Країна з налаштувань джерела — для сайтів організацій діаспори
+        # (Дублін, Дрезден, Барселона…): сайт фізично в одній країні, а модель
+        # не завжди виводить її з адреси «Dublin 8». Без країни запис не
+        # потрапляє на сторінку «Українським дітям за кордоном». Онлайн не
+        # чіпаємо: там порожня країна — правильна відповідь.
+        if not normalized.get("countries"):
+            fmt = (normalized.get("format") or "").lower()
+            if not ("онлайн" in fmt or "online" in fmt or "дистанц" in fmt):
+                default_countries = (source_configs.get(item.get("source_name")) or {}).get(
+                    "default_countries")
+                if default_countries:
+                    normalized["countries"] = list(default_countries)
 
         saved = upsert_opportunity(sb_client, normalized)
         if saved:
