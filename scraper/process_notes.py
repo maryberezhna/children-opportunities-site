@@ -18,7 +18,9 @@
 2. просить Claude застосувати їх до полів запису, КОЖЕН окремо (лише білий
    список полів — slug/status/хеш LLM не чіпає);
 3. зберігає зміни й закриває кожен застосований коментар: resolved_at = now()
-   і resolution — одним реченням, що саме зроблено;
+   і resolution — одним реченням, що саме зроблено; виконаний частково
+   (модель назвала, чого не зробила) лишається відкритим, і в адмін-чат іде
+   «виконано не повністю»;
 4. якщо застосувати нічого (коментар — питання до людини, а не вказівка),
    рядок лишається ВІДКРИТИМ, щоб його показало ранкове зведення; ставимо
    лише attempted_at, щоб не ганяти LLM щогодини по тому самому;
@@ -46,13 +48,18 @@ SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 ADMIN_CHAT_ID = os.environ.get("TELEGRAM_ADMIN_CHAT_ID", "")
 
-# Поля, які нотатка МОЖЕ змінювати. Решта (slug, status, content_hash,
-# source_url…) — інфраструктура, LLM до неї не торкається.
+# Поля, які нотатка МОЖЕ змінювати. Решта (slug, status, content_hash…) —
+# інфраструктура, LLM до неї не торкається.
 EDITABLE = [
     "title", "summary", "details", "opportunity_type", "age_from", "age_to",
     "cost_type", "price_note", "format", "cities", "deadline", "child_needs",
     # З 17.09.2026: час можливості — не лише дедлайн (аудит, С8).
     "event_start_date", "event_end_date", "timing_kind", "apply_url",
+    # З 28.09.2026. Марія написала під записом «[форма] Візьми першоджерело»,
+    # а source_url стояв поза списком: модель поставила форму в apply_url,
+    # коментар закрився як виконаний, і джерелом лишився допис @Mozhlyvosti.
+    # Джерело перевіряє build_patch — лише сторінка, не форма й не канал.
+    "source_url",
 ]
 DATE_FIELDS = ("deadline", "event_start_date", "event_end_date")
 
@@ -65,7 +72,7 @@ FIELD_LABELS = {
     "format": "формат", "cities": "міста", "deadline": "дедлайн",
     "child_needs": "потреби дитини", "event_start_date": "початок події",
     "event_end_date": "кінець події", "timing_kind": "вид за часом",
-    "apply_url": "посилання на подачу",
+    "apply_url": "посилання на подачу", "source_url": "джерело",
 }
 
 APPLY_TOOL = {
@@ -98,7 +105,16 @@ APPLY_TOOL = {
             "timing_kind": {"type": "string", "enum": ["one_time", "periodic", "permanent"],
                             "description": "Вид за часом: разова, повторюється циклами, будь-коли."},
             "apply_url": {"type": "string", "description": "Пряме посилання на подачу заявки."},
+            "source_url": {"type": "string",
+                           "description": "Джерело («першоджерело») — сторінка з описом можливості в "
+                                          "організатора. НЕ форма подачі (її місце — apply_url), НЕ "
+                                          "Telegram, соцмережі, Google Drive чи Docs, відео."},
             "child_needs": {"type": "array", "items": {"type": "string"}},
+            # Не поле запису, а звіт: без нього частково виконаний коментар
+            # закривався як виконаний (28.09.2026, див. EDITABLE).
+            "not_done": {"type": "string",
+                         "description": "Що з коментаря ти НЕ зробила, одним реченням. Порожньо — "
+                                        "лише якщо зроблено все, про що просили."},
         },
         "additionalProperties": False,
     },
@@ -117,7 +133,15 @@ SYSTEM = """Сьогодні {today}. Ти — редактор каталогу
 
 Дати — різні речі: «до коли подати» → deadline; «коли відбувається» →
 event_start_date / event_end_date. Якщо нотатка просить прибрати дату, поверни
-для цього поля порожній рядок. Рік не вказано — найближчий майбутній."""
+для цього поля порожній рядок. Рік не вказано — найближчий майбутній.
+
+«Джерело», «першоджерело» → source_url: сторінка з описом можливості в
+організатора. Форма подачі джерелом не буває — її місце apply_url. Якщо
+просять першоджерело, а в нотатці лише форма, постав форму в apply_url і
+чесно напиши в not_done, що джерело не змінено.
+
+not_done — що з нотатки ти НЕ зробила. Порожньо лише тоді, коли зроблено все:
+за частково виконаний коментар людина має дізнатись, а не побачити «готово»."""
 
 
 def build_patch(raw: dict) -> dict:
@@ -128,6 +152,7 @@ def build_patch(raw: dict) -> dict:
     Посилання на подачу — лише справжня адреса, не чат чи соцмережа.
     """
     import re
+    from canonical import canonical_url
     from normalizer import valid_apply_url
     from timing import clean_kind
     patch = {}
@@ -149,9 +174,29 @@ def build_patch(raw: dict) -> dict:
             if url:
                 patch[key] = url
             continue
+        if key == "source_url":
+            url = valid_source_url(value)
+            if url:
+                patch[key] = url
+                patch["canonical_url"] = canonical_url(url)
+            continue
         if value not in (None, "", []):
             patch[key] = value
     return patch
+
+def valid_source_url(value) -> str | None:
+    """Адреса, яку можна зробити джерелом, або None. Чиста функція — під тести.
+
+    Ті самі правила, що й для переходу з допису на першоджерело: не форма,
+    не соцмережа, не Drive/Docs чи відео (first_source.pick) і ніколи не чужий
+    Telegram-канал — навіть через дзеркала на кшталт telegram.dog.
+    """
+    import first_source
+    url = first_source.pick([str(value or "").strip()])
+    if not url or first_source.is_foreign_telegram(url):
+        return None
+    return url
+
 
 def now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -189,17 +234,35 @@ def resolution_text(patch: dict) -> str:
     return "Застосовано автоматично: змінено " + ", ".join(changed) + "."
 
 
-def close_patch(patch: dict, now: str | None = None) -> dict | None:
+def close_patch(patch: dict, now: str | None = None, not_done: str = "") -> dict | None:
     """Чим закривати рядок коментаря. Чиста функція — під тести.
 
     None означає «не закривати»: модель не змінила нічого, отже коментар —
     питання, яке має прочитати людина. Мовчки поставити resolved_at тут було б
     гірше за нинішню біду: коментар зник би і зі зведення, і з картки.
+
+    Так само не закриваємо, коли зроблено лише частину (not_done): «візьми
+    першоджерело» закрилось як виконане, бо змінилось посилання на подачу.
     """
     text = resolution_text(patch or {})
-    if not text:
+    if not text or (not_done or "").strip():
         return None
     return {"resolved_at": now or now_iso(), "resolution": text}
+
+
+def partial_note_text(o: dict, note_text: str, done: str, not_done: str) -> str:
+    """Повідомлення людині: коментар виконано не весь. Чиста функція — під тести."""
+    esc = lambda v: str(v).translate(TG_ESC)
+    return "\n".join([
+        "⚠️ <b>Коментар виконано не повністю — потрібне ваше рішення</b>",
+        "",
+        f"🎓 <b>{esc(o.get('title') or '')}</b>",
+        f"💬 <i>Коментар: {esc((note_text or '')[:300])}</i>",
+        f"✅ {esc(done)}",
+        f"❌ Не зроблено: {esc((not_done or '')[:300])}",
+        "",
+        "Коментар лишився відкритим і є в ранковому зведенні.",
+    ])
 
 
 def legacy_inserts(rows: list[dict], existing: set) -> list[dict]:
@@ -297,8 +360,8 @@ def failed_note_text(o: dict, note_text: str, error: str) -> str:
     ])
 
 
-def ask_llm(llm, record: dict, body: str) -> dict:
-    """Що модель пропонує змінити в записі за ОДНИМ коментарем.
+def ask_llm(llm, record: dict, body: str) -> tuple[dict, str]:
+    """Що модель пропонує змінити в записі за ОДНИМ коментарем і чого не зробила.
 
     По одному, а не всі коментарі запису разом: у кожного свій resolution, і
     прохання «вік 6–12» поруч із питанням «чи справді безкоштовно?» не закриє
@@ -317,7 +380,8 @@ def ask_llm(llm, record: dict, body: str) -> dict:
             "Поверни лише поля, які змінюються."}],
     )
     tool_use = next((b for b in resp.content if b.type == "tool_use"), None)
-    return build_patch(tool_use.input if tool_use else {})
+    raw = tool_use.input if tool_use else {}
+    return build_patch(raw), str(raw.get("not_done") or "").strip()
 
 
 def keyboard(o: dict) -> dict:
@@ -434,14 +498,14 @@ def main() -> int:
         applied = []
         for note in groups[oid][:5]:
             try:
-                patch = ask_llm(llm, record, note["body"])
+                patch, not_done = ask_llm(llm, record, note["body"])
             except Exception as e:
                 logger.error("LLM failed for %s: %s", oid, e)
                 errors += 1
                 continue
 
-            closing = close_patch(patch)
-            if not closing:
+            closing = close_patch(patch, not_done=not_done)
+            if not resolution_text(patch):
                 # Питання, а не вказівка: лишаємо відкритим для людини, лише
                 # позначаємо спробу, щоб не читати його LLM щогодини наново.
                 logger.info("Коментар до «%s» сам не застосовується — лишаю людині: %s",
@@ -482,6 +546,30 @@ def main() -> int:
                     })
                 continue
             record.update(patch)
+
+            if not closing:
+                # Зроблено лише частину: зроблене лишаємо, а коментар —
+                # відкритим, і людина одразу дізнається, чого бракує.
+                done_text = resolution_text(patch)
+                logger.info("Коментар до «%s» виконано частково: %s Не зроблено: %s",
+                            o.get("title"), done_text, not_done)
+                mark = {"resolution": f"Частково. {done_text} Не зроблено: {not_done}"[:1000]}
+                if has_attempted:
+                    mark["attempted_at"] = now_iso()
+                try:
+                    client.table("moderation_notes").update(mark).eq("id", note["id"]).execute()
+                except Exception as e:
+                    logger.error("Позначити частковий коментар не вдалося для %s: %s", note["id"], e)
+                    errors += 1
+                if ADMIN_CHAT_ID:
+                    tg("sendMessage", {
+                        "chat_id": ADMIN_CHAT_ID,
+                        "text": partial_note_text(record, note["body"], done_text, not_done),
+                        "parse_mode": "HTML",
+                        "disable_web_page_preview": True,
+                        "reply_markup": keyboard(record),
+                    })
+                continue
 
             # Запис уже змінено — коментар закриваємо окремим запитом. Якщо він
             # не пройде, коментар лишиться відкритим: побачити зміну двічі краще,

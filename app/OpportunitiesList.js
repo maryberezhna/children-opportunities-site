@@ -13,6 +13,7 @@ import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardAfter } from '@/lib/inline-card';
 import { PLACE_KINDS, placeOption } from '@/lib/place-search';
+import { publicSource } from '@/lib/source-link';
 import TelegramCard from './TelegramCard';
 import PlaceCombobox from './PlaceCombobox';
 
@@ -735,7 +736,8 @@ export default function OpportunitiesList({
         [t.f.place, placeText(item)],
         teens
           ? [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline]
-          : [t.f.source, item.source || null],
+          // Назву чужого каналу не показуємо й тут (lib/source-link.js).
+          : [t.f.source, publicSource(item).sourceName],
       ];
 
     const age = ageText(item);

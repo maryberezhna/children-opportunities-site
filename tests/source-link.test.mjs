@@ -59,3 +59,38 @@ test('звичайний запис — як і був', () => {
   assert.equal(r.applyUrl, null);          // збігається з джерелом — другої кнопки не треба
   assert.equal(r.primaryUrl, 'https://man.gov.ua/p');
 });
+
+// 28.09.2026: допис уже замінено сторінкою організатора, а назва каналу
+// лишилась — «Джерело: Можливості ↗» з лінком на ninjaschool.io (11 сторінок).
+test('назва каналу-переказувача не показується й з лінком на організатора', () => {
+  const r = publicSource({ source: 'Можливості', source_url: 'https://www.ninjaschool.io/', apply_url: null });
+  assert.equal(r.sourceName, null);
+  assert.equal(r.sourceUrl, 'https://www.ninjaschool.io/');
+  assert.equal(r.primaryUrl, 'https://www.ninjaschool.io/');
+  // У картці тематичної сторінки source_url немає — ховаємо за самою назвою.
+  assert.equal(publicSource({ source: 'Нова школа' }).sourceName, null);
+});
+
+test('канал самої організації — назва лишається', () => {
+  const r = publicSource({ source: 'UNICEF Ukraine', source_url: 'https://www.unicef.org/ukraine/x' });
+  assert.equal(r.sourceName, 'UNICEF Ukraine');
+});
+
+// Кожен канал, який читає скрапер, має рішення: переказувач чи організація.
+// Інакше новий агрегатор мовчки світитиме своєю назвою на сайті.
+const ORGANIZER_CHANNELS = new Set([
+  'UNICEF Ukraine', 'FLEX Alumni Ukraine', 'EducationUSA Ukraine',
+  'Goethe-Institut Ukraine', 'Українська волонтерська служба',
+]);
+
+test('кожен канал зі скрапера — або переказувач, або організація', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const { RETELLING_CHANNELS } = await import('../lib/source-link.js');
+  const py = await readFile(new URL('../scraper/scrapers/telegram_web.py', import.meta.url), 'utf8');
+  const block = py.slice(py.indexOf('CHANNELS: list'), py.indexOf(']\n', py.indexOf('CHANNELS: list')));
+  const names = [...block.matchAll(/\(\s*"[^"]+",\s*"([^"]+)"\s*\)/g)].map((m) => m[1]);
+  assert.ok(names.length >= 10, `розібрано каналів: ${names.length}`);
+  for (const n of names) {
+    assert.ok(RETELLING_CHANNELS.has(n) || ORGANIZER_CHANNELS.has(n), `канал «${n}» без рішення`);
+  }
+});
