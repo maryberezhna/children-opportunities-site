@@ -325,6 +325,10 @@ SITES: list[dict] = [
              "params": {"lang": "uk"}, "fetch_page": True,
              "selector": ".mec-single-event", "mec": True},
         ],
+        # Той самий гурток для різних віків — окремі події («Паперове диво,
+        # Група 1 (4-6 років)», «…Група 2 (6-8 років)»). Для батька це одна
+        # можливість із кількома групами: зливаємо в одну картку.
+        "merge_groups": True,
     },
     {
         "key": "rostock",
@@ -438,6 +442,69 @@ def _stable(site: dict, text: str) -> str:
     """Прибирає те, що міняється щотижня без зміни суті (вільні місця)."""
     pattern = site.get("volatile")
     return re.sub(r"\s{2,}", " ", re.sub(pattern, " ", text)).strip() if pattern else text
+
+
+# ── Групи одного гуртка (Осередок, 28.09.2026) ──────────────────────────────
+# «Креативне малювання, Група 1 (6-7 років)», «…Група 2 (7-9 років)»,
+# «Українознавство/Група 2. 7-8 роки», «Ментальна арифметика 1 група (7-10
+# років)» — той самий гурток, різні вікові групи. Ключ гуртка — назва без
+# номера групи, віку й години заняття; збіг ключа — одна картка.
+_GROUP_NO = re.compile(r"[,/.]?\s*(?:\bгруп[аи]\s*№?\s*\d+|\d+\s*-?\s*а?\s*груп[аи])\b\.?",
+                       re.IGNORECASE)
+_AGE_SPAN = re.compile(r"\(?\s*\d+(?:[.,]\d+)?\s*[-–—]\s*\d+\s*(?:р[а-яії]*|years?)?\.?\s*\)?",
+                       re.IGNORECASE)
+_CLOCK = re.compile(r"\b\d{1,2}:\d{2}\b")
+
+
+def group_key(title: str) -> str:
+    """Назва гуртка без групи, віку й години: ключ для злиття. Чиста функція."""
+    t = _GROUP_NO.sub(" ", title or "")
+    t = _CLOCK.sub(" ", t)
+    t = _AGE_SPAN.sub(" ", t)
+    return re.sub(r"[^0-9a-zа-яіїєґ]+", "", t.lower())
+
+
+def base_title(title: str) -> str:
+    """«Паперове диво, Група 1 (4-6 років)» → «Паперове диво»."""
+    t = _GROUP_NO.sub(" ", title or "")
+    t = _CLOCK.sub(" ", t)
+    t = _AGE_SPAN.sub(" ", t)
+    return re.sub(r"\s{2,}", " ", t).strip(" ,./–—-")
+
+
+def _group_no(title: str) -> int:
+    m = re.search(r"груп[аи]\s*№?\s*(\d+)|(\d+)\s*-?\s*а?\s*груп", title or "", re.IGNORECASE)
+    return int(m.group(1) or m.group(2)) if m else 0
+
+
+def merge_age_groups(items: list[dict]) -> list[dict]:
+    """Групи одного гуртка — одним сирцем. Чиста функція.
+
+    Адреса й дата — від першої групи; текст — сторінки всіх груп підряд, кожна
+    під власною назвою зі сайту, тож вік кожної групи лишається словами
+    джерела (цитата на вік знайдеться). Одиночні записи не чіпаємо.
+    """
+    buckets: dict[str, list[dict]] = {}
+    order: list[str] = []
+    for it in items:
+        key = group_key(it["raw_title"]) or it["source_url"]
+        if key not in buckets:
+            buckets[key] = []
+            order.append(key)
+        buckets[key].append(it)
+    out = []
+    for key in order:
+        group = buckets[key]
+        if len(group) == 1:
+            out.append(group[0])
+            continue
+        group = sorted(group, key=lambda it: (_group_no(it["raw_title"]), it["raw_title"]))
+        share = MAX_TEXT // len(group)
+        parts = [f"{it['raw_title']}\n{it['raw_text'][:share]}" for it in group]
+        out.append({**group[0],
+                    "raw_title": base_title(group[0]["raw_title"]) or group[0]["raw_title"],
+                    "raw_text": "\n\n".join(parts)[:MAX_TEXT]})
+    return out
 
 
 async def _get(client: httpx.AsyncClient, url: str, **params) -> httpx.Response | None:
@@ -654,6 +721,11 @@ async def fetch_site(site: dict, now: datetime | None = None,
             items += await _link_items(client, site, now, stats)
         if site.get("pages"):
             items += await _page_items(client, site, now, stats)
+    if site.get("merge_groups"):
+        before = len(items)
+        items = merge_age_groups(items)
+        if before != len(items):
+            stats["merged_groups"] = before - len(items)
     logger.info("діаспора %s: %d у чергу (%s)", site["key"], len(items), stats)
     return items
 

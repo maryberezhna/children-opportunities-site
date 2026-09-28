@@ -3,7 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CRITERIA, missingRequired, missingRequiredKeys } from '../lib/required.js';
+import { CRITERIA, missingRequired, missingRequiredKeys, missingProofKeys } from '../lib/required.js';
 
 const cases = JSON.parse(readFileSync(new URL('./fixtures/publish-criteria-cases.json', import.meta.url), 'utf8'));
 
@@ -11,6 +11,7 @@ test('спільні приклади дають той самий резуль�
   for (const c of cases) {
     assert.deepEqual(missingRequiredKeys(c.row), c.missing, c.name);
     assert.deepEqual(missingRequired(c.row), c.missing.map((k) => CRITERIA.required[k].label), c.name);
+    if (c.missing_proof) assert.deepEqual(missingProofKeys(c.row), c.missing_proof, c.name);
   }
 });
 

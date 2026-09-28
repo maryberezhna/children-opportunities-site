@@ -26,7 +26,7 @@ import proof_recheck
 from db import (due_at, find_active_by_canonical, get_client, get_health_stats,
                 get_new_today, get_source_configs, get_source_registry,
                 record_crawl_result, upsert_opportunity)
-from normalizer import Normalizer, NormalizeError
+from normalizer import Normalizer, NormalizeError, apply_ask_school
 from scrapers import (
     acmodasi,
     america_house,
@@ -36,6 +36,7 @@ from scrapers import (
     diaspora_schools,
     diaspora_sites,
     diia_osvita,
+    mon_cells,
     easy_gov,
     erasmus,
     eurodesk,
@@ -99,6 +100,9 @@ SCRAPERS = [
     # Сайти самих організацій діаспори (28.09.2026): кожен сайт — окреме
     # джерело з власним рядком у sources і тижневим обходом.
     *diaspora_sites.scrapers(),
+    # Реєстр МОН «Осередки за кордоном» (28.09.2026): суботні й недільні
+    # школи з вартістю з реєстру, обхід раз на місяць.
+    ("Реєстр осередків за кордоном (МОН, aikom.iea.gov.ua)", mon_cells, "diaspora"),
     # Тематичні / міжнародні
     ("UNICEF", unicef, "thematic"),
     # «Дитина їде за кордон» — пріоритет 1 від 03.09.2026: попит (топ-15
@@ -404,6 +408,9 @@ def process_pending(normalizer, sb_client, limit=500):
                     "default_countries")
                 if default_countries:
                     normalized["countries"] = list(default_countries)
+                    # Країна зʼявилась лише тепер — школа діаспори без ціни
+                    # отримує «вартість уточнюйте в школі» (28.09.2026).
+                    apply_ask_school(normalized)
 
         saved = upsert_opportunity(sb_client, normalized)
         if saved:

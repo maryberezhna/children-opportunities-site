@@ -177,6 +177,10 @@ class PromptRules(unittest.TestCase):
                        "для українських дітей, які живуть у", "Поїздку З України",
                        "Муніципальний фонд", "Bildung und Teilhabe", "800+"):
             self.assertIn(phrase, p)
+        # BuT — виняток: береться як виплата (Марія, 28.09.2026); решта — ні.
+        self.assertIn("БЕРЕМО ЯК ВИПЛАТУ", p)
+        self.assertIn("opportunity_type=allowance", p)
+        self.assertNotIn("не виплата родині, для діаспори вона", p)
         # Суботня школа — виняток із «закладу на роки».
         self.assertIn("суботня чи недільна школа за кордоном — НЕ такий заклад", p)
 
@@ -186,6 +190,7 @@ class PromptRules(unittest.TestCase):
                        "Союзу українців у Польщі", "НЕ РЕКЛАМА", "які живуть у Німеччині",
                        "фонд однієї голландської громади"):
             self.assertIn(phrase, p)
+        self.assertIn("Bildung und Teilhabe (BuT): його беремо", p)
 
 
 def _reload(**env):

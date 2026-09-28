@@ -8,7 +8,7 @@ import unittest
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from normalizer import (  # noqa: E402
     PUBLISH_CRITERIA, REQUIRED_FIELDS, VALID_OPP_TYPES, PUBLISHABLE_COST_TYPES,
-    PAYMENT_TYPES, missing_required, missing_required_keys,
+    PAYMENT_TYPES, missing_required, missing_required_keys, missing_proof,
 )
 
 _CASES = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "fixtures",
@@ -26,6 +26,8 @@ class SharedCases(unittest.TestCase):
                 self.assertEqual(missing_required_keys(case["row"]), case["missing"])
                 self.assertEqual(missing_required(case["row"]),
                                  [req[k]["label"] for k in case["missing"]])
+                if "missing_proof" in case:
+                    self.assertEqual(missing_proof(case["row"]), case["missing_proof"])
 
     def test_dictionaries_come_from_the_spec(self):
         req = PUBLISH_CRITERIA["required"]

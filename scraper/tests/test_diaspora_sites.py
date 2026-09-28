@@ -15,7 +15,7 @@ from datetime import date, datetime, timezone
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from scrapers.diaspora_sites import (  # noqa: E402
     SITES, clean_title, is_for_children, is_report, keep_wp_entry, mec_last_date,
-    page_text, trim, ucci_calendar,
+    page_text, trim, ucci_calendar, group_key, merge_age_groups, SITES_BY_KEY,
 )
 import db  # noqa: E402
 
@@ -204,6 +204,55 @@ class PinnedInterval(unittest.TestCase):
         db.record_crawl_result(client, "x", ok=False, new_items=0)
         nxt = datetime.fromisoformat(client.patch["next_crawl_at"])
         self.assertLessEqual((nxt - datetime.now(timezone.utc)).days, 1)
+
+
+def _it(title, slug, text=None):
+    return {"source": "Осередок", "source_url": f"https://oseredok-leipzig.de/uk/events/{slug}/",
+            "raw_title": title, "raw_text": text or f"{title} Вік … Вартість (місяць) €20.00"}
+
+
+class AgeGroups(unittest.TestCase):
+    """Осередок (Лейпциг): той самий гурток для різних віків — одна картка."""
+
+    def test_group_titles_share_a_key(self):
+        same = [
+            ("Паперове диво, Група 1 (4-6 років)", "Паперове диво, Група 2 (6-8 років)"),
+            ("Українознавство/ Група 1 (6-7 років)", "Українознавство/Група 2. 7-8 роки"),
+            ("Ранній музичний розвиток, Група 1 (1,5-3 роки)", "Ранній музичний розвиток, Група 3 (5-7 років)"),
+            ("Ментальна арифметика 1 група (7-10 років)", "Ментальна арифметика 2 група (7-10 років)"),
+            ("Групові Логопедичні Заняття – Сходинки Мовлення (6-8 Років)",
+             "Групові Логопедичні Заняття – Сходинки Мовлення (5-6 Років)"),
+        ]
+        for a, b in same:
+            self.assertEqual(group_key(a), group_key(b), (a, b))
+        # Різні гуртки й різні дати — різні картки.
+        self.assertNotEqual(group_key("Дитячі танці-KIDS- 6-8р."), group_key("Дитячі танці- MINIS- 3-5р."))
+        self.assertNotEqual(group_key("Дитяче читання 4.10.2026 о 14:00, книжка «Віка»"),
+                            group_key("Дитяче читання 11.10.2026 о 14:00, книжка «Віка»"))
+
+    def test_merge_keeps_every_group_in_the_text(self):
+        items = [
+            _it("Креативне малювання, Група 3 (8-10 років)", "km-3", "Вік 8-10 років Вартість 20"),
+            _it("Курс гри на гітарі", "gitara"),
+            _it("Креативне малювання, Група 1 (6-7 років)", "km-1", "Вік 6-7 років Вартість 20"),
+            _it("Креативне малювання, Група 2 (7-9 років)", "km-2", "Вік 7-9 років Вартість 20"),
+        ]
+        out = merge_age_groups(items)
+        self.assertEqual(len(out), 2)
+        card = out[0]
+        self.assertEqual(card["raw_title"], "Креативне малювання")
+        # Адреса — першої групи; вік кожної групи — словами сторінки, по порядку.
+        self.assertTrue(card["source_url"].endswith("/km-1/"))
+        text = card["raw_text"]
+        for age in ("Вік 6-7 років", "Вік 7-9 років", "Вік 8-10 років"):
+            self.assertIn(age, text)
+        self.assertLess(text.index("Група 1"), text.index("Група 2"))
+        self.assertLess(text.index("Група 2"), text.index("Група 3"))
+        self.assertIs(out[1], items[1])  # одиночний запис не чіпаємо
+
+    def test_only_oseredok_merges(self):
+        self.assertTrue(SITES_BY_KEY["oseredok"].get("merge_groups"))
+        self.assertEqual([s["key"] for s in SITES if s.get("merge_groups")], ["oseredok"])
 
 
 if __name__ == "__main__":
