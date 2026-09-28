@@ -1,0 +1,39 @@
+name: Картка для Instagram в адмінчат
+
+# Свіжа картка однієї можливості (з того, що зараз у базі) — в адмінчат, з
+# підказкою, кого тегнути. Для випадку, коли назву чи дані виправили вже після
+# того, як контент-агент надіслав чернетки: старе фото Telegram не оновить.
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Slug або адреса сторінки, напр. dityam.com.ua/o/discovereu-inclusion-action-5b3f5d'
+        required: true
+      note:
+        description: 'Дописати під карткою (необовʼязково)'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Надіслати
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SLUG: ${{ github.event.inputs.slug }}
+          NOTE: ${{ github.event.inputs.note }}
+        run: node scripts/send-card.mjs
