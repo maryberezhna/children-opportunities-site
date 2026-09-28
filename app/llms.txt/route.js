@@ -11,7 +11,10 @@
 // профіль дитини). Додано Dityam+, якої тут не було взагалі.
 
 import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
-import { TOPIC_LIST } from '@/lib/topics';
+import { TOPIC_LIST, DIASPORA_HUB, qualifyingCountryTopics } from '@/lib/topics';
+import { opportunitiesWord } from '@/lib/plural';
+import { kyivToday } from '@/lib/dates';
+import { isLive } from '@/lib/audience';
 import { CITY_META } from '@/lib/cities';
 import { PLUS_SALES_OPEN } from '@/lib/plus';
 import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
@@ -23,8 +26,14 @@ const SITE = 'https://dityam.com.ua';
 export async function GET() {
   let rows = [];
   if (supabase) {
+    // Усі поля, які читають правила підбірок (lib/topics.js): без summary,
+    // countries, is_international, format і child_needs «За кордон» тут
+    // рахувала 2 записи замість 56, а «Дітям захисників» — лише збіги в
+    // назві. Дати — щоб рахувати, як сторінка, лише живі записи (isLive).
     const { data } = await fetchAllRows(() => publicOpportunities(
-      'title, opportunity_type, cost_type, aid_type, cities, source',
+      'title, summary, opportunity_type, cost_type, aid_type, cities, countries, source, '
+      + 'is_international, format, child_needs, '
+      + 'deadline, event_start_date, event_end_date, results_date',
     ).order('id'));
     rows = data || [];
   }
@@ -33,11 +42,22 @@ export async function GET() {
   const free = rows.filter((o) => o.cost_type === 'free').length;
   const sources = new Set(rows.map((o) => o.source).filter(Boolean)).size;
 
+  // Число — те саме, що на сторінці підбірки: живі записи, той самий match.
+  const today = kyivToday();
+  const liveRows = rows.filter((o) => isLive(o, today));
   const topicLines = TOPIC_LIST.map((t) => {
-    const count = rows.filter(t.match).length;
-    const countNote = count > 0 ? ` Зараз у підбірці ${count} записів.` : '';
+    const count = liveRows.filter(t.match).length;
+    const countNote = count > 0 ? ` Зараз у підбірці ${count} ${opportunitiesWord(count)}.` : '';
     return `- [${t.title}](${SITE}/${t.slug}): ${t.description}${countNote}`;
   });
+
+  // Сторінки країн діаспори — лише ті, що пройшли поріг сьогодні.
+  const countryLines = qualifyingCountryTopics(liveRows).map((t) => {
+    const count = liveRows.filter(t.match).length;
+    return `  - [${t.title}](${SITE}/${t.slug}): ${t.description} Зараз на сторінці ${count} ${opportunitiesWord(count)}.`;
+  });
+  const topicBlock = topicLines.flatMap((line, i) =>
+    (TOPIC_LIST[i].slug === DIASPORA_HUB ? [line, ...countryLines] : [line]));
 
   const cityLines = Object.entries(CITY_META).map(
     ([slug, c]) =>
@@ -58,7 +78,7 @@ Dityam.com.ua — агрегатор, а не організатор: кожна
 
 Усі підбірки на одній сторінці з живими лічильниками: ${SITE}/pidbirky (English: ${SITE}/en/collections).
 
-${topicLines.join('\n')}
+${topicBlock.join('\n')}
 
 ## Міста
 

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TOPIC_LIST, TOPIC_NAV, topicPath } from '@/lib/topics';
+import { TOPIC_LIST, TOPIC_NAV, DIASPORA_COUNTRY_TOPICS, topicPath } from '@/lib/topics';
 import { ERASMUS_PATH } from '@/lib/erasmus';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
@@ -46,6 +46,7 @@ const SLUG_PAIRS = [
   ['/plus', '/en/plus'],
   ['/dyakuyu', '/en/thank-you'],
   ...TOPIC_LIST.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
+  ...DIASPORA_COUNTRY_TOPICS.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
 ];
 
 const HAS_EN = [

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
@@ -63,6 +64,8 @@ const CHROME = {
       emptyText: 'Спробуйте інший фільтр.',
       listLabel: 'Можливості підбірки',
       filterLabel: 'Фільтр за типом',
+      groupNav: 'Країни',
+      groupRest: 'Інші країни',
     },
     siteName: 'Dityam.com.ua',
     locale: 'uk_UA',
@@ -96,6 +99,8 @@ const CHROME = {
       emptyText: 'Try a different filter.',
       listLabel: 'Opportunities in this collection',
       filterLabel: 'Filter by type',
+      groupNav: 'Countries',
+      groupRest: 'Other countries',
     },
     siteName: 'Dityam.com.ua',
     locale: 'en_GB',
@@ -180,8 +185,9 @@ export function topicMetadata(topic, lang = 'uk') {
 // Збій бази кидає помилку, а не віддає порожню підбірку (#263): під час ISR
 // лишається попередня добра версія сторінки, під час збірки падає деплой.
 // fetchAllRows кешує однакову вибірку на 60 с, тож підбірки на одній мові
-// тягнуть каталог один раз.
-async function getRows(lang, slug) {
+// тягнуть каталог один раз. Сторінки країн діаспори беруть цю саму вибірку
+// для generateStaticParams — і вона приходить із того ж кешу.
+export async function topicRows(lang, slug) {
   if (!supabase) return [];
   return rowsOrThrow(await fetchAllRows(() =>
     publicOpportunities(lang === 'en' ? CARD_FIELDS_EN : CARD_FIELDS)
@@ -273,9 +279,13 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   const isEn = lang === 'en';
   const todayIso = kyivToday();
 
-  const rows = await getRows(lang, topic.slug);
+  const rows = await topicRows(lang, topic.slug);
   const liveRows = rows.filter((o) => isLive(o, todayIso));
   const matched = liveRows.filter(topic.match);
+
+  // Сторінка з порогом (країни діаспори): нижче порогу її немає — 404, як
+  // у «місто × підбірка». Порожньої чи з одного запису сторінки не буває.
+  if (topic.minItems && matched.length < topic.minItems) notFound();
 
   // «Лише для» — закріплені нагорі з позначкою (зараз лише «Дітям захисників»).
   const pinned = new Set(
@@ -286,11 +296,23 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   const total = items.length;
   const freeCount = items.filter((o) => o.cost_type === 'free').length;
 
-  const subfilters = buildSubfilters(topic, items, lang);
+  // Хаб із групами (країни діаспори): замість пігулок типів — заголовки
+  // груп, а записи з власною сторінкою стоять там, не тут. На екрані й у
+  // ItemList — один і той самий порядок.
+  const grouped = topic.groups ? topic.groups(items, lang) : null;
+  const listed = grouped ? grouped.groups.flatMap((g) => g.items) : items;
+
+  const subfilters = grouped ? [] : buildSubfilters(topic, items, lang);
   const related = buildRelated(topic, liveRows);
   const hero = heroImageOf(topic, lang);
   const heading = c.heading || { lead: c.h1.join(' '), script: '', tail: '' };
   const crumb = isEn ? topic.navEn : topic.nav;
+  // Ланка між «Підбірками» і сторінкою: «Живемо за кордоном» над країною.
+  const parent = topic.parent ? TOPIC_LIST.find((t) => t.slug === topic.parent) : null;
+  const parentCrumb = parent ? {
+    name: isEn ? parent.navEn : parent.nav,
+    path: topicPath({ slug: parent.slug, slugEn: parent.en.slug }, lang),
+  } : null;
 
   const nav = { slug: topic.slug, slugEn: topic.en.slug };
   const path = topicPath(nav, lang);
@@ -331,6 +353,10 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         dateModified: todayIso,
         isPartOf: { '@id': `${SITE_URL}/#website` },
         ...(hero ? { primaryImageOfPage: { '@type': 'ImageObject', url: `${SITE_URL}${hero.src}.jpg` } } : {}),
+        // Сторінки країн, на які хаб веде посиланнями вгорі списку.
+        ...(grouped?.links.length ? {
+          hasPart: grouped.links.map((l) => ({ '@type': 'CollectionPage', url: `${SITE_URL}${l.href}`, name: l.label })),
+        } : {}),
         mainEntity: { '@id': `${url}#list` },
         breadcrumb: { '@id': `${url}#breadcrumb` },
       },
@@ -338,9 +364,9 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         '@type': 'ItemList',
         '@id': `${url}#list`,
         name: h1Text,
-        numberOfItems: total,
+        numberOfItems: listed.length,
         itemListOrder: 'https://schema.org/ItemListOrderAscending',
-        itemListElement: items.slice(0, 100).map((o, i) => ({
+        itemListElement: listed.slice(0, 100).map((o, i) => ({
           '@type': 'ListItem',
           position: i + 1,
           url: `${base}/o/${o.slug}`,
@@ -351,10 +377,11 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         '@type': 'BreadcrumbList',
         '@id': `${url}#breadcrumb`,
         itemListElement: [
-          { '@type': 'ListItem', position: 1, name: ch.home, item: base },
-          { '@type': 'ListItem', position: 2, name: ch.collections, item: `${SITE_URL}${collectionsPath(lang)}` },
-          { '@type': 'ListItem', position: 3, name: crumb, item: url },
-        ],
+          { name: ch.home, item: base },
+          { name: ch.collections, item: `${SITE_URL}${collectionsPath(lang)}` },
+          ...(parentCrumb ? [{ name: parentCrumb.name, item: `${SITE_URL}${parentCrumb.path}` }] : []),
+          { name: crumb, item: url },
+        ].map((l, i) => ({ '@type': 'ListItem', position: i + 1, ...l })),
       },
       ...(c.faq?.length ? [{
         '@type': 'FAQPage',
@@ -385,6 +412,12 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           <span aria-hidden="true">/</span>
           <Link href={collectionsPath(lang)}>{ch.collections}</Link>
           <span aria-hidden="true">/</span>
+          {parentCrumb ? (
+            <>
+              <Link href={parentCrumb.path}>{parentCrumb.name}</Link>
+              <span aria-hidden="true">/</span>
+            </>
+          ) : null}
           <span aria-current="page">{crumb}</span>
         </nav>
 
@@ -429,7 +462,10 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         </section>
 
         <TopicCards
-          items={items.map(slim)}
+          items={grouped ? [] : items.map(slim)}
+          groups={grouped ? grouped.groups.map((g) => ({ ...g, items: g.items.map(slim) })) : null}
+          groupLinks={grouped ? grouped.links : []}
+          abroadLabel={topic.code ? crumb : null}
           subfilters={subfilters}
           todayIso={todayIso}
           lang={lang}
