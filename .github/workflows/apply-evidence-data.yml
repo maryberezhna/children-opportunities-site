@@ -1,0 +1,33 @@
+name: Дані — перевірка з цитатами (28.09.2026, разово)
+
+# Службова гілка: кожен пуш із новою пачкою результатів застосовує її до бази
+# (scripts/apply-evidence-data.mjs). Уже застосоване пропускається за слідом
+# в admin_comment, тож повторний запуск безпечний. У main не йде.
+on:
+  push:
+    branches: ['data/evidence-check-2026-09-28']
+    paths: ['scripts/data/evidence-2026-09-28/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Apply
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/apply-evidence-data.mjs
