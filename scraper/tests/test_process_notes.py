@@ -13,7 +13,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from process_notes import (  # noqa: E402
-    APPLY_TOOL, close_patch, failed_note_text, legacy_inserts, open_notes, resolution_text,
+    APPLY_TOOL, build_patch, close_patch, failed_note_text, legacy_inserts, open_notes,
+    partial_note_text, resolution_text, valid_source_url,
 )
 from normalizer import VALID_OPP_TYPES  # noqa: E402
 
@@ -134,6 +135,56 @@ class TypeOnlyFromDatabase(unittest.TestCase):
     def test_no_invented_school(self):
         spec = APPLY_TOOL["input_schema"]["properties"]["opportunity_type"]
         self.assertNotIn("school", spec["enum"])
+
+
+class FirstSourceFromNote(unittest.TestCase):
+    """28.09.2026: «[форма] Візьми першоджерело» закрилось як виконане, хоча
+    source_url коментар міняти не міг — джерелом лишився допис @Mozhlyvosti."""
+
+    PAGE = "https://rooterraorg.my.canva.site/olive-trees-html"
+    FORM = "https://docs.google.com/forms/d/e/1FAIpQLSfjMOjm7m/viewform"
+
+    def test_source_is_editable(self):
+        self.assertIn("source_url", APPLY_TOOL["input_schema"]["properties"])
+
+    def test_page_becomes_source_with_canonical(self):
+        patch = build_patch({"source_url": self.PAGE})
+        self.assertEqual(patch["source_url"], self.PAGE)
+        self.assertEqual(patch["canonical_url"], self.PAGE)
+        self.assertEqual(resolution_text(patch), "Застосовано автоматично: змінено джерело.")
+
+    def test_never_form_channel_or_drive(self):
+        for url in (self.FORM, "https://forms.gle/abc", "https://t.me/Mozhlyvosti/10539",
+                    "https://telegram.dog/tviyspace/1", "https://drive.google.com/file/d/x",
+                    "https://www.instagram.com/p/x", "не адреса", ""):
+            self.assertIsNone(valid_source_url(url), url)
+            self.assertNotIn("source_url", build_patch({"source_url": url}), url)
+
+    def test_our_channel_is_not_a_source_either(self):
+        # Джерело — сторінка можливості, а не допис, навіть наш.
+        self.assertIsNone(valid_source_url("https://t.me/dityam_com_ua/512"))
+
+    def test_not_done_is_not_a_record_field(self):
+        self.assertEqual(build_patch({"not_done": "джерело не змінено"}), {})
+
+
+class PartialNote(unittest.TestCase):
+    def test_partial_stays_open(self):
+        # Саме цей випадок: форму поставлено в подачу, джерело — ні.
+        patch = {"apply_url": "https://docs.google.com/forms/d/e/x/viewform"}
+        self.assertIsNone(close_patch(patch, not_done="джерело не змінено: у коментарі лише форма"))
+
+    def test_blank_not_done_closes(self):
+        closing = close_patch({"age_from": 6}, now="2026-09-28T08:00:00+00:00", not_done="  ")
+        self.assertEqual(closing["resolved_at"], "2026-09-28T08:00:00+00:00")
+
+    def test_message_says_what_is_missing(self):
+        text = partial_note_text({"title": "O-live <T.R.E.E.S.>"}, "Візьми першоджерело",
+                                 "Застосовано автоматично: змінено посилання на подачу.",
+                                 "джерело не змінено")
+        self.assertIn("не повністю", text)
+        self.assertIn("O-live &lt;T.R.E.E.S.&gt;", text)
+        self.assertIn("Не зроблено: джерело не змінено", text)
 
 
 class FailedNoteText(unittest.TestCase):

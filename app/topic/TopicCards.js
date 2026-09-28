@@ -6,6 +6,7 @@ import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
 import { inlineCardAfter } from '@/lib/inline-card';
+import { publicSource } from '@/lib/source-link';
 import TelegramCard from '../TelegramCard';
 
 /**
@@ -94,7 +95,7 @@ function placeText(item, lang) {
   if (real.length) return real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
   if (isOnline(item)) return t.online;
   if ((item.cities || []).some((c) => /вся україна/i.test(c))) return t.allUkraine;
-  return item.source || '';
+  return publicSource(item).sourceName || '';
 }
 
 export default function TopicCards({
