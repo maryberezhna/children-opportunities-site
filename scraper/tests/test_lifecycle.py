@@ -52,17 +52,42 @@ class CloseByDate(unittest.TestCase):
 
 
 QUOTE_OPEN = "Реєстрація на І етап триває до 30 жовтня 2026 року."
+PROVEN_BUT_DATE = {"age": "для учнів 8–11 класів", "cost": "участь безкоштовна",
+                   "type": "Всеукраїнський конкурс", "place": "онлайн"}
 
 
 class PlannedCheck(unittest.TestCase):
     def test_new_season_reopens_with_fresh_dates(self):
-        r = row(status="closed", timing_kind="periodic", deadline="2025-10-30")
+        r = row(status="closed", timing_kind="periodic", deadline="2025-10-30",
+                evidence=PROVEN_BUT_DATE)
         out = {"state": "open", "deadline": "2026-10-30", "evidence": QUOTE_OPEN,
                "timing_kind": "periodic"}
         patch = decide_check(r, out, QUOTE_OPEN, TODAY)
         self.assertEqual(patch["status"], "active")
         self.assertEqual(patch["deadline"], "2026-10-30")
         self.assertIsNone(patch["recheck_at"])
+        # Цитата нового сезону стає доказом дати, решта цитат не губиться.
+        self.assertEqual(patch["evidence"]["date"], QUOTE_OPEN)
+        self.assertEqual(patch["evidence"]["age"], PROVEN_BUT_DATE["age"])
+
+    def test_new_season_without_quotes_goes_to_the_queue(self):
+        # 28.09.2026: новий сезон відкривав запис із віком і вартістю на
+        # здогаді моделі. Без цитат на все — чернетка, людині.
+        r = row(status="closed", timing_kind="periodic", deadline="2025-10-30")
+        out = {"state": "open", "deadline": "2026-10-30", "evidence": QUOTE_OPEN,
+               "timing_kind": "periodic"}
+        patch = decide_check(r, out, QUOTE_OPEN, TODAY)
+        self.assertEqual(patch["status"], "draft")
+        self.assertEqual(patch["deadline"], "2026-10-30")
+        self.assertIn("у чергу людині", patch["admin_comment"])
+
+    def test_live_record_stays_live_without_new_proof(self):
+        # Уже на сайті — перевірка не стягує його в чернетку (модель від 22.09:
+        # те, що живе, перевіряється по черзі, а не знімається).
+        r = row(status="active", timing_kind="periodic", deadline="2026-09-20")
+        out = {"state": "open", "deadline": "2026-10-30", "evidence": QUOTE_OPEN,
+               "timing_kind": "periodic"}
+        self.assertEqual(decide_check(r, out, QUOTE_OPEN, TODAY)["status"], "active")
 
     def test_open_without_date_in_quote_is_not_reopened(self):
         r = row(status="closed", timing_kind="periodic")
