@@ -94,3 +94,16 @@ test('кожен канал зі скрапера — або переказув�
     assert.ok(RETELLING_CHANNELS.has(n) || ORGANIZER_CHANNELS.has(n), `канал «${n}» без рішення`);
   }
 });
+
+// 28.09.2026: джерело можна вставити руками в черзі — лише сторінку.
+test('джерелом не стають канал, форма, соцмережа, документ', async () => {
+  const { sourceUrlProblem } = await import('../lib/source-link.js');
+  for (const u of [
+    'https://t.me/Mozhlyvosti/10539', 'https://t.me/dityam_com_ua/1',
+    'https://docs.google.com/forms/d/e/x/viewform', 'https://forms.gle/abc',
+    'https://www.instagram.com/p/x', 'https://drive.google.com/file/d/x',
+    'https://docs.google.com/document/d/x', 'https://youtu.be/x', 'ftp://x', 'не адреса', '',
+  ]) assert.ok(sourceUrlProblem(u), u);
+  assert.equal(sourceUrlProblem('https://rooterraorg.my.canva.site/olive-trees-html'), null);
+  assert.equal(sourceUrlProblem('https://man.gov.ua/konkurs'), null);
+});

@@ -144,9 +144,10 @@ async function counts() {
       head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
     ]);
     return {
-      // Одне число на всю чергу: кандидати плюс сирі знахідки, бо це одна
-      // робота на одній сторінці.
-      queue: (drafts.count ?? 0) + (quar.count ?? 0),
+      // З 28.09.2026 черга — лише чернетки: сирі знахідки розбирає машина
+      // (triage_quarantine.py), а решта розділів переїхала на /admin/all.
+      queue: drafts.count ?? 0,
+      raw: quar.count ?? 0,
       drafts: drafts.count ?? 0,
       // Звернення з форми і пропозиції з поп-апа лежать у двох таблицях, але
       // для Марії це одна пошта — на /admin/messages вони вже злиті в один

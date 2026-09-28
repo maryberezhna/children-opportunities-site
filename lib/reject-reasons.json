@@ -1,0 +1,14 @@
+{
+  "about": "Причини кнопки «Не підходить» у черзі (Марія, 28.09.2026: «не шукати такі можливості, залишити дропдаун чому ж»). Один перелік для адмінки (lib/reject-reasons.js) і для пошуку (scraper/rejections.py): teach=true — пошук отримує такі відмови як приклади того, чого не шукати; false — відмова разова (дубль, минуло, нема першоджерела) і нічого не каже про вид можливостей.",
+  "reasons": [
+    { "code": "not_for_children", "label": "Не для дітей і молоді", "teach": true },
+    { "code": "for_adults", "label": "Для дорослих чи батьків, а не про дитину", "teach": true },
+    { "code": "club", "label": "Гурток чи секція — такі не шукаємо", "teach": true },
+    { "code": "foreign_local", "label": "Місцеве за кордоном — не для наших дітей", "teach": true },
+    { "code": "commercial", "label": "Реклама чи комерційна послуга", "teach": true },
+    { "code": "no_source", "label": "Немає першоджерела", "teach": false },
+    { "code": "duplicate", "label": "Дубль — уже є на сайті", "teach": false },
+    { "code": "expired", "label": "Уже минуло", "teach": false },
+    { "code": "other", "label": "Інше — напишу чому", "teach": true, "needs_text": true }
+  ]
+}
