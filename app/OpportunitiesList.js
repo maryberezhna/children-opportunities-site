@@ -740,7 +740,9 @@ export default function OpportunitiesList({
         [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline],
       ]
       : [
-        [t.f.format, item.format || null],
+        // Підпис, а не значення з бази: з #537 поля видно й на десктопі, і
+        // картка показувала «Формат hybrid» (28.09.2026).
+        [t.f.format, formatLabel(item.format, lang) || null],
         [t.f.place, placeText(item)],
         teens
           ? [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline]

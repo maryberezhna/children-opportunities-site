@@ -34,10 +34,10 @@
   .v2-home .v2-top .v2-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .v2-home .v2-catalog-main > .v2-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
-  /* У батьківському режимі топ без кремової підкладки — кремові самі
-     картки. Підлітковий чорний блок лишається як був. */
+  /* У батьківському режимі топ без кремової підкладки — виділені самі
+     картки (помаранчеві, правило в home-v2.css біля .v2-top). Підлітковий
+     чорний блок лишається як був. */
   html:not([data-mode="teens"]) .v2-home .v2-top { background: transparent; padding: 0; }
-  .v2-home .v2-top .v2-card { background: #f4efe4; border-color: transparent; }
 
   /* ── Картка ───────────────────────────────────────────────────────────── */
   .v2-home .v2-card { padding: 24px 28px; gap: 12px; }
