@@ -13,8 +13,9 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from process_notes import (  # noqa: E402
-    close_patch, legacy_inserts, open_notes, resolution_text,
+    APPLY_TOOL, close_patch, failed_note_text, legacy_inserts, open_notes, resolution_text,
 )
+from normalizer import VALID_OPP_TYPES  # noqa: E402
 
 
 def note(**over):
@@ -119,6 +120,35 @@ class LegacyTransfer(unittest.TestCase):
         existing = set()
         legacy_inserts(self.ROWS, existing)
         self.assertEqual(existing, set())
+
+
+
+class TypeOnlyFromDatabase(unittest.TestCase):
+    """28.09.2026: коментар «треба окрему категорію» місяць падав щогодини —
+    модель ставила тип «school», якого база не приймає."""
+
+    def test_enum_is_exactly_database_types(self):
+        spec = APPLY_TOOL["input_schema"]["properties"]["opportunity_type"]
+        self.assertEqual(set(spec["enum"]), VALID_OPP_TYPES)
+
+    def test_no_invented_school(self):
+        spec = APPLY_TOOL["input_schema"]["properties"]["opportunity_type"]
+        self.assertNotIn("school", spec["enum"])
+
+
+class FailedNoteText(unittest.TestCase):
+    def test_names_record_note_and_error(self):
+        text = failed_note_text({"title": "Ліцей «А»"}, "треба окрему категорію",
+                                "violates check constraint opportunities_opportunity_type_check")
+        self.assertIn("Ліцей «А»", text)
+        self.assertIn("треба окрему категорію", text)
+        self.assertIn("opportunity_type_check", text)
+
+    def test_escapes_html(self):
+        text = failed_note_text({"title": "<b>x</b> & y"}, "a<b", "e>f")
+        self.assertIn("&lt;b&gt;x&lt;/b&gt; &amp; y", text)
+        self.assertIn("a&lt;b", text)
+        self.assertIn("e&gt;f", text)
 
 
 if __name__ == "__main__":
