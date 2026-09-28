@@ -13,8 +13,8 @@ import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from process_notes import (  # noqa: E402
-    APPLY_TOOL, build_patch, close_patch, failed_note_text, legacy_inserts, open_notes,
-    partial_note_text, resolution_text, valid_source_url,
+    APPLY_TOOL, build_patch, close_patch, decision_patch, failed_note_text, legacy_inserts,
+    open_notes, partial_note_text, resolution_text, valid_source_url,
 )
 from normalizer import VALID_OPP_TYPES  # noqa: E402
 
@@ -185,6 +185,53 @@ class PartialNote(unittest.TestCase):
         self.assertIn("не повністю", text)
         self.assertIn("O-live &lt;T.R.E.E.S.&gt;", text)
         self.assertIn("Не зроблено: джерело не змінено", text)
+
+
+FULL = {"status": "draft", "age_from": 12, "age_to": 17, "deadline": "2026-10-15",
+        "cost_type": "free", "opportunity_type": "course", "format": "online"}
+
+
+class DecisionFromNote(unittest.TestCase):
+    """28.09.2026: жовта кнопка — «коли він обробиться, то виконати, що там
+    написано». «Опублікуй» і «не підходить» — теж вказівки."""
+
+    def test_publish_with_all_fields(self):
+        patch, decided, problem = decision_patch(FULL, "publish", now="2026-09-28T10:00:00+00:00")
+        self.assertEqual(patch, {"status": "active", "verified_at": "2026-09-28T10:00:00+00:00"})
+        self.assertEqual(decided, "опубліковано на сайт")
+        self.assertEqual(problem, "")
+
+    def test_publish_without_fields_is_refused_and_says_why(self):
+        patch, decided, problem = decision_patch({**FULL, "cost_type": None}, "publish")
+        self.assertEqual(patch, {})
+        self.assertIn("бракує: вартість", problem)
+
+    def test_reject_goes_to_archive_with_reason(self):
+        patch, decided, _ = decision_patch(FULL, "reject", "club")
+        self.assertEqual(patch, {"status": "archived"})
+        self.assertIn("гурток", decided)
+
+    def test_unknown_reason_is_other(self):
+        _, decided, _ = decision_patch(FULL, "reject", "school")
+        self.assertIn("інше", decided)
+
+    def test_no_decision_no_patch(self):
+        self.assertEqual(decision_patch(FULL, ""), ({}, "", ""))
+
+    def test_resolution_names_edits_and_decision(self):
+        self.assertEqual(resolution_text({"age_from": 12}, "опубліковано на сайт"),
+                         "Застосовано автоматично: змінено вік від; опубліковано на сайт.")
+        self.assertEqual(resolution_text({}, "опубліковано на сайт"),
+                         "Застосовано автоматично: опубліковано на сайт.")
+
+    def test_decision_alone_closes_the_note(self):
+        closing = close_patch({}, now="2026-09-28T10:00:00+00:00", decided="опубліковано на сайт")
+        self.assertEqual(closing["resolution"], "Застосовано автоматично: опубліковано на сайт.")
+
+    def test_tool_offers_only_known_reasons(self):
+        import rejections
+        spec = APPLY_TOOL["input_schema"]["properties"]["reject_reason"]
+        self.assertEqual(set(spec["enum"]), set(rejections.load_reasons()))
 
 
 class FailedNoteText(unittest.TestCase):

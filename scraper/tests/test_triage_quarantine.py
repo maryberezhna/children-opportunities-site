@@ -59,6 +59,15 @@ class HumanChangesNothing(unittest.TestCase):
     def test_human_verdict_writes_nothing(self):
         self.assertIsNone(verdict_patch(HUMAN, "не зрозуміло", "цитата"))
 
+    def test_doubt_to_queue_sends_to_parsing_not_to_site(self):
+        # 28.09.2026: сирий текст людині більше не показуємо — сумнів іде в
+        # розбір і стає карткою в черзі (позначка «людина прийняла з
+        # карантину» тримає її там). Відхилити сумнів так не можна.
+        patch = verdict_patch(HUMAN, "не зрозуміло", "цитата", doubt_to_queue=True)
+        self.assertEqual(patch["status"], "pending")
+        self.assertEqual(patch["review_verdict"], ACCEPT)
+        self.assertIn("сумнів машини", next(v for k, v in patch.items() if isinstance(v, str) and "авто-розбір" in v))
+
     def test_model_says_human(self):
         verdict, _, _ = decide(answer(HUMAN, "Літній мовний табір"), CAMP)
         self.assertEqual(verdict, HUMAN)
