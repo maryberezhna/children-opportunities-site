@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { TYPE_LABELS, AID_TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import { kyivToday } from '@/lib/dates';
 import { whenState } from '@/lib/timing';
+import { cutTitle } from '@/lib/text';
 
 // nodejs (not edge) бо шрифт читаємо з диска. На білді картинки не
 // генеруються («ƒ» у таблиці збірки): лише коли соцмережа чи месенджер
@@ -88,8 +89,11 @@ export default async function Image({ params }) {
     if (city) chips.push(city);
   }
 
-  // Довгі заголовки ріжемо — Satori не робить ellipsis по рядках надійно.
-  const shownTitle = title.length > 95 ? `${title.slice(0, 94).trimEnd()}…` : title;
+  // Satori не робить ellipsis по рядках надійно, тож довгу назву спершу
+  // зменшуємо, а ріжемо лише понад 130 символів — по межі слова (cutTitle).
+  // До 28.09.2026 різали все понад 95 посеред слова.
+  const shownTitle = cutTitle(title, 130);
+  const titleSize = shownTitle.length > 95 ? 48 : shownTitle.length > 55 ? 56 : 68;
 
   return new ImageResponse(
     (
@@ -140,7 +144,7 @@ export default async function Image({ params }) {
         <div
           style={{
             display: 'flex',
-            fontSize: shownTitle.length > 55 ? 56 : 68,
+            fontSize: titleSize,
             fontWeight: 700,
             color: '#1a1a1a',
             lineHeight: 1.15,

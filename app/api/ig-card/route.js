@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { supabase } from '@/lib/supabase';
 import { TYPE_LABELS, AID_TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
+import { cutTitle } from '@/lib/text';
 
 /**
  * Картинка під Instagram: 1080×1350 (4:5 — найбільше місця в стрічці).
@@ -65,7 +66,12 @@ export async function GET(request) {
     if (city) chips.push(city);
   }
   const deadline = deadlineLabel(item?.deadline);
-  const shown = title.length > 88 ? `${title.slice(0, 87).trimEnd()}…` : title;
+  // До 28.09.2026 тут різали все довше за 88 символів посеред слова:
+  // «…подорожей Європою в межах Discove…» (скриншот Марії). Місця на картці
+  // 4:5 вистачає на ~130 символів дрібнішим шрифтом, тож довгу назву
+  // зменшуємо, а ріжемо лише понад це — і по межі слова.
+  const shown = cutTitle(title, 130);
+  const titleSize = shown.length > 88 ? 58 : shown.length > 52 ? 66 : 82;
 
   return new ImageResponse(
     (
@@ -91,7 +97,7 @@ export async function GET(request) {
         </div>
 
         <div style={{
-          display: 'flex', fontSize: shown.length > 52 ? 66 : 82, fontWeight: 700,
+          display: 'flex', fontSize: titleSize, fontWeight: 700,
           color: '#1a1a1a', lineHeight: 1.12, letterSpacing: '-0.02em',
         }}>{shown}</div>
 
