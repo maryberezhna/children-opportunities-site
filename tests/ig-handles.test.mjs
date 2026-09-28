@@ -23,3 +23,15 @@ test('рядок для адмінчату каже, де знайдено ак�
   assert.match(tagLine({ handles: [], host: 'mon.gov.ua' }), /вручну/);
   assert.match(tagLine({ handles: [], host: null }), /вручну/);
 });
+
+// Правило Марії 28.09.2026: у чернетці поста для Instagram стоїть, кого
+// тегнути, — і лише акаунти, знайдені на сторінці джерела.
+test('контент-агент передає знайдені акаунти моделі й вимагає їх у пості', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../scripts/content-agent.mjs', import.meta.url), 'utf8');
+  const search = src.indexOf('instagramHandles(o.source_url)');
+  const writeCall = src.indexOf('await write(items, clips, found)');
+  assert.ok(search > -1 && writeCall > search, 'акаунти треба шукати ДО написання поста й передати в write()');
+  assert.match(src, /Якщо в даних є рядок «Instagram», познач ці акаунти/);
+  assert.match(src, /Інших акаунтів не\s+додавай і не вгадуй/);
+});
