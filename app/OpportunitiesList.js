@@ -4,7 +4,8 @@ import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
 import { cityLabel, formatLabel } from '@/lib/labels';
-import { opportunitiesWord } from '@/lib/plural';
+import { opportunitiesWord, freeWord } from '@/lib/plural';
+import { trackSearch } from '@/lib/track';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
@@ -79,6 +80,7 @@ const UI = {
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
     ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
     countWord: (n) => opportunitiesWord(n),
+    freeWord: (n) => freeWord(n),
   },
   en: {
     found: 'Found',
@@ -125,6 +127,7 @@ const UI = {
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
     ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
+    freeWord: () => 'free',
   },
 };
 
@@ -426,6 +429,8 @@ export default function OpportunitiesList({
   const [place, setPlace] = useState(presetCity ? [presetCity] : []);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(initialLimit);
+  // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
+  const searched = useRef('');
   const [hydrated, setHydrated] = useState(false);
 
   // Мобільна верстка головної (≤900px, референс «Dityam — мобільна версія»,
@@ -864,8 +869,30 @@ export default function OpportunitiesList({
 
   // Топ віднімається від стрічки лише з трьома картками — тоді й додаємо його
   // назад. Інакше одна-дві картки топу вже є в стрічці й рахувались двічі.
+  // Подія пошуку — пауза 600 мс, щоб не рахувати кожну літеру. Стоїть саме
+  // тут, після stream: вище він ще в TDZ, і звернення до stream.length у
+  // масиві залежностей валило б рендер.
+  //
+  // Кількість результатів шлемо разом із запитом: порожній пошук важливіший
+  // за успішний, бо показує, чого в базі бракує.
   const count = stream.length + (topCards.length === 3 ? topCards.length : 0);
+  // Скільки з видимих — безкоштовні. Рахуємо по тому, що людина зараз бачить,
+  // а не по всій базі: після фільтра «платно» рядок «540 безкоштовних» був би
+  // неправдою. До 28.09.2026 це число стояло в хіро, і на телефоні виходило
+  // два однакові лічильники на одному екрані.
+  const freeCount = stream.filter((o) => o.cost_type === 'free').length
+    + (topCards.length === 3 ? topCards.filter((o) => o.cost_type === 'free').length : 0);
   const shown = stream.slice(0, limit);
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    const q = query.trim();
+    if (q.length < 2 || q === searched.current) return undefined;
+    const timer = setTimeout(() => {
+      searched.current = q;
+      trackSearch(q, count);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [hydrated, query, count]);
   // Після четвертої: перша сторінка каталогу — 6 карток на десктопі й 10 на
   // мобільному, а після шостої картка ставала в самий кінець сторінки, поруч
   // із блоком Telegram, що й так стоїть під каталогом.
@@ -1468,7 +1495,14 @@ export default function OpportunitiesList({
 
           {mobileLayout ? (
             <div className="m-count" aria-live="polite" ref={countRef}>
-              <span><strong>{count}</strong> {t.countWord(count)}</span>
+              <span>
+                <strong>{count}</strong> {t.countWord(count)}
+                {freeCount ? (
+                  <span className="m-count-free">
+                    {' · '}<strong>{freeCount}</strong> {t.freeWord(freeCount)}
+                  </span>
+                ) : null}
+              </span>
               <span className="m-count-hint">{t.sortHint}</span>
             </div>
           ) : null}
