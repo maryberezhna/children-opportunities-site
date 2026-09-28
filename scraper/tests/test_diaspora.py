@@ -175,12 +175,15 @@ class PromptRules(unittest.TestCase):
         for phrase in ("БЕЗ УКРАЇНСЬКОГО ЗМІСТУ", "міська музична школа", "Союзу українців у Польщі",
                        "табір УГКЦ", "ОДНА постійна", "paid_affordable, якщо родина платить хоч щось",
                        "для українських дітей, які живуть у", "Поїздку З України",
-                       "Муніципальний фонд", "Bildung und Teilhabe", "800+"):
+                       "Bildung und Teilhabe", "800+", "Kindergeld"):
             self.assertIn(phrase, p)
-        # BuT — виняток: береться як виплата (Марія, 28.09.2026); решта — ні.
-        self.assertIn("БЕРЕМО ЯК ВИПЛАТУ", p)
+        # Державні виплати іншої країни — наші (Марія, 28.09.2026), з умовою
+        # права зі сторінки; виплати фондів і НУО — ні.
+        self.assertIn("ДЕРЖАВНІ ВИПЛАТИ ІНШОЇ КРАЇНИ — НАШІ", p)
         self.assertIn("opportunity_type=allowance", p)
-        self.assertNotIn("не виплата родині, для діаспори вона", p)
+        self.assertIn("Українців у тексті може й не бути", p)
+        self.assertIn("фонд\nгромади чи НУО", p)
+        self.assertNotIn("ЧУЖІ ВИПЛАТИ Й СУБСИДІЇ — НЕ НАШІ", p)
         # Суботня школа — виняток із «закладу на роки».
         self.assertIn("суботня чи недільна школа за кордоном — НЕ такий заклад", p)
 
@@ -188,9 +191,10 @@ class PromptRules(unittest.TestCase):
         from auto_review import JUDGE_PROMPT as p
         for phrase in ("БЕЗ УКРАЇНСЬКОГО ЗМІСТУ", "міська музична школа", "табір УГКЦ",
                        "Союзу українців у Польщі", "НЕ РЕКЛАМА", "які живуть у Німеччині",
-                       "фонд однієї голландської громади"):
+                       "фонд однієї\nголландської громади"):
             self.assertIn(phrase, p)
-        self.assertIn("Bildung und Teilhabe (BuT): його беремо", p)
+        self.assertIn("державні виплати на дитину (800+, Kindergeld", p)
+        self.assertNotIn("800+, Kindergeld та інші чужі виплати — ні", p)
 
 
 def _reload(**env):
@@ -231,7 +235,10 @@ class DiasporaProfile(unittest.TestCase):
         self.assertIn('countries — ["es"]', p)
         self.assertLess(p.index("СПЕРШУ державні"), p.index("ЛИШЕ ПОТІМ"))
         self.assertIn("aulas de enlace", p)
-        self.assertIn("грошові виплати родині", p)
+        # Державні виплати — наші (28.09.2026); фонди й НУО — ні.
+        self.assertIn("державні виплати на дитину (800+, Kindergeld", p)
+        self.assertIn("місцеву НЕДЕРЖАВНУ послугу", p)
+        self.assertNotIn("чужих виплат не збираємо", p)
 
     def test_daily_diaspora_day_ignores_deficit_theme(self):
         da = _reload(DISCOVER_KEYWORD="конкурси для дітей 7–10 років",
