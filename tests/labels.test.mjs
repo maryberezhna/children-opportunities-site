@@ -6,8 +6,8 @@ import { formatLabel, isEvent } from '../lib/labels.js';
 // розуміти всі три значення обома мовами, а на сміття відповідати null.
 test('formatLabel розуміє enum', () => {
   assert.equal(formatLabel('online'), 'Онлайн');
-  assert.equal(formatLabel('offline'), 'Наживо');
-  assert.equal(formatLabel('hybrid'), 'Онлайн і наживо');
+  assert.equal(formatLabel('offline'), 'На місці');
+  assert.equal(formatLabel('hybrid'), 'Онлайн і на місці');
   assert.equal(formatLabel('online', 'en'), 'Online');
   assert.equal(formatLabel('offline', 'en'), 'In person');
 });
