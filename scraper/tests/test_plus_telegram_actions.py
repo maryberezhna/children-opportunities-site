@@ -77,7 +77,10 @@ class TelegramKeyboard(unittest.TestCase):
         for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
             self.assertEqual([b for b in row if "url" in b], [])
         text = self.pd.build_telegram(SUB, [item()])
-        self.assertIn("/events/", text)
+        # Веде прямо в Google Calendar, а не на сторінку сайту: доти людина
+        # мусила клікнути ще раз (Марія, 25.09.2026).
+        self.assertIn("calendar.google.com", text)
+        self.assertNotIn("/events/", text)
         self.assertIn("у календар", text)
         # Без дати ставити подію нікуди — і посилання не буде.
         no_date = self.pd.build_telegram(SUB, [item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)])
