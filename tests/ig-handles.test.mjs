@@ -19,9 +19,17 @@ test('немає посилань — порожньо, а не вигадка',
 });
 
 test('рядок для адмінчату каже, де знайдено акаунт', () => {
-  assert.match(tagLine({ handles: ['eurodesk'], host: 'programmes.eurodesk.eu' }), /@eurodesk.*programmes\.eurodesk\.eu/);
+  assert.match(tagLine({ handles: ['eurodesk'], host: 'programmes.eurodesk.eu' }), /programmes\.eurodesk\.eu/);
   assert.match(tagLine({ handles: [], host: 'mon.gov.ua' }), /вручну/);
   assert.match(tagLine({ handles: [], host: null }), /вручну/);
+});
+
+// 28.09.2026: «@eurodesk» з адмінчату не шукався в Instagram — логін без @,
+// кожен окремо в <code>, щоб копіювався дотиком.
+test('логіни в адмінчаті без @ і кожен окремо, щоб копіювались у пошук', () => {
+  const line = tagLine({ handles: ['eurodesk', 'european_youth_eu'], host: 'a.eu' });
+  assert.ok(!line.includes('@'), line);
+  assert.match(line, /\n<code>eurodesk<\/code>\n<code>european_youth_eu<\/code>$/);
 });
 
 // Правило Марії 28.09.2026: у чернетці поста для Instagram стоїть, кого

@@ -10,7 +10,7 @@
  *      TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, SLUG, NOTE (необовʼязково).
  */
 import { createClient } from '@supabase/supabase-js';
-import { instagramHandles, tagLine } from './ig-handles.mjs';
+import { instagramHandles, tagLine, escapeHtml } from './ig-handles.mjs';
 
 const SITE = 'https://dityam.com.ua';
 const slug = String(process.env.SLUG || '').trim().replace(/^.*\/o\//, '').replace(/[/?#].*$/, '');
@@ -38,8 +38,9 @@ if (!item) {
 }
 
 const tags = tagLine(await instagramHandles(item.source_url));
-const caption = [item.title, `${SITE}/o/${item.slug}`, '', tags, note]
-  .filter((s, i) => s || i === 2).join('\n').slice(0, 1024);
+// Підпис у HTML: логіни в <code> копіюються дотиком (див. tagLine).
+const caption = [escapeHtml(item.title), `${SITE}/o/${item.slug}`, '', tags, escapeHtml(note.slice(0, 400))]
+  .filter((s, i) => s || i === 2).join('\n');
 
 // Параметр v — щоб Telegram завантажив картку заново, а не взяв збережену
 // за тією самою адресою.
@@ -47,11 +48,11 @@ const photo = `${SITE}/api/ig-card?slug=${encodeURIComponent(item.slug)}&v=${Dat
 const r = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendPhoto`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ chat_id: process.env.TELEGRAM_ADMIN_CHAT_ID, photo, caption }),
+  body: JSON.stringify({ chat_id: process.env.TELEGRAM_ADMIN_CHAT_ID, photo, caption, parse_mode: 'HTML' }),
 });
 const j = await r.json();
 if (!j.ok) {
   console.error('telegram sendPhoto:', j.description);
   process.exit(1);
 }
-console.log(`Надіслано в адмінчат: ${item.title}\n${tags}`);
+console.log(`Надіслано в адмінчат: ${item.title}\n${tags.replace(/<\/?code>/g, '')}`);

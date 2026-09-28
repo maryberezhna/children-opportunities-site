@@ -24,7 +24,7 @@ import { extname, join } from 'node:path';
 import { isoWeek } from '../lib/week.js';
 import { TYPE_LABELS } from '../lib/labels.js';
 import { costLabel, withPageLink } from './post-labels.mjs';
-import { instagramHandles, tagLine } from './ig-handles.mjs';
+import { instagramHandles, tagLine, escapeHtml } from './ig-handles.mjs';
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(name);
@@ -236,7 +236,8 @@ async function main() {
       // віддає збережену, і виправлена назва на картці не зʼявилась би.
       await tg('sendPhoto', {
         photo: `${SITE}/api/ig-card?slug=${item.slug}&v=${week}`,
-        caption: `${i + 1}/${posts.length} · ${item.title.slice(0, 120)}\n\n${tags[i]}`,
+        caption: `${i + 1}/${posts.length} · ${escapeHtml(item.title.slice(0, 120))}\n\n${tags[i]}`,
+        parse_mode: 'HTML',
       });
     }
     // Текст окремим повідомленням: із підпису під фото його не скопіювати

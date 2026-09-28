@@ -8,16 +8,25 @@ import { cutTitle } from '@/lib/text';
 /**
  * Картинка під Instagram: 1080×1350 (4:5 — найбільше місця в стрічці).
  *
- * Той самий візуальний словник, що й в OG-обкладинках: людина має впізнати
- * Dityam у стрічці, не читаючи підпису. Різниця лише в пропорції й у тому,
- * що тут є місце на заклик — у стрічці ніхто не бачить адреси сайту, тож
- * вона мусить бути на самій картинці.
+ * За бренд-кітом (public/press/dityam-brand-kit.zip, guidelines.html):
+ * фон для постів і каруселей — «кремовий у клітинку» #F1EBDE; логотип —
+ * справжній lockup зі знаком, а не набраний текст; кольори лише з палітри
+ * (кремовий · чорнильний · помаранчевий ≤15% · teal як другий голос);
+ * заголовок — вага 500 з трекінгом −0.025em (Manrope — кириличний напарник
+ * DM Sans); рубрика — uppercase 500 +0.04em. До 28.09.2026 картка жила
+ * своїм життям: світлий фон із градієнтами, сірі й коричневі кольори поза
+ * палітрою, жирний заголовок і адреса замість логотипа.
+ *
+ * Адреса сайту на картинці лишається — вона і є логотипом: у стрічці
+ * посилання не клікають, його запамʼятовують.
  */
 export const runtime = 'nodejs';
 export const revalidate = 3600;
 
 const fontDir = path.join(process.cwd(), 'public', 'fonts');
+const brandDir = path.join(process.cwd(), 'public', 'brand');
 let fontCache = null;
+let logoCache;
 async function fonts() {
   if (!fontCache) {
     const [medium, bold] = await Promise.all([
@@ -31,6 +40,31 @@ async function fonts() {
   }
   return fontCache;
 }
+
+// Lockup з бренд-кіту (1858×414). Не прочитався — картка все одно
+// має вийти: тоді адреса текстом, як було раніше.
+async function logo() {
+  if (logoCache === undefined) {
+    try {
+      const png = await readFile(path.join(brandDir, 'lockup-horizontal-orange.png'));
+      logoCache = `data:image/png;base64,${png.toString('base64')}`;
+    } catch {
+      logoCache = null;
+    }
+  }
+  return logoCache;
+}
+
+// Палітра бренд-кіту (colors/brand-colors.txt).
+const CREAM = '#f1ebde';
+const INK = '#1a1a1a';
+const INK_SOFT = '#4a4a4a';
+const BORDER = '#e8e3d6';
+const TEAL = '#cce8e0';
+const TEAL_INK = '#0e5449';
+// Помаранчевий текст на кремовому — темніший відтінок заради контрасту
+// (WCAG AA, як --v2-accent-strong на сайті); #e85d24 — лише в логотипі.
+const ORANGE_TEXT = '#c8501a';
 
 function deadlineLabel(dateStr) {
   if (!dateStr) return null;
@@ -73,50 +107,59 @@ export async function GET(request) {
   const shown = cutTitle(title, 130);
   const titleSize = shown.length > 88 ? 58 : shown.length > 52 ? 66 : 82;
 
+  const lockup = await logo();
+
   return new ImageResponse(
     (
       <div style={{
         width: '100%', height: '100%', display: 'flex', flexDirection: 'column',
         justifyContent: 'space-between', padding: '84px 72px',
-        backgroundColor: '#fefcf7',
+        backgroundColor: CREAM,
+        // «Кремовий у клітинку» — фон бренд-кіту для постів і каруселей.
+        // Лінія в кіті — rgba(26,26,26,0.045) на кремовому; satori не розбирає
+        // rgba у списку градієнтів, тож той самий колір суцільним — це BORDER.
         backgroundImage:
-          'radial-gradient(ellipse at top left, #fef2eb 0%, rgba(254,252,247,0) 55%),'
-          + 'radial-gradient(ellipse at bottom right, #e8f4f2 0%, rgba(254,252,247,0) 55%)',
+          `linear-gradient(${BORDER} 2px, transparent 2px),`
+          + `linear-gradient(90deg, ${BORDER} 2px, transparent 2px)`,
+        backgroundSize: '54px 54px',
         fontFamily: 'Manrope',
       }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 26 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
           <div style={{
-            display: 'flex', alignSelf: 'flex-start', fontSize: 30, fontWeight: 500,
-            color: '#ffffff', backgroundColor: '#e85d24', borderRadius: 999, padding: '10px 26px',
+            display: 'flex', alignSelf: 'flex-start', fontSize: 26, fontWeight: 500,
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+            color: TEAL_INK, backgroundColor: TEAL, borderRadius: 999, padding: '12px 28px',
           }}>{typeLabel}</div>
           {deadline ? (
-            <div style={{ display: 'flex', fontSize: 32, fontWeight: 700, color: '#b8471a' }}>
+            <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, color: ORANGE_TEXT }}>
               {deadline}
             </div>
           ) : null}
         </div>
 
         <div style={{
-          display: 'flex', fontSize: titleSize, fontWeight: 700,
-          color: '#1a1a1a', lineHeight: 1.12, letterSpacing: '-0.02em',
+          display: 'flex', fontSize: titleSize, fontWeight: 500,
+          color: INK, lineHeight: 1.12, letterSpacing: '-0.025em',
         }}>{shown}</div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 34 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 44 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14 }}>
             {chips.map((chip) => (
               <div key={chip} style={{
-                display: 'flex', fontSize: 28, fontWeight: 500, color: '#54617a',
-                backgroundColor: '#ffffff', border: '2px solid #e8e3d6',
+                display: 'flex', fontSize: 28, fontWeight: 500, color: INK_SOFT,
+                backgroundColor: '#ffffff', border: `2px solid ${BORDER}`,
                 borderRadius: 999, padding: '10px 22px',
               }}>{chip}</div>
             ))}
           </div>
-          {/* Адреса на самій картинці: у стрічці посилання не клікають, його
-              запамʼятовують — або не запамʼятовують, якщо його там немає. */}
-          <div style={{
-            display: 'flex', fontSize: 34, fontWeight: 700, color: '#e85d24',
-            letterSpacing: '-0.02em',
-          }}>dityam.com.ua</div>
+          {lockup ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={lockup} width={404} height={90} alt="dityam.com.ua" />
+          ) : (
+            <div style={{ display: 'flex', fontSize: 34, fontWeight: 700, color: ORANGE_TEXT }}>
+              dityam.com.ua
+            </div>
+          )}
         </div>
       </div>
     ),
