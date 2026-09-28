@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
+import { channelCtaVisible, onChannelCtaVisibility } from '@/lib/channel-cta';
 import { trackConversion, trackSubscribeClick, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
 
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
@@ -170,6 +171,10 @@ export default function SubscribePopup() {
 
   const open = useCallback((trigger, nextVariant = 'default', opts = {}) => {
     if (!canShow(opts)) return;
+    // Постійна картка каналу вже на екрані — підказка мовчить. Той самий
+    // заголовок і текст двічі водночас читаються як настирливість, а картка
+    // нікуди не зникне й людина її прочитає (lib/channel-cta.js).
+    if (channelCtaVisible()) return;
     writeSession(SESSION_SHOWS_KEY, readNumber(SESSION_SHOWS_KEY) + 1);
     lastTrigger.current = trigger;
     openRef.current = true;
@@ -231,6 +236,13 @@ export default function SubscribePopup() {
     trackSubscribeClick({ target: 'channel', placement: 'popup' });
     hide('joined');
   };
+
+  // Картка каналу вʼїхала в екран, поки підказка відкрита: ховаємо підказку.
+  // Причина вимкнення — 'autohidden', а не 'closed': людина її не закривала,
+  // і в звіті це не має виглядати як відмова.
+  useEffect(() => onChannelCtaVisibility((visible) => {
+    if (visible && openRef.current) hide('autohidden');
+  }), [hide]);
 
   // ТРИГЕР 1: 15 переглянутих карток.
   // Слухач не вішаємо взагалі, якщо підказка вже не потрібна: checkScroll на
