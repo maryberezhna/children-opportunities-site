@@ -54,13 +54,14 @@ from slugify import slugify
 from urllib.parse import urlparse
 
 from canonical import canonical_url
-from db import get_client, record_crawl_result
+from db import get_client, record_crawl_result, same_school
 import rejections
 import anthropic
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import deficit  # клітинка дня: попит ÷ надходження (23.09.2026)
 import hubs
 from keywords import (
+    DIASPORA_KEYWORDS, DIASPORA_REGION_NAMES, DIASPORA_REGIONS,
     DISCOVER_KEYWORDS, NATIONWIDE_ROTATION, RARE_ABROAD_KEYWORDS,
     RARE_ABROAD_REGIONS, REGION_ROTATION,
 )
@@ -98,6 +99,13 @@ CELL = deficit.cell_from_env(os.environ.get("DISCOVER_DEFICIT_CELL"))
 # обовʼязкових полів, лише чернетки на модерацію.
 PROFILE = (os.environ.get("DISCOVER_PROFILE") or "").strip()
 RARE = PROFILE == "rare_abroad"
+# Профіль «діаспора» (28.09.2026, план від 22.09, крок 3): для дітей з
+# України, які ВЖЕ ЖИВУТЬ у країні. Явно — DISCOVER_PROFILE=diaspora (ручний
+# запуск). У щоденному агенті він вмикається сам у дні, коли регіон дня —
+# закордонний (ротація чергує Україну з країнами діаспори через день): замість
+# «теми дефіциту × країна» ці дні тепер шукають за своїми темами й правилами.
+# Кількість викликів моделі не змінюється — один пошук на день, як і було.
+DIASPORA_PROFILE = PROFILE == "diaspora"
 
 RARE_FOCUS = (
     "\nЦЕЙ ПОШУК — ПРО РІДКІСНЕ Й НЕЗВИЧНЕ. Шукай те, про що батьки самі не "
@@ -127,8 +135,64 @@ RARE_FOCUS = (
 )
 
 
+def is_diaspora(region: dict) -> bool:
+    """Чи цей прогін — профіль «діаспора». «Рідкісне» ним не буває ніколи:
+    там аудиторія — дитина, яка живе в Україні (Марія, 14.09.2026)."""
+    if RARE:
+        return False
+    return DIASPORA_PROFILE or region.get("name") in DIASPORA_REGION_NAMES
+
+
+def diaspora_focus(region: dict) -> str:
+    """Правила профілю «діаспора» (рішення Марії 22.09 і 28.09.2026)."""
+    where = region.get("in_country") or f"у країні {region.get('name')}"
+    code = region.get("code") or ""
+    return (
+        f"\nЦЕЙ ПОШУК — ДЛЯ ДІАСПОРИ: дітей з України, які ВЖЕ ЖИВУТЬ {where}. "
+        "Родина тут живе й шукає, що є для дитини поруч.\n"
+        "ПОРЯДОК ПОШУКУ (Марія, 28.09.2026):\n"
+        "1) СПЕРШУ державні програми країни, регіону чи міста для дітей з України "
+        "або з тимчасовим захистом: безкоштовні уроки мови країни, підготовчі й "
+        "адаптаційні класи, шкільна інтеграція, державні канікулярні програми й "
+        "табори, психологічна підтримка, оплата гуртків напряму організатору, "
+        "програми міністерства чи регіону з української мови й культури. "
+        "Першоджерело — офіційна сторінка міністерства, регіонального уряду, міста "
+        "чи державної служби: перші пошуки — саме туди"
+        + (f" ({region['state_hint']})" if region.get("state_hint") else "") + ".\n"
+        "2) ЛИШЕ ПОТІМ — українські організації діаспори, церкви, НУО й фонди: "
+        "суботні школи, студії, табори, фестивалі, конкурси.\n"
+        "У відповіді державні програми став першими.\n"
+        "БЕРИ:\n"
+        "- державні програми для дітей з України чи з тимчасовим захистом — вони "
+        "безкоштовні: cost_type=free;\n"
+        "- те, що має український зміст або проводить українська організація, "
+        "навіть якщо відкрите всім: двомовна майстерня в Українському домі, конкурс "
+        "малюнка «Україна очима дітей», студія українського танцю з учнями різних "
+        "національностей, дитячі фестивалі Союзу українців у Польщі, табори УГКЦ "
+        "(навіть із підтвердженням від пароха);\n"
+        "- платні українські школи, студії й конкурси — cost_type=paid_affordable, "
+        "якщо родина платить хоч щось; порогів ціни немає;\n"
+        "- суботню чи недільну школу — ОДНИМ записом на школу: opportunity_type=club, "
+        "recurrence=ongoing.\n"
+        "НЕ БЕРИ:\n"
+        "- грошові виплати родині (800+, Kindergeld, допомога на дитину, субсидії) — "
+        "чужих виплат не збираємо;\n"
+        "- місцеву послугу для всіх мешканців без українського змісту: міська "
+        "музична школа, муніципальний фонд, клуб при бібліотеці;\n"
+        "- поїздки З України (обміни, табори, куди їдуть з України) — це інший пошук.\n"
+        "МОВА: шукай мовою країни й англійською, але title і summary пиши "
+        "українською — перекладай; власну назву лишай в оригіналі з поясненням через "
+        "тире («Willkommensklasse — підготовчий клас німецької»), без транслітерації.\n"
+        f"SUMMARY починай словами, для кого: «Для українських дітей, які живуть {where}» — "
+        "на цьому тримається добірка для діаспори на сайті. "
+        + (f"countries — [\"{code}\"].\n" if code else "\n")
+    )
+
+
 def _regions() -> list[dict]:
     """Усі регіони, які можна назвати вручну (DISCOVER_REGION)."""
+    if DIASPORA_PROFILE:
+        return DIASPORA_REGIONS
     return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
 
 
@@ -143,6 +207,8 @@ def _rotation() -> list[dict]:
     """
     if RARE:
         return RARE_ABROAD_REGIONS
+    if DIASPORA_PROFILE:
+        return DIASPORA_REGIONS
     return NATIONWIDE_ROTATION if CELL else REGION_ROTATION
 
 
@@ -394,17 +460,26 @@ def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str, dict, str
     return ok, why, page_evidence(out, page), page
 
 
-def keyword_of_day() -> str:
+def keyword_of_day(diaspora: bool = False) -> str:
     """Слово дня — детермінована ротація по KEYWORDS, без стану.
 
     DISCOVER_KEYWORD перебиває ротацію — так само, як DISCOVER_REGION перебиває
     регіон. Потрібно, щоб закрити тему, яку не можна чекати: кампанія має дату,
-    а ротація — ні."""
+    а ротація — ні.
+
+    День діаспори (diaspora=True): слово від ДЕФІЦИТУ тут не діє — попит
+    дефіциту виміряно на підбірках для дітей в Україні, а не для тих, хто
+    живе в Польщі. Слово людини (без клітинки дефіциту) діє як завжди."""
     override = (os.environ.get("DISCOVER_KEYWORD") or "").strip()
-    if override:
+    if override and not (diaspora and CELL):
         return override
-    pool = RARE_ABROAD_KEYWORDS if RARE else KEYWORDS
     doy = date.today().timetuple().tm_yday
+    if diaspora:
+        # У щоденній ротації дні діаспори мають одну парність doy — без «// 2»
+        # половина тем не випадала б ніколи.
+        step = doy if DIASPORA_PROFILE else doy // 2
+        return DIASPORA_KEYWORDS[step % len(DIASPORA_KEYWORDS)]
+    pool = RARE_ABROAD_KEYWORDS if RARE else KEYWORDS
     return pool[doy % len(pool)]
 
 
@@ -433,7 +508,7 @@ def region_of_day() -> dict:
 def _prompt(kw: str, region: dict, avoid: str = "") -> str:
     """avoid — відмови людини з причиною (rejections.avoid_block): Марія,
     28.09.2026, кнопка «Не підходить» — «не шукати такі можливості»."""
-    is_home = region["name"] == "Україна"
+    diaspora = is_diaspora(region)
     return (
         f"Сьогодні {date.today().isoformat()}.\n"
         f"Знайди в інтернеті до {MAX_CANDIDATES} КОНКРЕТНИХ, актуальних можливостей "
@@ -444,7 +519,7 @@ def _prompt(kw: str, region: dict, avoid: str = "") -> str:
         # старшокласників, бо їх у мережі більше.
         + (f"ВІК: шукай саме для дітей {deficit.band_label(AGE_BAND)}. Можливість "
            f"має підходити дитині цього віку — програму для інших вікових груп "
-           f"не бери.\n" if AGE_BAND in deficit.AGE_RANGES else "")
+           f"не бери.\n" if AGE_BAND in deficit.AGE_RANGES and not diaspora else "")
         + "\n"
         "Кожна має бути:\n"
         "- для дітей/підлітків 0–18, зокрема «з 18 років» (18-річні — наша\n"
@@ -456,14 +531,10 @@ def _prompt(kw: str, region: dict, avoid: str = "") -> str:
         # У флоу «рідкісне за кордоном» цей блок вимкнено: його «для дітей з
         # України/біженців» пускало діаспорні програми, для яких треба жити в
         # країні. Там своя, суворіша умова — RARE_FOCUS.
-        + ("" if is_home or RARE else
-           f"- доступна для української дитини в цій країні: або прямо для дітей "
-           f"з України/біженців, або відкрита для всіх без вимоги громадянства. "
-           f"Мовний бар'єр — не привід відкидати, але познач у summary, якою "
-           f"мовою проходить.\n"
-           f"\nТему «{kw}» сприймай як загальний напрям, а не буквальний запит: "
-           f"шукай місцевий відповідник. Українських реалій (ДЮСШ, МАН, НУШ, "
-           f"позашкілля) в цій країні немає — там свої формати.\n")
+        # Закордонний регіон поза «рідкісним» — завжди профіль «діаспора»
+        # (28.09.2026): свої правила замість загального «доступна для
+        # української дитини в цій країні», яке пускало місцеві послуги для всіх.
+        + (diaspora_focus(region) if diaspora else "")
         + (RARE_FOCUS if RARE else "")
         + avoid
         + "\n"
@@ -690,6 +761,7 @@ def build_record(c: dict, kw: str, region: dict) -> dict | None:
         # admin_comment: модератору він потрібен, відвідувачу — ні.
         "source": publisher(url) or "інтернет",
         "admin_comment": (f"🌍 Рідкісне за кордоном: {kw} · {region['name']}" if RARE
+                          else f"🏡 Діаспора: {kw} · {region['name']}" if is_diaspora(region)
                           else f"🔎 Агент: {kw}" if region["name"] == "Україна"
                           else f"🔎 Агент: {kw} · {region['name']}"),
         "source_url": url,
@@ -813,19 +885,23 @@ def remember_cell(kw: str, found: int, saved: int) -> None:
 
 
 def main() -> int:
-    kw = keyword_of_day()
     region = region_of_day()
+    diaspora = is_diaspora(region)
+    kw = keyword_of_day(diaspora)
+    if diaspora:
+        logger.info("🏡 Профіль: діаспора (для дітей, які вже живуть: %s)", region["name"])
     if RARE:
         logger.info("🌍 Профіль: рідкісне за кордоном")
     logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
                 kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
-    if CELL:
+    if CELL and not diaspora:
         logger.info("🎯 Клітинка дефіциту: %s:%s", CELL[0], CELL[1])
 
     candidates = search_candidates(kw, region)
     logger.info("  Знайдено кандидатів: %d", len(candidates))
     if not candidates:
-        remember_cell(kw, 0, 0)
+        if not diaspora:
+            remember_cell(kw, 0, 0)
         return 0
 
     client = get_client()
@@ -833,7 +909,8 @@ def main() -> int:
     # Existing titles (active + draft) for duplicate analysis — every candidate
     # is compared against these BEFORE it can enter the moderation queue.
     try:
-        rows = (client.table("opportunities").select("title, slug, canonical_url, source_url")
+        rows = (client.table("opportunities").select("title, slug, canonical_url, source_url, "
+                                                    "countries, cities, opportunity_type")
                 .in_("status", ["active", "draft"]).execute().data or [])
     except Exception as e:
         logger.warning("  Не вдалося завантажити наявні для дедупу: %s", e)
@@ -881,6 +958,16 @@ def main() -> int:
             dup_skipped += 1
             logger.info("  ⏭ сайт уже в каталозі як одна можливість (%s) — не пропоную: %s",
                         dom, rec["title"][:55])
+            continue
+
+        # Школа діаспори, яка вже є (каталог МІОК чи власний сайт): одна
+        # школа = одна картка (28.09.2026). Назва могла змінитись до
+        # невпізнанності для difflib — ключ школи цього не боїться.
+        twin = next((r for r in rows if same_school(rec, r)), None)
+        if twin:
+            dup_skipped += 1
+            logger.info("  ⏭ та сама школа вже є (%s) — не пропоную: %s",
+                        twin.get("slug"), rec["title"][:55])
             continue
 
         # Duplicate analysis (also catches near-dupes within this batch).
@@ -958,7 +1045,9 @@ def main() -> int:
     except Exception as e:
         logger.error("Не вдалось записати здоров'я discover-agent: %s", e)
 
-    remember_cell(kw, len(candidates), added)
+    # День діаспори шукав не клітинку дефіциту — памʼять дефіциту не чіпаємо.
+    if not diaspora:
+        remember_cell(kw, len(candidates), added)
 
     notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "

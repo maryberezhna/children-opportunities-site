@@ -348,6 +348,18 @@ def process_pending(normalizer, sb_client, limit=500):
         )
         if not existing:
             alive, reason = link_check.is_alive(normalized.get("source_url", ""))
+            if not alive and link_check.is_timeout(reason):
+                # Таймаут — це «не знаю», а не «мертве». 25.08.2026 усі сім шкіл
+                # з каталогу МІОК пішли в rejected як «dead link: ConnectTimeout»:
+                # сайт щойно віддав їх скраперу, а за кілька хвилин перестав
+                # відповідати тій самій машині. Відхилений сирець хеш-гейт уже
+                # не поверне, тож школа зникала назавжди. Тепер сирець лишається
+                # у черзі й пробує наступного запуску (не більше MAX_ATTEMPTS).
+                raw_store.bump_attempt(sb_client, item, f"link timeout: {reason}")
+                stats["retry"] += 1
+                print(f"  🔗? посилання не відповіло ({reason}) — спробую наступного разу: "
+                      f"{normalized.get('source_url', '')[:80]}")
+                continue
             if not alive:
                 raw_store.mark(sb_client, item["id"], "rejected",
                                error=f"dead link: {reason}", reason_code="dead_link")

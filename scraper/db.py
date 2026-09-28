@@ -72,6 +72,142 @@ def merge_patch(existing: dict, record: dict) -> dict:
     return patch
 
 
+# ── Та сама школа діаспори з двох джерел (28.09.2026) ────────────────────────
+#
+# Рішення Марії: суботня чи недільна школа за кордоном — ОДНА постійна картка.
+# Але ту саму школу приносять різні конвеєри: каталог МІОК (сторінка
+# vsesvit.miok.lviv.ua/schools/N) і пряме джерело — сайт чи стрічка самої
+# школи. Адреси різні, тож жоден із трьох ключів upsert (content_hash, slug,
+# canonical_url + назва) цієї пари не бачить. find_dup_candidates бачить, але
+# лише коли ОБИДВА записи вже активні: чернетка МІОК, що чекає вартості, і
+# готовий запис із сайту школи мали б дві картки на сайті в момент, коли
+# людина схвалить першу.
+#
+# Ключ школи — країна + власна назва в лапках («Берегиня», "Джерело") + місто.
+# Місто обовʼязкове для порівняння: у Нідерландах у каталозі дві різні школи
+# «Джерело» — в Амстердамі й в Алмере. Без власної назви («Українська
+# суботня школа в Берліні») збігом вважаємо лише однакову назву цілком І
+# спільне місто: у Берліні таких шкіл кілька.
+SCHOOL_TYPES = ("club", "course", "study_program")
+AGGREGATOR_SOURCES = ("Освітній Всесвіт (МІОК)",)
+_SCHOOL_WORD = re.compile(r"школ|садоч|центр|студі|академі|гімназі|ліце|простір", re.I)
+_QUOTED_NAME = re.compile(r"[«\"„“”]\s*([^«»\"„“”]{3,80}?)\s*[»\"“”]")
+_NOT_CITIES = {"онлайн", "вся україна", "міжнародні", "україна"}
+
+
+def _letters(text) -> str:
+    return re.sub(r"[^0-9a-zа-яіїєґ]+", "", (text or "").lower().replace("ʼ", "").replace("'", ""))
+
+
+def school_key(rec: dict) -> tuple | None:
+    """(країна, власна назва, уся назва) для запису-школи за кордоном, або None.
+
+    Лише школи: тип гурток/курс/навчальна програма І слово «школа», «садочок»,
+    «центр», «студія» в назві. Конкурс чи табір тієї самої школи — окрема
+    можливість, їх не чіпаємо. Чиста функція — під тести.
+    """
+    if rec.get("opportunity_type") not in SCHOOL_TYPES:
+        return None
+    title = rec.get("title") or ""
+    if not _SCHOOL_WORD.search(title):
+        return None
+    countries = [str(c).lower() for c in (rec.get("countries") or []) if c and str(c).lower() != "ua"]
+    if not countries:
+        return None
+    m = _QUOTED_NAME.search(title)
+    name = _letters(m.group(1)) if m else ""
+    if not name and " — " in title:
+        # «Berehynia — українська суботня школа в Барселоні»: власна назва до тире.
+        head = title.split(" — ", 1)[0]
+        if 1 <= len(head.split()) <= 4 and not _SCHOOL_WORD.search(head):
+            name = _letters(head)
+    return countries[0], (name if len(name) >= 3 else ""), _letters(title)
+
+
+def _real_cities(rec: dict) -> set:
+    return {str(c).strip().lower() for c in (rec.get("cities") or [])
+            if c and str(c).strip().lower() not in _NOT_CITIES}
+
+
+def same_school(a: dict, b: dict) -> bool:
+    """Чи два записи — та сама школа діаспори. Чиста функція — під тести."""
+    ka, kb = school_key(a), school_key(b)
+    if not ka or not kb or ka[0] != kb[0]:
+        return False
+    ca, cb = _real_cities(a), _real_cities(b)
+    if ka[1] and kb[1]:
+        if ka[1] != kb[1]:
+            return False
+        # Одна зі сторін без міста — не заважає; різні міста — різні школи.
+        return not (ca and cb) or bool(ca & cb)
+    return ka[2] == kb[2] and bool(ca & cb)
+
+
+def school_twin_resolution(new: dict, twin: dict) -> str:
+    """Хто з пари лишається: "new_is_dup" або "twin_is_dup". Чиста функція.
+
+    Лишається той, хто прийшов першим, — крім одного випадку: наявна чернетка
+    з каталогу МІОК поступається запису з будь-якого іншого джерела. Каталог —
+    посередник («Джерело — сторінка, не допис»: іти до першоджерела), а
+    чернетка ще нікому не показана, тож злиття нікого не підводить. Активну
+    картку МІОК не чіпаємо: вона вже живе на сайті, а різницю побачить людина.
+    """
+    if (twin.get("status") == "draft" and twin.get("source") in AGGREGATOR_SOURCES
+            and new.get("source") not in AGGREGATOR_SOURCES):
+        return "twin_is_dup"
+    return "new_is_dup"
+
+
+def _school_note(slug: str, source: str) -> str:
+    return (f"та сама школа, що й {slug} ({source or 'інше джерело'}) — "
+            "одна школа = одна картка (рішення 28.09.2026); злити, не публікувати двічі")
+
+
+def guard_same_school(client: Client, record: dict) -> None:
+    """Перед вставкою НОВОГО запису: чи немає вже картки тієї самої школи.
+
+    Позначає дубль так само, як тригер trg_opportunities_dedup_guard: чернетка
+    з dup_of, яку auto_review закриває червоним коридором «дубль — на злиття».
+    Збій бази не зупиняє вставку — у гіршому разі пару знайде
+    find_dup_candidates, коли обидва записи стануть активними.
+    """
+    key = school_key(record)
+    if not key:
+        return
+    try:
+        rows = (
+            client.table("opportunities")
+            .select("id, slug, title, cities, countries, opportunity_type, status, source, admin_comment")
+            .in_("status", ["active", "draft"])
+            .in_("opportunity_type", list(SCHOOL_TYPES))
+            .contains("countries", [key[0]])
+            .limit(500)
+            .execute()
+        ).data or []
+    except Exception as e:
+        logger.error(f"same-school lookup failed: {e}")
+        return
+    twins = [r for r in rows if r.get("slug") != record.get("slug") and same_school(record, r)]
+    if not twins:
+        return
+    twin = next((r for r in twins if r.get("status") == "active"), twins[0])
+    if school_twin_resolution(record, twin) == "twin_is_dup":
+        try:
+            client.table("opportunities").update({
+                "dup_of": record.get("slug"), "dup_score": 1.0,
+                "admin_comment": ((twin.get("admin_comment") or "") + " · "
+                                  + _school_note(record.get("slug"), record.get("source"))).strip(" ·")[:500],
+            }).eq("id", twin["id"]).execute()
+        except Exception as e:
+            logger.error(f"same-school twin update failed: {e}")
+        return
+    record["status"] = "draft"
+    record["dup_of"] = twin.get("slug")
+    record["dup_score"] = 1.0
+    record["admin_comment"] = ((record.get("admin_comment") or "") + " · "
+                               + _school_note(twin.get("slug"), twin.get("source"))).strip(" ·")
+
+
 def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
     from datetime import datetime, timezone
     # Always stamp updated_at so get_processed_today() can find today's activity.
@@ -147,6 +283,9 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
                 )
             return result.data[0] if result.data else None
 
+        # Четвертий ключ — лише для шкіл діаспори: та сама школа з каталогу
+        # МІОК і з власного сайту (див. same_school вище).
+        guard_same_school(client, record)
         result = client.table("opportunities").upsert(
             record,
             on_conflict="content_hash"

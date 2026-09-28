@@ -18,6 +18,17 @@ TIMEOUT = 10.0
 UA = "Mozilla/5.0 (compatible; DityamLinkCheck/1.0; +https://dityam.com.ua)"
 
 
+def is_timeout(reason: str) -> bool:
+    """Чи причина «не живий» — лише таймаут (ConnectTimeout, ReadTimeout…).
+
+    Таймаут нічого не каже про саму сторінку: сайт буває повільним або на
+    хвилину перестає відповідати машині, що щойно його обійшла. 404, 410 і
+    відмова в зʼєднанні — інша справа, це відповідь. Викликач (main.py) на
+    таймаут не відхиляє запис, а пробує ще раз наступного запуску.
+    """
+    return (reason or "").startswith("network:") and "Timeout" in reason
+
+
 def is_alive(url: str) -> tuple[bool, str]:
     """→ (alive, reason). Помилки на нашому боці трактуються на користь
     запису: сумнівний лінк доб'є щоденний verify-links, а от втратити
