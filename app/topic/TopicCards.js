@@ -8,11 +8,12 @@ import { plural } from '@/lib/plural';
 import { inlineCardPositions } from '@/lib/inline-card';
 import { publicSource } from '@/lib/source-link';
 import TelegramCard from '../TelegramCard';
+import BotLink from '../plus/BotLink';
 
 /**
  * Картки підбірки за макетом design_handoff_dityam_pidbirka (README, п. 4–5):
  * підфільтри-пігулки з лічильниками, сітка 2 колонки, після 4-ї картки —
- * промо Dityam+ на всю ширину. Сортування робить сервер (найближчий дедлайн
+ * картка Dityam+ на всю ширину (`plus`, null — не показувати). Сортування робить сервер (найближчий дедлайн
  * угорі, без дедлайну — вкінці), тут лише фільтр.
  *
  * «Показати ще» прибрано 15.09.2026 на прохання Марії: підбірка показує всі
@@ -102,7 +103,7 @@ function placeText(item, lang, abroadLabel = null) {
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  labels, hub = null, groups = null, groupLinks = [], abroadLabel = null,
+  labels, hub = null, groups = null, groupLinks = [], abroadLabel = null, plus = null,
 }) {
   const [sub, setSub] = useState('all');
   const isEn = lang === 'en';
@@ -161,14 +162,28 @@ export default function TopicCards({
     );
   }
 
-  // Telegram-картка після четвертої, як на головній. До 27.09.2026 вона
-  // стояла після восьмої, бо після четвертої була картка Dityam+; ту прибрано
-  // (рішення Марії, «сходинка»: сайт веде в канал, Dityam+ продає сам канал).
+  // Telegram-картка — раз на 20 можливостей, як на головній; картка Dityam+ —
+  // після четвертої. Разом вони не стають: канал зʼявляється не раніше
+  // десятої картки (inlineCardPositions, min 10).
   const tgAfter = inlineCardPositions(visible.length);
 
   const cells = [];
   visible.forEach((item, i) => {
     cells.push(card(item, abroadLabel));
+    if (i === 3 && plus) {
+      cells.push(
+        <aside key="plus" className="tp-promo" aria-label="Dityam+">
+          <div className="tp-promo-copy">
+            <span className="tp-promo-badge">Dityam+</span>
+            <h3 className="tp-promo-title">{plus.title}</h3>
+            <p className="tp-promo-text">{plus.text}</p>
+          </div>
+          <BotLink href={plus.href} place={plus.place} className="tp-btn tp-btn-white">
+            {plus.cta}
+          </BotLink>
+        </aside>,
+      );
+    }
     if (tgAfter.has(i)) cells.push(<TelegramCard key={`tg-card-${i}`} lang={lang} place="topic" hub={hub} />);
   });
 

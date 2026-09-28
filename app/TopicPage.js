@@ -6,6 +6,7 @@ import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
+import { plusFromUrl } from '@/lib/plus';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -18,7 +19,7 @@ import Footer from './Footer';
  *
  * Вересень 2026 — за макетом ~/Downloads/design_handoff_dityam_pidbirka:
  * кремовий хіро з фото, підфільтри з лічильниками, картки у дві колонки з
- * промо Dityam+ після четвертої, «Важливо знати», «Часті питання», «Інші
+ * карткою Dityam+ після четвертої (крім сторінок діаспори), «Важливо знати», «Часті питання», «Інші
  * підбірки». Увесь контент — з lib/topics.js (heading, intro, note, faq,
  * heroImage, related, subfilters) і з живої бази (лічильники,
  * картки). Тут лише рамка: підписи кнопок і заголовків блоків.
@@ -56,6 +57,12 @@ const CHROME = {
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
+    plus: {
+      title: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
+      text: 'Ви один раз розповідаєте про кожну дитину, а ми щодня перевіряємо нові можливості й надсилаємо '
+        + 'в Telegram ті, що підходять їй за віком і вподобаннями. Про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
+      cta: 'Оформити в Telegram',
+    },
     cards: {
       all: 'Усі',
       sort: 'за дедлайном, найближчі спочатку',
@@ -91,6 +98,12 @@ const CHROME = {
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
+    plus: {
+      title: 'Here we show everything that exists. Dityam+ sends what fits your child.',
+      text: 'Tell us about each child once, and every day we check new opportunities and send you the ones '
+        + 'that fit their age and interests on Telegram. We remind you of deadlines while there is still time to apply.',
+      cta: 'Subscribe on Telegram',
+    },
     cards: {
       all: 'All',
       sort: 'by deadline, soonest first',
@@ -300,6 +313,21 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   // груп, а записи з власною сторінкою стоять там, не тут. На екрані й у
   // ItemList — один і той самий порядок.
   const grouped = topic.groups ? topic.groups(items, lang) : null;
+
+  // Картка Dityam+ після четвертої можливості. 27.09.2026 її прибрали разом з
+  // усім Dityam+ на сторінках («сходинка»: сайт веде в канал), 28.09.2026 Марія
+  // повернула її в підбірки: у канал і так веде спливна підказка внизу.
+  // Кнопка — одразу в бот (рішення 20.09.2026: людина вже прочитала, що робить
+  // Dityam+, проміжна сторінка лише губить дорогу), з міткою підбірки, щоб бот
+  // записав джерело. На сторінках діаспори не показуємо: добірка Dityam+ не
+  // підбирає за країною, де живе родина, і обіцянка «підходить саме вашій
+  // дитині» там була б неправдою.
+  const plusPlace = `topic_${topic.slug}${lang === 'en' ? '_en' : ''}`;
+  const plus = grouped || topic.code ? null : {
+    ...ch.plus,
+    href: plusFromUrl(plusPlace),
+    place: plusPlace,
+  };
   const listed = grouped ? grouped.groups.flatMap((g) => g.items) : items;
 
   const subfilters = grouped ? [] : buildSubfilters(topic, items, lang);
@@ -473,6 +501,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           pinnedLabel={c.pinnedLabel || null}
           labels={ch.cards}
           hub={topic.slug}
+          plus={plus}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
