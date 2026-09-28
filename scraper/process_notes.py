@@ -40,6 +40,7 @@ import anthropic
 
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import rejections
 from normalizer import VALID_OPP_TYPES
 logger = logging.getLogger("process_notes")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -115,6 +116,15 @@ APPLY_TOOL = {
             "not_done": {"type": "string",
                          "description": "Що з коментаря ти НЕ зробила, одним реченням. Порожньо — "
                                         "лише якщо зроблено все, про що просили."},
+            # Рішення за коментарем (Марія, 28.09.2026: жовта кнопка — «коли
+            # він обробиться, то виконати, що там написано»). Статус модель не
+            # пише сама: publish пройде лише з усіма обовʼязковими полями.
+            "decision": {"type": "string", "enum": ["", "publish", "reject"],
+                         "description": "publish — коментар прямо просить опублікувати / додати на "
+                                        "сайт; reject — прямо каже, що не підходить / прибрати. "
+                                        "Інакше порожньо."},
+            "reject_reason": {"type": "string", "enum": sorted(rejections.load_reasons()),
+                              "description": "Лише для reject: найближча причина зі списку."},
         },
         "additionalProperties": False,
     },
@@ -141,7 +151,12 @@ event_start_date / event_end_date. Якщо нотатка просить при
 чесно напиши в not_done, що джерело не змінено.
 
 not_done — що з нотатки ти НЕ зробила. Порожньо лише тоді, коли зроблено все:
-за частково виконаний коментар людина має дізнатись, а не побачити «готово»."""
+за частково виконаний коментар людина має дізнатись, а не побачити «готово».
+
+decision — лише коли нотатка ПРЯМО просить: «опублікуй», «додай на сайт» →
+publish; «не підходить», «прибери», «це для дорослих» → reject і найближча
+reject_reason. Разом із рішенням застосуй і правки з тієї самої нотатки
+(«вік 12–17 і публікуй»). Сумнів чи питання — не рішення: decision порожній."""
 
 
 def build_patch(raw: dict) -> dict:
@@ -226,15 +241,39 @@ def open_notes(rows: list[dict]) -> dict:
     return groups
 
 
-def resolution_text(patch: dict) -> str:
-    """Одне речення, що саме зроблено. Порядок полів сталий — не як у моделі."""
-    changed = [FIELD_LABELS.get(k, k) for k in EDITABLE if k in patch]
-    if not changed:
+def resolution_text(patch: dict, decided: str = "") -> str:
+    """Одне речення, що саме зроблено. Порядок полів сталий — не як у моделі.
+    decided — рішення за коментарем («опубліковано на сайт»), якщо було."""
+    changed = [FIELD_LABELS.get(k, k) for k in EDITABLE if k in (patch or {})]
+    parts = (["змінено " + ", ".join(changed)] if changed else []) + ([decided] if decided else [])
+    if not parts:
         return ""
-    return "Застосовано автоматично: змінено " + ", ".join(changed) + "."
+    return "Застосовано автоматично: " + "; ".join(parts) + "."
 
 
-def close_patch(patch: dict, now: str | None = None, not_done: str = "") -> dict | None:
+def decision_patch(record: dict, decision: str, reason: str = "", now: str | None = None):
+    """Рішення за коментарем → (патч, що зроблено, чому не вийшло). Чиста функція.
+
+    publish — лише з усіма обовʼязковими полями (ті самі ворота, що в кнопки
+    «Опублікувати»); reject — у archived, як кнопка «Не підходить».
+    """
+    from normalizer import missing_required
+    if decision == "publish":
+        if record.get("status") == "active":
+            return {}, "", ""
+        missing = missing_required(record)
+        if missing:
+            return {}, "", "не опубліковано — бракує: " + ", ".join(missing)
+        return {"status": "active", "verified_at": now or now_iso()}, "опубліковано на сайт", ""
+    if decision == "reject":
+        reasons = rejections.load_reasons()
+        code = reason if reason in reasons else "other"
+        return {"status": "archived"}, f"не підходить ({reasons[code]['label'].lower()})", ""
+    return {}, "", ""
+
+
+def close_patch(patch: dict, now: str | None = None, not_done: str = "",
+                decided: str = "") -> dict | None:
     """Чим закривати рядок коментаря. Чиста функція — під тести.
 
     None означає «не закривати»: модель не змінила нічого, отже коментар —
@@ -244,7 +283,7 @@ def close_patch(patch: dict, now: str | None = None, not_done: str = "") -> dict
     Так само не закриваємо, коли зроблено лише частину (not_done): «візьми
     першоджерело» закрилось як виконане, бо змінилось посилання на подачу.
     """
-    text = resolution_text(patch or {})
+    text = resolution_text(patch or {}, decided)
     if not text or (not_done or "").strip():
         return None
     return {"resolved_at": now or now_iso(), "resolution": text}
@@ -312,7 +351,7 @@ def tg(method: str, payload: dict) -> bool:
 
 def candidate_card(o: dict, note_text: str = "") -> str:
     esc = lambda v: str(v).translate(TG_ESC)
-    live = o.get("status") != "draft"
+    live = o.get("status") == "active"
     meta = []
     if o.get("age_from") is not None and o.get("age_to") is not None:
         meta.append(f"👶 {o['age_from']}–{o['age_to']} р.")
@@ -360,7 +399,7 @@ def failed_note_text(o: dict, note_text: str, error: str) -> str:
     ])
 
 
-def ask_llm(llm, record: dict, body: str) -> tuple[dict, str]:
+def ask_llm(llm, record: dict, body: str) -> tuple[dict, dict]:
     """Що модель пропонує змінити в записі за ОДНИМ коментарем і чого не зробила.
 
     По одному, а не всі коментарі запису разом: у кожного свій resolution, і
@@ -368,6 +407,7 @@ def ask_llm(llm, record: dict, body: str) -> tuple[dict, str]:
     це питання заразом.
     """
     current = {k: record.get(k) for k in EDITABLE}
+    current["status"] = record.get("status")
     resp = llm.messages.create(
         model="claude-sonnet-5",
         max_tokens=1500,
@@ -381,7 +421,36 @@ def ask_llm(llm, record: dict, body: str) -> tuple[dict, str]:
     )
     tool_use = next((b for b in resp.content if b.type == "tool_use"), None)
     raw = tool_use.input if tool_use else {}
-    return build_patch(raw), str(raw.get("not_done") or "").strip()
+    extra = {
+        "not_done": str(raw.get("not_done") or "").strip(),
+        "decision": raw.get("decision") if raw.get("decision") in ("publish", "reject") else "",
+        "reject_reason": str(raw.get("reject_reason") or ""),
+    }
+    return build_patch(raw), extra
+
+
+def log_decision(client, oid: str, extra: dict, status_before, body: str) -> None:
+    """Рішення за коментарем — у ті самі журнали, що й кнопки черги: хто
+    (moderation_actions) і чому (moderation_corrections — з нього вчиться
+    пошук, scraper/rejections.py). Мовчки: рішення вже записане."""
+    action = "approve" if extra["decision"] == "publish" else "reject"
+    try:
+        client.table("moderation_actions").insert({
+            "opportunity_id": oid, "action": action, "actor": "машина за коментарем",
+        }).execute()
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Журнал дій не записано для %s: %s", oid, e)
+    if action == "reject":
+        reasons = rejections.load_reasons()
+        code = extra["reject_reason"] if extra["reject_reason"] in reasons else "other"
+        try:
+            client.table("moderation_corrections").insert({
+                "opportunity_id": oid, "field": rejections.DECISION_FIELD, "before": status_before,
+                "after": {"action": "reject", "reason": code, "comment": body[:500]},
+                "source": "review",
+            }).execute()
+        except Exception as e:  # noqa: BLE001
+            logger.warning("Причину відмови не записано для %s: %s", oid, e)
 
 
 def keyboard(o: dict) -> dict:
@@ -498,14 +567,39 @@ def main() -> int:
         applied = []
         for note in groups[oid][:5]:
             try:
-                patch, not_done = ask_llm(llm, record, note["body"])
+                patch, extra = ask_llm(llm, record, note["body"])
             except Exception as e:
                 logger.error("LLM failed for %s: %s", oid, e)
                 errors += 1
                 continue
 
-            closing = close_patch(patch, not_done=not_done)
-            if not resolution_text(patch):
+            not_done = extra["not_done"]
+            dpatch, decided, problem = decision_patch(
+                {**record, **patch}, extra["decision"], extra["reject_reason"])
+            if problem:
+                not_done = "; ".join(x for x in (not_done, problem) if x)
+            closing = close_patch(patch, not_done=not_done, decided=decided)
+            if not resolution_text(patch, decided) and problem:
+                # Просили рішення, а виконати нічого не вийшло (публікація без
+                # обовʼязкових полів) — кажемо людині одразу, а не мовчимо.
+                mark = {"resolution": problem[:1000]}
+                if has_attempted:
+                    mark["attempted_at"] = now_iso()
+                try:
+                    client.table("moderation_notes").update(mark).eq("id", note["id"]).execute()
+                except Exception as e:
+                    logger.error("Позначити коментар не вдалося для %s: %s", note["id"], e)
+                    errors += 1
+                if ADMIN_CHAT_ID:
+                    tg("sendMessage", {
+                        "chat_id": ADMIN_CHAT_ID,
+                        "text": failed_note_text(o, note["body"], problem),
+                        "parse_mode": "HTML",
+                        "disable_web_page_preview": True,
+                        "reply_markup": keyboard(o),
+                    })
+                continue
+            if not resolution_text(patch, decided):
                 # Питання, а не вказівка: лишаємо відкритим для людини, лише
                 # позначаємо спробу, щоб не читати його LLM щогодини наново.
                 logger.info("Коментар до «%s» сам не застосовується — лишаю людині: %s",
@@ -521,7 +615,7 @@ def main() -> int:
 
             # ISO-час, а не рядок "now()": PostgREST передає значення як є, і
             # рядок "now()" у timestamptz — не функція, а невалідна дата.
-            patch["updated_at"] = now_iso()
+            patch = {**patch, **dpatch, "updated_at": now_iso()}
             try:
                 client.table("opportunities").update(patch).eq("id", oid).execute()
             except Exception as e:
@@ -545,12 +639,15 @@ def main() -> int:
                         "reply_markup": keyboard(o),
                     })
                 continue
+            status_before = record.get("status")
             record.update(patch)
+            if dpatch:
+                log_decision(client, oid, extra, status_before, note["body"])
 
             if not closing:
                 # Зроблено лише частину: зроблене лишаємо, а коментар —
                 # відкритим, і людина одразу дізнається, чого бракує.
-                done_text = resolution_text(patch)
+                done_text = resolution_text(patch, decided)
                 logger.info("Коментар до «%s» виконано частково: %s Не зроблено: %s",
                             o.get("title"), done_text, not_done)
                 mark = {"resolution": f"Частково. {done_text} Не зроблено: {not_done}"[:1000]}

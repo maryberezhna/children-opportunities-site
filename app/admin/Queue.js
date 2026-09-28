@@ -197,7 +197,8 @@ function Card({ o, notes: initialNotes = [], today }) {
         <div className="q-panel">
           <p className="q-hint">
             Напиши, що зробити, — машина виконає протягом години й поверне картку сюди.
-            Наприклад: «вік 12–17», «дедлайн 15 жовтня», «джерело https://…».
+            Наприклад: «вік 12–17», «дедлайн 15 жовтня», «джерело https://…»,
+            «вік 12–17 і опублікуй», «не підходить — це для дорослих».
           </p>
           <textarea className="adm-ta" rows={3} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
           <div className="adm-acts">

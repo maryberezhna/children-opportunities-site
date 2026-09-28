@@ -226,10 +226,19 @@ def decide(answer, text: str) -> tuple[str, str, str]:
     return REJECT, reason, quote
 
 
-def verdict_patch(verdict: str, reason: str, quote: str, now=None) -> dict | None:
+def verdict_patch(verdict: str, reason: str, quote: str, now=None,
+                  doubt_to_queue: bool = False) -> dict | None:
     """Патч до raw_items. Дзеркало lib/quarantine.js verdictPatch (кнопки в
-    адмінці), плюс слід рішення. 'human' не чіпає нічого — повертає None."""
+    адмінці), плюс слід рішення. 'human' не чіпає нічого — повертає None.
+
+    doubt_to_queue (28.09.2026): Марія працює лише з однією чергою чернеток —
+    сирий текст людині більше не показуємо. Сумнів іде тим самим шляхом, що
+    й accept: нормалізатор заповнить поля й поставить позначку «людина
+    прийняла з карантину», і запис стане карткою в черзі з причиною «межа
+    „для дітей“» — а сам на сайт вийде лише з цитатами на все."""
     at = (now or datetime.now(timezone.utc)).isoformat()
+    if verdict == HUMAN and doubt_to_queue:
+        verdict, reason = ACCEPT, f"сумнів машини — у чергу людини ({reason})"
     note = f"авто-розбір {date.today().isoformat()}: {reason}"
     if quote:
         note += f" · цитата: «{quote}»"
@@ -323,7 +332,7 @@ def ask(client, item: dict) -> dict | None:
 REPORT = "triage-report.json"
 
 
-def run(apply: bool = False, limit: int = 100) -> dict:
+def run(apply: bool = False, limit: int = 100, doubt_to_queue: bool = False) -> dict:
     sb = get_client()
     key = os.getenv("ANTHROPIC_API_KEY")
     if not key:
@@ -351,7 +360,7 @@ def run(apply: bool = False, limit: int = 100) -> dict:
         logger.info("%s %-58s — %s", icon,
                     (item.get("raw_title") or item.get("source_url") or "")[:58], reason[:90])
         if apply:
-            patch = verdict_patch(verdict, reason, quote)
+            patch = verdict_patch(verdict, reason, quote, doubt_to_queue=doubt_to_queue)
             if patch and write_verdict(sb, item["id"], patch):
                 written += 1
 
@@ -376,5 +385,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description="Пакетний розбір карантину raw_items")
     p.add_argument("--apply", action="store_true", help="реально писати в базу")
     p.add_argument("--limit", type=int, default=100)
+    p.add_argument("--doubt-to-queue", action="store_true",
+                   help="сумнів (human) — теж у чергу розбору: людина побачить картку, а не сирий текст")
     args = p.parse_args()
-    run(apply=args.apply, limit=args.limit)
+    run(apply=args.apply, limit=args.limit, doubt_to_queue=args.doubt_to_queue)

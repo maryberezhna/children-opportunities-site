@@ -55,6 +55,7 @@ from urllib.parse import urlparse
 
 from canonical import canonical_url
 from db import get_client, record_crawl_result
+import rejections
 import anthropic
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import deficit  # клітинка дня: попит ÷ надходження (23.09.2026)
@@ -429,7 +430,9 @@ def region_of_day() -> dict:
     return regions[doy % len(regions)]
 
 
-def _prompt(kw: str, region: dict) -> str:
+def _prompt(kw: str, region: dict, avoid: str = "") -> str:
+    """avoid — відмови людини з причиною (rejections.avoid_block): Марія,
+    28.09.2026, кнопка «Не підходить» — «не шукати такі можливості»."""
     is_home = region["name"] == "Україна"
     return (
         f"Сьогодні {date.today().isoformat()}.\n"
@@ -462,6 +465,7 @@ def _prompt(kw: str, region: dict) -> str:
            f"шукай місцевий відповідник. Українських реалій (ДЮСШ, МАН, НУШ, "
            f"позашкілля) в цій країні немає — там свої формати.\n")
         + (RARE_FOCUS if RARE else "")
+        + avoid
         + "\n"
         "Поверни ВІДПОВІДЬ ЛИШЕ як JSON-масив (без пояснень, без markdown):\n"
         '[{"title":"...","summary":"1-3 речення опису","url":"https-посилання",'
@@ -521,6 +525,16 @@ def _extract_json_array(text: str):
         start = i + 1
 
 
+def _avoid() -> str:
+    """Чого не шукати — з відмов людини в черзі. Без бази (сухий прогін,
+    збій) — порожньо: пошук іде як і досі."""
+    try:
+        return rejections.avoid_block(rejections.fetch_lines(get_client()))
+    except Exception as e:  # noqa: BLE001
+        logger.warning("Відмови людини для промпту недоступні: %s", e)
+        return ""
+
+
 def search_candidates(kw: str, region: dict) -> list[dict]:
     body = {
         "model": MODEL,
@@ -538,7 +552,7 @@ def search_candidates(kw: str, region: dict) -> list[dict]:
         # коштує Марії часу модерації.
         **api_guard.effort_config(MODEL, "medium"),
         "tools": [{"type": "web_search_20250305", "name": "web_search", "max_uses": 4}],
-        "messages": [{"role": "user", "content": _prompt(kw, region)}],
+        "messages": [{"role": "user", "content": _prompt(kw, region, _avoid())}],
     }
     try:
         r = httpx.post(
