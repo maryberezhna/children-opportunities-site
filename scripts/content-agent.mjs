@@ -68,6 +68,9 @@ const VOICE = `Ти пишеш для Instagram платформи dityam.com.ua
 4. Без канцеляриту й без реклами. «Здійснюється набір учасників» — це не
    українська мова. Пиши так, як розповіла б подрузі.
 5. Без каскаду емодзі та без 30 хештегів.
+6. Якщо в даних є рядок «Instagram», познач ці акаунти в пості (@акаунт) —
+   організатор побачить згадку й може поширити пост. Інших акаунтів не
+   додавай і не вгадуй: немає рядка — немає тегу.
 
 Як побудований хороший пост:
 — Перший рядок — про ситуацію батька або дитини, а не назва програми. Саме
@@ -75,6 +78,8 @@ const VOICE = `Ти пишеш для Instagram платформи dityam.com.ua
 — Далі конкретика: що це, кому за віком, скільки коштує, до якої дати.
 — Наприкінці — рядок «Деталі — <сторінка>»: адреса сторінки САМЕ цієї
   можливості з даних (dityam.com.ua/o/…), не головна і не «шапка профілю».
+— Теги акаунтів із рядка «Instagram» — природно в тексті («організатор —
+  @…») або окремим рядком перед хештегами.
 — 4–7 хештегів, українською, по суті.
 — Довжина 500–900 символів.`;
 
@@ -120,7 +125,7 @@ async function media(dir) {
   }
 }
 
-async function write(items, clips) {
+async function write(items, clips, found = []) {
   const facts = items.map((o, i) => {
     const parts = [`#${i + 1} ${o.title}`, `тип: ${TYPE_LABELS[o.opportunity_type] || o.opportunity_type}`,
       `вік: ${o.age_from}–${o.age_to}`];
@@ -134,6 +139,9 @@ async function write(items, clips) {
     if (o.deadline) parts.push(`дедлайн: ${o.deadline} (через ${o.days} дн.)`);
     parts.push(`опис: ${(o.summary || '').slice(0, 400)}`);
     parts.push(`сторінка: dityam.com.ua/o/${o.slug}`);
+    // Лише акаунти з посилань на сторінці джерела (scripts/ig-handles.mjs).
+    const ig = found[i];
+    if (ig?.handles?.length) parts.push(`Instagram (зі сторінки ${ig.host}): ${ig.handles.map((h) => `@${h}`).join(', ')}`);
     return parts.join('\n');
   }).join('\n\n---\n\n');
 
@@ -197,7 +205,13 @@ async function main() {
   console.log(`Тиждень ${week}. Можливостей: ${items.length}. `
     + (dir ? `Твоїх медіа: ${photos.length} фото, ${clips.length} відео.` : 'Медіа-теки немає — картки генеровані.'));
 
-  const text = await write(items, clips);
+  // Кого тегнути — лише акаунти зі сторінки джерела (scripts/ig-handles.mjs):
+  // модель їх не знає і вигадувати не сміє. Шукаємо до написання, щоб теги
+  // стояли вже в тексті поста (правило Марії 28.09.2026), а не лише під фото.
+  const found = await Promise.all(items.map((o) => instagramHandles(o.source_url)));
+  const tags = found.map(tagLine);
+
+  const text = await write(items, clips, found);
   const posts = text.split(/===ПОСТ\s*\d+===/).map((s) => s.trim()).filter(Boolean)
     .map((p, i) => (items[i] ? withPageLink(p, items[i].slug) : p));
   console.log(`\nНаписано постів: ${posts.length}\n`);
@@ -212,10 +226,6 @@ async function main() {
       + (dir ? `\n\nТвоїх медіа в теці: ${photos.length} фото, ${clips.length} відео.` : ''),
     parse_mode: 'HTML',
   });
-
-  // Кого тегнути — лише акаунти зі сторінки джерела (scripts/ig-handles.mjs),
-  // модель їх не знає і вигадувати не сміє. Усі сторінки — паралельно.
-  const tags = await Promise.all(items.map((o) => instagramHandles(o.source_url).then(tagLine)));
 
   for (let i = 0; i < posts.length; i += 1) {
     const item = items[i];
