@@ -402,6 +402,16 @@ function buildJsonLd(item, lang) {
   const inLanguage = lang === 'en' ? 'en' : 'uk';
   const name = field(item, 'title', lang);
   const description = field(item, 'summary', lang);
+  // Дати життя запису — у самій розмітці, а не лише в OpenGraph.
+  //
+  // Головний аргумент каталогу — що дані актуальні, але машині це ніде не
+  // було сказано: і пошук, і AI-асистенти охочіше цитують сторінку, дату
+  // якої видно. dateModified беремо з updated_at — він оновлюється і при
+  // ручній перевірці, і при перевірці дедлайнів.
+  const dates = {
+    ...(item.created_at && { datePublished: String(item.created_at).slice(0, 10) }),
+    ...(item.updated_at && { dateModified: String(item.updated_at).slice(0, 10) }),
+  };
 
   if (COURSE_TYPES.has(item.opportunity_type)) {
     return {
@@ -411,6 +421,7 @@ function buildJsonLd(item, lang) {
       description,
       url,
       inLanguage,
+      ...dates,
       provider: {
         '@type': 'Organization',
         name: src.sourceName || 'dityam.com.ua',
@@ -449,6 +460,10 @@ function buildJsonLd(item, lang) {
       description,
       url,
       inLanguage,
+      ...dates,
+      // startDate/endDate — саме дати ПОДІЇ. У версії 13.09.2026 тут стояв
+      // item.deadline: подача й проведення тоді ще не були розведені, і
+      // Google бачив «подія відбудеться в день дедлайну».
       startDate: eventStart,
       ...(item.event_end_date ? { endDate: item.event_end_date } : {}),
       eventAttendanceMode: isOnline
@@ -489,6 +504,7 @@ function buildJsonLd(item, lang) {
     description,
     url,
     inLanguage,
+    ...dates,
     // expires — властивість CreativeWork: «дата, після якої вміст більше не
     // актуальний». Для закритих сторінок без Course/Event це єдина машинна
     // позначка завершення.
