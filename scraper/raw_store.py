@@ -246,7 +246,12 @@ GREY_HIGH = 0.55
 CHILD_MARKER = re.compile(
     r"дітей|дитин|дитяч|підліт|школяр|школи|школа|учн|юнац|клас|"
     r"молод|teen|kid|child|pupil|student|youth|"
-    r"\d{1,2}\s*[–—-]\s*\d{1,2}\s*рок",
+    # Мови діаспорних сайтів (28.09.2026): німецька, польська, чеська,
+    # іспанська, нідерландська. Без них сумнівний запис з німецької сторінки
+    # не діставався людині, навіть коли він про «Kinder 7–15 Jahre».
+    r"kinder|jugend|schüler|dzieci|dziecię|młodzież|uczni|děti|dětí|dětsk|"
+    r"mládež|žác|žák|niños|niñas|infantil|jóvenes|jongeren|leerling|"
+    r"\d{1,2}\s*[–—-]\s*\d{1,2}\s*(?:рок|jahr|lat|let|años|jaar|year)",
     re.IGNORECASE)
 
 NOT_FOR_CHILDREN = "у тексті нічого про дітей, підлітків, школу чи вік"
