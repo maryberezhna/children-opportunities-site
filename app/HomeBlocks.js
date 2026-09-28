@@ -1,5 +1,6 @@
 import { SuggestOpenButton } from './SuggestModal';
-import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
+import { TELEGRAM_URL } from '@/lib/social';
+import TelegramCard from './TelegramCard';
 
 // Два нижні блоки головної: Telegram-підписка і «Запропонувати можливість».
 // Серверний компонент — уся інтерактивність (поп-ап) живе в SuggestModal.
@@ -25,23 +26,11 @@ const T = {
 
 export default function HomeBlocks({ lang = 'uk' }) {
   const t = T[lang] || T.uk;
-  const tg = CHANNEL_CTA[lang] || CHANNEL_CTA.uk;
-  // Останнє слово заголовка — рукописним шрифтом, як і раніше в цьому блоці.
-  const cut = tg.title.lastIndexOf(' ');
   return (
     <section className="v2-bottom">
-      <div className="v2-panel">
-        <h2>
-          {tg.title.slice(0, cut + 1)}<span className="v2-script">{tg.title.slice(cut + 1)}</span>
-        </h2>
-        <p>{tg.text}</p>
-        <div className="v2-panel-actions">
-          <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" className="v2-btn-dark">
-            {tg.cta}
-          </a>
-          <span className="v2-panel-note">@dityam_com_ua</span>
-        </div>
-      </div>
+      {/* Той самий компонент, що й між картками: один заклик — один вигляд.
+          Раніше тут була власна верстка з тими самими словами. */}
+      <TelegramCard lang={lang} place="home_bottom" variant="panel" />
       <div className="v2-panel">
         <h2>{t.sgTitle}</h2>
         <p>{t.sgText}</p>

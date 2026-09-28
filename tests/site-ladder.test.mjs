@@ -54,8 +54,15 @@ test('блоку PlusSection більше немає', () => {
 });
 
 test('усі заклики до каналу говорять тими самими словами', () => {
+  // Файл або сам бере слова з CHANNEL_CTA, або рендерить TelegramCard, який
+  // їх бере. Друге зʼявилось 28.09.2026: блок унизу головної був власною
+  // версткою з тими самими словами, і людина бачила два різні на вигляд
+  // заклики до одного каналу. Тепер це один компонент — але вимога та сама:
+  // ніде не можна написати свій текст руками.
   for (const file of ['app/TelegramCard.js', 'app/TelegramSubscribeBlock.js', 'app/HomeBlocks.js', 'app/SubscribePopup.js']) {
-    assert.ok(read(file).includes('CHANNEL_CTA'), `${file} має брати текст із CHANNEL_CTA (lib/social.js)`);
+    const src = read(file);
+    assert.ok(src.includes('CHANNEL_CTA') || /<TelegramCard\b/.test(src),
+      `${file} має брати текст із CHANNEL_CTA (lib/social.js) — сам або через <TelegramCard />`);
   }
   for (const lang of ['uk', 'en']) {
     for (const key of ['title', 'text', 'short', 'cta']) {

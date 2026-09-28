@@ -5,7 +5,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
 import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
-import { inlineCardAfter } from '@/lib/inline-card';
+import { inlineCardPositions } from '@/lib/inline-card';
 import { publicSource } from '@/lib/source-link';
 import TelegramCard from '../TelegramCard';
 
@@ -149,12 +149,12 @@ export default function TopicCards({
   // Telegram-картка після четвертої, як на головній. До 27.09.2026 вона
   // стояла після восьмої, бо після четвертої була картка Dityam+; ту прибрано
   // (рішення Марії, «сходинка»: сайт веде в канал, Dityam+ продає сам канал).
-  const tgAfter = inlineCardAfter(visible.length, { after: 4 });
+  const tgAfter = inlineCardPositions(visible.length);
 
   const cells = [];
   visible.forEach((item, i) => {
     cells.push(card(item));
-    if (i === tgAfter) cells.push(<TelegramCard key="tg-card" lang={lang} place="topic" hub={hub} />);
+    if (tgAfter.has(i)) cells.push(<TelegramCard key={`tg-card-${i}`} lang={lang} place="topic" hub={hub} />);
   });
 
   return (
