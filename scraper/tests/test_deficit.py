@@ -81,7 +81,8 @@ class Formula(unittest.TestCase):
     def test_deficit_is_demand_over_intake_plus_one(self):
         cells = {c.key: c for c in deficit.rank({("contests", "15-18"): 1.0}, [], TODAY)}
         cell = cells["contests:15-18"]
-        self.assertAlmostEqual(cell.demand, deficit.DEMAND["contests"] / 5)
+        self.assertAlmostEqual(cell.demand, deficit.DEMAND["contests"]
+                               * deficit.BAND_SHARE["contests"]["15-18"])
         self.assertAlmostEqual(cell.deficit, cell.demand / 2.0)
 
     def test_hungrier_cell_goes_first(self):
@@ -97,7 +98,7 @@ class Formula(unittest.TestCase):
 
     def test_empty_cell_does_not_divide_by_zero(self):
         cells = {c.key: c for c in deficit.rank({}, [], TODAY)}
-        self.assertAlmostEqual(cells["grants:15-18"].deficit, deficit.DEMAND["grants"] / 5)
+        self.assertAlmostEqual(cells["grants:15-18"].deficit, cells["grants:15-18"].demand)
 
     def test_measured_numbers_are_the_ones_we_measured(self):
         # Цифри з GA4 за 28 днів, заміряно 23.09.2026. Якщо їх оновлюють —
@@ -233,8 +234,23 @@ class TodayOnLiveNumbers(unittest.TestCase):
         self.assertGreater(min(i for i, k in enumerate(order) if k.startswith("clubs:")), 10)
 
     def test_contests_and_grants_are_on_top(self):
-        top = [c.family for c in deficit.rank(self.INTAKE, [], TODAY)[:6]]
+        top = [c.family for c in deficit.rank(self.INTAKE, [], TODAY)[:4]]
         self.assertTrue(set(top) <= {"contests", "grants"}, top)
+
+    def test_toddlers_do_not_win_the_day(self):
+        # 24–28.09.2026 розвідник пʼять днів із семи шукав «конкурси для
+        # дітей 0–3 років»: вік ділили порівну, а надходжень у 0–3 нуль.
+        # Картки для 0–3 відкривають в 1 % випадків — тема дня має бути
+        # підлітковою, доки там є дефіцит.
+        top = deficit.rank(self.INTAKE, [], TODAY)[:6]
+        self.assertFalse([c.key for c in top if c.band in ("0-3", "4-6")], [c.key for c in top])
+        self.assertIn(deficit.pick(self.INTAKE, [], TODAY).band, ("11-14", "15-18"))
+
+    def test_band_shares_are_measured_and_sum_to_one(self):
+        self.assertEqual(deficit.BAND_SHARE_MEASURED_ON, date(2026, 9, 28))
+        for family, shares in [*deficit.BAND_SHARE.items(), ("*", deficit._BAND_SHARE_ALL)]:
+            self.assertEqual(set(shares), set(deficit.BANDS), family)
+            self.assertAlmostEqual(sum(shares.values()), 1.0, delta=0.011, msg=family)
 
 
 if __name__ == "__main__":

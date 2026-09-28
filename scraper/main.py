@@ -131,6 +131,14 @@ SCRAPERS = [
 # on their own.
 SCRAPER_TIMEOUT = 300  # seconds
 
+# Допуск розкладу. GitHub запускає нічний cron із запізненням, що щодня інше
+# (22:30 одного дня, 23:10 іншого). next_crawl_at ставиться від моменту
+# минулого обходу, тож «щоденне» джерело, обійдене о 23:12, наступної ночі
+# о 22:33 ще «не дозріло» — і пропускалось. 22 і 26.09.2026 так мовчали всі
+# джерела, 27.09 спрацювали 4 з 31. Джерело, якому лишилось менше доби без
+# кількох годин, вважаємо дозрілим.
+DUE_GRACE = timedelta(hours=6)
+
 
 async def run_scraper(name, module, sb_client):
     """Етап А: лише видобування. Знахідки лягають у raw_items (хеш-гейт:
@@ -541,7 +549,7 @@ async def amain():
         # ще в серпні.
         if reg_row and not args.only:
             due = due_at(sb_client, reg_row)
-            if due and due > datetime.now(_tz.utc):
+            if due and due > datetime.now(_tz.utc) + DUE_GRACE:
                 print(f"\n⏭  {name}: за розкладом наступний обхід "
                       f"{due:%d.%m %H:%M} — пропускаю")
                 results.append({"name": name, "status": "scheduled",

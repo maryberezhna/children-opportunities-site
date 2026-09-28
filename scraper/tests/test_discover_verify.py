@@ -180,5 +180,30 @@ class ReachableFromUkraine(unittest.TestCase):
         self.assertIn("не видно, чи можна скористатися з України", why)
 
 
+
+
+class MissingPageIsNotADraft(unittest.TestCase):
+    """28.09.2026: розвідник клав у чернетки сторінки, що віддавали 404,
+    з тією самою позначкою «⚠️ не перевірено», що й 403. 403 — це захист від
+    серверів GitHub, сторінка жива; 404/410 — сторінки немає."""
+
+    def _verify(self, fetched):
+        import discover_agent
+        from unittest import mock
+        with mock.patch.object(discover_agent, "fetch_text", return_value=fetched):
+            return discover_agent.verify_candidate(
+                {"title": "Т", "source_url": "https://example.org/x"}, full=False)
+
+    def test_404_is_rejected(self):
+        ok, why, _, _ = self._verify((None, "HTTP 404", "missing"))
+        self.assertFalse(ok)
+        self.assertIn("404", why)
+
+    def test_403_still_goes_to_moderation(self):
+        ok, why, _, _ = self._verify((None, "HTTP 403", "transient"))
+        self.assertTrue(ok)
+        self.assertIn("не перевірено", why)
+
+
 if __name__ == "__main__":
     unittest.main()
