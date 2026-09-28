@@ -7,6 +7,7 @@ import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
 import { plusFromUrl } from '@/lib/plus';
+import { schoolNotes } from '@/lib/diaspora';
 import TopicCards from './topic/TopicCards';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -46,6 +47,8 @@ const CHROME = {
     shared: 'Посилання скопійовано',
     heroCount: (total, free) => opportunitiesWord(total) + (free > 0 ? ` · ${free} ${freeWord(free)}` : ''),
     noteTitle: ['Важливо', 'знати'],
+    schoolTitle: ['Школа', 'в країні'],
+    schoolSource: 'Джерело',
     faqTitle: ['Часті', 'питання'],
     relatedTitle: ['Інші', 'підбірки'],
     feedback: (a) => <>Побачили помилку або знаєте, чого тут бракує, — {a}.</>,
@@ -87,6 +90,8 @@ const CHROME = {
     shared: 'Link copied',
     heroCount: (total, free) => (total === 1 ? 'opportunity' : 'opportunities') + (free > 0 ? ` · ${free} free` : ''),
     noteTitle: ['Good to', 'know'],
+    schoolTitle: ['School in', 'the country'],
+    schoolSource: 'Source',
     faqTitle: ['Frequently asked', 'questions'],
     relatedTitle: ['Other', 'collections'],
     feedback: (a) => <>Spotted a mistake or know what is missing here? {a}.</>,
@@ -329,6 +334,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
     place: plusPlace,
   };
   const listed = grouped ? grouped.groups.flatMap((g) => g.items) : items;
+  const schools = schoolNotes(topic.schoolNotes || [], lang);
 
   const subfilters = grouped ? [] : buildSubfilters(topic, items, lang);
   const related = buildRelated(topic, liveRows);
@@ -517,6 +523,25 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
             </p>
           </div>
         </section>
+
+        {/* Права й процедури в школі країни (діаспора, 28.09.2026) — абзацом,
+            не картками: запис до школи чи підготовчий клас — не можливість. */}
+        {schools.length ? (
+          <section className="tp-note" aria-labelledby="tp-school-title">
+            <h2 id="tp-school-title" className="tp-h2">{titled(ch.schoolTitle)}</h2>
+            <div className="tp-note-body">
+              {schools.map((s) => (
+                <p key={s.code} className="tp-note-text">
+                  {schools.length > 1 ? <strong>{s.country}. </strong> : null}
+                  {s.text}{' '}
+                  <span className="tp-note-meta">
+                    <a href={s.source} target="_blank" rel="noopener noreferrer">{ch.schoolSource}</a>
+                  </span>
+                </p>
+              ))}
+            </div>
+          </section>
+        ) : null}
 
         {c.faq?.length ? (
           <section className="tp-faq" aria-labelledby="tp-faq-title">

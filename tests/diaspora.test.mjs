@@ -7,7 +7,21 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   diasporaReason, isDiaspora, liveCountryPages, hubGroups, countryName, inCountry, MIN_COUNTRY,
+  SCHOOL_NOTES, schoolNotes,
 } from '../lib/diaspora.js';
+
+// «Школа в країні» (28.09.2026): права й процедури абзацом — кожен з
+// офіційним джерелом, обома мовами; Італії немає.
+test('абзаци «школа в країні»: обидві мови й офіційне джерело', () => {
+  assert.deepEqual(Object.keys(SCHOOL_NOTES).sort(), ['cz', 'de', 'es', 'ie', 'nl', 'pl']);
+  for (const [code, n] of Object.entries(SCHOOL_NOTES)) {
+    assert.ok(n.uk && n.en, code);
+    assert.match(n.source, /^https:\/\/\S+$/, code);
+  }
+  assert.equal(SCHOOL_NOTES.it, undefined);
+  assert.equal(schoolNotes(['pl', 'it'], 'en')[0].country, 'Poland');
+  assert.equal(schoolNotes(['pl', 'it']).length, 1);
+});
 import {
   TOPICS, TOPIC_LIST, DIASPORA_HUB, DIASPORA_COUNTRY_TOPICS, diasporaCountryBySlug,
   qualifyingCountryTopics,
