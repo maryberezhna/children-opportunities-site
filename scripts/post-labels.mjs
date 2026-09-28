@@ -103,7 +103,7 @@ export function placeText(r) {
   if (cities.length) return cities.slice(0, 2).join(', ') + (hybrid ? ' і онлайн' : '');
   if (goesAbroad(r)) return 'у різних країнах';
   if (isOnline(r)) return 'онлайн';
-  if (hybrid) return 'онлайн і наживо';
+  if (hybrid) return 'онлайн і на місці';
   if ((r.cities || []).some((c) => /вся україна/i.test(c))) return 'по всій Україні';
   return null;
 }
