@@ -55,12 +55,23 @@ export async function instagramHandles(url, { timeoutMs = 10000 } = {}) {
   }
 }
 
-/** Рядок для адмінчату під карткою. */
+const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/**
+ * Рядок для адмінчату під карткою (HTML — надсилати з parse_mode: 'HTML').
+ *
+ * Логіни без @ і кожен у <code>: 28.09.2026 Марія копіювала «@eurodesk» у
+ * пошук Instagram, і той нічого не знаходив. <code> у Telegram копіюється
+ * одним дотиком — саме те, що вставляється в пошук.
+ */
 export function tagLine({ handles, host }) {
   if (handles.length) {
-    return `Кого тегнути: ${handles.map((h) => `@${h}`).join(', ')} (знайдено на ${host}; перевір, чи це організатор, а не добірка)`;
+    return `Кого тегнути (знайдено на ${esc(host)}; перевір, чи це організатор, а не добірка):\n`
+      + handles.map((h) => `<code>${esc(h)}</code>`).join('\n');
   }
   return host
-    ? `Кого тегнути: на ${host} Instagram не знайшовся (або сайт не пустив) — тег вручну`
+    ? `Кого тегнути: на ${esc(host)} Instagram не знайшовся (або сайт не пустив) — тег вручну`
     : 'Кого тегнути: у запису немає сторінки джерела — тег вручну';
 }
+
+export { esc as escapeHtml };
