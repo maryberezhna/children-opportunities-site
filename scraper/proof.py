@@ -59,6 +59,31 @@ def source_text(text) -> str:
 
 
 PROOF_KEYS = tuple(PUBLISH_CRITERIA["order"])
+
+# ── «Вартість уточнюйте в школі» (Марія, 28.09.2026) ─────────────────────────
+# Виняток із пʼяти обовʼязкових полів ЛИШЕ для шкіл і студій діаспори: суботня
+# школа за кордоном часто не пише ціну, а картка без ціни корисніша за
+# відсутню. Визначення — publish-criteria.json (required.cost.ask_school); JS-
+# дзеркало — lib/required.js (isDiasporaSchool, askSchoolCost).
+ASK_SCHOOL = PUBLISH_CRITERIA["required"]["cost"]["ask_school"]
+ASK_SCHOOL_VALUE = ASK_SCHOOL["value"]
+_ASK_TITLE = re.compile(ASK_SCHOOL["title_pattern"], re.IGNORECASE)
+
+
+def is_diaspora_school(data: dict) -> bool:
+    """Школа чи студія діаспори: тип зі списку, «школа»/«студія»/«центр» у
+    назві, усі країни поза Україною (і хоч одна названа)."""
+    if data.get("opportunity_type") not in ASK_SCHOOL["types"]:
+        return False
+    if not _ASK_TITLE.search(data.get("title") or ""):
+        return False
+    countries = [str(c).lower() for c in (data.get("countries") or []) if c]
+    return bool(countries) and "ua" not in countries
+
+
+def ask_school_ok(data: dict) -> bool:
+    """«Вартість уточнюйте в школі» стоїть і дозволена саме цьому запису."""
+    return data.get("cost_type") == ASK_SCHOOL_VALUE and is_diaspora_school(data)
 PROOF_LABELS = {k: PUBLISH_CRITERIA["required"][k]["label"] for k in PROOF_KEYS}
 MAX_QUOTE = 240
 
@@ -164,6 +189,9 @@ def missing_proof(data: dict) -> list:
     for key in PROOF_KEYS:
         crit = PUBLISH_CRITERIA["required"][key]
         if otype in crit.get("except_types", ()):
+            continue
+        # Ціни на сторінці немає — цитувати нема чого (виняток для шкіл діаспори).
+        if key == "cost" and ask_school_ok(data):
             continue
         if not (isinstance(ev.get(key), str) and ev[key].strip()):
             missing.append(key)

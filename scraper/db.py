@@ -89,7 +89,11 @@ def merge_patch(existing: dict, record: dict) -> dict:
 # суботня школа в Берліні») збігом вважаємо лише однакову назву цілком І
 # спільне місто: у Берліні таких шкіл кілька.
 SCHOOL_TYPES = ("club", "course", "study_program")
-AGGREGATOR_SOURCES = ("Освітній Всесвіт (МІОК)",)
+MIOK_SOURCE = "Освітній Всесвіт (МІОК)"
+# Реєстр МОН «Осередки за кордоном» (28.09.2026) — теж посередник між
+# родиною і школою: сайт самої школи бʼє і його чернетку.
+MON_CELLS_SOURCE = "Реєстр осередків за кордоном (МОН, aikom.iea.gov.ua)"
+AGGREGATOR_SOURCES = (MIOK_SOURCE, MON_CELLS_SOURCE)
 _SCHOOL_WORD = re.compile(r"школ|садоч|центр|студі|академі|гімназі|ліце|простір", re.I)
 _QUOTED_NAME = re.compile(r"[«\"„“”]\s*([^«»\"„“”]{3,80}?)\s*[»\"“”]")
 _NOT_CITIES = {"онлайн", "вся україна", "міжнародні", "україна"}
@@ -154,6 +158,12 @@ def school_twin_resolution(new: dict, twin: dict) -> str:
     """
     if (twin.get("status") == "draft" and twin.get("source") in AGGREGATOR_SOURCES
             and new.get("source") not in AGGREGATOR_SOURCES):
+        return "twin_is_dup"
+    # Між двома посередниками лишається МІОК (Марія 28.09.2026 лишила
+    # поведінку з МІОК як є): чернетка реєстру МОН поступається картці МІОК,
+    # хай хто прийшов першим.
+    if (twin.get("status") == "draft" and twin.get("source") == MON_CELLS_SOURCE
+            and new.get("source") == MIOK_SOURCE):
         return "twin_is_dup"
     return "new_is_dup"
 

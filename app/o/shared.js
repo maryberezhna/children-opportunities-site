@@ -46,12 +46,15 @@ const COST_LABELS = {
     free: 'Безкоштовно',
     paid_affordable: 'Платно',
     paid_premium: 'Платно',
+    // Школа чи студія діаспори без ціни на сторінці (28.09.2026).
+    ask_school: 'Вартість уточнюйте в школі',
     closed: 'Закрита подача',
   },
   en: {
     free: 'Free',
     paid_affordable: 'Paid',
     paid_premium: 'Paid',
+    ask_school: 'Ask the school about the price',
     closed: 'Applications closed',
   },
 };
@@ -259,11 +262,13 @@ const COST_DESC = {
     free: 'безкоштовно',
     paid_affordable: 'платно',
     paid_premium: 'платно',
+    ask_school: 'вартість уточнюйте в школі',
   },
   en: {
     free: 'free',
     paid_affordable: 'paid',
     paid_premium: 'paid',
+    ask_school: 'ask the school about the price',
   },
 };
 
@@ -620,6 +625,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
               {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
                 ? <span className="chip chip-paid">{t.paid}</span> : null}
+              {item.cost_type === 'ask_school'
+                ? <span className="chip chip-cost-ask">{COSTS.ask_school}</span> : null}
               {needs.map((n) => (
                 <span key={n} className="chip chip-need">{NEEDS[n]}</span>
               ))}

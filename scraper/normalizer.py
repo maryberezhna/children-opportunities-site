@@ -33,7 +33,7 @@ class NormalizeError(Exception):
 # синхронно (уніфіковано 22.09.2026). Спільні приклади для обох мов —
 # tests/fixtures/publish-criteria-cases.json.
 from proof import (PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof,  # noqa: E402
-                   drop_proof, place_quote, quote_in_text, ONLINE_IN_TEXT, ONLINE_TITLE,
+                   ASK_SCHOOL_VALUE, ask_school_ok, is_diaspora_school, drop_proof, place_quote, quote_in_text, ONLINE_IN_TEXT, ONLINE_TITLE,
                    OFFLINE_IN_TEXT)
 _REQUIRED = PUBLISH_CRITERIA["required"]
 
@@ -91,6 +91,8 @@ def _present(value) -> bool:
 
 
 def _satisfied(crit: dict, data: dict) -> bool:
+    if crit is _REQUIRED["cost"] and ask_school_ok(data):
+        return True
     rule = crit["rule"]
     if rule == "all":
         return all(_present(data.get(f)) for f in crit["fields"])
@@ -181,6 +183,26 @@ def _apply_state_support_free(data: dict) -> None:
     else:
         return
     data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+
+
+def apply_ask_school(data: dict) -> None:
+    """«Вартість уточнюйте в школі» — лише школам і студіям діаспори.
+
+    Рішення Марії 28.09.2026: суботня школа чи студія за кордоном без ціни на
+    сторінці може вийти на сайт із поміткою «вартість уточнюйте в школі»,
+    замість того щоб вічно чекати в чернетках. Будь-якому іншому запису це
+    значення не належить: якщо модель чи людина поставили його деінде, воно
+    стає порожнечею й запис чекає вартість, як раніше.
+    """
+    cost = data.get("cost_type")
+    if cost == ASK_SCHOOL_VALUE and not is_diaspora_school(data):
+        data["cost_type"] = None
+        drop_proof(data, "cost")
+    elif cost is None and is_diaspora_school(data):
+        data["cost_type"] = ASK_SCHOOL_VALUE
+        drop_proof(data, "cost")
+        _note(data, "auto: ціни на сторінці немає — «вартість уточнюйте в школі» "
+                    "(виняток для шкіл діаспори, 28.09.2026)")
 
 
 # Вокабуляр формату живе в proof.py: одне визначення «що таке онлайн» і для
@@ -526,6 +548,7 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
     _apply_format_from_text(data)
     _apply_place_quote(data, source_text)
     age_missing = _fill_from_text(data, age_missing, source_text)
+    apply_ask_school(data)
 
     # ── Вік — лише зі слів джерела ──────────────────────────────────────────
     # Рішення Марії 23.09.2026: «здогад машини — заборонити». Схема змушує
@@ -630,7 +653,8 @@ SYSTEM_PROMPT = """Ти аналізуєш тексти про можливос�
   заняття вихідного дня на додачу до звичайної школи.
 - Платна діаспорна школа, студія чи конкурс — теж наші: cost_type=
   paid_affordable, якщо родина платить хоч щось. Поріг ціни не шукай. Про
-  гроші текст мовчить — cost_type=null, не здогадуйся.
+  гроші текст мовчить — cost_type=null, не здогадуйся: для школи чи студії
+  діаспори сайт сам напише «вартість уточнюйте в школі».
 - У summary прямо напиши, для кого: «для українських дітей, які живуть у
   Німеччині» — і постав код країни в countries (de). На цьому тримається
   добірка для діаспори на сайті.
@@ -640,10 +664,12 @@ SYSTEM_PROMPT = """Ти аналізуєш тексти про можливос�
 ЧУЖІ ВИПЛАТИ Й СУБСИДІЇ — НЕ НАШІ (Марія, 23.09.2026). Дитяча допомога,
 соціальна виплата, субсидія чи компенсація грошима родині від іншої держави,
 її громади або місцевого фонду (800+, Kindergeld) — не наші. Конкурси, обміни й
-стипендії на навчання за кордоном — це не виплати: вони лишаються. Державна
-програма, що сама оплачує дитині заняття, мовний курс чи табір напряму
-організатору (Bildung und Teilhabe), — не виплата родині, для діаспори вона
-наша (28.09.2026). Українські виплати й пільги збираємо як раніше.
+стипендії на навчання за кордоном — це не виплати: вони лишаються.
+ОДИН ВИНЯТОК — німецький Bildung und Teilhabe (BuT, «пакет освіти й участі»):
+його БЕРЕМО ЯК ВИПЛАТУ (Марія, 28.09.2026) — opportunity_type=allowance,
+countries=[de], cost_type=free, «для українських дітей, які живуть у
+Німеччині». Решта чужих грошових виплат (800+, Kindergeld тощо) — як і
+раніше, не наші. Українські виплати й пільги збираємо як раніше.
 
 ГОЛОВНЕ ПРАВИЛО, ВАЖЛИВІШЕ ЗА ВСІ ІНШІ: НІЧОГО НЕ ВИГАДУЙ.
 Заповнюй поле лише тим, що ПРЯМО сказано в тексті. Якщо чогось у тексті

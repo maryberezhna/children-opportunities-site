@@ -12,7 +12,7 @@ import { canonicalUrl } from '@/lib/canonical.mjs';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const COST = ['free', 'partially_free', 'paid_affordable', 'paid_premium', 'subsidized'];
+const COST = ['free', 'partially_free', 'paid_affordable', 'paid_premium', 'subsidized', 'ask_school'];
 const TYPES = [
   'course', 'workshop', 'summer_school', 'mentorship', 'club', 'camp', 'study_program',
   'olympiad', 'competition', 'hackathon', 'sport_tournament', 'festival', 'award',

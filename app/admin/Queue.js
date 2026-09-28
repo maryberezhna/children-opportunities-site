@@ -152,7 +152,7 @@ function Card({ o, notes: initialNotes = [], today }) {
       <p className="adm-facts">
         <span className="chip">{TYPE_LABELS[o.opportunity_type] || o.opportunity_type || 'тип не вказано'}</span>
         {ageLabel(o) ? <span>{ageLabel(o)}</span> : <span className="soft">вік не вказано</span>}
-        {o.cost_type ? <span className={o.cost_type === 'free' ? 'good' : ''}>{o.cost_type === 'free' ? 'безкоштовно' : 'платно'}</span> : null}
+        {o.cost_type ? <span className={o.cost_type === 'free' ? 'good' : ''}>{o.cost_type === 'free' ? 'безкоштовно' : o.cost_type === 'ask_school' ? 'уточнюйте в школі' : 'платно'}</span> : null}
         {when ? <span>коли: {when}</span> : null}
         {dl ? <span className={dl.past || dl.days <= 7 ? 'hot' : ''}>подача {dl.text}</span> : null}
         {!when && !dl && o.recurrence === 'annual' ? <span className="soft">щорічна</span> : null}

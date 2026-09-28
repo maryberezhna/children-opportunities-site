@@ -25,8 +25,8 @@ import {
  */
 
 const T = {
-  uk: { free: 'безкоштовно', paid: 'платно', today: 'сьогодні', days: (n) => `${n} днів` },
-  en: { free: 'free', paid: 'paid', today: 'today', days: (n) => `${n} days` },
+  uk: { free: 'безкоштовно', paid: 'платно', askSchool: 'вартість уточнюйте в школі', today: 'сьогодні', days: (n) => `${n} днів` },
+  en: { free: 'free', paid: 'paid', askSchool: 'ask the school about the price', today: 'today', days: (n) => `${n} days` },
 };
 
 /** Англійське поле з бази, з відкатом на оригінал: переклад доїжджає партіями. */
@@ -73,6 +73,9 @@ export default function OpportunityCard({
         <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
         {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
         {paid ? <span className="chip chip-paid">{t.paid}</span> : null}
+        {/* Школа чи студія діаспори без ціни на сторінці (28.09.2026): не
+            «безкоштовно» і не «платно», а чесно — ціну знає школа. */}
+        {item.cost_type === 'ask_school' ? <span className="chip chip-cost-ask">{t.askSchool}</span> : null}
         {days !== null && days >= 0 && days <= 7 ? (
           <span className="chip chip-deadline-urgent">
             ⏰ {days === 0 ? t.today : t.days(days)}

@@ -8,7 +8,10 @@ const FORMATS = [['', '— не визначено —'], ['online', 'Онлай
 // «Безкоштовно» кожному запису без вартості, і збереження перетворювало
 // «невідомо» на факт. Порожнє поле краще за правдоподібне.
 const RECURRENCE = [['', 'Разова подія'], ['annual', 'Щороку'], ['ongoing', 'Постійно доступна']];
-const COST = [['', '— не визначено —'], ['free', 'Безкоштовно'], ['paid_affordable', 'Платно']];
+// «Уточнюйте в школі» публікується лише для шкіл і студій діаспори (28.09.2026);
+// будь-якому іншому запису перевірка при публікації скаже «бракує: вартість».
+const COST = [['', '— не визначено —'], ['free', 'Безкоштовно'], ['paid_affordable', 'Платно'],
+  ['ask_school', 'Уточнюйте в школі (лише школи діаспори)']];
 const TYPES = [
   ['course', 'Курс'], ['workshop', 'Майстер-клас'], ['summer_school', 'Літня школа'], ['study_program', 'Навчальна програма'],
   ['mentorship', 'Менторство'], ['club', 'Гурток'], ['camp', 'Табір'], ['olympiad', 'Олімпіада'], ['competition', 'Конкурс'],
@@ -75,6 +78,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     cost_type: f.cost_type || null,
     opportunity_type: f.opportunity_type,
     format: f.format || null,
+    // Назва потрібна винятку «вартість уточнюйте в школі» (школа діаспори).
+    title: f.title,
     cities: f.cities.split(',').map((s) => s.trim()).filter(Boolean),
     countries: opp.countries || [],
     is_international: opp.is_international || false,

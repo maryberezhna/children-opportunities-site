@@ -65,6 +65,7 @@
 .chip-age { background: var(--cool-2); color: #0a5348; }
 .chip-free { background: var(--green-1); color: #2d5814; }
 .chip-paid { background: var(--warm-2); color: #8a5a0a; }
+.chip-cost-ask { background: var(--warm-2); color: #6b4a0a; }
 .chip-need { background: var(--pink-2); color: #8a1a3a; }
 .chip-aid { background: #e5eefc; color: #1b4a8f; font-weight: 500; }
 .chip-intl { background: #e0f2fe; color: #075985; }

@@ -23,6 +23,7 @@ function ageLabel(o) {
 // платить хоч щось — «платно», не платить нічого — «безкоштовно».
 function costLabel(o) {
   if (!o.cost_type) return null;
+  if (o.cost_type === 'ask_school') return 'уточнюйте в школі';
   return o.cost_type === 'free' ? 'безкоштовно' : 'платно';
 }
 
