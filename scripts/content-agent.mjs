@@ -8,7 +8,7 @@
  * Що агент НЕ робить: не публікує. Правило «вичитувати кожен текст перед
  * відправкою» тут головніше за зручність — пост від імені платформи, якій
  * вірять, не може виходити без людини. Агент готує все до кнопки: текст,
- * картинку, хештеги — лишається прочитати й викласти.
+ * картинку, хештеги, кого тегнути — лишається прочитати й викласти.
  *
  * Медіа з галереї. Бібліотеку Photos macOS не віддає стороннім процесам, тож
  * агент дивиться в теку, куди ти складаєш дібрані фото й кліпи (--media).
@@ -24,6 +24,7 @@ import { extname, join } from 'node:path';
 import { isoWeek } from '../lib/week.js';
 import { TYPE_LABELS } from '../lib/labels.js';
 import { costLabel, withPageLink } from './post-labels.mjs';
+import { instagramHandles, tagLine } from './ig-handles.mjs';
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf(name);
@@ -212,12 +213,18 @@ async function main() {
     parse_mode: 'HTML',
   });
 
+  // Кого тегнути — лише акаунти зі сторінки джерела (scripts/ig-handles.mjs),
+  // модель їх не знає і вигадувати не сміє. Усі сторінки — паралельно.
+  const tags = await Promise.all(items.map((o) => instagramHandles(o.source_url).then(tagLine)));
+
   for (let i = 0; i < posts.length; i += 1) {
     const item = items[i];
     if (item) {
+      // v — щоб Telegram завантажив картку заново: за тією самою адресою він
+      // віддає збережену, і виправлена назва на картці не зʼявилась би.
       await tg('sendPhoto', {
-        photo: `${SITE}/api/ig-card?slug=${item.slug}`,
-        caption: `${i + 1}/${posts.length} · ${item.title.slice(0, 120)}`,
+        photo: `${SITE}/api/ig-card?slug=${item.slug}&v=${week}`,
+        caption: `${i + 1}/${posts.length} · ${item.title.slice(0, 120)}\n\n${tags[i]}`,
       });
     }
     // Текст окремим повідомленням: із підпису під фото його не скопіювати
