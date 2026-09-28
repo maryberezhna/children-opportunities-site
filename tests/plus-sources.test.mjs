@@ -60,8 +60,18 @@ test('підказка й блок каналу на сторінці можли
   // Стара подія лишається: на ній звіти до 27.09.2026 і конверсія Ads.
   assert.ok(popup.includes("'telegram_join_click'"));
 
+  // Блок на сторінці можливості з 28.09.2026 не має власної розмітки й
+  // власної аналітики: він рендерить той самий TelegramCard, що й каталог.
+  // Тому перевіряємо не «де лежить код», а що ланцюг цілий — блок передає
+  // своє місце, а картка знає, в яке placement його перекласти.
   const block = read('app/TelegramSubscribeBlock.js');
-  assert.ok(block.includes("detail_page: 'opportunity_block'"));
-  assert.ok(block.includes('trackSubscribeClick('));
-  assert.ok(block.includes("'telegram_join_click'"));
+  assert.match(block, /<TelegramCard[^>]*place=\{place\}/,
+    'блок має передавати place у TelegramCard');
+  assert.ok(block.includes("place = 'detail_page'"), 'типове місце — detail_page');
+
+  const card = read('app/TelegramCard.js');
+  assert.ok(card.includes("detail_page: 'opportunity_block'"),
+    'TelegramCard має перекладати detail_page в opportunity_block');
+  assert.ok(card.includes('trackSubscribeClick('));
+  assert.ok(card.includes("'telegram_join_click'"));
 });
