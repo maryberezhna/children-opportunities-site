@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
+import { sourceUrlProblem } from '@/lib/source-link';
 
 const FORMATS = [['', '— не визначено —'], ['online', 'Онлайн'], ['offline', 'Офлайн'], ['hybrid', 'Онлайн і офлайн']];
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
@@ -31,8 +32,15 @@ function sourceHost(url) {
   }
 }
 
-export default function EditForm({ opp, stub = false }) {
+/**
+ * inline — та сама форма всередині картки черги (Марія, 28.09.2026: зелена
+ * кнопка «Відредагувати, а потім опублікувати»). Без розгорнутого матеріалу
+ * й топу тижня — вони лишаються на повній сторінці редагування; onDone
+ * отримує результат, щоб картка сказала «опубліковано» й дала лінк на сайт.
+ */
+export default function EditForm({ opp, stub = false, inline = false, onDone }) {
   const [f, setF] = useState({
+    source_url: opp.source_url || '',
     title: opp.title || '', summary: opp.summary || '', deadline: opp.deadline || '',
     // stub — чернетка, створена кнопкою «Додати на сайт» з пропозиції: у базі
     // тип «Курс» і вік 0–18 лише тому, що без них запис не зберегти. Показати
@@ -71,19 +79,31 @@ export default function EditForm({ opp, stub = false }) {
     countries: opp.countries || [],
     is_international: opp.is_international || false,
   });
+  // Нове джерело мусить бути сторінкою, а не формою чи каналом — тоді кнопки
+  // гаснуть. Старе (досі допис) лише підсвічуємо: людина вирішує сама.
+  const srcChanged = f.source_url.trim() && f.source_url.trim() !== (opp.source_url || '');
+  const sourceProblem = srcChanged ? sourceUrlProblem(f.source_url) : null;
+  const sourceWarn = !srcChanged && opp.source_url ? sourceUrlProblem(opp.source_url) : null;
 
   async function save(publish) {
     setBusy(true); setDone('');
     try {
+      const payload = { id: opp.id, ...f, publish };
+      // Поля, яких у картці немає, не надсилаємо: сервер лишить їх як є.
+      if (inline) { delete payload.details; delete payload.featured; }
       const res = await fetch('/api/admin/edit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: opp.id, ...f, publish }),
+        body: JSON.stringify(payload),
       });
       if (res.ok) {
+        const body = await res.json().catch(() => ({}));
         setDone(publish ? '✅ Збережено й опубліковано' : '💾 Збережено (лишилось чернеткою)');
+        onDone?.({ published: publish, slug: body.slug || null });
       } else if (res.status === 422) {
         const body = await res.json().catch(() => ({}));
-        setDone(`Помилка: не вистачає полів — ${(body.missing || []).join(', ')}`);
+        setDone(body.error === 'bad_source'
+          ? `Помилка: ${body.problem}`
+          : `Помилка: не вистачає полів — ${(body.missing || []).join(', ')}`);
       } else {
         setDone('Помилка. Перезайди в /admin.');
       }
@@ -93,7 +113,7 @@ export default function EditForm({ opp, stub = false }) {
   }
 
   return (
-    <div style={{ marginTop: 18 }}>
+    <div style={{ marginTop: inline ? 6 : 18 }}>
       <label style={L}>Назва</label>
       <input style={I} value={f.title} onChange={up('title')} />
       {/* Джерело — одразу під назвою і помітним блоком (Марія, 24.09.2026).
@@ -117,6 +137,10 @@ export default function EditForm({ opp, stub = false }) {
           <span aria-hidden="true">↗</span>
         </a>
       ) : null}
+      <label style={L}>Джерело <span style={{ fontWeight: 400, color: '#8a94a6' }}>— сторінка організатора про цю можливість, не допис і не форма</span></label>
+      <input style={{ ...I, borderColor: sourceProblem ? '#d92c2c' : I.border }} value={f.source_url} onChange={up('source_url')} placeholder="https://сайт-організатора/сторінка" />
+      {sourceProblem ? <p style={{ margin: '5px 0 0', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>{sourceProblem}</p> : null}
+      {sourceWarn ? <p style={{ margin: '5px 0 0', color: '#b4530a', fontSize: 13.5, fontWeight: 600 }}>⚠ {sourceWarn}</p> : null}
       <label style={L}>Опис</label>
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -143,6 +167,7 @@ export default function EditForm({ opp, stub = false }) {
       <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
       <label style={L}>Посилання на подачу <span style={{ fontWeight: 400, color: '#8a94a6' }}>— форма або реєстрація, якщо адреса не та сама, що в джерелі</span></label>
       <input style={I} value={f.apply_url} onChange={up('apply_url')} placeholder="https://forms.gle/…" />
+      {inline ? null : (<>
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>
       <textarea style={{ ...I, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13.5 }} rows={14} value={f.details} onChange={up('details')} placeholder={'## Хто може подаватись\n- учні 8-11 класів\n\n## Етапи\n...'} />
       {/* Ручний вибір перебиває правило: щотижневий скрипт бачить позначку
@@ -157,15 +182,19 @@ export default function EditForm({ opp, stub = false }) {
         />
         <span>⭐ Топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— показувати з позначкою й нагорі каталогу до понеділка</span></span>
       </label>
+      </>)}
       {missing.length ? (
         <p style={{ marginTop: 16, marginBottom: 0, padding: '10px 12px', borderRadius: 10, background: '#fdecec', border: '1px solid #f3bcbc', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>
           ⛔ Не можна опублікувати — бракує: {missing.join(', ')}
         </p>
       ) : null}
       <div style={{ display: 'flex', gap: 10, marginTop: 18, flexWrap: 'wrap', alignItems: 'center' }}>
-        <button onClick={() => save(false)} disabled={busy} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer', opacity: busy ? 0.6 : 1 }}>💾 Зберегти чернеткою</button>
-        <button onClick={() => save(true)} disabled={busy || missing.length > 0} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: 'none', background: '#15803d', color: '#fff', cursor: busy || missing.length ? 'default' : 'pointer', opacity: busy || missing.length ? 0.45 : 1 }}>✅ Зберегти й опублікувати</button>
-        <a href="/admin" style={{ padding: '10px 6px', fontSize: 14, color: '#54617a' }}>← До черги</a>
+        {/* У картці черги головна дія — публікація: вона перша й велика. */}
+        <button onClick={() => save(true)} disabled={busy || missing.length > 0 || !!sourceProblem} style={{ padding: inline ? '12px 22px' : '10px 18px', fontSize: inline ? 16 : 14, fontWeight: 700, borderRadius: 10, border: 'none', background: '#15803d', color: '#fff', cursor: busy || missing.length || sourceProblem ? 'default' : 'pointer', opacity: busy || missing.length || sourceProblem ? 0.45 : 1 }}>{inline ? '✅ Опублікувати на сайт' : '✅ Зберегти й опублікувати'}</button>
+        <button onClick={() => save(false)} disabled={busy || !!sourceProblem} style={{ padding: '10px 18px', fontSize: 14, fontWeight: 600, borderRadius: 10, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer', opacity: busy || sourceProblem ? 0.6 : 1 }}>{inline ? '💾 Лише зберегти' : '💾 Зберегти чернеткою'}</button>
+        {inline
+          ? <a href={`/admin/edit/${opp.id}`} style={{ padding: '10px 6px', fontSize: 14, color: '#54617a' }}>Усі поля →</a>
+          : <a href="/admin" style={{ padding: '10px 6px', fontSize: 14, color: '#54617a' }}>← До черги</a>}
       </div>
       {done ? <p style={{ marginTop: 12, fontWeight: 600, color: done.startsWith('Помилка') ? '#d92c2c' : '#15803d' }}>{done}</p> : null}
     </div>

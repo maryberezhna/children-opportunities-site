@@ -4,6 +4,7 @@ import { isAdmin, adminName } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
 import { missingRequired } from '@/lib/required';
 import { DECISION_FIELD } from '@/lib/corrections';
+import { rejectProblem, rejectNoteBody } from '@/lib/reject-reasons';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,6 +16,10 @@ const ACTIONS = {
   verify:  { decision: 'Перевірено', verify: true },                          // active link ok
   remove:  { status: 'closed', decision: 'Прибрано' },                        // active → hidden
   comment: { decision: 'Коментар' },                                          // note only, stays in queue
+  // «Не підходить» з причиною (Марія, 28.09.2026). archived, а не closed:
+  // closed сайт показує з «подачу закрито», а lifecycle.py умів такий запис
+  // знову відкрити — відхилене мусить зникнути назавжди.
+  reject:  { status: 'archived', decision: 'Не підходить' },
 };
 
 export async function POST(request) {
@@ -23,10 +28,15 @@ export async function POST(request) {
     return Response.json({ ok: false }, { status: 403 });
   }
 
-  const { id, action, comment } = await request.json().catch(() => ({}));
+  const { id, action, comment, reason } = await request.json().catch(() => ({}));
   const spec = ACTIONS[action];
   if (!id || !spec) {
     return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
+  }
+  // Відмова без причини нічого не вчить пошук — причина обовʼязкова.
+  if (action === 'reject') {
+    const problem = rejectProblem(reason, comment);
+    if (problem) return Response.json({ ok: false, error: problem }, { status: 400 });
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -67,7 +77,7 @@ export async function POST(request) {
   // Статус ДО рішення. 23.09.2026: «пропустити» й «прибрати» — теж сигнал
   // моделі («принесла не те»), а ми його не зберігали; після update статус уже
   // 'closed', і чим він був — чернеткою чи живим записом — не дізнатись.
-  const isDecision = action === 'skip' || action === 'remove';
+  const isDecision = action === 'skip' || action === 'remove' || action === 'reject';
   let statusBefore = null;
   if (isDecision) {
     const { data: cur } = await supabase
@@ -88,13 +98,17 @@ export async function POST(request) {
   if (!data) return Response.json({ ok: false, error: 'not_found' }, { status: 404 });
 
   let note = null;
-  if (text) {
+  // Відмова пишеться завжди — з причиною людською мовою. Дія в журналі
+  // коментарів — 'skip': таблиця приймає лише пʼять значень, а код причини
+  // лежить у moderation_corrections нижче.
+  const noteBody = action === 'reject' ? rejectNoteBody(reason, text) : text;
+  if (noteBody) {
     const { data: saved, error: noteError } = await supabase
       .from('moderation_notes')
       .insert({
         opportunity_id: id,
-        body: text,
-        action,
+        body: noteBody,
+        action: action === 'reject' ? 'skip' : action,
         resolved_at: action === 'comment' ? null : new Date().toISOString(),
       })
       .select('id, body, created_at')
@@ -115,7 +129,9 @@ export async function POST(request) {
         opportunity_id: id,
         field: DECISION_FIELD,
         before: statusBefore,
-        after: text ? { action, comment: text } : { action },
+        // reason — код із lib/reject-reasons.json: за ним пошук вчиться, чого
+        // не шукати (scraper/rejections.py).
+        after: { action, ...(action === 'reject' ? { reason } : {}), ...(text ? { comment: text } : {}) },
         source: 'review',
       });
     } catch { /* телеметрія мовчить і нічого не ламає */ }
@@ -138,7 +154,7 @@ export async function POST(request) {
   // Mirror to Notion (best-effort; no-op if not configured).
   await pushModeration({
     title: data.title,
-    comment: text,
+    comment: noteBody,
     decision: spec.decision,
     type: data.opportunity_type,
     url: data.source_url,

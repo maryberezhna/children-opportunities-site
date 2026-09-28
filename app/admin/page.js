@@ -1,152 +1,112 @@
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
-import { quarantineCriteria, quarantineSnippet } from '@/lib/quarantine';
 import { kyivToday } from '@/lib/dates';
-import AdminList from './AdminList';
+import { isOverdue, sortByDeadline } from '@/lib/decision-reason';
+import { isStubDraft } from '@/lib/suggestions';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
+import Queue from './Queue';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export const metadata = {
-  title: 'Модерація',
+  title: 'Черга',
   robots: { index: false, follow: false },
 };
 
-// Карантин переїхав сюди з окремої сторінки (Марія, 22.09.2026: «зроби так,
-// щоб карантин і черга були 1 сторінкою»; до того — «чим відрізняється
-// карантин і черга, я нічого не розумію»). Це не два види записів, а два
-// кроки одного шляху: сира знахідка → кандидат із полями → сайт.
+// Одна черга (Марія, 28.09.2026): «це не нормально, це повний розфокус. Я
+// хочу мати 1 лист, який збирає потенційні можливості, якщо вони не дотягують
+// до того, щоб бути опублікованими автоматично». Шість розділів — знахідки,
+// «чекає машину», неповні, прострочені, «потребує рішення», «на сайті» —
+// переїхали на /admin/all і звідти нікуди не зникли; тут лише чернетки, і на
+// кожній три дії: опублікувати, коментар машині, не підходить.
 //
-// 23.09.2026 Марія намалювала на папері, як ця сторінка має виглядати:
-// «Потребує рішення» — і показувати, ЧОМУ саме цей запис сюди потрапив,
-// сортувати за найближчим дедлайном; «Активні» — те, що зараз на сайті,
-// просто продивлятися. Тож замість пʼяти вкладок тут два розділи, а знахідки,
-// «чекає машину» й неповні — рядком під заголовком.
-const QUARANTINE_LIMIT = 150;
+// Прострочені сюди не потрапляють: вночі їх закриває auto_review («дата в
+// минулому»), і рішення людини там не потрібне.
+const FIELDS = [
+  'id, slug, status, title, summary, source, source_url, apply_url, opportunity_type',
+  'age_from, age_to, cost_type, price_note, deadline, recurrence, results_date',
+  'event_start_date, event_end_date, format, cities, countries, is_international',
+  'evidence, child_needs, link_status, dup_of, dup_score, admin_comment, created_at',
+].join(', ');
 
-// format/cities/countries/is_international і event_end_date тягнемо не для
-// показу, а щоб порахувати обовʼязковий мінімум прямо в черзі: без них
-// картка не знала б, що запису бракує «де» або дати (11.09.2026).
-// child_needs — щоб черга впізнала вразливу тему (статусні групи дітей)
-// і поставила такий запис першим (22.09.2026).
-// link_status — щоб причина на картці могла сказати «посилання не
-// відкривається»: конвеєр це знав (scraper/auto_review.py), а людина в черзі
-// не бачила ніде (23.09.2026).
-const REQUIRED_EXTRA = 'event_start_date, event_end_date, format, cities, countries, is_international, evidence, child_needs, link_status';
-const DRAFT_FIELDS =
-  `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, dup_of, dup_score, admin_comment, created_at, ${REQUIRED_EXTRA}`;
-const ACTIVE_FIELDS =
-  `id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, recurrence, verified_at, admin_comment, dup_of, dup_score, created_at, ${REQUIRED_EXTRA}`;
+const NOTE_DAYS = 7;
 
-export default async function AdminPage({ searchParams }) {
+export default async function QueuePage({ searchParams }) {
+  // Старі закладки на вкладки (?tab=raw, ?tab=active…) ведуть туди, де ці
+  // вкладки тепер живуть.
+  if (searchParams?.tab) redirect(`/admin/all?tab=${encodeURIComponent(searchParams.tab)}`);
+
   const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
-  const authed = isAdmin(cookie);
-
-  if (!authed) {
+  if (!isAdmin(cookie)) {
     return (
       <main style={{ maxWidth: 420, margin: '80px auto', padding: '0 20px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
         <h1 style={{ fontSize: 22 }}>Модерація можливостей</h1>
-        {token
+        {configured
           ? <LoginForm />
           : <p style={{ color: '#b4530a' }}>Адмінка не налаштована: задайте змінну середовища <code>ADMIN_TOKEN</code>.</p>}
       </main>
     );
   }
 
+  const today = kyivToday();
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   let drafts = [];
-  let actives = [];
-  let raw = [];
-  let matches = {};
+  let overdue = 0;
   const notes = {};
+  let failed = false;
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    const [d, a, rawRes, srcRes] = await Promise.all([
-      supabase.from('opportunities').select(DRAFT_FIELDS)
-        .eq('status', 'draft').order('created_at', { ascending: false }).limit(300),
-      supabase.from('opportunities').select(ACTIVE_FIELDS)
-        .eq('status', 'active')
-        // unverified first, then newest
-        .order('verified_at', { ascending: true, nullsFirst: true })
-        .order('created_at', { ascending: false })
-        .limit(600),
-      supabase.from('raw_items')
-        .select('id, source_name, source_url, canonical_url, raw_title, raw_text, confidence, fetched_at')
-        .eq('status', 'review').is('review_verdict', null)
-        .order('fetched_at', { ascending: false }).limit(QUARANTINE_LIMIT),
-      supabase.from('sources').select('name, trust_tier'),
-    ]);
-    drafts = d.data || [];
-    actives = a.data || [];
+    const { data, error } = await supabase.from('opportunities').select(FIELDS)
+      .eq('status', 'draft').order('created_at', { ascending: false }).limit(300);
+    // Збій бази — не «черга порожня»: людина має знати, що список не
+    // прочитався, а не радіти, що все розібрано.
+    if (error) failed = true;
+    // stub — чернетка з пропозиції (тип і вік у базі — заглушка). Рахуємо тут:
+    // lib/suggestions.js серверний і в браузер не йде.
+    const all = (data || []).map((o) => ({ ...o, stub: isStubDraft(o) }));
+    overdue = all.filter((o) => isOverdue(o, today)).length;
+    drafts = sortByDeadline(all.filter((o) => !isOverdue(o, today)), (o) => o.deadline);
 
-    // Порядок сирих знахідок — спершу надійніші джерела (trust_tier 1 —
-    // держ/офіційні), усередині від найвпевненішого: рідкісне міжнародне має
-    // потрапляти на очі першим, а не тонути серед свіжого шуму з Telegram.
-    const tier = new Map((srcRes.data || []).map((x) => [x.name, x.trust_tier]));
-    raw = (rawRes.data || [])
-      .map((r) => ({
-        id: r.id,
-        raw_title: r.raw_title,
-        source_name: r.source_name,
-        trust_tier: tier.get(r.source_name) ?? null,
-        confidence: r.confidence,
-        url: r.canonical_url || r.source_url,
-        raw_text: String(r.raw_text || '').slice(0, 6000),
-        snippet: quarantineSnippet(r.raw_text),
-        // По весь текст, а не по обрізаних 6000: дедлайн буває й наприкінці.
-        criteria: quarantineCriteria(r.raw_title, r.raw_text),
-      }))
-      .sort((a1, b1) => (a1.trust_tier ?? 9) - (b1.trust_tier ?? 9)
-        || (b1.confidence ?? 0) - (a1.confidence ?? 0));
-
-    // Fetch the matched opportunities so the UI can show both side by side.
-    const dupSlugs = [...new Set([...drafts, ...actives].map((o) => o.dup_of).filter(Boolean))];
-    if (dupSlugs.length) {
-      const { data: m } = await supabase
-        .from('opportunities')
-        .select('slug, title, source, source_url, deadline, opportunity_type, age_from, age_to, cost_type')
-        .in('slug', dupSlugs);
-      matches = Object.fromEntries((m || []).map((x) => [x.slug, x]));
+    // Коментарі машині: відкриті (ще в роботі) і виконані за останній
+    // тиждень — картка каже, що машина зробила з проханням.
+    const ids = drafts.map((o) => o.id);
+    if (ids.length) {
+      const since = new Date(Date.now() - NOTE_DAYS * 864e5).toISOString();
+      const { data: n } = await supabase.from('moderation_notes')
+        .select('id, opportunity_id, body, created_at, resolved_at, resolution, attempted_at')
+        .eq('action', 'comment')
+        .in('opportunity_id', ids)
+        .or(`resolved_at.is.null,resolved_at.gte.${since}`)
+        .order('created_at', { ascending: true })
+        .limit(500);
+      for (const x of n || []) (notes[x.opportunity_id] ||= []).push(x);
     }
-
-    // Відкриті коментарі людини — на картку, щоб наступний модератор бачив
-    // питання, яке вже поставили. Збій тут не валить чергу: без коментарів
-    // картки лишаються робочими.
-    const { data: n } = await supabase
-      .from('moderation_notes')
-      .select('id, opportunity_id, body, created_at')
-      .is('resolved_at', null)
-      .order('created_at', { ascending: true })
-      .limit(500);
-    for (const x of n || []) (notes[x.opportunity_id] ||= []).push(x);
   }
 
   return (
-    // Ширину задає сітка в AdminList: список лишається на тому ж місці, що
-    // й на інших сторінках адмінки, а правила стають у порожнє поле ліворуч.
-    <main style={{ margin: '32px 0 80px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
-      <AdminList
-        drafts={drafts}
-        actives={actives}
-        raw={raw}
-        matches={matches}
-        notes={notes}
-        // «Сьогодні» рахуємо на сервері за Києвом і передаємо пропом: інакше
-        // сервер і браузер порахують «скільки лишилось» по-різному й React
-        // перемалює список заново (див. lib/dates.js).
-        today={kyivToday()}
-        initialTab={searchParams?.tab}
-      >
-        <AdminNav current="queue" />
-        <h1 style={{ fontSize: 24, marginBottom: 4 }}>Модерація</h1>
-        <p style={{ color: '#54617a', fontSize: 16, margin: 0, lineHeight: 1.5 }}>
-          Два питання: що від тебе хочуть і що вже живе на сайті.
+    <main style={{ maxWidth: 860, margin: '32px auto 80px', padding: '0 18px', fontFamily: 'system-ui, sans-serif', color: '#131b28' }}>
+      <AdminNav current="queue" />
+      <h1 style={{ fontSize: 26, margin: '0 0 6px' }}>
+        Черга <span style={{ color: '#54617a', fontWeight: 600 }}>({drafts.length})</span>
+      </h1>
+      <p style={{ color: '#54617a', fontSize: 16, margin: '0 0 22px', lineHeight: 1.5 }}>
+        Можливості, які машина не змогла опублікувати сама. Спершу ті, де дедлайн найближчий.
+      </p>
+      {failed ? (
+        <p style={{ padding: '12px 14px', borderRadius: 10, background: '#fdecec', color: '#a11b1b', fontWeight: 600 }}>
+          База не відповіла — список неповний. Онови сторінку за хвилину.
         </p>
-      </AdminList>
+      ) : null}
+      <Queue drafts={drafts} notes={notes} today={today} />
+      <p style={{ marginTop: 36, fontSize: 14, color: '#8a94a6', lineHeight: 1.6 }}>
+        {overdue ? <>Ще {overdue} із минулими датами — машина закриє їх сама вночі.<br /></> : null}
+        <a href="/admin/all" style={{ color: '#8a94a6' }}>Старий вигляд з усіма розділами →</a>
+      </p>
     </main>
   );
 }

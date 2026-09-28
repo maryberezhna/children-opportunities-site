@@ -1,10 +1,13 @@
 import { cookies } from 'next/headers';
+import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
-import { isAdmin } from '@/lib/adminAuth';
+import { isAdmin, adminName } from '@/lib/adminAuth';
 import { isoWeek } from '@/lib/week';
 import { missingRequired } from '@/lib/required';
 import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
+import { sourceUrlProblem } from '@/lib/source-link';
+import { canonicalUrl } from '@/lib/canonical.mjs';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,21 +73,6 @@ export async function POST(request) {
   // Ручний топ тижня. Пишемо не прапорець, а сам тиждень: знята галочка
   // гасить позначку одразу, а забута — сама в понеділок.
   if (typeof b.featured === 'boolean') patch.featured_week = b.featured ? isoWeek() : null;
-  // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
-  // сайт (вимога Марії 11.09.2026). Рахуємо по тому, що людина щойно ввела,
-  // разом із полями, яких у формі немає (країни, позначка міжнародної).
-  if (b.publish) {
-    const missing = missingRequired({
-      ...patch,
-      countries: b.countries || null,
-      is_international: b.is_international || false,
-    });
-    if (missing.length) {
-      return Response.json({ ok: false, error: 'missing_required', missing }, { status: 422 });
-    }
-    patch.status = 'active';
-    patch.verified_at = new Date().toISOString();
-  }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -95,8 +83,33 @@ export async function POST(request) {
   // людина, тож конвеєр повторював ті самі помилки — після update старе
   // значення зникає назавжди, і прочитати його можна лише тут.
   const { data: cur } = await supabase.from('opportunities')
-    .select(`admin_comment, ${TRACKED_FIELDS.join(', ')}`)
+    .select(`slug, source_url, admin_comment, countries, is_international, ${TRACKED_FIELDS.join(', ')}`)
     .eq('id', b.id).maybeSingle();
+
+  // Джерело — сторінка організатора (Марія, 28.09.2026: «поміняй джерело на
+  // першоджерело»). Перевіряємо лише нове: форма надсилає джерело завжди, і
+  // запис, де воно досі допис, інакше не вдалося б навіть зберегти.
+  if (typeof b.source_url === 'string' && b.source_url.trim()
+      && b.source_url.trim() !== (cur?.source_url || '')) {
+    const src = b.source_url.trim().slice(0, 500);
+    const problem = sourceUrlProblem(src);
+    if (problem) return Response.json({ ok: false, error: 'bad_source', problem }, { status: 422 });
+    patch.source_url = src;
+    patch.canonical_url = canonicalUrl(src);
+  }
+
+  // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
+  // сайт (вимога Марії 11.09.2026). Рахуємо по запису з бази, поверх якого
+  // лягає щойно введене: форма не надсилає країн і позначки міжнародної, і
+  // доти запис, де «де» — лише країна, браузер пускав, а сервер відбивав 422.
+  if (b.publish) {
+    const missing = missingRequired({ ...(cur || {}), ...patch });
+    if (missing.length) {
+      return Response.json({ ok: false, error: 'missing_required', missing }, { status: 422 });
+    }
+    patch.status = 'active';
+    patch.verified_at = new Date().toISOString();
+  }
 
   // Людина сама обрала тип і вік — заглушка з пропозиції стала фактом, знімаємо
   // позначку, і форма далі показує збережені значення.
@@ -121,5 +134,20 @@ export async function POST(request) {
     } catch { /* телеметрія мовчить і нічого не ламає */ }
   }
 
-  return Response.json({ ok: true, published: !!b.publish });
+  if (b.publish) {
+    // Хто опублікував — у той самий журнал, що й кнопки черги.
+    try {
+      await supabase.from('moderation_actions').insert({
+        opportunity_id: b.id, action: 'approve', actor: adminName(cookie) || 'невідомий',
+      });
+    } catch { /* журнал мовчить і нічого не ламає */ }
+    // Сторінка можливості оновлюється раз на годину — після публікації
+    // людина хоче бачити запис на сайті одразу, а не вгадувати, чи спрацювало.
+    try {
+      if (cur?.slug) revalidatePath(`/o/${cur.slug}`);
+      revalidatePath('/');
+    } catch { /* поза запитом Next revalidatePath кидає — публікація вже є */ }
+  }
+
+  return Response.json({ ok: true, published: !!b.publish, slug: cur?.slug || null });
 }
