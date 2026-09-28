@@ -38,6 +38,7 @@ import anthropic
 
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+from normalizer import VALID_OPP_TYPES
 logger = logging.getLogger("process_notes")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -76,7 +77,11 @@ APPLY_TOOL = {
             "title": {"type": "string"},
             "summary": {"type": "string"},
             "details": {"type": "string"},
-            "opportunity_type": {"type": "string"},
+            # Лише типи, які приймає база. Вільний рядок дозволяв моделі
+            # вигадати «school» на коментар «треба окрему категорію»: база
+            # відкидала запис, і той самий коментар ішов у LLM щогодини
+            # з 29.08 по 28.09.2026.
+            "opportunity_type": {"type": "string", "enum": sorted(VALID_OPP_TYPES)},
             "age_from": {"type": "integer"},
             "age_to": {"type": "integer"},
             "cost_type": {"type": "string",
@@ -274,6 +279,24 @@ def candidate_card(o: dict, note_text: str = "") -> str:
     return "\n".join(l for l in lines if l is not None)
 
 
+def failed_note_text(o: dict, note_text: str, error: str) -> str:
+    """Повідомлення людині: коментар не застосувався. Чиста функція — під тести.
+
+    Причину даємо коротко й сирою: з «violates check constraint …type…» видно,
+    що просили значення, якого база не приймає, і рішення тут за людиною.
+    """
+    esc = lambda v: str(v).translate(TG_ESC)
+    return "\n".join([
+        "⚠️ <b>Коментар не вдалося застосувати — потрібне ваше рішення</b>",
+        "",
+        f"🎓 <b>{esc(o.get('title') or '')}</b>",
+        f"💬 <i>Коментар: {esc((note_text or '')[:300])}</i>",
+        f"❌ {esc((error or '')[:300])}",
+        "",
+        "Коментар лишився відкритим і є в ранковому зведенні. Сам він більше не повторюватиметься.",
+    ])
+
+
 def ask_llm(llm, record: dict, body: str) -> dict:
     """Що модель пропонує змінити в записі за ОДНИМ коментарем.
 
@@ -396,6 +419,10 @@ def main() -> int:
 
     llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     done = 0
+    # Кожна помилка робить запуск червоним. До 28.09.2026 скрипт лише писав
+    # ERROR у лог і повертав 0: коментар Марії місяць падав щогодини, а
+    # GitHub показував зелене, і ніхто про це не знав.
+    errors = 0
 
     for oid in ids:
         o = by_id.get(oid)
@@ -410,6 +437,7 @@ def main() -> int:
                 patch = ask_llm(llm, record, note["body"])
             except Exception as e:
                 logger.error("LLM failed for %s: %s", oid, e)
+                errors += 1
                 continue
 
             closing = close_patch(patch)
@@ -424,6 +452,7 @@ def main() -> int:
                          .eq("id", note["id"]).execute())
                     except Exception as e:
                         logger.error("Позначити спробу не вдалося для %s: %s", note["id"], e)
+                        errors += 1
                 continue
 
             # ISO-час, а не рядок "now()": PostgREST передає значення як є, і
@@ -433,6 +462,24 @@ def main() -> int:
                 client.table("opportunities").update(patch).eq("id", oid).execute()
             except Exception as e:
                 logger.error("Update failed for %s: %s", oid, e)
+                errors += 1
+                # Та сама відповідь моделі наступної години впаде так само:
+                # позначаємо спробу (коментар лишається відкритим людині в
+                # ранковому зведенні) і кажемо про збій одразу.
+                if has_attempted:
+                    try:
+                        (client.table("moderation_notes").update({"attempted_at": now_iso()})
+                         .eq("id", note["id"]).execute())
+                    except Exception as e2:
+                        logger.error("Позначити спробу не вдалося для %s: %s", note["id"], e2)
+                if ADMIN_CHAT_ID:
+                    tg("sendMessage", {
+                        "chat_id": ADMIN_CHAT_ID,
+                        "text": failed_note_text(o, note["body"], str(e)),
+                        "parse_mode": "HTML",
+                        "disable_web_page_preview": True,
+                        "reply_markup": keyboard(o),
+                    })
                 continue
             record.update(patch)
 
@@ -444,6 +491,7 @@ def main() -> int:
                  .eq("id", note["id"]).execute())
             except Exception as e:
                 logger.error("Закрити коментар не вдалося для %s: %s", note["id"], e)
+                errors += 1
 
             done += 1
             applied.append(note["body"])
@@ -458,8 +506,9 @@ def main() -> int:
                 "reply_markup": keyboard(record),
             })
 
-    logger.info("Готово: застосовано коментарів %d, записів у роботі %d", done, len(ids))
-    return 0
+    logger.info("Готово: застосовано коментарів %d, записів у роботі %d, помилок %d",
+                done, len(ids), errors)
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
