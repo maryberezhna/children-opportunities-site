@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
 import { whenState } from '@/lib/timing';
@@ -88,10 +88,12 @@ function deadlineChip(item, todayIso, lang) {
   return { text: s.state === 'periodic' ? t.annual : t.open, urgent: false };
 }
 
-function placeText(item, lang) {
+// abroadLabel — чим підписати закордонний запис без міста. У групі хаба
+// діаспори це назва країни з заголовка групи, а не безлике «За кордоном».
+function placeText(item, lang, abroadLabel = null) {
   const t = TEXT[lang] || TEXT.uk;
   const real = (item.cities || []).filter((c) => !PSEUDO.has(String(c).toLowerCase().trim()));
-  if (goesAbroad(item)) return real.length ? real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ') : t.abroad;
+  if (goesAbroad(item)) return real.length ? real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ') : (abroadLabel || t.abroad);
   if (real.length) return real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
   if (isOnline(item)) return t.online;
   if ((item.cities || []).some((c) => /вся україна/i.test(c))) return t.allUkraine;
@@ -100,7 +102,7 @@ function placeText(item, lang) {
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  labels, hub = null,
+  labels, hub = null, groups = null, groupLinks = [], abroadLabel = null,
 }) {
   const [sub, setSub] = useState('all');
   const isEn = lang === 'en';
@@ -117,7 +119,7 @@ export default function TopicCards({
 
   const choose = (key) => setSub(key);
 
-  const card = (item) => {
+  const card = (item, placeFallback = null) => {
     const dl = deadlineChip(item, todayIso, lang);
     const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type] || item.opportunity_type;
     const age = Number.isFinite(item.age_from) && Number.isFinite(item.age_to) ? t.age(item.age_from, item.age_to) : null;
@@ -139,12 +141,25 @@ export default function TopicCards({
           <p className="tp-card-summary" lang={isEn && !item.summary_en ? 'uk' : undefined}>{summary}</p>
         ) : null}
         <span className="tp-card-foot">
-          <span className="tp-card-place">{placeText(item, lang)}</span>
+          <span className="tp-card-place">{placeText(item, lang, placeFallback)}</span>
           <span className="tp-card-more">{labels.details}</span>
         </span>
       </Link>
     );
   };
+
+  if (groups) {
+    return (
+      <GroupedCards
+        groups={groups}
+        links={groupLinks}
+        card={card}
+        labels={labels}
+        lang={lang}
+        hub={hub}
+      />
+    );
+  }
 
   // Telegram-картка після четвертої, як на головній. До 27.09.2026 вона
   // стояла після восьмої, бо після четвертої була картка Dityam+; ту прибрано
@@ -153,7 +168,7 @@ export default function TopicCards({
 
   const cells = [];
   visible.forEach((item, i) => {
-    cells.push(card(item));
+    cells.push(card(item, abroadLabel));
     if (tgAfter.has(i)) cells.push(<TelegramCard key={`tg-card-${i}`} lang={lang} place="topic" hub={hub} />);
   });
 
@@ -189,6 +204,77 @@ export default function TopicCards({
           <p>{labels.emptyText}</p>
         </div>
       )}
+    </section>
+  );
+}
+
+/**
+ * Список групами (хаб «Українським дітям за кордоном»: групи — країни).
+ *
+ * Угорі — пігулки-зміст: країни з власною сторінкою ведуть туди, решта —
+ * на свою групу нижче. Пігулки тут переносяться в рядки, а не гортаються
+ * вбік: це зміст сторінки, і схована за краєм країна — це країна, якої
+ * людина не побачить. Кожна група — h2 з назвою, картки під нею — h3.
+ * Telegram-картка — за тими самими позиціями, що й у пласкому списку
+ * (lib/inline-card.js), але після цілої групи, де позиція припала.
+ */
+function GroupedCards({ groups, links, card, labels, lang, hub }) {
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  // Ті самі позиції, що в пласкому списку; картка стає після групи, у якій
+  // припала позиція, щоб не розривати сітку країни.
+  const tgAfter = inlineCardPositions(total);
+  const showNav = links.length + groups.length >= 2;
+  let seen = 0;
+
+  if (!groups.length && !links.length) {
+    return (
+      <section className="tp-list" aria-label={labels.listLabel}>
+        <div className="tp-empty">
+          <span aria-hidden="true">🔍</span>
+          <h2>{labels.emptyTitle}</h2>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="tp-list" aria-label={labels.listLabel}>
+      <div className="tp-toolbar">
+        {showNav ? (
+          <nav className="tp-pills tp-group-nav" aria-label={labels.groupNav}>
+            {links.map((l) => (
+              <Link key={l.href} href={l.href} className="tp-pill tp-pill-page">
+                {l.label} <span className="tp-pill-n">{l.count}</span> <span aria-hidden="true">→</span>
+              </Link>
+            ))}
+            {groups.map((g) => (
+              <a key={g.id} href={`#${g.id}`} className="tp-pill">
+                {g.title} <span className="tp-pill-n">{g.items.length}</span>
+              </a>
+            ))}
+          </nav>
+        ) : <span />}
+        {groups.length ? <span className="tp-sort">{labels.sort}</span> : null}
+      </div>
+
+      {links.length && groups.length ? <p className="tp-group-rest">{labels.groupRest}</p> : null}
+
+      {groups.map((g) => {
+        const start = seen;
+        seen += g.items.length;
+        const tgHere = [...tgAfter].some((i) => i >= start && i < seen);
+        return (
+          <Fragment key={g.id}>
+            <section id={g.id} className="tp-group" aria-labelledby={`${g.id}-title`}>
+              <h2 id={`${g.id}-title`} className="tp-group-title">
+                {g.title} <span className="tp-group-n">{g.items.length}</span>
+              </h2>
+              <div className="tp-grid">{g.items.map((item) => card(item, g.title))}</div>
+            </section>
+            {tgHere ? <TelegramCard key={`tg-${g.id}`} lang={lang} place="topic" hub={hub} /> : null}
+          </Fragment>
+        );
+      })}
     </section>
   );
 }

@@ -1,7 +1,9 @@
-import { supabase, publicOpportunities, fetchAllRows } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, CARD_FIELDS } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
-import { TOPIC_LIST } from '@/lib/topics';
+import { TOPIC_LIST, qualifyingCountryTopics } from '@/lib/topics';
 import { qualifyingCombos } from '@/lib/city-topics';
+import { kyivToday } from '@/lib/dates';
+import { isLive } from '@/lib/audience';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -131,5 +133,25 @@ export default async function sitemap() {
     lastModified: new Date(),
   }));
 
-  return [...staticPages, ...topicPages, ...cityPages, ...cityTopicPages, ...opportunityEntries];
+  // Сторінки країн діаспори («Українським дітям у Польщі») — лише над
+  // порогом і лише з живих записів: ті самі правила, що в TopicPage. Вибірка
+  // та сама, що в підбірок, тож під час збірки приходить із кешу fetchAllRows.
+  const { data: cardRows } = supabase
+    ? await fetchAllRows(() =>
+        publicOpportunities(CARD_FIELDS).order('created_at', { ascending: false }).order('id'))
+    : { data: [] };
+  const today = kyivToday();
+  const liveCards = (cardRows || []).filter((o) => isLive(o, today));
+  const diasporaCountryPages = qualifyingCountryTopics(liveCards).flatMap((t) => {
+    const languages = { uk: `${SITE_URL}/${t.slug}`, en: `${SITE_URL}/en/${t.en.slug}` };
+    return [
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.8, lastModified: new Date(), alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.7, lastModified: new Date(), alternates: { languages } },
+    ];
+  });
+
+  return [
+    ...staticPages, ...topicPages, ...diasporaCountryPages, ...cityPages, ...cityTopicPages,
+    ...opportunityEntries,
+  ];
 }

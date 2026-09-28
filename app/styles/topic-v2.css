@@ -326,6 +326,33 @@
 .tp-empty h3 { margin: 0; font-size: 20px; font-weight: 700; }
 .tp-empty p { margin: 0; font-size: 15px; color: #4a4a4a; }
 
+/* ── Список групами: хаб «Українським дітям за кордоном» (групи — країни) ──
+ * Пігулки тут — зміст сторінки, тож переносяться в рядки, а не ховаються за
+ * краєм. Посилання-пігулки мають колір звичайних пігулок, а не посилань. */
+.tp-group-nav { flex-wrap: wrap; overflow: visible; }
+.tp-main a.tp-pill, .tp-main a.tp-pill:hover { color: #1a1a1a; }
+.tp-pill-page { font-weight: 700; border-color: #1a1a1a; }
+.tp-group { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px; }
+.tp-group-title {
+  margin: 0;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+.tp-group-n { font-size: 15px; font-weight: 600; color: #6b6b6b; letter-spacing: 0; }
+.tp-group-rest {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+}
+
 .tp-home-link { margin: 0; font-size: 15px; font-weight: 600; }
 
 /* ── Важливо знати і Часті питання: заголовок ліворуч ── */
