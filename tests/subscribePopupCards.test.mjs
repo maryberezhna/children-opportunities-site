@@ -13,10 +13,19 @@ import { readFileSync } from 'node:fs';
  * Тест звіряє обидва боки: клас досі в розмітці списку І досі в селекторі.
  * Новий список карток — новий рядок тут і в CARD_SELECTOR.
  */
+// З 28.09.2026 картка одна на весь сайт (app/OpportunityCard.js), тож і рядок
+// тут один. До того їх було три — і саме через це селектор одного разу вже
+// розійшовся з розміткою.
 const LISTS = [
-  ['app/OpportunitiesList.js', 'v2-card'],   // головна, міські сторінки
-  ['app/topic/TopicCards.js', 'tp-card'],    // тематичні підбірки
-  ['app/o/shared.js', 'card'],               // «схожі можливості»
+  ['app/OpportunityCard.js', 'card'],
+];
+
+// Списки, які цю картку рендерять. Якщо котрийсь перестане — тригер «15
+// карток» на ньому замовкне так само тихо, як колись.
+const USERS = [
+  'app/OpportunitiesList.js',   // головна, міські сторінки
+  'app/topic/TopicCards.js',    // тематичні підбірки
+  'app/o/shared.js',            // «схожі можливості»
 ];
 
 const popup = readFileSync(new URL('../app/SubscribePopup.js', import.meta.url), 'utf8');
@@ -38,5 +47,13 @@ for (const [file, cls] of LISTS) {
       classes.includes(cls),
       `CARD_SELECTOR не бачить «${cls}» — тригер «15 карток» на цьому списку не спрацює`,
     );
+  });
+}
+
+for (const file of USERS) {
+  test(`${file} малює картку спільним компонентом`, () => {
+    const src = readFileSync(new URL(`../${file}`, import.meta.url), 'utf8');
+    assert.match(src, /<OpportunityCard\b/,
+      `${file} більше не рендерить <OpportunityCard /> — картки знову розійдуться`);
   });
 }

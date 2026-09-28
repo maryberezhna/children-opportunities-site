@@ -13,6 +13,7 @@ import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
+import OpportunityCard from './OpportunityCard';
 import { PLACE_KINDS, placeOption } from '@/lib/place-search';
 import { publicSource } from '@/lib/source-link';
 import TelegramCard from './TelegramCard';
@@ -756,78 +757,32 @@ export default function OpportunitiesList({
     const dlHead = dl.kind === 'calm' && daysUntil(item.deadline, todayIso) > 30
       ? t.until(formatDeadline(item.deadline, lang).replace(` ${todayIso.slice(0, 4)}`, ''))
       : dl.text;
-    // «Детальніше» веде на сторінку можливості, а не до джерела. До 24.09.2026
-    // тут стояв source_url із target="_blank": людина з каталогу потрапляла
-    // одразу в чужий телеграм-канал, а наша сторінка з умовами, віком і
-    // дедлайном лишалась збоку. Перехід до організатора живе на ній.
-    const moreLink = (
-      <Link
-        href={`${isEn ? '/en' : ''}/o/${item.slug}`}
-        className="v2-card-more"
-        prefetch={false}
-      >
-        {t.details}
-      </Link>
-    );
+    // «Детальніше» веде на сторінку можливості, а не до джерела (рішення
+    // 24.09.2026). Тепер це вся картка: OpportunityCard — одне посилання, і
+    // «Детальніше» всередині лишилось підписом, а не вкладеним <a>.
 
+    // Одна картка на весь сайт (app/OpportunityCard.js). До 28.09.2026 каталог
+    // мав власну .v2-card із трьома варіантами розкладки — мобільним рядком,
+    // бічним і звичайним, — і той самий запис на сторінці можливості виглядав
+    // інакше. Марія: «отака всюди».
+    //
+    // Тип, вік, вартість, дедлайн і обставини тепер пігулки самої картки, тож
+    // v2-card-tags / v2-card-meta / v2-card-head більше не потрібні. Поля й
+    // футер лишаються: у режимі «Підліткам» саме вони головний зміст.
     return (
-      <article key={item.id} className="v2-card">
-        <div className="v2-card-tags">
-          <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
-          <span className="v2-tag" style={{ background: dlBg, color: dlFg }}>{dl.text}</span>
-          {pinnedLabel && pinned.has(item.id) ? <span className="v2-tag v2-tag-pinned">{pinnedLabel}</span> : null}
-        </div>
-        {/* Мобільний рядок (6a): тип → дедлайн → вік. Дедлайн помаранчевий
-            лише коли горить (≤7 днів), інакше спокійний сірий. */}
-        {mobileLayout ? (
-          <div className="v2-card-meta">
-            <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
-            {pinnedLabel && pinned.has(item.id) ? <span className="v2-tag v2-tag-pinned">{pinnedLabel}</span> : null}
-            <span className={`v2-card-meta-dl${dl.kind === 'urgent' ? ' is-urgent' : ''}`}>{dl.text}</span>
-            {age ? <><span className="v2-card-meta-sep" aria-hidden="true">·</span><span>{age}</span></> : null}
-          </div>
-        ) : null}
-        {/* Десктоп головної (≥1100px, поруч із бічною панеллю): тип кольором
-            і вік ліворуч, дедлайн праворуч; поля dl ховаються. */}
-        {sidebarLayout ? (
-          <div className="v2-card-head">
-            <span className="v2-card-type" style={{ color: tagFg }}>{typeLabel}</span>
-            {age ? <><span className="v2-card-dot" aria-hidden="true">·</span><span className="v2-card-age">{age}</span></> : null}
-            <span className={`v2-card-dl is-${dl.kind}`}>{dlHead}</span>
-          </div>
-        ) : null}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <h3>
-            <Link
-              href={`${isEn ? '/en' : ''}/o/${item.slug}`}
-              lang={isEn && !item.title_en ? 'uk' : undefined}
-            >
-              {enField(item, 'title')}
-            </Link>
-          </h3>
-          {enField(item, 'summary') ? (
-            <p className="v2-card-summary" lang={isEn && !item.summary_en ? 'uk' : undefined}>
-              {enField(item, 'summary')}
-            </p>
-          ) : null}
-        </div>
-        {fmt ? <div className="v2-card-fmt">{fmt}</div> : null}
-        <dl>
-          {fields.filter(([, v]) => v).map(([k, v]) => (
-            <FieldRow key={k} k={k} v={v} />
-          ))}
-        </dl>
-        {moreLink}
-        {sidebarLayout ? (
-          <div className="v2-card-foot">
-            <span>
-              {age ? <span className="v2-card-foot-age">{`${age} · `}</span> : null}
-              {fmt}
-            </span>
-            {moreLink}
-          </div>
-        ) : null}
-      </article>
+      <OpportunityCard
+        key={item.id}
+        item={item}
+        lang={lang}
+        today={todayIso}
+        prefetch={false}
+        extraChip={pinnedLabel && pinned.has(item.id)
+          ? <span className="chip chip-need">{pinnedLabel}</span>
+          : null}
+        fields={fields}
+        footer={fmt || null}
+        moreLabel={t.details}
+      />
     );
   };
 

@@ -14,8 +14,11 @@ import { daysUntil, kyivToday, formatDate, formatEventDates } from '@/lib/dates'
 import { isoWeek } from '@/lib/week';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
-  NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
+  NEED_LABELS, NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
+  ageRangeLabel,
 } from '@/lib/labels';
+// Реекспорт: /en/o/[slug] бере ageRangeLabel саме звідси.
+export { ageRangeLabel };
 import Details from './[slug]/Details';
 import OutboundCta from './[slug]/OutboundCta';
 import ShareButton from './[slug]/ShareButton';
@@ -24,6 +27,7 @@ import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 import Footer from '../Footer';
+import OpportunityCard from '../OpportunityCard';
 import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
@@ -32,21 +36,6 @@ import { publicSource } from '@/lib/source-link';
 const SITE = 'https://dityam.com.ua';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
-const NEED_LABELS = {
-  gifted: 'обдаровані',
-  disability: 'інвалідність',
-  autism: 'РАС',
-  idp: 'ВПО',
-  veteran_family: 'діти захисників',
-  de_occupied: 'з деокупованих',
-  frontline: 'з прифронтових',
-  oncology: 'онкохворі',
-  rare_disease: 'рідкісні хвороби',
-  low_income: 'малозабезпечені',
-  orphan: 'сироти',
-  large_family: 'багатодітні',
-  rural: 'сільська місцевість',
-};
 
 const COST_LABELS = {
   // Платне називаємо платним: «Доступно» і «Преміум» описували ціну словами,
@@ -226,17 +215,6 @@ export async function getRelated(item, limit = 8) {
   return fallback || [];
 }
 
-export function ageRangeLabel(item, lang = 'uk') {
-  const { age_from: from, age_to: to } = item;
-  if (lang === 'en') {
-    if (from === to) return `age ${from}`;
-    if (from === 0 && to >= 17) return '0–18 yrs';
-    return `${from}–${to} yrs`;
-  }
-  if (from === to) return `${from} років`;
-  if (from === 0 && to >= 17) return '0-18 років';
-  return `${from}-${to} років`;
-}
 
 // «Перевірено сьогодні / вчора / N днів тому» — чесний сигнал свіжості.
 //
@@ -793,51 +771,14 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               {t.relatedTitle(ageRangeLabel(item, lang))}
             </h2>
             <ul className="opportunity-related-list">
-              {related.map((r) => {
-                // Той самий календарний розрахунок, що в каталозі: різниця
-                // від часового поясу сервера не залежить.
-                const days = daysUntil(r.deadline, today);
-                const rNeeds = (r.child_needs || []).filter((n) => NEEDS[n]);
-                const rSummary = field(r, 'summary', lang);
-                return (
-                  <li key={r.slug}>
-                    <Link href={`${base}/o/${r.slug}`} className="card" style={{ textDecoration: 'none' }}>
-                      <div className="chips">
-                        <span className="chip chip-type">{TYPES[r.opportunity_type] || r.opportunity_type}</span>
-                        <span className="chip chip-age">{ageRangeLabel(r, lang)}</span>
-                        {r.cost_type === 'free' && <span className="chip chip-free">{t.free}</span>}
-                        {(r.cost_type === 'paid_affordable' || r.cost_type === 'paid_premium')
-                          && <span className="chip chip-paid">{t.paid}</span>}
-                        {days !== null && days >= 0 && days <= 7 && (
-                          <span className="chip chip-deadline-urgent">
-                            ⏰ {days === 0 ? t.today : (lang === 'en' ? `${days} days` : `${days} днів`)}
-                          </span>
-                        )}
-                        {days !== null && days > 7 && days <= 30 && (
-                          <span className="chip chip-deadline-soon">
-                            ⏳ {lang === 'en' ? `${days} days` : `${days} днів`}
-                          </span>
-                        )}
-                        {rNeeds.slice(0, 2).map((n) => (
-                          <span key={n} className="chip chip-need">{NEEDS[n]}</span>
-                        ))}
-                      </div>
-                      <h3
-                        className="card-title-link"
-                        lang={lang === 'en' && !r.title_en ? 'uk' : undefined}
-                        style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.35, color: 'var(--ink)' }}
-                      >
-                        {field(r, 'title', lang)}
-                      </h3>
-                      {rSummary && (
-                        <p className="card-summary" lang={lang === 'en' && !r.summary_en ? 'uk' : undefined}>
-                          {rSummary.length > 140 ? `${rSummary.slice(0, 140)}…` : rSummary}
-                        </p>
-                      )}
-                    </Link>
-                  </li>
-                );
-              })}
+              {related.map((r) => (
+                <li key={r.slug}>
+                  {/* Та сама картка, що в каталозі й підбірках
+                      (app/OpportunityCard.js) — раніше вона була зверстана
+                      тут окремо. */}
+                  <OpportunityCard item={r} lang={lang} today={today} href={`${base}/o/${r.slug}`} />
+                </li>
+              ))}
             </ul>
           </section>
         )}
