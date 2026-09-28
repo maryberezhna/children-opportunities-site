@@ -772,21 +772,30 @@ html[data-mode="teens"] .v2-chip.is-on {
 
 .v2-top-head span { font-size: 0.8125rem; color: var(--v2-ink-3); }
 
-/* Картки «Топу тижня» мають вирізнятися з каталогу (Марія, 28.09.2026:
-   «тепер воно не виділяється на фоні інших — вирізняй, може, на
-   оранжевому»). До #537 це робила кремова заливка .v2-card; спільна картка
-   має клас .card, і правило тихо відпало — топ злився зі стрічкою.
-   Лише батьківський режим: у підлітковому топ і так чорний блок.
-   «Детальніше» темніше за звичайне: #c8501a на цьому тлі дає 4,0:1, нижче
-   WCAG AA; #a8430f — 5,3:1. */
-html:not([data-mode="teens"]) .v2-top .card {
-  background: #fdeee4;
-  border-color: rgba(232, 93, 36, 0.45);
+/* «Топ тижня» виділяє сам блок, а не кожну картку (Марія, 28.09.2026).
+   Спершу топ злився зі стрічкою — #537 переробив картки, і кремова заливка
+   старої .v2-card відпала; потім помаранчеві картки з рамками (#545) вийшли
+   важкими: «це не виглядає гарно». Тепер тепла панель, а картки в ній білі,
+   без рамки, з мʼякою тінню. Лише батьківський режим: у підлітковому топ —
+   чорний блок. */
+html:not([data-mode="teens"]) .v2-top {
+  background: linear-gradient(135deg, #fff4ec 0%, #fde3d1 100%);
+  border-radius: 24px;
+  padding: 22px 22px 24px;
 }
-html:not([data-mode="teens"]) .v2-top .card:hover { border-color: var(--v2-accent); }
-html:not([data-mode="teens"]) .v2-top .card-more { color: #a8430f; }
-/* Помаранчева смужка згори, яка на решті карток зʼявляється лише під курсором. */
-.v2-top .card::before { transform: scaleX(1); }
+html:not([data-mode="teens"]) .v2-top-head h2 { font-size: 1.125rem; }
+html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
+.v2-top .card {
+  border-color: transparent;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 8px 24px rgba(200, 80, 26, 0.10);
+}
+.v2-top .card:hover {
+  border-color: transparent;
+  box-shadow: 0 2px 4px rgba(26, 26, 26, 0.05), 0 14px 32px rgba(200, 80, 26, 0.16);
+}
+/* «Детальніше» притиснуте донизу, щоб у картках різної висоти в одному
+   ряду стояло на одній лінії. */
+.v2-top .card-more { margin-top: auto; padding-top: 12px; }
 
 /* ── Сітка і картки ────────────────────────────────────────────────────── */
 .v2-grid {

@@ -15,7 +15,6 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import OpportunityCard from './OpportunityCard';
 import { PLACE_KINDS, placeOption } from '@/lib/place-search';
-import { publicSource } from '@/lib/source-link';
 import TelegramCard from './TelegramCard';
 import PlaceCombobox from './PlaceCombobox';
 
@@ -44,6 +43,7 @@ const UI = {
     showMore: 'Показати ще',
     details: 'Детальніше →',
     topTitle: '⏰ Топ тижня',
+    topSub: 'три найближчі дедлайни',
     annual: '🔄 щорічно',
     open: 'набір відкритий',
     today: 'сьогодні',
@@ -91,6 +91,7 @@ const UI = {
     showMore: 'Show more',
     details: 'Details →',
     topTitle: '⏰ Top this week',
+    topSub: 'three closest deadlines',
     annual: '🔄 every year',
     open: 'enrolment open',
     today: 'today',
@@ -733,28 +734,29 @@ export default function OpportunitiesList({
     // Підліткова картка відповідає на «що я отримаю і що зробити», а не
     // «формат і джерело». Поки запис без розмітки — батьківські поля.
     const teenReady = teens && (item.teen_benefit || item.teen_requirement);
+    // Батьківська картка — без полів «Формат / Де / Джерело» (Марія,
+    // 28.09.2026: «без деталей… всюди прибирай, бо не компактно»). Формат і
+    // місце лишаються одним рядком унизу (footer). До #537 на десктопі цих
+    // полів теж не було видно. У «Підліткам» поля — головний зміст, лишаються.
     const fields = teenReady
       ? [
         [t.f.benefit, item.teen_benefit],
         [t.f.requirement, item.teen_requirement],
         [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline],
       ]
-      : [
-        // Підпис, а не значення з бази: з #537 поля видно й на десктопі, і
-        // картка показувала «Формат hybrid» (28.09.2026).
-        [t.f.format, formatLabel(item.format, lang) || null],
-        [t.f.place, placeText(item)],
-        teens
-          ? [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline]
-          // Назву чужого каналу не показуємо й тут (lib/source-link.js).
-          : [t.f.source, publicSource(item).sourceName],
-      ];
+      : teens
+        ? [
+          [t.f.format, formatLabel(item.format, lang) || null],
+          [t.f.place, placeText(item)],
+          [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline],
+        ]
+        : [];
 
     const age = ageText(item);
     // Set: в онлайн-записів формат і «місто» однакові — без «Онлайн · Онлайн».
-    const fmt = mobileLayout || sidebarLayout
-      ? [...new Set([formatLabel(item.format, lang), placeText(item)].filter(Boolean))].join(' · ')
-      : '';
+    // Рядок «формат · місце» — на кожній картці: тепер це єдине місце, де
+    // батько бачить, онлайн це чи ні і де.
+    const fmt = [...new Set([formatLabel(item.format, lang), placeText(item)].filter(Boolean))].join(' · ');
     // Десктопна картка головної: далека дата без року — «до 20 жовт».
     const dlHead = dl.kind === 'calm' && daysUntil(item.deadline, todayIso) > 30
       ? t.until(formatDeadline(item.deadline, lang).replace(` ${todayIso.slice(0, 4)}`, ''))
@@ -1405,9 +1407,10 @@ export default function OpportunitiesList({
             <section className="v2-top" aria-label={t.topTitle}>
               <div className="v2-top-head">
                 <h2>{t.topTitle}</h2>
+                <span>{t.topSub}</span>
               </div>
               <div className="v2-grid">
-                {topCards.map(renderCard)}
+                {topCards.map((item) => renderCard(item))}
               </div>
             </section>
           ) : null}
