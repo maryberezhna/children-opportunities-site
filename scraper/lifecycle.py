@@ -51,6 +51,7 @@ import anthropic
 
 import api_guard
 from db import get_client
+from proof import missing_proof
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
 from remark import telegram_text, _TG_POST
 from timing import (
@@ -284,7 +285,19 @@ def decide_check(row: dict, out: dict, page: str, today: date,
         patch.update({"status": "closed", "recheck_at": None})
         note = f"програми за адресою більше немає — перевір: {quote}"
     elif state == "open" and (fresh or kind == "permanent"):
-        patch.update({"status": "active", **fresh})
+        # Цитата, на якій стоять нові дати, — це й доказ поля «дата».
+        ev = dict(row.get("evidence")) if isinstance(row.get("evidence"), dict) else {}
+        if fresh and evidence and evidence_in_text(evidence, page):
+            ev["date"] = evidence[:300]
+            patch["evidence"] = ev
+        # Повернути на сайт запис, якого там немає (закритий, чернетка), можна
+        # лише з цитатами на всі пʼять обовʼязкових полів — як будь-який новий
+        # (світлофор, 22.09.2026). До 28.09.2026 тут стояло просто «active»: новий
+        # сезон відкривав запис із віком і вартістю на здогаді моделі. Інакше —
+        # чернетка, і запис чекає людини в черзі з переліком, чого бракує.
+        reopening = row.get("status") != "active"
+        missing = missing_proof({**row, **fresh, "evidence": ev}) if reopening else []
+        patch.update({"status": "draft" if missing else "active", **fresh})
         # Нові дати сезону замінюють старі цілком — старі належать минулому циклу.
         for key in ("deadline", "event_start_date", "event_end_date"):
             if fresh and key not in fresh:
@@ -300,7 +313,8 @@ def decide_check(row: dict, out: dict, page: str, today: date,
                 patch["check_interval_days"] = days
         else:
             patch["recheck_at"] = None
-        note = f"відкрито: {quote}"
+        note = (f"новий сезон, але без цитат на {', '.join(missing)} — у чергу людині: {quote}"
+                if missing else f"відкрито: {quote}")
     elif state == "upcoming":
         patch.update({"status": "closed", **fresh,
                       "recheck_at": (today + timedelta(days=RETRY_DAYS)).isoformat()})
