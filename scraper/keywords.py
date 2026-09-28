@@ -199,6 +199,85 @@ DIASPORA_REGIONS: list[dict[str, str]] = [
     },
 ]
 
+# ── Профіль «діаспора» (28.09.2026) ─────────────────────────────────────────
+# Для кожної країни: код (так він лягає в opportunities.countries), «у кому»
+# для речення «для українських дітей, які живуть у Польщі» (на ньому тримається
+# добірка lib/diaspora.js) і ДЕРЖАВНІ програми мовою країни. Марія, 28.09.2026:
+# державні програми країни для дітей з України / з тимчасовим захистом —
+# першими, першоджерело — офіційна сторінка; НУО й організації діаспори — потім.
+# Терміни тут — підказки для пошуку, а не твердження, що програма є.
+_DIASPORA_EXTRA: dict[str, tuple[str, str, str]] = {
+    "Польща": ("pl", "у Польщі",
+               "«oddziały przygotowawcze», «zajęcia z języka polskiego dla uczniów z Ukrainy», "
+               "«asystent międzykulturowy», «wypoczynek dla dzieci z Ukrainy», «pomoc psychologiczna "
+               "dla dzieci z Ukrainy»; офіційні сторінки — gov.pl, кураторії освіти, сайти міст"),
+    "Німеччина": ("de", "у Німеччині",
+                  "«Willkommensklassen», «Vorbereitungsklassen», «Deutsch als Zweitsprache», "
+                  "«herkunftssprachlicher Unterricht Ukrainisch», «Bildung und Teilhabe», "
+                  "«Ferienprogramm für geflüchtete Kinder»; офіційні сторінки — Kultusministerium "
+                  "землі, сайти міст, Jugendamt"),
+    "Чехія": ("cz", "у Чехії",
+              "«adaptační skupiny», «bezplatná výuka češtiny pro děti z Ukrajiny», «dočasná ochrana», "
+              "«příměstský tábor pro děti z Ukrajiny»; офіційні сторінки — msmt.cz, краї й міста"),
+    "Велика Британія": ("gb", "у Великій Британії",
+                        "«EAL support for Ukrainian pupils», «Holiday Activities and Food programme», "
+                        "«Homes for Ukraine»; офіційні сторінки — gov.uk, councils"),
+    "Іспанія": ("es", "в Іспанії",
+                "«aulas de enlace», «aulas de acogida», «ATAL», «Llengües i cultures d'origen — "
+                "ucraïnès», «protección temporal», «campamentos de verano para niños ucranianos»; "
+                "офіційні сторінки — consejerías de educación, gencat.cat, ayuntamientos"),
+    "Італія": ("it", "в Італії",
+               "«corsi di italiano L2 per alunni ucraini», «protezione temporanea», «centri estivi "
+               "per bambini ucraini», «mediatore culturale»; офіційні сторінки — Ministero "
+               "dell'Istruzione e del Merito, регіони, comuni"),
+    "Нідерланди": ("nl", "у Нідерландах",
+                   "«nieuwkomersonderwijs», «taalklas», «internationale schakelklas», «Oekraïense "
+                   "ontheemden», «vakantieactiviteiten Oekraïense kinderen»; офіційні сторінки — "
+                   "Rijksoverheid, gemeenten"),
+    "Румунія": ("ro", "у Румунії",
+                "«cursuri de limba română pentru copiii ucraineni», «protecție temporară»; "
+                "офіційні сторінки — edu.ro, primării"),
+    "Словаччина": ("sk", "у Словаччині",
+                   "«adaptačné kurzy slovenčiny pre deti z Ukrajiny», «dočasné útočisko», «letné "
+                   "tábory pre deti z Ukrajiny»; офіційні сторінки — minedu.sk, міста"),
+    "Ірландія": ("ie", "в Ірландії",
+                 "«EAL support for Ukrainian students», «beneficiaries of temporary protection», "
+                 "«summer programme for Ukrainian children»; офіційні сторінки — gov.ie, "
+                 "Department of Education, county councils"),
+    "Угорщина": ("hu", "в Угорщині",
+                 "«ideiglenes védelem», «magyar nyelvi felzárkóztatás ukrán gyerekeknek»; "
+                 "офіційні сторінки — kormany.hu, Oktatási Hivatal"),
+    "Молдова": ("md", "у Молдові",
+                "«copii refugiați din Ucraina», «cursuri de limba română pentru copiii refugiați»; "
+                "офіційні сторінки — mec.gov.md, primării"),
+}
+for _r in DIASPORA_REGIONS:
+    _code, _loc, _state = _DIASPORA_EXTRA[_r["name"]]
+    _r.update({"code": _code, "in_country": _loc, "state_hint": _state})
+
+# Теми профілю «діаспора»: СПЕРШУ державні програми країни (міністерство,
+# регіон, місто), ПОТІМ українські організації, церкви, НУО. Державних більше,
+# ніж громадських, — так вони й частіше випадають у ротації.
+# Грошових виплат родині тут немає й не буде (рішення 23.09.2026, «без чужих
+# виплат»): оплата гуртків — лише та, що йде організатору, не родині на руки.
+DIASPORA_STATE_KEYWORDS: list[str] = [
+    "безкоштовні державні уроки мови країни для дітей з України",
+    "підготовчі й адаптаційні класи для дітей з України в школах",
+    "державні канікулярні програми й табори для дітей з України",
+    "психологічна підтримка дітей з України від державних служб",
+    "державна оплата гуртків і занять для дітей напряму організатору (Bildung und Teilhabe та подібні)",
+    "програма міністерства чи регіону з української мови й культури для дітей",
+    "шкільна інтеграція й допомога з навчанням для учнів з України",
+]
+DIASPORA_COMMUNITY_KEYWORDS: list[str] = [
+    "українські суботні й недільні школи",
+    "табори й фестивалі українських організацій і церков для дітей",
+    "конкурси для українських дітей за кордоном (малюнок, читання, есе)",
+    "українські мистецькі студії, ансамблі й хори для дітей",
+]
+DIASPORA_KEYWORDS: list[str] = DIASPORA_STATE_KEYWORDS + DIASPORA_COMMUNITY_KEYWORDS
+DIASPORA_REGION_NAMES: set[str] = {r["name"] for r in DIASPORA_REGIONS}
+
 # Обласні центри й великі міста. Ротація спускається до конкретного міста, а
 # не питає «що є в Україні»: на загальний запит пошук щоразу віддає ті самі
 # всеукраїнські програми (МОН, МАН, UNICEF), які в нас і так є, а міське
