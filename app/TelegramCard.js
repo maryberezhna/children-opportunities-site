@@ -19,7 +19,13 @@ const ARIA = {
 // `place`: 'catalog' — головна й міські сторінки, 'topic' — підбірки.
 // Іде в GA4 як popup_trigger, щоб рахуватись поруч зі спливною підказкою.
 // `hub` — slug підбірки з lib/topics.js: з якої саме підбірки долучаються.
-export default function TelegramCard({ lang = 'uk', place = 'catalog', hub = null }) {
+// `variant`: 'inline' — між картками можливостей, 'panel' — у сітці внизу
+// сторінки. Розмітка та сама: до 28.09.2026 блок унизу головної був власною
+// версткою з тими самими словами, і людина бачила два різні на вигляд заклики
+// до одного каналу (Марія: «створи один дизайн цього блока»).
+export default function TelegramCard({
+  lang = 'uk', place = 'catalog', hub = null, variant = 'inline',
+}) {
   const [joined, setJoined] = useState(false);
   const t = { ...(CHANNEL_CTA[lang] || CHANNEL_CTA.uk), aria: ARIA[lang] || ARIA.uk };
 
@@ -50,7 +56,7 @@ export default function TelegramCard({ lang = 'uk', place = 'catalog', hub = nul
   };
 
   return (
-    <aside className="tg-card" aria-label={t.aria}>
+    <aside className={`tg-card${variant === 'panel' ? ' tg-card-panel' : ''}`} aria-label={t.aria}>
       <div className="tg-card-copy">
         <span className="tg-card-badge">Telegram</span>
         {/* Не заголовок: у списку h3 — назви можливостей, і «Щоб не шукати

@@ -11,7 +11,7 @@ import { goesAbroad } from '@/lib/geo';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
-import { inlineCardAfter } from '@/lib/inline-card';
+import { inlineCardPositions } from '@/lib/inline-card';
 import { PLACE_KINDS, placeOption } from '@/lib/place-search';
 import { publicSource } from '@/lib/source-link';
 import TelegramCard from './TelegramCard';
@@ -869,7 +869,7 @@ export default function OpportunitiesList({
   // Після четвертої: перша сторінка каталогу — 6 карток на десктопі й 10 на
   // мобільному, а після шостої картка ставала в самий кінець сторінки, поруч
   // із блоком Telegram, що й так стоїть під каталогом.
-  const tgAfter = inlineCardAfter(shown.length, { after: 4 });
+  const tgAfter = inlineCardPositions(shown.length);
 
   // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
   // рядку. Тип видно чипом у самому рядку, пошук — у полі.
@@ -1482,11 +1482,11 @@ export default function OpportunitiesList({
 
           {shown.length ? (
             <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
-              {/* Telegram-картка після четвертої: без таймерів, замість
-                  4-секундної спливної підказки (див. TelegramCard.js). */}
+              {/* Telegram-картка кожні 20 можливостей (lib/inline-card.js):
+                  без таймерів, замість 4-секундної спливної підказки. */}
               {shown.flatMap((item, i) => (
-                i === tgAfter
-                  ? [renderCard(item), <TelegramCard key="tg-card" lang={lang} place="catalog" />]
+                tgAfter.has(i)
+                  ? [renderCard(item), <TelegramCard key={`tg-card-${i}`} lang={lang} place="catalog" />]
                   : [renderCard(item)]
               ))}
             </section>
