@@ -280,3 +280,34 @@
    саме, і повторення лише з'їдає рядок, потрібний типу, віку й вартості.
    У каталозі нижче чип лишається — там він єдине, що вирізняє ці записи. */
 .top-week .chip-top { display: none; }
+
+/* Поля під описом — «Формат», «Місце», «Джерело», а в режимі «Підліткам»
+   «що отримаєш» і «що треба». На картці «схожих можливостей» їх не було, і
+   коли ця картка стала єдиною на весь сайт (28.09.2026), поля довелося
+   перенести сюди: у підлітковому режимі саме вони — головний зміст. */
+.card-fields {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 4px;
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+.card-fields > div { display: flex; gap: 8px; }
+.card-fields dt { flex: 0 0 auto; color: var(--ink-muted); }
+.card-fields dd { margin: 0; min-width: 0; color: var(--ink); }
+
+.card-foot {
+  margin-top: 10px;
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+/* «Детальніше» — текстом, не посиланням: уся картка вже одне посилання,
+   і вкладений <a> був би нечинною розміткою. */
+.card-more {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--v2-accent-strong, #c8501a);
+}

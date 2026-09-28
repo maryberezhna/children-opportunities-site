@@ -6,6 +6,7 @@ import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
 import { plural } from '@/lib/plural';
 import { inlineCardPositions } from '@/lib/inline-card';
+import OpportunityCard from '../OpportunityCard';
 import { publicSource } from '@/lib/source-link';
 import TelegramCard from '../TelegramCard';
 import BotLink from '../plus/BotLink';
@@ -120,34 +121,24 @@ export default function TopicCards({
 
   const choose = (key) => setSub(key);
 
-  const card = (item, placeFallback = null) => {
-    const dl = deadlineChip(item, todayIso, lang);
-    const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type] || item.opportunity_type;
-    const age = Number.isFinite(item.age_from) && Number.isFinite(item.age_to) ? t.age(item.age_from, item.age_to) : null;
-    const title = (isEn && item.title_en) || item.title;
-    const summary = (isEn && item.summary_en) || item.summary;
-    const href = `${isEn ? '/en' : ''}/o/${item.slug}`;
-    return (
-      <Link key={item.id} href={href} className="tp-card" prefetch={false}>
-        <span className="tp-card-meta">
-          <span className="tp-card-meta-l">
-            <span className="tp-card-tag" style={{ color: TAG_FG[item.opportunity_type] || TAG_DEFAULT }}>{typeLabel}</span>
-            {age ? <><span className="tp-card-sep" aria-hidden="true">·</span><span>{age}</span></> : null}
-          </span>
-          <span className={`tp-card-dl${dl.urgent ? ' is-urgent' : ''}`}>{dl.text}</span>
-        </span>
-        {pinned.has(item.id) && pinnedLabel ? <span className="tp-card-pin">{pinnedLabel}</span> : null}
-        <h3 className="tp-card-title" lang={isEn && !item.title_en ? 'uk' : undefined}>{title}</h3>
-        {summary ? (
-          <p className="tp-card-summary" lang={isEn && !item.summary_en ? 'uk' : undefined}>{summary}</p>
-        ) : null}
-        <span className="tp-card-foot">
-          <span className="tp-card-place">{placeText(item, lang, placeFallback)}</span>
-          <span className="tp-card-more">{labels.details}</span>
-        </span>
-      </Link>
-    );
-  };
+  // Одна картка на весь сайт (app/OpportunityCard.js). До 28.09.2026 підбірки
+  // мали власну .tp-card — тип кольоровим текстом, дедлайн праворуч, місто у
+  // футері, — і той самий запис на головній виглядав інакше.
+  //
+  // `placeFallback` більше не використовується: місто на новій картці не
+  // показуємо. Параметр лишено, бо його передають викликачі.
+  const card = (item) => (
+    <OpportunityCard
+      key={item.id}
+      item={item}
+      lang={lang}
+      today={todayIso}
+      prefetch={false}
+      extraChip={pinned.has(item.id) && pinnedLabel
+        ? <span className="chip chip-need">{pinnedLabel}</span>
+        : null}
+    />
+  );
 
   if (groups) {
     return (
