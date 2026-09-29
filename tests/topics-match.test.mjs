@@ -23,12 +23,24 @@ test('держвиплата не потрапляє в гуртки навіт�
   assert.equal(TOPICS['bezkoshtovni-hurtky'].match(o), false);
 });
 
-// «Дитина їде за кордон»: лише справжні поїздки. Гурток в Ірландії для родин,
-// які вже виїхали, і онлайн-курс закордонного організатора сюди не потрапляють.
-test('за кордон: обмін із країною і міжнародною міткою — так', () => {
+// «За кордоном»: лише справжні поїздки. Гурток в Ірландії для родин, які вже
+// виїхали, і онлайн-курс закордонного організатора сюди не потрапляють.
+//
+// Обміни — теж ні, хоч дитина й їде: з 28.09.2026 вони живуть тільки в
+// /prohramy-obminu. Доти FLEX стояв на обох сторінках (18 спільних записів із
+// 29), Google бачив дві сторінки про одне й показував їх поспіль.
+test('за кордон: обмін — ні, він у програмах обміну', () => {
   const o = { opportunity_type: 'exchange', title: 'Програма обміну FLEX',
               countries: ['us'], is_international: true, format: 'Офлайн', cities: [] };
+  assert.equal(TOPICS['za-kordon'].match(o), false);
+  assert.equal(TOPICS['prohramy-obminu'].match(o), true);
+});
+
+test('за кордон: табір за кордоном — так', () => {
+  const o = { opportunity_type: 'camp', title: 'Літній табір у Польщі',
+              countries: ['pl'], is_international: true, format: 'Офлайн', cities: [] };
   assert.equal(TOPICS['za-kordon'].match(o), true);
+  assert.equal(TOPICS['prohramy-obminu'].match(o), false);
 });
 
 test('за кордон: міжнародна олімпіада без країни — так', () => {
@@ -95,4 +107,29 @@ test('лише для дітей захисників: пільгові кате
   assert.equal(ex({ title: 'Безкоштовне оздоровлення дітей пільгових категорій 2026' }), false);
   assert.equal(ex({ title: 'Фонд «Діти Героїв» — допомога дітям-сиротам від військової агресії' }), false);
   assert.equal(ex({ title: '«Блогер Кемп» — друга осіння зміна' }), false);
+});
+
+// Сторожа розведення. 28.09.2026 обидві сторінки виходили в Google на той
+// самий запит (5-та і 6-та позиції поспіль) і ділили трафік: 205 входів проти
+// 16. Причина — 18 записів із 29 стояли на обох. Правило тепер одне
+// (isExchangeProgramme), тож жоден запис не може опинитися на двох сторінках;
+// цей тест падає, якщо добір знову розʼїдеться.
+test('обміни і «за кордоном» не перетинаються — жодного запису на двох сторінках', () => {
+  const types = ['exchange', 'study_program', 'internship', 'residency', 'camp',
+                 'olympiad', 'competition', 'volunteer', 'scholarship', 'conference',
+                 'summer_school', 'festival', 'hackathon'];
+  const titles = ['Програма обміну FLEX', 'AFS: семестр у Європі', 'Літній табір у Польщі',
+                  'Erasmus+ для молоді', 'Міжнародний конкурс малюнка', 'Волонтерство в Іспанії'];
+  for (const opportunity_type of types) {
+    for (const title of titles) {
+      for (const is_international of [true, false]) {
+        for (const countries of [[], ['pl'], ['ua']]) {
+          const o = { opportunity_type, title, countries, is_international,
+                      format: 'Офлайн', cities: [] };
+          const both = TOPICS['za-kordon'].match(o) && TOPICS['prohramy-obminu'].match(o);
+          assert.equal(both, false, `${opportunity_type} / ${title} стоїть на двох сторінках`);
+        }
+      }
+    }
+  }
 });
