@@ -9,6 +9,7 @@ import { trackSearch } from '@/lib/track';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
+import { abroadPlaceText, foreignOnly } from '@/lib/place';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
@@ -365,7 +366,11 @@ function placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t })
   const base = liveItems.filter((item) => FACETS.every((k) => k === 'place' || dp[k](item)));
   const places = new Set();
   base.forEach((item) => {
-    (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+    // Прага чи Дублін не стоять у списку поруч зі Львовом: закордонний запис
+    // знаходиться через «За кордоном» (29.09.2026).
+    if (!foreignOnly(item)) {
+      (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
+    }
     if (goesAbroad(item)) places.add('abroad');
     if (teens && isOnline(item)) places.add('online');
   });
@@ -717,7 +722,7 @@ export default function OpportunitiesList({
   );
 
   const placeText = (item) => {
-    if (goesAbroad(item)) return t.abroad.replace('🌍 ', '');
+    if (goesAbroad(item)) return abroadPlaceText(item, lang) || t.abroad.replace('🌍 ', '');
     const real = (item.cities || []).filter((c) => !PSEUDO_CITIES.has(c));
     const shown = real.length ? real
       : (item.cities || []).filter((c) => c !== 'Міжнародні');

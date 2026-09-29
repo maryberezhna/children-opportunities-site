@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, isSupabaseConfigured } from '@/lib/supabase';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
-import { placeLabel, isInternational } from '@/lib/geo';
+import { placeLabel, isInternational, goesAbroad } from '@/lib/geo';
+import { abroadPlaceText } from '@/lib/place';
 import ReminderForm from './ReminderForm';
 
 export const revalidate = 300;
@@ -154,7 +155,7 @@ export default async function Page() {
               <ul className="dl-list">
                 {g.items.map((o) => {
                   const d = new Date(o.deadline);
-                  const place = placeLabel(o);
+                  const place = (goesAbroad(o) && abroadPlaceText(o)) || placeLabel(o);
                   return (
                     <li key={o.slug} className="dl-row">
                       <Link href={`/o/${o.slug}`} className="dl-link">

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
 import { whenState } from '@/lib/timing';
 import { goesAbroad, isOnline } from '@/lib/geo';
+import { abroadPlaceText } from '@/lib/place';
 import { plural } from '@/lib/plural';
 import { inlineCardPositions } from '@/lib/inline-card';
 import OpportunityCard from '../OpportunityCard';
@@ -95,7 +96,11 @@ function deadlineChip(item, todayIso, lang) {
 function placeText(item, lang, abroadLabel = null) {
   const t = TEXT[lang] || TEXT.uk;
   const real = (item.cities || []).filter((c) => !PSEUDO.has(String(c).toLowerCase().trim()));
-  if (goesAbroad(item)) return real.length ? real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ') : (abroadLabel || t.abroad);
+  if (goesAbroad(item)) {
+    // У групі хаба країна вже в заголовку — лишаємо місто або її назву.
+    if (abroadLabel) return real.length ? real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ') : abroadLabel;
+    return abroadPlaceText(item, lang) || t.abroad;
+  }
   if (real.length) return real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
   if (isOnline(item)) return t.online;
   if ((item.cities || []).some((c) => /вся україна/i.test(c))) return t.allUkraine;
