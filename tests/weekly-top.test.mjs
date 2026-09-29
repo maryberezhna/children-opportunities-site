@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { selectWeeklyTop, day } from '../lib/weekly-top.js';
+import { selectWeeklyTop, topWeekCards, day } from '../lib/weekly-top.js';
+import { daysUntil } from '../lib/dates.js';
 
 const today = day('2026-10-01');
 const iso = (d) => new Date((day('2026-10-01') + d) * 86400000).toISOString().slice(0, 10);
@@ -43,4 +44,41 @@ test('три ручні позначки не лишають місця прав
   const pin = (id) => ({ id, opportunity_type: 'camp', cost_type: 'paid_affordable', title: `П${id}` });
   const picked = selectWeeklyTop({ free: [free(1, 'olympiad', 10)], pinned: [pin(7), pin(8), pin(9)], today });
   assert.deepEqual(picked.map((o) => o.id), [7, 8, 9]);
+});
+
+// --- блок «Топ тижня» на сайті ---
+//
+// Доти блок рахував трійку сам — три найближчі дедлайни — і позначки
+// featured_week не бачив зовсім. Тобто послуга, яку ми продаємо організаторам
+// за 500 грн, не виконувалась: оплачена картка в блок не потрапляла, позначка
+// давала лише ⭐ на сторінці можливості.
+const WEEK = '2026-W40';
+const card = (id, deadline, extra = {}) => ({ id, deadline, title: `К${id}`, ...extra });
+
+test('Топ тижня: відмічена картка стоїть першою й займає місце', () => {
+  const items = [card(1, '2026-10-05'), card(2, '2026-10-06'), card(3, '2026-10-07'),
+                 card(9, '2026-11-20', { featured_week: WEEK })];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.deepEqual(top.map((c) => c.id), [9, 1, 2]);
+});
+
+test('Топ тижня: відмічена картка без дедлайну теж потрапляє', () => {
+  const items = [card(1, '2026-10-05'), card(2, '2026-10-06'),
+                 card(9, null, { featured_week: WEEK })];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.deepEqual(top.map((c) => c.id), [9, 1, 2]);
+});
+
+test('Топ тижня: позначка минулого тижня не діє', () => {
+  const items = [card(1, '2026-10-05'), card(2, '2026-10-06'), card(3, '2026-10-07'),
+                 card(9, '2026-11-20', { featured_week: '2026-W39' })];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.deepEqual(top.map((c) => c.id), [1, 2, 3]);
+});
+
+test('Топ тижня: без позначок — три найближчі дедлайни, як і було', () => {
+  const items = [card(3, '2026-10-20'), card(1, '2026-10-05'), card(2, '2026-10-06'),
+                 card(4, '2026-09-20')];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.deepEqual(top.map((c) => c.id), [1, 2, 3]);
 });

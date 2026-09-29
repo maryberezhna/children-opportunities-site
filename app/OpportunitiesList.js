@@ -15,6 +15,8 @@ import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
+import { topWeekCards } from '@/lib/weekly-top';
+import { isoWeek } from '@/lib/week';
 import OpportunityCard from './OpportunityCard';
 import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX } from '@/lib/place-search';
 import TelegramCard from './TelegramCard';
@@ -29,8 +31,8 @@ import PlaceCombobox from './PlaceCombobox';
 //   місце знову мультивибірні — див. MULTI нижче;
 // - зʼявився режим «Підліткам» (перемикач у шапці): свої пігулки, вік
 //   класами, фільтр «Що дає» по teen_tags і поля картки «Отримаєш / Треба»;
-// - «Топ тижня» — три найближчі дедлайни автоматично, а не кураторська
-//   трійка featured_week;
+// - «Топ тижня» — відмічені в адмінці цього тижня (featured_week) плюс
+//   найближчі дедлайни до трьох;
 // - сортування зафіксоване: найближчий дедлайн угорі, без дедлайну — вкінці.
 
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
@@ -637,17 +639,12 @@ export default function OpportunitiesList({
     });
   }, [liveItems, predicates, todayIso, pinned]);
 
-  // Топ тижня: три найближчі живі дедлайни. Показується без активних
-  // фільтрів і виключається з основної стрічки, щоб не дублювався.
+  // Топ тижня: спершу відмічені цього тижня в адмінці (так виконується платне
+  // просування організаторам), далі — найближчі живі дедлайни. Показується без
+  // активних фільтрів і виключається з основної стрічки, щоб не дублювався.
   const topCards = useMemo(() => {
     if (hasActive) return [];
-    return liveItems
-      .filter((item) => {
-        const days = daysUntil(item.deadline, todayIso);
-        return days !== null && days >= 0;
-      })
-      .sort((a, b) => daysUntil(a.deadline, todayIso) - daysUntil(b.deadline, todayIso))
-      .slice(0, 3);
+    return topWeekCards({ items: liveItems, week: isoWeek(), todayIso, daysUntil });
   }, [liveItems, hasActive, todayIso]);
 
   const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
@@ -1435,7 +1432,10 @@ export default function OpportunitiesList({
                 {/* «Цього тижня» — лише коли всі три справді закриваються за 7
                     днів; інакше заголовок обіцяв би те, чого в стрічці немає. */}
                 <h2 id="m-top-title">
-                  {topCards.every((c) => daysUntil(c.deadline, todayIso) <= 7) ? t.mTopWeek : t.mTopSoon}
+                  {topCards.every((c) => {
+                    const d = daysUntil(c.deadline, todayIso);
+                    return d !== null && d <= 7;
+                  }) ? t.mTopWeek : t.mTopSoon}
                 </h2>
                 <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
               </div>
