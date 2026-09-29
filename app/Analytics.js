@@ -2,7 +2,7 @@
 import { useEffect } from 'react';
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { ADS_ID } from '@/lib/track';
+import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
 import { NO_ANALYTICS_KEY, PRODUCTION_HOST, isInternalPath } from '@/lib/analytics-scope';
 
 const GA_ID = 'G-KPLE8LGH91';
@@ -49,6 +49,18 @@ export function Analytics() {
   useEffect(() => {
     if (!internal) return;
     try { localStorage.setItem(NO_ANALYTICS_KEY, '1'); } catch { /* приватний режим */ }
+  }, [internal]);
+
+  // Клік по картці можливості з будь-якої сторінки — одна подія card_click.
+  useEffect(() => {
+    if (internal) return undefined;
+    const onClick = (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a.card') : null;
+      const slug = a ? cardSlugFromHref(a.getAttribute('href')) : null;
+      if (slug) trackCardClick(slug, window.location.pathname);
+    };
+    document.addEventListener('click', onClick, true);
+    return () => document.removeEventListener('click', onClick, true);
   }, [internal]);
 
   if (internal) return null;

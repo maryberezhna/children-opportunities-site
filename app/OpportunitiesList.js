@@ -5,7 +5,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
 import { cityLabel, itemFormatLabel } from '@/lib/labels';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import { trackSearch } from '@/lib/track';
+import { trackSearch, trackFilterApply, filterSignature } from '@/lib/track';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
@@ -867,6 +867,22 @@ export default function OpportunitiesList({
     }, 600);
     return () => clearTimeout(timer);
   }, [hydrated, query, count]);
+  // Фільтр застосовано — подія filter_apply на кожну зміну стану (з паузою,
+  // щоб серія кліків по чипах не йшла десятком подій). Стан, з яким людина
+  // прийшла за посиланням (?type=…), фільтром людини не вважаємо: його
+  // запамʼятовуємо як відправну точку й не шлемо.
+  const filtersSent = useRef(null);
+  const filterSig = filterSignature({ type, age, deadline, need, cost, place, presetCity });
+  useEffect(() => {
+    if (!hydrated) return undefined;
+    if (filtersSent.current === null) { filtersSent.current = filterSig; return undefined; }
+    if (filterSig === filtersSent.current) return undefined;
+    const timer = setTimeout(() => {
+      filtersSent.current = filterSig;
+      trackFilterApply(filterSig, count);
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [hydrated, filterSig, count]);
   // Після четвертої: перша сторінка каталогу — 6 карток на десктопі й 10 на
   // мобільному, а після шостої картка ставала в самий кінець сторінки, поруч
   // із блоком Telegram, що й так стоїть під каталогом.
