@@ -6,8 +6,7 @@
 .o-m-meta,
 .o-m-deadline,
 .o-m-only,
-.o-m-bar,
-.o-share { display: none; }
+.o-m-bar { display: none; }
 
 @media (max-width: 900px) {
   /* Рядок «← Усі можливості / Поділитися ↗» на всю ширину екрана. */
@@ -21,8 +20,7 @@
     border-bottom: 1px solid var(--v2-line);
   }
 
-  .opportunity-breadcrumbs a,
-  .o-share {
+  .opportunity-breadcrumbs a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
@@ -31,14 +29,11 @@
     color: var(--v2-ink-2);
   }
 
-  .o-share {
-    padding: 0 0 0 12px;
-    border: 0;
-    background: none;
-    font-family: inherit;
-    font-weight: 400;
-    cursor: pointer;
-  }
+  /* На телефоні з крихт лишається лише «← {підбірка}» (макет
+     OpportunityMobile.dc.html): решта — місце, а не навігація. */
+  .opportunity-breadcrumbs > a:first-child,
+  .opportunity-breadcrumbs > span { display: none; }
+  .opportunity-breadcrumbs .o-crumb-topic::before { content: '← '; }
 
   .opportunity-page {
     display: flex;
@@ -52,7 +47,7 @@
     background: none;
   }
 
-  .opportunity-chips { display: none; }
+  .opportunity-chips { display: flex; gap: 6px; margin-bottom: 4px; }
 
   .o-m-meta {
     display: flex;
@@ -176,19 +171,23 @@
     border-top: 1px solid var(--v2-line);
   }
 
-  .o-m-heart {
+  /* «Поділитися» — кругла кнопка-значок поруч із подачею (з 29.09.2026
+     замість 🧡: підтримати сайт можна з шапки й футера). */
+  .o-m-share {
     flex: 0 0 52px;
     height: 52px;
     box-sizing: border-box;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    border: 1px solid var(--v2-line-strong);
-    border-radius: 14px;
+    padding: 0;
+    border: 1.5px solid var(--v2-ink);
+    border-radius: 999px;
     background: #ffffff;
-    font-size: 20px;
-    text-decoration: none;
+    color: var(--v2-ink);
+    cursor: pointer;
   }
+  .o-m-share:active { background: var(--v2-cream); }
 
   .o-m-bar .o-m-apply {
     flex: 1;
@@ -197,7 +196,7 @@
     align-items: center;
     justify-content: center;
     padding: 0 16px;
-    border-radius: 14px;
+    border-radius: 999px;
     background: var(--v2-accent-strong);
     color: #ffffff;
     font-size: 16px;
@@ -232,4 +231,43 @@
   .opportunity-related-list > li,
   .opportunity-related-list .card { min-width: 0; }
   .opportunity-related-list .chips { flex-wrap: wrap; }
+}
+
+/* ── Редизайн сторінки можливості на телефоні (29.09.2026) ─────────────── */
+@media (max-width: 900px) {
+  /* Факти 2×2: лінії перераховуємо під два стовпці. */
+  .o-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: 4px; }
+  .o-fact { padding: 14px; }
+  .o-fact:nth-child(3n + 1) { border-left: 1px solid var(--border); }
+  .o-fact:nth-child(-n + 3) { border-top: 1px solid var(--border); }
+  .o-fact:nth-child(2n + 1) { border-left: 0; }
+  .o-fact:nth-child(-n + 2) { border-top: 0; }
+  .o-fact dt { font-size: 11px; }
+  .o-fact dd { font-size: 15px; }
+
+  .o-who { margin-top: 20px; }
+  .o-h2 { font-size: 20px; }
+
+  /* Кнопки живуть у панелі під пальцем; блок каналу з картки дії лишається. */
+  .o-action { display: none; }
+  .o-aside { display: contents; }
+  .o-m-links { display: block; margin: 20px 0 0; }
+  .o-m-links .o-m-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--v2-accent-strong);
+    text-decoration: none;
+  }
+
+  .o-verified { margin-top: 20px; font-size: 13px; }
+  .o-report { margin-left: 0; }
+
+  .o-m-deadline.is-urgent { background: #fee2e2; }
+  .o-m-deadline.is-urgent .o-m-eyebrow { color: #991b1b; }
+
+  .o-related-head { margin-bottom: 12px; }
+  .opportunity-related-list { grid-template-columns: minmax(0, 1fr); }
 }
