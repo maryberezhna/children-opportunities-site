@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminName } from '@/lib/adminAuth';
 import { isoWeek } from '@/lib/week';
 import { missingRequired } from '@/lib/required';
+import { countryPatch } from '@/lib/country-field';
 import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
 import { sourceUrlProblem } from '@/lib/source-link';
@@ -61,6 +62,9 @@ export async function POST(request) {
   if (typeof b.cities === 'string') {
     patch.cities = b.cities.split(',').map((s) => s.trim()).filter(Boolean).slice(0, 20);
   }
+  // Країна з селекта форми: одна країна, «за кордоном — різні» або порожньо.
+  // Не прийшла чи «кілька країн» — лишаємо як було (lib/country-field.js).
+  Object.assign(patch, countryPatch(b.country));
   if (TYPES.includes(b.opportunity_type)) patch.opportunity_type = b.opportunity_type;
   if (typeof b.price_note === 'string') patch.price_note = b.price_note.trim().slice(0, 200) || null;
   if (typeof b.details === 'string') patch.details = b.details.trim().slice(0, 20000) || null;
