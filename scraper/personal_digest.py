@@ -32,6 +32,7 @@ import html
 import logging
 import os
 import sys
+import time
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -417,29 +418,40 @@ def calendar_url(o, today=None):
     return calendar_link.google_calendar_url(o, target, SITE_URL) if target else None
 
 
-def telegram_keyboard(items) -> dict:
-    """Кнопки під добіркою: дві на можливість, номер — як у тексті.
+def card_keyboard(o) -> dict:
+    """Кнопки під карткою однієї можливості — ті самі, що в першій добірці
+    після оплати (app/api/telegram/plus/route.js, sendLatest):
 
-    Було чотири (👍 👎 ✍️ 📅), і на восьми можливостях це 29 кнопок суцільною
-    стіною — читати неможливо (Марія, 24.09.2026). Лишились ті, що змінюють
-    поведінку системи:
+    • 👍 «Цікаво» (papp:<id>) — памʼять про пройдене: більше не пропонуємо як
+      нову, а після дедлайну питаємо «Ви подавалися?» (#497, 27.09.2026). Префікс
+      papp: лишився від старої «✍️ Подаюсь» — у чатах висять старі картки;
+    • 👎 «Не цікаво» (pfb:no:<id>) — ховає можливість від цієї людини назавжди;
+    • 📅 «У календар» — прямо в Google Calendar, лише коли є дата.
 
-    • ✍️ «подаюсь» — памʼять про пройдене: більше не пропонуємо як нову,
-      нагадування звучить інакше, і з цього виростає питання «чим закінчилось»;
-    • 👎 «не цікаво» — ховає можливість від цієї людини назавжди (load_disliked).
-
-    👍 прибрано: єдиним його споживачем був ask_outcomes, де воно рівнозначне
-    ✍️ (marked_by = 👍 або ✍️), тобто слабший дубль тієї самої дії. 📅 нікуди
-    не зник — переїхав у текст посиланням, бо кнопкою він займав чверть стіни.
+    До 29.09.2026 щоденна добірка йшла одним повідомленням зі стіною кнопок
+    «✍️ 1 / 👎 1 / ✍️ 2…», хоча рішення «кожна можливість — окремим
+    повідомленням» було ще 24.09.2026. Окрема картка знімає номери: кнопка
+    стосується того, що просто над нею.
 
     callback_data вміщується в ліміт Telegram 64 байти: pfb:no:<uuid> — 43."""
-    rows = []
-    for n, o in enumerate(items, 1):
-        rows.append([
-            {"text": f"✍️ {n}", "callback_data": f"papp:{o['id']}"},
-            {"text": f"👎 {n}", "callback_data": f"pfb:no:{o['id']}"},
-        ])
+    rows = [[
+        {"text": "👍 Цікаво", "callback_data": f"papp:{o['id']}"},
+        {"text": "👎 Не цікаво", "callback_data": f"pfb:no:{o['id']}"},
+    ]]
+    cal = calendar_url(o)
+    if cal:
+        rows.append([{"text": "📅 У календар", "url": cal}])
     return {"inline_keyboard": rows}
+
+
+def _cut(text: str, limit: int) -> str:
+    """Опис у картці — не довше за limit, по межі слова: п'ять повних описів
+    підряд перетворюють добірку на полотно."""
+    text = " ".join(str(text or "").split())
+    if len(text) <= limit:
+        return text
+    head = text[:limit].rsplit(" ", 1)[0].rstrip(",;:—–- ")
+    return f"{head}…"
 
 
 def load_disliked(client, subs) -> dict:
@@ -478,54 +490,45 @@ def load_applications(client, subs) -> dict:
     return out
 
 
-def _item_lines(n: int, o: dict) -> list:
+def card_text(o: dict) -> str:
+    """Одна можливість — одне повідомлення."""
     url = f"{SITE_URL}/o/{o['slug']}"
-    # Номер, а не маркер: кнопки під повідомленням підписані тими самими номерами.
-    lines = [f"{n}. <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>"]
-    # Календар — посиланням у тексті, а не кнопкою: кнопкою він займав
-    # чверть клавіатури. На сторінці можливості його немає, тож прибрати
-    # зовсім не можна — тільки перенести.
-    meta = html.escape(_meta(o))
-    cal = calendar_url(o)
-    if cal:
-        link = f"<a href=\"{html.escape(cal)}\">📅 у календар</a>"
-        meta = f"{meta} · {link}" if meta else link
-    lines.append(meta)
+    lines = [f"🔸 <a href=\"{html.escape(url)}\"><b>{html.escape(o['title'])}</b></a>"]
+    meta = _meta(o)
+    if meta:
+        lines.append(html.escape(meta))
+    summary = _cut(o.get("summary"), 220)
+    if summary:
+        lines.append(html.escape(summary))
     if o.get("_after"):
         lines.append(f"<i>{html.escape(ladder.after_line(o))}</i>")
     if o.get("_for"):
         lines.append(f"<i>{html.escape(o['_for'])}</i>")
-    lines.append("")
-    return lines
+    return "\n".join(lines)
 
 
-def build_telegram(sub, items, revival: bool = False, steps=None) -> str:
-    """steps — «наступна сходинка» (ladder.next_steps): окремий блок після
-    добірки, з тією самою нумерацією, бо кнопки під повідомленням спільні."""
+def build_messages(sub, items, revival: bool = False, steps=None) -> list:
+    """Добірка як послідовність повідомлень [(текст, клавіатура|None)]:
+    заголовок, картка на кожну можливість, а «наступна сходинка» (ladder.next_steps)
+    — окремим заголовком і своїми картками після них."""
     steps = steps or []
-    lines = []
+    out = []
     if items:
         # revival — це не нові записи, а добірка з того, що вже є в каталозі.
         # Називати їх «новими» було б неправдою.
         head = ("🧡 <b>Добірка під вашу дитину</b>" if revival
                 else "🧡 <b>Нові можливості для вашої дитини</b>")
-        lines += [head, ""]
-        for n, o in enumerate(items, 1):
-            lines += _item_lines(n, o)
+        # Рядка «Змінити профіль — /start · Відписатись — /stop» тут немає
+        # (Марія, 24.09.2026: «дивно постійно пропонувати відписатися»).
+        out.append((head + "\n<i>Відібрано під профіль вашої дитини. Усі можливості — "
+                    "відкриті для всіх на dityam.com.ua</i>", None))
+        out += [(card_text(o), card_keyboard(o)) for o in items]
     if steps:
         # Сходинка — не «нове під профіль», а продовження того, що родина сама
-        # позначила. Тому окремий заголовок і рядок «Після «X»…» під кожною.
-        lines += ["🪜 <b>Наступна сходинка</b>", ""]
-        for n, o in enumerate(steps, len(items) + 1):
-            lines += _item_lines(n, o)
-    lines.append("Під повідомленням: ✍️ подаюсь · 👎 не цікаво — номер як у списку.")
-    lines.append("")
-    # Рядка «Змінити профіль — /start · Відписатись — /stop» тут більше немає
-    # (Марія, 24.09.2026: «дивно постійно пропонувати відписатися»). Добірка
-    # приходить регулярно, і щоразу пропонувати вихід — це не турбота.
-    # /stop нікуди не подівся: він лишається командою і в «⭐ Деталі підписки».
-    lines.append("<i>Відібрано під профіль вашої дитини. Усі можливості — відкриті для всіх на dityam.com.ua</i>")
-    return "\n".join(lines)
+        # позначила. Тому окремий заголовок і рядок «Після «X»…» у кожній картці.
+        out.append(("🪜 <b>Наступна сходинка</b>", None))
+        out += [(card_text(o), card_keyboard(o)) for o in steps]
+    return out
 
 
 # Відповіді Telegram, після яких є сенс спробувати інший бот: цей бот людині
@@ -559,6 +562,18 @@ def send_telegram(chat_id, text, reply_markup=None) -> bool:
             break
     logger.warning("TG send failed for %s: %s", chat_id, detail)
     return False
+
+
+def send_messages(chat_id, messages, pause: float = 0.35) -> bool:
+    """Надіслати добірку по одному повідомленню. Заголовок не дійшов — далі не
+    шлемо: картки без заголовка виглядали б уламками. Пауза — щоб не впертись
+    у ліміт Telegram на повідомлення в один чат."""
+    for i, (text, markup) in enumerate(messages):
+        if i:
+            time.sleep(pause)
+        if not send_telegram(chat_id, text, reply_markup=markup) and i == 0:
+            return False
+    return bool(messages)
 
 
 def main():
@@ -727,8 +742,7 @@ def main():
         if not sub.get("telegram_chat_id"):
             logger.info("sub %s — Telegram not connected yet, skip", sub["id"])
             continue
-        ok = send_telegram(sub["telegram_chat_id"], build_telegram(sub, items, revival, steps),
-                           reply_markup=telegram_keyboard(items + steps))
+        ok = send_messages(sub["telegram_chat_id"], build_messages(sub, items, revival, steps))
 
         if ok:
             client.table("digest_subscribers").update(

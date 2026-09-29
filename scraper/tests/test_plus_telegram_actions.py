@@ -53,56 +53,67 @@ class TelegramKeyboard(unittest.TestCase):
     def setUp(self):
         self.pd = load_personal_digest()
 
-    def test_row_per_item_numbered_like_the_text(self):
-        """Дві кнопки на можливість, не чотири: на восьми записах чотири —
-        це 29 кнопок суцільною стіною (Марія, 24.09.2026)."""
+    def test_each_opportunity_is_its_own_message(self):
+        """Кожна можливість — окремим повідомленням зі своїми кнопками (рішення
+        24.09.2026; щоденна добірка до 29.09.2026 йшла списком «✍️ 1 / 👎 1»)."""
         other = item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)
-        rows = self.pd.telegram_keyboard([item(), other])["inline_keyboard"]
-        self.assertEqual([b["text"] for b in rows[0]], ["✍️ 1", "👎 1"])
-        self.assertEqual([b["text"] for b in rows[1]], ["✍️ 2", "👎 2"])
-        text = self.pd.build_telegram(SUB, [item(), other])
-        self.assertIn("1. <a", text)
-        self.assertIn("2. <a", text)
+        msgs = self.pd.build_messages(SUB, [item(), other])
+        self.assertEqual(len(msgs), 3)
+        head, first, second = msgs
+        self.assertIsNone(head[1])
+        self.assertIn("Нові можливості", head[0])
+        self.assertIn("isef-ukraine", first[0])
+        self.assertIn("no-date", second[0])
+        self.assertNotIn("1. <a", first[0])
+        self.assertEqual([b["text"] for b in first[1]["inline_keyboard"][0]], ["👍 Цікаво", "👎 Не цікаво"])
 
-    def test_no_thumbs_up_button(self):
-        """👍 був слабшим дублем ✍️: єдиний споживач — ask_outcomes, де
-        marked_by = 👍 або ✍️."""
-        for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
+    def test_no_old_apply_button(self):
+        """«✍️ Подаюсь» замінено на «👍 Цікаво» (#497): рішення в людини ще немає."""
+        for row in self.pd.card_keyboard(item())["inline_keyboard"]:
             for button in row:
+                self.assertNotIn("✍️", button["text"])
                 self.assertNotIn("pfb:yes", button.get("callback_data", ""))
 
-    def test_calendar_moved_from_button_to_text(self):
-        """Календар прибрано з клавіатури, але не з добірки: на сторінці
-        можливості його немає, тож він мусить лишитись хоч десь."""
-        for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
-            self.assertEqual([b for b in row if "url" in b], [])
-        text = self.pd.build_telegram(SUB, [item()])
-        # Веде прямо в Google Calendar, а не на сторінку сайту: доти людина
-        # мусила клікнути ще раз (Марія, 25.09.2026).
-        self.assertIn("calendar.google.com", text)
-        self.assertNotIn("/events/", text)
-        self.assertIn("у календар", text)
-        # Без дати ставити подію нікуди — і посилання не буде.
-        no_date = self.pd.build_telegram(SUB, [item(id="aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee", slug="no-date", deadline=None)])
-        self.assertNotIn("у календар", no_date)
+    def test_calendar_is_a_button_only_with_a_date(self):
+        # Веде прямо в Google Calendar, а не на сторінку сайту (Марія, 25.09.2026).
+        rows = self.pd.card_keyboard(item())["inline_keyboard"]
+        cal = [b for row in rows for b in row if "url" in b]
+        self.assertEqual(len(cal), 1)
+        self.assertIn("calendar.google.com", cal[0]["url"])
+        self.assertNotIn("/events/", cal[0]["url"])
+        # Без дати ставити подію нікуди — і кнопки не буде.
+        no_date = self.pd.card_keyboard(item(deadline=None))["inline_keyboard"]
+        self.assertEqual([b for row in no_date for b in row if "url" in b], [])
 
     def test_digest_does_not_offer_unsubscribe_every_time(self):
         """«Відписатись — /stop» у кожній добірці — це не турбота."""
-        text = self.pd.build_telegram(SUB, [item()])
-        self.assertNotIn("/stop", text)
+        for text, _ in self.pd.build_messages(SUB, [item()]):
+            self.assertNotIn("/stop", text)
 
-    def test_apply_button_carries_the_opportunity_id(self):
-        """«✍️ Подаємося» — памʼять про пройдене: бот має знати, що саме позначили."""
-        rows = self.pd.telegram_keyboard([item()])["inline_keyboard"]
-        apply_btn = [b for b in rows[0] if b.get("callback_data", "").startswith("papp:")]
-        self.assertEqual(len(apply_btn), 1)
-        self.assertTrue(apply_btn[0]["callback_data"].endswith(item()["id"]))
+    def test_interested_button_carries_the_opportunity_id(self):
+        """«👍 Цікаво» — памʼять про пройдене: бот має знати, що саме позначили."""
+        rows = self.pd.card_keyboard(item())["inline_keyboard"]
+        btn = [b for b in rows[0] if b.get("callback_data", "").startswith("papp:")]
+        self.assertEqual(len(btn), 1)
+        self.assertTrue(btn[0]["callback_data"].endswith(item()["id"]))
 
     def test_callback_data_fits_telegram_limit(self):
-        for row in self.pd.telegram_keyboard([item()])["inline_keyboard"]:
+        for row in self.pd.card_keyboard(item())["inline_keyboard"]:
             for button in row:
                 if "callback_data" in button:
                     self.assertLessEqual(len(button["callback_data"].encode()), 64)
+
+    def test_summary_is_cut_on_a_word(self):
+        text = self.pd.card_text(item(summary="слово " * 100))
+        self.assertIn("…", text)
+        self.assertLess(len(text), 600)
+
+    def test_send_messages_stops_without_header(self):
+        calls = []
+        self.pd.time = types.SimpleNamespace(sleep=lambda s: None)
+        self.pd.send_telegram = lambda chat, text, reply_markup=None: calls.append(text) or False
+        self.assertFalse(self.pd.send_messages("1", [("h", None), ("c", {})]))
+        self.assertEqual(calls, ["h"])
 
     def test_send_telegram_passes_keyboard(self):
         sent = []
@@ -110,7 +121,7 @@ class TelegramKeyboard(unittest.TestCase):
         self.pd.MAIN_BOT_TOKEN = ""
         self.pd.httpx = types.SimpleNamespace(post=lambda url, json=None, timeout=None: (
             sent.append(json) or types.SimpleNamespace(status_code=200, text="", json=lambda: {"ok": True})))
-        keyboard = self.pd.telegram_keyboard([item()])
+        keyboard = self.pd.card_keyboard(item())
         self.assertTrue(self.pd.send_telegram("1", "hi", reply_markup=keyboard))
         self.assertEqual(sent[0]["reply_markup"], keyboard)
         self.assertTrue(self.pd.send_telegram("1", "hi"))
@@ -122,7 +133,7 @@ class Content(unittest.TestCase):
         self.pd = load_personal_digest()
 
     def test_title_is_escaped(self):
-        self.assertIn("ISEF &lt;Ukraine&gt;", self.pd.build_telegram(SUB, [item()]))
+        self.assertIn("ISEF &lt;Ukraine&gt;", self.pd.card_text(item()))
 
     def test_event_dates_in_meta_and_calendar(self):
         # 17.09.2026: подія без дедлайну не мала в добірці ні дати, ні кнопки
@@ -136,7 +147,7 @@ class Content(unittest.TestCase):
 
     def test_deadline_in_meta(self):
         this_year = f"{date.today().year}-10-30"
-        self.assertIn("до 30 жовтня", self.pd.build_telegram(SUB, [item(deadline=this_year)]))
+        self.assertIn("до 30 жовтня", self.pd.card_text(item(deadline=this_year)))
         self.assertNotIn(" до ", self.pd._meta(item(deadline=None)))
 
     def test_no_email_delivery_left(self):

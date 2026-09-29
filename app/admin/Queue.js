@@ -64,7 +64,7 @@ function Notes({ list }) {
       ) : null}
       {stuck.length ? (
         <div className="adm-note warn">
-          <div className="h">⚠️ Машина не змогла виконати коментар повністю</div>
+          <div className="h">⚠️ Коментар виконано не повністю</div>
           {stuck.map((n) => (
             <div key={n.id} style={{ marginBottom: 4 }}>
               «{n.body}»{n.resolution ? <><br /><span style={{ color: '#54617a' }}>{n.resolution}</span></> : null}
@@ -74,7 +74,7 @@ function Notes({ list }) {
       ) : null}
       {done.length ? (
         <div className="adm-note info" style={{ background: '#e7f6ec', borderColor: '#b7e2c4' }}>
-          <div className="h">✍️ Машина виконала коментар</div>
+          <div className="h">✅ Коментар виконано</div>
           {done.map((n) => (
             <div key={n.id} style={{ marginBottom: 4 }}>
               «{n.body}» → {n.resolution || 'виконано'}
