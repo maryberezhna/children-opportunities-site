@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
 import { plusFunnel, plusSources } from '@/lib/funnel';
+import { allNamed } from '@/lib/allNamed';
 import LoginForm from '../LoginForm';
 
 export const runtime = 'nodejs';
@@ -88,33 +89,33 @@ export default async function MetricsPage() {
 
   const iso = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString();
 
-  const [
+  const {
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
     subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
-  ] = await Promise.all([
-    count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
-    count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
-    count(supabase, 'opportunities', (q) => q.gte('created_at', iso(7))),
-    count(supabase, 'opportunities', (q) => q.gte('created_at', iso(30))),
-    count(supabase, 'opportunities', (q) => q.eq('status', 'closed').gte('updated_at', iso(7))),
-    count(supabase, 'plus_waitlist'),
-    count(supabase, 'plus_waitlist', (q) => q.gte('created_at', iso(7))),
-    count(supabase, 'digest_subscribers'),
-    count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7)), 'opportunity_id'),
-    count(supabase, 'opportunity_outcomes'),
-    supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
+  } = await allNamed({
+    active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
+    drafts: count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
+    added7: count(supabase, 'opportunities', (q) => q.gte('created_at', iso(7))),
+    added30: count(supabase, 'opportunities', (q) => q.gte('created_at', iso(30))),
+    closed7: count(supabase, 'opportunities', (q) => q.eq('status', 'closed').gte('updated_at', iso(7))),
+    waitlist: count(supabase, 'plus_waitlist'),
+    waitlist7: count(supabase, 'plus_waitlist', (q) => q.gte('created_at', iso(7))),
+    profiles: count(supabase, 'digest_subscribers'),
+    feedback7: count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7)), 'opportunity_id'),
+    outcomes: count(supabase, 'opportunity_outcomes'),
+    subsRes: supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
     // Уся воронка, а не лише ті, хто дійшов: саме ті, хто НЕ дійшов,
     // і показують, де ми їх втрачаємо.
-    supabase.from('digest_subscribers')
+    allSubsRes: supabase.from('digest_subscribers')
       .select('id, status, consent_at, flow_step, wfp_order_reference, source'),
-    supabase.from('plus_children').select('subscriber_id'),
-    supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
-    supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
+    kidsRes: supabase.from('plus_children').select('subscriber_id'),
+    snapshotsRes: supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
+    promoRes: supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
-    supabase.from('moderation_actions').select('actor, action, created_at')
+    actionsRes: supabase.from('moderation_actions').select('actor, action, created_at')
       .gte('created_at', iso(30)).limit(5000),
-  ]);
+  });
 
   const subs = subsRes.data || [];
   const allSubs = allSubsRes.data || [];
