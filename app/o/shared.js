@@ -14,7 +14,7 @@ import { daysUntil, kyivToday, formatDate, formatEventDates } from '@/lib/dates'
 import { isoWeek } from '@/lib/week';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
-  NEED_LABELS, NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, formatLabel,
+  NEED_LABELS, NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, itemFormatLabel, PAYMENT_TYPES,
   ageRangeLabel,
 } from '@/lib/labels';
 // Реекспорт: /en/o/[slug] бере ageRangeLabel саме звідси.
@@ -293,7 +293,8 @@ function buildDescription(item, typeLabel, ageRange, lang) {
   // «Вся Україна» нічого не додає до сніпета — беремо конкретне місто,
   // інакше формат (онлайн / офлайн).
   const rawPlace =
-    (item.cities || []).find((c) => c && c !== 'Вся Україна') || item.format;
+    (item.cities || []).find((c) => c && c !== 'Вся Україна')
+    || (PAYMENT_TYPES.includes(item.opportunity_type) ? null : item.format);
   if (rawPlace) facts.push(String(cityLabel(rawPlace, lang)).trim());
 
   // Для закритої — чесний факт замість простроченого «заявки до …».
@@ -687,10 +688,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               колонкою, що прилипає до верху, поки людина читає опис. */}
           <div className="o-aside">
             <dl className="opportunity-meta">
-              {formatLabel(item.format, lang) && (
+              {itemFormatLabel(item, lang) && (
                 <>
                   <dt>{t.format}</dt>
-                  <dd>{formatLabel(item.format, lang)}</dd>
+                  <dd>{itemFormatLabel(item, lang)}</dd>
                 </>
               )}
               {(item.cities || []).length > 0 && (

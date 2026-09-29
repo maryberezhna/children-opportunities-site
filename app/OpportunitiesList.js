@@ -3,7 +3,7 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
-import { cityLabel, formatLabel } from '@/lib/labels';
+import { cityLabel, itemFormatLabel } from '@/lib/labels';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { trackSearch } from '@/lib/track';
 import { daysUntil, kyivToday } from '@/lib/dates';
@@ -746,7 +746,7 @@ export default function OpportunitiesList({
       ]
       : teens
         ? [
-          [t.f.format, formatLabel(item.format, lang) || null],
+          [t.f.format, itemFormatLabel(item, lang) || null],
           [t.f.place, placeText(item)],
           [t.f.deadline, item.deadline ? formatDeadline(item.deadline, lang) : t.noDeadline],
         ]
@@ -756,7 +756,7 @@ export default function OpportunitiesList({
     // Set: в онлайн-записів формат і «місто» однакові — без «Онлайн · Онлайн».
     // Рядок «формат · місце» — на кожній картці: тепер це єдине місце, де
     // батько бачить, онлайн це чи ні і де.
-    const fmt = [...new Set([formatLabel(item.format, lang), placeText(item)].filter(Boolean))].join(' · ');
+    const fmt = [...new Set([itemFormatLabel(item, lang), placeText(item)].filter(Boolean))].join(' · ');
     // Десктопна картка головної: далека дата без року — «до 20 жовт».
     const dlHead = dl.kind === 'calm' && daysUntil(item.deadline, todayIso) > 30
       ? t.until(formatDeadline(item.deadline, lang).replace(` ${todayIso.slice(0, 4)}`, ''))
