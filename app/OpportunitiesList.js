@@ -9,13 +9,14 @@ import { trackSearch } from '@/lib/track';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
-import { abroadPlaceText, foreignOnly } from '@/lib/place';
+import { abroadPlaceText, foreignOnly, abroadCodes } from '@/lib/place';
+import { countryName } from '@/lib/diaspora';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import OpportunityCard from './OpportunityCard';
-import { PLACE_KINDS, placeOption } from '@/lib/place-search';
+import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX } from '@/lib/place-search';
 import TelegramCard from './TelegramCard';
 import PlaceCombobox from './PlaceCombobox';
 
@@ -309,6 +310,7 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
       // «Україна» — усе, куди не треба їхати за кордон (дзеркало «За кордоном»).
       if (v === 'ukraine') return !goesAbroad(item);
       if (v === 'online') return isOnline(item);
+      if (isCountryValue(v)) return abroadCodes(item).includes(v.slice(COUNTRY_PREFIX.length));
       const cities = item.cities || [];
       if (cities.includes(v)) return true;
       // «Вся Україна» просвічує крізь вибір УКРАЇНСЬКОГО міста. Для закордонного
@@ -365,7 +367,9 @@ function placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t })
   const dp = buildPredicates(s, ctx);
   const base = liveItems.filter((item) => FACETS.every((k) => k === 'place' || dp[k](item)));
   const places = new Set();
+  const countries = new Set();
   base.forEach((item) => {
+    if (goesAbroad(item)) abroadCodes(item).forEach((c) => countries.add(c));
     // Прага чи Дублін не стоять у списку поруч зі Львовом: закордонний запис
     // знаходиться через «За кордоном» (29.09.2026).
     if (!foreignOnly(item)) {
@@ -380,6 +384,10 @@ function placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t })
   // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
   opts.push(['ukraine', t.ukraine, t.ukraine]);
   opts.push(['online', t.online, t.online]);
+  [...countries]
+    .map((c) => [countryValue(c), countryName(c, 'uk'), countryName(c, 'en')])
+    .sort((a, b) => a[1].localeCompare(b[1], 'uk'))
+    .forEach((o) => opts.push(o));
   [...places].filter((p) => p !== 'abroad' && p !== 'online')
     .sort((a, b) => a.localeCompare(b, 'uk'))
     .forEach((c) => opts.push([c, c, cityLabel(c, 'en')]));
@@ -1031,7 +1039,7 @@ export default function OpportunitiesList({
   // літерою, у підказці — скільки дасть.
   const sheetPlace = () => {
     const counts = sheet.place;
-    const togglePlace = (v) => setDraft({ ...draft, place: toggle(draft.place, v) });
+    const togglePlace = (v) => setDraft({ ...draft, place: pickPlace(draft.place, v) });
     const kinds = PLACE_KINDS.filter((v) => counts[v] > 0 || draft.place.includes(v));
     const chosenCities = draft.place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v));
     const cityOpts = sheet.placeOpts.filter((o) => !PLACE_KINDS.includes(o[0])
@@ -1094,6 +1102,7 @@ export default function OpportunitiesList({
   };
   const placeLabel = (v) => (v === 'abroad' ? t.abroad : v === 'online' ? t.online
     : v === 'ukraine' ? t.ukraine
+    : isCountryValue(v) ? `🌍 ${countryName(v.slice(COUNTRY_PREFIX.length), isEn ? 'en' : 'uk')}`
     : (isEn ? cityLabel(v, 'en') : v));
   // Мультигрупи — по чипу на кожне обране значення, щоб зняти можна було одне.
   const activeChips = [
@@ -1213,7 +1222,7 @@ export default function OpportunitiesList({
             options={deskPlace.options}
             counts={deskPlace.counts}
             chosen={place}
-            onPick={(v) => setPlace(toggle(place, v))}
+            onPick={(v) => setPlace(pickPlace(place, v))}
             placeholder={place.length ? t.addPlace : t.pickPlace}
             emptyText={t.nothingTitle}
           />
@@ -1379,7 +1388,7 @@ export default function OpportunitiesList({
                 options={deskPlace.options}
                 counts={deskPlace.counts}
                 chosen={place}
-                onPick={(v) => setPlace(toggle(place, v))}
+                onPick={(v) => setPlace(pickPlace(place, v))}
                 placeholder={place.length ? t.addPlace : `${t.sel.where}: ${t.all}`}
                 emptyText={t.nothingTitle}
               />
