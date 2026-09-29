@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
 import { sourceUrlProblem } from '@/lib/source-link';
 import { PAYMENT_TYPES } from '@/lib/labels';
+import { countryFieldValue, countryOptions, countryPatch } from '@/lib/country-field';
 
 const FORMATS = [['', '— не визначено —'], ['online', 'Онлайн'], ['offline', 'Офлайн'], ['hybrid', 'Онлайн і офлайн']];
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
@@ -56,6 +57,7 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     apply_url: opp.apply_url || '',
     cost_type: opp.cost_type || '', opportunity_type: stub ? '' : (opp.opportunity_type || 'course'),
     format: opp.format || '', cities: (opp.cities || []).join(', '),
+    country: countryFieldValue(opp),
     price_note: opp.price_note || '', details: opp.details || '',
     // Прапорець, а не рядок: модератор думає «так, це в топ цього тижня»,
     // а не «який зараз ISO-тиждень». Тиждень підставляє сервер.
@@ -68,6 +70,13 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
   // Що саме заважає опублікувати — рахуємо на льоту, з того, що в полях
   // просто зараз. Кнопка публікації гасне, поки перелік не порожній
   // (вимога Марії 11.09.2026: ці пʼять полів обовʼязкові перед сайтом).
+  // Країна з селекта — так, як її запише сервер (lib/country-field.js).
+  const initialCountry = countryFieldValue(opp);
+  const geo = {
+    countries: opp.countries || [],
+    is_international: opp.is_international || false,
+    ...(f.country !== initialCountry ? countryPatch(f.country) : null),
+  };
   const missing = missingRequired({
     age_from: f.age_from === '' ? null : Number(f.age_from),
     age_to: f.age_to === '' ? null : Number(f.age_to),
@@ -82,8 +91,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     // Назва потрібна винятку «вартість уточнюйте в школі» (школа діаспори).
     title: f.title,
     cities: f.cities.split(',').map((s) => s.trim()).filter(Boolean),
-    countries: opp.countries || [],
-    is_international: opp.is_international || false,
+    countries: geo.countries,
+    is_international: geo.is_international,
   });
   // Нове джерело мусить бути сторінкою, а не формою чи каналом — тоді кнопки
   // гаснуть. Старе (досі допис) лише підсвічуємо: людина вирішує сама.
@@ -95,6 +104,9 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     setBusy(true); setDone('');
     try {
       const payload = { id: opp.id, ...f, publish };
+      // Країну шлемо, лише якщо її змінили: «Кілька країн» і ручні позначки
+      // конвеєра інакше перезаписались би тим, що показує один селект.
+      if (f.country === initialCountry) delete payload.country;
       // Поля, яких у картці немає, не надсилаємо: сервер лишить їх як є.
       if (inline) { delete payload.details; delete payload.featured; }
       const res = await fetch('/api/admin/edit', {
@@ -168,8 +180,18 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         )}
         <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
       </div>
-      <label style={L}>Міста <span style={{ fontWeight: 400, color: '#8a94a6' }}>— через кому; порожньо, якщо онлайн або за кордоном</span></label>
-      <input style={I} value={f.cities} onChange={up('cities')} placeholder="Львів, Київ" />
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: '1 1 200px' }}>
+          <label style={L}>Країна</label>
+          <select style={I} value={f.country} onChange={up('country')}>
+            {countryOptions(opp).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+        <div style={{ flex: '2 1 260px' }}>
+          <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>— кілька через кому; порожньо, якщо онлайн</span></label>
+          <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
+        </div>
+      </div>
       {/* Іде просто в сніпет Google — за запитами «… ціна» ми показувались і не
           отримували жодного кліку, бо категорії вартості на них не відповідають. */}
       <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
