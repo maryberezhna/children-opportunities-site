@@ -44,7 +44,7 @@ const sinceIso = sinceDate.toISOString();
 
 const { data: rows, error } = await supabase
   .from('opportunity_feedback')
-  .select('value, variant, telegram_user_id, opportunity_id, updated_at, opportunities(title, slug)')
+  .select('value, variant, source, page, telegram_user_id, opportunity_id, updated_at, opportunities(title, slug)')
   .gte('updated_at', sinceIso);
 
 if (error) {
@@ -60,7 +60,18 @@ let totalNo = 0;
 // Голоси без варіанта — з постів до запуску експерименту — не рахуються тут.
 const byVariant = { a: { yes: 0, no: 0 }, b: { yes: 0, no: 0 } };
 
+// «Щось не так? Повідомити» зі сторінки можливості (з 29.09.2026): ті самі
+// рядки, але value 'report' і без Telegram-id — рахуємо окремо, не як голоси.
+const reports = new Map();
 for (const r of rows || []) {
+  if (r.value === 'report') {
+    const key = r.opportunity_id;
+    if (!reports.has(key)) {
+      reports.set(key, { title: r.opportunities?.title || '(без назви)', slug: r.opportunities?.slug || r.page || null, n: 0 });
+    }
+    reports.get(key).n += 1;
+    continue;
+  }
   userSet.add(r.telegram_user_id);
   if (byVariant[r.variant] && (r.value === 'yes' || r.value === 'no')) {
     byVariant[r.variant][r.value] += 1;
@@ -86,8 +97,19 @@ all.forEach((r) => { r.score = r.yes - r.no; r.total = r.yes + r.no; });
 const totalVotes = totalYes + totalNo;
 const totalPosts = all.length;
 
+const reportLines = () => {
+  if (!reports.size) return [];
+  const out = ['', '<b>🚩 Повідомлення з сайту «щось не так»</b>'];
+  [...reports.values()].sort((a, b) => b.n - a.n).slice(0, TOP_N).forEach((r) => {
+    const link = r.slug ? `<a href="${SITE_URL}/o/${r.slug}">${escapeHtml(r.title)}</a>` : escapeHtml(r.title);
+    out.push(`🚩 ${r.n} — ${link}`);
+  });
+  return out;
+};
+
 if (totalVotes === 0) {
-  const empty = `📊 <b>Звіт за останні ${PERIOD_DAYS} дн.</b> (${formatDate(sinceDate)} – ${formatDate(new Date())})\n\nГолосів немає 🤷`;
+  const empty = `📊 <b>Звіт за останні ${PERIOD_DAYS} дн.</b> (${formatDate(sinceDate)} – ${formatDate(new Date())})\n\nГолосів немає 🤷`
+    + reportLines().join('\n');
   await send(empty);
   console.log('No feedback in window. Sent empty digest.');
   process.exit(0);
@@ -141,6 +163,8 @@ if (topNo.length) {
   lines.push(`<b>❄️ Топ "не цікаво"</b>`);
   topNo.forEach((r) => lines.push(renderRow(r, 'no')));
 }
+
+lines.push(...reportLines());
 
 const message = lines.join('\n');
 

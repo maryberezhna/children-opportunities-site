@@ -10,11 +10,11 @@
  */
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
-import { daysUntil, kyivToday, formatDate, formatEventDates } from '@/lib/dates';
+import { kyivToday, formatDate } from '@/lib/dates';
 import { isoWeek } from '@/lib/week';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
-  NEED_LABELS, NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, itemFormatLabel, PAYMENT_TYPES,
+  NEED_LABELS, NEED_LABELS_EN, ANNUAL_TYPES, cityLabel, PAYMENT_TYPES,
   ageRangeLabel,
 } from '@/lib/labels';
 // Реекспорт: /en/o/[slug] бере ageRangeLabel саме звідси.
@@ -22,8 +22,10 @@ export { ageRangeLabel };
 import Details from './[slug]/Details';
 import OutboundCta from './[slug]/OutboundCta';
 import ShareButton from './[slug]/ShareButton';
+import ReportButton from './[slug]/ReportButton';
 import { plural } from '@/lib/plural';
-import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
+import { topicOf, topicPath } from '@/lib/topics';
+import { intakeStatus, pageFacts, applicantConditions } from '@/lib/opportunity-facts';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 import Footer from '../Footer';
@@ -32,10 +34,8 @@ import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
 import { publicSource } from '@/lib/source-link';
-import { detailCountries, detailCities } from '@/lib/place';
 
 const SITE = 'https://dityam.com.ua';
-const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 
 
 const COST_LABELS = {
@@ -100,6 +100,22 @@ const L = {
     applyClubShort: 'Записатися ↗',
     support: 'Підтримати dityam.com.ua',
     requirement: 'Треба',
+    // Редизайн сторінки (29.09.2026, макет Opportunity.dc.html).
+    home: 'Головна',
+    officialSite: 'Офіційний сайт ↗',
+    goSite: 'Перейти до офіційного сайту ↗',
+    goSiteShort: 'На сайт організатора ↗',
+    shareWith: 'Поділитися з іншим батьком',
+    whoCan: 'Хто може подати заявку',
+    checkedOn: (d) => `Перевірено ${d}`,
+    linkCheckedOn: (d) => `Посилання перевірено ${d}`,
+    sourceWord: 'джерело',
+    report: 'Щось не так? Повідомити',
+    reported: 'Дякуємо, перевіримо.',
+    reportMore: 'Написати, що саме не так →',
+    similar: 'Схожі можливості',
+    allOf: (name) => `Уся підбірка «${name}» →`,
+    allHome: 'Усі можливості →',
     daysLeft: (n) => (n === 0 ? 'сьогодні' : `${n} ${plural(n, 'день', 'дні', 'днів')}`),
   },
   en: {
@@ -137,6 +153,21 @@ const L = {
     applyClubShort: 'Sign up ↗',
     support: 'Support dityam.com.ua',
     requirement: 'You need',
+    home: 'Home',
+    officialSite: 'Official site ↗',
+    goSite: 'Go to the official site ↗',
+    goSiteShort: 'Organiser’s site ↗',
+    shareWith: 'Share with another parent',
+    whoCan: 'Who can apply',
+    checkedOn: (d) => `Checked ${d}`,
+    linkCheckedOn: (d) => `Link checked ${d}`,
+    sourceWord: 'source',
+    report: 'Something wrong? Report',
+    reported: 'Thank you, we will check.',
+    reportMore: 'Tell us what is wrong →',
+    similar: 'Similar opportunities',
+    allOf: (name) => `All in “${name}” →`,
+    allHome: 'All opportunities →',
     daysLeft: (n) => (n === 0 ? 'today' : `${n} ${n === 1 ? 'day' : 'days'}`),
   },
 };
@@ -544,28 +575,25 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // що набір закрито.
   const jsonLd = buildJsonLd(item, lang);
   const today = kyivToday();
+  const title = field(item, 'title', lang);
+
+  // Підбірка запису (lib/topics.js): середня крихта, «схожі» з тієї ж
+  // підбірки й посилання «Уся підбірка» під ними. Без збігу крихтою лишається
+  // тип, як було в BreadcrumbList до редизайну.
+  const topic = topicOf(item);
+  const topicHref = topic ? topicPath({ slug: topic.slug, slugEn: topic.en.slug }, lang) : null;
+  const topicName = topic ? (lang === 'en' ? topic.navEn : topic.nav) : null;
+  const crumbName = topicName || TYPES[item.opportunity_type] || (lang === 'en' ? 'Opportunity' : 'Можливість');
+  const crumbHref = topicHref || base || '/';
+  const inTopic = (r) => { try { return Boolean(topic && topic.match(r)); } catch { return false; } };
+
   const breadcrumbs = {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: lang === 'en' ? 'Home' : 'Головна',
-        item: `${SITE}${base}`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 2,
-        name: TYPES[item.opportunity_type] || (lang === 'en' ? 'Opportunity' : 'Можливість'),
-        item: `${SITE}${base}`,
-      },
-      {
-        '@type': 'ListItem',
-        position: 3,
-        name: field(item, 'title', lang),
-        item: `${SITE}${base}/o/${item.slug}`,
-      },
+      { '@type': 'ListItem', position: 1, name: t.home, item: `${SITE}${base}` },
+      { '@type': 'ListItem', position: 2, name: crumbName, item: `${SITE}${topicHref || base}` },
+      { '@type': 'ListItem', position: 3, name: title, item: `${SITE}${base}/o/${item.slug}` },
     ],
   };
 
@@ -578,23 +606,34 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   const detailsText = field(item, 'details', lang);
   const detailsLang = lang === 'en' && !item.details_en ? 'uk' : undefined;
 
-  // Мобільна верстка (≤900px, референс 6d): дедлайн окремим блоком одразу
-  // під назвою і прибита знизу панель «Подати заявку». Розмітка лежить
-  // поруч із десктопною, перемикає її home-mobile/opportunity-mobile.css.
-  const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
-  const deadlineDays = item.deadline ? daysUntil(item.deadline, today) : null;
-  const showDeadlineBlock = Boolean(item.deadline) && !isClosed;
-  // «Коли відбувається» живе окремо від «до коли подати»: у записі можуть
-  // бути обидві дати, одна з них або жодної.
-  const eventDates = formatEventDates(item, lang);
+  // Куди веде основна кнопка: подача, якщо відома, інакше сторінка джерела.
+  // Без прямого посилання на подачу кнопка чесно каже «Перейти до офіційного
+  // сайту»: обіцяти подачу на сторінці без форми не можна. Гурток —
+  // «Записатися на сайті гуртка» (#574).
   const src = publicSource(item);
-  const showBar = Boolean(src.primaryUrl) && !isClosed;
-  // Пряме посилання на подачу, коли воно відоме й відрізняється від адреси
-  // джерела. У пості про сесію ЄМП у Мальме це була Google-форма — єдине,
-  // що людині насправді потрібне, і саме воно не зберігалось, бо колонки
-  // для нього не існувало.
   const applyUrl = src.applyUrl;
-  const clubSignup = item.opportunity_type === 'club' && Boolean(src.applyUrl);
+  const clubSignup = item.opportunity_type === 'club' && Boolean(applyUrl);
+  const primaryUrl = src.primaryUrl;
+  const showBar = Boolean(primaryUrl) && !isClosed;
+  const primaryLabel = applyUrl ? (clubSignup ? t.applyClub : t.apply) : t.goSite;
+  const primaryShort = applyUrl ? (clubSignup ? t.applyClubShort : t.apply) : t.goSiteShort;
+  const primaryPlace = applyUrl ? 'detail_page_apply' : 'detail_page';
+  const primaryRel = applyUrl ? 'noopener noreferrer nofollow' : 'noopener noreferrer';
+
+  // Факти з запису (lib/opportunity-facts.js). Порожнє не показується.
+  const status = intakeStatus(item, today, lang);
+  const facts = pageFacts(item, today, lang);
+  const conditions = applicantConditions(item, lang);
+  const factOf = (k) => facts.find((f) => f.key === k)?.value;
+  const actionSub = [factOf('cost'), factOf('format'), factOf('age')].filter(Boolean).join(' · ');
+
+  const verified = verifiedLabel(item, lang);
+  const verifiedText = verified
+    ? (verifiedKind(item) === 'checked' ? t.checkedOn(verified) : t.linkCheckedOn(verified))
+    : null;
+
+  // Схожі — три картки, спершу з тієї ж підбірки.
+  const similar = [...related.filter(inTopic), ...related.filter((r) => !inTopic(r))].slice(0, 3);
 
   return (
     <>
@@ -603,15 +642,14 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
       ) : null}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbs) }} />
 
-      <div className={`container o-detail${showBar ? ' o-has-bar' : ''}${showBar && applyUrl ? ' o-has-apply' : ''}`} lang={lang}>
-        <nav className="opportunity-breadcrumbs">
-          <Link href={base || '/'}>{t.back}</Link>
-          <ShareButton
-            className="o-share"
-            title={field(item, 'title', lang)}
-            label={t.share}
-            copiedLabel={t.copied}
-          />
+      <div className={`container o-detail${showBar ? ' o-has-bar' : ''}`} lang={lang}>
+        {/* «Головна / {підбірка} / {назва}»; на телефоні лишається «← {підбірка}». */}
+        <nav className="opportunity-breadcrumbs" aria-label={lang === 'en' ? 'Breadcrumbs' : 'Навігація'}>
+          <Link href={base || '/'}>{t.home}</Link>
+          <span aria-hidden="true">/</span>
+          <Link href={crumbHref} className="o-crumb-topic">{crumbName}</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page" className="o-crumb-here" lang={titleLang}>{title}</span>
         </nav>
 
         {isClosed ? (
@@ -630,12 +668,11 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
         <article className={`opportunity-page${isClosed ? ' opportunity-page-closed' : ''}`}>
           <div className="o-main">
+            {/* Вік першим, потім тип — як на картці варіанта B. */}
             <div className="opportunity-chips">
-              {item.featured_week === isoWeek()
-                ? <span className="chip chip-top">{t.topWeek}</span> : null}
+              <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
               <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
               {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
-              <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
               {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
               {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
                 ? <span className="chip chip-paid">{t.paid}</span> : null}
@@ -644,41 +681,53 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               {needs.map((n) => (
                 <span key={n} className="chip chip-need">{NEEDS[n]}</span>
               ))}
+              {item.featured_week === isoWeek()
+                ? <span className="chip chip-top">{t.topWeek}</span> : null}
             </div>
 
-            <div className="o-m-meta">
-              <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>
-                {TYPES[item.opportunity_type] || item.opportunity_type}
-              </span>
-              <span>{ageRangeLabel(item, lang)}</span>
-              {item.cost_type && COSTS[item.cost_type] ? (
-                <>
-                  <span className="o-m-sep" aria-hidden="true">·</span>
-                  <span>{COSTS[item.cost_type]}</span>
-                </>
-              ) : null}
-              {needs.map((n) => (
-                <span key={n}><span className="o-m-sep" aria-hidden="true">· </span>{NEEDS[n]}</span>
-              ))}
-            </div>
+            <h1 className="opportunity-title" lang={titleLang}>{title}</h1>
 
-            <h1 className="opportunity-title" lang={titleLang}>{field(item, 'title', lang)}</h1>
-
-            {showDeadlineBlock ? (
-              <div className="o-m-deadline">
+            {/* Телефон: статус прийому заявок першим, одразу під назвою. */}
+            {status ? (
+              <div className={`o-m-deadline${status.urgent ? ' is-urgent' : ''}`}>
                 <div>
-                  <span className="o-m-eyebrow">{t.deadline}</span>
-                  <span className="o-m-date">{formatDate(item.deadline, lang)}</span>
+                  <span className="o-m-eyebrow">{status.label}</span>
+                  <span className="o-m-date">{status.value}</span>
                 </div>
-                {deadlineDays !== null && deadlineDays >= 0 ? (
-                  <span className={`o-m-days${deadlineDays <= 7 ? ' is-urgent' : ''}`}>
-                    {deadlineDays <= 7 ? '⏰' : '⏳'} {t.daysLeft(deadlineDays)}
-                  </span>
+                {status.note ? (
+                  <span className={`o-m-days${status.urgent ? ' is-urgent' : ''}`}>{status.note}</span>
                 ) : null}
               </div>
             ) : null}
+
             {field(item, 'summary', lang) ? (
               <p className="opportunity-summary" lang={summaryLang}>{field(item, 'summary', lang)}</p>
+            ) : null}
+
+            {/* Ключові факти сіткою: 3×2 на десктопі, 2×2 на телефоні. */}
+            {facts.length ? (
+              <dl className="o-facts">
+                {facts.map((f) => (
+                  <div key={f.key} className={`o-fact o-fact-${f.key}`}>
+                    <dt>{f.label}</dt>
+                    <dd>
+                      {f.urgent ? <span className="o-fact-urgent">{f.value}</span> : f.value}
+                      {f.note ? <span className="o-fact-note">{f.note}</span> : null}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : null}
+
+            {/* Лише з наявних полів: вік, обставини дитини, вимога для підлітка.
+                Без обставин і вимог блоку немає — вигадувати умови не можна. */}
+            {conditions.length ? (
+              <section className="o-who" aria-labelledby="o-who-title">
+                <h2 id="o-who-title" className="o-h2">{t.whoCan}</h2>
+                <ul className="o-who-list">
+                  {conditions.map((c) => <li key={c}>{c}</li>)}
+                </ul>
+              </section>
             ) : null}
 
             <div lang={detailsLang} className={`o-body${isClosed ? ' closed-dim' : ''}`}>
@@ -695,133 +744,101 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 </Link>
               </p>
             ) : null}
+
+            {/* Телефон: панель несе подачу, тож офіційний сайт — посиланням у тексті. */}
+            {!isClosed && applyUrl && src.sourceUrl ? (
+              <p className="o-m-links">
+                <OutboundCta href={src.sourceUrl} title={item.title} id={item.id} lang={lang} className="o-m-link" place="detail_page">
+                  {t.officialSite}
+                </OutboundCta>
+              </p>
+            ) : null}
+
+            {/* «Перевірено {дата} · джерело» + «Щось не так? Повідомити». Три
+                різні перевірки (див. verifiedKind): обіцяємо лише ту, що
+                справді сталась. */}
+            {verifiedText || src.sourceName ? (
+              <div className="o-verified">
+                <span className="o-verified-text">
+                  {verifiedText}
+                  {verifiedText && src.sourceName ? ' · ' : null}
+                  {src.sourceName ? (
+                    <>
+                      {t.sourceWord}:{' '}
+                      {src.sourceUrl
+                        ? <a href={src.sourceUrl} target="_blank" rel="noopener noreferrer">{src.sourceName}</a>
+                        : src.sourceName}
+                    </>
+                  ) : null}
+                </span>
+                <ReportButton
+                  id={item.id}
+                  slug={item.slug}
+                  label={t.report}
+                  doneLabel={t.reported}
+                  moreLabel={t.reportMore}
+                  moreHref={`${base}/contacts?type=error`}
+                />
+              </div>
+            ) : null}
           </div>
 
-          {/* Факти і кнопки — одним блоком: на широкому екрані він стає правою
-              колонкою, що прилипає до верху, поки людина читає опис. */}
-          <div className="o-aside">
-            <dl className="opportunity-meta">
-              {itemFormatLabel(item, lang) && (
-                <>
-                  <dt>{t.format}</dt>
-                  <dd>{itemFormatLabel(item, lang)}</dd>
-                </>
-              )}
-              {detailCountries(item, lang).length > 0 && (
-                <>
-                  <dt>{t.country}</dt>
-                  <dd>{detailCountries(item, lang).join(', ')}</dd>
-                </>
-              )}
-              {detailCities(item).length > 0 && (
-                <>
-                  <dt>{t.city}</dt>
-                  <dd>{detailCities(item).map((c) => cityLabel(c, lang)).join(', ')}</dd>
-                </>
-              )}
-              {eventDates ? (
-                <>
-                  <dt>{t.when}</dt>
-                  <dd>{eventDates}</dd>
-                </>
+          {/* Картка дії: статус великим, одна основна кнопка, офіційний сайт
+              лише коли адреса інша, «Поділитися». Прилипає до верху, поки
+              людина читає. Під нею — блок каналу (єдиний заклик сторінки,
+              рішення 27.09.2026). На телефоні кнопки живуть у нижній панелі. */}
+          <aside className="o-aside">
+            <div className="o-action">
+              {status ? (
+                <div className="o-action-status">
+                  <span className="o-eyebrow">{status.label}</span>
+                  <span className={`o-status${status.urgent ? ' is-urgent' : ''}`}>{status.value}</span>
+                  {status.note ? <span className="o-status-note">{status.note}</span> : null}
+                </div>
               ) : null}
-              {/* Розіграш чи оголошення переможців — окремий факт, не подача й не
-                  проведення (з 17.09.2026). */}
-              {item.results_date ? (
-                <>
-                  <dt>{t.results}</dt>
-                  <dd>{formatDate(item.results_date, lang)}</dd>
-                </>
-              ) : null}
-              {item.deadline && !sameDayAsEvent(item) ? (
-                <>
-                  <dt className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{t.deadline}</dt>
-                  <dd className={showDeadlineBlock ? 'o-dl-deadline' : undefined}>{formatDate(item.deadline, lang)}</dd>
-                </>
-              ) : applicationsNote(item) ? (
-                <>
-                  <dt>{t.applications}</dt>
-                  <dd>{applicationsNote(item) === 'periodic' ? t.annual : t.ongoing}</dd>
-                </>
-              ) : null}
-              {/* Один рядок «Вартість»: категорія і, якщо відомо, сума словами.
-                  Коли 16.09.2026 перерозмітка заповнила price_note на ~260
-                  сторінках, два окремі рядки з однаковим підписом стояли підряд:
-                  «Вартість: €100 — включає проживання…» і «Вартість: Платно». */}
-              {(item.cost_type || item.price_note) && (
-                <>
-                  <dt>{t.cost}</dt>
-                  <dd>
-                    {[item.cost_type && (COSTS[item.cost_type] || item.cost_type), item.price_note]
-                      .filter(Boolean)
-                      .join(' — ')}
-                  </dd>
-                </>
-              )}
-              {item.teen_requirement ? (
-                <>
-                  <dt className="o-m-only">{t.requirement}</dt>
-                  <dd className="o-m-only">{item.teen_requirement}</dd>
-                </>
-              ) : null}
-              {src.sourceName && (
-                <>
-                  <dt>{t.source}</dt>
-                  <dd>
-                    {src.sourceUrl ? (
-                      <>
-                        <span className="o-d-only">{src.sourceName}</span>
-                        <a className="o-m-only" href={src.sourceUrl} target="_blank" rel="noopener noreferrer">
-                          {src.sourceName} ↗
-                        </a>
-                      </>
-                    ) : src.sourceName}
-                  </dd>
-                </>
-              )}
-              {verifiedLabel(item, lang) && (
-                <>
-                  <dt>{verifiedKind(item) === 'checked' ? t.verified : t.linkAlive}</dt>
-                  <dd>✅ {verifiedLabel(item, lang)}</dd>
-                </>
-              )}
-            </dl>
-
-            <div className="opportunity-actions">
-              {src.sourceUrl && (
-                <OutboundCta href={src.sourceUrl} title={item.title} id={item.id} lang={lang} />
-              )}
-              {applyUrl && (
+              {actionSub ? <p className="o-action-sub">{actionSub}</p> : null}
+              {!isClosed && primaryUrl ? (
                 <OutboundCta
-                  href={applyUrl}
+                  href={primaryUrl}
                   title={item.title}
                   id={item.id}
                   lang={lang}
-                  rel="noopener noreferrer nofollow"
-                  className="opportunity-apply"
-                  place="detail_page_apply"
+                  rel={primaryRel}
+                  className="o-btn o-btn-primary"
+                  place={primaryPlace}
+                  apply
                 >
-                  {clubSignup ? t.applyClub : t.apply}
+                  {primaryLabel}
                 </OutboundCta>
-              )}
+              ) : null}
+              {src.sourceUrl && (isClosed || applyUrl) ? (
+                <OutboundCta href={src.sourceUrl} title={item.title} id={item.id} lang={lang} className="o-btn o-btn-secondary" place="detail_page">
+                  {t.officialSite}
+                </OutboundCta>
+              ) : null}
+              <ShareButton
+                className="o-btn o-btn-share"
+                title={title}
+                label={t.shareWith}
+                copiedLabel={t.copied}
+              />
             </div>
-          </div>
+            <TelegramSubscribeBlock place="detail_page" lang={lang} />
+          </aside>
         </article>
 
-        <TelegramSubscribeBlock place="detail_page" lang={lang} />
-
-
-        {related.length > 0 && (
+        {similar.length > 0 && (
           <section className="opportunity-related" aria-labelledby="related-heading">
-            <h2 id="related-heading" className="opportunity-related-title">
-              {t.relatedTitle(ageRangeLabel(item, lang))}
-            </h2>
+            <div className="o-related-head">
+              <h2 id="related-heading" className="opportunity-related-title">{t.similar}</h2>
+              <Link href={crumbHref} className="o-related-all">
+                {topicName ? t.allOf(topicName) : t.allHome}
+              </Link>
+            </div>
             <ul className="opportunity-related-list">
-              {related.map((r) => (
+              {similar.map((r) => (
                 <li key={r.slug}>
-                  {/* Та сама картка, що в каталозі й підбірках
-                      (app/OpportunityCard.js) — раніше вона була зверстана
-                      тут окремо. */}
+                  {/* Та сама картка, що в каталозі й підбірках (app/OpportunityCard.js). */}
                   <OpportunityCard item={r} lang={lang} today={today} href={`${base}/o/${r.slug}`} />
                 </li>
               ))}
@@ -829,39 +846,31 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           </section>
         )}
 
-        {/* Блоку Dityam+ тут більше немає (рішення Марії 27.09.2026,
-            «сходинка»: сайт веде в канал, Dityam+ продає сам канал). Заклик
-            сторінки — блок каналу одразу під описом; далі схожі можливості
-            й футер із навігацією по сайту. */}
+        {/* Блоку Dityam+ тут немає (рішення Марії 27.09.2026, «сходинка»:
+            сайт веде в канал, Dityam+ продає сам канал). */}
       </div>
 
       <Footer lang={lang} />
 
+      {/* Панель під пальцем: «Подати заявку ↗» і «Поділитися» (з 29.09.2026
+          замість 🧡 — підтримати сайт можна з шапки й футера). Панель несе
+          саме подачу: з прямим посиланням — на нього, без нього — на сайт
+          організатора, і тоді підпис не обіцяє подачі. */}
       {showBar ? (
         <div className="o-m-bar">
-          <a
-            href={MONOBANK_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="o-m-heart"
-            aria-label={t.support}
-          >
-            <span aria-hidden="true">🧡</span>
-          </a>
-          {/* Панель несе саме подачу: коли пряме посилання відоме — веде на
-              нього, а не на пост у джерелі. У тексті тоді лишається чорна
-              кнопка на офіційний сайт (opportunity-mobile.css), інакше на
-              телефоні дві однакові «Подати заявку» вели б у різні місця. */}
           <OutboundCta
-            href={src.primaryUrl}
+            href={primaryUrl}
             title={item.title}
             lang={lang}
+            rel={primaryRel}
             className="o-m-apply"
             place="detail_page_bar"
             id={item.id}
+            apply
           >
-            {clubSignup ? t.applyClubShort : t.apply}
+            {primaryShort}
           </OutboundCta>
+          <ShareButton className="o-m-share" icon title={title} label={t.shareWith} copiedLabel={t.copied} />
         </div>
       ) : null}
 
