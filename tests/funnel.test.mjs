@@ -49,3 +49,45 @@ test('джерела: сортування за тими, хто оплатив'
   assert.deepEqual(r[0], { source: 'site', all: 2, paid: 1 });
   assert.equal(r[1].source, 'channel');
 });
+
+// --- верхні кроки: сайт ---
+//
+// Спершу воронка починалась аж із бота, і на головне питання — де з двох тисяч
+// відвідувачів лишаються одиниці — не відповідала.
+test('воронка починається на сайті, коли є події', () => {
+  const f = plusFunnel({
+    subs: [sub(1, { consent_at: 'x', wfp_order_reference: 'r', status: 'active' })],
+    childIds: new Set([1]),
+    site: { visit: 2000, plus_view: 40, plus_click: 12 },
+  });
+  assert.deepEqual(f.map((s) => s.key),
+    ['visit', 'plus_view', 'plus_click', 'bot', 'consent', 'started', 'filled', 'pay', 'paid']);
+  assert.equal(f[0].n, 2000);
+  // Втрата між сайтом і сторінкою Dityam+ — найбільша, і це має бути видно.
+  assert.equal(f[1].drop, 1960);
+  assert.equal(f[1].dropShare, 98);
+});
+
+test('без подій сайту воронка починається з бота, як раніше', () => {
+  const f = plusFunnel({ subs: [sub(1)], childIds: new Set(), site: {} });
+  assert.equal(f[0].key, 'bot');
+  assert.equal(f[0].drop, null);
+});
+
+test('частка рахується від першого кроку воронки, а не від бота', () => {
+  const f = plusFunnel({
+    subs: [sub(1, { status: 'active' })], childIds: new Set(),
+    site: { visit: 100, plus_view: 10, plus_click: 5 },
+  });
+  assert.equal(f.find((s) => s.key === 'paid').share, 1);  // 1 зі 100
+});
+
+test('перехід сайт → бот рахує втрату проти кліків, а не проти візитів', () => {
+  const f = plusFunnel({
+    subs: [sub(1), sub(2)], childIds: new Set(),
+    site: { visit: 500, plus_view: 20, plus_click: 6 },
+  });
+  const bot = f.find((s) => s.key === 'bot');
+  assert.equal(bot.n, 2);
+  assert.equal(bot.drop, 4);
+});

@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
 import { NO_ANALYTICS_KEY, PRODUCTION_HOST, isInternalPath } from '@/lib/analytics-scope';
+import { markVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
 
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
@@ -49,6 +50,32 @@ export function Analytics() {
   useEffect(() => {
     if (!internal) return;
     try { localStorage.setItem(NO_ANALYTICS_KEY, '1'); } catch { /* приватний режим */ }
+  }, [internal]);
+
+  // Верхні кроки воронки — у власну базу, бо з GA4 їх не дістати в адмінку
+  // (lib/site-events.js). «Зайшов» рахуємо раз на сесію, «відкрив Dityam+» —
+  // на кожному заході на /plus.
+  useEffect(() => {
+    if (internal) return;
+    markVisit();
+  }, [internal]);
+
+  useEffect(() => {
+    if (internal || !isPlusPath(pathname)) return;
+    sendSiteEvent(SITE_EVENTS.PLUS_VIEW);
+  }, [internal, pathname]);
+
+  // Перехід у бота Dityam+ звідки завгодно. Слухаємо документ, а не правимо
+  // шість файлів із такими посиланнями: так жодна кнопка не загубиться й
+  // наступна порахується сама.
+  useEffect(() => {
+    if (internal) return undefined;
+    const onPlusClick = (e) => {
+      const a = e.target instanceof Element ? e.target.closest('a[href*="DityamPlusBot"]') : null;
+      if (a) sendSiteEvent(SITE_EVENTS.PLUS_CLICK);
+    };
+    document.addEventListener('click', onPlusClick, true);
+    return () => document.removeEventListener('click', onPlusClick, true);
   }, [internal]);
 
   // Клік по картці можливості з будь-якої сторінки — одна подія card_click.
