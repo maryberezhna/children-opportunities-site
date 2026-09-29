@@ -95,6 +95,9 @@ const L = {
     share: 'Поділитися ↗',
     copied: 'Посилання скопійовано',
     apply: 'Подати заявку ↗',
+    // Гурток: до нього не «подаються», а записуються — і форма їхня, не наша.
+    applyClub: 'Записатися на сайті гуртка ↗',
+    applyClubShort: 'Записатися ↗',
     support: 'Підтримати dityam.com.ua',
     requirement: 'Треба',
     daysLeft: (n) => (n === 0 ? 'сьогодні' : `${n} ${plural(n, 'день', 'дні', 'днів')}`),
@@ -130,6 +133,8 @@ const L = {
     share: 'Share ↗',
     copied: 'Link copied',
     apply: 'Apply ↗',
+    applyClub: 'Sign up on the club’s site ↗',
+    applyClubShort: 'Sign up ↗',
     support: 'Support dityam.com.ua',
     requirement: 'You need',
     daysLeft: (n) => (n === 0 ? 'today' : `${n} ${n === 1 ? 'day' : 'days'}`),
@@ -585,6 +590,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // що людині насправді потрібне, і саме воно не зберігалось, бо колонки
   // для нього не існувало.
   const applyUrl = src.applyUrl;
+  const clubSignup = item.opportunity_type === 'club' && Boolean(src.applyUrl);
 
   return (
     <>
@@ -779,17 +785,20 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
             <div className="opportunity-actions">
               {src.sourceUrl && (
-                <OutboundCta href={src.sourceUrl} title={item.title} lang={lang} />
+                <OutboundCta href={src.sourceUrl} title={item.title} id={item.id} lang={lang} />
               )}
               {applyUrl && (
-                <a
+                <OutboundCta
                   href={applyUrl}
-                  target="_blank"
+                  title={item.title}
+                  id={item.id}
+                  lang={lang}
                   rel="noopener noreferrer nofollow"
                   className="opportunity-apply"
+                  place="detail_page_apply"
                 >
-                  {t.apply}
-                </a>
+                  {clubSignup ? t.applyClub : t.apply}
+                </OutboundCta>
               )}
             </div>
           </div>
@@ -845,8 +854,9 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
             lang={lang}
             className="o-m-apply"
             place="detail_page_bar"
+            id={item.id}
           >
-            {t.apply}
+            {clubSignup ? t.applyClubShort : t.apply}
           </OutboundCta>
         </div>
       ) : null}
