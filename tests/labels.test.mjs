@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatLabel, isEvent } from '../lib/labels.js';
+import { readFileSync } from 'node:fs';
+import { formatLabel, isEvent, itemFormatLabel, PAYMENT_TYPES } from '../lib/labels.js';
 
 // Поле format у базі — enum (CHECK-констрейнт від 01.09.2026). Картка має
 // розуміти всі три значення обома мовами, а на сміття відповідати null.
@@ -31,4 +32,20 @@ test('isEvent дивиться на дати проведення, а не на 
   assert.equal(isEvent({ opportunity_type: 'exchange', deadline: '2026-09-17' }), false);
   assert.equal(isEvent({ opportunity_type: 'competition' }), false);
   assert.equal(isEvent(null), false);
+});
+
+// Виплатам формат не показуємо (Марія, 29.09.2026) — ні на картці, ні на
+// сторінці можливості, ні в адмінці.
+test('itemFormatLabel мовчить для виплат', () => {
+  assert.equal(itemFormatLabel({ opportunity_type: 'allowance', format: 'online' }), null);
+  assert.equal(itemFormatLabel({ opportunity_type: 'support_payment', format: 'offline' }), null);
+  assert.equal(itemFormatLabel({ opportunity_type: 'camp', format: 'offline' }), 'На місці');
+  assert.equal(itemFormatLabel({ opportunity_type: 'course', format: 'online' }, 'en'), 'Online');
+});
+
+// Той самий перелік виплат, що звільнений від дати в критеріях публікації:
+// якщо зʼявиться третій тип виплати, він має з'явитись в обох місцях.
+test('PAYMENT_TYPES збігається з виплатами в publish-criteria', () => {
+  const crit = JSON.parse(readFileSync(new URL('../lib/publish-criteria.json', import.meta.url)));
+  assert.deepEqual([...PAYMENT_TYPES].sort(), [...crit.required.date.except_types].sort());
 });

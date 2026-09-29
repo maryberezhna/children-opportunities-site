@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
 import { sourceUrlProblem } from '@/lib/source-link';
+import { PAYMENT_TYPES } from '@/lib/labels';
 
 const FORMATS = [['', '— не визначено —'], ['online', 'Онлайн'], ['offline', 'Офлайн'], ['hybrid', 'Онлайн і офлайн']];
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
@@ -161,7 +162,10 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         <div style={{ flex: '1 1 170px' }}><label style={L}>Вартість</label><select style={I} value={f.cost_type} onChange={up('cost_type')}>{COST.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 170px' }}><label style={L}>Формат</label><select style={I} value={f.format} onChange={up('format')}>{FORMATS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+        {/* Виплатам формат не потрібен — на сайті його теж не показуємо (lib/labels.js, PAYMENT_TYPES). */}
+        {PAYMENT_TYPES.includes(f.opportunity_type) ? null : (
+          <div style={{ flex: '1 1 170px' }}><label style={L}>Формат</label><select style={I} value={f.format} onChange={up('format')}>{FORMATS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+        )}
         <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
       </div>
       <label style={L}>Міста <span style={{ fontWeight: 400, color: '#8a94a6' }}>— через кому; порожньо, якщо онлайн або за кордоном</span></label>
