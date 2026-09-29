@@ -8,15 +8,16 @@ import { trackOpportunityClick } from '@/lib/track';
 // place розрізняє кнопку в тексті сторінки й прибиту панель на телефоні —
 // щоб бачити, котра з них працює.
 export default function OutboundCta({
-  href, title, lang = 'uk', className = 'opportunity-cta', place = 'detail_page', children,
+  href, title, id = null, lang = 'uk', className = 'opportunity-cta', place = 'detail_page',
+  rel = 'noopener noreferrer', children,
 }) {
   return (
     <a
       href={href}
       target="_blank"
-      rel="noopener noreferrer"
+      rel={rel}
       className={className}
-      onClick={() => trackOpportunityClick(title, place)}
+      onClick={() => trackOpportunityClick(title, place, id)}
     >
       {children || (lang === 'en' ? 'Go to the official site ↗' : 'Перейти до офіційного сайту ↗')}
     </a>
