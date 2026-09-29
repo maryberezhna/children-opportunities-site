@@ -107,6 +107,11 @@ export function Analytics() {
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
+          // A/B-тест картки (lib/ab-card.js): варіант — user property, до
+          // config, щоб його ніс уже перший page_view. Без cookie — A.
+          gtag('set', 'user_properties', {
+            ab_card: (document.cookie.match(/(?:^|;\\s*)ab_card=(A|B)(?:;|$)/) || [])[1] || 'A'
+          });
           gtag('config', '${GA_ID}');
           ${ADS_ID ? `gtag('config', '${ADS_ID}');` : ''}
         `}

@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  AB_CARD_COOKIE, AB_CARD_MAX_AGE, AB_CARD_BOOT_SCRIPT, abCardFromCookie, abCardFromSearch,
+  AB_CARD_COOKIE, AB_CARD_MAX_AGE, AB_CARD_BOOT_SCRIPT, AB_CARD_MODE,
+  abCardFromCookie, abCardFromSearch, abCardForRequest, pickAbCard,
 } from '../lib/ab-card.js';
 import { whenLabel, costLabel, formatPlace, organiserName, cardFacts, shortDate } from '../lib/card-facts.js';
 
@@ -131,4 +132,50 @@ test('cardFacts: порожні поля — null, а не заглушки', ()
   assert.equal(shortDate('2026-10-03', today), '3 жовт');
   assert.equal(shortDate('2027-10-03', today), '3 жовт 2027');
   assert.equal(shortDate(null, today), null);
+});
+
+// ── Розподіл 50/50 (middleware.js) ─────────────────────────────────────────
+test('жереб дає рівно A або B', () => {
+  assert.equal(pickAbCard(() => 0.1), 'A');
+  assert.equal(pickAbCard(() => 0.9), 'B');
+  const seen = new Set(Array.from({ length: 200 }, () => pickAbCard()));
+  assert.deepEqual([...seen].sort(), ['A', 'B']);
+});
+
+test('cookie є — варіант сталий і не переставляється', () => {
+  assert.deepEqual(abCardForRequest({ cookie: 'ab_card=B', mode: 'split' }), { variant: 'B', set: false });
+  assert.deepEqual(abCardForRequest({ cookie: 'dityam_lang=uk; ab_card=A', mode: 'split' }), { variant: 'A', set: false });
+});
+
+test('новому відвідувачу — жереб і cookie; боту — A без cookie', () => {
+  assert.deepEqual(abCardForRequest({ mode: 'split', random: () => 0.9 }), { variant: 'B', set: true });
+  assert.deepEqual(abCardForRequest({ mode: 'split', random: () => 0.1 }), { variant: 'A', set: true });
+  assert.deepEqual(abCardForRequest({ mode: 'split', isBot: true }), { variant: 'A', set: false });
+});
+
+test('?ab_card= в адресі — явний вибір понад усе', () => {
+  assert.deepEqual(abCardForRequest({ cookie: 'ab_card=A', search: '?ab_card=B', mode: 'split' }), { variant: 'B', set: true });
+  assert.deepEqual(abCardForRequest({ search: '?x=1&ab_card=A', isBot: true, mode: 'split' }), { variant: 'A', set: true });
+});
+
+test('вимикач: режим A чи B переставляє cookie всім', () => {
+  assert.deepEqual(abCardForRequest({ cookie: 'ab_card=B', mode: 'A' }), { variant: 'A', set: true });
+  assert.deepEqual(abCardForRequest({ cookie: 'ab_card=A', mode: 'A' }), { variant: 'A', set: false });
+  assert.deepEqual(abCardForRequest({ mode: 'B', isBot: true }), { variant: 'B', set: true });
+  assert.ok(['split', 'A', 'B'].includes(AB_CARD_MODE));
+});
+
+test('middleware ставить cookie через abCardForRequest, а події GA4 несуть ab_card', () => {
+  const mw = read('middleware.js');
+  assert.ok(mw.includes('abCardForRequest('), 'middleware не розподіляє варіант');
+  assert.ok(mw.includes('res.cookies.set(AB_CARD_COOKIE'), 'middleware не ставить cookie ab_card');
+  assert.ok(/isBot: BOTS\.test/.test(mw), 'боти мають лишатись без cookie');
+  const track = read('lib/track.js');
+  for (const ev of ["'event', name, withAbCard(", "'card_click', withAbCard(", "'filter_apply', withAbCard(", "'search', withAbCard("]) {
+    assert.ok(track.includes(ev), `у lib/track.js подія без ab_card: ${ev}`);
+  }
+  const analytics = read('app/Analytics.js');
+  assert.ok(/gtag\('set', 'user_properties', \{\s*ab_card:/.test(analytics), 'user property ab_card не ставиться');
+  assert.ok(analytics.indexOf("'user_properties'") < analytics.indexOf("gtag('config', '${GA_ID}')"),
+    'user property має стояти до config, інакше перший page_view без варіанта');
 });
