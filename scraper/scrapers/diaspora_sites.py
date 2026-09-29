@@ -672,9 +672,15 @@ async def _link_items(client, site: dict, now: datetime, stats: dict) -> list[di
         if r is None:
             stats["page_failed"] = stats.get("page_failed", 0) + 1
             continue
+        title = page_title(r.text)
+        # Звіт про минуле і рубрики, що за сайтом ніколи не наші (події МАН
+        # для педагогів), до моделі не йдуть — як і в стрічках.
+        if is_report(title) or skipped_title(site, title):
+            stats["report"] = stats.get("report", 0) + 1
+            continue
         start, end = (cfg.get("trim") or [None, None])
         text = trim(page_text(r.text), start, end)
-        items.append(_item(site, str(r.url), page_title(r.text), _stable(site, text)))
+        items.append(_item(site, str(r.url), title, _stable(site, text)))
     return items
 
 

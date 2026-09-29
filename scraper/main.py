@@ -35,6 +35,7 @@ from scrapers import (
     cprs_kyiv,
     diaspora_schools,
     diaspora_sites,
+    organizer_sites,
     diia_osvita,
     mon_cells,
     easy_gov,
@@ -104,6 +105,10 @@ SCRAPERS = [
     # школи з вартістю з реєстру, обхід раз на місяць.
     ("Реєстр осередків за кордоном (МОН, aikom.iea.gov.ua)", mon_cells, "diaspora"),
     # Тематичні / міжнародні
+    # Сайти самих організаторів конкурсів і програм для підлітків (29.09.2026):
+    # МАН, Київська МАН, Klitschko Foundation… Кожен — окреме джерело з
+    # власним рядком у sources і тижневим обходом.
+    *organizer_sites.scrapers(),
     ("UNICEF", unicef, "thematic"),
     # «Дитина їде за кордон» — пріоритет 1 від 03.09.2026: попит (топ-15
     # переглядів — суцільні обміни й закордонні програми) не мав системних
