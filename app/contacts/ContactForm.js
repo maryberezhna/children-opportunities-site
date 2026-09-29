@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
 
 /**
@@ -26,6 +26,8 @@ const L = {
     sending: 'Надсилаємо…',
     submit: 'Надіслати',
     privacy: 'Контакт потрібен лише, щоб відповісти вам. Реклами не надсилаємо. Як обробляємо дані — у політиці конфіденційності.',
+    consent: 'Можна опублікувати мою історію на Dityam.com.ua з моїм іменем. Контакт не публікуємо ніколи.',
+    storyDone: 'Дякуємо, що поділились! Для нас це найкращий доказ, що платформа працює.',
   },
   en: {
     doneTitle: 'Thank you, your message arrived!',
@@ -45,6 +47,8 @@ const L = {
     sending: 'Sending…',
     submit: 'Send',
     privacy: 'We only use your contact to reply to you. We don’t send advertising. How we handle data is in the privacy policy.',
+    consent: 'You may publish my story on Dityam.com.ua with my name. My contact is never published.',
+    storyDone: 'Thank you for sharing! It’s the best proof that the platform works.',
   },
 };
 
@@ -54,6 +58,14 @@ export default function ContactForm({ lang = 'uk' }) {
   const [type, setType] = useState('opportunity');
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [form, setForm] = useState({ message: '', name: '', contact: '', url: '', website: '' });
+  const [consent, setConsent] = useState(false);
+
+  // /contacts?type=story — сюди веде щомісячний пост у каналі. Читаємо з
+  // location, а не useSearchParams, щоб сторінка лишалась статичною.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get('type');
+    if (wanted && CONTACT_TYPE_MAP[wanted]) setType(wanted);
+  }, []);
 
   const active = CONTACT_TYPE_MAP[type];
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -77,6 +89,7 @@ export default function ContactForm({ lang = 'uk' }) {
         body: JSON.stringify({
           ...form,
           type,
+          publish_consent: type === 'story' && consent,
           page: typeof window !== 'undefined' ? window.location.pathname : '',
         }),
       });
@@ -84,6 +97,7 @@ export default function ContactForm({ lang = 'uk' }) {
       if (!res.ok || !json.ok) throw new Error('failed');
       setState('done');
       setForm({ message: '', name: '', contact: '', url: '', website: '' });
+      setConsent(false);
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'contact_submit', { event_category: 'engagement', event_label: type });
       }
@@ -97,7 +111,7 @@ export default function ContactForm({ lang = 'uk' }) {
       <div className="contact-form-done">
         <div className="contact-form-done-icon">🧡</div>
         <h3>{t.doneTitle}</h3>
-        <p>{t.doneText}</p>
+        <p>{type === 'story' ? t.storyDone : t.doneText}</p>
         <button type="button" className="contact-form-again" onClick={() => setState('idle')}>
           {t.again}
         </button>
@@ -169,6 +183,14 @@ export default function ContactForm({ lang = 'uk' }) {
           />
         </label>
       </div>
+
+      {/* Галочка за замовчуванням знята: дозвіл має бути явною дією людини. */}
+      {type === 'story' && (
+        <label className="contact-consent">
+          <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
+          <span>{t.consent}</span>
+        </label>
+      )}
 
       {/* honeypot: приховане поле для ботів */}
       <input

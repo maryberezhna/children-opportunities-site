@@ -92,6 +92,12 @@ function Message({ row, onChange }) {
         {row.message}
       </p>
 
+      {row.type === 'story' && (
+        <p style={{ ...metaS, margin: '0 0 8px', fontWeight: 600, color: row.publish_consent ? '#15803d' : '#b42318' }}>
+          {row.publish_consent ? '✅ Можна опублікувати на сайті з іменем' : '🔒 Публікувати не можна — лише для нас'}
+        </p>
+      )}
+
       {row.url && (
         <p style={{ margin: '0 0 8px' }}>
           <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: 14 }}>
