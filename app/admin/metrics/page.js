@@ -92,7 +92,7 @@ export default async function MetricsPage() {
   const {
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
-    subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
+    subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes, siteRes,
   } = await allNamed({
     active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     drafts: count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -110,6 +110,8 @@ export default async function MetricsPage() {
     allSubsRes: supabase.from('digest_subscribers')
       .select('id, status, consent_at, flow_step, wfp_order_reference, source'),
     kidsRes: supabase.from('plus_children').select('subscriber_id'),
+    // Верхні кроки воронки — власні лічильники сайту (lib/site-events.js).
+    siteRes: supabase.from('site_events').select('name'),
     snapshotsRes: supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
     promoRes: supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
@@ -120,7 +122,9 @@ export default async function MetricsPage() {
   const subs = subsRes.data || [];
   const allSubs = allSubsRes.data || [];
   const childIds = new Set((kidsRes.data || []).map((k) => k.subscriber_id));
-  const funnel = plusFunnel({ subs: allSubs, childIds });
+  const site = {};
+  for (const e of siteRes.data || []) site[e.name] = (site[e.name] || 0) + 1;
+  const funnel = plusFunnel({ subs: allSubs, childIds, site });
   const sources = plusSources(allSubs);
   const funnelFirst = funnel[0]?.n || 0;
   const half = subs.filter((s) => s.billing_period === 'halfyear').length;
@@ -229,7 +233,9 @@ export default async function MetricsPage() {
           <p style={noteS}>
             Колонки: скільки людей · частка від першого кроку · скільки втратили саме тут.
             Хто де завис поіменно — на <a href="/admin/plus">сторінці Dityam+</a>.
-            Перший крок «побачив Dityam+ на сайті» сюди не входить: він живе в GA4, а не в нашій базі.
+            {site.visit
+              ? 'Кроки сайту рахуємо своїми лічильниками з 29.09.2026 — до того їх ніхто не збирав, тож перші дні числа будуть неповні. Ваші заходи (?noga=1) не рахуються.'
+              : 'Кроків сайту ще немає: лічильники ввімкнено 29.09.2026, перші числа з’являться за кілька годин.'}
           </p>
           {sources.length > 1 && (
             <div style={{ overflowX: 'auto', marginTop: 10 }}>
