@@ -161,23 +161,23 @@ class Cost(unittest.TestCase):
 
 
 class DigestMessage(unittest.TestCase):
-    def test_steps_block_continues_numbering(self):
+    def test_steps_block_after_items(self):
         item = opp("n1", title="Нове під профіль")
         step = dict(opp("y", title="Мала академія наук"), _after="Олімпіада МОН",
                     _stage="applying", _ladder_id="l1")
-        text = pd.build_telegram(SUB, [item], steps=[step])
-        self.assertIn("🧡 <b>Нові можливості для вашої дитини</b>", text)
-        self.assertIn("🪜 <b>Наступна сходинка</b>", text)
-        self.assertIn("2. <a href", text)
-        self.assertIn("Після «Олімпіада МОН», на яку ви подаєтесь.", text)
-        kb = pd.telegram_keyboard([item, step])["inline_keyboard"]
-        self.assertEqual(kb[1][0]["text"], "✍️ 2")
+        msgs = pd.build_messages(SUB, [item], steps=[step])
+        texts = [t for t, _ in msgs]
+        self.assertIn("🧡 <b>Нові можливості для вашої дитини</b>", texts[0])
+        self.assertEqual(texts[2], "🪜 <b>Наступна сходинка</b>")
+        self.assertIn("Мала академія наук", texts[3])
+        self.assertIn("Після «Олімпіада МОН», на яку ви подаєтесь.", texts[3])
+        self.assertIsNotNone(msgs[3][1])
 
     def test_only_steps(self):
         step = dict(opp("y"), _after="X", _stage="applying", _ladder_id="l1")
-        text = pd.build_telegram(SUB, [], steps=[step])
-        self.assertTrue(text.startswith("🪜 <b>Наступна сходинка</b>"))
-        self.assertNotIn("Нові можливості", text)
+        msgs = pd.build_messages(SUB, [], steps=[step])
+        self.assertTrue(msgs[0][0].startswith("🪜 <b>Наступна сходинка</b>"))
+        self.assertNotIn("Нові можливості", " ".join(t for t, _ in msgs))
 
 
 class AdminCard(unittest.TestCase):

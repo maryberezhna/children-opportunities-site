@@ -553,7 +553,7 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
 
           {/* Флоу підписки на одній можливості: дайджест → «Цікаво» → календар →
               нагадування. Формат повідомлень — scraper/personal_digest.py
-              (build_telegram) і scraper/deadline_reminders.py.
+              (build_messages) і scraper/deadline_reminders.py.
               ISEF Ukraine звірено з базою 14.09.2026: 14–17, безкоштовно,
               конкурс (нагадування за 14 і 3 дні), подача до 31.01.2027.
               Кнопки «Цікаво / Не цікаво» і «Додати в календар» є і в

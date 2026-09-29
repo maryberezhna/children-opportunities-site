@@ -133,7 +133,7 @@ export default function PlusFlowDemo({ f }) {
   );
 }
 
-// Формат — scraper/personal_digest.py build_telegram і
+// Формат — scraper/personal_digest.py build_messages (картка на можливість) і
 // scraper/deadline_reminders.py build_text.
 function TgScreen({ f, step }) {
   // Анкета: те саме, що бачить людина в боті — питання про конкретну дитину
