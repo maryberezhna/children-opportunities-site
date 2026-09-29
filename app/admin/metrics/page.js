@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
+import { plusFunnel, plusSources } from '@/lib/funnel';
 import LoginForm from '../LoginForm';
 
 export const runtime = 'nodejs';
@@ -23,6 +24,28 @@ const numS = { fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', fontVari
 const labS = { fontSize: 12.5, color: '#54617a', marginTop: 2, lineHeight: 1.35 };
 const h2S = { fontSize: 17, margin: '28px 0 2px' };
 const noteS = { fontSize: 13, color: '#8a94a6', margin: '4px 0 0' };
+
+// Рядок воронки: смужка завширшки як частка від першого кроку, поруч —
+// скільки людей і скільки з них ми втратили на цьому переході.
+function FunnelRow({ s, first }) {
+  const w = first ? Math.max((s.n / first) * 100, 1.5) : 0;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '7px 0', borderBottom: '1px solid #f0f3f8' }}>
+      <div style={{ width: 190, fontSize: 13.5, flexShrink: 0 }}>
+        {s.label}
+        {s.hint && <div style={{ fontSize: 11.5, color: '#8a94a6' }}>{s.hint}</div>}
+      </div>
+      <div style={{ flex: 1, minWidth: 60 }}>
+        <div style={{ width: `${w}%`, height: 20, borderRadius: 4, background: s.key === 'paid' ? '#15803d' : '#c8501a' }} />
+      </div>
+      <div style={{ width: 62, textAlign: 'right', fontWeight: 800, fontVariantNumeric: 'tabular-nums' }}>{s.n}</div>
+      <div style={{ width: 52, textAlign: 'right', fontSize: 12.5, color: '#8a94a6', fontVariantNumeric: 'tabular-nums' }}>{s.share}%</div>
+      <div style={{ width: 92, textAlign: 'right', fontSize: 12.5, color: s.drop ? '#b3372e' : '#c3cad6', fontVariantNumeric: 'tabular-nums' }}>
+        {s.drop ? `−${s.drop} (−${s.dropShare}%)` : '—'}
+      </div>
+    </div>
+  );
+}
 
 function Card({ value, delta, label }) {
   return (
@@ -68,7 +91,7 @@ export default async function MetricsPage() {
   const [
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
-    subsRes, snapshotsRes, promoRes, actionsRes,
+    subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
   ] = await Promise.all([
     count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -81,6 +104,11 @@ export default async function MetricsPage() {
     count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7)), 'opportunity_id'),
     count(supabase, 'opportunity_outcomes'),
     supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
+    // Уся воронка, а не лише ті, хто дійшов: саме ті, хто НЕ дійшов,
+    // і показують, де ми їх втрачаємо.
+    supabase.from('digest_subscribers')
+      .select('id, status, consent_at, flow_step, wfp_order_reference, source'),
+    supabase.from('plus_children').select('subscriber_id'),
     supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
     supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
@@ -89,6 +117,11 @@ export default async function MetricsPage() {
   ]);
 
   const subs = subsRes.data || [];
+  const allSubs = allSubsRes.data || [];
+  const childIds = new Set((kidsRes.data || []).map((k) => k.subscriber_id));
+  const funnel = plusFunnel({ subs: allSubs, childIds });
+  const sources = plusSources(allSubs);
+  const funnelFirst = funnel[0]?.n || 0;
   const half = subs.filter((s) => s.billing_period === 'halfyear').length;
   const yearly = subs.filter((s) => s.billing_period === 'yearly').length;
   const monthly = subs.length - half - yearly;
@@ -183,6 +216,44 @@ export default async function MetricsPage() {
         Сесії, органіка і AI-трафік — у <a href="https://analytics.google.com" target="_blank" rel="noreferrer">GA4</a> та{' '}
         <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>. Щоб бачити їх тут — потрібен сервісний ключ GA4 (напишіть Claude «підключи GA4 до метрик»).
       </p>
+
+      <h2 style={h2S}>🪜 Воронка Dityam+</h2>
+      {funnelFirst === 0 ? (
+        <p style={noteS}>Ще ніхто не відкривав бота.</p>
+      ) : (
+        <>
+          <div style={{ ...cardS, padding: '4px 14px 8px' }}>
+            {funnel.map((f) => <FunnelRow key={f.key} s={f} first={funnelFirst} />)}
+          </div>
+          <p style={noteS}>
+            Колонки: скільки людей · частка від першого кроку · скільки втратили саме тут.
+            Хто де завис поіменно — на <a href="/admin/plus">сторінці Dityam+</a>.
+            Перший крок «побачив Dityam+ на сайті» сюди не входить: він живе в GA4, а не в нашій базі.
+          </p>
+          {sources.length > 1 && (
+            <div style={{ overflowX: 'auto', marginTop: 10 }}>
+              <table style={{ borderCollapse: 'collapse', fontSize: 13.5, width: '100%', fontVariantNumeric: 'tabular-nums' }}>
+                <thead>
+                  <tr style={{ textAlign: 'left', color: '#54617a' }}>
+                    {['Звідки прийшли', 'Усього', 'Оплатили'].map((h) => (
+                      <th key={h} style={{ padding: '6px 10px', borderBottom: '1px solid #e3e8f0' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {sources.map((r) => (
+                    <tr key={r.source}>
+                      <td style={{ padding: '5px 10px' }}>{r.source}</td>
+                      <td style={{ padding: '5px 10px' }}>{r.all}</td>
+                      <td style={{ padding: '5px 10px', color: r.paid ? '#15803d' : '#8a94a6' }}>{r.paid}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </>
+      )}
 
       <h2 style={h2S}>💰 Dityam+</h2>
       <div style={grid}>
