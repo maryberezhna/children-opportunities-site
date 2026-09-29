@@ -257,10 +257,23 @@ export const addDays = (iso, n) =>
 export const kyivIso = (date = new Date()) =>
   date.toLocaleDateString('en-CA', { timeZone: 'Europe/Kyiv' });
 
+/**
+ * Щомісячний пост поза ротацією: прохання розповісти, куди потрапила дитина.
+ * Відгуків на сайті ми не вигадуємо (29.09.2026), тож збираємо справжні:
+ * посилання веде на /contacts?type=story, де людина лишає імʼя, контакт і
+ * окремо ставить позначку, що історію можна опублікувати.
+ *
+ * Пост займає місце теми дня, а не додається до неї: у каналі один пост на
+ * день (21.09.2026). Тема, що випала на цей день, просто пропускається.
+ */
+export const MONTHLY_DAY = 15;
+export const MONTHLY_ENTRY = { key: 'file-istoriyi', kind: 'file', file: 'istoriyi.html' };
+
 /** Запис плану на дату. До PLAN_START і після кінця циклу — по колу. */
 export function planEntryFor(dateIso) {
   const n = ROTATION.length;
   const days = Math.round((Date.parse(`${dateIso}T00:00:00Z`) - Date.parse(`${PLAN_START}T00:00:00Z`)) / DAY_MS);
   const index = ((days % n) + n) % n;
+  if (Number(dateIso.slice(8, 10)) === MONTHLY_DAY) return { ...MONTHLY_ENTRY, index };
   return { ...ROTATION[index], index };
 }

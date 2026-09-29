@@ -51,6 +51,7 @@ const FILE_LABEL = {
   'onlain.html': 'готовий пост: онлайн',
   'dedlainy-dva-tyzhni.html': 'готовий пост: дедлайни двох тижнів',
   'za-kordonom.html': 'готовий пост: за кордоном',
+  'istoriyi.html': 'раз на місяць: просимо історії родин',
 };
 
 function planLabel(entry) {

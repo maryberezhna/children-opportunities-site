@@ -121,6 +121,24 @@
   color: #b3372e;
 }
 
+.contact-consent {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.contact-consent input {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #c8501a;
+}
+
 .contact-privacy {
   margin: -8px 0 0;
   font-size: 0.8125rem;

@@ -27,6 +27,8 @@ export async function POST(request) {
   const contact = str(b.contact, 200);
   const url = str(b.url, 500);
   const page = str(b.page, 300);
+  // Дозвіл на публікацію має сенс лише для історії; без нього історію не публікуємо.
+  const publishConsent = type === 'story' && b.publish_consent === true;
 
   if (message.length < 10) {
     return Response.json({ ok: false, error: 'short' }, { status: 400 });
@@ -51,6 +53,7 @@ export async function POST(request) {
     message,
     url: url || null,
     page: page || null,
+    publish_consent: publishConsent,
   });
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
 
@@ -63,6 +66,7 @@ export async function POST(request) {
       '',
       esc(message).slice(0, 1200),
       url ? `\n🔗 ${esc(url)}` : null,
+      type === 'story' ? (publishConsent ? '\n✅ Можна опублікувати з іменем' : '\n🔒 Публікувати не можна') : null,
       `\n👤 ${esc([name, contact].filter(Boolean).join(' · '))}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',

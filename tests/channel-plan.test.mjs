@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { ROTATION, PLAN_START, FALLBACK_TOPIC, planEntryFor, addDays } from '../scripts/channel-plan.mjs';
+import { ROTATION, PLAN_START, FALLBACK_TOPIC, MONTHLY_DAY, MONTHLY_ENTRY, planEntryFor, addDays } from '../scripts/channel-plan.mjs';
 
 // До 16.09.2026 канал жив за шаблоном тижня: ті самі формати в ті самі дні.
 // Марія попросила план, де кожен день має свою тему. Ці тести не дають плану
@@ -68,6 +68,17 @@ test('фільтри тем відповідають назві', () => {
   assert.equal(byKey['need-idp'].match({ child_needs: ['idp'] }), true);
   assert.equal(byKey['city-kyiv'].match({ cities: ['Київ'] }), true);
   assert.equal(byKey.it.match({ title: 'Курс програмування Python' }), true);
+});
+
+test('раз на місяць замість теми дня — прохання розповісти історію', () => {
+  assert.equal(MONTHLY_DAY, 15);
+  for (const d of ['2026-10-15', '2026-11-15', '2027-02-15']) {
+    assert.equal(planEntryFor(d).key, MONTHLY_ENTRY.key, d);
+  }
+  assert.notEqual(planEntryFor('2026-10-14').key, MONTHLY_ENTRY.key);
+  assert.notEqual(planEntryFor('2026-10-16').key, MONTHLY_ENTRY.key);
+  assert.ok(!ROTATION.some((e) => e.key === MONTHLY_ENTRY.key), 'щомісячний пост не має стояти ще й у ротації');
+  assert.ok(existsSync(new URL(`../content/telegram/${MONTHLY_ENTRY.file}`, import.meta.url)));
 });
 
 test('addDays рахує календарні дні', () => {
