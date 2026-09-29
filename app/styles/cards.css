@@ -312,3 +312,91 @@
   font-weight: 600;
   color: var(--v2-accent-strong, #c8501a);
 }
+
+/* ── A/B-тест картки (lib/ab-card.js, 29.09.2026) ─────────────────────────
+   Розмітка одна (app/OpportunityCard.js), вигляд вибирає атрибут
+   data-ab-card на <html>, який ставить inline-скрипт із cookie. Без
+   атрибута — варіант A, картка як була. Нижче: що B ховає з A і що показує
+   лише B. Кольори — лише наявні змінні й уже наявні класи чипів. */
+.card .meta,
+.card .card-b-line,
+.card .card-b-foot { display: none; }
+
+/* Вік першим, потім тип. Вартість і дедлайн ідуть у блок деталей. */
+html[data-ab-card="B"] .card .chip-age { order: -1; }
+html[data-ab-card="B"] .card .chip-cost,
+html[data-ab-card="B"] .card .chip-when,
+html[data-ab-card="B"] .card .card-foot,
+html[data-ab-card="B"] .card .card-more.card-a { display: none; }
+
+/* Опис — два рядки: картка має лише допомогти вирішити, чи відкривати її. */
+html[data-ab-card="B"] .card .card-summary {
+  -webkit-line-clamp: 2;
+  flex-grow: 0;
+  margin-bottom: 0;
+}
+
+/* Блок деталей: дедлайн (червоний чип до 7 днів), вартість, формат,
+   організатор. Підпис ліворуч, значення праворуч. */
+html[data-ab-card="B"] .card .meta {
+  display: flex;
+  margin: 14px 0 0;
+}
+html[data-ab-card="B"] .card .meta-row { min-height: 22px; }
+html[data-ab-card="B"] .card .meta-val {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+html[data-ab-card="B"] .card .meta .chip { padding: 2px 9px; }
+
+/* «Детальніше ↗» притиснуте донизу, щоб у ряду стояло на одній лінії. */
+html[data-ab-card="B"] .card .card-b-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 14px;
+}
+html[data-ab-card="B"] .card .card-b-when { display: none; }
+html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 0; }
+
+/* Телефон: без опису й блоку деталей; під назвою «формат · вартість», унизу
+   «До {дата} · {n днів}» поруч із «Детальніше ↗». Уся картка — посилання. */
+@media (max-width: 900px) {
+  html[data-ab-card="B"] .card .card-summary,
+  html[data-ab-card="B"] .card .meta { display: none; }
+
+  html[data-ab-card="B"] .card .card-b-line {
+    display: block;
+    margin: 0 0 4px;
+    font-size: 0.875rem;
+    line-height: 1.45;
+    color: var(--ink-muted);
+  }
+
+  html[data-ab-card="B"] .card .card-b-foot {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  html[data-ab-card="B"] .card .card-b-when {
+    display: inline-flex;
+    align-items: center;
+    min-height: 24px;
+    font-size: 0.8125rem;
+    color: var(--ink);
+  }
+
+  html[data-ab-card="B"] .card .card-b-when.is-urgent {
+    padding: 2px 10px;
+    border-radius: 100px;
+    background: #fee2e2;
+    color: #991b1b;
+  }
+
+  /* Мобільний список головної стоїть без відступів (рядки без рамок у
+     старій верстці); картки B мають рамку, тож між ними потрібен зазор. */
+  html[data-ab-card="B"] .v2-home .v2-list { gap: 12px; }
+}

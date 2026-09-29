@@ -205,8 +205,12 @@ export async function getOpportunity(slug) {
   return data;
 }
 
+// Ті самі поля, що потрібні картці в каталозі (варіант B показує дедлайн,
+// вартість, формат із місцем і організатора): без них «схожі» стояли б
+// порожнішими за ту саму картку на головній.
 const RELATED_FIELDS =
-  'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs, title_en, summary_en, featured_week';
+  'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs, title_en, summary_en, featured_week, '
+  + 'source, source_url, format, cities, countries, is_international, event_start_date, event_end_date, results_date, timing_kind';
 
 export async function getRelated(item, limit = 8) {
   if (!supabase || !item) return [];
