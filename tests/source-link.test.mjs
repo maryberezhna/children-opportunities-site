@@ -96,14 +96,23 @@ test('кожен канал зі скрапера — або переказув�
 });
 
 // 28.09.2026: джерело можна вставити руками в черзі — лише сторінку.
-test('джерелом не стають канал, форма, соцмережа, документ', async () => {
+test('джерелом не стають канал, соцмережа, документ', async () => {
   const { sourceUrlProblem } = await import('../lib/source-link.js');
   for (const u of [
     'https://t.me/Mozhlyvosti/10539', 'https://t.me/dityam_com_ua/1',
-    'https://docs.google.com/forms/d/e/x/viewform', 'https://forms.gle/abc',
     'https://www.instagram.com/p/x', 'https://drive.google.com/file/d/x',
     'https://docs.google.com/document/d/x', 'https://youtu.be/x', 'ftp://x', 'не адреса', '',
   ]) assert.ok(sourceUrlProblem(u), u);
   assert.equal(sourceUrlProblem('https://rooterraorg.my.canva.site/olive-trees-html'), null);
   assert.equal(sourceUrlProblem('https://man.gov.ua/konkurs'), null);
+});
+
+// 29.09.2026: форму організатора людина джерелом зробити може.
+test('форма організатора — джерело, якщо вставила людина', async () => {
+  const { sourceUrlProblem } = await import('../lib/source-link.js');
+  for (const u of [
+    'https://docs.google.com/forms/d/1-py7ChjaTADMdlvBHXRX8RL8LHaAMIpVv0DJsLO9v3A/viewform',
+    'https://docs.google.com/forms/d/e/x/viewform', 'https://forms.gle/abc',
+  ]) assert.equal(sourceUrlProblem(u), null, u);
+  assert.ok(sourceUrlProblem('https://docs.google.com/document/d/x'));
 });
