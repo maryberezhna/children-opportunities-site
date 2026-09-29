@@ -58,7 +58,7 @@ function Notes({ list }) {
     <>
       {open.length ? (
         <div className="adm-note info">
-          <div className="h">💬 Коментар у машини — виконає протягом години</div>
+          <div className="h">💬 Коментар — буде виконано протягом години</div>
           {open.map((n) => <div key={n.id}>«{n.body}»</div>)}
         </div>
       ) : null}
@@ -174,7 +174,7 @@ function Card({ o, notes: initialNotes = [], today }) {
       {panel === null ? (
         <div className="adm-acts">
           <button type="button" className="adm-btn q-btn-go" onClick={() => setPanel('edit')}>✏️ Відредагувати й опублікувати</button>
-          <button type="button" className="adm-btn q-btn-note" onClick={() => { setText(''); setPanel('note'); }}>💬 Коментар машині</button>
+          <button type="button" className="adm-btn q-btn-note" onClick={() => { setText(''); setPanel('note'); }}>💬 Коментар</button>
           <button type="button" className="adm-btn q-btn-no" onClick={() => { setText(''); setReason(''); setPanel('reject'); }}>Не підходить</button>
         </div>
       ) : null}
@@ -196,13 +196,13 @@ function Card({ o, notes: initialNotes = [], today }) {
       {panel === 'note' ? (
         <div className="q-panel">
           <p className="q-hint">
-            Напиши, що зробити, — машина виконає протягом години й поверне картку сюди.
+            Напиши, що зробити, — буде виконано протягом години, і картка повернеться сюди.
             Наприклад: «вік 12–17», «дедлайн 15 жовтня», «джерело https://…»,
             «вік 12–17 і опублікуй», «не підходить — це для дорослих».
           </p>
           <textarea className="adm-ta" rows={3} value={text} onChange={(e) => setText(e.target.value)} autoFocus />
           <div className="adm-acts">
-            <button type="button" className="adm-btn q-btn-note" onClick={sendNote} disabled={busy || !text.trim()}>Надіслати машині</button>
+            <button type="button" className="adm-btn q-btn-note" onClick={sendNote} disabled={busy || !text.trim()}>Надіслати</button>
             <button type="button" className="adm-btn" onClick={() => setPanel(null)} disabled={busy}>Скасувати</button>
           </div>
         </div>
