@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readsUkrainian, acceptLanguageTags } from '@/lib/lang';
 import { shouldBlock } from '@/lib/bot-guard';
+import { AB_CARD_COOKIE, AB_CARD_MAX_AGE, abCardForRequest } from '@/lib/ab-card';
 
 /**
  * Хто заходить не з України — бачить англійську сторінку.
@@ -30,7 +31,32 @@ const ALLOWED = new Set(['uk', 'en']);
 // Ті самі ключі, які читає каталог у app/OpportunitiesList.js.
 const CATALOGUE_PARAMS = ['q', 'age', 'type', 'aid', 'theme', 'need', 'cost', 'deadline', 'city', 'sort'];
 
+/**
+ * A/B-тест картки можливості (lib/ab-card.js, 29.09.2026): новому відвідувачу
+ * ставимо cookie ab_card = A або B, 50/50, на 90 днів. Без персональних
+ * даних — лише літера. Далі варіант читає inline-скрипт у layout і застосовує
+ * CSS, тож HTML для обох однаковий і кеш ISR не роздвоюється. Cookie
+ * приходить у відповідь разом зі сторінкою, тому вже перший екран малюється
+ * потрібним варіантом. Боти cookie не отримують і бачать A.
+ *
+ * Обгортка над route(): cookie треба додати до будь-якої відповіді —
+ * і до next(), і до редіректу мови, — а точок повернення там кілька.
+ */
 export function middleware(request) {
+  const res = route(request);
+  if (res.status === 403) return res;
+  const { variant, set } = abCardForRequest({
+    cookie: request.headers.get('cookie') || '',
+    search: request.nextUrl.search,
+    isBot: BOTS.test(request.headers.get('user-agent') || ''),
+  });
+  if (set) {
+    res.cookies.set(AB_CARD_COOKIE, variant, { path: '/', maxAge: AB_CARD_MAX_AGE, sameSite: 'lax' });
+  }
+  return res;
+}
+
+function route(request) {
   const url = request.nextUrl;
 
   // Захист від масового копіювання (lib/bot-guard.js) — на всіх сторінках.
