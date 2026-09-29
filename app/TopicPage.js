@@ -6,9 +6,10 @@ import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
-import { plusFromUrl } from '@/lib/plus';
+import { closingThisWeek, splitIntro } from '@/lib/topic-filters';
 import { schoolNotes } from '@/lib/diaspora';
 import TopicCards from './topic/TopicCards';
+import SuggestBlock from './SuggestBlock';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
 import SubscribePopup from './SubscribePopup';
@@ -18,12 +19,16 @@ import Footer from './Footer';
 /**
  * Шаблон сторінки підбірки (/za-kordon, /konkursy і решта, uk і en).
  *
- * Вересень 2026 — за макетом ~/Downloads/design_handoff_dityam_pidbirka:
- * кремовий хіро з фото, підфільтри з лічильниками, картки у дві колонки з
- * карткою Dityam+ після четвертої (крім сторінок діаспори), «Важливо знати», «Часті питання», «Інші
- * підбірки». Увесь контент — з lib/topics.js (heading, intro, note, faq,
- * heroImage, related, subfilters) і з живої бази (лічильники,
- * картки). Тут лише рамка: підписи кнопок і заголовків блоків.
+ * Редизайн 29.09.2026 за макетом «Dityam — редизайн каталогу» (артборди
+ * Topic і TopicMobile): компактний hero (крихти, H1 з Caveat, одне речення,
+ * «{N} можливостей · {M} безкоштовних · {K} закриваються цього тижня», фото
+ * праворуч), рядок фільтрів над списком (тип із лічильниками, вік, «Лише
+ * безкоштовні», «Онлайн»), картки у дві колонки з каналом після першого
+ * ряду й автопродовженням, «Важливо знати», «Часті питання», «Інші
+ * підбірки» з фото, блок для організаторів. Картки Dityam+ тут немає
+ * (рішення Марії 29.09.2026). Увесь контент — з lib/topics.js (heading,
+ * intro, note, faq, heroImage, related, subfilters) і з живої бази
+ * (лічильники, картки). Тут лише рамка: підписи кнопок і заголовків блоків.
  *
  * GEO/SEO: title без хвоста шаблону layout, власні OG і Twitter з фото
  * підбірки, видимі хлібні крихти, речення з числами й датою, яке асистенти
@@ -41,11 +46,10 @@ const CHROME = {
   uk: {
     home: 'Головна',
     collections: 'Підбірки',
-    eyebrow: (d) => `Підбірка · оновлено ${d}`,
     telegram: 'Отримувати нові в Telegram',
     share: 'Поділитися підбіркою',
     shared: 'Посилання скопійовано',
-    heroCount: (total, free) => opportunitiesWord(total) + (free > 0 ? ` · ${free} ${freeWord(free)}` : ''),
+    closing: (k) => `${k} ${k === 1 ? 'закривається' : 'закриваються'} цього тижня`,
     noteTitle: ['Важливо', 'знати'],
     schoolTitle: ['Школа', 'в країні'],
     schoolSource: 'Джерело',
@@ -60,12 +64,6 @@ const CHROME = {
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
-    plus: {
-      title: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
-      text: 'Ви один раз розповідаєте про кожну дитину, а ми щодня перевіряємо нові можливості й надсилаємо '
-        + 'в Telegram ті, що підходять їй за віком і вподобаннями. Про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
-      cta: 'Оформити в Telegram',
-    },
     cards: {
       all: 'Усі',
       sort: 'за дедлайном, найближчі спочатку',
@@ -76,6 +74,14 @@ const CHROME = {
       filterLabel: 'Фільтр за типом',
       groupNav: 'Країни',
       groupRest: 'Інші країни',
+      age: 'Вік',
+      ageLabel: 'Вік дитини',
+      onlyFree: 'Лише безкоштовні',
+      online: 'Онлайн',
+      reset: 'Скинути',
+      more: 'Показати ще',
+      // Лише рядки: labels їдуть у клієнтський TopicCards, а функцію серверний
+      // компонент передати не може; «Показано X з N» складає сам TopicCards.
     },
     siteName: 'Dityam.com.ua',
     locale: 'uk_UA',
@@ -84,11 +90,10 @@ const CHROME = {
   en: {
     home: 'Home',
     collections: 'Collections',
-    eyebrow: (d) => `Collection · updated ${d}`,
     telegram: 'Get new ones on Telegram',
     share: 'Share this collection',
     shared: 'Link copied',
-    heroCount: (total, free) => (total === 1 ? 'opportunity' : 'opportunities') + (free > 0 ? ` · ${free} free` : ''),
+    closing: (k) => `${k} ${k === 1 ? 'closes' : 'close'} this week`,
     noteTitle: ['Good to', 'know'],
     schoolTitle: ['School in', 'the country'],
     schoolSource: 'Source',
@@ -103,12 +108,6 @@ const CHROME = {
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
-    plus: {
-      title: 'Here we show everything that exists. Dityam+ sends what fits your child.',
-      text: 'Tell us about each child once, and every day we check new opportunities and send you the ones '
-        + 'that fit their age and interests on Telegram. We remind you of deadlines while there is still time to apply.',
-      cta: 'Subscribe on Telegram',
-    },
     cards: {
       all: 'All',
       sort: 'by deadline, soonest first',
@@ -119,6 +118,12 @@ const CHROME = {
       filterLabel: 'Filter by type',
       groupNav: 'Countries',
       groupRest: 'Other countries',
+      age: 'Age',
+      ageLabel: 'Child age',
+      onlyFree: 'Free only',
+      online: 'Online',
+      reset: 'Reset',
+      more: 'Show more',
     },
     siteName: 'Dityam.com.ua',
     locale: 'en_GB',
@@ -323,20 +328,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   // ItemList — один і той самий порядок.
   const grouped = topic.groups ? topic.groups(items, lang) : null;
 
-  // Картка Dityam+ після четвертої можливості. 27.09.2026 її прибрали разом з
-  // усім Dityam+ на сторінках («сходинка»: сайт веде в канал), 28.09.2026 Марія
-  // повернула її в підбірки: у канал і так веде спливна підказка внизу.
-  // Кнопка — одразу в бот (рішення 20.09.2026: людина вже прочитала, що робить
-  // Dityam+, проміжна сторінка лише губить дорогу), з міткою підбірки, щоб бот
-  // записав джерело. На сторінках діаспори не показуємо: добірка Dityam+ не
-  // підбирає за країною, де живе родина, і обіцянка «підходить саме вашій
-  // дитині» там була б неправдою.
-  const plusPlace = `topic_${topic.slug}${lang === 'en' ? '_en' : ''}`;
-  const plus = grouped || topic.code ? null : {
-    ...ch.plus,
-    href: plusFromUrl(plusPlace),
-    place: plusPlace,
-  };
+  // Картки Dityam+ в підбірці більше немає (рішення Марії 29.09.2026;
+  // 28.09 у #532 її повертали — скасовано): тут веде лише канал.
   const listed = grouped ? grouped.groups.flatMap((g) => g.items) : items;
   const schools = schoolNotes(topic.schoolNotes || [], lang);
 
@@ -363,15 +356,20 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   }).format(new Date());
   const sentence = ch.sentence(updatedLabel, total, freeCount);
 
-  // Картка «28 можливостей · 25 безкоштовних» поверх фото хіро (варіант 4b).
-  // Нуль не показуємо ніде (рішення Марії 14.09.2026): порожня цифра виглядає
-  // як зламана підбірка.
-  const heroCount = (inline) => (total > 0 ? (
-    <p className={`tp-hero-count${inline ? ' is-inline' : ''}`}>
-      <span className="tp-hero-count-n">{total}</span>
-      <span className="tp-hero-count-t">{ch.heroCount(total, freeCount)}</span>
+  // Рядок «{N} можливостей · {M} безкоштовних · {K} закриваються цього тижня»
+  // під описом (макет Topic.dc.html). Нуль не показуємо ніде (рішення Марії
+  // 14.09.2026): порожня цифра виглядає як зламана підбірка.
+  const closing = closingThisWeek(items, todayIso);
+  const heroStats = total > 0 ? (
+    <p className="tp-hero-stats">
+      <span><strong>{total}</strong> {opportunitiesWord(total)}</span>
+      {freeCount > 0 ? <span> · <strong>{freeCount}</strong> {freeWord(freeCount)}</span> : null}
+      {closing > 0 ? <span className="tp-hero-closing"> · {ch.closing(closing)}</span> : null}
     </p>
-  ) : null);
+  ) : null;
+  // У hero — одне речення; решта інтро йде в «Важливо знати», щоб текст, який
+  // цитують асистенти, лишався на сторінці цілим.
+  const { first: introFirst, rest: introRest } = splitIntro(c.intro);
   const h1Text = `${heading.lead}${heading.script ? ` ${heading.script}` : ''}${heading.tail || ''}`;
 
   // Один @graph: CollectionPage — що це за сторінка й коли оновлена;
@@ -461,13 +459,13 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
         <section className={`tp-hero${hero ? '' : ' tp-hero-solo'}`} aria-labelledby="tp-title">
           <div className="tp-hero-copy">
-            <span className="tp-eyebrow">{ch.eyebrow(updatedLabel)}</span>
             <h1 id="tp-title" className="tp-h1">
               {heading.lead}
               {heading.script ? <>{' '}<span className="tp-script">{heading.script}</span></> : null}
               {heading.tail || null}
             </h1>
-            <p className="tp-intro">{c.intro}</p>
+            <p className="tp-intro">{introFirst}</p>
+            {heroStats}
             {c.guide ? (
               <p className="tp-guide-link"><Link href={c.guide.href}>{c.guide.label}</Link></p>
             ) : null}
@@ -477,7 +475,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
               </a>
               <ShareButton label={ch.share} doneLabel={ch.shared} />
             </div>
-            {hero ? null : heroCount(true)}
           </div>
 
           {hero ? (
@@ -494,7 +491,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                   style={hero.position ? { objectPosition: hero.position } : undefined}
                 />
               </picture>
-              {heroCount(false)}
             </div>
           ) : null}
         </section>
@@ -511,7 +507,6 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           pinnedLabel={c.pinnedLabel || null}
           labels={ch.cards}
           hub={topic.slug}
-          plus={plus}
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
@@ -520,6 +515,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         <section className="tp-note" aria-labelledby="tp-note-title">
           <h2 id="tp-note-title" className="tp-h2">{titled(ch.noteTitle)}</h2>
           <div className="tp-note-body">
+            {introRest ? <p className="tp-note-text">{introRest}</p> : null}
             <p className="tp-note-text">{c.note}</p>
             <p className="tp-note-meta">{sentence}</p>
             <p className="tp-note-meta">
@@ -565,15 +561,29 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           <section className="tp-related" aria-labelledby="tp-related-title">
             <h2 id="tp-related-title" className="tp-h2">{titled(ch.relatedTitle)}</h2>
             <div className="tp-related-grid">
-              {related.map(({ topic: t, count }) => (
-                <Link key={t.slug} href={topicPath({ slug: t.slug, slugEn: t.en.slug }, lang)} className="tp-related-card">
-                  <span className="tp-related-title">{isEn ? t.navEn : t.nav}</span>
-                  <span className="tp-related-n">{ch.count(count)}</span>
-                </Link>
-              ))}
+              {related.map(({ topic: t, count }) => {
+                const img = heroImageOf(t, lang);
+                return (
+                  <Link key={t.slug} href={topicPath({ slug: t.slug, slugEn: t.en.slug }, lang)} className="tp-related-card">
+                    {img ? (
+                      <picture className="tp-related-photo">
+                        <source srcSet={`${img.src}.webp`} type="image/webp" />
+                        <img src={`${img.src}.jpg`} alt="" width="450" height="300" loading="lazy" />
+                      </picture>
+                    ) : null}
+                    <span className="tp-related-body">
+                      <span className="tp-related-title">{isEn ? t.navEn : t.nav} →</span>
+                      <span className="tp-related-n">{ch.count(count)}</span>
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </section>
         ) : null}
+
+        {/* Для організаторів: той самий блок, що й у каталозі (app/SuggestBlock.js). */}
+        <SuggestBlock lang={lang} />
       </main>
 
       <Footer lang={lang} />

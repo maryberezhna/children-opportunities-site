@@ -3,8 +3,9 @@
 // До того на одній підбірці людина бачила до дев'яти закликів у пʼять різних
 // місць, а Dityam+ був одночасно «Оформити», «Дізнатися першим» і «скоро,
 // стати в список». Тепер головний заклик сайту — канал, а Dityam+ на сайті
-// лишився в шапці, на /plus, на /dedlainy і — з 28.09.2026 — однією карткою в
-// підбірках (Марія: у канал і так веде спливна підказка). Продає його сам канал.
+// лишився в шапці, на /plus і на /dedlainy. Картку в підбірках повертали
+// 28.09.2026 (#532) і знову прибрали 29.09.2026 (редизайн: у підбірці веде
+// лише канал). Продає його сам канал.
 //
 // Тест стереже, щоб Dityam+ тихо не повернувся в списки, картки й підказку —
 // блоки промо вже раз додавали й прибирали в паралельних сесіях.
@@ -22,6 +23,8 @@ const read = (f) => readFileSync(join(root, f), 'utf8');
 const CHANNEL_ONLY = [
   'app/OpportunitiesList.js',
   'app/o/shared.js',
+  'app/TopicPage.js',
+  'app/topic/TopicCards.js',
   'app/SubscribePopup.js',
   'app/StickyBar.js',
   'app/HomeBlocks.js',
@@ -105,25 +108,17 @@ test('посилання з сайту в бот несуть мітку, яку
   }
 });
 
-// Підбірки: одна картка Dityam+ після четвертої можливості (28.09.2026).
-// Стара картка до 27.09 кликала «Дізнатися першим», хоча вела в оплату, і
-// обіцяла добір «за містом», якого Dityam+ не гарантує.
-test('підбірка: Dityam+ — одна картка, у бот з міткою підбірки', () => {
-  const page = read('app/TopicPage.js');
-  const cards = read('app/topic/TopicCards.js');
-  assert.match(page, /plusFromUrl\(plusPlace\)/, 'кнопка картки має вести в бот через plusFromUrl');
-  assert.match(page, /topic_\$\{topic\.slug\}/, 'мітка джерела — topic_<slug>');
-  assert.ok(/<BotLink\b/.test(cards), 'клік по картці має рахуватись у GA4 (BotLink)');
-  assert.equal((cards.match(/className="tp-promo"/g) || []).length, 1, 'картка Dityam+ у підбірці — одна');
-  for (const re of [/\bplusBotUrl\b/, /\bPLUS_WAITLIST_URL\b/, /DityamPlusBot/, /\bPlusSection\b/, /\bPlusBanner\b/]) {
-    assert.ok(!re.test(page + cards), `у підбірці ${re} — лише картка через plusFromUrl`);
+// Підбірки: картки Dityam+ немає (рішення Марії 29.09.2026, редизайн PR 3).
+// До того її додавали й прибирали тричі — тест стереже, щоб не повернулась
+// ні карткою, ні кнопкою, ні текстом.
+test('підбірка: жодного Dityam+ — ні картки, ні кнопки, ні тексту', () => {
+  const page = code(read('app/TopicPage.js'));
+  const cards = code(read('app/topic/TopicCards.js'));
+  for (const re of [/tp-promo/, /\bBotLink\b/, /Оформити в Telegram/, /Subscribe on Telegram/, /\bplus\b\s*[:=]/]) {
+    assert.ok(!re.test(page + cards), `у підбірці знову Dityam+: ${re}`);
   }
-  const text = (code(page).match(/\bplus: \{[\s\S]*?\n {4}\},/g) || []).join('\n');
-  assert.ok(text.includes('Оформити в Telegram'), 'тексти картки мають лежати в CHROME.*.plus');
-  for (const bad of [/Дізнатися першим/, /Tell me first/, /місто/i, /city/i]) {
-    assert.ok(!bad.test(text), `знову ${bad} у тексті картки Dityam+`);
-  }
-  // Найдовша мітка має влізти в правило parseSourceArg (до 40 символів).
+  // Найдовша мітка досі має влізти в правило parseSourceArg (до 40 символів):
+  // бот читає її з інших місць (/plus, /dedlainy).
   const place = 'topic_ukrainskym-ditiam-za-kordonom_en';
   assert.equal(parseSourceArg(new URL(plusFromUrl(place)).searchParams.get('start')), place);
 });
