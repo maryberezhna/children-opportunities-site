@@ -146,3 +146,31 @@ test('matchRange підсвічує збіг у вихідному підпис�
   assert.equal(matchRange('Київ', 'kyiv'), null);
   assert.equal(matchRange('Київ', ''), null);
 });
+
+// Країна за кордоном (Марія 29.09.2026): вибір звужує закордон, а не додає до нього.
+import { pickPlace, countryValue } from '../lib/place-search.js';
+
+test('країна заміняє «За кордоном», «За кордоном» — країни', () => {
+  const de = countryValue('de');
+  assert.deepEqual(pickPlace(['abroad'], de), [de]);
+  assert.deepEqual(pickPlace(['Київ', 'abroad'], de), ['Київ', de]);
+  assert.deepEqual(pickPlace([de, countryValue('pl')], 'abroad'), ['abroad']);
+  assert.deepEqual(pickPlace([de], countryValue('pl')), [de, countryValue('pl')]);
+  assert.deepEqual(pickPlace([de], de), []);
+  assert.deepEqual(pickPlace(['Київ'], 'Львів'), ['Київ', 'Львів']);
+});
+
+test('обрано закордон — на порожньому полі першими країни', () => {
+  const list = [
+    ...opts,
+    placeOption(countryValue('de'), 'Німеччина', 'Germany'),
+    placeOption(countryValue('pl'), 'Польща', 'Poland'),
+  ];
+  const counts = { Київ: 200, Львів: 90, [countryValue('de')]: 39, [countryValue('pl')]: 16 };
+  const abroad = filterPlaces(list, '', { counts, exclude: ['abroad'], kindsWhenEmpty: false });
+  assert.deepEqual(abroad.slice(0, 2).map((o) => o.label), ['Німеччина', 'Польща']);
+  const plain = filterPlaces(list, '', { counts, kindsWhenEmpty: false });
+  assert.equal(plain[0].label, 'Київ');
+  assert.equal(filterPlaces(list, 'німеч', { counts })[0].label, 'Німеччина');
+  assert.equal(filterPlaces(list, 'germ', { counts })[0].label, 'Німеччина');
+});
