@@ -32,6 +32,7 @@ import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
 import { publicSource } from '@/lib/source-link';
+import { detailCountries, detailCities } from '@/lib/place';
 
 const SITE = 'https://dityam.com.ua';
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
@@ -82,6 +83,7 @@ const L = {
     ongoing: 'Постійно відкрита',
     cost: 'Вартість',
     city: 'Місто',
+    country: 'Країна',
     source: 'Джерело',
     verified: 'Перевірено',
     linkAlive: 'Посилання працює',
@@ -116,6 +118,7 @@ const L = {
     ongoing: 'Always open',
     cost: 'Cost',
     city: 'City',
+    country: 'Country',
     source: 'Source',
     verified: 'Checked',
     linkAlive: 'Link works',
@@ -694,10 +697,16 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   <dd>{itemFormatLabel(item, lang)}</dd>
                 </>
               )}
-              {(item.cities || []).length > 0 && (
+              {detailCountries(item, lang).length > 0 && (
+                <>
+                  <dt>{t.country}</dt>
+                  <dd>{detailCountries(item, lang).join(', ')}</dd>
+                </>
+              )}
+              {detailCities(item).length > 0 && (
                 <>
                   <dt>{t.city}</dt>
-                  <dd>{item.cities.map((c) => cityLabel(c, lang)).join(', ')}</dd>
+                  <dd>{detailCities(item).map((c) => cityLabel(c, lang)).join(', ')}</dd>
                 </>
               )}
               {eventDates ? (
