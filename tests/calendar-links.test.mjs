@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { calendarTarget, googleCalendarUrl } from '../lib/calendar-links.js';
+import { calendarTarget, googleCalendarUrl, botCalendarUrl } from '../lib/calendar-links.js';
 
 const { today, cases } = JSON.parse(readFileSync(new URL('./fixtures/calendar-cases.json', import.meta.url)));
 
@@ -44,4 +44,18 @@ test('дедлайн іде з київським часовим поясом', 
     title: 'Конкурс', date: '2026-10-20', url: 'https://dityam.com.ua/o/x',
   }));
   assert.equal(url.searchParams.get('ctz'), 'Europe/Kyiv');
+});
+
+// Перша добірка після оплати (route.js) — те саме пряме посилання, що й
+// щоденна (29.09.2026): без сторінки /events/…/add і без минулих дат.
+test('botCalendarUrl: пряме посилання в Google, лише з датою попереду', () => {
+  const item = { title: 'ISEF', slug: 'isef', summary: 'Опис', deadline: '2026-10-20' };
+  const url = botCalendarUrl(item, '2026-09-29');
+  assert.ok(url.startsWith('https://calendar.google.com/calendar/render?'));
+  assert.ok(!url.includes('/events/'));
+  assert.ok(url.includes('20261020T090000%2F20261020T095900'));
+  assert.equal(botCalendarUrl({ ...item, deadline: '2026-09-01' }, '2026-09-29'), null);
+  assert.equal(botCalendarUrl({ title: 'x', slug: 'x' }, '2026-09-29'), null);
+  const ev = botCalendarUrl({ title: 'Табір', slug: 't', event_start_date: '2026-10-10', event_end_date: '2026-10-19' }, '2026-09-29');
+  assert.ok(ev.includes('20261010%2F20261020'));
 });

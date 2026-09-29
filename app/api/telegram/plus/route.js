@@ -16,6 +16,8 @@ import {
 import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
 import { cutTitle } from '@/lib/text';
+import { botCalendarUrl } from '@/lib/calendar-links';
+import { kyivToday } from '@/lib/dates';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
@@ -255,9 +257,10 @@ async function sendLatest(bot, supabase, sub, chatId) {
       { text: '👍 Цікаво', callback_data: `papp:${m.o.id}` },
       { text: '👎 Не цікаво', callback_data: `pfb:no:${m.o.id}` },
     ]];
-    if (m.o.deadline || m.o.event_start_date || m.o.event_end_date) {
-      rows.push([{ text: '📅 Додати в календар', url: `${SITE_URL}/events/${m.o.slug}/add` }]);
-    }
+    // Прямо в Google Calendar, як у щоденній добірці (#493): без проміжної
+    // сторінки сайту й лише коли дата ще попереду.
+    const cal = botCalendarUrl(m.o, kyivToday());
+    if (cal) rows.push([{ text: '📅 У календар', url: cal }]);
     await bot.sendMessage(chatId, card.join('\n'), { inline_keyboard: rows });
   }
 }
