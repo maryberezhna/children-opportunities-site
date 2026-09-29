@@ -3,6 +3,7 @@ import { daysUntil } from '@/lib/dates';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, NEED_LABELS, NEED_LABELS_EN, ageRangeLabel,
 } from '@/lib/labels';
+import { cardFacts, CARD_LABELS } from '@/lib/card-facts';
 
 /**
  * Картка можливості — одна на весь сайт.
@@ -14,11 +15,18 @@ import {
  * Людина, що йшла з головної на сторінку можливості, бачила той самий запис
  * у двох різних виглядах. Марія обрала третій: «отака всюди».
  *
- * Що на картці й у якому порядку — рішення саме цього вигляду: спершу
- * пігулки (тип, вік, вартість, дедлайн, обставини), потім назва, потім два
- * рядки опису. Пігулка дедлайну зʼявляється лише коли є що встигати: до
- * тижня — червона з ⏰, до місяця — спокійна з ⏳, далі нічого, бо «через
- * пів року» на картці лише шумить.
+ * З 29.09.2026 картка має два вигляди для A/B-тесту (lib/ab-card.js):
+ *   A — як була: пігулки (тип, вік, вартість, дедлайн, обставини), назва,
+ *       опис до пʼяти рядків, поля й футер «формат · місце»;
+ *   B — за макетом «Dityam — редизайн каталогу»: вік першим, потім тип;
+ *       вартості й дедлайну серед пігулок немає — вони в блоці деталей
+ *       (.meta: дедлайн, вартість, формат, організатор); опис у два рядки;
+ *       на телефоні рядок «формат · вартість» і внизу «До {дата} · {n днів}»
+ *       поруч із «Детальніше».
+ * Розмітка одна на обидва варіанти, різницю робить CSS (cards.css) за
+ * атрибутом data-ab-card на <html>: HTML однаковий для всіх і лишається в
+ * кеші ISR. Класи chip-cost і chip-when позначають те, що B ховає;
+ * .meta, .card-b-line і .card-b-foot — те, що бачить лише B.
  *
  * Компонент серверний: жодного стану, лише дані й посилання. Класи й кольори
  * — app/styles/cards.css, і вони вже глобальні.
@@ -39,15 +47,18 @@ const field = (item, name, lang) =>
  * Їх немає на картці «схожих можливостей», але викидати разом із виглядом їх
  * не можна: у режимі «Підліткам» це єдине, заради чого картку читають.
  *
- * `footer` — рядок під полями (місто й формат одним рядком).
- * `moreLabel` — «Детальніше →». Саме текстом, а не посиланням: уся картка вже
- * одне посилання, і вкладений <a> був би нечинною розміткою.
+ * `footer` — рядок під полями (місто й формат одним рядком). Лише варіант A:
+ * у B те саме стоїть у блоці деталей.
+ * `moreLabel` — «Детальніше →» варіанта A. Саме текстом, а не посиланням: уся
+ * картка вже одне посилання, і вкладений <a> був би нечинною розміткою.
+ * У варіанті B підпис «Детальніше ↗» є на кожній картці (рішення 29.09.2026).
  */
 export default function OpportunityCard({
   item, lang = 'uk', today, href, prefetch, extraChip = null,
   fields = null, footer = null, moreLabel = null,
 }) {
   const t = T[lang] || T.uk;
+  const b = CARD_LABELS[lang] || CARD_LABELS.uk;
   const types = lang === 'en' ? TYPE_LABELS_EN : TYPE_LABELS;
   const needs = lang === 'en' ? NEED_LABELS_EN : NEED_LABELS;
 
@@ -61,6 +72,18 @@ export default function OpportunityCard({
   // з відступом, і під описом зʼявлялась дірка на картках без формату й джерела.
   const rows = (fields || []).filter(([, v]) => v);
 
+  // Варіант B: факти з запису (lib/card-facts.js). Порожнє — рядка немає.
+  const facts = cardFacts(item, today, lang);
+  const meta = [
+    facts.when ? [facts.when.label, facts.when.kind === 'urgent'
+      ? <span className="chip chip-deadline-urgent">{facts.when.text}</span>
+      : facts.when.text] : null,
+    facts.cost ? [b.cost, facts.cost] : null,
+    facts.format ? [b.format, facts.format] : null,
+    facts.organiser ? [b.organiser, facts.organiser] : null,
+  ].filter(Boolean);
+  const bLine = [facts.format, facts.cost].filter(Boolean).join(' · ');
+
   return (
     <Link
       href={url}
@@ -71,18 +94,18 @@ export default function OpportunityCard({
       <div className="chips">
         <span className="chip chip-type">{types[item.opportunity_type] || item.opportunity_type}</span>
         <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
-        {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
-        {paid ? <span className="chip chip-paid">{t.paid}</span> : null}
+        {item.cost_type === 'free' ? <span className="chip chip-free chip-cost">{t.free}</span> : null}
+        {paid ? <span className="chip chip-paid chip-cost">{t.paid}</span> : null}
         {/* Школа чи студія діаспори без ціни на сторінці (28.09.2026): не
             «безкоштовно» і не «платно», а чесно — ціну знає школа. */}
-        {item.cost_type === 'ask_school' ? <span className="chip chip-cost-ask">{t.askSchool}</span> : null}
+        {item.cost_type === 'ask_school' ? <span className="chip chip-cost-ask chip-cost">{t.askSchool}</span> : null}
         {days !== null && days >= 0 && days <= 7 ? (
-          <span className="chip chip-deadline-urgent">
+          <span className="chip chip-deadline-urgent chip-when">
             ⏰ {days === 0 ? t.today : t.days(days)}
           </span>
         ) : null}
         {days !== null && days > 7 && days <= 30 ? (
-          <span className="chip chip-deadline-soon">⏳ {t.days(days)}</span>
+          <span className="chip chip-deadline-soon chip-when">⏳ {t.days(days)}</span>
         ) : null}
         {/* Дві обставини — стеля: далі рядок пігулок переноситься й картка
             перестає читатись за секунду, заради якої вона й потрібна. */}
@@ -103,6 +126,19 @@ export default function OpportunityCard({
           {summary.length > 140 ? `${summary.slice(0, 140)}…` : summary}
         </p>
       ) : null}
+      {/* B, телефон: «Онлайн · Безкоштовно» одним рядком під назвою. */}
+      {bLine ? <p className="card-b-line">{bLine}</p> : null}
+      {/* B, десктоп: блок деталей. Підпис ліворуч, значення праворуч. */}
+      {meta.length ? (
+        <dl className="meta">
+          {meta.map(([k, v]) => (
+            <div key={k} className="meta-row">
+              <dt className="meta-label">{k}</dt>
+              <dd className="meta-val">{v}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
       {rows.length ? (
         <dl className="card-fields">
           {rows.map(([k, v]) => (
@@ -114,7 +150,16 @@ export default function OpportunityCard({
         </dl>
       ) : null}
       {footer ? <div className="card-foot">{footer}</div> : null}
-      {moreLabel ? <span className="card-more">{moreLabel}</span> : null}
+      {moreLabel ? <span className="card-more card-a">{moreLabel}</span> : null}
+      {/* B: «Детальніше ↗» завжди; на телефоні поруч із ним дедлайн. */}
+      <div className="card-b-foot">
+        {facts.when ? (
+          <span className={`card-b-when${facts.when.kind === 'urgent' ? ' is-urgent' : ''}`}>
+            {facts.when.foot}
+          </span>
+        ) : <span />}
+        <span className="card-more card-b">{b.details}</span>
+      </div>
     </Link>
   );
 }

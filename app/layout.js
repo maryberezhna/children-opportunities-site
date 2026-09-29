@@ -7,6 +7,7 @@ import ScrollNav from './ScrollNav';
 import AccessibilityPanel from './AccessibilityPanel';
 import ServiceWorker from './ServiceWorker';
 import { countActiveOpportunities } from '@/lib/supabase';
+import { AB_CARD_BOOT_SCRIPT } from '@/lib/ab-card';
 import './globals.css';
 
 // Шрифти вендорнуті локально, а не через next/font/google.
@@ -145,8 +146,18 @@ const JSON_LD = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="uk" className={`${dmSans.variable} ${manrope.variable} ${caveat.variable}`}>
+    // suppressHydrationWarning: варіант картки (data-ab-card) ставить на
+    // <html> inline-скрипт нижче ще до гідратації, і без прапорця React у dev
+    // скаржився б на «зайвий» атрибут на кожній сторінці.
+    <html
+      lang="uk"
+      className={`${dmSans.variable} ${manrope.variable} ${caveat.variable}`}
+      suppressHydrationWarning
+    >
       <body>
+        {/* Перший скрипт у <body>: варіант картки з cookie ab_card — до того,
+            як браузер розбере решту сторінки (lib/ab-card.js). */}
+        <script dangerouslySetInnerHTML={{ __html: AB_CARD_BOOT_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
