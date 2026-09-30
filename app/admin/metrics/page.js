@@ -109,7 +109,7 @@ function MediaKit({ kit }) {
     ['Унікальні відвідувачі', (r) => fmtN(r.users)],
     ['Сеанси', (r) => fmtN(r.sessions)],
     ['Перегляди сторінок', (r) => fmtN(r.views)],
-    ['Середній час сеансу', (r) => fmtSec(r.avgSessionSec)],
+    ['Середній час взаємодії за сеанс', (r) => fmtSec(r.avgSessionSec)],
     ['Сторінок за сеанс', (r) => (r.pagesPerSession ?? '—')],
     ['Повернулись (частка відвідувачів)', (r) => fmtPct(r.returningShare)],
     ['З України', (r) => fmtPct(r.ukraineShare)],
