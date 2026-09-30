@@ -1,0 +1,4 @@
+/* Підбірки (app/TopicPage.js), /olimpiady, /erasmus, /pidbirky.
+   Порядок той самий, що був у globals.css: блок підтримки перед шаблоном. */
+@import "../support-section.css";
+@import "../topic-v2.css";

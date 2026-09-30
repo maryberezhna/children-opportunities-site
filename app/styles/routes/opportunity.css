@@ -1,0 +1,5 @@
+/* Сторінка можливості (app/o/shared.js) і «Додати в календар» (/events/…/add).
+   Порядок як у globals.css: десктоп, блок Dityam+, мобільні правила останніми. */
+@import "../opportunity-page.css";
+@import "../plus-promo.css";
+@import "../opportunity-mobile.css";

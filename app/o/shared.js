@@ -8,6 +8,7 @@
  * списком підбірок у футері, тож усе спільне лежить тут, а маршрути
  * лишаються тонкими обгортками.
  */
+import '@/app/styles/routes/opportunity.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { kyivToday, formatDate } from '@/lib/dates';

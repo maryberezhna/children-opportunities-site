@@ -1,34 +1,28 @@
-/* Точка входу для стилів. Самі правила живуть у ./styles/* —
- * порядок імпортів = порядок каскаду, тому переставляти рядки не можна. */
+/* Точка входу для стилів, спільних для всіх сторінок. Самі правила живуть у
+ * ./styles/* — порядок імпортів = порядок каскаду, тому переставляти рядки не
+ * можна.
+ *
+ * Стилі однієї сторінки сюди не входять (30.09.2026): їх підключає сама
+ * сторінка чи її компонент, і Next віддає їх лише на тому маршруті —
+ * підбірки (styles/routes/topic.css), сторінка можливості (routes/opportunity.css),
+ * /plus (plus-landing.css), /about (routes/about.css), /press (press-v2.css),
+ * /contacts (contact-form.css), /dedlainy (deadlines.css), /dyakuyu (legal-pages.css).
+ * До того всі 310 КБ CSS їхали на кожну сторінку; підбірка тепер бере ~215 КБ,
+ * головна ~180. Маршрутні файли завжди йдуть ПІСЛЯ цих глобальних. */
 @import "./styles/base.css";
 @import "./styles/badges.css";
-@import "./styles/support-section.css";
-@import "./styles/subscribe-section.css";
-@import "./styles/subscribe-modal.css";
-@import "./styles/filters.css";
 @import "./styles/cards.css";
 @import "./styles/subscribe-popup.css";
 @import "./styles/support-modal.css";
 @import "./styles/site-header.css";
-@import "./styles/footer.css";
 @import "./styles/sticky-bar.css";
 @import "./styles/responsive.css";
-@import "./styles/opportunity-page.css";
 @import "./styles/static-pages.css";
-@import "./styles/contact-form.css";
 @import "./styles/telegram-fab.css";
 @import "./styles/scroll-nav.css";
 @import "./styles/accessibility.css";
-@import "./styles/deadlines.css";
 @import "./styles/home-v2.css";
-@import "./styles/press-v2.css";
-@import "./styles/plus-landing.css";
-@import "./styles/about-v2.css";
 @import "./styles/home-sidebar.css";
-/* Шаблон підбірок (tp-*) — після home-v2, але до мобільних файлів. */
-@import "./styles/topic-v2.css";
 @import "./styles/telegram-card.css";
-@import "./styles/plus-promo.css";
 /* Мобільні стилі — останніми: вони перебивають десктопні правила вище. */
 @import "./styles/home-mobile.css";
-@import "./styles/opportunity-mobile.css";

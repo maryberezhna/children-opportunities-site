@@ -1,5 +1,87 @@
 /* Юридичні / статичні сторінки */
 
+/* ---- Хлібні крихти сторінки можливості, юридичних сторінок і «місто × підбірка».
+   До 30.09.2026 жили в opportunity-page.css; той файл тепер підключається лише
+   на сторінці можливості (app/styles/routes/opportunity.css), а крихти потрібні
+   всюди — тому тут, у глобальному файлі, у тому самому порядку, що й був. ---- */
+.opportunity-breadcrumbs {
+  margin: 16px 0 24px;
+  font-size: 0.875rem;
+}
+
+.opportunity-breadcrumbs a {
+  color: var(--ink-soft);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.opportunity-breadcrumbs a:hover {
+  color: var(--accent);
+}
+
+.opportunity-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  color: var(--ink-muted);
+}
+.opportunity-breadcrumbs .o-crumb-here {
+  min-width: 0;
+  max-width: 48ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+@media (min-width: 1100px) {
+  .opportunity-breadcrumbs { margin: 14px 0 18px; }
+}
+
+/* На телефоні крихти — один рядок «← {звідки}» (правила з opportunity-mobile.css,
+   бо діють і на юридичних сторінках, і на «місто × підбірка»). */
+@media (max-width: 900px) {
+  /* Рядок «← Усі можливості / Поділитися ↗» на всю ширину екрана. */
+  .opportunity-breadcrumbs {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 0 calc(50% - 50vw) 20px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--v2-line);
+  }
+
+  .opportunity-breadcrumbs a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--v2-ink-2);
+  }
+
+  /* На телефоні з крихт лишається лише «← {підбірка}» (макет
+     OpportunityMobile.dc.html): решта — місце, а не навігація. */
+  .opportunity-breadcrumbs > a:first-child,
+  .opportunity-breadcrumbs > span { display: none; }
+  .opportunity-breadcrumbs .o-crumb-topic::before { content: '← '; }
+}
+
+/* ---- /support: PayPal і посилання (теж переїхали з opportunity-page.css) ---- */
+.support-page .paypal-container {
+  margin: 16px 0 28px;
+  max-width: 420px;
+}
+
+.support-page .support-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0 28px;
+}
+
+
 /* ---- Стрічка «Про нас пишуть» (/about, /en/about) ---- */
 /* Стрічка логотипів видань на сторінці «Про проєкт» (/press переїхала на
    press-v2.css). Логотипи в різних форматах і з різним тлом, тож кожен садимо

@@ -1,3 +1,4 @@
+import '@/app/styles/deadlines.css';
 import Link from 'next/link';
 import { publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, isSupabaseConfigured } from '@/lib/supabase';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';

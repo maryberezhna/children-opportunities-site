@@ -1,3 +1,4 @@
+import '@/app/styles/press-v2.css';
 import { pressStats } from '@/lib/press';
 import PressKit from '../PressKit';
 
