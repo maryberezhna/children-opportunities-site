@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  normalizePlace, matchRange, filterPlaces, placeOption, PLACE_KINDS,
+  normalizePlace, matchRange, filterPlaces, placeOption, PLACE_KINDS, placeFieldMode,
 } from '../lib/place-search.js';
 
 // Поле «Де» (Марія 27.09.2026): місто вписують, підказки звужуються.
@@ -173,4 +173,32 @@ test('обрано закордон — на порожньому полі пе�
   assert.equal(plain[0].label, 'Київ');
   assert.equal(filterPlaces(list, 'німеч', { counts })[0].label, 'Німеччина');
   assert.equal(filterPlaces(list, 'germ', { counts })[0].label, 'Німеччина');
+});
+
+// --- поле під трьома видами місця, 30.09.2026 ---
+//
+// Доти «Україна» стояла першим рядком у списку міст: вибір країни виглядав як
+// вибір міста, а поле просило обрати місто ще до того, як людина сказала, чи
+// їй узагалі в Україну.
+test('без вибору поля місця немає', () => {
+  assert.equal(placeFieldMode([]), null);
+  assert.equal(placeFieldMode(['online']), null);
+});
+
+test('«Україна» → міста, «за кордоном» → країни', () => {
+  assert.equal(placeFieldMode(['ukraine']), 'city');
+  assert.equal(placeFieldMode(['abroad']), 'country');
+  assert.equal(placeFieldMode(['online', 'abroad']), 'country');
+});
+
+test('обидва разом — показуємо все', () => {
+  assert.equal(placeFieldMode(['abroad', 'ukraine']), 'both');
+});
+
+// Інакше на сторінці міста чи за посиланням із фільтром обране місто не було б
+// чим зняти: поле зникло б разом зі списком обраного.
+test('уже обране місто тримає поле відкритим', () => {
+  assert.equal(placeFieldMode(['Київ']), 'both');
+  assert.equal(placeFieldMode(['online', 'Львів']), 'both');
+  assert.equal(placeFieldMode(['country:de']), 'both');
 });

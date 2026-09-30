@@ -24,7 +24,7 @@ import { plural } from '@/lib/plural';
 import { HERO_SEARCH_EVENT } from './HomeHero';
 import { isoWeek } from '@/lib/week';
 import OpportunityCard from './OpportunityCard';
-import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX } from '@/lib/place-search';
+import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX, placeFieldMode } from '@/lib/place-search';
 import TelegramCard from './TelegramCard';
 import PlaceCombobox from './PlaceCombobox';
 
@@ -108,7 +108,7 @@ const UI = {
       benefit: 'Отримаєш', requirement: 'Треба', deadline: 'Дедлайн' },
     sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
-    all: 'Усі', anyCost: 'Будь-яка', anyTime: 'Будь-коли', formatGroup: 'Формат', city: 'Місто',
+    all: 'Усі', anyCost: 'Будь-яка', anyTime: 'Будь-коли', formatGroup: 'Формат', city: 'Місто', country: 'Країна',
     abroad: '🌍 За кордоном', online: '💻 Онлайн',
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
     ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
@@ -173,7 +173,7 @@ const UI = {
       benefit: 'You get', requirement: 'You need', deadline: 'Deadline' },
     sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
-    all: 'All', anyCost: 'Any', anyTime: 'Any time', formatGroup: 'Format', city: 'City',
+    all: 'All', anyCost: 'Any', anyTime: 'Any time', formatGroup: 'Format', city: 'City', country: 'Country',
     abroad: '🌍 Abroad', online: '💻 Online',
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
     ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
@@ -1111,6 +1111,24 @@ export default function OpportunitiesList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [side, presetCity, type, age, deadline, need, cost, place, query, liveItems, teens, todayIso, searchIndex, domestic, lang]);
 
+  // Що вже обрано руками — міста й країни, без трьох видів місця.
+  const pickedPlaces = place.filter((v) => !PLACE_KINDS.includes(v));
+  // Поле міста показуємо лише після «за кордоном» чи «Україна» — або якщо
+  // місто вже обрано (сторінка міста, посилання з фільтром). Без цього поле
+  // просило вибрати місто ще до того, як людина сказала, чи їй узагалі в
+  // Україну.
+  const placeMode = placeFieldMode(place);
+  const onlyAbroad = placeMode === 'country';
+  const showPlaceField = placeMode !== null;
+  // «За кордоном» → країни, «Україна» → міста: пропонуємо те, що звужує
+  // саме обраний напрям, а не все підряд.
+  const placeFieldOptions = (deskPlace?.options || []).filter((o) => {
+    if (PLACE_KINDS.includes(o.value)) return false;
+    if (placeMode === 'country') return isCountryValue(o.value);
+    if (placeMode === 'city') return !isCountryValue(o.value);
+    return true;
+  });
+
   const sheetGroup = (key, title, allLabel, opts) => {
     const counts = sheet[key];
     const cur = draft[key];
@@ -1158,10 +1176,18 @@ export default function OpportunitiesList({
   const sheetPlace = () => {
     const counts = sheet.place;
     const togglePlace = (v) => setDraft({ ...draft, place: pickPlace(draft.place, v) });
-    const kinds = PLACE_KINDS.filter((v) => counts[v] > 0 || draft.place.includes(v));
+    const kinds = ['online', 'abroad', 'ukraine'].filter((v) => counts[v] > 0 || draft.place.includes(v));
     const chosenCities = draft.place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v));
+    // Те саме правило, що в бічній панелі (30.09.2026): поле міста лише після
+    // «за кордоном» чи «Україна» — вони й задають, із чого вибирати.
+    const sheetMode = placeFieldMode(draft.place);
+    const sheetAbroadOnly = sheetMode === 'country';
+    const sheetUaOnly = sheetMode === 'city';
     const cityOpts = sheet.placeOpts.filter((o) => !PLACE_KINDS.includes(o[0])
-      && !draft.place.includes(o[0]) && counts[o[0]] > 0);
+      && !draft.place.includes(o[0]) && counts[o[0]] > 0
+      && (sheetAbroadOnly ? isCountryValue(o[0]) : true)
+      && (sheetUaOnly ? !isCountryValue(o[0]) : true));
+    const showSheetField = sheetMode !== null;
     if (!kinds.length && !cityOpts.length && !chosenCities.length) return null;
     // Види місця теж у підказках, але лише коли їх вписали: на порожньому
     // полі вони б дублювали чипи над ним.
@@ -1194,7 +1220,7 @@ export default function OpportunitiesList({
             </button>
           ))}
         </div>
-        {cityOpts.length ? (
+        {showSheetField && cityOpts.length ? (
           <PlaceCombobox
             id="m-sheet-place"
             className="pc--sheet"
@@ -1204,7 +1230,7 @@ export default function OpportunitiesList({
             counts={counts}
             chosen={draft.place}
             onPick={togglePlace}
-            placeholder={chosenCities.length ? t.addCity : t.pickCity}
+            placeholder={sheetAbroadOnly ? t.country : (chosenCities.length ? t.addCity : t.pickCity)}
             ariaLabel={t.pickCity}
             emptyText={t.nothingTitle}
           />
@@ -1325,15 +1351,16 @@ export default function OpportunitiesList({
         DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]), 'radio')}
       {sideGroup('cost', t.sel.cost, t.anyCost,
         COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-      {/* «Формат»: онлайн і за кордоном — чекбоксами з лічильниками (як у
-          макеті), місто — полем з підказками нижче: міст десятки, повний
-          список був би довшим за екран (27.09.2026). Обрані міста й країни —
-          рядками, клік знімає. */}
+      {/* «Де»: три чекбокси — онлайн, за кордоном, Україна (Марія, 30.09.2026).
+          Доти в панелі стояли лише перші два, а «Україна» падала в список
+          міст першим рядком — вибір країни виглядав як вибір міста.
+          Поле міста зʼявляється лише після «за кордоном» або «Україна»:
+          саме вони й задають, із чого вибирати — з країн чи з міст. */}
       {deskPlace && (deskPlace.options.length || place.length) ? (
         <div className="v2-side-group" role="group" aria-labelledby="v2-side-place-title">
-          <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.formatGroup}</label>
+          <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
           <div className="v2-side-list">
-            {['online', 'abroad'].map((v) => {
+            {['online', 'abroad', 'ukraine'].map((v) => {
               const opt = deskPlace.options.find((o) => o.value === v);
               const on = place.includes(v);
               if (!opt && !on) return null;
@@ -1354,9 +1381,9 @@ export default function OpportunitiesList({
               );
             })}
           </div>
-          {place.filter((v) => v !== 'online' && v !== 'abroad').length ? (
+          {pickedPlaces.length ? (
             <div className="v2-side-list">
-              {place.filter((v) => v !== 'online' && v !== 'abroad').map((v) => (
+              {pickedPlaces.map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -1370,17 +1397,19 @@ export default function OpportunitiesList({
               ))}
             </div>
           ) : null}
-          <PlaceCombobox
-            id="v2-side-place"
-            className="pc--side"
-            labelId="v2-side-place-title"
-            options={deskPlace.options.filter((o) => o.value !== 'online' && o.value !== 'abroad')}
-            counts={deskPlace.counts}
-            chosen={place}
-            onPick={(v) => setPlace(pickPlace(place, v))}
-            placeholder={t.city}
-            emptyText={t.nothingTitle}
-          />
+          {showPlaceField ? (
+            <PlaceCombobox
+              id="v2-side-place"
+              className="pc--side"
+              labelId="v2-side-place-title"
+              options={placeFieldOptions}
+              counts={deskPlace.counts}
+              chosen={place}
+              onPick={(v) => setPlace(pickPlace(place, v))}
+              placeholder={onlyAbroad ? t.country : t.city}
+              emptyText={t.nothingTitle}
+            />
+          ) : null}
         </div>
       ) : null}
       {/* «Онлайн» уже стоїть у «Формат» — у типах не дублюємо. */}
