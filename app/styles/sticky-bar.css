@@ -64,8 +64,6 @@
 }
 
 /* ВАЖЛИВО: за замовчуванням мобільна кнопка прихована на десктопі */
-.sticky-mobile-only { display: none !important; }
-.sticky-desktop-only { display: inline-flex !important; }
 
 /* Subscribe кнопка — градієнтна, щоб вирізнялась */
 .sticky-btn-subscribe,
