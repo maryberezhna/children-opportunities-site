@@ -491,8 +491,6 @@
   cursor: pointer;
 }
 .o-report:hover { color: var(--ink); }
-.o-report.is-sent { text-decoration: none; cursor: default; }
-.o-report.is-sent a { color: var(--v2-accent-strong); }
 /* Посилання в тексті на телефоні — ховаємо на десктопі: там кнопка в картці дії. */
 .o-m-links { display: none; }
 

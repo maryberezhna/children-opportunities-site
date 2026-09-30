@@ -53,7 +53,7 @@
     background: var(--v2-cream);
   }
 
-  .o-m-deadline > div { display: flex; flex-direction: column; gap: 2px; }
+  .o-m-deadline > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 
   .o-m-eyebrow {
     font-size: 12px;
@@ -65,13 +65,28 @@
 
   .o-m-date { font-size: 17px; font-weight: 700; color: var(--v2-ink); }
 
-  /* Помаранчевий — лише коли горить (≤7 днів), як і в списку. */
+  /* Примітка праворуч від дати. Великою й без переносів — ЛИШЕ відлік днів
+     («4 дні», «сьогодні»): для нього це головне число на екрані.
+     
+     Усе інше дрібним і з переносами. Доти великий розмір із nowrap стояв за
+     замовчуванням, і в записів із щорічним набором сюди потрапляла ціла фраза
+     «стежте за новим набором» — вона не переносилась і вилазила за межі
+     блока, налазячи на сусідній текст (знімок Марії, 30.09.2026). */
   .o-m-days {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.3;
+    text-align: right;
+    color: var(--v2-ink-2);
+  }
+
+  .o-m-days--deadline {
     font-size: 22px;
     font-weight: 800;
     letter-spacing: -0.02em;
     white-space: nowrap;
-    color: var(--v2-ink-2);
   }
 
   .o-m-days.is-urgent { color: var(--v2-accent-strong); }
