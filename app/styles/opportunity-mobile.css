@@ -214,6 +214,11 @@
   .o-fact { padding: 14px; }
   .o-fact:nth-child(3n + 1) { border-left: 1px solid var(--border); }
   .o-fact:nth-child(-n + 3) { border-top: 1px solid var(--border); }
+  /* Два стовпці: правила «на три» з десктопу скидаємо, непарний останній —
+     на весь рядок. */
+  .o-fact:last-child:nth-child(3n + 1),
+  .o-fact:last-child:nth-child(3n + 2) { grid-column: auto; }
+  .o-fact:last-child:nth-child(odd) { grid-column: span 2; }
   .o-fact:nth-child(2n + 1) { border-left: 0; }
   .o-fact:nth-child(-n + 2) { border-top: 0; }
   .o-fact dt { font-size: 11px; }

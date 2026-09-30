@@ -404,6 +404,11 @@
 }
 .o-fact:nth-child(3n + 1) { border-left: 0; }
 .o-fact:nth-child(-n + 3) { border-top: 0; }
+/* Останній факт добирає решту рядка: у записі з чотирма фактами «Де» стояло
+   саме в другому рядку поруч із двома порожніми клітинками (Марія,
+   30.09.2026). Пʼять фактів — останній на два стовпці, чотири — на три. */
+.o-fact:last-child:nth-child(3n + 1) { grid-column: span 3; }
+.o-fact:last-child:nth-child(3n + 2) { grid-column: span 2; }
 .o-fact dt {
   font-size: 0.75rem;
   font-weight: 600;
@@ -421,6 +426,8 @@
 }
 .o-fact-urgent {
   display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 2px 10px;
   border-radius: 100px;
   background: #fee2e2;
