@@ -177,11 +177,20 @@
     position: sticky;
     top: 76px;
     max-height: calc(100vh - 92px);
-    overflow: auto;
+    overflow-y: auto;
     box-sizing: border-box;
-    padding-right: 4px;
+    /* Панель прокручується всередині: смужка прокрутки має свою колонку, а
+       не лягає на лічильники (Марія, 30.09.2026). */
+    padding-right: 16px;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--v2-line-strong) transparent;
     font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
   }
+
+  .v2-home .v2-side::-webkit-scrollbar { width: 6px; }
+  .v2-home .v2-side::-webkit-scrollbar-thumb { background: var(--v2-line-strong); border-radius: 3px; }
+  .v2-home .v2-side::-webkit-scrollbar-track { background: transparent; }
 
   .v2-home .v2-side > * { flex-shrink: 0; }
 
