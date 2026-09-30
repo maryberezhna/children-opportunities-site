@@ -98,3 +98,42 @@ test('«Повідомити» пише в opportunity_feedback як report із
   const track = read('lib/track.js');
   assert.ok(/export function trackApplyClick/.test(track) && track.includes("trackConversion('apply_click'"));
 });
+
+// --- примітка біля дати, 30.09.2026 ---
+//
+// Великий шрифт без переносів у блоці прийому заявок призначений лише для
+// відліку днів. Для щорічного набору туди потрапляла ціла фраза «стежте за
+// новим набором»: вона не переносилась і вилазила за межі блока, налазячи на
+// сусідній текст (знімок Марії). Тепер розмір обирає status.kind, тож кожен
+// вид мусить його мати — інакше в розмітку піде o-m-days--undefined і стиль
+// не застосується взагалі.
+const KINDS = ['closed', 'deadline', 'event', 'results', 'periodic', 'permanent'];
+
+test('у кожного статусу прийому є kind', () => {
+  const cases = [
+    { status: 'closed' },
+    { deadline: '2026-12-31' },
+    { event_start_date: '2026-12-20', event_end_date: '2026-12-21' },
+    { results_date: '2026-12-25' },
+    { timing_kind: 'periodic', recurrence: 'annual' },
+    { timing_kind: 'permanent' },
+  ];
+  for (const item of cases) {
+    const s = intakeStatus({ status: 'active', ...item }, '2026-09-30');
+    if (!s) continue;
+    assert.ok(KINDS.includes(s.kind), `невідомий kind: ${s.kind}`);
+  }
+});
+
+// Довгу примітку великим шрифтом показувати не можна — саме на цьому й
+// зламалась верстка.
+test('довга примітка буває лише не в дедлайна', () => {
+  const periodic = intakeStatus({ status: 'active', timing_kind: 'periodic', recurrence: 'annual' }, '2026-09-30');
+  if (periodic?.note) {
+    assert.notEqual(periodic.kind, 'deadline');
+    assert.ok(periodic.note.length > 12, 'примітка щорічного набору коротка — перевірте тест');
+  }
+  const soon = intakeStatus({ status: 'active', deadline: '2026-10-02' }, '2026-09-30');
+  assert.equal(soon.kind, 'deadline');
+  assert.ok(soon.note.length <= 12, `відлік задовгий для великого шрифту: «${soon.note}»`);
+});

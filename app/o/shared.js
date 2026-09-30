@@ -700,7 +700,11 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   <span className="o-m-date">{status.value}</span>
                 </div>
                 {status.note ? (
-                  <span className={`o-m-days${status.urgent ? ' is-urgent' : ''}`}>{status.note}</span>
+                  <span
+                    className={`o-m-days o-m-days--${status.kind}${status.urgent ? ' is-urgent' : ''}`}
+                  >
+                    {status.note}
+                  </span>
                 ) : null}
               </div>
             ) : null}
