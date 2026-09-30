@@ -29,6 +29,7 @@ import argparse
 import json
 import logging
 import os
+import re
 from datetime import date
 
 import anthropic
@@ -69,6 +70,53 @@ DEFAULT_TIER = int(PUBLISH_CRITERIA["risk"]["trust_tier_default"])
 
 MIN_SUMMARY_LEN = 60
 MIN_TITLE_LEN = 15
+
+# ── Вік в описі проти поля ──────────────────────────────────────────────────
+# Дзеркало lib/age-text.js. Картка конкурсу «Ось як це було…» 30.09.2026:
+# поле 8–16 з цитатою з положення, а опис із добірки learning.ua — «14–18
+# років». Опис, що ОБІЦЯЄ вік поза полем, не публікується сам: що хибне —
+# поле чи опис — видно лише зі сторінки. Опис вужчий за поле не ловимо: у
+# записах із кількома групами він часто називає лише одну.
+_AGE_PAIR = re.compile(r"(\d{1,2})\s*(?:[–—-]|до)\s*(\d{1,2})")
+# Перелік груп «8–10, 11–13 і 14–18 років»: «років» лише в кінці ланцюжка.
+_AGE_RUN = re.compile(
+    r"(?:від\s*)?((?:\d{1,2}\s*(?:[–—-]|до)\s*\d{1,2})"
+    r"(?:\s*(?:,|;|і|та|або)?\s*(?:[^\s\d.;:,]+\s+){0,2}\d{1,2}\s*(?:[–—-]|до)\s*\d{1,2})*)"
+    r"\s*(?:рок|р\.)")
+_NOT_AGE_BEFORE = re.compile(
+    r"(?:(?:навчанн|трива|протягом|курс|програм|досвід|стаж|термін)\S*|на)\s*$", re.I)
+SITE_MAX_AGE = 18
+
+
+def summary_age_range(text: str | None) -> tuple[int, int] | None:
+    """Найширший вік, який називає текст, або None."""
+    s = text or ""
+    lo = hi = None
+    for run in _AGE_RUN.finditer(s):
+        if _NOT_AGE_BEFORE.search(s[max(0, run.start() - 14):run.start()]):
+            continue
+        for m in _AGE_PAIR.finditer(run.group(1)):
+            a, b = int(m.group(1)), int(m.group(2))
+            if a > b:
+                continue
+            lo = a if lo is None else min(lo, a)
+            hi = b if hi is None else max(hi, b)
+    return None if lo is None else (lo, hi)
+
+
+def summary_age_conflict(summary: str | None, age_from, age_to) -> str | None:
+    """Опис обіцяє вік поза полем — причина для модератора, інакше None."""
+    r = summary_age_range(summary)
+    if not r or (age_from is None and age_to is None):
+        return None
+    text_from = min(r[0], SITE_MAX_AGE)
+    text_to = min(r[1], SITE_MAX_AGE)
+    wider = ((age_from is not None and text_from < age_from)
+             or (age_to is not None and text_to > age_to))
+    if not wider:
+        return None
+    return (f"в описі {r[0]}–{r[1]} років, а в полі "
+            f"{'?' if age_from is None else age_from}–{'?' if age_to is None else age_to}")
 
 GREEN = "green"
 YELLOW = "yellow"
@@ -175,6 +223,9 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
     summary = row.get("summary") or ""
     if summary_says_over(summary):
         return _hold("в описі сказано, що набір чи сезон уже завершено", trust_tier)
+    mismatch = summary_age_conflict(summary, row.get("age_from"), row.get("age_to"))
+    if mismatch:
+        return _hold(mismatch, trust_tier)
     if len(summary) < MIN_SUMMARY_LEN:
         return _hold(f"опис коротший за {MIN_SUMMARY_LEN} символів", trust_tier)
     if len(row.get("title") or "") < MIN_TITLE_LEN:

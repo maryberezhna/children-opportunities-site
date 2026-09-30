@@ -468,11 +468,17 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 
 .v2-tile picture { display: block; }
 
+/* Пропорція замість сталої висоти: плитка тягнеться з екраном, а 88px — ні,
+   і на широкому екрані з фото 3:2 лишалась смужка 2.5:1 посередині — без
+   голів (Марія, 30.09.2026). 2:1 — трохи вище; фокус зсунуто догори, бо на
+   всіх шести фото діти стоять чи сидять, і обличчя у верхній половині. */
 .v2-tile img {
   display: block;
   width: 100%;
-  height: 88px;
+  height: auto;
+  aspect-ratio: 2 / 1;
   object-fit: cover;
+  object-position: 50% 30%;
   border-radius: 12px;
   transition: transform 0.2s;
 }
