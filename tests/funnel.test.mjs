@@ -35,6 +35,14 @@ test('незавершена анкета не потрапляє в «запо�
   assert.equal(f.find((s) => s.key === 'filled').n, 0);
 });
 
+// Крок «phone» стоїть після анкети: людина відповіла на всі питання й
+// зупинилась на запиті номера (30.09.2026: двоє таких не рахувались).
+test('крок «phone» після анкети — це вже «заповнили»', () => {
+  const subs = [sub(1, { consent_at: 'x', flow_step: 'phone' })];
+  const f = plusFunnel({ subs, childIds: new Set([1]) });
+  assert.equal(f.find((s) => s.key === 'filled').n, 1);
+});
+
 test('порожня база не ділить на нуль', () => {
   const f = plusFunnel({ subs: [], childIds: new Set() });
   assert.equal(f[0].n, 0);
