@@ -22,6 +22,8 @@ import { resolveTokens, hasTokens } from './telegram-counters.mjs';
 
 const FILE = process.env.FILE || process.argv[2];
 const DRY = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
+// PIN=true — закріпити пост у каналі одразу після відправки (без сповіщення).
+const PIN = String(process.env.PIN || '').toLowerCase() === 'true';
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT = process.env.TELEGRAM_CHAT_ID;
 
@@ -111,3 +113,16 @@ if (!json.ok) {
 console.log(EDIT_ID
   ? `\n✅ Пост ${EDIT_ID} виправлено.`
   : `\n✅ Опубліковано. message_id ${json.result.message_id}`);
+if (PIN && !EDIT_ID) {
+  const pin = await fetch(`https://api.telegram.org/bot${TOKEN}/pinChatMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: CHAT, message_id: json.result.message_id, disable_notification: true }),
+  });
+  const pj = await pin.json();
+  if (!pj.ok) {
+    console.error(`Пост є, але закріпити не вдалося: ${pj.description}`);
+    process.exit(1);
+  }
+  console.log('📌 Закріплено.');
+}
