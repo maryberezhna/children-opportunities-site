@@ -133,3 +133,116 @@ test('обміни і «за кордоном» не перетинаються 
     }
   }
 });
+
+// --- нові підбірки під пошук, 30.09.2026 ---
+
+test('волонтерство: бере волонтерські проєкти', () => {
+  const o = { opportunity_type: 'volunteer', title: 'SCI Short-Term Volunteering',
+              summary: 'короткострокове волонтерство', countries: [], cities: [], format: 'offline' };
+  assert.equal(TOPICS['volonterstvo'].match(o), true);
+});
+
+// Обміни лишаються за /prohramy-obminu: стажування й резиденції туди
+// потрапляють за типом, і без цього винятку ми повторили б історію
+// «за кордон проти обмінів» — дві сторінки на той самий запит.
+test('волонтерство: програму обміну не забирає', () => {
+  const o = { opportunity_type: 'internship', title: 'AIESEC — волонтерське стажування',
+              summary: '', countries: [], cities: [], format: 'offline' };
+  assert.equal(TOPICS['volonterstvo'].match(o), false);
+  assert.equal(TOPICS['prohramy-obminu'].match(o), true);
+});
+
+test('виплати: бере грошову допомогу й не бере гурток', () => {
+  const pay = { opportunity_type: 'support_payment', title: 'Грошова допомога ЮНІСЕФ',
+                summary: '', cities: [], countries: [] };
+  const club = { opportunity_type: 'club', title: 'Гурток робототехніки',
+                 summary: '', cities: ['Київ'], countries: [] };
+  assert.equal(TOPICS['dopomoha-rodynam'].match(pay), true);
+  assert.equal(TOPICS['dopomoha-rodynam'].match(club), false);
+});
+
+test('виплати: бере запис із aid_type cash будь-якого типу', () => {
+  const o = { opportunity_type: 'scholarship', aid_type: 'cash', title: 'Виплата родинам',
+              summary: '', cities: [], countries: [] };
+  assert.equal(TOPICS['dopomoha-rodynam'].match(o), true);
+});
+
+// Сторінка обіцяє психологічну допомогу, тож ловити її має тільки за типом.
+// Регулярка по тексту тягнула сюди гуртки «з елементами арттерапії» — а це
+// обіцянка, якої запис не виконує.
+test('психологічна допомога: лише допомога, не гуртки з арттерапією', () => {
+  const help = { opportunity_type: 'psychology', title: '«Діти воїнів» — групи підтримки',
+                 summary: '', cities: [], countries: [] };
+  const club = { opportunity_type: 'club', title: 'Студія малювання з елементами арттерапії',
+                 summary: 'заняття з психологом', cities: ['Львів'], countries: [] };
+  assert.equal(TOPICS['psykholohichna-dopomoha'].match(help), true);
+  assert.equal(TOPICS['psykholohichna-dopomoha'].match(club), false);
+});
+
+test('кожна нова підбірка має власні title, description і FAQ', () => {
+  for (const slug of ['volonterstvo', 'dopomoha-rodynam', 'psykholohichna-dopomoha']) {
+    const t = TOPICS[slug];
+    assert.ok(t, slug);
+    for (const field of ['title', 'description', 'intro', 'note']) {
+      assert.ok(t[field] && t[field].length > 40, `${slug}: ${field}`);
+      assert.ok(t.en[field] && t.en[field].length > 40, `${slug}: en.${field}`);
+    }
+    assert.equal(t.faq.length, 3, `${slug}: FAQ`);
+    assert.equal(t.en.faq.length, 3, `${slug}: en FAQ`);
+    assert.ok(t.en.slug && t.en.slug !== slug, `${slug}: en.slug`);
+  }
+});
+
+// Титули двох сторінок не мають починатися з тих самих слів: саме так
+// /za-kordon і /prohramy-obminu опинились у Google поруч на один запит.
+test('жодні дві підбірки не починаються з однакових трьох слів у title', () => {
+  const seen = new Map();
+  for (const [slug, t] of Object.entries(TOPICS)) {
+    if (!t.title || t.city) continue;
+    const key = t.title.toLowerCase().split(/\s+/).slice(0, 3).join(' ');
+    assert.ok(!seen.has(key), `«${key}…» — і ${seen.get(key)}, і ${slug}`);
+    seen.set(key, slug);
+  }
+});
+
+// --- онлайн-заняття, 30.09.2026 ---
+//
+// Доти всі 66 безкоштовних онлайн-занять лежали в «Гуртках», а title тієї
+// сторінки прямо обіцяв «онлайн і в містах України» — одна сторінка ловила
+// два різні запити й жоден добре.
+const onlineCourse = {
+  opportunity_type: 'course', cost_type: 'free', aid_type: null, format: 'online',
+  title: 'Безкоштовний онлайн-курс програмування', summary: '', cities: ['Онлайн'], countries: [],
+};
+const cityClub = {
+  opportunity_type: 'club', cost_type: 'free', aid_type: null, format: 'offline',
+  title: 'Гурток робототехніки', summary: '', cities: ['Київ'], countries: [],
+};
+
+test('онлайн-заняття: бере безкоштовний онлайн-курс, гурток у місті — ні', () => {
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(onlineCourse), true);
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(cityClub), false);
+});
+
+test('«Гуртки» на головній більше не показують онлайн', () => {
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].match(onlineCourse), false);
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].match(cityClub), true);
+});
+
+// А на сторінці міста всеукраїнський онлайн-гурток лишається: батькам у малому
+// місті він доступний так само, як місцевий.
+test('на сторінці міста онлайн-заняття лишається видимим', () => {
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].cityMatch(onlineCourse), true);
+});
+
+test('онлайн-заняття: платне й конкурс не беремо', () => {
+  const paid = { ...onlineCourse, cost_type: 'paid_affordable' };
+  const contest = { ...onlineCourse, opportunity_type: 'competition', title: 'Онлайн-конкурс малюнка' };
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(paid), false);
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(contest), false);
+});
+
+// «Онлайн-курси у Києві» — запит, якого ніхто не ставить.
+test('онлайн-заняття не породжують міських сторінок', () => {
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].noCityPages, true);
+});

@@ -1,137 +1,113 @@
 'use client';
-import { Fragment, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { TYPE_LABELS, TYPE_LABELS_EN, cityLabel } from '@/lib/labels';
-import { whenState } from '@/lib/timing';
-import { goesAbroad, isOnline } from '@/lib/geo';
-import { abroadPlaceText } from '@/lib/place';
-import { plural } from '@/lib/plural';
 import { inlineCardPositions } from '@/lib/inline-card';
+import { AGE_GROUPS, applyTopicFilters } from '@/lib/topic-filters';
+import { trackFilterApply, filterSignature } from '@/lib/track';
 import OpportunityCard from '../OpportunityCard';
-import { publicSource } from '@/lib/source-link';
 import TelegramCard from '../TelegramCard';
-import BotLink from '../plus/BotLink';
 
 /**
- * Картки підбірки за макетом design_handoff_dityam_pidbirka (README, п. 4–5):
- * підфільтри-пігулки з лічильниками, сітка 2 колонки, після 4-ї картки —
- * картка Dityam+ на всю ширину (`plus`, null — не показувати). Сортування робить сервер (найближчий дедлайн
- * угорі, без дедлайну — вкінці), тут лише фільтр.
+ * Картки підбірки (редизайн 29.09.2026, макет Topic.dc.html / TopicMobile).
  *
- * «Показати ще» прибрано 15.09.2026 на прохання Марії: підбірка показує всі
- * свої можливості одразу, нічого не ховаючи за кнопкою.
+ * Один рядок фільтрів над списком: вкладки типів із лічильниками, вік (ті
+ * самі пʼять груп, що на головній), «Лише безкоштовні», «Онлайн», підпис
+ * сортування. Сортування робить сервер (найближчий дедлайн угорі, без
+ * дедлайну — вкінці), тут лише фільтр. Лічильники рахуються з урахуванням
+ * решти фільтрів; порожні варіанти не показуються.
+ *
+ * Список — дві колонки, картка каналу після першого ряду й далі раз на
+ * двадцять (lib/inline-card.js). Автопродовження замість кнопки (рішення
+ * Марії 29.09.2026): усі картки є в HTML для пошуку й внутрішніх посилань,
+ * але видно перші 20; коли людина догортає до кінця, зʼявляються наступні
+ * 20. Рядок «Показано X з N» і кнопка — на випадок, коли спостерігач не
+ * спрацював.
+ *
+ * Картки Dityam+ тут більше немає (рішення Марії 29.09.2026; повернута
+ * 28.09 у #532 — скасовано): у підбірці веде лише канал.
  */
 
-// Кольори тегів — рівно ті, що в README макета. Інші типи — колір тексту.
-const TAG_FG = {
-  camp: '#0a5348', summer_school: '#0a5348',
-  club: '#8a5a0a', course: '#8a5a0a', workshop: '#8a5a0a',
-  allowance: '#2d5814', support_payment: '#2d5814', medical_aid: '#2d5814', scholarship: '#2d5814',
-  exchange: '#4c3d8c', olympiad: '#4c3d8c',
-  competition: '#8a1a3a',
-};
-const TAG_DEFAULT = '#4a4a4a';
+const PAGE = 20;
 
-const MONTHS = {
-  uk: ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'],
-  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-};
-
-const TEXT = {
+const DEFAULT_LABELS = {
   uk: {
-    annual: '🔄 щорічно', open: 'набір відкритий', today: 'сьогодні', tomorrow: 'завтра',
-    running: 'триває',
-    days: (n) => `${n} ${plural(n, 'день', 'дні', 'днів')}`,
-    until: (d) => `до ${d}`,
-    age: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
-    abroad: 'За кордоном', online: 'Онлайн', allUkraine: 'Вся Україна',
+    all: 'Усі', sort: 'за дедлайном, найближчі спочатку', details: 'Детальніше →',
+    emptyTitle: 'Нічого не знайдено', emptyText: 'Спробуйте інший фільтр.',
+    listLabel: 'Можливості підбірки', filterLabel: 'Фільтр за типом',
+    groupNav: 'Країни', groupRest: 'Інші країни',
+    age: 'Вік', ageLabel: 'Вік дитини', onlyFree: 'Лише безкоштовні', online: 'Онлайн',
+    reset: 'Скинути', shown: (x, n) => `Показано ${x} з ${n}`, more: 'Показати ще',
   },
   en: {
-    annual: '🔄 every year', open: 'enrolment open', today: 'today', tomorrow: 'tomorrow',
-    running: 'on now',
-    days: (n) => `${n} ${n === 1 ? 'day' : 'days'}`,
-    until: (d) => `by ${d}`,
-    age: (a, b) => (a === b ? `age ${a}` : `ages ${a}–${b}`),
-    abroad: 'Abroad', online: 'Online', allUkraine: 'All of Ukraine',
+    all: 'All', sort: 'by deadline, soonest first', details: 'Details →',
+    emptyTitle: 'Nothing found', emptyText: 'Try a different filter.',
+    listLabel: 'Opportunities in this collection', filterLabel: 'Filter by type',
+    groupNav: 'Countries', groupRest: 'Other countries',
+    age: 'Age', ageLabel: 'Child age', onlyFree: 'Free only', online: 'Online',
+    reset: 'Reset', shown: (x, n) => `Showing ${x} of ${n}`, more: 'Show more',
   },
 };
-
-const PSEUDO = new Set(['онлайн', 'вся україна', 'міжнародні', 'україна']);
-
-function dateShort(iso, todayIso, lang) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-  if (!m) return iso;
-  const day = Number(m[3]);
-  const month = (MONTHS[lang] || MONTHS.uk)[Number(m[2]) - 1];
-  const year = m[1] === String(todayIso).slice(0, 4) ? '' : ` ${m[1]}`;
-  return lang === 'en' ? `${day} ${month}${year}` : `${day} ${month}${year}`;
-}
-
-/**
- * Текст про час і чи він горить (≤ 7 днів до дедлайну — помаранчевий жирний).
- * Стан — з lib/timing.js, спільного з карткою головної: дедлайн подачі горить
- * завжди, подія показує свою дату, вид важить більше за тип.
- */
-function deadlineChip(item, todayIso, lang) {
-  const t = TEXT[lang] || TEXT.uk;
-  const s = whenState(item, todayIso);
-  if (s.state === 'deadline') {
-    if (s.days === 0) return { text: `⏰ ${t.today}`, urgent: true };
-    if (s.days === 1) return { text: `⏰ ${t.tomorrow}`, urgent: true };
-    if (s.days <= 7) return { text: `⏰ ${t.days(s.days)}`, urgent: true };
-    if (s.days <= 30) return { text: `⏳ ${t.days(s.days)}`, urgent: false };
-    return { text: t.until(dateShort(item.deadline, todayIso, lang)), urgent: false };
-  }
-  if (s.state === 'event') {
-    if (s.days === 1) return { text: `📅 ${t.tomorrow}`, urgent: false };
-    return { text: `📅 ${dateShort(s.date, todayIso, lang)}`, urgent: false };
-  }
-  if (s.state === 'running') return { text: `📅 ${t.running}`, urgent: false };
-  if (s.state === 'results') return { text: `🏆 ${dateShort(s.date, todayIso, lang)}`, urgent: false };
-  return { text: s.state === 'periodic' ? t.annual : t.open, urgent: false };
-}
-
-// abroadLabel — чим підписати закордонний запис без міста. У групі хаба
-// діаспори це назва країни з заголовка групи, а не безлике «За кордоном».
-function placeText(item, lang, abroadLabel = null) {
-  const t = TEXT[lang] || TEXT.uk;
-  const real = (item.cities || []).filter((c) => !PSEUDO.has(String(c).toLowerCase().trim()));
-  if (goesAbroad(item)) {
-    // У групі хаба країна вже в заголовку — лишаємо місто або її назву.
-    if (abroadLabel) return real.length ? real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ') : abroadLabel;
-    return abroadPlaceText(item, lang) || t.abroad;
-  }
-  if (real.length) return real.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
-  if (isOnline(item)) return t.online;
-  if ((item.cities || []).some((c) => /вся україна/i.test(c))) return t.allUkraine;
-  return publicSource(item).sourceName || '';
-}
 
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
-  labels, hub = null, groups = null, groupLinks = [], abroadLabel = null, plus = null,
+  labels, hub = null, groups = null, groupLinks = [], abroadLabel = null,
 }) {
-  const [sub, setSub] = useState('all');
-  const isEn = lang === 'en';
-  const t = TEXT[lang] || TEXT.uk;
+  // Сторінки /olimpiady й /erasmus передають власні підписи без нових ключів.
+  const t = { ...(DEFAULT_LABELS[lang] || DEFAULT_LABELS.uk), ...(labels || {}) };
   const pinned = useMemo(() => new Set(pinnedIds), [pinnedIds]);
 
-  const filtered = useMemo(() => {
-    if (sub === 'all') return items;
-    const active = subfilters.find((s) => s.key === sub);
-    return active ? items.filter((o) => active.types.includes(o.opportunity_type)) : items;
-  }, [items, subfilters, sub]);
+  const [sub, setSub] = useState('all');
+  const [age, setAge] = useState(null);
+  const [free, setFree] = useState(false);
+  const [online, setOnline] = useState(false);
+  const [shown, setShown] = useState(PAGE);
 
-  const visible = filtered;
+  const typesOf = (key) => (key === 'all' ? null : (subfilters.find((s) => s.key === key)?.types || null));
 
-  const choose = (key) => setSub(key);
+  const filtered = useMemo(
+    () => applyTopicFilters(items, { types: typesOf(sub), age, free, online }),
+    [items, subfilters, sub, age, free, online],
+  );
 
-  // Одна картка на весь сайт (app/OpportunityCard.js). До 28.09.2026 підбірки
-  // мали власну .tp-card — тип кольоровим текстом, дедлайн праворуч, місто у
-  // футері, — і той самий запис на головній виглядав інакше.
-  //
-  // `placeFallback` більше не використовується: місто на новій картці не
-  // показуємо. Параметр лишено, бо його передають викликачі.
+  // Лічильники з урахуванням решти фільтрів: вкладка каже, скільки буде,
+  // якщо її натиснути зараз, а не скільки записів такого типу взагалі.
+  const countTab = (key) => applyTopicFilters(items, { types: typesOf(key), age, free, online }).length;
+  const countAge = (v) => applyTopicFilters(items, { types: typesOf(sub), age: v, free, online }).length;
+  const freeCount = applyTopicFilters(items, { types: typesOf(sub), age, free: true, online }).length;
+  const onlineCount = applyTopicFilters(items, { types: typesOf(sub), age, free, online: true }).length;
+  const ages = AGE_GROUPS.filter(([v]) => countAge(v) > 0 || age === v);
+  const hasActive = sub !== 'all' || age !== null || free || online;
+
+  // Зміна фільтра — спочатку списку і подія filter_apply (воронка #570).
+  const signature = filterSignature({
+    type: sub === 'all' ? [] : [sub], age: age ? [age] : [],
+    cost: free ? 'free' : 'all', place: online ? ['online'] : [],
+  });
+  const lastSig = useRef('');
+  useEffect(() => {
+    setShown(PAGE);
+    if (signature !== lastSig.current) {
+      lastSig.current = signature;
+      trackFilterApply(signature, filtered.length);
+    }
+  }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Автопродовження: як тільки кінець списку в полі зору — ще 20.
+  const sentinelRef = useRef(null);
+  const hasMore = shown < filtered.length;
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) setShown((s) => s + PAGE);
+    }, { rootMargin: '400px 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [hasMore, shown]);
+
+  const reset = () => { setSub('all'); setAge(null); setFree(false); setOnline(false); };
+
+  // Одна картка на весь сайт (app/OpportunityCard.js).
   const card = (item) => (
     <OpportunityCard
       key={item.id}
@@ -147,72 +123,107 @@ export default function TopicCards({
 
   if (groups) {
     return (
-      <GroupedCards
-        groups={groups}
-        links={groupLinks}
-        card={card}
-        labels={labels}
-        lang={lang}
-        hub={hub}
-      />
+      <GroupedCards groups={groups} links={groupLinks} card={card} labels={t} lang={lang} hub={hub} />
     );
   }
 
-  // Telegram-картка — раз на 20 можливостей, як на головній; картка Dityam+ —
-  // після четвертої. Разом вони не стають: канал зʼявляється не раніше
-  // десятої картки (inlineCardPositions, min 10).
-  const tgAfter = inlineCardPositions(visible.length);
+  // Канал після першого ряду (дві картки) і далі раз на двадцять.
+  const tgAfter = new Set(inlineCardPositions(filtered.length));
+  if (filtered.length > 2) tgAfter.add(1);
 
   const cells = [];
-  visible.forEach((item, i) => {
-    cells.push(card(item, abroadLabel));
-    if (i === 3 && plus) {
-      cells.push(
-        <aside key="plus" className="tp-promo" aria-label="Dityam+">
-          <div className="tp-promo-copy">
-            <span className="tp-promo-badge">Dityam+</span>
-            <h3 className="tp-promo-title">{plus.title}</h3>
-            <p className="tp-promo-text">{plus.text}</p>
-          </div>
-          <BotLink href={plus.href} place={plus.place} className="tp-btn tp-btn-white">
-            {plus.cta}
-          </BotLink>
-        </aside>,
-      );
+  filtered.forEach((item, i) => {
+    cells.push(
+      <div key={item.id} className={`tp-cell${i >= shown ? ' is-hidden' : ''}`}>
+        {card(item, abroadLabel)}
+      </div>,
+    );
+    if (tgAfter.has(i) && i < shown) {
+      cells.push(<TelegramCard key={`tg-card-${i}`} lang={lang} place="topic" hub={hub} />);
     }
-    if (tgAfter.has(i)) cells.push(<TelegramCard key={`tg-card-${i}`} lang={lang} place="topic" hub={hub} />);
   });
 
   return (
-    <section className="tp-list" aria-label={labels.listLabel}>
+    <section className="tp-list" aria-label={t.listLabel}>
       {/* Невидимий h2: картки — h3, і без h2 над ними ламався порядок заголовків. */}
-      <h2 className="sr-only">{labels.listLabel}</h2>
-      <div className="tp-toolbar">
+      <h2 className="sr-only">{t.listLabel}</h2>
+
+      <div className="tp-filters">
         {subfilters.length >= 2 ? (
-          <div className="tp-pills" role="group" aria-label={labels.filterLabel}>
-            {[{ key: 'all', label: labels.all, count: items.length }, ...subfilters].map((s) => (
+          <div className="tp-pills" role="group" aria-label={t.filterLabel}>
+            {[{ key: 'all', label: t.all }, ...subfilters].map((s) => {
+              const n = countTab(s.key);
+              if (s.key !== 'all' && n === 0 && sub !== s.key) return null;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  className={`tp-pill${sub === s.key ? ' is-on' : ''}`}
+                  aria-pressed={sub === s.key}
+                  onClick={() => setSub(s.key)}
+                >
+                  {s.label} <span className="tp-pill-n">{n}</span>
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {ages.length >= 2 ? (
+          <div className="tp-ages" role="group" aria-label={t.ageLabel}>
+            <span className="tp-filter-label">{t.age}</span>
+            {ages.map(([v, label]) => (
               <button
-                key={s.key}
+                key={v}
                 type="button"
-                className={`tp-pill${sub === s.key ? ' is-on' : ''}`}
-                aria-pressed={sub === s.key}
-                onClick={() => choose(s.key)}
+                className={`tp-pill tp-pill-age${age === v ? ' is-on' : ''}`}
+                aria-pressed={age === v}
+                onClick={() => setAge(age === v ? null : v)}
               >
-                {s.label} <span className="tp-pill-n">{s.count}</span>
+                {label}
               </button>
             ))}
           </div>
-        ) : <span />}
-        <span className="tp-sort">{labels.sort}</span>
+        ) : null}
+
+        {/* Перемикач має сенс, лише коли він щось відсіює: у підбірці, де все
+            безкоштовне, «Лише безкоштовні» нічого не змінює й лише плутає. */}
+        {free || (freeCount > 0 && freeCount < filtered.length) ? (
+          <label className="tp-check">
+            <input type="checkbox" checked={free} onChange={(e) => setFree(e.target.checked)} />
+            {t.onlyFree}
+          </label>
+        ) : null}
+        {online || (onlineCount > 0 && onlineCount < filtered.length) ? (
+          <label className="tp-check">
+            <input type="checkbox" checked={online} onChange={(e) => setOnline(e.target.checked)} />
+            {t.online}
+          </label>
+        ) : null}
+
+        {hasActive ? (
+          <button type="button" className="tp-reset" onClick={reset}>{t.reset}</button>
+        ) : null}
+        <span className="tp-sort">{t.sort}</span>
       </div>
 
-      {visible.length ? (
-        <div className="tp-grid">{cells}</div>
+      {filtered.length ? (
+        <>
+          <div className="tp-grid">{cells}</div>
+          <div className="tp-more" ref={sentinelRef} aria-live="polite">
+            <span className="tp-more-count">{t.shown(Math.min(shown, filtered.length), filtered.length)}</span>
+            {hasMore ? (
+              <button type="button" className="tp-btn tp-btn-outline" onClick={() => setShown((s) => s + PAGE)}>
+                {t.more}
+              </button>
+            ) : null}
+          </div>
+        </>
       ) : (
         <div className="tp-empty">
           <span aria-hidden="true">🔍</span>
-          <h3>{labels.emptyTitle}</h3>
-          <p>{labels.emptyText}</p>
+          <h3>{t.emptyTitle}</h3>
+          <p>{t.emptyText}</p>
         </div>
       )}
     </section>
@@ -231,8 +242,6 @@ export default function TopicCards({
  */
 function GroupedCards({ groups, links, card, labels, lang, hub }) {
   const total = groups.reduce((n, g) => n + g.items.length, 0);
-  // Ті самі позиції, що в пласкому списку; картка стає після групи, у якій
-  // припала позиція, щоб не розривати сітку країни.
   const tgAfter = inlineCardPositions(total);
   const showNav = links.length + groups.length >= 2;
   let seen = 0;
