@@ -1,10 +1,11 @@
-/* Блок Dityam+ на сторінці можливості (app/PlusPromo.js, 30.09.2026): чорна
-   картка з помаранчевим бейджем і білою кнопкою — той самий вигляд, що мала
-   картка Dityam+ у підбірках (#532), лише окремим компонентом. */
+/* Блок Dityam+ на сторінці можливості (app/PlusPromo.js, 30.09.2026):
+   помаранчева картка (Марія: «має бути оранжеве») з білим бейджем і білою
+   кнопкою. Тло — --v2-accent-strong (#c8501a), а не брендовий #e85d24: під
+   білим текстом лише він проходить WCAG AA. */
 .plus-promo {
   margin: 8px 0 40px;
   padding: 28px 32px;
-  background: #1a1a1a;
+  background: var(--v2-accent-strong);
   color: #ffffff;
   border-radius: 20px;
   display: flex;
@@ -28,8 +29,8 @@
   letter-spacing: 0.05em;
   padding: 5px 10px;
   border-radius: 6px;
-  background: var(--v2-accent-strong);
-  color: #ffffff;
+  background: #ffffff;
+  color: var(--v2-accent-strong);
 }
 
 .plus-promo-title {
@@ -42,7 +43,7 @@
   text-wrap: balance;
 }
 
-.plus-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: #d4cfc1; }
+.plus-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: #fde3d1; }
 
 .plus-promo .plus-promo-btn {
   flex-shrink: 0;
@@ -60,7 +61,7 @@
   white-space: nowrap;
 }
 
-.plus-promo .plus-promo-btn:hover { background: #f7f1e6; color: #1a1a1a; }
+.plus-promo .plus-promo-btn:hover { background: #fff4ec; color: #1a1a1a; }
 .plus-promo .plus-promo-btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
 
 @media (max-width: 640px) {
