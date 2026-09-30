@@ -19,7 +19,7 @@ import './globals.css';
 // відтворити й від якої нічого не залежить у нашому коді.
 //
 // Файли — ті самі підмножини, що віддає Google: латиниця для DM Sans,
-// кирилиця для Manrope, обидві для Caveat. Разом ~257 КБ.
+// кирилиця для Manrope, обидві в одному файлі для Caveat. Разом ~150 КБ.
 
 // DM Sans не має кирилиці в підмножинах Google. Тримаємо його для латиниці,
 // а українські гліфи бере Manrope через fallback у font-family.
@@ -45,10 +45,12 @@ const manrope = localFont({
 
 const caveat = localFont({
   src: [
-    { path: './fonts/Caveat-lat-400.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/Caveat-cyr-400.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/Caveat-lat-700.woff2', weight: '700', style: 'normal' },
-    { path: './fonts/Caveat-cyr-700.woff2', weight: '700', style: 'normal' },
+    // Один файл на латиницю й кирилицю разом (30.09.2026). Два файли з
+    // однаковими weight/style next/font/local видає як два @font-face без
+    // unicode-range — браузер бере останній і латиницю в Caveat не показує.
+    // Вага 400 знята: усі стилі сайту беруть 700 (.v2-script просить 600 →
+    // теж 700). Було 4 файли на 190 КБ, стало один на 84 КБ.
+    { path: './fonts/Caveat-700.woff2', weight: '700', style: 'normal' },
   ],
   display: 'swap',
   variable: '--font-caveat',

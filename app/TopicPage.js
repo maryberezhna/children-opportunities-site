@@ -74,12 +74,12 @@ const CHROME = {
       filterLabel: 'Фільтр за типом',
       groupNav: 'Країни',
       groupRest: 'Інші країни',
-      age: 'Вік',
+      age: 'Вік дитини',
       ageLabel: 'Вік дитини',
       onlyFree: 'Лише безкоштовні',
       online: 'Онлайн',
       reset: 'Скинути',
-      more: 'Показати ще',
+      more: 'Завантажити ще',
       // Лише рядки: labels їдуть у клієнтський TopicCards, а функцію серверний
       // компонент передати не може; «Показано X з N» складає сам TopicCards.
     },
@@ -118,12 +118,12 @@ const CHROME = {
       filterLabel: 'Filter by type',
       groupNav: 'Countries',
       groupRest: 'Other countries',
-      age: 'Age',
+      age: 'Child age',
       ageLabel: 'Child age',
       onlyFree: 'Free only',
       online: 'Online',
       reset: 'Reset',
-      more: 'Show more',
+      more: 'Load more',
     },
     siteName: 'Dityam.com.ua',
     locale: 'en_GB',
@@ -444,7 +444,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
       <main className="tp-main" lang={isEn ? 'en' : undefined}>
         <nav className="tp-crumbs" aria-label={isEn ? 'Breadcrumbs' : 'Навігація'}>
-          <Link href={homePath}>{ch.home}</Link>
+          <Link href={homePath} prefetch={false}>{ch.home}</Link>
           <span aria-hidden="true">/</span>
           <Link href={collectionsPath(lang)}>{ch.collections}</Link>
           <span aria-hidden="true">/</span>
@@ -510,7 +510,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         />
 
         {/* Кінець підбірки завжди веде на головну (рішення Марії 14.09.2026). */}
-        <p className="tp-home-link"><Link href={homePath}>{ch.homeLink}</Link></p>
+        <p className="tp-home-link"><Link href={homePath} prefetch={false}>{ch.homeLink}</Link></p>
 
         <section className="tp-note" aria-labelledby="tp-note-title">
           <h2 id="tp-note-title" className="tp-h2">{titled(ch.noteTitle)}</h2>

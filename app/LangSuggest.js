@@ -70,6 +70,7 @@ export default function LangSuggest() {
       </span>
       <Link
         href={href}
+        prefetch={false}
         className="lang-suggest-link"
         onClick={() => {
           rememberLang(toEnglish ? 'en' : 'uk');

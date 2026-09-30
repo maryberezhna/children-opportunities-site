@@ -55,7 +55,7 @@ test('інтро: перше речення в hero, решта — у «Важ�
   assert.equal(splitIntro('Тут «Кенгуру». Далі.').first, 'Тут «Кенгуру».');
 });
 
-test('сторінка підбірки: рядок цифр, канал після першого ряду, автопродовження, фото в «Інших підбірках», блок організаторів', () => {
+test('сторінка підбірки: рядок цифр, канал після першого ряду, кнопка «Завантажити ще», фото в «Інших підбірках», блок організаторів', () => {
   const page = read('app/TopicPage.js');
   assert.ok(page.includes('closingThisWeek(items, todayIso)'), 'K рахується з даних, а не вигадується');
   assert.ok(page.includes('className="tp-hero-stats"'));
@@ -66,7 +66,9 @@ test('сторінка підбірки: рядок цифр, канал піс�
   // Кнопки в hero лишаються (рішення Марії 29.09.2026).
   assert.ok(page.includes('{ch.telegram}') && page.includes('<ShareButton'));
   const cards = read('app/topic/TopicCards.js');
-  assert.ok(cards.includes('IntersectionObserver'), 'автопродовження замість кнопки');
+  // 30.09.2026: автопродовження зняте — людина не догортала до кінця сторінки.
+  assert.ok(!cards.includes('IntersectionObserver'), 'кнопка замість автопродовження');
+  assert.ok(cards.includes("more: 'Завантажити ще'"), 'кнопка після перших 20');
   assert.ok(cards.includes("tgAfter.add(1)"), 'канал після першого ряду');
   assert.ok(cards.includes('is-hidden'), 'усі картки в HTML, приховані за межею — для пошуку');
   assert.ok(cards.includes('AGE_GROUPS') && cards.includes('t.onlyFree') && cards.includes('t.online'));

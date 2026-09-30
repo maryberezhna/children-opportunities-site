@@ -55,8 +55,9 @@ const COPY = {
     searchPlaceholder: 'Олімпіада з математики, табір у Львові, робототехніка…',
     search: 'Знайти',
     searchAria: 'Пошук можливостей',
-    soonTitle: 'Встигніть цього тижня',
-    soonTitleLater: 'Найближчі дедлайни',
+    // Панель — «Топ 3 цього тижня» (Марія, 30.09.2026): закріплені «Топ»
+    // і найближчі дедлайни разом, а не «найближчі дедлайни» як такі.
+    soonTitle: 'Топ 3 цього тижня',
     allDeadlines: 'Усі дедлайни →',
     allDeadlinesHref: '/dedlainy',
     pinned: 'Топ',
@@ -84,8 +85,7 @@ const COPY = {
     searchPlaceholder: 'Maths olympiad, camp in Lviv, robotics…',
     search: 'Search',
     searchAria: 'Search opportunities',
-    soonTitle: 'Closing this week',
-    soonTitleLater: 'Closing soonest',
+    soonTitle: 'Top 3 this week',
     allDeadlines: null,
     allDeadlinesHref: null,
     pinned: 'Top',
@@ -102,12 +102,6 @@ const dateParts = (iso, lang) => {
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
   if (!m) return null;
   return { day: Number(m[3]), month: (MONTHS[lang] || MONTHS.uk)[Number(m[2]) - 1] };
-};
-
-const daysBetween = (iso, todayIso) => {
-  const d = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || '')); return m ? Date.UTC(+m[1], +m[2] - 1, +m[3]) / 86400000 : null; };
-  const a = d(iso); const b = d(todayIso);
-  return a === null || b === null ? null : Math.floor(a - b);
 };
 
 export default function HomeHero({ soon = [], teenSoon = [], today = null, lang = 'uk' }) {
@@ -138,10 +132,6 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
 
 
   const items = (mode === 'teens' ? teenSoon : soon) || [];
-  const allWithinWeek = items.length > 0 && items.every((o) => {
-    const d = daysBetween(o.deadline, today);
-    return d !== null && d >= 0 && d <= 7;
-  });
 
   const submit = (e) => {
     e.preventDefault();
@@ -205,7 +195,7 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
         {items.length === 3 ? (
           <aside className="v2-soon" aria-labelledby="v2-soon-title">
             <span id="v2-soon-title" className="v2-soon-title">
-              {allWithinWeek ? t.soonTitle : t.soonTitleLater}
+              {t.soonTitle}
             </span>
             {items.map((o) => {
               const d = dateParts(o.deadline, lang);

@@ -502,7 +502,9 @@
   .tp-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 8px; padding: 12px 16px; margin: 0 -16px; }
   .tp-filters::-webkit-scrollbar { display: none; }
   .tp-filters .tp-pills, .tp-ages { flex-wrap: nowrap; overflow: visible; flex-shrink: 0; }
-  .tp-filter-label { display: none; }
+  /* Підпис «Вік дитини» лишається й на телефоні: без нього пігулки віку в
+     одному рядку з типами читались як щось незрозуміле (30.09.2026). */
+  .tp-filter-label { white-space: nowrap; flex-shrink: 0; }
   /* Зона дотику ≥ 44px у рядку фільтрів на телефоні. */
   .tp-filters .tp-pill { height: 44px; }
   .tp-check { flex-shrink: 0; white-space: nowrap; min-height: 44px; }

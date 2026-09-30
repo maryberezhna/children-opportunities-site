@@ -83,14 +83,14 @@ export default function Footer({ lang = 'uk' }) {
   return (
     <footer className="v2-footer">
       <div className="v2-footer-inner">
-        <Link href={h.all} className="v2-footer-mark" aria-label={t.markLabel}>
+        <Link href={h.all} className="v2-footer-mark" prefetch={false} aria-label={t.markLabel}>
           dityam.com.ua
         </Link>
 
         <div className="v2-footer-grid">
           <div className="v2-footer-col">
             <span className="v2-footer-col-title">{t.opportunities}</span>
-            <Link href={h.all}>{t.all}</Link>
+            <Link href={h.all} prefetch={false}>{t.all}</Link>
             <Link href={h.categories}>{t.categories}</Link>
             {h.deadlines && <Link href={h.deadlines}>{t.deadlines}</Link>}
             <Link href={h.plus}>{t.plus}</Link>

@@ -155,7 +155,7 @@ export default function Header() {
   return (
     <header className={headerClass}>
       <div className="v2-header-inner">
-        <Link href={isEnglish ? '/en' : '/'} className="v2-logo" onClick={track('logo')}>
+        <Link href={isEnglish ? '/en' : '/'} className="v2-logo" prefetch={false} onClick={track('logo')}>
           <span className="v2-logo-script">dityam.com.ua</span>
         </Link>
 

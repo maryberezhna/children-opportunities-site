@@ -17,11 +17,12 @@ import TelegramCard from '../TelegramCard';
  * решти фільтрів; порожні варіанти не показуються.
  *
  * Список — дві колонки, картка каналу після першого ряду й далі раз на
- * двадцять (lib/inline-card.js). Автопродовження замість кнопки (рішення
- * Марії 29.09.2026): усі картки є в HTML для пошуку й внутрішніх посилань,
- * але видно перші 20; коли людина догортає до кінця, зʼявляються наступні
- * 20. Рядок «Показано X з N» і кнопка — на випадок, коли спостерігач не
- * спрацював.
+ * двадцять (lib/inline-card.js). Усі картки є в HTML для пошуку й
+ * внутрішніх посилань, але видно перші 20; далі — кнопка «Завантажити ще»
+ * і рядок «Показано X з N». Автопродовження, яке стояло тут із 29.09.2026,
+ * Марія зняла 30.09: у підбірці на 70 карток людина ніколи не догортала
+ * до «Інших підбірок» і блоку для організаторів — список сам ріс під
+ * пальцем. Кнопка лишає кінець сторінки досяжним.
  *
  * Картки Dityam+ тут більше немає (рішення Марії 29.09.2026; повернута
  * 28.09 у #532 — скасовано): у підбірці веде лише канал.
@@ -35,16 +36,16 @@ const DEFAULT_LABELS = {
     emptyTitle: 'Нічого не знайдено', emptyText: 'Спробуйте інший фільтр.',
     listLabel: 'Можливості підбірки', filterLabel: 'Фільтр за типом',
     groupNav: 'Країни', groupRest: 'Інші країни',
-    age: 'Вік', ageLabel: 'Вік дитини', onlyFree: 'Лише безкоштовні', online: 'Онлайн',
-    reset: 'Скинути', shown: (x, n) => `Показано ${x} з ${n}`, more: 'Показати ще',
+    age: 'Вік дитини', ageLabel: 'Вік дитини', onlyFree: 'Лише безкоштовні', online: 'Онлайн',
+    reset: 'Скинути', shown: (x, n) => `Показано ${x} з ${n}`, more: 'Завантажити ще',
   },
   en: {
     all: 'All', sort: 'by deadline, soonest first', details: 'Details →',
     emptyTitle: 'Nothing found', emptyText: 'Try a different filter.',
     listLabel: 'Opportunities in this collection', filterLabel: 'Filter by type',
     groupNav: 'Countries', groupRest: 'Other countries',
-    age: 'Age', ageLabel: 'Child age', onlyFree: 'Free only', online: 'Online',
-    reset: 'Reset', shown: (x, n) => `Showing ${x} of ${n}`, more: 'Show more',
+    age: 'Child age', ageLabel: 'Child age', onlyFree: 'Free only', online: 'Online',
+    reset: 'Reset', shown: (x, n) => `Showing ${x} of ${n}`, more: 'Load more',
   },
 };
 
@@ -92,18 +93,7 @@ export default function TopicCards({
     }
   }, [signature]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Автопродовження: як тільки кінець списку в полі зору — ще 20.
-  const sentinelRef = useRef(null);
   const hasMore = shown < filtered.length;
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || !hasMore || typeof IntersectionObserver === 'undefined') return undefined;
-    const io = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting) setShown((s) => s + PAGE);
-    }, { rootMargin: '400px 0px' });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasMore, shown]);
 
   const reset = () => { setSub('all'); setAge(null); setFree(false); setOnline(false); };
 
@@ -172,7 +162,7 @@ export default function TopicCards({
         {ages.length >= 2 ? (
           <div className="tp-ages" role="group" aria-label={t.ageLabel}>
             <span className="tp-filter-label">{t.age}</span>
-            {ages.map(([v, label]) => (
+            {ages.map(([v, label, labelEn]) => (
               <button
                 key={v}
                 type="button"
@@ -180,7 +170,7 @@ export default function TopicCards({
                 aria-pressed={age === v}
                 onClick={() => setAge(age === v ? null : v)}
               >
-                {label}
+                {lang === 'en' ? labelEn : label}
               </button>
             ))}
           </div>
@@ -210,7 +200,7 @@ export default function TopicCards({
       {filtered.length ? (
         <>
           <div className="tp-grid">{cells}</div>
-          <div className="tp-more" ref={sentinelRef} aria-live="polite">
+          <div className="tp-more" aria-live="polite">
             <span className="tp-more-count">{t.shown(Math.min(shown, filtered.length), filtered.length)}</span>
             {hasMore ? (
               <button type="button" className="tp-btn tp-btn-outline" onClick={() => setShown((s) => s + PAGE)}>
