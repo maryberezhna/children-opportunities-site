@@ -50,7 +50,10 @@ console.log(`Чернеток: ${rows.length}${ONLY ? ` (фільтр «${ONLY}�
 for (const o of rows.slice(0, LIMIT)) {
   const miss = missingRequired(o);
   console.log(`— ${o.title}`);
+  // id — для publish-draft, slug — для patch-opportunity: вони шукають запис
+  // по-різному, і без обох доводиться бігати по колу.
   console.log(`   id: ${o.id}`);
+  console.log(`   slug: ${o.slug}`);
   console.log(`   джерело: ${o.source_url || '—'}`);
   console.log(`   тип: ${o.opportunity_type || '—'} | вік: ${o.age_from ?? '—'}–${o.age_to ?? '—'}`
     + ` | вартість: ${o.cost_type || '—'} | формат: ${o.format || '—'}`
