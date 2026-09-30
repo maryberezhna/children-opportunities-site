@@ -58,11 +58,13 @@ test('сторінка можливості: один блок Dityam+ чере�
   const promo = read('app/PlusPromo.js');
   assert.equal((page.match(/<PlusPromo\b/g) || []).length, 1, 'блок Dityam+ на сторінці — один');
   assert.ok(page.indexOf('<PlusPromo') > page.indexOf('opportunity-related'), 'блок стоїть після «Схожих можливостей»');
-  assert.ok(/<BotLink\b/.test(promo), 'клік має рахуватись у GA4 (BotLink)');
-  assert.ok(promo.includes('plusFromUrl(place)'), 'кнопка веде в бот через plusFromUrl');
-  for (const place of ['opportunity_page', 'opportunity_page_en']) {
-    assert.equal(parseSourceArg(new URL(plusFromUrl(place)).searchParams.get('start')), place, `мітку «${place}» бот не прочитає`);
-  }
+  // З 30.09.2026 банер — місце знайомства, а не каси (Марія): кнопки «Оформити
+  // в Telegram» тут немає, натомість стоїть ціна й перехід на /plus, де можна
+  // дочитати. Вести з банера одразу в оплату зарано.
+  assert.ok(!/<BotLink\b/.test(promo), 'банер знову веде одразу в бот');
+  assert.ok(!/Оформити|Subscribe on Telegram/.test(code(promo)), 'у банері знову кнопка оплати');
+  assert.ok(/PRICE_HALF/.test(promo) && /PRICE\b/.test(promo), 'ціни в банері немає');
+  assert.ok(promo.includes("'/plus'") && promo.includes("'/en/plus'"), 'кнопка не веде на /plus');
   const text = code(promo);
   for (const bad of [/Дізнатися першим/, /Tell me first/, /місто/i, /city/i, /без реклами/i]) {
     assert.ok(!bad.test(text), `знову ${bad} у тексті блоку Dityam+`);

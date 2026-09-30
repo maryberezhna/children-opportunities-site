@@ -62,11 +62,37 @@ test('Топ тижня: відмічена картка стоїть першо
   assert.deepEqual(top.map((c) => c.id), [9, 1, 2]);
 });
 
-test('Топ тижня: відмічена картка без дедлайну теж потрапляє', () => {
+test('Топ тижня: відмічена картка без дат теж потрапляє', () => {
   const items = [card(1, '2026-10-05'), card(2, '2026-10-06'),
                  card(9, null, { featured_week: WEEK })];
   const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
   assert.deepEqual(top.map((c) => c.id), [9, 1, 2]);
+});
+
+// Правило Марії: якщо термін закінчився — знімаємо. 30.09.2026 у блоці висів
+// закріплений вручну Erasmus+ Mobility з підписом «стежте за новим набором»:
+// набір цього сезону минув, а блок кричить «⏰ встигніть цього тижня».
+// Пропустило його послаблення з #569 — закріплені обходили перевірку дат.
+test('Топ тижня: закріплений «щорічно, стежте за новим набором» не показуємо', () => {
+  const periodic = { id: 9, deadline: null, timing_kind: 'periodic', recurrence: 'annual',
+                     title: 'Щорічна програма', featured_week: WEEK };
+  const items = [card(1, '2026-10-05'), card(2, '2026-10-06'), card(3, '2026-10-07'), periodic];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.deepEqual(top.map((c) => c.id), [1, 2, 3]);
+});
+
+test('Топ тижня: закріплений із протермінованим дедлайном не показуємо', () => {
+  const past = card(9, '2026-09-01', { featured_week: WEEK });
+  const items = [card(1, '2026-10-05'), card(2, '2026-10-06'), card(3, '2026-10-07'), past];
+  const top = topWeekCards({ items, week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.ok(!top.some((c) => c.id === 9), 'протермінований лишився в трійці');
+});
+
+test('Топ тижня: закріплений постійний набір лишається', () => {
+  const perm = { id: 9, deadline: null, timing_kind: 'permanent', title: 'Гурток партнера',
+                 featured_week: WEEK };
+  const top = topWeekCards({ items: [card(1, '2026-10-05'), perm], week: WEEK, todayIso: '2026-10-01', daysUntil });
+  assert.equal(top[0].id, 9);
 });
 
 test('Топ тижня: позначка минулого тижня не діє', () => {
