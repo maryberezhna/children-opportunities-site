@@ -629,3 +629,19 @@
 @media (max-width: 640px) {
   .plus-open-btn { display: block; text-align: center; }
 }
+
+/* Мобільні розміри блоку підтримки — з responsive.css (30.09.2026): файл
+   тепер підключається лише на підбірках, тож і його мобільні правила тут. */
+@media (max-width: 640px) {
+  .support-section { padding: 24px 18px; border-radius: 20px; }
+
+  .support-content { gap: 20px; }
+
+  .support-title { font-size: 1.25rem; }
+  .support-description { font-size: 0.875rem; }
+  .support-benefits li { font-size: 0.875rem; }
+
+  .support-cta-card { padding: 20px 18px 14px; }
+  .support-price-num { font-size: 2.25rem; }
+  .support-cta-btn { padding: 14px 20px; }
+}

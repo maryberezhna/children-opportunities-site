@@ -1,3 +1,4 @@
+import '@/app/styles/plus-landing.css';
 import PlusChoice from '../PlusChoice';
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';

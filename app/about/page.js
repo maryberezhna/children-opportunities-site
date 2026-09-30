@@ -1,3 +1,4 @@
+import '@/app/styles/routes/about.css';
 import Link from 'next/link';
 import Footer from '../Footer';
 import PressLogos from '../PressLogos';

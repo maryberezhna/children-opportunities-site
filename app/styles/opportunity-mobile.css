@@ -9,32 +9,6 @@
 .o-m-bar { display: none; }
 
 @media (max-width: 900px) {
-  /* Рядок «← Усі можливості / Поділитися ↗» на всю ширину екрана. */
-  .opportunity-breadcrumbs {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 0 calc(50% - 50vw) 20px;
-    padding: 0 20px;
-    border-bottom: 1px solid var(--v2-line);
-  }
-
-  .opportunity-breadcrumbs a {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--v2-ink-2);
-  }
-
-  /* На телефоні з крихт лишається лише «← {підбірка}» (макет
-     OpportunityMobile.dc.html): решта — місце, а не навігація. */
-  .opportunity-breadcrumbs > a:first-child,
-  .opportunity-breadcrumbs > span { display: none; }
-  .opportunity-breadcrumbs .o-crumb-topic::before { content: '← '; }
-
   .opportunity-page {
     display: flex;
     flex-direction: column;

@@ -1,4 +1,5 @@
 'use client';
+import '@/app/styles/contact-form.css';
 import { useEffect, useState } from 'react';
 import { CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
 

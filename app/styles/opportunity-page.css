@@ -1,20 +1,6 @@
 /* Детальна сторінка можливості */
 /* ============ ДЕТАЛЬНА СТОРІНКА ============ */
 
-.opportunity-breadcrumbs {
-  margin: 16px 0 24px;
-  font-size: 0.875rem;
-}
-
-.opportunity-breadcrumbs a {
-  color: var(--ink-soft);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.opportunity-breadcrumbs a:hover {
-  color: var(--accent);
-}
 
 .opportunity-page {
   background: var(--surface);
@@ -202,17 +188,6 @@
 }
 
 
-.support-page .paypal-container {
-  margin: 16px 0 28px;
-  max-width: 420px;
-}
-
-.support-page .support-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin: 16px 0 28px;
-}
 
 .opportunity-related {
   margin: 48px 0 24px;
@@ -259,29 +234,6 @@
   .opportunity-related-list { grid-template-columns: 1fr; }
 }
 
-.card-title-link {
-  color: inherit;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.card-title-link:hover {
-  color: var(--accent);
-}
-
-/* Make the entire card clickable via the title link without breaking
-   nested anchors (link-btn for source_url stays interactive). */
-.card-title-link::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.card .link-btn {
-  position: relative;
-  z-index: 2;
-}
 
 
 /* ---- Форма кейсу «я подався / нас взяли» ---- */
@@ -429,21 +381,6 @@
    Праворуч: липка картка дії й блок каналу. Кольори — лише змінні base.css
    і вже наявні класи чипів. */
 
-.opportunity-breadcrumbs {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 8px;
-  color: var(--ink-muted);
-}
-.opportunity-breadcrumbs .o-crumb-here {
-  min-width: 0;
-  max-width: 48ch;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ink);
-}
 
 /* Факти: сітка з внутрішніми лініями. Лінії — зліва й зверху в кожної
    клітинки, крім першого стовпця й першого ряду: так сітка правильна для
@@ -659,7 +596,6 @@
   }
   .o-main { min-width: 0; }
 
-  .opportunity-breadcrumbs { margin: 14px 0 18px; }
   .opportunity-chips { margin-bottom: 14px; }
   .opportunity-title { margin-bottom: 10px; }
   .opportunity-summary { margin-bottom: 0; }

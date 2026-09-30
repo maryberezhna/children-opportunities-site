@@ -1,3 +1,4 @@
+import '@/app/styles/routes/topic.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS } from '@/lib/supabase';
 import { TOPICS, topicPath, collectionsPath } from '@/lib/topics';
