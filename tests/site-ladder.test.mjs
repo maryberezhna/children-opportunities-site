@@ -3,8 +3,9 @@
 // До того на одній підбірці людина бачила до дев'яти закликів у пʼять різних
 // місць, а Dityam+ був одночасно «Оформити», «Дізнатися першим» і «скоро,
 // стати в список». Тепер головний заклик сайту — канал, а Dityam+ на сайті
-// лишився в шапці, на /plus, на /dedlainy і — з 28.09.2026 — однією карткою в
-// підбірках (Марія: у канал і так веде спливна підказка). Продає його сам канал.
+// лишився в шапці, на /plus, на /dedlainy, з 28.09.2026 — однією карткою в
+// підбірках (Марія: у канал і так веде спливна підказка), а з 30.09.2026 —
+// одним блоком унизу сторінки можливості (app/PlusPromo.js).
 //
 // Тест стереже, щоб Dityam+ тихо не повернувся в списки, картки й підказку —
 // блоки промо вже раз додавали й прибирали в паралельних сесіях.
@@ -21,7 +22,6 @@ const read = (f) => readFileSync(join(root, f), 'utf8');
 // Місця, де людина гортає або читає можливість: тут веде лише канал.
 const CHANNEL_ONLY = [
   'app/OpportunitiesList.js',
-  'app/o/shared.js',
   'app/SubscribePopup.js',
   'app/StickyBar.js',
   'app/HomeBlocks.js',
@@ -47,6 +47,24 @@ for (const file of CHANNEL_ONLY) {
     }
   });
 }
+
+// Сторінка можливості: один блок Dityam+ унизу, між схожими й футером
+// (рішення Марії 30.09.2026), через PlusPromo із міткою, яку бот записує.
+test('сторінка можливості: один блок Dityam+ через PlusPromo, з міткою opportunity_page', () => {
+  const page = read('app/o/shared.js');
+  const promo = read('app/PlusPromo.js');
+  assert.equal((page.match(/<PlusPromo\b/g) || []).length, 1, 'блок Dityam+ на сторінці — один');
+  assert.ok(page.indexOf('<PlusPromo') > page.indexOf('opportunity-related'), 'блок стоїть після «Схожих можливостей»');
+  assert.ok(/<BotLink\b/.test(promo), 'клік має рахуватись у GA4 (BotLink)');
+  assert.ok(promo.includes('plusFromUrl(place)'), 'кнопка веде в бот через plusFromUrl');
+  for (const place of ['opportunity_page', 'opportunity_page_en']) {
+    assert.equal(parseSourceArg(new URL(plusFromUrl(place)).searchParams.get('start')), place, `мітку «${place}» бот не прочитає`);
+  }
+  const text = code(promo);
+  for (const bad of [/Дізнатися першим/, /Tell me first/, /місто/i, /city/i, /без реклами/i]) {
+    assert.ok(!bad.test(text), `знову ${bad} у тексті блоку Dityam+`);
+  }
+});
 
 test('блоку PlusSection більше немає', () => {
   assert.ok(!existsSync(join(root, 'app/PlusSection.js')));
