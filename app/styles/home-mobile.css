@@ -223,10 +223,17 @@
   .m-search input::placeholder { color: #b8b3a6; }
 
   /* Вік одразу під пошуком: пʼять груп у ряд, зона дотику 44px. */
+  .m-ages-hint {
+    margin: 12px 0 0;
+    font-size: 13px;
+    line-height: 1.35;
+    color: #6b6b6b;
+  }
+  html[data-mode="teens"] .m-ages-hint { color: rgba(247, 241, 230, 0.75); }
   .m-ages {
     display: flex;
     gap: 6px;
-    margin-top: 10px;
+    margin-top: 6px;
   }
 
   .m-ages .m-age {

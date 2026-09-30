@@ -71,6 +71,11 @@ const UI = {
     // Той самий блок, що панель у hero на десктопі: «Топ 3 цього тижня»
     // (Марія, 30.09.2026), а не «найближчі дедлайни».
     mTop: 'Топ 3 цього тижня',
+    // Підказка над пігулками віку на телефоні: голі «0–3 · 4–6 · …» під
+    // пошуком ні про що не казали (Марія, 30.09.2026: «напиши хоч якусь
+    // фразу — побачте добірку для таких-то років»).
+    mAgeHint: 'Оберіть вік дитини — і побачите добірку саме для неї',
+    mAgeHintTeens: 'Обери свій клас — побачиш добірку для себе',
     swipe: 'листайте →',
     sortHint: 'за дедлайном ↓',
     typeGroup: 'Тип',
@@ -134,6 +139,8 @@ const UI = {
     sideSearchTeens: 'FLEX, internships…',
     filters: 'Filters',
     mTop: 'Top 3 this week',
+    mAgeHint: 'Pick your child’s age to see a matching selection',
+    mAgeHintTeens: 'Pick your grade to see what fits you',
     swipe: 'swipe →',
     sortHint: 'by deadline ↓',
     typeGroup: 'Type',
@@ -1425,8 +1432,10 @@ export default function OpportunitiesList({
               {searchInput()}
             </label>
             {/* Вік одразу під пошуком (макет Mobile.dc.html): пʼять груп сайту,
-                ті самі, що в шторці й бічній панелі. */}
-            <div className="m-ages" role="group" aria-label={teens ? t.sel.grade : t.sel.age}>
+                ті самі, що в шторці й бічній панелі. Над ними — фраза, бо самі
+                числа без підпису не читались (30.09.2026). */}
+            <p className="m-ages-hint" id="m-ages-hint">{teens ? t.mAgeHintTeens : t.mAgeHint}</p>
+            <div className="m-ages" role="group" aria-labelledby="m-ages-hint">
               {ageList.filter((o) => available.ages.has(o[0]) || age.includes(o[0])).map((o) => (
                 <button
                   key={o[0]}
