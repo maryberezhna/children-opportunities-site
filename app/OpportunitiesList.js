@@ -67,8 +67,8 @@ const UI = {
     mSearchTeens: 'FLEX, стажування, НМТ…',
     sideSearchTeens: 'FLEX, стажування…',
     filters: 'Фільтри',
-    mTopWeek: '⏰ Встигніть цього тижня',
-    mTopSoon: '⏰ Найближчі дедлайни',
+    mTopWeek: 'Встигніть цього тижня',
+    mTopSoon: 'Найближчі дедлайни',
     swipe: 'листайте →',
     sortHint: 'за дедлайном ↓',
     typeGroup: 'Тип',
@@ -132,8 +132,8 @@ const UI = {
     mSearchTeens: 'FLEX, internships…',
     sideSearchTeens: 'FLEX, internships…',
     filters: 'Filters',
-    mTopWeek: '⏰ Make it this week',
-    mTopSoon: '⏰ Closing soonest',
+    mTopWeek: 'Make it this week',
+    mTopSoon: 'Closing soonest',
     swipe: 'swipe →',
     sortHint: 'by deadline ↓',
     typeGroup: 'Type',
@@ -854,31 +854,38 @@ export default function OpportunitiesList({
     );
   };
 
-  // Велика картка горизонтальної стрічки (6a): дедлайн — найбільший текст.
+  // Картка стрічки «Найближчі дедлайни» на телефоні (макет Mobile.dc.html):
+  // помаранчевий квадрат із датою, назва, рядок «тип · вік · безкоштовно» —
+  // те саме, що в панелі хіро на десктопі. Без дедлайну (відмічена в
+  // адмінці) — «Топ» замість дати.
   const renderTopCard = (item) => {
-    const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
     const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
       || item.opportunity_type;
-    const age = ageText(item);
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(item.deadline || ''));
+    const months = isEn ? MONTHS_EN
+      : ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
+    const meta = [typeLabel, ageText(item), item.cost_type === 'free' ? (isEn ? 'free' : 'безкоштовно') : null]
+      .filter(Boolean).join(' · ');
     return (
-      <article key={item.id} className="m-top-card">
-        <div className="m-top-row">
-          <span className="v2-tag" style={{ background: tagBg, color: tagFg }}>{typeLabel}</span>
-          {age ? <span className="m-top-age">{age}</span> : null}
-        </div>
-        <span className="m-top-dl">{dlChip(item).text}</span>
-        <h3>
-          <Link
-            href={`${isEn ? '/en' : ''}/o/${item.slug}`}
-            lang={isEn && !item.title_en ? 'uk' : undefined}
-          >
-            {enField(item, 'title')}
-          </Link>
-        </h3>
-        {enField(item, 'summary') ? (
-          <p lang={isEn && !item.summary_en ? 'uk' : undefined}>{enField(item, 'summary')}</p>
-        ) : null}
-      </article>
+      <Link
+        key={item.id}
+        href={`${isEn ? '/en' : ''}/o/${item.slug}`}
+        className="m-top-card"
+        lang={isEn && !item.title_en ? 'uk' : undefined}
+      >
+        <span className="v2-soon-date" aria-hidden="true">
+          {m ? (
+            <>
+              <span className="v2-soon-day">{Number(m[3])}</span>
+              <span className="v2-soon-month">{months[Number(m[2]) - 1]}</span>
+            </>
+          ) : <span className="v2-soon-month">{isEn ? 'Top' : 'Топ'}</span>}
+        </span>
+        <span className="m-top-text">
+          <span className="m-top-name">{enField(item, 'title')}</span>
+          <span className="m-top-meta">{meta}</span>
+        </span>
+      </Link>
     );
   };
 
