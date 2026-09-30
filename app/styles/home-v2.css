@@ -322,34 +322,29 @@
 /* Група «Підбірки» в мобільному меню. З нею меню довше за екран телефона —
    тому воно прокручується, а не вилазить за нижній край. */
 .v2-mmenu { max-height: calc(100vh - 64px); overflow-y: auto; }
-.v2-mmenu-group {
-  display: flex;
-  flex-direction: column;
-  padding: 6px 0 6px;
-  border-bottom: 1px solid var(--v2-line);
-}
-.v2-mmenu-label {
-  padding: 12px 0 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--v2-ink-3);
-}
-
+/* Група не має власних полів і рамки: її перший рядок — така сама кнопка, як
+   решта пунктів меню, і сама несе межу під собою. Інакше «Підбірки» стояли б
+   на іншій висоті, ніж «Про проєкт» (Марія, 30.09.2026). */
+.v2-mmenu-group { display: flex; flex-direction: column; }
 /* Згорнута група підбірок: сама кнопка — той самий підпис, лише з рискою
    праворуч і достатньою висотою, щоб у неї можна було влучити пальцем. */
+/* Виглядає й стоїть точно як пункт-посилання поруч: ті самі висота, розмір,
+   насиченість, колір і межа. Відрізняє лише риска праворуч. */
 .v2-mmenu-toggle {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   width: 100%;
-  min-height: 44px;
-  padding: 12px 0;
+  min-height: 52px;
+  padding: 0;
   background: none;
   border: 0;
+  border-bottom: 1px solid var(--v2-line);
   font-family: inherit;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--v2-ink);
   text-align: left;
   cursor: pointer;
 }

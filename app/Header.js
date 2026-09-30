@@ -275,7 +275,7 @@ export default function Header() {
             <button
               type="button"
               id="v2-mmenu-topics"
-              className={`v2-mmenu-label v2-mmenu-toggle${mTopicsOpen ? ' is-open' : ''}`}
+              className={`v2-mmenu-toggle${mTopicsOpen ? ' is-open' : ''}`}
               aria-expanded={mTopicsOpen}
               aria-controls="v2-mmenu-topics-list"
               onClick={() => setMTopicsOpen((v) => !v)}
