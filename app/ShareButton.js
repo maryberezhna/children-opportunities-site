@@ -1,17 +1,21 @@
 'use client';
 import { useState } from 'react';
 
-// «Поділитися з іншим батьком» у картці дії й кнопка-іконка в панелі на
-// телефоні (редизайн, 29.09.2026). Системне меню поширення (Web Share API),
-// де його немає — копіюємо адресу. Подія share_click лишилась як була.
+// «Поділитися з іншим батьком» у картці дії й кнопка-іконка в нижніх панелях
+// на телефоні. Системне меню поширення (Web Share API), де його немає —
+// копіюємо адресу.
+//
+// Живе в app/, а не в app/o/[slug]/: з 30.09.2026 нею користується і панель
+// підбірок (StickyBar), бо поділитися має бути звідки завгодно, а не лише зі
+// сторінки можливості.
 //
 // `icon` — лише значок без підпису (панель на телефоні): підпис іде в
 // aria-label, а «Посилання скопійовано» читає екранний читач через aria-live.
-export default function ShareButton({ title, label, copiedLabel, className, icon = false }) {
+export default function ShareButton({ title, label, copiedLabel, className, icon = false, place = 'detail_page' }) {
   const [copied, setCopied] = useState(false);
 
   const onClick = async () => {
-    if (window.gtag) window.gtag('event', 'share_click', { event_label: 'detail_page' });
+    if (window.gtag) window.gtag('event', 'share_click', { event_label: place });
     const url = window.location.href;
     try {
       if (navigator.share) {

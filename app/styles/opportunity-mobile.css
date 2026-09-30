@@ -189,6 +189,22 @@
   }
   .o-m-share:active { background: var(--v2-cream); }
 
+  /* Канал — така сама кругла кнопка, як «Поділитися» (30.09.2026). */
+  .o-m-tg {
+    flex: 0 0 52px;
+    height: 52px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--v2-ink);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--v2-ink);
+    text-decoration: none;
+  }
+  .o-m-tg:active { background: var(--v2-cream); }
+
   .o-m-bar .o-m-apply {
     flex: 1;
     height: 52px;
