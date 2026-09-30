@@ -374,11 +374,14 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 .v2-hero {
   max-width: var(--v2-max-w);
   margin: 0 auto;
-  padding: 48px 32px 40px;
+  padding: 44px 32px 28px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 420px;
   gap: 56px;
-  align-items: start;
+  /* Панель праворуч тягнеться на висоту тексту ліворуч: інакше під нею
+     лишалась біла діра (Марія, 30.09.2026: «мені не подобається це пусте
+     місце»). */
+  align-items: stretch;
 }
 
 .v2-hero-copy {
@@ -482,9 +485,11 @@ html[data-mode="teens"] .v2-tile-label { color: #f7f1e6; }
 html[data-mode="teens"] .v2-hero-search-field { border-color: #f7f1e6; }
 html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong); }
 
-/* «Встигніть цього тижня»: тепла панель, три рядки з датою. */
+/* «Встигніть цього тижня»: тепла панель, три рядки з датою; посилання
+   внизу притиснуте до краю, щоб панель заповнювала свою колонку. */
 .v2-soon {
   box-sizing: border-box;
+  align-self: stretch;
   padding: 26px;
   background: var(--v2-cream);
   border-radius: 20px;
@@ -549,7 +554,8 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
 .v2-soon-meta { font-size: 0.8125rem; color: var(--v2-ink-3); }
 
 .v2-soon-all {
-  padding-top: 2px;
+  margin-top: auto;
+  padding-top: 10px;
   font-size: 0.9375rem;
   font-weight: 600;
   color: var(--v2-accent-strong);

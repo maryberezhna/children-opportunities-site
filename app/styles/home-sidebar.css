@@ -15,11 +15,16 @@
 @media (min-width: 1100px) {
   .v2-home .v2-filters { display: none; }
 
+  /* Список починається з тонкої лінії одразу під hero (макет Main.dc.html),
+     а не з порожнього відступу. */
   .v2-home .v2-catalog {
     display: grid;
     grid-template-columns: 260px minmax(0, 1fr);
     gap: 48px;
     align-items: start;
+    margin-top: -8px;
+    padding-top: 32px;
+    border-top: 1px solid var(--v2-line);
   }
 
   .v2-home .v2-catalog-main {
