@@ -297,7 +297,7 @@
   .v2-topics-mobile .v2-tiles::-webkit-scrollbar { display: none; }
   .v2-topics-mobile .v2-tiles::after { content: ''; flex: 0 0 8px; }
   .v2-topics-mobile .v2-tile { flex: 0 0 140px; }
-  .v2-topics-mobile .v2-tile img { height: 96px; }
+  .v2-topics-mobile .v2-tile img { height: 96px; aspect-ratio: auto; }
 
   /* Порядок після списку: канал → теми → організатори. Сітка нижніх блоків
      розчиняється, і її дві картки стають дітьми контейнера. */
