@@ -204,3 +204,45 @@ test('жодні дві підбірки не починаються з одна
     seen.set(key, slug);
   }
 });
+
+// --- онлайн-заняття, 30.09.2026 ---
+//
+// Доти всі 66 безкоштовних онлайн-занять лежали в «Гуртках», а title тієї
+// сторінки прямо обіцяв «онлайн і в містах України» — одна сторінка ловила
+// два різні запити й жоден добре.
+const onlineCourse = {
+  opportunity_type: 'course', cost_type: 'free', aid_type: null, format: 'online',
+  title: 'Безкоштовний онлайн-курс програмування', summary: '', cities: ['Онлайн'], countries: [],
+};
+const cityClub = {
+  opportunity_type: 'club', cost_type: 'free', aid_type: null, format: 'offline',
+  title: 'Гурток робототехніки', summary: '', cities: ['Київ'], countries: [],
+};
+
+test('онлайн-заняття: бере безкоштовний онлайн-курс, гурток у місті — ні', () => {
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(onlineCourse), true);
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(cityClub), false);
+});
+
+test('«Гуртки» на головній більше не показують онлайн', () => {
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].match(onlineCourse), false);
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].match(cityClub), true);
+});
+
+// А на сторінці міста всеукраїнський онлайн-гурток лишається: батькам у малому
+// місті він доступний так само, як місцевий.
+test('на сторінці міста онлайн-заняття лишається видимим', () => {
+  assert.equal(TOPICS['bezkoshtovni-hurtky'].cityMatch(onlineCourse), true);
+});
+
+test('онлайн-заняття: платне й конкурс не беремо', () => {
+  const paid = { ...onlineCourse, cost_type: 'paid_affordable' };
+  const contest = { ...onlineCourse, opportunity_type: 'competition', title: 'Онлайн-конкурс малюнка' };
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(paid), false);
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].match(contest), false);
+});
+
+// «Онлайн-курси у Києві» — запит, якого ніхто не ставить.
+test('онлайн-заняття не породжують міських сторінок', () => {
+  assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].noCityPages, true);
+});
