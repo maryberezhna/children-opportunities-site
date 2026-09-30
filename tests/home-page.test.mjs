@@ -63,7 +63,7 @@ test('список: сортування, фільтри лише в панел�
   assert.ok(order.every((i) => i >= 0), 'у панелі бракує групи');
   assert.deepEqual([...order].sort((a, b) => a - b), order, 'порядок: вік → дедлайн → вартість → де → тип → особлива потреба');
   assert.ok(!side.includes('v2-side-search'), 'пошуку в панелі немає — він у хіро');
-  assert.ok(side.includes('NEEDS_SHOWN = 5') && side.includes('t.moreNeeds('), 'обставини: перші 5 і «Ще N»');
+  assert.ok(!side.includes('moreNeeds') && !side.includes('v2-side-more'), 'обставини — усі одразу, без «Ще N» (Марія, 30.09.2026)');
   assert.ok(list.includes('groupMonOlympiads(stream)'), 'олімпіади МОН — групою');
   assert.ok(list.includes('topCards.length === 3 && !sidebarLayout'), 'на десктопі головної топ лише в хіро');
   assert.ok(list.includes('className="v2-active"') && list.includes('t.clearAll'), 'активні чипи з «Очистити все» на десктопі');

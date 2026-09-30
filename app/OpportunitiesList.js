@@ -85,8 +85,6 @@ const UI = {
     sortBtn: 'Сортування',
     filtersBtn: (n) => (n ? `Фільтри (${n})` : 'Фільтри'),
     clearAll: 'Очистити все',
-    moreNeeds: (n, names) => `Ще ${n}${names ? `: ${names}…` : ''}`,
-    lessNeeds: 'Менше',
     olymp: {
       title: 'Всеукраїнські учнівські олімпіади 2026/27',
       subjects: (n) => `${n} ${plural(n, 'предмет', 'предмети', 'предметів')}`,
@@ -150,8 +148,6 @@ const UI = {
     sortBtn: 'Sort',
     filtersBtn: (n) => (n ? `Filters (${n})` : 'Filters'),
     clearAll: 'Clear all',
-    moreNeeds: (n, names) => `${n} more${names ? `: ${names}…` : ''}`,
-    lessNeeds: 'Less',
     olymp: {
       title: 'All-Ukrainian school olympiads 2026/27',
       subjects: (n) => `${n} ${n === 1 ? 'subject' : 'subjects'}`,
@@ -487,8 +483,6 @@ export default function OpportunitiesList({
   // Сортування (редизайн 29.09.2026): найближчий дедлайн, як було, або нові.
   const [sort, setSort] = useState('deadline');
   const [sortOpen, setSortOpen] = useState(false);
-  // «Особлива потреба» в бічній панелі: перші пʼять і «Ще N».
-  const [moreNeeds, setMoreNeeds] = useState(false);
   // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
   const searched = useRef('');
   const [hydrated, setHydrated] = useState(false);
@@ -1304,11 +1298,9 @@ export default function OpportunitiesList({
   // Порядок груп за макетом (29.09.2026): вік → дедлайн → вартість → де
   // (формат і місце: онлайн, за кордоном, місто) → тип → особлива потреба.
   // Пошуку в панелі немає: поле в хіро шле запит сюди подією.
+  // Обставини — усі одразу, без «Ще N» (Марія, 30.09.2026: «показуй усі фільтри»).
   const needOpts = needList.map((o) => [o[0], optLabel(o)]);
-  const needVisible = needOpts.filter(([v]) => (side?.need?.[v] || 0) > 0 || has(need, v));
-  const NEEDS_SHOWN = 5;
-  const needShown = moreNeeds ? needVisible : needVisible.slice(0, NEEDS_SHOWN);
-  const needHidden = needVisible.length - needShown.length;
+  const needShown = needOpts.filter(([v]) => (side?.need?.[v] || 0) > 0 || has(need, v));
 
   const renderSide = () => (
     <aside className="v2-side" aria-label={t.filters}>
@@ -1402,13 +1394,6 @@ export default function OpportunitiesList({
                 <span className="v2-side-n">{side?.need?.[v] || 0}</span>
               </button>
             ))}
-            {needHidden > 0 || moreNeeds ? (
-              <button type="button" className="v2-side-more" onClick={() => setMoreNeeds(!moreNeeds)}>
-                {moreNeeds
-                  ? t.lessNeeds
-                  : t.moreNeeds(needHidden, needVisible.slice(NEEDS_SHOWN, NEEDS_SHOWN + 3).map(([, l]) => String(l).toLowerCase()).join(', '))}
-              </button>
-            ) : null}
           </div>
         </div>
       ) : null}
