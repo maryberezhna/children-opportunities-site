@@ -43,6 +43,15 @@ test('крок «phone» після анкети — це вже «заповн�
   assert.equal(f.find((s) => s.key === 'filled').n, 1);
 });
 
+// Банк відхилив картку: рахунку в базі немає (він пишеться лише при успіху),
+// але до оплати людина дійшла — це видно з відповіді WayForPay.
+test('відхилений банком платіж — це «дійшли до оплати»', () => {
+  const subs = [sub(1, { consent_at: 'x', wfp_last_status: 'Declined', status: 'paused' })];
+  const f = plusFunnel({ subs, childIds: new Set([1]) });
+  assert.equal(f.find((s) => s.key === 'pay').n, 1);
+  assert.equal(f.find((s) => s.key === 'paid').n, 0);
+});
+
 test('порожня база не ділить на нуль', () => {
   const f = plusFunnel({ subs: [], childIds: new Set() });
   assert.equal(f[0].n, 0);
