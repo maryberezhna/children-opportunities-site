@@ -7,9 +7,9 @@ import {
 
 // Реальні числа GA4 за 28 днів до 30.09.2026 (перевірено через конектор).
 const totals = [
-  { dateRange: 'date_range_0', newVsReturning: 'new', activeUsers: 1962, sessions: 1966, screenPageViews: 6203, averageSessionDuration: 224.7 },
-  { dateRange: 'date_range_0', newVsReturning: 'returning', activeUsers: 310, sessions: 645, screenPageViews: 2585, averageSessionDuration: 483.7 },
-  { dateRange: 'date_range_0', newVsReturning: '(not set)', activeUsers: 0, sessions: 137, screenPageViews: 123, averageSessionDuration: 39 },
+  { dateRange: 'date_range_0', newVsReturning: 'new', activeUsers: 1962, sessions: 1966, screenPageViews: 6203, userEngagementDuration: 143020 },
+  { dateRange: 'date_range_0', newVsReturning: 'returning', activeUsers: 310, sessions: 645, screenPageViews: 2585, userEngagementDuration: 54706 },
+  { dateRange: 'date_range_0', newVsReturning: '(not set)', activeUsers: 0, sessions: 137, screenPageViews: 123, userEngagementDuration: 0 },
 ];
 
 test('відвідувачі, перегляди, повернення, час — без рядка (not set)', () => {
@@ -18,8 +18,8 @@ test('відвідувачі, перегляди, повернення, час �
   assert.equal(t.views, 8788);
   assert.equal(t.returningShare, 14);
   assert.equal(t.pagesPerSession, 3.4);
-  // Зважено за сеансами: (224.7·1966 + 483.7·645) / 2611 ≈ 289 с.
-  assert.equal(t.avgSessionSec, 289);
+  // Час взаємодії / сеанси: 197 726 / 2 611 ≈ 76 с (1:16), як у GA4.
+  assert.equal(t.avgSessionSec, 76);
 });
 
 test('частка України', () => {
