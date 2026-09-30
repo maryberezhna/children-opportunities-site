@@ -44,6 +44,10 @@
 
 .plus-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: #d4cfc1; }
 
+/* Ціна в самому банері (Марія, 30.09.2026): людина має бачити, скільки це
+   коштує, ще до того, як кудись натисне. */
+.plus-promo-price { margin: 10px 0 0; font-size: 15px; font-weight: 700; color: #ffffff; }
+
 .plus-promo .plus-promo-btn {
   flex-shrink: 0;
   display: inline-flex;

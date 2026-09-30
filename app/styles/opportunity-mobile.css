@@ -44,6 +44,9 @@
   }
 
   .o-m-deadline {
+    /* Залитий блок між назвою й описом: спільного gap:14px замало, він
+       злипався з обома (Марія, 30.09.2026). */
+    margin: 6px 0 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;

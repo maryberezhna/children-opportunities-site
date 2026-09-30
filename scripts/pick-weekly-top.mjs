@@ -21,7 +21,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { isoWeek } from '../lib/week.js';
 import { cutTitle } from '../lib/text.js';
-import { selectWeeklyTop, day, MIN_DAYS, MAX_DAYS } from '../lib/weekly-top.js';
+import { selectWeeklyTop, topWeekEligible, day, MIN_DAYS, MAX_DAYS } from '../lib/weekly-top.js';
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -55,7 +55,7 @@ async function main() {
 
   const { data, error } = await sb
     .from('opportunities')
-    .select('id, slug, title, summary, details, cities, age_from, age_to, deadline, opportunity_type, cost_type, featured_week, admin_comment')
+    .select('id, slug, title, summary, details, cities, age_from, age_to, deadline, opportunity_type, cost_type, featured_week, admin_comment, status, timing_kind, recurrence, season_months, event_start_date, event_end_date, results_date')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .eq('cost_type', 'free')
@@ -66,14 +66,23 @@ async function main() {
   // бере лише безкоштовні, і платний партнерський запис у неї не потрапляв.
   const { data: pinnedRows, error: pinErr } = await sb
     .from('opportunities')
-    .select('id, slug, title, summary, details, cities, age_from, age_to, deadline, opportunity_type, cost_type, featured_week, admin_comment')
+    .select('id, slug, title, summary, details, cities, age_from, age_to, deadline, opportunity_type, cost_type, featured_week, admin_comment, status, timing_kind, recurrence, season_months, event_start_date, event_end_date, results_date')
     .eq('status', 'active')
     .is('canonical_slug', null)
     .eq('featured_week', week);
   if (pinErr) throw pinErr;
 
-  const pinned = pinnedRows || [];
-  console.log(`Тиждень ${week}. Вручну відмічено: ${pinned.length}`);
+  // Відмічене вручну теж має бути відкритим для подачі: 30.09.2026 у блоці
+  // висів закріплений «Щорічно — стежте за новим набором», куди цього сезону
+  // вже не подати. Знімаємо позначку, а не просто ховаємо: інакше вона
+  // висітиме в базі й повернеться наступного прогону.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const all = pinnedRows || [];
+  const pinned = all.filter((o) => topWeekEligible(o, todayIso));
+  const stalePins = all.filter((o) => !pinned.includes(o));
+  console.log(`Тиждень ${week}. Вручну відмічено: ${all.length}`
+    + (stalePins.length ? `, з них закрито для подачі: ${stalePins.length}` : ''));
+  for (const o of stalePins) console.log(`  ✗ знято: ${o.title.slice(0, 70)}`);
 
   const picked = selectWeeklyTop({ free: data || [], pinned, today });
 
