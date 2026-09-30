@@ -185,7 +185,7 @@ export default async function MetricsPage() {
     // Уся воронка, а не лише ті, хто дійшов: саме ті, хто НЕ дійшов,
     // і показують, де ми їх втрачаємо.
     allSubsRes: supabase.from('digest_subscribers')
-      .select('id, status, consent_at, flow_step, wfp_order_reference, source'),
+      .select('id, status, consent_at, flow_step, wfp_order_reference, wfp_last_status, source'),
     kidsRes: supabase.from('plus_children').select('subscriber_id, age_bands'),
     // Верхні кроки воронки — власні лічильники сайту (lib/site-events.js).
     siteRes: supabase.from('site_events').select('name'),
