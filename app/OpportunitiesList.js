@@ -16,6 +16,7 @@ import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
+import { packFullRows } from '@/lib/grid-rows';
 import { topWeekCards } from '@/lib/weekly-top';
 import { groupMonOlympiads, subjectLabel } from '@/lib/olympiad-group';
 import { STAGES, OLYMPIADS_PATH } from '@/lib/olympiads';
@@ -1676,11 +1677,18 @@ export default function OpportunitiesList({
             <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
               {/* Telegram-картка кожні 20 можливостей (lib/inline-card.js):
                   без таймерів, замість 4-секундної спливної підказки. */}
-              {shown.flatMap((item, i) => (
-                tgAfter.has(i)
-                  ? [item.group ? renderGroup(item) : renderCard(item), <TelegramCard key={`tg-card-${i}`} lang={lang} place="catalog" />]
-                  : [item.group ? renderGroup(item) : renderCard(item)]
-              ))}
+              {/* Група олімпіад і Telegram-картка — на весь рядок; перед неповним
+                  рядком вони стають попереду самотньої картки, щоб у сітці не
+                  зяяла порожня клітинка (lib/grid-rows.js, 30.09.2026). */}
+              {packFullRows(
+                shown.flatMap((item, i) => {
+                  const cell = { node: item.group ? renderGroup(item) : renderCard(item), full: Boolean(item.group) };
+                  return tgAfter.has(i)
+                    ? [cell, { node: <TelegramCard key={`tg-card-${i}`} lang={lang} place="catalog" />, full: true }]
+                    : [cell];
+                }),
+                (c) => c.full,
+              ).map((c) => c.node)}
             </section>
           ) : (
             <div className="v2-empty">

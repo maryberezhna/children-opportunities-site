@@ -990,6 +990,11 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
      за край, а стискається до ширини контейнера. */
   grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 16px;
+  /* Блоки на весь рядок (олімпіади, Telegram-картка) у двоколонковій сітці
+     переставляє lib/grid-rows.js; тут — запобіжник для auto-fill із трьома
+     й більше колонками (сторінки міст): лишок клітинок добирає наступна
+     картка, а не порожнеча. */
+  grid-auto-flow: dense;
 }
 
 .v2-card {
