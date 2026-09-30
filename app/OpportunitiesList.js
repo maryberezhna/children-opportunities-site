@@ -68,8 +68,9 @@ const UI = {
     mSearchTeens: 'FLEX, стажування, НМТ…',
     sideSearchTeens: 'FLEX, стажування…',
     filters: 'Фільтри',
-    mTopWeek: 'Встигніть цього тижня',
-    mTopSoon: 'Найближчі дедлайни',
+    // Той самий блок, що панель у hero на десктопі: «Топ 3 цього тижня»
+    // (Марія, 30.09.2026), а не «найближчі дедлайни».
+    mTop: 'Топ 3 цього тижня',
     swipe: 'листайте →',
     sortHint: 'за дедлайном ↓',
     typeGroup: 'Тип',
@@ -132,8 +133,7 @@ const UI = {
     mSearchTeens: 'FLEX, internships…',
     sideSearchTeens: 'FLEX, internships…',
     filters: 'Filters',
-    mTopWeek: 'Make it this week',
-    mTopSoon: 'Closing soonest',
+    mTop: 'Top 3 this week',
     swipe: 'swipe →',
     sortHint: 'by deadline ↓',
     typeGroup: 'Type',
@@ -1584,14 +1584,7 @@ export default function OpportunitiesList({
           {mobileLayout && topCards.length === 3 ? (
             <section className="m-top" aria-labelledby="m-top-title">
               <div className="m-top-head">
-                {/* «Цього тижня» — лише коли всі три справді закриваються за 7
-                    днів; інакше заголовок обіцяв би те, чого в стрічці немає. */}
-                <h2 id="m-top-title">
-                  {topCards.every((c) => {
-                    const d = daysUntil(c.deadline, todayIso);
-                    return d !== null && d <= 7;
-                  }) ? t.mTopWeek : t.mTopSoon}
-                </h2>
+                <h2 id="m-top-title">{t.mTop}</h2>
                 <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
               </div>
               <div
