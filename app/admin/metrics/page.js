@@ -4,6 +4,7 @@ import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
 import { plusFunnel, plusSources } from '@/lib/funnel';
 import { allNamed } from '@/lib/allNamed';
+import { mediaKit } from '@/lib/mediakit';
 import LoginForm from '../LoginForm';
 
 export const runtime = 'nodejs';
@@ -69,6 +70,82 @@ async function count(supabase, table, filter = (q) => q, col = 'id') {
   return c ?? 0;
 }
 
+// Показники для рекламодавця (lib/mediakit.js): відвідувачі → увага → дія,
+// за 28 і 90 днів. Лише в адмінці (Марія, 30.09.2026). Без ключа GA4 —
+// інструкція, як його дати.
+const thS = { textAlign: 'right', fontSize: 12.5, color: '#54617a', fontWeight: 600, padding: '6px 8px' };
+const tdS = { textAlign: 'right', padding: '6px 8px', fontVariantNumeric: 'tabular-nums', fontWeight: 700 };
+const fmtSec = (s) => (s == null ? '—' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
+const fmtPct = (v) => (v == null ? '—' : `${v}%`);
+const fmtN = (v) => (v == null ? '—' : v.toLocaleString('uk-UA'));
+
+function MediaKit({ kit }) {
+  const audience = kit?.audience;
+  const audienceBlock = audience?.children ? (
+    <p style={{ ...noteS, marginTop: 10 }}>
+      Вік дітей у профілях Dityam+ ({audience.children}):{' '}
+      {audience.bands.map((b) => `${b.band} — ${b.share}%`).join(' · ')}.
+      GA4 не знає віку й статі відвідувачів (Google Signals вимкнено) — це єдині наші дані про аудиторію.
+    </p>
+  ) : null;
+
+  if (!kit || !kit.configured) {
+    return (
+      <>
+        <p style={noteS}>
+          GA4 із сервера ще не підключено. Щоб цифри зʼявились тут: у Google Cloud створити сервісний акаунт і JSON-ключ,
+          у GA4 (Адміністратор → Керування доступом до властивості) додати e-mail акаунта як «Переглядача»,
+          у Vercel додати змінні <code>GA4_PROPERTY_ID</code> = 533756602 і <code>GA4_SERVICE_ACCOUNT_JSON</code> = увесь JSON ключа одним рядком.
+          Показники: відвідувачі, перегляди, час, сторінок за сеанс, повернення, Україна, топ підбірок,
+          перегляди сторінок можливостей, переходи до організаторів, CTR карток на головній.
+        </p>
+        {audienceBlock}
+      </>
+    );
+  }
+  if (kit.error) return <p style={{ ...noteS, color: '#b3372e' }}>GA4 не відповів: {kit.error}</p>;
+
+  const rows = [
+    ['Унікальні відвідувачі', (r) => fmtN(r.users)],
+    ['Сеанси', (r) => fmtN(r.sessions)],
+    ['Перегляди сторінок', (r) => fmtN(r.views)],
+    ['Середній час сеансу', (r) => fmtSec(r.avgSessionSec)],
+    ['Сторінок за сеанс', (r) => (r.pagesPerSession ?? '—')],
+    ['Повернулись (частка відвідувачів)', (r) => fmtPct(r.returningShare)],
+    ['З України', (r) => fmtPct(r.ukraineShare)],
+    ['Перегляди сторінок можливостей', (r) => `${fmtN(r.opportunityViews)} (${fmtPct(r.opportunityShare)} переглядів)`],
+    ['Переходи до організаторів', (r) => `${fmtN(r.outbound)} (${fmtPct(r.outboundPerUsers)} від відвідувачів)`],
+    ['Перегляди головної', (r) => fmtN(r.homeViews)],
+    ['Кліки карток на головній · CTR', (r) => `${fmtN(r.cardClicks)} · ${r.homeCtr == null ? '—' : `${r.homeCtr}%`}`],
+  ];
+  return (
+    <>
+      <table style={{ borderCollapse: 'collapse', width: '100%', maxWidth: 720, fontSize: 13.5, marginTop: 8 }}>
+        <thead>
+          <tr><th style={{ ...thS, textAlign: 'left' }}>Показник</th>{kit.ranges.map((r) => <th key={r.label} style={thS}>{r.label}</th>)}</tr>
+        </thead>
+        <tbody>
+          {rows.map(([label, f]) => (
+            <tr key={label} style={{ borderTop: '1px solid #f0f3f8' }}>
+              <td style={{ padding: '6px 8px' }}>{label}</td>
+              {kit.ranges.map((r) => <td key={r.label} style={tdS}>{f(r)}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p style={{ ...noteS, marginTop: 8 }}>
+        Топ підбірок за 28 днів: {kit.ranges[0].topTopics.map((t) => `${t.label} — ${fmtN(t.views)}`).join(' · ') || '—'}.
+      </p>
+      <p style={noteS}>
+        «Переходи до організаторів» — події opportunity_click і apply_click. CTR карток — кліки card_click на перегляди
+        головної: показів окремої картки GA4 не рахує, тож для «Топ тижня» це верхня межа. Реєстрації на сайті
+        організатора нам не видно — їх може повідомити лише сам організатор.
+      </p>
+      {audienceBlock}
+    </>
+  );
+}
+
 export default async function MetricsPage() {
   const configured = adminConfigured();
   const cookie = cookies().get('dityam_admin')?.value;
@@ -109,7 +186,7 @@ export default async function MetricsPage() {
     // і показують, де ми їх втрачаємо.
     allSubsRes: supabase.from('digest_subscribers')
       .select('id, status, consent_at, flow_step, wfp_order_reference, source'),
-    kidsRes: supabase.from('plus_children').select('subscriber_id'),
+    kidsRes: supabase.from('plus_children').select('subscriber_id, age_bands'),
     // Верхні кроки воронки — власні лічильники сайту (lib/site-events.js).
     siteRes: supabase.from('site_events').select('name'),
     snapshotsRes: supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
@@ -122,6 +199,14 @@ export default async function MetricsPage() {
   const subs = subsRes.data || [];
   const allSubs = allSubsRes.data || [];
   const childIds = new Set((kidsRes.data || []).map((k) => k.subscriber_id));
+  // Медіакіт: GA4 із сервера (lib/ga4.js). Помилка GA4 не валить сторінку —
+  // решта метрик з бази має показуватись і тоді.
+  let kit;
+  try {
+    kit = await mediaKit({ children: kidsRes.data || [] });
+  } catch (e) {
+    kit = { configured: true, error: String(e.message || e).slice(0, 300) };
+  }
   const site = {};
   for (const e of siteRes.data || []) site[e.name] = (site[e.name] || 0) + 1;
   const funnel = plusFunnel({ subs: allSubs, childIds, site });
@@ -218,9 +303,12 @@ export default async function MetricsPage() {
         <Card value={outcomes} label="історій «я подався» від батьків" />
       </div>
       <p style={noteS}>
-        Сесії, органіка і AI-трафік — у <a href="https://analytics.google.com" target="_blank" rel="noreferrer">GA4</a> та{' '}
-        <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>. Щоб бачити їх тут — потрібен сервісний ключ GA4 (напишіть Claude «підключи GA4 до метрик»).
+        Органіка і AI-трафік — у <a href="https://analytics.google.com" target="_blank" rel="noreferrer">GA4</a> та{' '}
+        <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>.
       </p>
+
+      <h2 style={h2S}>📊 Медіакіт — показники для рекламодавця</h2>
+      <MediaKit kit={kit} />
 
       <h2 style={h2S}>🪜 Воронка Dityam+</h2>
       {funnelFirst === 0 ? (
