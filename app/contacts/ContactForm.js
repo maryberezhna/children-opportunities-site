@@ -63,9 +63,17 @@ export default function ContactForm({ lang = 'uk' }) {
 
   // /contacts?type=story — сюди веде щомісячний пост у каналі. Читаємо з
   // location, а не useSearchParams, щоб сторінка лишалась статичною.
+  //
+  // ?url= підставляє посилання на сторінку, з якої прийшли. Потрібне для
+  // «Щось не так?»: з 30.09.2026 кнопка веде одразу сюди, і без цього
+  // параметра лист приходив би без найголовнішого — про який саме запис
+  // ідеться.
   useEffect(() => {
-    const wanted = new URLSearchParams(window.location.search).get('type');
+    const q = new URLSearchParams(window.location.search);
+    const wanted = q.get('type');
     if (wanted && CONTACT_TYPE_MAP[wanted]) setType(wanted);
+    const url = q.get('url');
+    if (url && /^https?:\/\//i.test(url)) setForm((f) => ({ ...f, url }));
   }, []);
 
   const active = CONTACT_TYPE_MAP[type];

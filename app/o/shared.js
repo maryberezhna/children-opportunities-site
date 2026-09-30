@@ -115,8 +115,6 @@ const L = {
     linkCheckedOn: (d) => `Посилання перевірено ${d}`,
     sourceWord: 'джерело',
     report: 'Щось не так? Повідомити',
-    reported: 'Дякуємо, перевіримо.',
-    reportMore: 'Написати, що саме не так →',
     similar: 'Схожі можливості',
     allOf: (name) => `Уся підбірка «${name}» →`,
     allHome: 'Усі можливості →',
@@ -168,8 +166,6 @@ const L = {
     linkCheckedOn: (d) => `Link checked ${d}`,
     sourceWord: 'source',
     report: 'Something wrong? Report',
-    reported: 'Thank you, we will check.',
-    reportMore: 'Tell us what is wrong →',
     similar: 'Similar opportunities',
     allOf: (name) => `All in “${name}” →`,
     allHome: 'All opportunities →',
@@ -784,9 +780,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   id={item.id}
                   slug={item.slug}
                   label={t.report}
-                  doneLabel={t.reported}
-                  moreLabel={t.reportMore}
-                  moreHref={`${base}/contacts?type=error`}
+                  href={`${base}/contacts?type=error`}
                 />
               </div>
             ) : null}
