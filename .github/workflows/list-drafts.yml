@@ -1,0 +1,39 @@
+name: Чернетки — показати (manual)
+
+# Друкує чернетки в лог: що за запис, куди йти по факти й чого бракує до
+# пʼяти обовʼязкових полів. Лише читає — нічого не змінює й нікому не пише.
+# Потрібен тому, що anon-ключ чернеток не бачить (RLS), а працювати з ними
+# ззовні адмінки якось треба.
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Скільки показати (типово 40)'
+        required: false
+        default: '40'
+      only:
+        description: 'Фільтр: підрядок у назві або джерелі'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  list:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Показати
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          LIMIT: ${{ github.event.inputs.limit }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: node scripts/list-drafts.mjs
