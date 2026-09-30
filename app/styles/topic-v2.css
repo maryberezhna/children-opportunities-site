@@ -55,28 +55,24 @@
 .tp-main .tp-home-link a { display: inline-flex; align-items: center; min-height: 44px; }
 
 /* ── Хіро ── */
+/* Редизайн 29.09.2026 (макет Topic.dc.html): компактний hero без кремової
+ * картки — крихти, H1, одне речення, рядок цифр, кнопки; фото 380×240
+ * праворуч. Список починається на першому екрані. */
 .tp-hero {
-  background: #f7f1e6;
-  border-radius: 24px;
-  padding: 24px;
   display: grid;
-  /* 15.09.2026, варіант 4b з pidbirka.dc.html (блок data-d="hero"): фото —
-   * прямокутник на всю висоту правої колонки, а цифри підбірки — одна біла
-   * картка поверх фото замість рядка фактів під кнопками. До того (14.09)
-   * фото стояло в овалі, як на головній. */
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 40px;
-  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 48px;
+  align-items: center;
+  padding: 4px 0 8px;
 }
 .tp-hero.tp-hero-solo { grid-template-columns: minmax(0, 1fr); }
 .tp-hero-copy {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: 18px;
-  padding: 24px 0 24px 32px;
+  gap: 16px;
+  min-width: 0;
 }
-.tp-hero-solo .tp-hero-copy { padding-right: 32px; }
 .tp-eyebrow {
   font-size: 13px;
   font-weight: 700;
@@ -87,8 +83,7 @@
 .tp-h1 {
   margin: 0;
   font-weight: 800;
-  /* Менше, ніж було (60px): поруч із великим фото заголовок ішов у 4–5 рядків. */
-  font-size: clamp(34px, 3.6vw, 50px);
+  font-size: clamp(34px, 3.4vw, 48px);
   line-height: 1.04;
   letter-spacing: -0.02em;
   text-wrap: balance;
@@ -104,7 +99,12 @@
 }
 .tp-guide-link { margin: -4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.45; max-width: 600px; }
 .tp-main .tp-guide-link a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
-.tp-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 4px; }
+.tp-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 2px; }
+
+/* «{N} можливостей · {M} безкоштовних · {K} закриваються цього тижня» */
+.tp-hero-stats { margin: 0; font-size: 15px; line-height: 1.5; color: #6b6b6b; }
+.tp-hero-stats strong { font-weight: 700; color: #1a1a1a; }
+.tp-hero-closing { color: #991b1b; }
 
 .tp-btn {
   font-family: inherit;
@@ -127,14 +127,14 @@
 .tp-main .tp-btn-white { background: #ffffff; color: #1a1a1a; border: 1px solid #ffffff; padding: 0 22px; }
 .tp-main .tp-btn-white:hover { color: #1a1a1a; background: #f7f1e6; }
 
-/* Фото на всю висоту колонки, без овалу. Точку фокуса задає heroImage.position. */
+/* Фото 380×240, скруглене. Точку фокуса задає heroImage.position. */
 .tp-hero-photo {
-  position: relative;
-  min-height: 440px;
-  border-radius: 16px;
+  width: 380px;
+  height: 240px;
+  border-radius: 20px;
   overflow: hidden;
 }
-.tp-hero-photo picture { position: absolute; inset: 0; display: block; }
+.tp-hero-photo picture { display: block; width: 100%; height: 100%; }
 .tp-hero-photo img {
   display: block;
   width: 100%;
@@ -142,28 +142,6 @@
   object-fit: cover;
   object-position: center;
 }
-
-/* Цифри підбірки: біла картка знизу-ліворуч поверх фото. */
-.tp-hero-count {
-  position: absolute;
-  left: 16px;
-  bottom: 16px;
-  max-width: calc(100% - 32px);
-  box-sizing: border-box;
-  margin: 0;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  padding: 12px 18px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.94);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-}
-.tp-hero-count-n { font-size: 24px; font-weight: 800; line-height: 1; letter-spacing: -0.02em; color: #1a1a1a; }
-.tp-hero-count-t { font-size: 15px; font-weight: 500; color: #4a4a4a; }
-/* Підбірка без фото: та сама картка просто під кнопками. */
-.tp-hero-count.is-inline { position: static; align-self: flex-start; background: #ffffff; }
 
 /* ── Список ── */
 .tp-list { display: flex; flex-direction: column; gap: 20px; }
@@ -206,11 +184,60 @@
 .tp-pill.is-on .tp-pill-n { color: #ffffff; }
 .tp-sort { font-size: 14px; color: #6b6b6b; white-space: nowrap; }
 
+/* Рядок фільтрів: вкладки типів, вік, «Лише безкоштовні», «Онлайн», підпис
+   сортування праворуч. Лінії зверху й знизу відділяють його від hero. */
+.tp-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 14px 0;
+  border-top: 1px solid #e8e3d6;
+  border-bottom: 1px solid #e8e3d6;
+}
+.tp-ages { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tp-filter-label { font-size: 14px; color: #6b6b6b; margin-right: 4px; }
+.tp-pill-age { padding: 0 12px; }
+.tp-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  font-size: 14px;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+.tp-check input { width: 18px; height: 18px; margin: 0; accent-color: #e85d24; cursor: pointer; }
+.tp-reset {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--v2-accent-strong);
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 36px;
+  cursor: pointer;
+}
+.tp-filters .tp-sort { margin-left: auto; }
+
 .tp-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
+/* Усі картки є в HTML (посилання для пошуку), видно перші 20; решту
+   відкриває автопродовження (TopicCards.js). */
+.tp-cell { display: contents; }
+.tp-cell.is-hidden { display: none; }
+.tp-more {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0 0;
+}
+.tp-more-count { font-size: 14px; color: #6b6b6b; }
 
 .tp-main .tp-card {
   background: #ffffff;
@@ -280,39 +307,6 @@
 }
 .tp-card-place { color: #6b6b6b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tp-card-more { font-weight: 600; color: var(--v2-accent-strong); white-space: nowrap; }
-
-.tp-promo {
-  grid-column: 1 / -1;
-  background: #1a1a1a;
-  color: #ffffff;
-  border-radius: 16px;
-  padding: 28px 32px;
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  flex-wrap: wrap;
-}
-.tp-promo-copy { flex: 1; min-width: 260px; display: flex; flex-direction: column; gap: 8px; }
-.tp-promo-badge {
-  align-self: flex-start;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 5px 10px;
-  border-radius: 6px;
-  background: var(--v2-accent-strong);
-  color: #ffffff;
-}
-.tp-promo-title {
-  margin: 0;
-  font-weight: 800;
-  font-size: 22px;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
-  color: #ffffff;
-  text-wrap: balance;
-}
-.tp-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: #d4cfc1; }
 
 .tp-empty {
   text-align: center;
@@ -399,16 +393,54 @@
 .tp-main .tp-related-card {
   border: 1px solid #e8e3d6;
   border-radius: 16px;
-  padding: 20px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 6px;
   color: #1a1a1a;
   transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
 .tp-main .tp-related-card:hover { transform: translateY(-2px); color: #1a1a1a; }
-.tp-related-title { font-size: 17px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
+.tp-related-photo { display: block; }
+.tp-related-photo img { display: block; width: 100%; height: 150px; object-fit: cover; }
+.tp-related-body { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px; }
+.tp-related-title { font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
 .tp-related-n { font-size: 14px; color: #6b6b6b; }
+
+/* Для організаторів: той самий SuggestBlock, що в каталозі, але світлий і в
+   рядок — у сітці каталогу він чорна картка серед білих, тут окремий блок. */
+.tp-main .suggest-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto auto;
+  column-gap: 32px;
+  row-gap: 6px;
+  align-items: center;
+  min-height: 0;
+  height: auto;
+  padding: 28px 32px;
+  background: #ffffff;
+  border: 1px solid #e8e3d6;
+  border-radius: 20px;
+  color: #1a1a1a;
+  text-align: left;
+}
+.tp-main .suggest-card .suggest-kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b6b; }
+.tp-main .suggest-card h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #1a1a1a; }
+.tp-main .suggest-card p { margin: 0; font-size: 16px; color: #4a4a4a; }
+.tp-main .suggest-card .suggest-cta {
+  grid-column: 2;
+  grid-row: 1 / 4;
+  margin: 0;
+  width: auto;
+  height: 48px;
+  padding: 0 26px;
+  border: 1.5px solid #1a1a1a;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+.tp-main .suggest-card .suggest-cta:hover { background: #1a1a1a; color: #ffffff; }
 
 /* ── Сторінка «Підбірки» (app/CollectionsHub.js) ── */
 .tp-hub-head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
@@ -459,26 +491,34 @@
 /* ── Мобільний ── */
 @media (max-width: 900px) {
   .tp-main { padding: 0 16px; }
-  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 20px; gap: 20px; }
-  .tp-hero-copy, .tp-hero-solo .tp-hero-copy { padding: 0; }
-  /* Фото зверху, 220px; картка з цифрою лишається поверх нього. */
-  .tp-hero-photo { order: -1; min-height: 0; height: 220px; }
-  /* Картка в один рядок, щоб не закривала пів фото висотою 220. */
-  .tp-hero-count { left: 12px; bottom: 12px; max-width: calc(100% - 24px); padding: 10px 14px; gap: 6px; }
-  .tp-hero-count-n { font-size: 22px; }
-  .tp-hero-count-t { font-size: 14px; white-space: nowrap; }
-  .tp-h1 { font-size: 34px; }
+  .tp-hero { grid-template-columns: minmax(0, 1fr); padding: 0 0 4px; gap: 16px; }
+  /* Фото на телефоні не показуємо (макет TopicMobile): перший екран — назва,
+     цифри й фільтри, а не картинка. */
+  .tp-hero-photo { display: none; }
+  .tp-h1 { font-size: 30px; }
+  .tp-hero-stats { font-size: 14px; }
+  .tp-actions .tp-btn { height: 44px; font-size: 14px; }
+  /* Фільтри одним рядком із прокруткою вбік. */
+  .tp-filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 8px; padding: 12px 16px; margin: 0 -16px; }
+  .tp-filters::-webkit-scrollbar { display: none; }
+  .tp-filters .tp-pills, .tp-ages { flex-wrap: nowrap; overflow: visible; flex-shrink: 0; }
+  .tp-filter-label { display: none; }
+  /* Зона дотику ≥ 44px у рядку фільтрів на телефоні. */
+  .tp-filters .tp-pill { height: 44px; }
+  .tp-check { flex-shrink: 0; white-space: nowrap; min-height: 44px; }
+  .tp-reset { flex-shrink: 0; min-height: 44px; }
+  .tp-filters .tp-sort { display: none; }
   .tp-grid { grid-template-columns: minmax(0, 1fr); }
-  .tp-promo { padding: 22px 20px; }
   .tp-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-related-photo img { height: 96px; }
+  .tp-related-body { padding: 10px 12px 12px; }
+  .tp-related-title { font-size: 14px; }
+  .tp-main .suggest-card { grid-template-columns: minmax(0, 1fr); padding: 20px; row-gap: 8px; }
+  .tp-main .suggest-card .suggest-cta { grid-column: 1; grid-row: auto; width: 100%; margin-top: 8px; }
   .tp-note, .tp-faq { grid-template-columns: minmax(0, 1fr); gap: 16px; }
   .tp-note { padding: 24px 20px; }
   .er-facts, .er-columns { grid-template-columns: minmax(0, 1fr); }
   .er-fact-value { font-size: 20px; }
-}
-/* На найвужчих екранах підпис картки може перенестись, аби не вилізти за фото. */
-@media (max-width: 359px) {
-  .tp-hero-count-t { white-space: normal; }
 }
 
 @media (prefers-reduced-motion: reduce) {
