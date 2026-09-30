@@ -79,7 +79,8 @@ test('сторінка: крихта з підбірки, основна кно�
   assert.ok(src.includes('className="o-m-share" icon'), 'у панелі має бути «Поділитися»');
   assert.ok(!src.includes('MONOBANK_URL'), '🧡 у панелі замінено на «Поділитися» (рішення Марії 29.09.2026)');
   assert.ok(!/opportunity-meta/.test(src), 'старий перелік фактів замінено сіткою .o-facts');
-  assert.ok(src.includes('<TelegramSubscribeBlock'), 'блок каналу лишається — єдиний заклик сторінки');
+  assert.ok(src.includes('<TelegramSubscribeBlock'), 'блок каналу лишається в картці дії');
+  assert.ok(src.includes('<PlusPromo'), 'блок Dityam+ унизу (рішення Марії 30.09.2026)');
   // Основна кнопка чесна: без прямого посилання на подачу — «Перейти до офіційного сайту».
   assert.ok(/primaryLabel = applyUrl \? \(clubSignup \? t\.applyClub : t\.apply\) : t\.goSite/.test(src));
 });

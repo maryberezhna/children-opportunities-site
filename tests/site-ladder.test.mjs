@@ -5,7 +5,8 @@
 // стати в список». Тепер головний заклик сайту — канал, а Dityam+ на сайті
 // лишився в шапці, на /plus і на /dedlainy. Картку в підбірках повертали
 // 28.09.2026 (#532) і знову прибрали 29.09.2026 (редизайн: у підбірці веде
-// лише канал). Продає його сам канал.
+// лише канал); з 30.09.2026 є один блок унизу сторінки можливості
+// (app/PlusPromo.js). Продає його сам канал.
 //
 // Тест стереже, щоб Dityam+ тихо не повернувся в списки, картки й підказку —
 // блоки промо вже раз додавали й прибирали в паралельних сесіях.
@@ -22,7 +23,6 @@ const read = (f) => readFileSync(join(root, f), 'utf8');
 // Місця, де людина гортає або читає можливість: тут веде лише канал.
 const CHANNEL_ONLY = [
   'app/OpportunitiesList.js',
-  'app/o/shared.js',
   'app/TopicPage.js',
   'app/topic/TopicCards.js',
   'app/SubscribePopup.js',
@@ -50,6 +50,24 @@ for (const file of CHANNEL_ONLY) {
     }
   });
 }
+
+// Сторінка можливості: один блок Dityam+ унизу, між схожими й футером
+// (рішення Марії 30.09.2026), через PlusPromo із міткою, яку бот записує.
+test('сторінка можливості: один блок Dityam+ через PlusPromo, з міткою opportunity_page', () => {
+  const page = read('app/o/shared.js');
+  const promo = read('app/PlusPromo.js');
+  assert.equal((page.match(/<PlusPromo\b/g) || []).length, 1, 'блок Dityam+ на сторінці — один');
+  assert.ok(page.indexOf('<PlusPromo') > page.indexOf('opportunity-related'), 'блок стоїть після «Схожих можливостей»');
+  assert.ok(/<BotLink\b/.test(promo), 'клік має рахуватись у GA4 (BotLink)');
+  assert.ok(promo.includes('plusFromUrl(place)'), 'кнопка веде в бот через plusFromUrl');
+  for (const place of ['opportunity_page', 'opportunity_page_en']) {
+    assert.equal(parseSourceArg(new URL(plusFromUrl(place)).searchParams.get('start')), place, `мітку «${place}» бот не прочитає`);
+  }
+  const text = code(promo);
+  for (const bad of [/Дізнатися першим/, /Tell me first/, /місто/i, /city/i, /без реклами/i]) {
+    assert.ok(!bad.test(text), `знову ${bad} у тексті блоку Dityam+`);
+  }
+});
 
 test('блоку PlusSection більше немає', () => {
   assert.ok(!existsSync(join(root, 'app/PlusSection.js')));

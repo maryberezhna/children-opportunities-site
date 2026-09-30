@@ -30,6 +30,7 @@ import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 import Footer from '../Footer';
 import OpportunityCard from '../OpportunityCard';
+import PlusPromo from '../PlusPromo';
 import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
@@ -846,8 +847,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           </section>
         )}
 
-        {/* Блоку Dityam+ тут немає (рішення Марії 27.09.2026, «сходинка»:
-            сайт веде в канал, Dityam+ продає сам канал). */}
+        {/* Dityam+ — унизу, між схожими й футером (рішення Марії 30.09.2026;
+            з 27.09 його тут не було). Заклик каналу лишається вище, у
+            картці дії. */}
+        <PlusPromo lang={lang} />
       </div>
 
       <Footer lang={lang} />
