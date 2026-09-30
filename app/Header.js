@@ -101,6 +101,10 @@ export default function Header() {
   // шапці лишались лише лого й одна кнопка — до «Про проєкт», Dityam+ і
   // Telegram можна було дістатися тільки через футер унизу сторінки.
   const [menuOpen, setMenuOpen] = useState(false);
+  // Підбірок дванадцять, і в мобільному меню вони відтісняли Dityam+ за нижній
+  // край екрана (Марія, 30.09.2026). Тепер група згорнута, поки її не
+  // натиснули, і згортається знову щоразу, коли меню відкривають.
+  const [mTopicsOpen, setMTopicsOpen] = useState(false);
   // Підменю «Підбірки» (14.09.2026, прохання Марії): на десктопі — випадний
   // список біля «Про проєкт», у мобільному меню — окрема група. Відкривається
   // наведенням і кліком; закривається Escape, кліком поза ним і переходом.
@@ -244,7 +248,7 @@ export default function Header() {
           aria-label={isEnglish
             ? (menuOpen ? 'Close menu' : 'Open menu')
             : (menuOpen ? 'Закрити меню' : 'Відкрити меню')}
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => setMenuOpen((v) => { if (!v) setMTopicsOpen(false); return !v; })}
         >
           <span aria-hidden="true" className={menuOpen ? 'v2-burger-lines is-open' : 'v2-burger-lines'} />
         </button>
@@ -268,7 +272,18 @@ export default function Header() {
       {menuOpen ? (
         <nav id="v2-mobile-menu" className="v2-mmenu" aria-label={isEnglish ? 'Menu' : 'Меню'}>
           <div className="v2-mmenu-group" role="group" aria-labelledby="v2-mmenu-topics">
-            <span id="v2-mmenu-topics" className="v2-mmenu-label">{TOPICS_LABEL}</span>
+            <button
+              type="button"
+              id="v2-mmenu-topics"
+              className={`v2-mmenu-label v2-mmenu-toggle${mTopicsOpen ? ' is-open' : ''}`}
+              aria-expanded={mTopicsOpen}
+              aria-controls="v2-mmenu-topics-list"
+              onClick={() => setMTopicsOpen((v) => !v)}
+            >
+              {TOPICS_LABEL}
+              <span className="v2-nav-caret" aria-hidden="true" />
+            </button>
+            <div id="v2-mmenu-topics-list" hidden={!mTopicsOpen}>
             {topicLinks.map((l) => (
               <Link
                 key={l.href}
@@ -280,6 +295,7 @@ export default function Header() {
                 {l.label}
               </Link>
             ))}
+            </div>
           </div>
           {NAV.map((item) => (
             <Link

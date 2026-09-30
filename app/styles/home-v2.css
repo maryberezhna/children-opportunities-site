@@ -336,6 +336,31 @@
   text-transform: uppercase;
   color: var(--v2-ink-3);
 }
+
+/* Згорнута група підбірок: сама кнопка — той самий підпис, лише з рискою
+   праворуч і достатньою висотою, щоб у неї можна було влучити пальцем. */
+.v2-mmenu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 0;
+  background: none;
+  border: 0;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.v2-mmenu-toggle .v2-nav-caret { flex: 0 0 auto; }
+.v2-mmenu-toggle.is-open .v2-nav-caret { transform: translateY(1px) rotate(-135deg); }
+.v2-mmenu-toggle:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 4px; border-radius: 4px; }
+
+#v2-mmenu-topics-list { display: flex; flex-direction: column; }
+/* Обовʼязково: власне display переважує атрибут hidden, і згорнутий список
+   лишався б розкритим. */
+#v2-mmenu-topics-list[hidden] { display: none; }
 .v2-mmenu a.v2-mmenu-sub {
   min-height: 44px;
   padding-left: 12px;
