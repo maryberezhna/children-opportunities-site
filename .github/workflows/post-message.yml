@@ -13,6 +13,10 @@ on:
         description: 'true = лише показати текст, не публікувати'
         required: false
         default: 'true'
+      pin:
+        description: 'true = закріпити пост у каналі після відправки'
+        required: false
+        default: 'false'
       message_id:
         description: 'Номер уже опублікованого поста, щоб виправити його текст (порожньо = новий пост)'
         required: false
@@ -42,5 +46,6 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           FILE: ${{ github.event.inputs.file }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
+          PIN: ${{ github.event.inputs.pin }}
           MESSAGE_ID: ${{ github.event.inputs.message_id }}
         run: node scripts/post-message.mjs
