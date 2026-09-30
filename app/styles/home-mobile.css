@@ -8,6 +8,7 @@
 
 .m-band,
 .m-compact,
+.m-bottom,
 .m-bar,
 .m-top,
 .m-active,
@@ -78,6 +79,10 @@
   .v2-home .v2-hero-status,
   .v2-home .hero-press,
   .v2-home .v2-hero-photo,
+  .v2-home .v2-hero-search,
+  .v2-home .v2-tiles-hero,
+  .v2-home .v2-trust,
+  .v2-home .v2-soon,
   .v2-home .v2-hero-tail { display: none; }
 
   /* А от підпис і числа повертаємо (28.09.2026).
@@ -217,6 +222,106 @@
   }
 
   .m-search input::placeholder { color: #b8b3a6; }
+
+  /* Вік одразу під пошуком: пʼять груп у ряд, зона дотику 44px. */
+  .m-ages {
+    display: flex;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .m-ages .m-age {
+    flex: 1 1 0;
+    justify-content: center;
+    height: 44px;
+    padding: 0 4px;
+    font-size: 14px;
+  }
+
+  /* ── Панель знизу: «Фільтри (n)» + «Сортування» ─────────────────────── */
+  .m-bottom {
+    display: flex;
+    gap: 10px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    padding: 12px 20px max(20px, calc(12px + env(safe-area-inset-bottom, 0px)));
+    background: #ffffff;
+    border-top: 1px solid var(--v2-line);
+  }
+
+  .m-bottom-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 48px;
+    border: 1.5px solid var(--v2-ink);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--v2-ink);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .m-bottom-btn.is-on { background: var(--v2-ink); color: #ffffff; }
+
+  /* Місце під панеллю, щоб вона не закривала останній блок і футер. */
+  .v2-home .v2-container { padding-bottom: 96px; }
+  body:has(.m-bottom) .a11y-trigger,
+  body:has(.m-bottom) .telegram-fab { bottom: calc(96px + env(safe-area-inset-bottom, 0px)); }
+
+  .m-sort-opt {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 52px;
+    padding: 0 16px;
+    border: 1px solid var(--v2-line-strong);
+    border-radius: 12px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--v2-ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .m-sort-opt.is-on { border-color: var(--v2-ink); background: var(--v2-cream); font-weight: 600; }
+  .m-sheet--sort { max-height: none; }
+  .m-sheet--sort .m-sheet-body { gap: 10px; padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── «Або оберіть тему»: плитки з фото прокруткою вбік ──────────────── */
+  .v2-topics-mobile { display: block; }
+  .v2-topics-mobile h2 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+  .v2-topics-mobile .v2-tiles {
+    display: flex;
+    gap: 12px;
+    margin: 0 -20px;
+    padding: 0 20px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .v2-topics-mobile .v2-tiles::-webkit-scrollbar { display: none; }
+  .v2-topics-mobile .v2-tiles::after { content: ''; flex: 0 0 8px; }
+  .v2-topics-mobile .v2-tile { flex: 0 0 140px; }
+  .v2-topics-mobile .v2-tile img { height: 96px; }
+
+  /* Порядок після списку: канал → теми → організатори. Сітка нижніх блоків
+     розчиняється, і її дві картки стають дітьми контейнера. */
+  .v2-home .v2-bottom { display: contents; }
+  .v2-home .v2-bottom > .tg-card-panel { order: 1; }
+  .v2-home .v2-topics-mobile { order: 2; }
+  .v2-home .v2-bottom > .v2-panel { order: 3; }
+  .v2-home .v2-bottom > * { margin-top: 40px; }
+  .v2-home .v2-topics { display: none; }
 
   /* ── Компактна шапка після скролу (6b) ──────────────────────────────── */
   .m-compact {

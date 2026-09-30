@@ -1,9 +1,13 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { kyivToday } from '@/lib/dates';
-import { audienceStats } from '@/lib/audience';
+import { audienceStats, visibleFor } from '@/lib/audience';
+import { topWeekCards } from '@/lib/weekly-top';
+import { isoWeek } from '@/lib/week';
+import { daysUntil } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
 import HomeHero from './HomeHero';
+import HomeTopics from './HomeTopics';
 import HomeBlocks from './HomeBlocks';
 import Footer from './Footer';
 import SubscribePopup from './SubscribePopup';
@@ -11,10 +15,13 @@ import { TOPIC_NAV } from '@/lib/topics';
 
 export const revalidate = 300;
 
-// Головна, редизайн (вересень 2026): крем-градієнт, хіро без фото, перемикач
-// «Батькам / Підліткам» у шапці, автоматичний «Топ тижня», два нижні блоки
-// (Telegram + «Запропонувати можливість»). Email-підписки, стікі-бар і
-// плаваюче сердечко зняті свідомо — один заклик на екран.
+// Головна, редизайн 29.09.2026 (макет Main.dc.html / Mobile.dc.html): хіро з
+// пошуком, плитками тем і «Встигніть цього тижня» праворуч, фільтри лише в
+// бічній панелі, олімпіади МОН однією карткою, два нижні блоки (Telegram +
+// «Запропонувати можливість»). На телефоні: заголовок → пошук → вік →
+// «Встигніть цього тижня» → список → канал → «Або оберіть тему» → блок для
+// організаторів, знизу панель «Фільтри / Сортування». Email-підписки,
+// стікі-бар і плаваюче сердечко зняті свідомо — один заклик на екран.
 
 async function getOpportunities() {
   if (!supabase) {
@@ -33,6 +40,16 @@ export default async function Home() {
   // загальні — інакше воно обіцяє більше, ніж каталог під ним покаже.
   const stats = audienceStats(opportunities, today);
   const teenStats = audienceStats(opportunities, today, true);
+  // Трійка «Встигніть цього тижня» для хіро — та сама, що раніше рахував
+  // список як «Топ тижня» (відмічені в адмінці + найближчі дедлайни). Список
+  // на десктопі її більше не показує, але й далі вилучає зі стрічки.
+  const week = isoWeek();
+  const slim = (o) => ({
+    slug: o.slug, title: o.title, title_en: o.title_en || null, deadline: o.deadline || null,
+    opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to, cost_type: o.cost_type || null,
+  });
+  const soon = topWeekCards({ items: visibleFor(opportunities, today), week, todayIso: today, daysUntil }).map(slim);
+  const teenSoon = topWeekCards({ items: visibleFor(opportunities, today, true), week, todayIso: today, daysUntil }).map(slim);
 
   const itemListLd = {
     '@context': 'https://schema.org',
@@ -54,9 +71,9 @@ export default async function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <HomeHero stats={stats} teenStats={teenStats} />
+      <HomeHero stats={stats} teenStats={teenStats} soon={soon} teenSoon={teenSoon} today={today} />
 
-      <main className="v2-container">
+      <main className="v2-container" id="catalog">
         <OpportunitiesList
           opportunities={opportunities}
           today={today}
@@ -78,6 +95,12 @@ export default async function Home() {
             <Link key={t.slug} href={`/${t.slug}`}>{t.label}</Link>
           ))}
         </nav>
+
+        {/* Телефон: «Або оберіть тему» після списку (на десктопі плитки в хіро).
+            Порядок «список → канал → теми → організатори» задає CSS
+            (home-mobile.css): блоки HomeBlocks на телефоні стають окремими
+            дітьми контейнера. */}
+        <HomeTopics variant="mobile" />
 
         <HomeBlocks />
       </main>

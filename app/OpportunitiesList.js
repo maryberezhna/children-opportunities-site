@@ -16,6 +16,10 @@ import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import { topWeekCards } from '@/lib/weekly-top';
+import { groupMonOlympiads, subjectLabel } from '@/lib/olympiad-group';
+import { STAGES, OLYMPIADS_PATH } from '@/lib/olympiads';
+import { plural } from '@/lib/plural';
+import { HERO_SEARCH_EVENT } from './HomeHero';
 import { isoWeek } from '@/lib/week';
 import OpportunityCard from './OpportunityCard';
 import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX } from '@/lib/place-search';
@@ -75,6 +79,22 @@ const UI = {
     close: 'Закрити фільтри',
     resetFilters: 'Скинути фільтри',
     sortLong: 'за дедлайном, найближчі спочатку',
+    sortLabel: 'Сортувати',
+    sortDeadline: 'Спочатку найближчий дедлайн',
+    sortNew: 'Спочатку нові',
+    sortBtn: 'Сортування',
+    filtersBtn: (n) => (n ? `Фільтри (${n})` : 'Фільтри'),
+    clearAll: 'Очистити все',
+    moreNeeds: (n) => `Ще ${n}`,
+    lessNeeds: 'Менше',
+    olymp: {
+      title: 'Всеукраїнські учнівські олімпіади 2026/27',
+      subjects: (n) => `${n} ${plural(n, 'предмет', 'предмети', 'предметів')}`,
+      more: (n) => `+${n} ${plural(n, 'предмет', 'предмети', 'предметів')}`,
+      details: 'Детальніше →',
+      free: 'безкоштовно',
+      href: OLYMPIADS_PATH,
+    },
     show: (n) => (n ? `Показати ${n} ${opportunitiesWord(n)}` : 'Нічого не знайдено'),
     ageShort: (a, b) => (a === b ? `${a} р.` : `${a}–${b} р.`),
     f: { format: 'Формат', place: 'Де', source: 'Джерело',
@@ -123,6 +143,22 @@ const UI = {
     close: 'Close filters',
     resetFilters: 'Reset filters',
     sortLong: 'by deadline, soonest first',
+    sortLabel: 'Sort',
+    sortDeadline: 'Soonest deadline first',
+    sortNew: 'Newest first',
+    sortBtn: 'Sort',
+    filtersBtn: (n) => (n ? `Filters (${n})` : 'Filters'),
+    clearAll: 'Clear all',
+    moreNeeds: (n) => `${n} more`,
+    lessNeeds: 'Less',
+    olymp: {
+      title: 'All-Ukrainian school olympiads 2026/27',
+      subjects: (n) => `${n} ${n === 1 ? 'subject' : 'subjects'}`,
+      more: (n) => `+${n} ${n === 1 ? 'subject' : 'subjects'}`,
+      details: 'Details →',
+      free: 'free',
+      href: '/en/olympiads',
+    },
     show: (n) => (n ? `Show ${n} ${n === 1 ? 'opportunity' : 'opportunities'}` : 'Nothing found'),
     ageShort: (a, b) => (a === b ? `age ${a}` : `${a}–${b} y.o.`),
     f: { format: 'Format', place: 'Where', source: 'Source',
@@ -446,6 +482,11 @@ export default function OpportunitiesList({
   const [place, setPlace] = useState(presetCity ? [presetCity] : []);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(initialLimit);
+  // Сортування (редизайн 29.09.2026): найближчий дедлайн, як було, або нові.
+  const [sort, setSort] = useState('deadline');
+  const [sortOpen, setSortOpen] = useState(false);
+  // «Особлива потреба» в бічній панелі: перші пʼять і «Ще N».
+  const [moreNeeds, setMoreNeeds] = useState(false);
   // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
   const searched = useRef('');
   const [hydrated, setHydrated] = useState(false);
@@ -499,7 +540,15 @@ export default function OpportunitiesList({
     if (cities.length) setPlace(cities);
     const q = p.get('q');
     if (q) setQuery(q);
+    if (p.get('sort') === 'new') setSort('new');
     setHydrated(true);
+  }, []);
+
+  // Пошук із хіро головної (app/HomeHero.js): поле там, список тут.
+  useEffect(() => {
+    const onSearch = (e) => setQuery(String(e.detail?.q || ''));
+    window.addEventListener(HERO_SEARCH_EVENT, onSearch);
+    return () => window.removeEventListener(HERO_SEARCH_EVENT, onSearch);
   }, []);
 
   useEffect(() => {
@@ -515,12 +564,13 @@ export default function OpportunitiesList({
       writeList('need', need); write('cost', cost);
       if (!(presetCity && place.length === 1 && place[0] === presetCity)) writeList('city', place);
       if (query.trim()) next.set('q', query.trim());
+      if (sort !== 'deadline') next.set('sort', sort);
       const qs = next.toString();
       window.history.replaceState(null, '',
         qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
     }, 250);
     return () => clearTimeout(timer);
-  }, [hydrated, type, age, deadline, need, cost, place, query, presetCity]);
+  }, [hydrated, type, age, deadline, need, cost, place, query, sort, presetCity]);
 
   // Пошуковий індекс: рахується раз на набір записів (див. lib/search).
   const searchIndex = useMemo(() => {
@@ -632,12 +682,14 @@ export default function OpportunitiesList({
       const pa = pinned.has(a.id) ? 0 : 1;
       const pb = pinned.has(b.id) ? 0 : 1;
       if (pa !== pb) return pa - pb;
-      const ra = Math.min(whenRank(a, todayIso), 9999);
-      const rb = Math.min(whenRank(b, todayIso), 9999);
-      if (ra !== rb) return ra - rb;
+      if (sort !== 'new') {
+        const ra = Math.min(whenRank(a, todayIso), 9999);
+        const rb = Math.min(whenRank(b, todayIso), 9999);
+        if (ra !== rb) return ra - rb;
+      }
       return (b.created_at || '').localeCompare(a.created_at || '');
     });
-  }, [liveItems, predicates, todayIso, pinned]);
+  }, [liveItems, predicates, todayIso, pinned, sort]);
 
   // Топ тижня: спершу відмічені цього тижня в адмінці (так виконується платне
   // просування організаторам), далі — найближчі живі дедлайни. Показується без
@@ -828,6 +880,42 @@ export default function OpportunitiesList({
     );
   };
 
+  // Всеукраїнські олімпіади МОН одним блоком: «N предметів», найближчий етап
+  // з наказу (lib/olympiads.js), чипи предметів на власні сторінки, решта —
+  // на путівник /olimpiady. Нічого, крім даних записів і наказу, тут немає.
+  const renderGroup = (g) => {
+    const first = STAGES[0];
+    const allFree = g.items.every((o) => o.cost_type === 'free');
+    const subjects = g.items.slice(0, 8);
+    const rest = g.items.length - subjects.length;
+    return (
+      <article key={g.id} className="v2-olymp">
+        <div className="v2-olymp-n" aria-hidden="true">
+          <span className="v2-olymp-num">{g.items.length}</span>
+          <span className="v2-olymp-word">{t.olymp.subjects(g.items.length).replace(/^\d+\s*/, '')}</span>
+        </div>
+        <div className="v2-olymp-body">
+          <h3 className="v2-olymp-title">
+            <Link href={t.olymp.href}>{t.olymp.title}</Link>
+          </h3>
+          <p className="v2-olymp-sub">
+            {isEn ? `Stage I: ${first.startDate} — ${first.endDate}` : `${first.n}: ${first.when}`}
+            {allFree ? ` · ${t.olymp.free}` : ''}
+          </p>
+          <div className="v2-olymp-subjects">
+            {subjects.map((o) => (
+              <Link key={o.id} href={`${isEn ? '/en' : ''}/o/${o.slug}`} className="v2-olymp-chip">
+                {subjectLabel(o)}
+              </Link>
+            ))}
+            {rest > 0 ? <Link href={t.olymp.href} className="v2-olymp-chip v2-olymp-rest">{t.olymp.more(rest)}</Link> : null}
+          </div>
+        </div>
+        <Link href={t.olymp.href} className="v2-olymp-more">{t.olymp.details}</Link>
+      </article>
+    );
+  };
+
   const chips = TYPE_CHIPS[teens ? 'teens' : 'parents']
     .filter((c) => available.chips.has(c.value) || type.includes(c.value));
 
@@ -853,7 +941,10 @@ export default function OpportunitiesList({
   // два однакові лічильники на одному екрані.
   const freeCount = stream.filter((o) => o.cost_type === 'free').length
     + (topCards.length === 3 ? topCards.filter((o) => o.cost_type === 'free').length : 0);
-  const shown = stream.slice(0, limit);
+  // Олімпіади МОН — однією карткою на місці найближчої (lib/olympiad-group.js).
+  // Лічильник «Знайдено N» і далі рахує записи, а не картки.
+  const entries = useMemo(() => groupMonOlympiads(stream), [stream]);
+  const shown = entries.slice(0, limit);
   useEffect(() => {
     if (!hydrated) return undefined;
     const q = query.trim();
@@ -1177,33 +1268,25 @@ export default function OpportunitiesList({
     );
   };
 
+  // Порядок груп за макетом (29.09.2026): вік → дедлайн → вартість → де
+  // (формат і місце: онлайн, за кордоном, місто) → тип → особлива потреба.
+  // Пошуку в панелі немає: поле в хіро шле запит сюди подією.
+  const needOpts = needList.map((o) => [o[0], optLabel(o)]);
+  const needVisible = needOpts.filter(([v]) => (side?.need?.[v] || 0) > 0 || has(need, v));
+  const NEEDS_SHOWN = 5;
+  const needShown = moreNeeds ? needVisible : needVisible.slice(0, NEEDS_SHOWN);
+  const needHidden = needVisible.length - needShown.length;
+
   const renderSide = () => (
     <aside className="v2-side" aria-label={t.filters}>
+      <span className="v2-side-heading">{t.filters}</span>
       {hasActive ? (
         <button type="button" className="v2-side-reset" onClick={reset}>{t.resetFilters}</button>
       ) : null}
-      <label className="v2-side-search">
-        <span aria-hidden="true">🔍</span>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          // Поле вузьке (220px) — довгий десктопний плейсхолдер обрізався б.
-          placeholder={teens ? t.sideSearchTeens : t.mSearchParents}
-          aria-label={isEn ? 'Search' : 'Пошук'}
-        />
-      </label>
-      {sideGroup('type', t.typeGroup, t.all,
-        TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
       {sideGroup('age', teens ? t.sel.grade : t.sel.age, t.all,
         ageList.map((o) => [o[0], optLabel(o)]))}
       {sideGroup('deadline', t.sel.deadline, t.all,
         DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]))}
-      {sideGroup('need', teens ? t.sel.gives : t.sel.need, teens ? t.all : t.allKids,
-        needList.map((o) => [o[0], optLabel(o)]))}
-      {/* Вартість і «Де» в референсі немає, але на сайті вони є: без них
-          платне не відсіяти (урок #152), а закордон — пріоритет контенту.
-          Міст десятки — тому «Де» полем з підказками, а не списком. */}
       {sideGroup('cost', t.sel.cost, t.anyCost,
         COST_OPTS.map((o) => [o[0], optLabel(o)]))}
       {/* «Де» — обрані місця списком (клік знімає), поле нижче додає ще
@@ -1241,6 +1324,40 @@ export default function OpportunitiesList({
           />
         </div>
       ) : null}
+      {sideGroup('type', t.typeGroup, t.all,
+        TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
+      {needShown.length ? (
+        <div className="v2-side-group" role="group" aria-labelledby="v2-side-need">
+          <span id="v2-side-need" className="v2-side-title">{teens ? t.sel.gives : t.sel.need}</span>
+          <div className="v2-side-list">
+            <button
+              type="button"
+              className={`v2-side-item${need.length === 0 ? ' is-on' : ''}`}
+              aria-pressed={need.length === 0}
+              onClick={() => setNeed([])}
+            >
+              <span>{teens ? t.all : t.allKids}</span>
+            </button>
+            {needShown.map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                className={`v2-side-item${has(need, v) ? ' is-on' : ''}`}
+                aria-pressed={has(need, v)}
+                onClick={() => setNeed(toggle(need, v))}
+              >
+                <span>{label}</span>
+                <span className="v2-side-n">{side?.need?.[v] || 0}</span>
+              </button>
+            ))}
+            {needHidden > 0 || moreNeeds ? (
+              <button type="button" className="v2-side-more" onClick={() => setMoreNeeds(!moreNeeds)}>
+                {moreNeeds ? t.lessNeeds : t.moreNeeds(needHidden)}
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </aside>
   );
 
@@ -1265,6 +1382,21 @@ export default function OpportunitiesList({
               <span className="m-search-icon" aria-hidden="true">🔍</span>
               {searchInput()}
             </label>
+            {/* Вік одразу під пошуком (макет Mobile.dc.html): пʼять груп сайту,
+                ті самі, що в шторці й бічній панелі. */}
+            <div className="m-ages" role="group" aria-label={teens ? t.sel.grade : t.sel.age}>
+              {ageList.filter((o) => available.ages.has(o[0]) || age.includes(o[0])).map((o) => (
+                <button
+                  key={o[0]}
+                  type="button"
+                  className={`m-chip m-age${age.includes(o[0]) ? ' is-on' : ''}`}
+                  aria-pressed={age.includes(o[0])}
+                  onClick={() => setAge(toggle(age, o[0]))}
+                >
+                  {optLabel(o)}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className={`m-compact${compact ? ' is-on' : ''}`} aria-hidden={compact ? undefined : 'true'}>
@@ -1282,41 +1414,6 @@ export default function OpportunitiesList({
             </label>
           </div>
 
-          <div className={`m-bar${compact ? ' is-compact' : ''}`}>
-            <div className="m-chips" role="group" aria-label={t.filters} ref={chipsRowRef}>
-              <button
-                type="button"
-                className={`m-chip m-filters-btn${sheetActive ? ' is-on' : ''}`}
-                aria-haspopup="dialog"
-                aria-expanded={sheetOpen}
-                ref={filtersBtnRef}
-                onClick={() => setDraft({ type, age, deadline, need, cost, place, query })}
-              >
-                <span aria-hidden="true">⚙︎</span>
-                {t.filters}
-                {sheetActive ? <span className="m-count-dot">{sheetActive}</span> : null}
-              </button>
-              <button
-                type="button"
-                className={`m-chip${type.length === 0 ? ' is-on' : ''}`}
-                aria-pressed={type.length === 0}
-                onClick={() => setType([])}
-              >
-                {t.all}
-              </button>
-              {chips.map((c) => (
-                <button
-                  key={c.value}
-                  type="button"
-                  className={`m-chip${type.includes(c.value) ? ' is-on' : ''}`}
-                  aria-pressed={type.includes(c.value)}
-                  onClick={() => setType(toggle(type, c.value))}
-                >
-                  {isEn ? c.en : c.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </>
       ) : null}
 
@@ -1430,7 +1527,7 @@ export default function OpportunitiesList({
       <Wrap on={sidebarLayout} className="v2-catalog">
         {sidebarLayout ? renderSide() : null}
         <Wrap on={sidebarLayout} className="v2-catalog-main">
-          {topCards.length === 3 ? (
+          {topCards.length === 3 && !sidebarLayout ? (
             <section className="v2-top" aria-label={t.topTitle}>
               <div className="v2-top-head">
                 <h2>{t.topTitle}</h2>
@@ -1500,9 +1597,34 @@ export default function OpportunitiesList({
           ) : null}
 
           {sidebarLayout ? (
-            <div className="v2-side-count" aria-live="polite">
-              <span><strong>{count}</strong> {t.countWord(count)}</span>
-              <span className="v2-side-count-hint">{t.sortLong}</span>
+            <div className="v2-side-head">
+              <div className="v2-side-count" aria-live="polite">
+                <span><strong>{count}</strong> {t.countWord(count)}</span>
+                <label className="v2-sort">
+                  <span>{t.sortLabel}</span>
+                  <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label={t.sortLabel}>
+                    <option value="deadline">{t.sortDeadline}</option>
+                    <option value="new">{t.sortNew}</option>
+                  </select>
+                </label>
+              </div>
+              {activeChips.length ? (
+                <div className="v2-active">
+                  {activeChips.map((c) => (
+                    <button
+                      key={c.key}
+                      type="button"
+                      className="v2-active-chip"
+                      aria-label={`${t.remove}: ${c.label}`}
+                      onClick={c.clear}
+                    >
+                      {c.label}
+                      <span className="v2-active-x" aria-hidden="true">✕</span>
+                    </button>
+                  ))}
+                  <button type="button" className="v2-active-reset" onClick={reset}>{t.clearAll}</button>
+                </div>
+              ) : null}
             </div>
           ) : null}
 
@@ -1512,8 +1634,8 @@ export default function OpportunitiesList({
                   без таймерів, замість 4-секундної спливної підказки. */}
               {shown.flatMap((item, i) => (
                 tgAfter.has(i)
-                  ? [renderCard(item), <TelegramCard key={`tg-card-${i}`} lang={lang} place="catalog" />]
-                  : [renderCard(item)]
+                  ? [item.group ? renderGroup(item) : renderCard(item), <TelegramCard key={`tg-card-${i}`} lang={lang} place="catalog" />]
+                  : [item.group ? renderGroup(item) : renderCard(item)]
               ))}
             </section>
           ) : (
@@ -1524,7 +1646,7 @@ export default function OpportunitiesList({
             </div>
           )}
 
-          {stream.length > limit ? (
+          {entries.length > limit ? (
             <div className="v2-more-row">
               <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + pageSize.current)}>
                 {t.showMore}
@@ -1533,6 +1655,61 @@ export default function OpportunitiesList({
           ) : null}
         </Wrap>
       </Wrap>
+
+      {/* Панель знизу (макет Mobile.dc.html): «Фільтри (n)» відкриває шторку,
+          «Сортування» — вибір порядку. Замінила липкий рядок чипів угорі. */}
+      {mobileLayout ? (
+        <div className="m-bottom">
+          <button
+            type="button"
+            className={`m-bottom-btn${type.length + sheetActive ? ' is-on' : ''}`}
+            aria-haspopup="dialog"
+            aria-expanded={sheetOpen}
+            ref={filtersBtnRef}
+            onClick={() => setDraft({ type, age, deadline, need, cost, place, query })}
+          >
+            <span aria-hidden="true">⚙︎</span>
+            {t.filtersBtn(type.length + sheetActive)}
+          </button>
+          <button
+            type="button"
+            className={`m-bottom-btn${sort !== 'deadline' ? ' is-on' : ''}`}
+            aria-haspopup="dialog"
+            aria-expanded={sortOpen}
+            onClick={() => setSortOpen(true)}
+          >
+            <span aria-hidden="true">↕</span>
+            {t.sortBtn}
+          </button>
+        </div>
+      ) : null}
+
+      {mobileLayout && sortOpen ? (
+        <div className="m-sheet-root">
+          <div className="m-sheet-overlay" onClick={() => setSortOpen(false)} aria-hidden="true" />
+          <div className="m-sheet m-sheet--sort" role="dialog" aria-modal="true" aria-labelledby="m-sort-title">
+            <div className="m-sheet-head">
+              <button type="button" className="m-sheet-handle" aria-label={t.close} onClick={() => setSortOpen(false)} />
+              <div className="m-sheet-title-row">
+                <h2 id="m-sort-title" className="m-sheet-title">{t.sortBtn}</h2>
+              </div>
+            </div>
+            <div className="m-sheet-body">
+              {[['deadline', t.sortDeadline], ['new', t.sortNew]].map(([v, label]) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`m-sort-opt${sort === v ? ' is-on' : ''}`}
+                  aria-pressed={sort === v}
+                  onClick={() => { setSort(v); setSortOpen(false); }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {mobileLayout && sheet ? (
         <div className="m-sheet-root">

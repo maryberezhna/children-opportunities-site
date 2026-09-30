@@ -315,15 +315,98 @@
 
   .v2-home .v2-side-reset:hover { background: #ffffff; }
 
-  /* ── Лічильник над стрічкою ───────────────────────────────────────────── */
+  /* ── Лічильник, сортування й активні чипи над стрічкою ───────────────── */
+  .v2-home .v2-side-heading {
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    color: var(--v2-ink);
+  }
+
+  .v2-home .v2-side-more {
+    align-self: flex-start;
+    margin: 4px 0 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--v2-accent-strong);
+    cursor: pointer;
+  }
+
+  .v2-home .v2-side-head {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--v2-line);
+  }
+
   .v2-home .v2-side-count {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
+    align-items: center;
     gap: 16px;
-    padding-bottom: 14px;
-    border-bottom: 1px solid var(--v2-line);
     color: var(--v2-ink);
+  }
+
+  .v2-home .v2-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--v2-ink-3);
+  }
+
+  .v2-home .v2-sort select {
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid var(--v2-line);
+    border-radius: 10px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--v2-ink);
+  }
+
+  .v2-home .v2-active {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .v2-home .v2-active-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 34px;
+    padding: 0 8px 0 14px;
+    border: 1px solid var(--v2-ink);
+    border-radius: 9999px;
+    background: #ffffff;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--v2-ink);
+    cursor: pointer;
+  }
+
+  .v2-home .v2-active-x { font-size: 12px; }
+
+  .v2-home .v2-active-reset {
+    margin-left: 6px;
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--v2-accent-strong);
+    cursor: pointer;
   }
 
   .v2-home .v2-side-count > span:first-child {
