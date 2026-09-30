@@ -40,7 +40,7 @@ test('хіро: без фото й цифр, пошук шле подію в с�
   assert.ok(!hero.includes('<picture'), 'фото з хіро знято (рішення Марії 29.09.2026)');
   assert.ok(!hero.includes('v2-stats'), 'великих цифр у хіро немає');
   assert.ok(hero.includes("export const HERO_SEARCH_EVENT = 'dityam:search'"));
-  assert.ok(hero.includes('оновлюється щодня'), 'рядок довіри — мʼяке формулювання');
+  assert.ok(!hero.includes('v2-trust'), 'рядка довіри з числом у хіро немає — число вже над списком (30.09.2026)');
   assert.ok(!hero.includes('звіряємо'), 'без «кожну звіряємо» (рішення Марії 29.09.2026)');
   assert.ok(hero.includes('<HomeTopics'), 'шість плиток тем у хіро');
   assert.ok(hero.includes('className="v2-soon"'), '«Встигніть цього тижня» праворуч');

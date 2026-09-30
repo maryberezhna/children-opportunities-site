@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { readMode, onModeChange } from '@/lib/mode';
-import { opportunitiesWord } from '@/lib/plural';
 import { trackConversion } from '@/lib/track';
 import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import HomeTopics from './HomeTopics';
@@ -14,9 +13,10 @@ import HomeTopics from './HomeTopics';
 // app/page.js) і посилання на всі дедлайни.
 //
 // Фото й великі цифри з хіро знято (рішення Марії 29.09.2026 за макетом;
-// 15.09 їх повертали). Рядок довіри — «{N} можливостей · оновлюється щодня»:
-// мʼякше за формулювання з макета, бо для старих записів перевірка — це лише
-// щоденний пінг посилання.
+// 15.09 їх повертали). Рядка довіри «{N} можливостей · оновлюється щодня»
+// теж немає (Марія, 30.09.2026: «навіщо це 2 рази»): число стоїть над
+// списком і змінюється з фільтрами, а «оновлюється щодня» уже є в надписі
+// над заголовком.
 //
 // Копія залежить від режиму «Батькам / Підліткам», тому компонент
 // клієнтський. SSR завжди віддає батьківську версію — саме її бачить Google.
@@ -55,7 +55,6 @@ const COPY = {
     searchPlaceholder: 'Олімпіада з математики, табір у Львові, робототехніка…',
     search: 'Знайти',
     searchAria: 'Пошук можливостей',
-    trust: 'оновлюється щодня',
     soonTitle: 'Встигніть цього тижня',
     soonTitleLater: 'Найближчі дедлайни',
     allDeadlines: 'Усі дедлайни →',
@@ -85,7 +84,6 @@ const COPY = {
     searchPlaceholder: 'Maths olympiad, camp in Lviv, robotics…',
     search: 'Search',
     searchAria: 'Search opportunities',
-    trust: 'updated daily',
     soonTitle: 'Closing this week',
     soonTitleLater: 'Closing soonest',
     allDeadlines: null,
@@ -112,9 +110,7 @@ const daysBetween = (iso, todayIso) => {
   return a === null || b === null ? null : Math.floor(a - b);
 };
 
-export default function HomeHero({
-  stats: parentStats, teenStats, soon = [], teenSoon = [], today = null, lang = 'uk',
-}) {
+export default function HomeHero({ soon = [], teenSoon = [], today = null, lang = 'uk' }) {
   const [mode, setMode] = useState('parents');
   const [q, setQ] = useState('');
   useEffect(() => {
@@ -140,11 +136,6 @@ export default function HomeHero({
   const isEn = lang === 'en';
   const TYPES = isEn ? TYPE_LABELS_EN : TYPE_LABELS;
 
-  const n = (mode === 'teens' ? teenStats : parentStats) || parentStats || {};
-  const total = Number(n.total);
-  const trust = Number.isFinite(total) && total > 0
-    ? `${total} ${isEn ? 'opportunities' : opportunitiesWord(total)} · ${t.trust}`
-    : null;
 
   const items = (mode === 'teens' ? teenSoon : soon) || [];
   const allWithinWeek = items.length > 0 && items.every((o) => {
@@ -189,8 +180,6 @@ export default function HomeHero({
           </form>
 
           <HomeTopics lang={lang} variant="hero" />
-
-          {trust ? <p className="v2-trust">{trust}</p> : null}
 
           {/* Підбірка «За кордон» — окремий блок, а не рядок у тексті: це
               найсильніший запит підлітків, і як посилання серед абзаців його

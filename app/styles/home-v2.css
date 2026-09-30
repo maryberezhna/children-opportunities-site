@@ -479,11 +479,8 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
 
 /* Підлітковий режим: чорна смуга — підписи плиток і рядок довіри світлі. */
 html[data-mode="teens"] .v2-tile-label { color: #f7f1e6; }
-html[data-mode="teens"] .v2-trust { color: #c9c3b6; }
 html[data-mode="teens"] .v2-hero-search-field { border-color: #f7f1e6; }
 html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong); }
-
-.v2-trust { margin: 0; font-size: 0.9375rem; color: var(--v2-ink-3); }
 
 /* «Встигніть цього тижня»: тепла панель, три рядки з датою. */
 .v2-soon {

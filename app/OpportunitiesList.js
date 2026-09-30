@@ -85,7 +85,7 @@ const UI = {
     sortBtn: 'Сортування',
     filtersBtn: (n) => (n ? `Фільтри (${n})` : 'Фільтри'),
     clearAll: 'Очистити все',
-    moreNeeds: (n) => `Ще ${n}`,
+    moreNeeds: (n, names) => `Ще ${n}${names ? `: ${names}…` : ''}`,
     lessNeeds: 'Менше',
     olymp: {
       title: 'Всеукраїнські учнівські олімпіади 2026/27',
@@ -101,7 +101,8 @@ const UI = {
       benefit: 'Отримаєш', requirement: 'Треба', deadline: 'Дедлайн' },
     sel: { age: 'Вік дитини', grade: 'Клас', deadline: 'Дедлайн',
       need: 'Особлива потреба', gives: 'Що дає', cost: 'Вартість', where: 'Де' },
-    all: 'Усі', anyCost: 'Будь-яка', abroad: '🌍 За кордоном', online: '💻 Онлайн',
+    all: 'Усі', anyCost: 'Будь-яка', anyTime: 'Будь-коли', formatGroup: 'Формат', city: 'Місто',
+    abroad: '🌍 За кордоном', online: '💻 Онлайн',
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
     ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
     countWord: (n) => opportunitiesWord(n),
@@ -149,7 +150,7 @@ const UI = {
     sortBtn: 'Sort',
     filtersBtn: (n) => (n ? `Filters (${n})` : 'Filters'),
     clearAll: 'Clear all',
-    moreNeeds: (n) => `${n} more`,
+    moreNeeds: (n, names) => `${n} more${names ? `: ${names}…` : ''}`,
     lessNeeds: 'Less',
     olymp: {
       title: 'All-Ukrainian school olympiads 2026/27',
@@ -165,7 +166,8 @@ const UI = {
       benefit: 'You get', requirement: 'You need', deadline: 'Deadline' },
     sel: { age: 'Child age', grade: 'Grade', deadline: 'Deadline',
       need: 'Special need', gives: 'What it gives', cost: 'Cost', where: 'Where' },
-    all: 'All', anyCost: 'Any', abroad: '🌍 Abroad', online: '💻 Online',
+    all: 'All', anyCost: 'Any', anyTime: 'Any time', formatGroup: 'Format', city: 'City',
+    abroad: '🌍 Abroad', online: '💻 Online',
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
     ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
@@ -1231,7 +1233,11 @@ export default function OpportunitiesList({
   // .v2-filters ховає CSS, нижче 1100px — навпаки, ховається панель.
   const sideSetters = { type: setType, age: setAge, deadline: setDeadline, need: setNeed, cost: setCost };
   const sideApplied = { type, age, deadline, need, cost };
-  const sideGroup = (key, title, allLabel, opts) => {
+  // Групи панелі за макетом Main.dc.html: вік — пігулки, дедлайн — один
+  // перемикач із «Будь-коли», решта — чекбокси з лічильником праворуч.
+  // Рядок «Усі» є лише в перемикача: у чекбоксів «нічого не обрано» і є
+  // «усі», а в пігулок — теж.
+  const sideGroup = (key, title, allLabel, opts, kind = 'check') => {
     const counts = side[key];
     const cur = sideApplied[key];
     const set = sideSetters[key];
@@ -1239,29 +1245,49 @@ export default function OpportunitiesList({
     // Нульові опції ховаємо, як і в шторці: мертвий пункт гірший за відсутній.
     const visible = opts.filter(([v]) => counts[v] > 0 || has(cur, v));
     if (!visible.length) return null;
+    if (kind === 'pills') {
+      return (
+        <div className="v2-side-group" role="group" aria-labelledby={`v2-side-${key}`}>
+          <span id={`v2-side-${key}`} className="v2-side-title">{title}</span>
+          <div className="v2-side-pills">
+            {visible.map(([v, label]) => (
+              <button
+                key={v}
+                type="button"
+                className={`v2-side-pill${has(cur, v) ? ' is-on' : ''}`}
+                aria-pressed={has(cur, v)}
+                onClick={() => set(multi ? toggle(cur, v) : (cur === v ? 'all' : v))}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      );
+    }
+    const row = (v, label, on, onClick, n) => (
+      <button
+        key={v}
+        type="button"
+        className={`v2-side-item v2-side-${kind}${on ? ' is-on' : ''}`}
+        role={kind === 'radio' ? 'radio' : 'checkbox'}
+        aria-checked={on}
+        onClick={onClick}
+      >
+        <span className="v2-side-box" aria-hidden="true" />
+        <span className="v2-side-label">{label}</span>
+        {n !== null ? <span className="v2-side-n">{n}</span> : null}
+      </button>
+    );
     return (
-      <div className="v2-side-group" role="group" aria-labelledby={`v2-side-${key}`}>
+      <div className="v2-side-group" role={kind === 'radio' ? 'radiogroup' : 'group'} aria-labelledby={`v2-side-${key}`}>
         <span id={`v2-side-${key}`} className="v2-side-title">{title}</span>
         <div className="v2-side-list">
-          <button
-            type="button"
-            className={`v2-side-item${isAll(cur) ? ' is-on' : ''}`}
-            aria-pressed={isAll(cur)}
-            onClick={() => set(multi ? [] : 'all')}
-          >
-            <span>{allLabel}</span>
-          </button>
-          {visible.map(([v, label]) => (
-            <button
-              key={v}
-              type="button"
-              className={`v2-side-item${has(cur, v) ? ' is-on' : ''}`}
-              aria-pressed={has(cur, v)}
-              onClick={() => set(multi ? toggle(cur, v) : (cur === v ? 'all' : v))}
-            >
-              <span>{label}</span>
-              <span className="v2-side-n">{counts[v]}</span>
-            </button>
+          {kind === 'radio' ? row('all', allLabel, isAll(cur), () => set('all'), null) : null}
+          {visible.map(([v, label]) => row(
+            v, label, has(cur, v),
+            () => set(multi ? toggle(cur, v) : (cur === v ? 'all' : v)),
+            counts[v],
           ))}
         </div>
       </div>
@@ -1284,20 +1310,43 @@ export default function OpportunitiesList({
         <button type="button" className="v2-side-reset" onClick={reset}>{t.resetFilters}</button>
       ) : null}
       {sideGroup('age', teens ? t.sel.grade : t.sel.age, t.all,
-        ageList.map((o) => [o[0], optLabel(o)]))}
-      {sideGroup('deadline', t.sel.deadline, t.all,
-        DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]))}
+        ageList.map((o) => [o[0], optLabel(o)]), 'pills')}
+      {sideGroup('deadline', t.sel.deadline, t.anyTime,
+        DEADLINE_OPTS.map((o) => [o[0], optLabel(o)]), 'radio')}
       {sideGroup('cost', t.sel.cost, t.anyCost,
         COST_OPTS.map((o) => [o[0], optLabel(o)]))}
-      {/* «Де» — обрані місця списком (клік знімає), поле нижче додає ще
-          одне: місто вписують, підказки звужуються (27.09.2026). Міст
-          десятки — повний список був би довшим за екран. */}
+      {/* «Формат»: онлайн і за кордоном — чекбоксами з лічильниками (як у
+          макеті), місто — полем з підказками нижче: міст десятки, повний
+          список був би довшим за екран (27.09.2026). Обрані міста й країни —
+          рядками, клік знімає. */}
       {deskPlace && (deskPlace.options.length || place.length) ? (
         <div className="v2-side-group" role="group" aria-labelledby="v2-side-place-title">
-          <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
-          {place.length ? (
+          <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.formatGroup}</label>
+          <div className="v2-side-list">
+            {['online', 'abroad'].map((v) => {
+              const opt = deskPlace.options.find((o) => o.value === v);
+              const on = place.includes(v);
+              if (!opt && !on) return null;
+              return (
+                <button
+                  key={v}
+                  type="button"
+                  className={`v2-side-item v2-side-check${on ? ' is-on' : ''}`}
+                  role="checkbox"
+                  aria-checked={on}
+                  onClick={() => setPlace(pickPlace(place, v))}
+                >
+                  <span className="v2-side-box" aria-hidden="true" />
+                  {/* Без емодзі: у бренд-кіті єдина емодзі — 🧡. */}
+                  <span className="v2-side-label">{placeLabel(v).replace(/^[^\p{L}\d]+/u, '')}</span>
+                  <span className="v2-side-n">{deskPlace.counts[v] || 0}</span>
+                </button>
+              );
+            })}
+          </div>
+          {place.filter((v) => v !== 'online' && v !== 'abroad').length ? (
             <div className="v2-side-list">
-              {place.map((v) => (
+              {place.filter((v) => v !== 'online' && v !== 'abroad').map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -1315,44 +1364,42 @@ export default function OpportunitiesList({
             id="v2-side-place"
             className="pc--side"
             labelId="v2-side-place-title"
-            options={deskPlace.options}
+            options={deskPlace.options.filter((o) => o.value !== 'online' && o.value !== 'abroad')}
             counts={deskPlace.counts}
             chosen={place}
             onPick={(v) => setPlace(pickPlace(place, v))}
-            placeholder={place.length ? t.addPlace : t.pickPlace}
+            placeholder={t.city}
             emptyText={t.nothingTitle}
           />
         </div>
       ) : null}
+      {/* «Онлайн» уже стоїть у «Формат» — у типах не дублюємо. */}
       {sideGroup('type', t.typeGroup, t.all,
-        TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
+        TYPE_CHIPS[teens ? 'teens' : 'parents'].filter((c) => c.value !== 'online')
+          .map((c) => [c.value, (isEn ? c.en : c.label).replace(/^[^\p{L}\d]+/u, '')]))}
       {needShown.length ? (
         <div className="v2-side-group" role="group" aria-labelledby="v2-side-need">
           <span id="v2-side-need" className="v2-side-title">{teens ? t.sel.gives : t.sel.need}</span>
           <div className="v2-side-list">
-            <button
-              type="button"
-              className={`v2-side-item${need.length === 0 ? ' is-on' : ''}`}
-              aria-pressed={need.length === 0}
-              onClick={() => setNeed([])}
-            >
-              <span>{teens ? t.all : t.allKids}</span>
-            </button>
             {needShown.map(([v, label]) => (
               <button
                 key={v}
                 type="button"
-                className={`v2-side-item${has(need, v) ? ' is-on' : ''}`}
-                aria-pressed={has(need, v)}
+                className={`v2-side-item v2-side-check${has(need, v) ? ' is-on' : ''}`}
+                role="checkbox"
+                aria-checked={has(need, v)}
                 onClick={() => setNeed(toggle(need, v))}
               >
-                <span>{label}</span>
+                <span className="v2-side-box" aria-hidden="true" />
+                <span className="v2-side-label">{label}</span>
                 <span className="v2-side-n">{side?.need?.[v] || 0}</span>
               </button>
             ))}
             {needHidden > 0 || moreNeeds ? (
               <button type="button" className="v2-side-more" onClick={() => setMoreNeeds(!moreNeeds)}>
-                {moreNeeds ? t.lessNeeds : t.moreNeeds(needHidden)}
+                {moreNeeds
+                  ? t.lessNeeds
+                  : t.moreNeeds(needHidden, needVisible.slice(NEEDS_SHOWN, NEEDS_SHOWN + 3).map(([, l]) => String(l).toLowerCase()).join(', '))}
               </button>
             ) : null}
           </div>

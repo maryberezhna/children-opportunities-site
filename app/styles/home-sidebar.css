@@ -167,91 +167,91 @@
 
   .v2-home .plus-banner-btn:hover { background: var(--v2-cream); color: var(--v2-ink); }
 
-  /* ── Панель ───────────────────────────────────────────────────────────── */
+  /* ── Панель (макет Main.dc.html, 29.09.2026): біла колонка без тла, групи
+     через тонкі лінії; вік — пігулки, дедлайн — перемикач, решта — чекбокси
+     з лічильником праворуч. Помаранчевий — лише всередині чекбокса. ───── */
   .v2-home .v2-side {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    background: var(--v2-cream);
-    border-radius: 16px;
-    padding: 20px;
+    gap: 0;
     position: sticky;
     top: 76px;
     max-height: calc(100vh - 92px);
     overflow: auto;
     box-sizing: border-box;
+    padding-right: 4px;
+    font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
   }
 
-  /* Панель прокручується всередині, і flex стискав би пошук і кнопку
-     нижче їхньої висоти. */
   .v2-home .v2-side > * { flex-shrink: 0; }
 
-  .v2-home .v2-side-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    height: 44px;
-    padding: 0 12px;
-    box-sizing: border-box;
-    background: #ffffff;
-    border: 1px solid var(--v2-line-strong);
-    border-radius: 10px;
-    font-size: 15px;
-    color: var(--v2-ink-3);
-  }
-
-  .v2-home .v2-side-search:focus-within { border-color: var(--v2-ink); }
-
-  .v2-home .v2-side-search input {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    padding: 0;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    font-family: inherit;
-    font-size: 15px;
+  .v2-home .v2-side-heading {
+    font-family: var(--font-dm-sans), var(--font-cyrillic), sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: -0.015em;
     color: var(--v2-ink);
+    margin-bottom: 4px;
   }
 
-  .v2-home .v2-side-search input::placeholder { color: #b8b3a6; }
-
-  /* ── Групи ────────────────────────────────────────────────────────────── */
   .v2-home .v2-side-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    padding: 22px 0;
+    border-top: 1px solid var(--v2-line);
   }
 
+  .v2-home .v2-side-heading + .v2-side-group,
+  .v2-home .v2-side-reset + .v2-side-group { border-top: 0; padding-top: 16px; }
+
   .v2-home .v2-side-title {
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
+    font-family: var(--font-dm-sans), var(--font-cyrillic), sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
     color: var(--v2-ink-3);
   }
 
-  .v2-home .v2-side-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+  /* Вік — пігулки в ряд. */
+  .v2-home .v2-side-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  .v2-home .v2-side-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    height: 38px;
+    padding: 0 6px;
+    box-sizing: border-box;
+    border: 1px solid var(--v2-line);
+    border-radius: 999px;
+    background: #ffffff;
+    font-family: var(--font-dm-sans), var(--font-cyrillic), sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    white-space: nowrap;
+    color: var(--v2-ink);
+    cursor: pointer;
+    transition: background 150ms, border-color 150ms;
   }
 
-  /* Пункт виступає на 10px в обидва боки: текст стоїть на лінії із
-     заголовком, а підсвітка має поля. */
+  .v2-home .v2-side-pill:hover { border-color: var(--v2-ink); }
+  .v2-home .v2-side-pill.is-on { background: var(--v2-ink); border-color: var(--v2-ink); color: #ffffff; }
+  .v2-home .v2-side-pill:focus-visible { outline: 2px solid var(--v2-ink); outline-offset: 2px; }
+
+  /* Рядки перемикача й чекбоксів. */
+  .v2-home .v2-side-list { display: flex; flex-direction: column; gap: 2px; }
+
   .v2-home .v2-side-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
     gap: 10px;
-    min-height: 36px;
-    padding: 6px 10px;
-    margin: 0 -10px;
-    width: calc(100% + 20px);
-    box-sizing: border-box;
+    min-height: 34px;
+    width: 100%;
+    margin: 0;
+    padding: 0;
     border: 0;
-    border-radius: 8px;
+    border-radius: 6px;
     background: transparent;
     font-family: inherit;
     font-size: 15px;
@@ -260,60 +260,85 @@
     color: var(--v2-ink);
     text-align: left;
     cursor: pointer;
-    transition: background 200ms;
   }
 
-  .v2-home .v2-side-item:hover { background: #ffffff; }
+  .v2-home .v2-side-item:hover .v2-side-box { border-color: var(--v2-ink); }
+  .v2-home .v2-side-item:focus-visible { outline: 2px solid var(--v2-ink); outline-offset: 2px; }
 
-  .v2-home .v2-side-item:focus-visible {
-    outline: 2px solid var(--v2-ink);
-    outline-offset: -2px;
+  .v2-home .v2-side-box {
+    flex-shrink: 0;
+    position: relative;
+    width: 18px;
+    height: 18px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--v2-line-strong);
+    border-radius: 4px;
+    background: #ffffff;
+    transition: background 150ms, border-color 150ms;
   }
 
-  /* Батькам — помаранчевий, підліткам — чорний (див. .v2-chip.is-on). */
-  .v2-home .v2-side-item.is-on {
+  .v2-home .v2-side-radio .v2-side-box { border-radius: 50%; }
+
+  .v2-home .v2-side-item.is-on .v2-side-box {
     background: var(--v2-accent-strong);
-    color: #ffffff;
-    font-weight: 700;
+    border-color: var(--v2-accent-strong);
   }
 
-  html[data-mode="teens"] .v2-home .v2-side-item.is-on { background: var(--v2-ink); }
+  /* Галочка — двома лініями рамки, повернутими на 45°; крапка — для перемикача. */
+  .v2-home .v2-side-check.is-on .v2-side-box::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid #ffffff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
 
-  .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-ink); }
-  html[data-mode="teens"] .v2-home .v2-side-item.is-on:focus-visible { outline-color: var(--v2-accent); }
+  .v2-home .v2-side-radio.is-on .v2-side-box::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: #ffffff;
+  }
+
+  .v2-home .v2-side-label { min-width: 0; }
 
   .v2-home .v2-side-n {
-    font-size: 13px;
+    margin-left: auto;
+    font-size: 14px;
     font-weight: 400;
     color: var(--v2-ink-3);
     font-variant-numeric: tabular-nums;
   }
 
-  .v2-home .v2-side-item.is-on .v2-side-n { color: #ffffff; }
-  html[data-mode="teens"] .v2-home .v2-side-item.is-on .v2-side-n { color: #b8b3a6; }
+  /* Обране місто чи країна — рядок із «✕», як і був. */
+  .v2-home .v2-side-item.is-on:not(.v2-side-check):not(.v2-side-radio) {
+    font-weight: 600;
+  }
 
-  /* «Де» — поле з підказками (PlaceCombobox): базовий вигляд у home-v2.css
-     зроблений саме під цю панель, окремих правил не треба. */
-
-  /* Кнопка стоїть першою в панелі, а не останньою: панель прокручується
-     всередині, і під сімома групами фільтрів скидання лишалось за краєм —
-     його не було видно саме тоді, коли фільтрів набралось найбільше. */
+  /* Кнопка «Скинути фільтри» стоїть першою: панель прокручується
+     всередині, і внизу її не було видно саме тоді, коли фільтрів найбільше. */
   .v2-home .v2-side-reset {
     align-self: flex-start;
-    height: 40px;
-    padding: 0 18px;
+    height: 36px;
+    margin: 6px 0 10px;
+    padding: 0 16px;
     box-sizing: border-box;
     border: 1px solid var(--v2-ink);
     border-radius: 9999px;
     background: transparent;
-    font-family: inherit;
+    font-family: var(--font-dm-sans), var(--font-cyrillic), sans-serif;
     font-size: 14px;
     font-weight: 500;
     color: var(--v2-ink);
     cursor: pointer;
   }
 
-  .v2-home .v2-side-reset:hover { background: #ffffff; }
+  .v2-home .v2-side-reset:hover { background: var(--v2-cream); }
 
   /* ── Лічильник, сортування й активні чипи над стрічкою ───────────────── */
   .v2-home .v2-side-heading {
