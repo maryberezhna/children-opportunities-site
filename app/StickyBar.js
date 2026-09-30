@@ -3,13 +3,17 @@ import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL, INSTAGRAM_URL } from '@/lib/social';
 import ShareButton from './ShareButton';
 
-const MAIL_URL = 'mailto:hellodityam.com.ua@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
 // Нижня панель на телефоні (≤640px, responsive.css). До 27.09.2026 у ній були
 // ще «Підписатись» ✉️ і «🚀 Dityam+». Перша відкривала ту саму підказку про
 // канал, що й кнопка Telegram поруч, а конверт обіцяв розсилку листами, якої
 // немає. Друга суперечила «сходинці» (рішення Марії 27.09.2026): сайт веде в
 // канал, а Dityam+ на сайті — лише в шапці, на /plus і на /dedlainy.
+//
+// 30.09.2026 звідси прибрано «Написати» з міткою sticky-desktop-only. Його не
+// бачив ніхто й ніколи: панель схована на десктопі цілком, а на телефоні цю
+// мітку ховає медіазапит. Написати нам можна з підвалу й зі сторінки
+// /contacts — там воно й лишається.
 export default function StickyBar() {
   // Мову беремо зі шляху: панель стоїть і на /en/kyiv, а власного пропа
   // мови в неї немає.
@@ -30,28 +34,8 @@ export default function StickyBar() {
     }
   };
 
-  const trackMail = () => {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', 'mail_click', { event_label: 'sticky_bar' });
-    }
-  };
-
   return (
     <div className="sticky-bar">
-      {/* ДЕСКТОП: "Написати" */}
-      <a
-        href={MAIL_URL}
-        className="sticky-btn sticky-desktop-only"
-        aria-label="Написати нам"
-        onClick={trackMail}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-          <polyline points="22,6 12,13 2,6"></polyline>
-        </svg>
-        <span>Написати</span>
-      </a>
-
       {/* Канал — перший: головний заклик сайту (рішення Марії 27.09.2026). */}
       <a
         href={TELEGRAM_URL}

@@ -116,9 +116,6 @@
     display: none !important;
   }
 
-  /* На мобільному показуємо sticky-mobile-only, ховаємо sticky-desktop-only */
-  .sticky-mobile-only { display: inline-flex !important; }
-  .sticky-desktop-only { display: none !important; }
 
   .sticky-btn {
     flex: 1;
