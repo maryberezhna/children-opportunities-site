@@ -179,8 +179,6 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
             <button type="submit" className="v2-hero-search-btn">{t.search}</button>
           </form>
 
-          <HomeTopics lang={lang} variant="hero" />
-
           {/* Підбірка «За кордон» — окремий блок, а не рядок у тексті: це
               найсильніший запит підлітків, і як посилання серед абзаців його
               не помічали. Клік шлемо в аналітику окремою подією, щоб бачити
@@ -238,6 +236,10 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
             ) : null}
           </aside>
         ) : null}
+
+        {/* Плитки тем — окремим рядком на всю ширину hero, під обома колонками
+            (Марія, 30.09.2026). */}
+        <HomeTopics lang={lang} variant="hero" />
       </div>
     </section>
   );

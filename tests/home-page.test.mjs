@@ -67,7 +67,8 @@ test('список: сортування, фільтри лише в панел�
   assert.ok(list.includes('groupMonOlympiads(stream)'), 'олімпіади МОН — групою');
   assert.ok(list.includes('topCards.length === 3 && !sidebarLayout'), 'на десктопі головної топ лише в хіро');
   assert.ok(list.includes('className="v2-active"') && list.includes('t.clearAll'), 'активні чипи з «Очистити все» на десктопі');
-  assert.ok(list.includes('className="m-bottom"') && list.includes('t.filtersBtn(') && list.includes('t.sortBtn'), 'панель «Фільтри / Сортування» на телефоні');
+  assert.ok(list.includes('className="m-bottom"') && list.includes('m-bottom-tg') && list.includes('t.filtersBtn('), 'панель знизу: Telegram-канал ліворуч, «Фільтри» праворуч (30.09.2026)');
+  assert.ok(list.includes('draft.sort') && list.includes("setSort(draft.sort || 'deadline')"), 'сортування на телефоні — у шторці фільтрів');
   assert.ok(list.includes('className="m-ages"'), 'вік під пошуком на телефоні');
   assert.ok(!list.includes('className={`m-bar'), 'липкого рядка чипів угорі більше немає');
 });

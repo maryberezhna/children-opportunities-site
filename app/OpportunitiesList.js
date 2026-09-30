@@ -5,7 +5,8 @@ import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
 import { cityLabel, itemFormatLabel } from '@/lib/labels';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import { trackSearch, trackFilterApply, filterSignature } from '@/lib/track';
+import { trackSearch, trackFilterApply, filterSignature, trackConversion, trackSubscribeClick } from '@/lib/track';
+import { TELEGRAM_URL } from '@/lib/social';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
@@ -83,6 +84,7 @@ const UI = {
     sortDeadline: 'Спочатку найближчий дедлайн',
     sortNew: 'Спочатку нові',
     sortBtn: 'Сортування',
+    tgBar: 'Telegram-канал',
     filtersBtn: (n) => (n ? `Фільтри (${n})` : 'Фільтри'),
     clearAll: 'Очистити все',
     olymp: {
@@ -146,6 +148,7 @@ const UI = {
     sortDeadline: 'Soonest deadline first',
     sortNew: 'Newest first',
     sortBtn: 'Sort',
+    tgBar: 'Telegram channel',
     filtersBtn: (n) => (n ? `Filters (${n})` : 'Filters'),
     clearAll: 'Clear all',
     olymp: {
@@ -482,7 +485,6 @@ export default function OpportunitiesList({
   const [limit, setLimit] = useState(initialLimit);
   // Сортування (редизайн 29.09.2026): найближчий дедлайн, як було, або нові.
   const [sort, setSort] = useState('deadline');
-  const [sortOpen, setSortOpen] = useState(false);
   // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
   const searched = useRef('');
   const [hydrated, setHydrated] = useState(false);
@@ -993,6 +995,7 @@ export default function OpportunitiesList({
   const applyDraft = () => {
     setType(draft.type); setAge(draft.age); setDeadline(draft.deadline);
     setNeed(draft.need); setCost(draft.cost); setPlace(draft.place);
+    setSort(draft.sort || 'deadline');
     setDraft(null);
     // Результат має бути видно одразу: якщо початок списку схований під
     // липкими рядками або далеко внизу — підкручуємо до лічильника.
@@ -1695,58 +1698,37 @@ export default function OpportunitiesList({
         </Wrap>
       </Wrap>
 
-      {/* Панель знизу (макет Mobile.dc.html): «Фільтри (n)» відкриває шторку,
-          «Сортування» — вибір порядку. Замінила липкий рядок чипів угорі. */}
+      {/* Панель знизу (Марія, 30.09.2026): ліворуч Telegram-канал — головний
+          заклик сайту, праворуч «Фільтри (n)», що відкриває шторку; сортування
+          живе в шторці. Замінила липкий рядок чипів угорі. */}
       {mobileLayout ? (
         <div className="m-bottom">
+          <a
+            href={TELEGRAM_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="m-bottom-btn m-bottom-tg"
+            onClick={() => {
+              trackConversion('telegram_join_click', { event_label: 'home_bar', popup_trigger: 'home_bar' });
+              trackSubscribeClick({ target: 'channel', placement: 'home_bar' });
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L8.32 14.617l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.828.942z" />
+            </svg>
+            {t.tgBar}
+          </a>
           <button
             type="button"
-            className={`m-bottom-btn${type.length + sheetActive ? ' is-on' : ''}`}
+            className={`m-bottom-btn${type.length + sheetActive + (sort !== 'deadline' ? 1 : 0) ? ' is-on' : ''}`}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
             ref={filtersBtnRef}
-            onClick={() => setDraft({ type, age, deadline, need, cost, place, query })}
+            onClick={() => setDraft({ type, age, deadline, need, cost, place, query, sort })}
           >
             <span aria-hidden="true">⚙︎</span>
-            {t.filtersBtn(type.length + sheetActive)}
+            {t.filtersBtn(type.length + sheetActive + (sort !== 'deadline' ? 1 : 0))}
           </button>
-          <button
-            type="button"
-            className={`m-bottom-btn${sort !== 'deadline' ? ' is-on' : ''}`}
-            aria-haspopup="dialog"
-            aria-expanded={sortOpen}
-            onClick={() => setSortOpen(true)}
-          >
-            <span aria-hidden="true">↕</span>
-            {t.sortBtn}
-          </button>
-        </div>
-      ) : null}
-
-      {mobileLayout && sortOpen ? (
-        <div className="m-sheet-root">
-          <div className="m-sheet-overlay" onClick={() => setSortOpen(false)} aria-hidden="true" />
-          <div className="m-sheet m-sheet--sort" role="dialog" aria-modal="true" aria-labelledby="m-sort-title">
-            <div className="m-sheet-head">
-              <button type="button" className="m-sheet-handle" aria-label={t.close} onClick={() => setSortOpen(false)} />
-              <div className="m-sheet-title-row">
-                <h2 id="m-sort-title" className="m-sheet-title">{t.sortBtn}</h2>
-              </div>
-            </div>
-            <div className="m-sheet-body">
-              {[['deadline', t.sortDeadline], ['new', t.sortNew]].map(([v, label]) => (
-                <button
-                  key={v}
-                  type="button"
-                  className={`m-sort-opt${sort === v ? ' is-on' : ''}`}
-                  aria-pressed={sort === v}
-                  onClick={() => { setSort(v); setSortOpen(false); }}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       ) : null}
 
@@ -1774,7 +1756,7 @@ export default function OpportunitiesList({
                   className="m-sheet-reset"
                   onClick={() => setDraft({
                     type: [], age: [], deadline: 'all', need: [], cost: 'all',
-                    place: presetCity ? [presetCity] : [], query: draft.query,
+                    place: presetCity ? [presetCity] : [], query: draft.query, sort: 'deadline',
                   })}
                 >
                   {t.resetAll}
@@ -1783,6 +1765,23 @@ export default function OpportunitiesList({
             </div>
 
             <div className="m-sheet-body" ref={sheetBodyRef}>
+              {/* Сортування — тут, а не окремою кнопкою в панелі знизу. */}
+              <div className="m-group" role="group" aria-labelledby="m-sort-title">
+                <h3 id="m-sort-title">{t.sortBtn}</h3>
+                <div className="m-group-chips">
+                  {[['deadline', t.sortDeadline], ['new', t.sortNew]].map(([v, label]) => (
+                    <button
+                      key={v}
+                      type="button"
+                      className={`m-chip${(draft.sort || 'deadline') === v ? ' is-on' : ''}`}
+                      aria-pressed={(draft.sort || 'deadline') === v}
+                      onClick={() => setDraft({ ...draft, sort: v })}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {sheetGroup('type', t.typeGroup, t.all,
                 TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => [c.value, isEn ? c.en : c.label]))}
               {sheetGroup('age', teens ? t.sel.grade : t.sel.age, t.all,
