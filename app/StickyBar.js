@@ -1,5 +1,7 @@
 'use client';
+import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL, INSTAGRAM_URL } from '@/lib/social';
+import ShareButton from './ShareButton';
 
 const MAIL_URL = 'mailto:hellodityam.com.ua@gmail.com?subject=Зауваження%20до%20dityam.com.ua';
 
@@ -9,6 +11,13 @@ const MAIL_URL = 'mailto:hellodityam.com.ua@gmail.com?subject=Зауваженн
 // немає. Друга суперечила «сходинці» (рішення Марії 27.09.2026): сайт веде в
 // канал, а Dityam+ на сайті — лише в шапці, на /plus і на /dedlainy.
 export default function StickyBar() {
+  // Мову беремо зі шляху: панель стоїть і на /en/kyiv, а власного пропа
+  // мови в неї немає.
+  const isEn = (usePathname() || '/').startsWith('/en');
+  const t = isEn
+    ? { share: 'Share', copied: 'Link copied', title: 'Dityam.com.ua' }
+    : { share: 'Поділитися', copied: 'Посилання скопійовано', title: 'Dityam.com.ua' };
+
   const trackInstagram = () => {
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'instagram_click', { event_label: 'sticky_bar' });
@@ -73,6 +82,16 @@ export default function StickyBar() {
         </svg>
         <span>Instagram</span>
       </a>
+
+      {/* Поділитися — з 30.09.2026 на прохання Марії: підбіркою діляться так
+          само часто, як окремою можливістю, а в панелі цього не було. */}
+      <ShareButton
+        className="sticky-btn sticky-btn-share"
+        title={t.title}
+        label={t.share}
+        copiedLabel={t.copied}
+        place="sticky_bar"
+      />
     </div>
   );
 }

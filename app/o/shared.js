@@ -22,7 +22,8 @@ import {
 export { ageRangeLabel };
 import Details from './[slug]/Details';
 import OutboundCta from './[slug]/OutboundCta';
-import ShareButton from './[slug]/ShareButton';
+import ShareButton from '../ShareButton';
+import ChannelIconLink from '../ChannelIconLink';
 import ReportButton from './[slug]/ReportButton';
 import { plural } from '@/lib/plural';
 import { topicOf, topicPath } from '@/lib/topics';
@@ -96,6 +97,7 @@ const L = {
     siteName: 'Можливості для дитини',
     share: 'Поділитися ↗',
     copied: 'Посилання скопійовано',
+    channel: 'Канал у Telegram',
     apply: 'Подати заявку ↗',
     // Гурток: до нього не «подаються», а записуються — і форма їхня, не наша.
     applyClub: 'Записатися на сайті гуртка ↗',
@@ -150,6 +152,7 @@ const L = {
     siteName: 'Opportunities for your child',
     share: 'Share ↗',
     copied: 'Link copied',
+    channel: 'Telegram channel',
     apply: 'Apply ↗',
     applyClub: 'Sign up on the club’s site ↗',
     applyClubShort: 'Sign up ↗',
@@ -874,7 +877,11 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           >
             {primaryShort}
           </OutboundCta>
-          <ShareButton className="o-m-share" icon title={title} label={t.shareWith} copiedLabel={t.copied} />
+          {/* Канал — між подачею і поширенням (Марія, 30.09.2026): панель на
+              телефоні мусить нести всі три дії, а каналу в ній не було, хоча
+              це головний заклик сайту. */}
+          <ChannelIconLink className="o-m-tg" label={t.channel} />
+          <ShareButton className="o-m-share" icon title={title} label={t.shareWith} copiedLabel={t.copied} place="detail_page_bar" />
         </div>
       ) : null}
 
