@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
-import { NO_ANALYTICS_KEY, PRODUCTION_HOST, isInternalPath } from '@/lib/analytics-scope';
+import { NO_ANALYTICS_KEY, PRODUCTION_HOST, AUTOMATION_UA, isInternalPath } from '@/lib/analytics-scope';
 import { markVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
 
 const GA_ID = 'G-KPLE8LGH91';
@@ -26,12 +26,30 @@ const HOTJAR_ID = 6704189;
 const OPT_OUT_SCRIPT = `
   (function () {
     var off = !${PRODUCTION_HOST}.test(window.location.hostname);
+    // Автоматика — не аудиторія: знімки верстки й перевірки з headless-Chrome
+    // (scripts/screenshot.mjs, Claude) і все, що керується через webdriver.
+    // 01.10.2026 у звіті за тиждень сиділи «мобільний Chrome, Варшава» — це
+    // були мої ж прогони Lighthouse й знімки живого сайту.
+    if (navigator.webdriver || ${AUTOMATION_UA}.test(navigator.userAgent)) off = true;
     try {
       var key = '${NO_ANALYTICS_KEY}';
       var flag = new URLSearchParams(window.location.search).get('noga');
       if (flag === '1') localStorage.setItem(key, '1');
       if (flag === '0') localStorage.removeItem(key);
       if (localStorage.getItem(key)) off = true;
+      // Видиме підтвердження: на телефоні інакше не зрозуміти, чи спрацювало
+      // (Марія, 01.10.2026: «викресли мене з усього трафіку… і мобільний теж»).
+      if (flag === '1' || flag === '0') {
+        document.addEventListener('DOMContentLoaded', function () {
+          var n = document.createElement('div');
+          n.textContent = flag === '1'
+            ? 'Цей браузер більше не рахується в статистиці'
+            : 'Цей браузер знову рахується в статистиці';
+          n.style.cssText = 'position:fixed;left:16px;right:16px;bottom:120px;z-index:99999;padding:12px 16px;border-radius:12px;background:#1a1a1a;color:#fff;font:600 14px/1.3 system-ui;text-align:center';
+          document.body.appendChild(n);
+          setTimeout(function () { n.remove(); }, 5000);
+        });
+      }
     } catch (e) {}
     if (off) {
       window['ga-disable-${GA_ID}'] = true;
