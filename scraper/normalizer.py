@@ -97,7 +97,11 @@ def _satisfied(crit: dict, data: dict) -> bool:
     if rule == "all":
         return all(_present(data.get(f)) for f in crit["fields"])
     if rule == "any":
-        return any(_present(data.get(f)) for f in crit["fields"])
+        if any(_present(data.get(f)) for f in crit["fields"]):
+            return True
+        # Поле зі списком значень: не «є щось», а «є саме це». Так
+        # періодичність рахується з timing_kind, а не лише з дат (01.10.2026).
+        return any(data.get(f) in vals for f, vals in (crit.get("any_values") or {}).items())
     if rule == "in":
         return data.get(crit["fields"][0]) in crit["allowed"]
     raise ValueError(f"publish-criteria: невідоме правило «{rule}»")
