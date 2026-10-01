@@ -15,6 +15,10 @@ on:
         description: 'скільки записів (порожньо = всі)'
         required: false
         default: ''
+      statuses:
+        description: 'статуси через кому (типово active,closed; додайте draft, щоб розмітити чергу)'
+        required: false
+        default: 'active,closed'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -41,4 +45,5 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
           LIMIT: ${{ github.event.inputs.limit }}
+          STATUSES: ${{ github.event.inputs.statuses }}
         run: python classify_timing.py

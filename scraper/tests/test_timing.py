@@ -137,6 +137,27 @@ class ModelAnswers(unittest.TestCase):
         self.assertEqual(kind, "periodic")
         self.assertIn("визначенням", why)
 
+    # Рішення Марії 01.10.2026. У черзі лежало 15+ суботніх шкіл діаспори, і всі
+    # стояли через «дата, період або періодичність». Поля цього в них ніколи й
+    # не буде: джерело більшості — державний реєстр АІКОМ, а він фіксує країну,
+    # статус і програму, але розкладу не містить за форматом.
+    def test_diaspora_school_is_permanent_by_definition(self):
+        kind, _m, why = rule_kind(row(opportunity_type="course",
+                                      title="Українська суботня школа «Знайко»",
+                                      countries=["de"]))
+        self.assertEqual(kind, "permanent")
+        self.assertIn("визначенням", why)
+
+    def test_diaspora_rule_does_not_catch_plain_course_abroad(self):
+        self.assertIsNone(rule_kind(row(opportunity_type="course",
+                                        title="Курс програмування для підлітків",
+                                        countries=["de"])))
+
+    def test_diaspora_rule_does_not_catch_school_in_ukraine(self):
+        self.assertIsNone(rule_kind(row(opportunity_type="course",
+                                        title="Українська школа",
+                                        countries=["ua"])))
+
 
 TODAY = date(2026, 9, 17)
 

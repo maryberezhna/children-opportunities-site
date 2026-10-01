@@ -184,14 +184,22 @@ def _ask(ai, rows: list[dict], raw_texts: dict[str, str]) -> dict[int, dict]:
     return {}
 
 
+# Типово — лише те, що вже на сайті. Чернетки додають свідомо: 01.10.2026 так
+# розмічали 15+ суботніх шкіл діаспори, які стояли в черзі саме через вид.
+STATUSES = [s.strip() for s in (os.environ.get("STATUSES") or "active,closed").split(",") if s.strip()]
+
+
 def _load_rows(db) -> list[dict]:
     rows, start = [], 0
     while True:
         page = (db.table("opportunities")
+                # countries — для правила «школа діаспори»: без них воно не
+                # спрацює жодного разу, бо саме країни й роблять школу
+                # закордонною.
                 .select("id, title, summary, details, opportunity_type, source, source_url, "
                         "status, deadline, event_start_date, event_end_date, recurrence, "
-                        "admin_comment")
-                .in_("status", ["active", "closed"])
+                        "countries, admin_comment")
+                .in_("status", STATUSES)
                 .is_("canonical_slug", "null")
                 .is_("timing_kind", "null")
                 .order("id")
