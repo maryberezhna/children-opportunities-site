@@ -1,0 +1,51 @@
+name: Чернетка — «Не підходить» (manual)
+
+# Те саме, що кнопка «Не підходить» в адмінці, але ззовні: статус → archived,
+# причина в moderation_notes, телеметрія й слід у журналі. Діє ЛИШЕ на
+# чернетки — живий запис цим скриптом з сайту не прибрати.
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: 'id записів через кому'
+        required: true
+      reason:
+        description: 'код причини: not_for_children, for_adults, club, foreign_local, commercial, no_source, duplicate, expired, other'
+        required: true
+      comment:
+        description: 'пояснення (для «other» обовʼязкове)'
+        required: false
+        default: ''
+      actor:
+        description: 'хто вирішив'
+        required: false
+        default: 'скрипт'
+      confirm:
+        description: 'REJECT — записати; порожньо — лише показати'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  reject:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Відхилити
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          IDS: ${{ github.event.inputs.ids }}
+          REASON: ${{ github.event.inputs.reason }}
+          COMMENT: ${{ github.event.inputs.comment }}
+          ACTOR: ${{ github.event.inputs.actor }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: node scripts/reject-draft.mjs
