@@ -12,6 +12,7 @@ import '@/app/styles/routes/opportunity.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
 import { kyivToday, formatDate } from '@/lib/dates';
+import { isExpired } from '@/lib/timing';
 import { isoWeek } from '@/lib/week';
 import {
   TYPE_LABELS, TYPE_LABELS_EN, AID_TYPE_LABELS, AID_TYPE_LABELS_EN,
@@ -444,7 +445,10 @@ function buildJsonLd(item, lang) {
   // завершений: інакше Google показує його як чинну можливість.
   // Дату не вигадуємо: у 275 із 475 закритих записів її немає взагалі, і тоді
   // лишається сама позначка «набір закрито» без validThrough.
-  const isClosed = item.status === 'closed';
+  // Закрите — і те, що вже закрив нічний lifecycle, і те, що протерміноване
+  // просто зараз: інакше між дедлайном і нічним прогоном (плюс до 6 годин
+  // запізнення GitHub) сторінка кликала подавати туди, куди вже не можна.
+  const isClosed = item.status === 'closed' || isExpired(item, kyivToday());
   const endedOn = item.deadline || item.event_end_date || item.event_start_date || null;
   const offerState = isClosed
     ? { availability: 'https://schema.org/SoldOut', ...(endedOn ? { validThrough: endedOn } : {}) }
@@ -569,7 +573,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   const NEEDS = needLabels(lang);
   const AIDS = lang === 'en' ? AID_TYPE_LABELS_EN : AID_TYPE_LABELS;
   const COSTS = COST_LABELS[lang] || COST_LABELS.uk;
-  const isClosed = item.status === 'closed';
+  // Те саме, що в JSON-LD вище: протерміноване закрите вже зараз, а не з
+  // нічного прогону lifecycle. Від цього залежать кнопка «Подати заявку» й
+  // нижня панель на телефоні.
+  const isClosed = item.status === 'closed' || isExpired(item, kyivToday());
   // Закритий запис теж отримує розмітку — але позначену як завершену
   // (availability SoldOut + validThrough / expires). До 20.09.2026 ми не
   // віддавали нічого: сторінка лишалась в індексі без жодної машинної ознаки,
