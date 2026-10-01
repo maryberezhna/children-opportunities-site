@@ -1,92 +1,534 @@
 [
-  { "name": "повний запис нічого не потребує",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "format": "offline", "cities": ["Львів"], "countries": ["ua"], "is_international": false },
-    "missing": [] },
-  { "name": "вік 0–18 — це заповнений вік, нуль не порожнеча",
-    "row": { "age_from": 0, "age_to": 18, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "format": "online" },
-    "missing": [] },
-  { "name": "без верхньої межі віку",
-    "row": { "age_from": 6, "age_to": null, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "format": "offline" },
-    "missing": ["age"] },
-  { "name": "вартість порожня",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": null, "opportunity_type": "camp", "format": "offline" },
-    "missing": ["cost"] },
-  { "name": "вартість поза словником — не заповнене поле",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "unknown", "opportunity_type": "camp", "format": "offline" },
-    "missing": ["cost"] },
-  { "name": "«частково безкоштовно» база приймає, сайт не показує",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "partially_free", "opportunity_type": "camp", "format": "offline" },
-    "missing": ["cost"] },
-  { "name": "тип порожній",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": null, "format": "offline" },
-    "missing": ["type"] },
-  { "name": "тип поза словником",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "щось", "format": "offline" },
-    "missing": ["type"] },
-  { "name": "жодної дати",
-    "row": { "age_from": 6, "age_to": 12, "cost_type": "free", "opportunity_type": "camp", "format": "offline" },
-    "missing": ["date"] },
-  { "name": "дату закриває кінець події",
-    "row": { "age_from": 6, "age_to": 12, "event_end_date": "2026-12-01", "cost_type": "free", "opportunity_type": "camp", "format": "offline" },
-    "missing": [] },
-  { "name": "дату закриває початок події",
-    "row": { "age_from": 6, "age_to": 12, "event_start_date": "2026-11-06", "cost_type": "free", "opportunity_type": "camp", "format": "offline" },
-    "missing": [] },
-  { "name": "дату закриває періодичність",
-    "row": { "age_from": 6, "age_to": 12, "recurrence": "annual", "cost_type": "free", "opportunity_type": "olympiad", "format": "offline" },
-    "missing": [] },
-  { "name": "дату закриває дата результатів",
-    "row": { "age_from": 6, "age_to": 12, "results_date": "2026-12-20", "cost_type": "free", "opportunity_type": "competition", "format": "online" },
-    "missing": [] },
-  { "name": "виплаті дата не обовʼязкова",
-    "row": { "age_from": 0, "age_to": 17, "cost_type": "free", "opportunity_type": "allowance", "cities": ["Львів"] },
-    "missing": [] },
-  { "name": "виплата від громади теж без дати",
-    "row": { "age_from": 0, "age_to": 17, "cost_type": "free", "opportunity_type": "support_payment", "cities": ["Рівне"] },
-    "missing": [] },
-  { "name": "стипендії дата обовʼязкова",
-    "row": { "age_from": 14, "age_to": 18, "cost_type": "free", "opportunity_type": "scholarship", "format": "online" },
-    "missing": ["date"] },
-  { "name": "виплата без віку — бракує віку, дата не рахується",
-    "row": { "age_from": 0, "age_to": null, "cost_type": "free", "opportunity_type": "allowance", "cities": ["Львів"] },
-    "missing": ["age"] },
-  { "name": "ніде — бракує місця",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "format": null, "cities": [], "countries": [], "is_international": false },
-    "missing": ["place"] },
-  { "name": "місце закриває формат",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "format": "online", "cities": [], "countries": [] },
-    "missing": [] },
-  { "name": "місце закриває місто",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "cities": ["Київ"] },
-    "missing": [] },
-  { "name": "місце закриває країна",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "countries": ["pl"] },
-    "missing": [] },
-  { "name": "місце закриває позначка міжнародної",
-    "row": { "age_from": 6, "age_to": 12, "deadline": "2026-10-01", "cost_type": "free", "opportunity_type": "camp", "is_international": true },
-    "missing": [] },
-  { "name": "порожній запис — усі пʼять, у сталому порядку",
+  {
+    "name": "повний запис нічого не потребує",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "offline",
+      "cities": [
+        "Львів"
+      ],
+      "countries": [
+        "ua"
+      ],
+      "is_international": false
+    },
+    "missing": []
+  },
+  {
+    "name": "вік 0–18 — це заповнений вік, нуль не порожнеча",
+    "row": {
+      "age_from": 0,
+      "age_to": 18,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "online"
+    },
+    "missing": []
+  },
+  {
+    "name": "без верхньої межі віку",
+    "row": {
+      "age_from": 6,
+      "age_to": null,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": [
+      "age"
+    ]
+  },
+  {
+    "name": "вартість порожня",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": null,
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": [
+      "cost"
+    ]
+  },
+  {
+    "name": "вартість поза словником — не заповнене поле",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "unknown",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": [
+      "cost"
+    ]
+  },
+  {
+    "name": "«частково безкоштовно» база приймає, сайт не показує",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "partially_free",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": [
+      "cost"
+    ]
+  },
+  {
+    "name": "тип порожній",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": null,
+      "format": "offline"
+    },
+    "missing": [
+      "type"
+    ]
+  },
+  {
+    "name": "тип поза словником",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "щось",
+      "format": "offline"
+    },
+    "missing": [
+      "type"
+    ]
+  },
+  {
+    "name": "жодної дати",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": [
+      "date"
+    ]
+  },
+  {
+    "name": "дату закриває кінець події",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "event_end_date": "2026-12-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": []
+  },
+  {
+    "name": "дату закриває початок події",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "event_start_date": "2026-11-06",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "offline"
+    },
+    "missing": []
+  },
+  {
+    "name": "дату закриває періодичність",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "recurrence": "annual",
+      "cost_type": "free",
+      "opportunity_type": "olympiad",
+      "format": "offline"
+    },
+    "missing": []
+  },
+  {
+    "name": "дату закриває дата результатів",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "results_date": "2026-12-20",
+      "cost_type": "free",
+      "opportunity_type": "competition",
+      "format": "online"
+    },
+    "missing": []
+  },
+  {
+    "name": "виплаті дата не обовʼязкова",
+    "row": {
+      "age_from": 0,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "allowance",
+      "cities": [
+        "Львів"
+      ]
+    },
+    "missing": []
+  },
+  {
+    "name": "виплата від громади теж без дати",
+    "row": {
+      "age_from": 0,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "support_payment",
+      "cities": [
+        "Рівне"
+      ]
+    },
+    "missing": []
+  },
+  {
+    "name": "стипендії дата обовʼязкова",
+    "row": {
+      "age_from": 14,
+      "age_to": 18,
+      "cost_type": "free",
+      "opportunity_type": "scholarship",
+      "format": "online"
+    },
+    "missing": [
+      "date"
+    ]
+  },
+  {
+    "name": "виплата без віку — бракує віку, дата не рахується",
+    "row": {
+      "age_from": 0,
+      "age_to": null,
+      "cost_type": "free",
+      "opportunity_type": "allowance",
+      "cities": [
+        "Львів"
+      ]
+    },
+    "missing": [
+      "age"
+    ]
+  },
+  {
+    "name": "ніде — бракує місця",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": null,
+      "cities": [],
+      "countries": [],
+      "is_international": false
+    },
+    "missing": [
+      "place"
+    ]
+  },
+  {
+    "name": "місце закриває формат",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "format": "online",
+      "cities": [],
+      "countries": []
+    },
+    "missing": []
+  },
+  {
+    "name": "місце закриває місто",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "cities": [
+        "Київ"
+      ]
+    },
+    "missing": []
+  },
+  {
+    "name": "місце закриває країна",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "countries": [
+        "pl"
+      ]
+    },
+    "missing": []
+  },
+  {
+    "name": "місце закриває позначка міжнародної",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "deadline": "2026-10-01",
+      "cost_type": "free",
+      "opportunity_type": "camp",
+      "is_international": true
+    },
+    "missing": []
+  },
+  {
+    "name": "порожній запис — усі пʼять, у сталому порядку",
     "row": {},
-    "missing": ["age", "date", "cost", "type", "place"] },
-  { "name": "школа діаспори без ціни — «вартість уточнюйте в школі» закриває вартість, цитата на неї не потрібна",
-    "row": { "title": "Українська суботня школа «Сонях» у Лейпцигу", "age_from": 5, "age_to": 12, "recurrence": "ongoing", "cost_type": "ask_school", "opportunity_type": "club", "countries": ["de"], "cities": ["Лейпциг"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": [], "missing_proof": [] },
-  { "name": "студія діаспори теж підпадає під виняток",
-    "row": { "title": "Студія українського танцю «Barvinok»", "age_from": 4, "age_to": 16, "recurrence": "ongoing", "cost_type": "ask_school", "opportunity_type": "course", "countries": ["es"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": [], "missing_proof": [] },
-  { "name": "«уточнюйте в школі» на таборі за кордоном — вартості бракує",
-    "row": { "title": "Літній табір «Сонях» у Польщі", "age_from": 7, "age_to": 14, "deadline": "2026-10-01", "cost_type": "ask_school", "opportunity_type": "camp", "countries": ["pl"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": ["cost"], "missing_proof": ["cost"] },
-  { "name": "«уточнюйте в школі» без слова «школа» чи «студія» в назві — вартості бракує",
-    "row": { "title": "Гурток малювання для дітей", "age_from": 6, "age_to": 10, "recurrence": "ongoing", "cost_type": "ask_school", "opportunity_type": "club", "countries": ["de"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": ["cost"], "missing_proof": ["cost"] },
-  { "name": "«уточнюйте в школі» для школи в Україні — вартості бракує",
-    "row": { "title": "Школа робототехніки «Robo»", "age_from": 8, "age_to": 14, "recurrence": "ongoing", "cost_type": "ask_school", "opportunity_type": "club", "countries": ["ua"], "cities": ["Львів"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": ["cost"], "missing_proof": ["cost"] },
-  { "name": "«уточнюйте в школі» без країни — вартості бракує",
-    "row": { "title": "Українська суботня школа", "age_from": 6, "age_to": 14, "recurrence": "ongoing", "cost_type": "ask_school", "opportunity_type": "club", "format": "offline", "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": ["cost"], "missing_proof": ["cost"] },
-  { "name": "платна школа діаспори й далі потребує цитати на вартість",
-    "row": { "title": "Українська суботня школа «Сонях» у Лейпцигу", "age_from": 5, "age_to": 12, "recurrence": "ongoing", "cost_type": "paid_affordable", "opportunity_type": "club", "countries": ["de"], "evidence": { "age": "для дітей 5–12 років", "date": "щосуботи", "type": "суботня школа", "place": "у Лейпцигу" } },
-    "missing": [], "missing_proof": ["cost"] }
+    "missing": [
+      "age",
+      "date",
+      "cost",
+      "type",
+      "place"
+    ]
+  },
+  {
+    "name": "школа діаспори без ціни — «вартість уточнюйте в школі» закриває вартість, цитата на неї не потрібна",
+    "row": {
+      "title": "Українська суботня школа «Сонях» у Лейпцигу",
+      "age_from": 5,
+      "age_to": 12,
+      "recurrence": "ongoing",
+      "cost_type": "ask_school",
+      "opportunity_type": "club",
+      "countries": [
+        "de"
+      ],
+      "cities": [
+        "Лейпциг"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [],
+    "missing_proof": []
+  },
+  {
+    "name": "студія діаспори теж підпадає під виняток",
+    "row": {
+      "title": "Студія українського танцю «Barvinok»",
+      "age_from": 4,
+      "age_to": 16,
+      "recurrence": "ongoing",
+      "cost_type": "ask_school",
+      "opportunity_type": "course",
+      "countries": [
+        "es"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [],
+    "missing_proof": []
+  },
+  {
+    "name": "«уточнюйте в школі» на таборі за кордоном — вартості бракує",
+    "row": {
+      "title": "Літній табір «Сонях» у Польщі",
+      "age_from": 7,
+      "age_to": 14,
+      "deadline": "2026-10-01",
+      "cost_type": "ask_school",
+      "opportunity_type": "camp",
+      "countries": [
+        "pl"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [
+      "cost"
+    ],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "«уточнюйте в школі» без слова «школа» чи «студія» в назві — вартості бракує",
+    "row": {
+      "title": "Гурток малювання для дітей",
+      "age_from": 6,
+      "age_to": 10,
+      "recurrence": "ongoing",
+      "cost_type": "ask_school",
+      "opportunity_type": "club",
+      "countries": [
+        "de"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [
+      "cost"
+    ],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "«уточнюйте в школі» для школи в Україні — вартості бракує",
+    "row": {
+      "title": "Школа робототехніки «Robo»",
+      "age_from": 8,
+      "age_to": 14,
+      "recurrence": "ongoing",
+      "cost_type": "ask_school",
+      "opportunity_type": "club",
+      "countries": [
+        "ua"
+      ],
+      "cities": [
+        "Львів"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [
+      "cost"
+    ],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "«уточнюйте в школі» без країни — вартості бракує",
+    "row": {
+      "title": "Українська суботня школа",
+      "age_from": 6,
+      "age_to": 14,
+      "recurrence": "ongoing",
+      "cost_type": "ask_school",
+      "opportunity_type": "club",
+      "format": "offline",
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [
+      "cost"
+    ],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "платна школа діаспори й далі потребує цитати на вартість",
+    "row": {
+      "title": "Українська суботня школа «Сонях» у Лейпцигу",
+      "age_from": 5,
+      "age_to": 12,
+      "recurrence": "ongoing",
+      "cost_type": "paid_affordable",
+      "opportunity_type": "club",
+      "countries": [
+        "de"
+      ],
+      "evidence": {
+        "age": "для дітей 5–12 років",
+        "date": "щосуботи",
+        "type": "суботня школа",
+        "place": "у Лейпцигу"
+      }
+    },
+    "missing": [],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "постійний набір — це відповідь на «коли», дати не треба",
+    "row": {
+      "age_from": 6,
+      "age_to": 14,
+      "cost_type": "free",
+      "opportunity_type": "club",
+      "timing_kind": "permanent",
+      "format": "offline",
+      "cities": [
+        "Прага"
+      ],
+      "countries": [
+        "cz"
+      ]
+    },
+    "missing": []
+  },
+  {
+    "name": "періодична без дат — теж відповідь на «коли»",
+    "row": {
+      "age_from": 7,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "competition",
+      "timing_kind": "periodic",
+      "format": "online"
+    },
+    "missing": []
+  },
+  {
+    "name": "одноразова без жодної дати лишається неповною",
+    "row": {
+      "age_from": 7,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "competition",
+      "timing_kind": "one_time",
+      "format": "online"
+    },
+    "missing": [
+      "date"
+    ]
+  }
 ]
