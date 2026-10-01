@@ -1,6 +1,6 @@
 'use client';
 import { usePathname } from 'next/navigation';
-import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
+import { TELEGRAM_URL } from '@/lib/social';
 import ShareButton from './ShareButton';
 
 /**
@@ -16,11 +16,12 @@ import ShareButton from './ShareButton';
  */
 export default function StickyBar() {
   const isEn = (usePathname() || '/').startsWith('/en');
-  const lang = isEn ? 'en' : 'uk';
-  const cta = CHANNEL_CTA[lang] || CHANNEL_CTA.uk;
+  // Підпис каже прямо, куди: «до каналу» без слова Telegram на панелі нічого
+  // не пояснювало (Марія, 01.10.2026: «до якого каналу? напиши прямо»). У
+  // картці каналу поруч є текст про Telegram, тут його немає.
   const t = isEn
-    ? { share: 'Share', copied: 'Link copied', title: 'Dityam.com.ua' }
-    : { share: 'Поділитися', copied: 'Посилання скопійовано', title: 'Dityam.com.ua' };
+    ? { join: 'Join on Telegram', share: 'Share', copied: 'Link copied', title: 'Dityam.com.ua' }
+    : { join: 'Долучитися в Telegram', share: 'Поділитися', copied: 'Посилання скопійовано', title: 'Dityam.com.ua' };
 
   const trackTelegram = () => {
     if (typeof window !== 'undefined' && window.gtag) {
@@ -37,7 +38,7 @@ export default function StickyBar() {
         className="sticky-main"
         onClick={trackTelegram}
       >
-        {cta.cta}
+        {t.join}
       </a>
       <ShareButton
         className="sticky-share"
