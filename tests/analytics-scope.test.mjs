@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PRODUCTION_HOST, isProductionHost, isInternalPath } from '../lib/analytics-scope.js';
+import { PRODUCTION_HOST, isProductionHost, isInternalPath, isAutomationUa } from '../lib/analytics-scope.js';
 
 test('рахуємо лише бойовий домен', () => {
   assert.equal(isProductionHost('dityam.com.ua'), true);
@@ -27,4 +27,11 @@ test('адмінка — внутрішній маршрут', () => {
   assert.equal(isInternalPath('/admin/plus'), true);
   assert.equal(isInternalPath('/about'), false);
   assert.equal(isInternalPath(null), false);
+});
+
+test('автоматика за User-Agent не рахується', () => {
+  assert.equal(isAutomationUa('Mozilla/5.0 (Macintosh) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/140.0 Safari/537.36'), true);
+  assert.equal(isAutomationUa('Mozilla/5.0 (Linux; Android 11; moto g power) Chrome/140 Mobile Safari/537.36 Chrome-Lighthouse'), true);
+  assert.equal(isAutomationUa('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1'), false);
+  assert.equal(isAutomationUa(''), false);
 });

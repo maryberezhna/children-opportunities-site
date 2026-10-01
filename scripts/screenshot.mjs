@@ -15,7 +15,12 @@
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 
-const [,, out, wArg, hArg, url, mobileArg] = process.argv;
+const [,, out, wArg, hArg, rawUrl, mobileArg] = process.argv;
+// Знімок живого сайту не має потрапляти в статистику: ?noga=1 вимикає GA4 і
+// Hotjar у цьому профілі (lib/analytics-scope.js). Headless ловиться й за UA,
+// параметр — другий запобіжник.
+const url = /(^|\/\/)(www\.)?dityam\.com\.ua/.test(rawUrl || '') && !/[?&]noga=/.test(rawUrl)
+  ? `${rawUrl}${rawUrl.includes('?') ? '&' : '?'}noga=1` : rawUrl;
 const width = +wArg, height = +hArg, mobile = mobileArg === 'mobile';
 const profile = `${process.env.TMPDIR || '/tmp'}/dityam-cdp-profile`;
 const chrome = spawn('/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', [
