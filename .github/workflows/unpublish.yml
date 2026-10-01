@@ -1,0 +1,47 @@
+name: Зняти з сайту в чернетки (manual)
+
+# Не «Не підходить»: запис може бути справжнім, просто показувати його в
+# теперішньому вигляді не можна (наприклад, джерело — чужий Telegram-канал).
+# Такий іде в чергу на перевірку, а не зникає назавжди. Діє лише на те, що
+# зараз на сайті.
+on:
+  workflow_dispatch:
+    inputs:
+      ids:
+        description: 'id записів через кому'
+        required: true
+      comment:
+        description: 'чому знімаємо (обовʼязково)'
+        required: true
+      actor:
+        description: 'хто вирішив'
+        required: false
+        default: 'скрипт'
+      confirm:
+        description: 'UNPUBLISH — записати; порожньо — лише показати'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  unpublish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Зняти
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          IDS: ${{ github.event.inputs.ids }}
+          COMMENT: ${{ github.event.inputs.comment }}
+          ACTOR: ${{ github.event.inputs.actor }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: node scripts/unpublish.mjs
