@@ -19,6 +19,10 @@ on:
         description: 'статуси через кому (типово active,closed; додайте draft, щоб розмітити чергу)'
         required: false
         default: 'active,closed'
+      rules_only:
+        description: 'true = лише правила, без моделі (дешево й передбачувано)'
+        required: false
+        default: 'false'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -46,4 +50,5 @@ jobs:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
           LIMIT: ${{ github.event.inputs.limit }}
           STATUSES: ${{ github.event.inputs.statuses }}
+          RULES_ONLY: ${{ github.event.inputs.rules_only }}
         run: python classify_timing.py

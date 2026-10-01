@@ -236,6 +236,8 @@ def _trace(row: dict, kind: str, why: str) -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--limit", type=int, default=int(os.environ.get("LIMIT") or 0) or None)
+    ap.add_argument("--rules-only", action="store_true",
+                    default=os.environ.get("RULES_ONLY", "").lower() == "true")
     ap.add_argument("--dry-run", action="store_true",
                     default=os.environ.get("DRY_RUN", "").lower() == "true")
     args = ap.parse_args()
@@ -258,6 +260,15 @@ def main() -> int:
     logger.info("За правилами: %d · модели: %d", len(decided), len(for_model))
 
     unknown = []
+    # Лише правила: модель не кличемо зовсім. Треба тоді, коли розмітку дає
+    # саме правило (01.10.2026 — школи діаспори), а платити моделі за решту
+    # черги зараз не на часі. Заразом рятує від давньої вади в розборі
+    # відповіді моделі, через яку падав увесь прогін.
+    if for_model and args.rules_only:
+        logger.info("rules-only: %d записів лишаю моделі на потім", len(for_model))
+        unknown.extend(for_model)
+        for_model = []
+
     if for_model:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             logger.error("Немає ANTHROPIC_API_KEY")
