@@ -8,7 +8,7 @@
 // (lib/required.js) — інакше скрипт падає й нічого не пише.
 
 import { createClient } from '@supabase/supabase-js';
-import { missingRequired } from '../lib/required.js';
+import { missingRequired, missingProof } from '../lib/required.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -32,7 +32,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const { data: row, error } = await supabase
   .from('opportunities')
-  .select('id, title, status, slug, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, price_note, opportunity_type, format, cities, countries, is_international, admin_comment')
+  .select('id, title, status, slug, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, timing_kind, cost_type, price_note, opportunity_type, format, cities, countries, is_international, evidence, admin_comment')
   .eq('id', ID)
   .maybeSingle();
 
@@ -53,6 +53,19 @@ if (PRICE_NOTE) patch.price_note = PRICE_NOTE;
 const missing = missingRequired({ ...row, ...patch });
 if (missing.length) {
   console.error(`«${row.title}» не можна публікувати — бракує: ${missing.join(', ')}`);
+  process.exit(1);
+}
+
+// Цитати — обовʼязкові так само, як самі поля («світлофор», 22.09.2026).
+// Перевірка missingProof існувала з того ж дня, але публікація її не кликала,
+// і повз неї пройшли і старі записи, і ті, що я публікувала 01.10.2026. Поле,
+// заповнене без цитати, — це твердження, якого ніхто не підтверджував; на
+// сайті воно виглядає так само впевнено, як перевірене.
+const noProof = missingProof({ ...row, ...patch });
+if (noProof.length) {
+  console.error(`«${row.title}» не можна публікувати — немає цитат зі сторінки: ${noProof.join(', ')}`);
+  console.error('Додайте їх у evidence через «Картка — точкова правка»:');
+  console.error('  {"evidence": {"date": "…", "cost": "…", "age": "…", "type": "…", "place": "…"}}');
   process.exit(1);
 }
 

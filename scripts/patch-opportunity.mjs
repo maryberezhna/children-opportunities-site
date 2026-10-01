@@ -20,12 +20,25 @@ const EDITABLE = new Set([
   'title', 'summary', 'details', 'title_en', 'summary_en', 'details_en',
   'price_note', 'apply_url', 'deadline', 'event_start_date', 'event_end_date',
   'age_from', 'age_to', 'cost_type',
+  // Цитати зі сторінки. Без них публікація тепер не проходить, тож має бути
+  // чим їх вписати: {"evidence": {"date": "…", "cost": "…"}} доповнює наявні
+  // ключі, а не затирає весь обʼєкт.
+  'evidence',
 ]);
 
 export function applyPatch(row, patch) {
   const out = {};
   for (const [field, value] of Object.entries(patch)) {
     if (!EDITABLE.has(field)) throw new Error(`поле «${field}» тут не змінюється`);
+    // evidence доповнюємо по ключах: передали цитату на дату — решта лишається.
+    if (field === 'evidence') {
+      if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        throw new Error('evidence має бути обʼєктом: {"date": "цитата"}');
+      }
+      const base = (row.evidence && typeof row.evidence === 'object') ? row.evidence : {};
+      out.evidence = { ...base, ...value };
+      continue;
+    }
     if (value && typeof value === 'object' && Array.isArray(value.replace)) {
       let text = String(row[field] ?? '');
       for (const [from, to] of value.replace) {

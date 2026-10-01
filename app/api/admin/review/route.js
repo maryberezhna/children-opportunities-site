@@ -2,7 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminName } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
-import { missingRequired } from '@/lib/required';
+import { missingRequired, missingProof } from '@/lib/required';
 import { DECISION_FIELD } from '@/lib/corrections';
 import { rejectProblem, rejectNoteBody } from '@/lib/reject-reasons';
 
@@ -53,13 +53,23 @@ export async function POST(request) {
   if (spec.status === 'active') {
     const { data: row } = await supabase
       .from('opportunities')
-      .select('title, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .select('title, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, timing_kind, cost_type, opportunity_type, format, cities, countries, is_international, evidence')
       .eq('id', id)
       .maybeSingle();
     const missing = row ? missingRequired(row) : [];
     if (missing.length) {
       return Response.json(
         { ok: false, error: 'missing_required', missing },
+        { status: 422 },
+      );
+    }
+    // Цитати — так само обовʼязкові, як самі поля («світлофор», 22.09.2026).
+    // Перевірка існувала з того ж дня, але кнопка її не кликала: поле без
+    // цитати ніхто не підтверджував, а на сайті воно виглядає як перевірене.
+    const noProof = row ? missingProof(row) : [];
+    if (noProof.length) {
+      return Response.json(
+        { ok: false, error: 'missing_proof', missing: noProof },
         { status: 422 },
       );
     }
