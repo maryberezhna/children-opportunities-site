@@ -1,205 +1,65 @@
-/* Sticky bar */
-/* ============ STICKY BAR ============ */
+/* Нижня панель підбірок і міських сторінок на телефоні (app/StickyBar.js).
+   Та сама розкладка, що .o-m-bar на сторінці можливості
+   (opportunity-mobile.css): помаранчева дія на всю ширину + кругла
+   «Поділитися». На десктопі панелі немає — канал і поширення є в hero
+   підбірки. */
 
-/* На десктопі приховуємо sticky-bar — залишаємо тільки в футері */
-.sticky-bar {
-  display: none !important;
-}
+.sticky-bar { display: none; }
 
-/* На мобільному показуємо через media query нижче */
-.sticky-bar.sticky-bar-mobile {
-  position: fixed !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 9999 !important;
-  display: flex !important;
-  justify-content: center;
-  gap: 12px;
-  padding: 10px 20px calc(10px + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid var(--border);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06);
-}
-
-.sticky-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  background: var(--bg);
-  color: var(--ink-soft);
-  text-decoration: none;
-  border-radius: 100px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  transition: background 0.15s, box-shadow 0.15s, border-color 0.15s, transform 0.15s;
-  border: 1px solid var(--border);
-  min-width: 120px;
-  justify-content: center;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  font-family: inherit;
-  cursor: pointer;
-}
-
-.sticky-btn:hover {
-  background: var(--surface);
-  border-color: var(--border-hover);
-  transform: translateY(-1px);
-}
-
-.sticky-btn,
-.sticky-btn:visited,
-.sticky-btn:focus,
-.sticky-btn:active {
-  outline: none;
-}
-
-.sticky-btn svg {
-  stroke: var(--ink-soft);
-  flex-shrink: 0;
-}
-
-/* ВАЖЛИВО: за замовчуванням мобільна кнопка прихована на десктопі */
-
-/* Subscribe кнопка — градієнтна, щоб вирізнялась */
-.sticky-btn-subscribe,
-.sticky-btn-subscribe:link,
-.sticky-btn-subscribe:visited,
-.sticky-btn-subscribe:hover,
-.sticky-btn-subscribe:focus,
-.sticky-btn-subscribe:active {
-  background: linear-gradient(135deg, #fff4ec 0%, #fde8c7 100%);
-  color: var(--accent) !important;
-  border-color: var(--accent);
-  font-weight: 500;
-}
-
-.sticky-btn-subscribe:hover {
-  background: var(--accent-soft) !important;
-  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.2);
-}
-
-.sticky-btn-subscribe svg,
-.sticky-btn-subscribe:hover svg,
-.sticky-btn-subscribe:focus svg,
-.sticky-btn-subscribe:active svg {
-  stroke: var(--accent) !important;
-}
-
-.sticky-btn-subscribe span {
-  color: var(--v2-accent-strong) !important;
-}
-
-/* Instagram кнопка */
-.sticky-btn-insta,
-.sticky-btn-insta:link,
-.sticky-btn-insta:visited,
-.sticky-btn-insta:hover,
-.sticky-btn-insta:focus,
-.sticky-btn-insta:active {
-  background: linear-gradient(135deg, #f09433 0%, #dc2743 50%, #bc1888 100%);
-  color: #ffffff !important;
-  border-color: transparent;
-}
-
-.sticky-btn-insta:hover {
-  box-shadow: 0 6px 20px rgba(220, 39, 67, 0.35);
-}
-
-.sticky-btn-insta svg,
-.sticky-btn-insta:hover svg,
-.sticky-btn-insta:focus svg,
-.sticky-btn-insta:active svg {
-  stroke: #ffffff !important;
-}
-
-.sticky-btn-insta span {
-  color: #ffffff !important;
-}
-
-/* Telegram кнопка */
-.sticky-btn-tg,
-.sticky-btn-tg:link,
-.sticky-btn-tg:visited,
-.sticky-btn-tg:hover,
-.sticky-btn-tg:focus,
-.sticky-btn-tg:active {
-  background: #1a73a3;
-  color: #ffffff !important;
-  border-color: transparent;
-}
-
-.sticky-btn-tg:hover {
-  background: #0288D1;
-  box-shadow: 0 6px 20px rgba(41, 182, 246, 0.35);
-}
-
-.sticky-btn-tg svg {
-  fill: #ffffff !important;
-  stroke: none !important;
-}
-
-.sticky-btn-tg span {
-  color: #ffffff !important;
-}
-
-/* Донат кнопка */
-.sticky-btn-donate,
-.sticky-btn-donate:link,
-.sticky-btn-donate:visited,
-.sticky-btn-donate:focus,
-.sticky-btn-donate:active {
-  background: var(--v2-accent-strong); /* білий на #e85d24 — лише 3,5:1 */
-  color: #ffffff !important;
-  border-color: transparent;
-}
-
-.sticky-btn-donate:hover {
-  background: #d14c15;
-  color: #ffffff !important;
-  box-shadow: 0 6px 20px rgba(232, 93, 36, 0.4);
-}
-
-.sticky-btn-donate svg,
-.sticky-btn-donate:hover svg,
-.sticky-btn-donate:focus svg,
-.sticky-btn-donate:active svg {
-  stroke: #ffffff !important;
-}
-
-.sticky-btn-donate span {
-  color: #ffffff !important;
-}
-
-.sticky-heart {
-  font-size: 1.125rem;
-  line-height: 1;
-  animation: heartbeat 1.8s ease-in-out infinite;
-}
-
-/* Планшет — 4 кнопки футера в 2 ряди */
-@media (max-width: 900px) and (min-width: 641px) {
-  .footer-actions {
+@media (max-width: 640px) {
+  .sticky-bar {
+    display: flex;
     gap: 10px;
-    padding: 22px 24px;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 900;
+    padding: 12px 20px max(28px, calc(12px + env(safe-area-inset-bottom, 0px)));
+    background: #ffffff;
+    border-top: 1px solid var(--v2-line);
   }
 
-  .footer-action-btn {
-    padding: 10px 18px;
-    font-size: 0.8125rem;
+  .sticky-main {
     flex: 1;
-    min-width: 140px;
+    height: 52px;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    padding: 0 16px;
+    border-radius: 999px;
+    background: var(--v2-accent-strong);
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 600;
+    text-decoration: none;
   }
+  .sticky-main:active { background: var(--v2-accent-hover); }
 
-  .footer-content {
-    grid-template-columns: 1fr 1fr;
-    gap: 28px;
-    padding: 28px 28px 0;
+  .sticky-share {
+    flex: 0 0 52px;
+    height: 52px;
+    box-sizing: border-box;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 1.5px solid var(--v2-ink);
+    border-radius: 999px;
+    background: #ffffff;
+    color: var(--v2-ink);
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .sticky-share:active { background: var(--v2-cream); }
+
+  /* Футер і плаваючі кнопки — над панеллю, як на сторінці можливості. */
+  body:has(.sticky-bar) .v2-footer-inner {
+    padding-bottom: calc(48px + 104px + env(safe-area-inset-bottom, 0px));
+  }
+  body:has(.sticky-bar) .a11y-trigger,
+  body:has(.sticky-bar) .telegram-fab,
+  body:has(.sticky-bar) .scroll-nav {
+    bottom: calc(104px + env(safe-area-inset-bottom, 0px));
   }
 }
-
