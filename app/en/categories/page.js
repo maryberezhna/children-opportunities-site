@@ -8,7 +8,7 @@ const SITE_URL = 'https://dityam.com.ua';
 export const revalidate = 300;
 
 export const metadata = {
-  title: 'Categories of opportunities for children — courses, camps, scholarships, contests',
+  title: { absolute: 'Opportunities for children by category — courses, camps, contests' },
   description:
     'Every category of opportunity for children 0–18 in one place: education, camps and exchanges, scholarships and grants, international programmes, contests, volunteering, careers. Live counts, updated daily.',
   alternates: {
