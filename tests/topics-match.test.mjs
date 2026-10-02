@@ -310,3 +310,14 @@ test('безкоштовний мовний клуб онлайн лишаєть
   assert.equal(topicOf(speakingClub).slug, 'bezkoshtovni-onlain-kursy');
   assert.equal(topicOf(paidSchool).slug, 'inozemni-movy');
 });
+
+// 02.10.2026: «Гурток «Англійська мова»» в Харкові має aid_type
+// «free_activities» — і через умову !aid_type не рахувався, тож сторінка
+// /kharkiv/inozemni-movy віддавала 404 з чотирма записами замість пʼяти.
+test('іноземні мови: безкоштовний гурток із aid_type «free_activities» — наш', () => {
+  const club = { opportunity_type: 'club', cost_type: 'free', aid_type: 'free_activities',
+                 title: 'Гурток «Англійська мова»', cities: ['Харків'] };
+  assert.equal(TOPICS['inozemni-movy'].match(club), true);
+  const cash = { opportunity_type: 'support_payment', aid_type: 'cash', title: 'Виплата на курси англійської', cities: [] };
+  assert.equal(TOPICS['inozemni-movy'].match(cash), false);
+});
