@@ -34,6 +34,7 @@ import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
 import Footer from '../Footer';
 import OpportunityCard from '../OpportunityCard';
 import PlusPromo from '../PlusPromo';
+import PlusDeadlineNudge from './PlusDeadlineNudge';
 import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
@@ -630,6 +631,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
   // Факти з запису (lib/opportunity-facts.js). Порожнє не показується.
   const status = intakeStatus(item, today, lang);
+  // Рядок про Dityam+ — лише коли є живий дедлайн подачі (PlusDeadlineNudge).
+  const showPlusNudge = !isClosed && status?.kind === 'deadline';
   const facts = pageFacts(item, today, lang);
   const conditions = applicantConditions(item, lang);
   const factOf = (k) => facts.find((f) => f.key === k)?.value;
@@ -711,6 +714,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 ) : null}
               </div>
             ) : null}
+            {showPlusNudge ? <PlusDeadlineNudge lang={lang} place="detail_deadline_mobile" className="o-plus-nudge--mobile" /> : null}
 
             {field(item, 'summary', lang) ? (
               <p className="opportunity-summary" lang={summaryLang}>{field(item, 'summary', lang)}</p>
@@ -806,6 +810,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   {status.note ? <span className="o-status-note">{status.note}</span> : null}
                 </div>
               ) : null}
+              {showPlusNudge ? <PlusDeadlineNudge lang={lang} place="detail_deadline_desktop" className="o-plus-nudge--desktop" /> : null}
               {actionSub ? <p className="o-action-sub">{actionSub}</p> : null}
               {!isClosed && primaryUrl ? (
                 <OutboundCta

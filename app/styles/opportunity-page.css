@@ -620,3 +620,21 @@
   .o-aside { margin-top: 28px; }
   .opportunity-related-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Рядок Dityam+ під дедлайном (app/o/PlusDeadlineNudge.js, 02.10.2026). */
+.o-plus-nudge {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--v2-accent-strong);
+  text-decoration: none;
+}
+.o-plus-nudge:hover { text-decoration: underline; text-underline-offset: 2px; }
+.o-plus-nudge--mobile { display: none; }
+@media (max-width: 900px) {
+  .o-plus-nudge--mobile { display: flex; margin: -8px 0 4px; min-height: 44px; align-items: center; }
+}
