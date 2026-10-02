@@ -34,12 +34,16 @@ test('причина називається словами', () => {
   assert.equal(sourceProblem({ source_url: 'https://aiesec.ua/' }), '');
 });
 
-// Перевірка має стояти на ОБОХ шляхах публікації — саме відсутність виклику й
-// була дірою.
-test('обидва шляхи публікації перевіряють джерело', () => {
-  for (const f of ['scripts/publish-draft.mjs', 'app/api/admin/review/route.js']) {
+// Перевірка має стояти на ВСІХ шляхах публікації — саме відсутність виклику й
+// була дірою. 02.10.2026 виявилось, що шляхів чотири, а не два: кнопка в боті
+// й редактор джерело не питали, і на сайт зайшли пʼять записів із чужим
+// каналом. Тепер правило кличуть через lib/publish-gate.js, а повний перелік
+// шляхів звіряє tests/publish-gate.test.mjs.
+test('шляхи публікації перевіряють джерело через спільні ворота', () => {
+  for (const f of ['scripts/publish-draft.mjs', 'app/api/admin/review/route.js',
+                   'app/api/admin/edit/route.js', 'app/api/telegram/webhook/route.js']) {
     const src = read(f);
-    assert.ok(/sourceProblem/.test(src), `${f}: джерело не перевіряється`);
-    assert.ok(/source_url/.test(src), `${f}: source_url не читається з бази — перевірка була б сліпа`);
+    assert.ok(/publishBlockers/.test(src), `${f}: джерело не перевіряється`);
+    assert.ok(/GATE_SELECT/.test(src), `${f}: поля воріт не читаються з бази — перевірка була б сліпа`);
   }
 });
