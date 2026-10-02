@@ -13,25 +13,26 @@ import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
  *     має бачити, скільки це коштує, ще до того, як кудись натисне;
  *   • кнопка веде на /plus, де можна дочитати, а не в бот.
  *
+ * 02.10.2026 Марія: «дуже багато тексту, не виглядає як CTA» — банер
+ * скорочено до заголовка, одного рядка й ціни; пояснення живе на /plus.
+ *
  * Ціна береться з lib/wayforpay (ті самі змінні, що й у боті та на /plus) —
  * щоб на сайті не лишилось місця, де вона застаріла.
  */
 const T = {
   uk: {
     badge: 'Dityam+',
-    title: 'Тут показуємо все, що існує. Dityam+ надсилає те, що підходить саме вашій дитині.',
-    text: 'Ви один раз розповідаєте про кожну дитину, а ми щодня перевіряємо нові можливості й надсилаємо '
-      + 'в Telegram ті, що підходять їй за віком і вподобаннями. Про дедлайн нагадуємо, поки ще встигаєте подати заявку.',
-    price: `${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року. Скасувати можна будь-коли.`,
+    title: 'Можливості саме для вашої дитини — щодня в Telegram',
+    text: 'Добираємо за віком і вподобаннями й нагадуємо про дедлайн.',
+    price: `${PRICE} грн/міс або ${PRICE_HALF} грн за пів року · скасувати будь-коли`,
     cta: 'Найкращі можливості для моєї дитини',
     href: '/plus',
   },
   en: {
     badge: 'Dityam+',
-    title: 'Here we show everything that exists. Dityam+ sends what fits your child.',
-    text: 'Tell us about each child once, and every day we check new opportunities and send you the ones '
-      + 'that fit their age and interests on Telegram. We remind you of deadlines while there is still time to apply.',
-    price: `UAH ${PRICE} a month or UAH ${PRICE_HALF} for six months. Cancel any time.`,
+    title: 'Opportunities picked for your child, daily on Telegram',
+    text: 'Matched to age and interests, with deadline reminders.',
+    price: `UAH ${PRICE}/month or UAH ${PRICE_HALF} for six months · cancel any time`,
     cta: 'The best opportunities for my child',
     href: '/en/plus',
   },
