@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { readsUkrainian, acceptLanguageTags } from '@/lib/lang';
 import { shouldBlock } from '@/lib/bot-guard';
+import { isRuSearchBot } from '@/lib/ru-search';
 import { AB_CARD_COOKIE, AB_CARD_MAX_AGE, abCardForRequest } from '@/lib/ab-card';
 
 /**
@@ -59,10 +60,23 @@ export function middleware(request) {
 function route(request) {
   const url = request.nextUrl;
 
+  const host = request.headers.get('host') || '';
+  const live = /(^|\.)dityam\.com\.ua$/i.test(host);
+
+  // Пошук рф і білорусі (Марія, 02.10.2026). robots.txt просить їх піти й
+  // прибрати сторінки з індексу; це — щоб правило діяло й тоді, коли
+  // robots.txt зігнорували. Сам robots.txt лишається відкритим (його немає в
+  // matcher нижче): інакше робот не прочитає заборону й не знатиме, що йому йти.
+  if (live && isRuSearchBot(request.headers.get('user-agent'))) {
+    return new NextResponse('Not available.', {
+      status: 403,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    });
+  }
+
   // Захист від масового копіювання (lib/bot-guard.js) — на всіх сторінках.
   // Лише на бойовому домені: dev-сервер і превʼю Vercel працюють як були.
-  const host = request.headers.get('host') || '';
-  if (/(^|\.)dityam\.com\.ua$/i.test(host) && shouldBlock(request.headers.get('user-agent'))) {
+  if (live && shouldBlock(request.headers.get('user-agent'))) {
     return new NextResponse('Automated copying of Dityam.com.ua is not allowed.', {
       status: 403,
       headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
