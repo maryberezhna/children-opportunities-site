@@ -12,7 +12,7 @@
 // заголовком/тілом і за редіректом на головну з глибокого шляху.
 
 import { createClient } from '@supabase/supabase-js';
-import { stillAhead } from '../lib/links.js';
+import { stillAhead, verdictForStatus } from '../lib/links.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -65,14 +65,21 @@ async function checkUrl(url) {
     try {
       res = await fetchWithTimeout(url, { method: 'GET' });
     } catch (e) {
-      return { alive: false, reason: `network: ${e.name === 'AbortError' ? 'timeout' : e.message}`.slice(0, 120) };
+      // «Не достукались» — це НЕ «сторінки немає». Перевірка ходить з IP
+      // GitHub Actions, і частина сайтів (особливо державні) рве зʼєднання
+      // або мовчить саме для них. 02.10.2026 з 13 позначених мертвими 11
+      // відповідали 200 зі звичайної адреси. Такий запис лишаємо як є й
+      // показуємо окремим списком людині.
+      return { unknown: true, reason: `network: ${e.name === 'AbortError' ? 'timeout' : e.message}`.slice(0, 120) };
     }
   }
 
   const { status } = res;
-  if (status === 403 || status === 429) return { alive: true, reason: `bot-protected ${status}` };
-  if (status === 404 || status === 410) return { alive: false, reason: `http ${status}` };
-  if (status >= 400) return { alive: false, reason: `http ${status}` };
+  // Правило в lib/links.js — щоб його перевіряв тест, а не лише прогін уночі.
+  const verdict = verdictForStatus(status);
+  // Повертаємо одразу все, крім звичайного 2xx: у сторінки бот-захисту немає
+  // вмісту, і шукати в ній ознаки «не знайдено» — марно й оманливо.
+  if (!verdict.alive || /bot-protected/.test(verdict.reason)) return verdict;
 
   // 2xx: перевірка на софт-404.
   const originalPath = new URL(url).pathname;
@@ -127,9 +134,10 @@ async function run() {
   console.log(`Перевіряю ${rows.length} активних лінків (макс ${CONCURRENCY} одночасно)…`);
 
   const now = new Date().toISOString();
-  const results = { ok: 0, suspect: 0, closed: 0, recovered: 0, heldOpen: 0 };
+  const results = { ok: 0, suspect: 0, closed: 0, recovered: 0, heldOpen: 0, unknown: 0 };
   const newlyClosed = [];
   const heldOpen = [];
+  const unreachable = [];
   const today = now.slice(0, 10);
   const queue = [...rows];
 
@@ -137,10 +145,18 @@ async function run() {
     for (;;) {
       const row = queue.shift();
       if (!row) return;
-      const { alive, reason } = await checkUrl(row.source_url);
+      const { alive, unknown, reason } = await checkUrl(row.source_url);
 
       let patch;
-      if (alive) {
+      if (unknown) {
+        // Не змінюємо ні статус, ні лічильник невдач: ми нічого не дізнались.
+        // Інакше кожен недоступний із GitHub сайт за три ночі ставав «мертвим»,
+        // і справжні биті лінки тонули серед хибних.
+        results.unknown += 1;
+        unreachable.push({ ...row, reason });
+        patch = { link_checked_at: now };
+        console.log(`  ? не перевірено: ${reason}  ${row.source_url}`);
+      } else if (alive) {
         if (row.link_status !== 'ok') results.recovered += 1;
         results.ok += 1;
         patch = { link_status: 'ok', link_failures: 0, link_checked_at: now, last_verified_at: now };
@@ -190,6 +206,14 @@ async function run() {
   console.log(`Підозрілих (${'<'}${MAX_FAILURES} збоїв): ${results.suspect}`);
   console.log(`Закрито як мертві: ${results.closed}`);
   console.log(`Лишено активними (подача попереду): ${results.heldOpen}`);
+  console.log(`Не вдалося перевірити (мережа або 5xx): ${results.unknown}`);
+  if (unreachable.length) {
+    console.log('\n? Не перевірено — запис не змінювався:');
+    for (const r of unreachable.slice(0, 30)) {
+      console.log(`  · ${r.title.slice(0, 56)} — ${r.reason}\n    ${r.source_url}`);
+    }
+    console.log('  Сайти часто блокують саме IP GitHub Actions — перевір руками зі звичайної адреси.');
+  }
 
   if (heldOpen.length && TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_CHAT_ID && !DRY_RUN) {
     const text = [
