@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
@@ -200,3 +200,83 @@ test('isOurOrderRef впізнає лише наші номери', () => {
   assert.equal(isOurOrderRef(null), false);
 });
 
+
+// --- людині теж треба сказати, 02.10.2026 ---
+//
+// Доти при невдалій оплаті сповіщення йшло ЛИШЕ в адмінчат. Людина проходила
+// всю анкету, тиснула «Оплатити», банк відмовляв — і далі тиша. 24.09.2026 так
+// сталося з першою людиною, що дійшла до оплати Dityam+.
+test('повернення не називаємо невдалою оплатою', () => {
+  // Сказати «оплата не пройшла», коли ми ЇЙ ПОВЕРНУЛИ гроші, — збрехати в
+  // найгіршу мить. Такі статуси людині не пишемо зовсім.
+  for (const status of ['Refunded', 'Voided', 'RefundInProcessing']) {
+    assert.equal(failureAdviceForPerson({ status }), null, status);
+  }
+});
+
+test('картка — порада спробувати іншою', () => {
+  for (const code of [1101, 1103, 1104, 1105, 1108]) {
+    const a = failureAdviceForPerson({ status: 'Declined', reasonCode: code });
+    assert.equal(a.kind, 'card', String(code));
+    assert.match(a.text, /карткою|картки/);
+  }
+});
+
+test('не довершили — рахунок просто збіг', () => {
+  for (const f of [{ status: 'Declined', reasonCode: 1124 }, { status: 'Expired' },
+                   { status: 'Declined', reasonCode: 1125 }]) {
+    assert.equal(failureAdviceForPerson(f).kind, 'unfinished', JSON.stringify(f));
+  }
+});
+
+test('наш бік — людина не винна, і ми цього не приховуємо', () => {
+  const a = failureAdviceForPerson({ status: 'Declined', reasonCode: 1118 });
+  assert.equal(a.kind, 'ours');
+  assert.match(a.text, /на нашому боці/);
+});
+
+test('причина невідома — не вигадуємо її', () => {
+  const a = failureAdviceForPerson({ status: 'SomethingNew' });
+  assert.equal(a.kind, 'unknown');
+  assert.match(a.text, /банк не повідомив/);
+});
+
+// Правила Марії для текстів до людини.
+test('у тексті людині немає ні коду, ні дефіциту, ні виправдань про гроші', () => {
+  const texts = [
+    failureAdviceForPerson({ status: 'Declined', reasonCode: 1104 }).text,
+    failureAdviceForPerson({ status: 'Expired' }).text,
+    failureAdviceForPerson({ status: 'Declined', reasonCode: 1118 }).text,
+    failureAdviceForPerson({ status: 'X' }).text,
+  ];
+  for (const t of texts) {
+    assert.doesNotMatch(t, /\d{4}/, `код у тексті: ${t}`);
+    assert.doesNotMatch(t, /єдина|єдиний|перша, хто|ніхто/i, `дефіцит: ${t}`);
+    assert.doesNotMatch(t, /не платний|нічого не продаємо/i, `виправдання: ${t}`);
+    assert.ok(t.length > 40 && t.length < 400, `дивна довжина: ${t.length}`);
+  }
+});
+
+// Головне: щоб виклик узагалі був. Саме його відсутність і була дірою —
+// функція ніколи б не спрацювала, якби колбек її не кликав.
+test('колбек оплати пише людині, а не лише адміну', () => {
+  const src = readFileSync(new URL('../app/api/pay/wayforpay/route.js', import.meta.url), 'utf8');
+  assert.match(src, /failureAdviceForPerson\(/, 'поради для людини не викликано');
+  assert.match(src, /makeBot\(PLUS_TOKEN\)/, 'пишемо не тим ботом, у якому сидить людина');
+  // Нове посилання обовʼязкове: рахунок живе годину, старий уже мертвий.
+  assert.match(src, /payStartUrl\(token/, 'немає свіжого посилання на оплату');
+});
+
+test('у текстах «картка», а не «карта»', () => {
+  for (const f of [{ status: 'Declined', reasonCode: 1104 },
+                   { status: 'Declined', reasonCode: 1118 }]) {
+    const t = failureAdviceForPerson(f).text;
+    assert.doesNotMatch(t, /\bкарт(а|ою|и|у)\b/, `«карта» замість «картка»: ${t}`);
+  }
+});
+
+test('«не завершено» не називаємо «не пройшла»', () => {
+  const a = failureAdviceForPerson({ status: 'Expired' });
+  assert.equal(a.title, 'Оплату не завершено');
+  assert.doesNotMatch(a.text, /не пройшла/);
+});

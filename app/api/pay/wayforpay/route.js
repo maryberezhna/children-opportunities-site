@@ -5,6 +5,7 @@ import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import {
   verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef,
   FAILED_STATUSES, describeFailure, failureStopsSubscription,
+  failureAdviceForPerson, payStartUrl,
 } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
 
@@ -144,8 +145,23 @@ export async function POST(request) {
           wfp_last_failed_at: now,
         })
         .eq('unsub_token', token)
-        .select('telegram_handle, telegram_chat_id')
+        .select('telegram_handle, telegram_chat_id, billing_period')
         .maybeSingle();
+
+      // САМІЙ ЛЮДИНІ — перше, що тут робиться. Доти сповіщення йшло лише в
+      // адмінчат: людина проходила всю анкету, тиснула «Оплатити», банк
+      // відмовляв — і далі тиша (24.09.2026, перша людина, що дійшла до оплати).
+      // Пишемо з того бота, у якому вона й сидить (@DityamPlusBot), і даємо
+      // свіже посилання: рахунок живе годину, старий уже мертвий.
+      const advice = failureAdviceForPerson(failure);
+      if (advice && sub?.telegram_chat_id && PLUS_TOKEN) {
+        const plan = sub.billing_period === 'halfyear' ? 'halfyear' : 'monthly';
+        await makeBot(PLUS_TOKEN).sendMessage(
+          sub.telegram_chat_id,
+          `<b>${esc(advice.title)}</b>\n\n${esc(advice.text)}`,
+          { inline_keyboard: [[{ text: '💳 Спробувати ще раз', url: payStartUrl(token, plan) }]] },
+        );
+      }
 
       // Сповіщення адміну: людина щойно дійшла до кінця анкети й лишилась без
       // підписки. Без цього рядок мовчки висить у «Потребує уваги».
