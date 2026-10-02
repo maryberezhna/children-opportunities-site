@@ -289,11 +289,17 @@ def _date_supported_by(iso: str, evidence: str) -> bool:
         return False
     y, m, d = (int(x) for x in iso.split("-"))
     low = evidence.lower()
-    if not re.search(rf"(?<!\d){d:02d}(?!\d)|(?<!\d){d}(?!\d)", low):
+    day_hits = [h.start() for h in re.finditer(rf"(?<!\d)0?{d}(?!\d)", low)]
+    if not day_hits:
         return False
-    if re.search(rf"(?<!\d){m:02d}(?!\d)", low):
+    if any(name in low for name in MONTHS_UK[m] + MONTHS_EN[m]):
         return True
-    return any(name in low for name in MONTHS_UK[m] + MONTHS_EN[m])
+    # День і місяць мають бути ДВОМА різними числами цитати. 02.10.2026 тест
+    # упав сам собою: дата 11.11 «підтвердилась» цитатою «до 14.11.2026» —
+    # одне й те саме «11» зійшло і за день, і за місяць. Так перший день
+    # події міг записатись із цитати, де стоїть лише останній.
+    month_hits = [h.start() for h in re.finditer(rf"(?<!\d){m:02d}(?!\d)", low)]
+    return any(mh != dh for mh in month_hits for dh in day_hits)
 
 # Сезонні типи закриваємо чесно, але через ~11 місяців дивимось ще раз:
 # ttl_requeue перечитає сторінку, і нова річна програма оживить запис. Та

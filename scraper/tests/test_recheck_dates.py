@@ -97,6 +97,24 @@ class EventDatesAreNotDeadline(unittest.TestCase):
                               event_end_date=self.END), TODAY_ISO)
         self.assertNotIn("event_start_date", patch)
 
+class DayIsNotMonth(unittest.TestCase):
+    """Одне число цитати не може бути і днем, і місяцем (02.10.2026: дата
+    11.11 «знайшлась» у цитаті «до 14.11.2026»). Фіксовані дати — щоб тест не
+    залежав від того, якого числа його запускають."""
+
+    def test_month_number_does_not_confirm_same_day(self):
+        from recheck_dates import _date_supported_by
+        self.assertFalse(_date_supported_by("2026-11-11", "Прийом заявок триває до 14.11.2026 включно"))
+        self.assertFalse(_date_supported_by("2026-01-01", "до 15.01.2027"))
+
+    def test_real_same_day_and_month_still_confirmed(self):
+        from recheck_dates import _date_supported_by
+        self.assertTrue(_date_supported_by("2026-11-11", "Табір з 11.11.2026 по 14.11.2026"))
+        self.assertTrue(_date_supported_by("2026-11-11", "Початок 11 листопада"))
+        self.assertTrue(_date_supported_by("2026-11-05", "до 05.11.2026"))
+        self.assertTrue(_date_supported_by("2026-11-05", "до 5.11.2026"))
+
+
 class ClosingRules(unittest.TestCase):
     def test_page_says_closed(self):
         patch, why = decide(row(), out(enrollment="closed",
