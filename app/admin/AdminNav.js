@@ -140,7 +140,7 @@ async function counts() {
       // Лише ті пропозиції, що чекають на людину. Було «все, крім done», а
       // process_suggestions.py ставить imported / duplicate, не done: число
       // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
-      head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human'])),
+      head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
       head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
     ]);
     return {
