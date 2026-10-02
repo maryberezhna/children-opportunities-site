@@ -10,12 +10,15 @@
  * {"replace": [["було", "стало"], ...]} — виправити фрагменти в тексті.
  * Кожен фрагмент мусить знайтися, інакше правка не пишеться зовсім.
  *
- * Змінювати можна лише текст і факти картки (EDITABLE). Статус, slug,
- * джерело — ні: для публікації й приховування є адмінка.
+ * Змінювати можна лише текст і факти картки (EDITABLE), серед них тип,
+ * формат, місто й вид за часом. Статус, slug, джерело — ні: для публікації й
+ * приховування є адмінка та «Опублікувати чернетку».
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SLUG, PATCH,
  *      CONFIRM=PATCH (без нього — лише показати, що зміниться).
  */
+import criteria from '../lib/publish-criteria.json' with { type: 'json' };
+
 const EDITABLE = new Set([
   'title', 'summary', 'details', 'title_en', 'summary_en', 'details_en',
   'price_note', 'apply_url', 'deadline', 'event_start_date', 'event_end_date',
@@ -24,12 +27,32 @@ const EDITABLE = new Set([
   // чим їх вписати: {"evidence": {"date": "…", "cost": "…"}} доповнює наявні
   // ключі, а не затирає весь обʼєкт.
   'evidence',
+  // Тип, формат, місце й вид за часом — теж факти картки, і без них чернетка-
+  // заглушка не публікується: publish-draft вимагає всі пʼять полів, а
+  // вписати формат чи місто не було чим. 02.10.2026 так застрягли мовні
+  // школи, які Марія сказала публікувати одразу. Значення звіряються зі
+  // словником (CHECKS): тип поза словником сайт мовчки показує як «курс».
+  'opportunity_type', 'format', 'cities', 'countries', 'timing_kind', 'is_international',
 ]);
+
+const isStringList = (v) => Array.isArray(v) && v.every((x) => typeof x === 'string' && x.trim());
+const oneOf = (list) => (v) => list.includes(v);
+const CHECKS = {
+  opportunity_type: [oneOf(criteria.required.type.allowed), 'тип зі словника lib/publish-criteria.json'],
+  format: [oneOf(['online', 'offline', 'hybrid']), 'online, offline або hybrid'],
+  timing_kind: [oneOf(['one_time', 'periodic', 'permanent']), 'one_time, periodic або permanent'],
+  cities: [isStringList, 'список назв: ["Дніпро"]'],
+  countries: [isStringList, 'список кодів країн: ["ua"]'],
+  is_international: [(v) => typeof v === 'boolean', 'true або false'],
+};
 
 export function applyPatch(row, patch) {
   const out = {};
   for (const [field, value] of Object.entries(patch)) {
     if (!EDITABLE.has(field)) throw new Error(`поле «${field}» тут не змінюється`);
+    if (CHECKS[field] && !CHECKS[field][0](value)) {
+      throw new Error(`«${field}» має бути: ${CHECKS[field][1]}`);
+    }
     // evidence доповнюємо по ключах: передали цитату на дату — решта лишається.
     if (field === 'evidence') {
       if (!value || typeof value !== 'object' || Array.isArray(value)) {
