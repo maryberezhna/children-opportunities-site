@@ -5,9 +5,16 @@ import { usePathname } from 'next/navigation';
 import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
 import { NO_ANALYTICS_KEY, PRODUCTION_HOST, AUTOMATION_UA, isInternalPath } from '@/lib/analytics-scope';
 import { markVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
+import { AMPLITUDE_KEY, AMPLITUDE_EU } from '@/lib/amplitude';
 
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
+
+// Amplitude (02.10.2026). Ключ проєкту — публічний, живе в змінній Vercel
+// NEXT_PUBLIC_AMPLITUDE_API_KEY: без неї нічого не вантажиться й не збирається.
+// Якщо проєкт створено в європейському дата-центрі Amplitude, потрібна ще
+// NEXT_PUBLIC_AMPLITUDE_SERVER_ZONE=EU — інакше події підуть не туди й зникнуть.
+// Розбір змінних — lib/amplitude.js.
 
 // Вимикач власного трафіку. Заходи авторки псували статистику: середня сесія
 // на головній була 11 хвилин при 16% відмов — так поводиться не відвідувач.
@@ -123,7 +130,18 @@ export function Analytics() {
       <Script id="google-analytics" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
+          function gtag(){
+            dataLayer.push(arguments);
+            ${AMPLITUDE_KEY ? `
+            // Кожна подія GA4 йде ще й в Amplitude — однією точкою тут, а не
+            // в сорока місцях, де викликають gtag. Amplitude вантажиться пізно
+            // (lazyOnload), тож до того події чекають у черзі. «conversion» —
+            // службовий виклик Google Ads, не подія.
+            if (arguments[0] === 'event' && arguments[1] !== 'conversion' && !window.__dityamNoAnalytics) {
+              (window.__dityamAmpQ = window.__dityamAmpQ || []).push([arguments[1], arguments[2] || {}]);
+              if (window.__dityamAmpFlush) window.__dityamAmpFlush();
+            }` : ''}
+          }
           gtag('js', new Date());
           // A/B-тест картки (lib/ab-card.js): варіант — user property, до
           // config, щоб його ніс уже перший page_view. Без cookie — A.
@@ -148,6 +166,52 @@ export function Analytics() {
                 r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
                 a.appendChild(r);
               })(window,document,'https://static.hotjar.com/c/hotjar-',  '.js?sv=');
+            }
+          `}
+        </Script>
+      ) : null}
+      {/* Amplitude — теж lazyOnload: для першого екрана не потрібен. Автозбір:
+          перегляди сторінок, сесії, джерела переходів, кліки, форми, файли.
+          Запис сесій (Session Replay) не вмикаємо: для цього вже є Hotjar. */}
+      {AMPLITUDE_KEY ? (
+        <Script id="amplitude" strategy="lazyOnload">
+          {`
+            if (!window.__dityamNoAnalytics) {
+              (function () {
+                var s = document.createElement('script');
+                s.async = true;
+                s.src = 'https://${AMPLITUDE_EU ? 'cdn.eu.amplitude.com' : 'cdn.amplitude.com'}/script/${AMPLITUDE_KEY}.js';
+                s.onload = function () {
+                  var a = window.amplitude;
+                  if (!a || !a.init) return;
+                  try {
+                    a.init('${AMPLITUDE_KEY}', {
+                      ${AMPLITUDE_EU ? "serverZone: 'EU'," : ''}
+                      fetchRemoteConfig: true,
+                      autocapture: {
+                        attribution: true,
+                        pageViews: true,
+                        sessions: true,
+                        formInteractions: true,
+                        fileDownloads: true,
+                        elementInteractions: true
+                      }
+                    });
+                    // Варіант A/B-тесту картки — властивість користувача, як у GA4.
+                    if (a.Identify) {
+                      var id = new a.Identify();
+                      id.set('ab_card', (document.cookie.match(/(?:^|;\\s*)ab_card=(A|B)(?:;|$)/) || [])[1] || 'A');
+                      a.identify(id);
+                    }
+                    window.__dityamAmpFlush = function () {
+                      var q = window.__dityamAmpQ || [];
+                      while (q.length) { var e = q.shift(); a.track(e[0], e[1]); }
+                    };
+                    window.__dityamAmpFlush();
+                  } catch (e) { /* аналітика — не причина ламати сторінку */ }
+                };
+                document.head.appendChild(s);
+              })();
             }
           `}
         </Script>

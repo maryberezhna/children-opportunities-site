@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AMPLITUDE_ON } from '@/lib/amplitude';
 import Footer from '../../Footer';
 
 export const metadata = {
@@ -51,7 +52,7 @@ export default function PrivacyPageEn() {
           <h2>2. What data we collect and why</h2>
           <ul>
             <li>
-              <strong>Visiting the site.</strong> Google Analytics, Hotjar and Google
+              <strong>Visiting the site.</strong> Google Analytics, Hotjar{AMPLITUDE_ON ? ', Amplitude' : ''} and Google
               Ads tags receive data about your device, browser, language, the pages
               you view and your actions on them — so we understand what people use
               and can measure advertising.
@@ -139,6 +140,12 @@ export default function PrivacyPageEn() {
               <strong>Hotjar</strong> — behaviour analytics on the site
               (<a href="https://www.hotjar.com/legal/policies/privacy/" target="_blank" rel="noopener noreferrer">policy</a>).
             </li>
+            {AMPLITUDE_ON ? (
+              <li>
+                <strong>Amplitude</strong> — product analytics: how the site is used
+                (<a href="https://amplitude.com/privacy" target="_blank" rel="noopener noreferrer">policy</a>).
+              </li>
+            ) : null}
             <li>
               <strong>Anthropic</strong> — the AI model that parses suggested
               opportunities; it receives the title, link and page text, but not your
@@ -172,7 +179,7 @@ export default function PrivacyPageEn() {
             Technical cookies and browser storage remember your language,
             accessibility settings, viewing mode and whether you have closed the
             subscription pop-up. Analytics and advertising cookies are set by Google
-            Analytics, Google Ads and Hotjar, which load together with the page. You
+            Analytics, Google Ads{AMPLITUDE_ON ? ', Amplitude' : ''} and Hotjar, which load together with the page. You
             can block them in your browser settings or with an extension; the site
             works without them.
           </p>
