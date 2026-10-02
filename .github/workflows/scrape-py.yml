@@ -10,6 +10,11 @@ on:
     # зʼїв би вечір, пізніше — ранок.
     - cron: '0 20 * * *'
   workflow_dispatch:
+    inputs:
+      proof_limit:
+        description: 'скільки сторінок перечитати по цитати за прогін (нічний — 20)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -45,6 +50,11 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Перечит сторінок по цитати (scraper/proof_recheck.py). Порожнє —
+          # нічна норма 20 на кожну чергу. Разовий більший прохід потрібен,
+          # бо 470 записів без повних цитат по 20 за ніч розходяться місяць;
+          # межу стримує бюджет часу екстракції, не цей вхід.
+          PROOF_LIMIT: ${{ github.event.inputs.proof_limit }}
           # Звіт іде в Telegram-бот; email — запасний канал, якщо Telegram упав
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
