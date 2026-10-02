@@ -5,7 +5,7 @@ import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import {
   verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef,
   FAILED_STATUSES, describeFailure, failureStopsSubscription,
-  failureAdviceForPerson, payStartUrl,
+  failureAdviceForPerson, accessLine, payStartUrl,
 } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
 
@@ -156,9 +156,15 @@ export async function POST(request) {
       const advice = failureAdviceForPerson(failure);
       if (advice && sub?.telegram_chat_id && PLUS_TOKEN) {
         const plan = sub.billing_period === 'halfyear' ? 'halfyear' : 'monthly';
+        // Людина вже платила — значить, це зірвалось ПРОДОВЖЕННЯ, і її підписка
+        // щойно стала на паузу. Сказати їй лише «спробуйте ще раз» означало б
+        // змовчати про головне: добірки спинились. На першій оплаті доступу й
+        // не було, тож цього рядка там немає.
+        const access = accessLine(existing?.status === 'active');
         await makeBot(PLUS_TOKEN).sendMessage(
           sub.telegram_chat_id,
-          `<b>${esc(advice.title)}</b>\n\n${esc(advice.text)}`,
+          [`<b>${esc(advice.title)}</b>`, '', esc(advice.text),
+            ...(access ? ['', esc(access)] : [])].join('\n'),
           { inline_keyboard: [[{ text: '💳 Спробувати ще раз', url: payStartUrl(token, plan) }]] },
         );
       }
