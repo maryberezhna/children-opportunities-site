@@ -32,7 +32,7 @@ def out(verdict, evidence, price="", confidence=0.9, page_kind="one_opportunity"
 class DecideCost(unittest.TestCase):
     def test_free_with_quote_becomes_free(self):
         patch, why = decide_cost(row(), out("free", "Навчання безкоштовне за кошти міського бюджету"), PAGE_FREE)
-        self.assertEqual(patch, {"cost_type": "free"})
+        self.assertEqual({k: v for k, v in patch.items() if k != "evidence_cost"}, {"cost_type": "free"})
         self.assertIn("безкоштовно", why)
 
     def test_paid_with_price_on_page_adds_price_note(self):
@@ -51,32 +51,32 @@ class DecideCost(unittest.TestCase):
 
     def test_no_quote_changes_nothing(self):
         patch, why = decide_cost(row(), out("free", ""), PAGE_FREE)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("не каже", why)
 
     def test_unknown_changes_nothing(self):
         patch, _ = decide_cost(row(), out("unknown", "Гурток працює щосереди"), PAGE_FREE)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
 
     def test_low_confidence_changes_nothing(self):
         patch, _ = decide_cost(row(), out("free", "Навчання безкоштовне за кошти міського бюджету", confidence=0.3), PAGE_FREE)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
 
     def test_quote_missing_from_page_is_rejected(self):
         # Модель «процитувала» те, чого на сторінці немає, — це переказ.
         patch, why = decide_cost(row(), out("free", "Участь абсолютно безкоштовна для всіх дітей"), PAGE_PAID)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("цитати на сторінці немає", why)
 
     def test_already_paid_premium_stays(self):
         patch, why = decide_cost(row(cost_type="paid_premium", price_note="є"),
                                  out("paid", "Вартість участі: 1600 грн за одну пісню"), PAGE_PAID)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("без змін", why)
 
     def test_already_free_stays(self):
         patch, why = decide_cost(row(cost_type="free"), out("free", "Навчання безкоштовне за кошти міського бюджету"), PAGE_FREE)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("без змін", why)
 
     def test_partially_funded_is_not_free(self):
@@ -84,27 +84,27 @@ class DecideCost(unittest.TestCase):
         # сказала free, але частина родин платить.
         q = "Depending on demonstrated need, the offer may be fully or partially funded."
         patch, why = decide_cost(row(cost_type=None), out("free", q), q)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("не для всіх", why)
 
     def test_ukrainian_partial_is_not_free(self):
         q = "Навчання безкоштовне для пільгових категорій, для інших — часткова оплата."
         patch, _ = decide_cost(row(), out("free", q), q)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
 
     def test_listing_page_verdict_is_rejected(self):
         # МАН, прогін 14.09.2026: головна man.gov.ua, «участь безплатна» — під
         # семінарами для педагогів, а не під літньою STEM-школою.
         q = "Коли: 19 вересня - 19 жовтня 2026 участь безплатна"
         patch, why = decide_cost(row(), out("free", q, page_kind="listing_or_org"), q)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("не про одну можливість", why)
 
     def test_missing_page_kind_is_rejected(self):
         q = "Навчання безкоштовне за кошти міського бюджету"
         o = out("free", q); o.pop("page_kind")
         patch, _ = decide_cost(row(), o, q)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
 
 
 
@@ -137,19 +137,19 @@ class SearchOtherSources(unittest.TestCase):
         o = {"verdict": "paid", "page_kind": "one_opportunity", "evidence": "Вартість заняття 150 грн",
              "url": "https://akvarel.ua/", "confidence": 0.9}
         patch, why = decide_from_search(row(title="WAY UP DANCE"), o, page)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("не про цю програму", why)
 
     def test_unopenable_source_is_rejected(self):
         o = {"verdict": "free", "page_kind": "one_opportunity", "evidence": "Участь безкоштовна",
              "url": "https://dead.example/", "confidence": 0.9}
         patch, why = decide_from_search(row(title="WAY UP DANCE"), o, None)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("не відкривається", why)
 
     def test_unknown_from_search_changes_nothing(self):
         patch, why = decide_from_search(row(), {"verdict": "unknown"}, "будь-що")
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("нічого", why)
 
 
@@ -160,13 +160,13 @@ class GuardsFromSearchRun(unittest.TestCase):
     def test_budget_institution_is_not_free(self):
         q = "Центр юних техніків є комунальною, бюджетною, неприбутковою установою"
         patch, why = decide_cost(row(title="Клуб юних техніків Кварц"), out("free", q), q)
-        self.assertEqual(patch, {})
+        self.assertEqual({k: v for k, v in patch.items() if k != 'evidence_cost'}, {})
         self.assertIn("здогад", why)
 
     def test_explicit_free_in_other_language_is_accepted(self):
         q = "Die Teilnahme ist kostenlos für alle Kinder aus der Ukraine"
         patch, _ = decide_cost(row(), out("free", q), q)
-        self.assertEqual(patch, {"cost_type": "free"})
+        self.assertEqual({k: v for k, v in patch.items() if k != "evidence_cost"}, {"cost_type": "free"})
 
     def test_generic_erasmus_match_is_not_enough(self):
         page = "Scambio giovanile Erasmus in Grecia. Quota di 40 euro per il tesseramento."
@@ -203,3 +203,28 @@ class ApiFailures(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EvidenceIsKept(unittest.TestCase):
+    """01.10.2026: цитату зберігаємо навіть тоді, коли вартість уже правильна.
+
+    Доти підтверджений запис давав порожній патч — і доказ, який щойно знайшли
+    й перевірили на сторінці, просто зникав. Через це на сайті було 396
+    записів без цитати на вартість: їх перевіряли, і це ніде не лишалось.
+    """
+
+    PAGE = "Навчання безкоштовне за кошти міського бюджету для всіх учнів."
+
+    def test_quote_kept_when_value_already_right(self):
+        patch, why = decide_cost(
+            row(cost_type="free"),
+            out(verdict="free", evidence="Навчання безкоштовне за кошти міського бюджету"),
+            self.PAGE)
+        self.assertEqual(patch.get("evidence_cost"), "Навчання безкоштовне за кошти міського бюджету")
+        self.assertNotIn("cost_type", patch)
+        self.assertIn("цитату записано", why)
+
+    def test_no_quote_no_evidence(self):
+        patch, _ = decide_cost(row(cost_type="free"),
+                               out(verdict="free", evidence="платно, 500 грн"), self.PAGE)
+        self.assertEqual(patch, {})

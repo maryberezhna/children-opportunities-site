@@ -330,3 +330,26 @@ class AnnualCooldown(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class DayMustSitNextToItsMonth(unittest.TestCase):
+    """01.10.2026: день і місяць шукались окремо будь-де в цитаті.
+
+    Через це цитата «по 14.11.2026» підтверджувала дату 11 листопада: число 11
+    знаходилось у місяці сусідньої дати. Вада спливала лише в ті дні, коли
+    день однієї дати дорівнює місяцю іншої, — тому тест падав не щодня, і CI
+    місяцями показував зелене.
+    """
+
+    def test_day_equal_to_other_dates_month_is_not_a_match(self):
+        self.assertFalse(rd._date_supported_by("2026-11-11", "Табір проходитиме по 14.11.2026"))
+
+    def test_real_numeric_date_matches(self):
+        self.assertTrue(rd._date_supported_by("2026-11-11", "Табір з 11.11.2026 по 14.11.2026"))
+
+    def test_month_name_before_and_after_day(self):
+        self.assertTrue(rd._date_supported_by("2026-11-05", "Deadline is November 5, 2026"))
+        self.assertTrue(rd._date_supported_by("2026-11-05", "Подати до 5 листопада 2026 року"))
+
+    def test_year_alone_is_not_a_date(self):
+        self.assertFalse(rd._date_supported_by("2027-06-30", "форму на програму FLEX 2026-2027 відкрито"))

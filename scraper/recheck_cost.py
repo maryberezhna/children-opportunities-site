@@ -226,8 +226,15 @@ def decide_cost(row: dict, out: dict, page: str) -> tuple[dict, str]:
         if price and not row.get("price_note") and _norm(price) in _norm(page):
             patch["price_note"] = f"Платно: {price}"
 
-    if not patch:
-        return {}, f"{why} — без змін"
+    # Цитату зберігаємо завжди, навіть коли вартість уже правильна. Доти
+    # підтверджений запис давав порожній патч — і доказ, який щойно знайшли й
+    # перевірили на сторінці, просто зникав. Саме тому 01.10.2026 на сайті
+    # було 396 записів без цитати на вартість: їх перевіряли, і це ніде не
+    # лишалось. Ключ evidence_cost — не колонка: його зливає з наявним
+    # обʼєктом той, хто пише в базу.
+    patch["evidence_cost"] = evidence[:300]
+    if set(patch) == {"evidence_cost"}:
+        return patch, f"{why} — без змін, цитату записано"
     return patch, f"{why}: «{evidence[:140]}»"
 
 
@@ -412,7 +419,7 @@ def _note(sb, row: dict, why: str, apply: bool) -> None:
 def select_rows(sb, scope: str, limit: int) -> list:
     q = (sb.table("opportunities")
          .select("id, title, source_url, opportunity_type, cost_type, price_note, "
-                 "admin_comment, link_status, cities, format")
+                 "admin_comment, evidence, link_status, cities, format")
          .eq("status", "active"))
     if scope == "in_between":
         q = q.or_("cost_type.in.(partially_free,subsidized),cost_type.is.null")
@@ -468,7 +475,7 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
             patch, why = decide_from_search(row, found, src_page)
             stats["searched"] += 1
         if not patch:
-            if why.endswith("без змін"):
+            if "без змін" in why:
                 stats["unchanged"] += 1
             else:
                 stats["unclear"] += 1
@@ -495,7 +502,13 @@ def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
 
         if apply:
             patch["admin_comment"] = _with_trace(row, f"recheck-cost · {why}")
+            quote = patch.pop("evidence_cost", None)
+            if quote:
+                base = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
+                patch["evidence"] = {**base, "cost": quote}
             sb.table("opportunities").update(patch).eq("id", row["id"]).execute()
+        else:
+            patch.pop("evidence_cost", None)
 
     def dump(title, items):
         print(f"\n{title}: {len(items)}")
