@@ -563,5 +563,94 @@
     "missing": [
       "cost"
     ]
+  },
+  {
+    "name": "Дія.Освіта: курс — цитати на вартість не вимагаємо (сторінка її не друкує)",
+    "row": {
+      "opportunity_type": "course",
+      "source_url": "https://osvita.diia.gov.ua/courses/pidpriemnictvo",
+      "cost_type": "free",
+      "age_from": 13,
+      "age_to": 18,
+      "format": "online",
+      "timing_kind": "permanent",
+      "evidence": {
+        "date": "курс відкритий постійно",
+        "type": "онлайн-курс",
+        "age": "для учнів 8–11 класів",
+        "place": "онлайн"
+      }
+    },
+    "missing": [],
+    "missing_proof": []
+  },
+  {
+    "name": "Дія.Освіта, але ГУРТОК — виняток не діє: пари «хост → свої типи»",
+    "row": {
+      "opportunity_type": "club",
+      "source_url": "https://osvita.diia.gov.ua/courses/pidpriemnictvo",
+      "cost_type": "free",
+      "age_from": 13,
+      "age_to": 18,
+      "format": "online",
+      "timing_kind": "permanent",
+      "evidence": {
+        "date": "курс відкритий постійно",
+        "type": "онлайн-курс",
+        "age": "для учнів 8–11 класів",
+        "place": "онлайн"
+      }
+    },
+    "missing": [],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "палац позашкілля, але КУРС — виняток не діє так само",
+    "row": {
+      "opportunity_type": "course",
+      "source_url": "https://cprs.kiev.ua/gurtok/1",
+      "cost_type": "free",
+      "age_from": 6,
+      "age_to": 14,
+      "format": "offline",
+      "cities": [
+        "Київ"
+      ],
+      "timing_kind": "permanent",
+      "evidence": {
+        "date": "курс відкритий постійно",
+        "type": "онлайн-курс",
+        "age": "для учнів 8–11 класів",
+        "place": "онлайн"
+      }
+    },
+    "missing": [],
+    "missing_proof": [
+      "cost"
+    ]
+  },
+  {
+    "name": "курс з іншого сайту — цитата на вартість потрібна як усім",
+    "row": {
+      "opportunity_type": "course",
+      "source_url": "https://example.org/course",
+      "cost_type": "free",
+      "age_from": 13,
+      "age_to": 18,
+      "format": "online",
+      "timing_kind": "permanent",
+      "evidence": {
+        "date": "курс відкритий постійно",
+        "type": "онлайн-курс",
+        "age": "для учнів 8–11 класів",
+        "place": "онлайн"
+      }
+    },
+    "missing": [],
+    "missing_proof": [
+      "cost"
+    ]
   }
 ]

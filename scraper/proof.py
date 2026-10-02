@@ -94,10 +94,14 @@ def cost_quote_impossible(data: dict) -> bool:
     це опис занять, а не прайс (рішення Марії 02.10.2026, той самий виняток,
     що для шкіл діаспори). Значення вартості лишається як є — не вимагаємо
     лише цитати."""
-    if data.get("opportunity_type") not in (_NO_QUOTE.get("types") or []):
-        return False
     url = str(data.get("source_url") or "").lower()
-    return any(h in url for h in (_NO_QUOTE.get("hosts") or []))
+    if not url:
+        return False
+    otype = data.get("opportunity_type")
+    # Пари «хост → свої типи»: спільний список типів звільняв би й чужі
+    # (02.10.2026 Дія.Освіта почала звільняти гуртки палаців).
+    return any(p.get("host", "") in url and otype in (p.get("types") or [])
+               for p in (_NO_QUOTE.get("pairs") or []))
 PROOF_LABELS = {k: PUBLISH_CRITERIA["required"][k]["label"] for k in PROOF_KEYS}
 MAX_QUOTE = 240
 
