@@ -12,7 +12,7 @@
 // заголовком/тілом і за редіректом на головну з глибокого шляху.
 
 import { createClient } from '@supabase/supabase-js';
-import { stillAhead, verdictForStatus } from '../lib/links.js';
+import { siteWideFailure, stillAhead, verdictForStatus } from '../lib/links.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -79,13 +79,13 @@ async function checkUrl(url) {
   const verdict = verdictForStatus(status);
   // Повертаємо одразу все, крім звичайного 2xx: у сторінки бот-захисту немає
   // вмісту, і шукати в ній ознаки «не знайдено» — марно й оманливо.
-  if (!verdict.alive || /bot-protected/.test(verdict.reason)) return verdict;
+  if (!verdict.alive || /bot-protected/.test(verdict.reason)) return { ...verdict, status };
 
   // 2xx: перевірка на софт-404.
   const originalPath = new URL(url).pathname;
   const finalPath = new URL(res.url).pathname;
   if (originalPath !== '/' && originalPath !== '' && (finalPath === '/' || finalPath === '')) {
-    return { alive: false, reason: 'redirect to homepage' };
+    return { alive: false, reason: 'redirect to homepage', status };
   }
   const contentType = res.headers.get('content-type') || '';
   if (res.body && contentType.includes('text/html')) {
@@ -102,12 +102,34 @@ async function checkUrl(url) {
       const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
       const h1Match = html.match(/<h1[^>]*>([\s\S]{0,300}?)<\/h1>/i);
       const probe = `${titleMatch?.[1] ?? ''} ${h1Match?.[1] ?? ''}`;
-      if (SOFT_404_RE.test(probe)) return { alive: false, reason: 'soft 404' };
+      if (SOFT_404_RE.test(probe)) return { alive: false, reason: 'soft 404', status };
     } catch {
       // тіло не дочиталось — статус 2xx уже отримали, вважаємо живим
     }
   }
-  return { alive: true, reason: `http ${status}` };
+  return { alive: true, reason: `http ${status}`, status };
+}
+
+// Корінь домену — щоб відрізнити «зникла сторінка» від «ліг весь сайт».
+// Відповіді кешуємо: у 400 гуртків палацу один домен на всіх.
+const rootCache = new Map();
+async function rootStatusOf(url) {
+  let origin;
+  try {
+    origin = new URL(url).origin;
+  } catch {
+    return null;
+  }
+  if (rootCache.has(origin)) return rootCache.get(origin);
+  let status = null;
+  try {
+    const res = await fetchWithTimeout(origin, { method: 'GET' });
+    status = res.status;
+  } catch {
+    status = null; // до кореня теж не достукались — нічого не знаємо
+  }
+  rootCache.set(origin, status);
+  return status;
 }
 
 
@@ -145,7 +167,7 @@ async function run() {
     for (;;) {
       const row = queue.shift();
       if (!row) return;
-      const { alive, unknown, reason } = await checkUrl(row.source_url);
+      const { alive, unknown, reason, status } = await checkUrl(row.source_url);
 
       let patch;
       if (unknown) {
@@ -162,7 +184,17 @@ async function run() {
         patch = { link_status: 'ok', link_failures: 0, link_checked_at: now, last_verified_at: now };
       } else {
         const failures = (row.link_failures || 0) + 1;
-        if (failures >= MAX_FAILURES && stillAhead(row, today)) {
+        // Перед закриттям питаємо корінь домену: той самий код на головній
+        // означає, що ліг сайт, а не зникла сторінка (ГО «Важливі», 02.10.2026).
+        // Запитуємо лише тут — один раз на домен і лише коли на кону закриття.
+        const siteWide = failures >= MAX_FAILURES
+          && siteWideFailure({ pageStatus: status, rootStatus: await rootStatusOf(row.source_url) });
+        if (siteWide) {
+          results.unknown += 1;
+          unreachable.push({ ...row, reason: `${reason} — те саме на головній сайту` });
+          patch = { link_checked_at: now };
+          console.log(`  ? ліг весь сайт, запис не чіпаємо: ${reason}  ${row.source_url}`);
+        } else if (failures >= MAX_FAILURES && stillAhead(row, today)) {
           // Подача ще відкрита — закривати не можна. Найімовірніше, сайт
           // блокує саме нас: перевірка ходить з IP GitHub Actions.
           results.heldOpen += 1;
@@ -190,7 +222,7 @@ async function run() {
           results.suspect += 1;
           patch = { link_status: 'suspect', link_failures: failures, link_checked_at: now };
         }
-        console.log(`  ✗ ${reason}  ${row.source_url}`);
+        if (!siteWide) console.log(`  ✗ ${reason}  ${row.source_url}`);
       }
 
       if (!DRY_RUN) {
