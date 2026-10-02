@@ -24,6 +24,7 @@
     python recheck_cost.py                       # дамп проміжних, нічого не пише
     python recheck_cost.py --apply               # пише в базу
     python recheck_cost.py --scope all --limit 200   # переглянути й решту бази
+    python recheck_cost.py --scope no_quote --apply   # лише ті, де немає цитати
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY.
 """
@@ -41,6 +42,7 @@ import anthropic
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import httpx
 
+from proof import missing_proof
 from recheck_dates import fetch_text
 
 logger = logging.getLogger("recheck_cost")
@@ -419,11 +421,21 @@ def _note(sb, row: dict, why: str, apply: bool) -> None:
 def select_rows(sb, scope: str, limit: int) -> list:
     q = (sb.table("opportunities")
          .select("id, title, source_url, opportunity_type, cost_type, price_note, "
-                 "admin_comment, evidence, link_status, cities, format")
+                 "admin_comment, evidence, link_status, cities, format, countries")
          .eq("status", "active"))
     if scope == "in_between":
         q = q.or_("cost_type.in.(partially_free,subsidized),cost_type.is.null")
-    return q.order("updated_at").limit(limit).execute().data or []
+    rows = q.order("updated_at").limit(limit if scope != "no_quote" else limit * 4)\
+        .execute().data or []
+    # scope=no_quote — вартість названа, але ніхто її не підтверджував
+    # (02.10.2026: таких 287 із 612 на сайті). Фільтруємо вже прочитане, бо
+    # «немає цитати на вартість» в один запит до PostgREST не висловити:
+    # evidence — jsonb, і умова «ключа cost немає АБО він порожній» лягла б
+    # на or_ з вкладеними шляхами. Беремо вчетверо більше й відсікаємо тут —
+    # дешевше, ніж питати модель про запис, у якого цитата вже є.
+    if scope == "no_quote":
+        rows = [r for r in rows if "cost" in missing_proof(r)][:limit]
+    return rows
 
 
 def run(apply: bool = False, scope: str = "in_between", limit: int = BATCH,
@@ -533,7 +545,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     p = argparse.ArgumentParser(description="Безкоштовно чи платно — з живої сторінки")
     p.add_argument("--apply", action="store_true", help="реально писати в базу")
-    p.add_argument("--scope", choices=["in_between", "all"], default="in_between")
+    p.add_argument("--scope", choices=["in_between", "all", "no_quote"],
+                   default="in_between")
     p.add_argument("--limit", type=int, default=BATCH)
     p.add_argument("--search", action="store_true",
                    help="якщо власна сторінка мовчить — шукати в інших джерелах")
