@@ -16,10 +16,15 @@ FULL = {"age": "7–12 років", "date": "до 1 жовтня", "cost": "бе
         "type": "табір", "place": "Львів"}
 
 
-def draft(_id, evidence, otype="camp"):
+def draft(_id, evidence, otype="camp", status="draft"):
     return {"id": _id, "title": f"Запис {_id}", "source": "Тест",
             "source_url": f"https://example.com/{_id}", "opportunity_type": otype,
-            "evidence": dict(evidence), "updated_at": "2026-09-01T00:00:00Z"}
+            "evidence": dict(evidence), "status": status,
+            "updated_at": "2026-09-01T00:00:00Z"}
+
+
+def live(_id, evidence, otype="camp"):
+    return draft(_id, evidence, otype, status="active")
 
 
 class FakeTable:
@@ -49,8 +54,9 @@ class FakeTable:
         if self.name == "raw_items":
             hit = [{"id": "x"}] if self._hash in self.db["known_hashes"] else []
             return mock.Mock(data=hit)
-        if self.name == "opportunities" and self._status == "draft":
-            return mock.Mock(data=self.db["drafts"])
+        if self.name == "opportunities" and self._status in ("draft", "active"):
+            return mock.Mock(data=[r for r in self.db["rows"]
+                                   if r.get("status") == self._status])
         return mock.Mock(data=[])
 
 
@@ -60,8 +66,8 @@ class FakeClient:
 
 
 class ProofRequeue(unittest.TestCase):
-    def _run(self, drafts, known_hashes=(), page="новий текст сторінки"):
-        db = {"drafts": drafts, "known_hashes": set(known_hashes), "updates": [], "stored": []}
+    def _run(self, rows, known_hashes=(), page="новий текст сторінки"):
+        db = {"rows": rows, "known_hashes": set(known_hashes), "updates": [], "stored": []}
         with mock.patch.object(proof_recheck.raw_store, "store_raw_items",
                                side_effect=lambda c, src, items: db["stored"].extend(items)), \
              mock.patch.object(proof_recheck.raw_store, "raw_hash", return_value="HASH"):
@@ -75,8 +81,10 @@ class ProofRequeue(unittest.TestCase):
         self.assertEqual([i["raw_title"] for i in db["stored"]], ["Запис a"])
 
     def test_unchanged_page_is_not_re_extracted(self):
-        # Текст той самий — нових цитат на ньому не буде, токени не палимо.
-        stats, db = self._run([draft("a", {})], known_hashes={"HASH"})
+        # Цитати частково є — сторінку вже читав екстрактор зі світлофором.
+        # Той самий текст нових цитат не дасть, токени не палимо.
+        part = {k: v for k, v in FULL.items() if k != "cost"}
+        stats, db = self._run([draft("a", part)], known_hashes={"HASH"})
         self.assertEqual(stats["checked"], 1)
         self.assertEqual(stats["requeued"], 0)
         self.assertEqual(db["stored"], [])
@@ -84,6 +92,40 @@ class ProofRequeue(unittest.TestCase):
     def test_checked_record_goes_to_the_back_of_the_queue(self):
         _, db = self._run([draft("a", {})], known_hashes={"HASH"})
         self.assertTrue(any("updated_at" in p for p in db["updates"]))
+
+    # --- 02.10.2026: ворота за хешем тримали найгірші записи ---
+    #
+    # Без жодної цитати запис читала машина ДО світлофора (22.09.2026).
+    # Сторінка з того часу не змінилась, хеш збігається — і такий запис не
+    # перечитувався ніколи. Саме так на сайті зібралось 92 записи без жодної
+    # цитати. Тепер порожні цитати важать більше за хеш.
+    def test_record_without_any_quote_is_re_read_even_if_page_unchanged(self):
+        stats, db = self._run([draft("a", {})], known_hashes={"HASH"})
+        self.assertEqual(stats["requeued"], 1)
+        self.assertEqual([i["raw_title"] for i in db["stored"]], ["Запис a"])
+
+    def test_queue_is_not_only_drafts(self):
+        # 476 із 612 записів без повного набору цитат були АКТИВНІ — їх уже
+        # читають батьки, а перечит їх не бачив.
+        stats, db = self._run([live("a", {})])
+        self.assertEqual(stats["checked"], 1)
+        self.assertEqual([i["raw_title"] for i in db["stored"]], ["Запис a"])
+
+    def test_both_queues_in_one_run(self):
+        stats, db = self._run([draft("d", {}), live("a", {})])
+        self.assertEqual(stats["checked"], 2)
+        self.assertEqual(sorted(i["raw_title"] for i in db["stored"]),
+                         ["Запис a", "Запис d"])
+
+    def test_record_with_full_quotes_is_left_alone(self):
+        stats, _ = self._run([live("a", FULL), draft("d", FULL)])
+        self.assertEqual(stats["checked"], 0)
+
+    def test_blank_records_go_first(self):
+        part = {k: v for k, v in FULL.items() if k != "cost"}
+        rows = [draft(f"p{i}", part) for i in range(25)] + [draft("blank", {})]
+        picked = proof_recheck.pick(rows)
+        self.assertEqual(picked[0]["id"], "blank")
 
     def test_payment_needs_no_date_quote(self):
         ev = {k: v for k, v in FULL.items() if k != "date"}
@@ -96,9 +138,11 @@ class ProofRequeue(unittest.TestCase):
         self.assertEqual(stats["requeued"], 0)
         self.assertEqual(db["stored"], [])
 
-    def test_cap_per_run(self):
-        stats, _ = self._run([draft(str(i), {}) for i in range(40)])
-        self.assertEqual(stats["checked"], proof_recheck.PROOF_LIMIT_PER_RUN)
+    def test_cap_per_run_applies_to_each_queue(self):
+        rows = ([draft(f"d{i}", {}) for i in range(40)]
+                + [live(f"a{i}", {}) for i in range(40)])
+        stats, _ = self._run(rows)
+        self.assertEqual(stats["checked"], proof_recheck.PROOF_LIMIT_PER_RUN * 2)
 
 
 class ItActuallyRuns(unittest.TestCase):
