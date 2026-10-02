@@ -246,3 +246,67 @@ test('онлайн-заняття: платне й конкурс не бере�
 test('онлайн-заняття не породжують міських сторінок', () => {
   assert.equal(TOPICS['bezkoshtovni-onlain-kursy'].noCityPages, true);
 });
+
+// --- іноземні мови, 02.10.2026 ---
+//
+// Перша підбірка, де платне стоїть поруч із безкоштовним: на запит «курси
+// англійської для дітей» людина чекає шкіл, а не лише безкоштовних клубів.
+const paidSchool = {
+  opportunity_type: 'course', cost_type: 'paid_affordable', aid_type: null, format: 'online',
+  title: 'German Pro — онлайн-школа німецької мови для дітей', summary: '', cities: ['Онлайн'], countries: [],
+};
+const citySchool = {
+  opportunity_type: 'course', cost_type: 'paid_affordable', aid_type: null, format: 'hybrid',
+  title: 'Yarko — студія іноземних мов для дітей 6–17 років, Дніпро', summary: '', cities: ['Дніпро'], countries: ['ua'],
+};
+const speakingClub = {
+  opportunity_type: 'club', cost_type: 'free', aid_type: null, format: 'online',
+  title: 'GoGlobal Speaking Clubs — безоплатна програма мовного спілкування', summary: '', cities: [], countries: [],
+};
+
+test('іноземні мови: бере платну школу, школу в місті й безкоштовний клуб', () => {
+  const topic = TOPICS['inozemni-movy'];
+  assert.equal(topic.match(paidSchool), true);
+  assert.equal(topic.match(citySchool), true);
+  assert.equal(topic.match(speakingClub), true);
+});
+
+// Людина шукає, де вчити мову, а не де з неї змагатися; а українська для
+// дітей за кордоном — окрема підбірка з іншим запитом.
+test('іноземні мови: олімпіаду, конкурс і школу української не беремо', () => {
+  const topic = TOPICS['inozemni-movy'];
+  const olympiad = { opportunity_type: 'olympiad', cost_type: 'free', title: 'Всеукраїнська олімпіада з англійської мови', cities: ['Вся Україна'] };
+  const contest = { opportunity_type: 'competition', cost_type: 'paid_affordable', title: 'Конкурс іноземної пісні', cities: ['Львів'] };
+  const ukrainian = { opportunity_type: 'course', cost_type: 'free', title: 'Суботня школа української мови у Варшаві', cities: [], countries: ['pl'] };
+  const coding = { opportunity_type: 'course', cost_type: 'free', title: 'Курс програмування для підлітків', cities: ['Онлайн'] };
+  for (const o of [olympiad, contest, ukrainian, coding]) assert.equal(topic.match(o), false, o.title);
+});
+
+// Слово має починатися з кореня: «англійськ» усередині іншого слова — не збіг,
+// так само як «курс» не має ловити «конкурс».
+test('іноземні мови: назва без мови не проходить навіть із типом «курс»', () => {
+  assert.equal(TOPICS['inozemni-movy'].match({ opportunity_type: 'course', title: 'Школа акторської майстерності' }), false);
+});
+
+test('іноземні мови: власні тексти обома мовами й міська сторінка', async () => {
+  const t = TOPICS['inozemni-movy'];
+  for (const field of ['title', 'description', 'intro', 'note']) {
+    assert.ok(t[field].length > 40, field);
+    assert.ok(t.en[field].length > 40, `en.${field}`);
+  }
+  assert.equal(t.faq.length, 3);
+  assert.equal(t.en.faq.length, 3);
+  assert.equal(t.en.slug, 'language-courses');
+  const { CITY_TOPIC_TEXTS } = await import('../lib/city-topics.js');
+  assert.ok(CITY_TOPIC_TEXTS['inozemni-movy'], 'немає текстів для сторінки міста');
+  // Сторінка не обіцяє, що все безкоштовне: платні школи тут навмисно.
+  assert.doesNotMatch(t.title + t.description + t.intro, /усе безкоштовн|все безкоштовн/i);
+});
+
+// Безкоштовний онлайн-клуб лишається у своїй підбірці: «Іноземні мови» стоять
+// після безкоштовних, тож крихта на сторінці можливості не змінюється.
+test('безкоштовний мовний клуб онлайн лишається в «Онлайн-заняттях» за крихтою', async () => {
+  const { topicOf } = await import('../lib/topics.js');
+  assert.equal(topicOf(speakingClub).slug, 'bezkoshtovni-onlain-kursy');
+  assert.equal(topicOf(paidSchool).slug, 'inozemni-movy');
+});

@@ -7,7 +7,7 @@ import { langSuggestion, isEnglishPath, readsUkrainian } from '../lib/lang.js';
 // України. Україномовна людина потрапляла на англійську сторінку й не бачила
 // жодної підказки, що та сама сторінка є українською.
 test('україномовному на англійській сторінці пропонуємо українську', () => {
-  for (const p of ['/en', '/en/contests', '/en/free-online-courses', '/en/o/abc']) {
+  for (const p of ['/en', '/en/contests', '/en/free-online-courses', '/en/language-courses', '/en/o/abc']) {
     assert.equal(langSuggestion({ pathname: p, uaReader: true }), 'to_uk', p);
   }
 });

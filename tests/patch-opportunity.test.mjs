@@ -48,3 +48,30 @@ test('запис без цитат лишається без них, поки ї
   const out = applyPatch({}, { evidence: { date: 'з 15 вересня до 8 жовтня' } });
   assert.deepEqual(out.evidence, { date: 'з 15 вересня до 8 жовтня' });
 });
+
+// --- формат, місце, вид за часом, 02.10.2026 ---
+//
+// Чернетка-заглушка з дослідження приходить без формату, міста й виду за
+// часом, а publish-draft без них не публікує. Вписати їх не було чим:
+// конектор бази в сесії відхилив запис, адмінки під рукою немає.
+test('тип, формат, місто й вид за часом можна вписати', () => {
+  const out = applyPatch({}, {
+    opportunity_type: 'course', format: 'hybrid', cities: ['Дніпро'], countries: ['ua'],
+    timing_kind: 'permanent', is_international: false,
+  });
+  assert.deepEqual(out, {
+    opportunity_type: 'course', format: 'hybrid', cities: ['Дніпро'], countries: ['ua'],
+    timing_kind: 'permanent', is_international: false,
+  });
+});
+
+// Тип поза словником сайт показує як «курс», а невідомий формат — ніяк:
+// помилка в одній літері стала б тихою брехнею на картці.
+test('значення поза словником не пишуться', () => {
+  assert.throws(() => applyPatch({}, { format: 'онлайн' }), /online, offline або hybrid/);
+  assert.throws(() => applyPatch({}, { timing_kind: 'always' }), /permanent/);
+  assert.throws(() => applyPatch({}, { opportunity_type: 'school' }), /словника/);
+  assert.throws(() => applyPatch({}, { cities: 'Дніпро' }), /список/);
+  assert.throws(() => applyPatch({}, { cities: [''] }), /список/);
+  assert.throws(() => applyPatch({}, { is_international: 'ні' }), /true або false/);
+});
