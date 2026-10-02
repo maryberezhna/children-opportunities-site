@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   if (!cityData) return {};
   const { ua, locative } = cityData;
   return {
-    title: `Можливості для дітей у ${locative} — курси, олімпіади, стипендії`,
+    title: { absolute: `Можливості для дітей у ${locative} — курси, олімпіади, стипендії` },
     description: `Безкоштовний каталог можливостей для дітей 0–18 років у ${locative}: курси, олімпіади, стипендії, табори, медична допомога. Оновлюється щодня.`,
     alternates: {
       canonical: `https://dityam.com.ua/${params.city}`,

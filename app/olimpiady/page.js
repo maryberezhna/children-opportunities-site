@@ -213,7 +213,13 @@ export default async function OlympiadsGuide() {
         endDate: st.endDate,
         eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
         eventStatus: 'https://schema.org/EventScheduled',
-        location: { '@type': 'Country', name: 'Україна' },
+        // Place з адресою, а не Country: для офлайн-події Google вимагає
+        // location.address, і з Country усі чотири етапи були невалідні.
+        location: {
+          '@type': 'Place',
+          name: 'Україна',
+          address: { '@type': 'PostalAddress', addressCountry: 'UA' },
+        },
         isAccessibleForFree: true,
         organizer: {
           '@type': 'GovernmentOrganization',

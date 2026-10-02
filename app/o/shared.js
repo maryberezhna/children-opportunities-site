@@ -39,6 +39,7 @@ import { ERASMUS_PATH, isErasmus } from '@/lib/erasmus';
 // Чужий Telegram-канал не показуємо ні кнопкою, ні «Джерелом», ні в розмітці
 // (Марія, 27.09.2026) — див. lib/source-link.js.
 import { publicSource } from '@/lib/source-link';
+import { opportunityTitle, structuredType, audienceOf } from '@/lib/opportunity-seo';
 
 const SITE = 'https://dityam.com.ua';
 
@@ -65,8 +66,6 @@ const COST_LABELS = {
   },
 };
 
-const COURSE_TYPES = new Set(['course', 'olympiad', 'club', 'exchange', 'study_abroad', 'scholarship', 'internship']);
-const EVENT_TYPES = new Set(['camp', 'festival', 'sport_event', 'competition']);
 
 const L = {
   uk: {
@@ -397,14 +396,14 @@ export function buildMetadata(item, lang = 'uk') {
     : (item.age_from === 0 && item.age_to >= 17 ? '0-18 років' : `${item.age_from}-${item.age_to} років`);
 
   const name = field(item, 'title', lang);
-  const title = en
-    ? `${name} — ${typeLabel} for children ${ageRange}`
-    : `${name} — ${typeLabel} для дітей ${ageRange}`;
+  const title = opportunityTitle({ name, typeLabel, ageRange, lang });
   const url = `${SITE}${base}/o/${item.slug}`;
   const description = buildDescription(item, typeLabel, ageRange, lang);
 
   return {
-    title,
+    // absolute — без шаблону «| Можливості для дитини» з app/layout.js: назву
+    // сайту Google показує окремим рядком, а в заголовку вона зʼїдала місце.
+    title: { absolute: title },
     description,
     alternates: {
       canonical: url,
@@ -468,32 +467,38 @@ function buildJsonLd(item, lang) {
     ...(item.updated_at && { dateModified: String(item.updated_at).slice(0, 10) }),
   };
 
-  if (COURSE_TYPES.has(item.opportunity_type)) {
+  const kind = structuredType(item);
+  const audience = audienceOf(item);
+  const city = (item.cities || []).find((c) => c && c !== 'Вся Україна' && c !== 'Онлайн' && c !== 'Міжнародні');
+
+  // Курс чи гурток — Service, а не Course: для Course Google вимагає розклад
+  // занять, якого в базі немає (див. lib/opportunity-seo.js). Тут лише те, що
+  // знаємо напевно: хто проводить, для якого віку, де і чи безкоштовно.
+  if (kind === 'Service') {
     return {
       '@context': 'https://schema.org',
-      '@type': 'Course',
+      '@type': 'Service',
       name,
       description,
       url,
       inLanguage,
       ...dates,
+      serviceType: typeLabels(lang)[item.opportunity_type] || undefined,
       provider: {
         '@type': 'Organization',
         name: src.sourceName || 'dityam.com.ua',
         sameAs: src.sourceUrl || undefined,
       },
+      ...(audience && { audience }),
+      ...(city && { areaServed: { '@type': 'City', name: cityLabel(city, lang) } }),
       ...((isFree || isClosed) && {
         offers: {
           '@type': 'Offer',
           url,
-          ...(isFree ? { price: '0', priceCurrency: 'UAH', category: 'Free' } : {}),
+          ...(isFree ? { price: '0', priceCurrency: 'UAH' } : {}),
           ...offerState,
         },
       }),
-      audience: {
-        '@type': 'EducationalAudience',
-        educationalRole: 'student',
-      },
     };
   }
 
@@ -506,7 +511,7 @@ function buildJsonLd(item, lang) {
   // Без справжньої дати проведення чесніше віддати WebPage, ніж вигадати
   // подію на день дедлайну.
   const eventStart = item.event_start_date || null;
-  if (EVENT_TYPES.has(item.opportunity_type) && eventStart) {
+  if (kind === 'Event') {
     const isOnline = /онлайн|online/i.test(item.format || '');
     return {
       '@context': 'https://schema.org',
@@ -521,6 +526,9 @@ function buildJsonLd(item, lang) {
       // Google бачив «подія відбудеться в день дедлайну».
       startDate: eventStart,
       ...(item.event_end_date ? { endDate: item.event_end_date } : {}),
+      // Картинка події — та сама, що йде в соцмережі (opengraph-image.js).
+      image: `${url}/opengraph-image`,
+      ...(audience && { audience }),
       eventAttendanceMode: isOnline
         ? 'https://schema.org/OnlineEventAttendanceMode'
         : 'https://schema.org/OfflineEventAttendanceMode',
@@ -560,6 +568,7 @@ function buildJsonLd(item, lang) {
     url,
     inLanguage,
     ...dates,
+    ...(audience && { audience }),
     // expires — властивість CreativeWork: «дата, після якої вміст більше не
     // актуальний». Для закритих сторінок без Course/Event це єдина машинна
     // позначка завершення.

@@ -5,6 +5,16 @@ const nextConfig = {
   reactStrictMode: true,
   async redirects() {
     return [
+      // www.dityam.com.ua — на основну адресу. До 02.10.2026 піддомен мав DNS,
+      // але не був привʼязаний до проєкту у Vercel: браузер показував помилку
+      // сертифіката (аудит Semrush). Тепер привʼязаний, а це правило не дає
+      // сайту жити під двома адресами.
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.dityam.com.ua' }],
+        destination: 'https://dityam.com.ua/:path*',
+        permanent: true,
+      },
       {
         source: '/',
         has: [{ type: 'query', key: 'o', value: '(?<slug>.*)' }],

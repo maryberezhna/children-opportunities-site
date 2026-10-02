@@ -21,7 +21,7 @@ export async function generateMetadata({ params }) {
   const name = cityData.en || cityData.ua;
   const url = `${SITE_URL}/en/${params.city}`;
   return {
-    title: `Opportunities for children in ${name} — courses, olympiads, scholarships`,
+    title: { absolute: `Opportunities for children in ${name} — courses, olympiads, scholarships` },
     description: `A free catalogue of opportunities for children aged 0–18 in ${name}: courses, olympiads, scholarships, camps, medical help. Updated daily.`,
     alternates: {
       canonical: url,
