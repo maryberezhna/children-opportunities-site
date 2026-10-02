@@ -90,7 +90,11 @@ export default async function MessagesPage() {
     }
   }
 
-  const suggestions = (sugRes.data || []).map((s) => ({
+  // Лише пропозиції з форми на сайті (Марія, 02.10.2026: «звернення — це
+  // тільки для форми з сайту, додавай усе в чернетку»). Знахідки нашого
+  // дослідження (Google Alerts, ручний пошук) тут не показуємо: робот
+  // process_suggestions.py сам доводить їх до чернетки в черзі модерації.
+  const suggestions = (sugRes.data || []).filter((s) => originOf(s) === 'popup').map((s) => ({
     id: s.id,
     type: 'opportunity',
     name: null,
@@ -129,8 +133,8 @@ export default async function MessagesPage() {
   const byResearch = sugAll.filter((s) => originOf(s) === 'research').length;
   const manual = [byMaria ? `Марія ${byMaria}` : null, byResearch ? `дослідження ${byResearch}` : null]
     .filter(Boolean).join(', ');
-  // Чекає — усі, хай хто приніс: рішення за людиною однаково.
-  const sugWaiting = sugAll.filter((s) => s.status === 'new' || s.status === 'needs_human').length;
+  // Чекає — лише те, що принесли люди: наше дослідження йде в чернетки само.
+  const sugWaiting = fromPeople.filter((s) => s.status === 'new' || s.status === 'needs_human').length;
 
   return (
     <main style={wrap}>

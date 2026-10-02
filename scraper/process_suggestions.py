@@ -371,6 +371,57 @@ def notify_published(sb, apply: bool = False) -> int:
     return sent
 
 
+# Позначка чернетки-заглушки — та сама, що STUB_MARK у lib/suggestions.js: поки
+# вона є, форма правки показує тип і вік порожніми й публікацію не пускає.
+STUB_MARK = "тип і вік ще не визначено"
+
+
+def stub_draft(sb, s: dict, why: str, apply: bool) -> str:
+    """Чернетка з того, що є: назва й посилання.
+
+    Для знахідок нашого дослідження (Google Alerts, ручний пошук). Марія,
+    02.10.2026: «звернення — це тільки для форми з сайту, додавай усе в
+    чернетку». Якщо сторінку не вдалося прочитати чи нормалізатор її не взяв,
+    пропозиція від людини чекає в «Зверненнях», а наша — лишалась би ніде:
+    «Звернення» її більше не показують. Тому вона йде в чергу модерації
+    заглушкою, і вирішує людина. Розкладка рядка — як у кнопки «Додати на сайт»
+    (app/api/admin/suggestion/route.js).
+    """
+    from hubs import content_hash
+    from slugify import slugify
+    import hashlib
+
+    url = (s.get("url") or "").strip()
+    title = ((s.get("title") or "").strip() or url)[:300]
+    contact = (s.get("contact") or "").strip()
+    origin = origin_of(s)
+    parts = [ORIGIN_TRACE[origin], f"автоматично не розібрано: {why}"]
+    if contact:
+        parts.append(f"організатор: {contact}")
+    if s.get("comment"):
+        parts.append("коментар: " + str(s["comment"])[:300])
+    parts.append(STUB_MARK)
+    short = hashlib.md5(f"{title}{url}".encode()).hexdigest()[:6]
+    row = {
+        "title": title,
+        "slug": f"{slugify(title, max_length=80, word_boundary=True) or 'mozhlyvist'}-{short}",
+        "source": urlparse(url).hostname.removeprefix("www.") if urlparse(url).hostname else "Наше дослідження",
+        "source_url": url,
+        "canonical_url": canonical_url(url),
+        "content_hash": content_hash(title, url),
+        "status": "draft",
+        # Технічна заглушка: база не приймає запис без типу й віку.
+        "opportunity_type": "course",
+        "age_from": 0,
+        "age_to": 18,
+        "admin_comment": " · ".join(parts),
+    }
+    if apply:
+        from db import upsert_opportunity
+        upsert_opportunity(sb, row)
+    return f"→ чернетка-заглушка «{title[:44]}» ({why})"
+
+
 def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, str]:
     """Повертає (новий статус, пояснення для дампу)."""
     url = (s.get("url") or "").strip()
@@ -398,6 +449,9 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
 
     page, http = fetch_text(url)
     if not page:
+        # Наше дослідження — завжди в чернетку: у «Зверненнях» його не видно.
+        if origin != "popup":
+            return "imported", stub_draft(sb, s, f"сторінку не прочитали ({http})", apply)
         if apply and email:
             send_email(email, SUBJECT_OK, BODY_NEEDS_HUMAN.format(
                 title=title or url, site=SITE))
@@ -411,6 +465,8 @@ def process_one(sb, normalizer, s: dict, apply: bool, seen: set) -> tuple[str, s
 
     if not data:
         reason = getattr(normalizer, "last_reject_reason", None) or "не схоже на можливість для дитини"
+        if origin != "popup":
+            return "imported", stub_draft(sb, s, f"нормалізатор не взяв: {reason}", apply)
         if apply and email:
             send_email(email, SUBJECT_OK, BODY_NEEDS_HUMAN.format(
                 title=title or url, site=SITE))
