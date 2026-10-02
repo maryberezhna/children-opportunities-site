@@ -84,6 +84,20 @@ def is_diaspora_school(data: dict) -> bool:
 def ask_school_ok(data: dict) -> bool:
     """«Вартість уточнюйте в школі» стоїть і дозволена саме цьому запису."""
     return data.get("cost_type") == ASK_SCHOOL_VALUE and is_diaspora_school(data)
+
+
+_NO_QUOTE = PUBLISH_CRITERIA["required"]["cost"].get("no_quote_sources") or {}
+
+
+def cost_quote_impossible(data: dict) -> bool:
+    """Джерела, де ціни немає й не буде: сторінка гуртка палацу позашкілля —
+    це опис занять, а не прайс (рішення Марії 02.10.2026, той самий виняток,
+    що для шкіл діаспори). Значення вартості лишається як є — не вимагаємо
+    лише цитати."""
+    if data.get("opportunity_type") not in (_NO_QUOTE.get("types") or []):
+        return False
+    url = str(data.get("source_url") or "").lower()
+    return any(h in url for h in (_NO_QUOTE.get("hosts") or []))
 PROOF_LABELS = {k: PUBLISH_CRITERIA["required"][k]["label"] for k in PROOF_KEYS}
 MAX_QUOTE = 240
 
@@ -191,7 +205,7 @@ def missing_proof(data: dict) -> list:
         if otype in crit.get("except_types", ()):
             continue
         # Ціни на сторінці немає — цитувати нема чого (виняток для шкіл діаспори).
-        if key == "cost" and ask_school_ok(data):
+        if key == "cost" and (ask_school_ok(data) or cost_quote_impossible(data)):
             continue
         if not (isinstance(ev.get(key), str) and ev[key].strip()):
             missing.append(key)

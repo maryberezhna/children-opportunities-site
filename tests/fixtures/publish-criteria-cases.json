@@ -530,5 +530,38 @@
     "missing": [
       "date"
     ]
+  },
+  {
+    "name": "гурток палацу позашкілля: ціни на сторінці немає й не буде",
+    "row": {
+      "opportunity_type": "club",
+      "source_url": "https://cprs.kiev.ua/gurtok/chariv-hlyna",
+      "cost_type": "free",
+      "age_from": 6,
+      "age_to": 14,
+      "format": "offline",
+      "cities": [
+        "Київ"
+      ],
+      "timing_kind": "permanent"
+    },
+    "missing": []
+  },
+  {
+    "name": "той самий гурток з іншого джерела — вартість потрібна як усім",
+    "row": {
+      "opportunity_type": "club",
+      "source_url": "https://example.org/gurtok",
+      "age_from": 6,
+      "age_to": 14,
+      "format": "offline",
+      "cities": [
+        "Київ"
+      ],
+      "timing_kind": "permanent"
+    },
+    "missing": [
+      "cost"
+    ]
   }
 ]
