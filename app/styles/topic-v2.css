@@ -383,6 +383,32 @@
 .tp-faq-item h3 { margin: 0; font-weight: 700; font-size: 18px; line-height: 1.35; letter-spacing: -0.01em; }
 .tp-faq-item p { margin: 0; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
 
+/* ── Ця підбірка у вашому місті ── */
+.tp-cities { display: flex; flex-direction: column; gap: 16px; }
+.tp-cities-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tp-main .tp-city-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-weight: 600;
+  text-decoration: none;
+}
+.tp-main .tp-city-link:hover { border-color: var(--v2-accent-strong); color: var(--v2-accent-strong); }
+.tp-city-n { font-weight: 500; color: #6b6b6b; }
+
 /* ── Інші підбірки ── */
 .tp-related { display: flex; flex-direction: column; gap: 16px; }
 .tp-related-grid {

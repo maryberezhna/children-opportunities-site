@@ -9,6 +9,7 @@ import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
 import { closingThisWeek, splitIntro } from '@/lib/topic-filters';
 import { schoolNotes } from '@/lib/diaspora';
+import { topicCityLinks } from '@/lib/city-topics';
 import TopicCards from './topic/TopicCards';
 import SuggestBlock from './SuggestBlock';
 import ShareButton from './topic/ShareButton';
@@ -336,6 +337,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
   const subfilters = grouped ? [] : buildSubfilters(topic, items, lang);
   const related = buildRelated(topic, liveRows);
+  // Сторінки «місто × підбірка» мають лише українську версію.
+  const cityLinks = isEn ? [] : topicCityLinks(liveRows, topic);
   const hero = heroImageOf(topic, lang);
   const heading = c.heading || { lead: c.h1.join(' '), script: '', tail: '' };
   const crumb = isEn ? topic.navEn : topic.nav;
@@ -555,6 +558,21 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                 </div>
               ))}
             </div>
+          </section>
+        ) : null}
+
+        {cityLinks.length ? (
+          <section className="tp-cities" aria-labelledby="tp-cities-title">
+            <h2 id="tp-cities-title" className="tp-h2">Ця підбірка у вашому місті</h2>
+            <ul className="tp-cities-list">
+              {cityLinks.map((c) => (
+                <li key={c.href}>
+                  <Link href={c.href} prefetch={false} className="tp-city-link">
+                    {c.city} <span className="tp-city-n">{c.count}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </section>
         ) : null}
 

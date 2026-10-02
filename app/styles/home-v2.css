@@ -197,6 +197,33 @@
 .v2-nav .v2-nav-drop-panel a:hover { background: var(--v2-cream); color: var(--v2-ink); }
 .v2-nav .v2-nav-drop-panel a[aria-current="page"] { color: var(--v2-accent-strong); }
 
+/* Меню у два рівні (02.10.2026): пʼять розділів стовпцями, у кожному — свої
+   підбірки. Стовпці переносяться в другий ряд, коли панелі не вистачає
+   ширини до краю вікна (max-width ставить Header.js). */
+.v2-nav-mega {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 12px;
+  width: max-content;
+  padding: 16px 12px 12px;
+}
+/* Власне display переважує атрибут hidden — без цього закрита панель
+   лишалась би на екрані. */
+.v2-nav-mega[hidden] { display: none; }
+.v2-nav-group { min-width: 168px; }
+.v2-nav-group ul { margin: 0; padding: 0; list-style: none; }
+.v2-nav-group-title {
+  margin: 0 0 4px;
+  padding: 0 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b6b6b;
+  white-space: nowrap;
+}
+.v2-nav .v2-nav-mega a { padding: 7px 12px; }
+
 .v2-header-right {
   margin-left: auto;
   display: flex;
@@ -352,10 +379,10 @@
 .v2-mmenu-toggle.is-open .v2-nav-caret { transform: translateY(1px) rotate(-135deg); }
 .v2-mmenu-toggle:focus-visible { outline: 2px solid var(--v2-accent); outline-offset: 4px; border-radius: 4px; }
 
-#v2-mmenu-topics-list { display: flex; flex-direction: column; }
+.v2-mmenu-list { display: flex; flex-direction: column; }
 /* Обовʼязково: власне display переважує атрибут hidden, і згорнутий список
    лишався б розкритим. */
-#v2-mmenu-topics-list[hidden] { display: none; }
+.v2-mmenu-list[hidden] { display: none; }
 .v2-mmenu a.v2-mmenu-sub {
   min-height: 44px;
   padding-left: 12px;

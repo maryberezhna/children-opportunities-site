@@ -2,8 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { TOPIC_LIST, TOPIC_NAV, DIASPORA_COUNTRY_TOPICS, topicPath } from '@/lib/topics';
-import { ERASMUS_PATH } from '@/lib/erasmus';
+import { TOPIC_LIST, DIASPORA_COUNTRY_TOPICS, topicMenu } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
 
@@ -104,12 +103,25 @@ export default function Header() {
   // Підбірок дванадцять, і в мобільному меню вони відтісняли Dityam+ за нижній
   // край екрана (Марія, 30.09.2026). Тепер група згорнута, поки її не
   // натиснули, і згортається знову щоразу, коли меню відкривають.
-  const [mTopicsOpen, setMTopicsOpen] = useState(false);
+  //
+  // 02.10.2026: підбірок стало чотирнадцять — меню у два рівні. На телефоні
+  // замість однієї групи «Підбірки» стоять пʼять розділів, і розкритий лише
+  // один (ключ розділу або null).
+  const [mGroupOpen, setMGroupOpen] = useState(null);
   // Підменю «Підбірки» (14.09.2026, прохання Марії): на десктопі — випадний
   // список біля «Про проєкт», у мобільному меню — окрема група. Відкривається
   // наведенням і кліком; закривається Escape, кліком поза ним і переходом.
   const [topicsOpen, setTopicsOpen] = useState(false);
   const topicsRef = useRef(null);
+  // Панель із пʼятьма стовпцями ширша за місце праворуч від кнопки на
+  // вузькому ноутбуці. Обмежуємо її шириною до краю вікна — стовпці тоді
+  // переносяться в другий ряд, а не вилазять за екран.
+  const [megaMax, setMegaMax] = useState(null);
+  useEffect(() => {
+    if (!topicsOpen || !topicsRef.current) return;
+    const left = topicsRef.current.getBoundingClientRect().left;
+    setMegaMax(Math.max(260, window.innerWidth - left - 4));
+  }, [topicsOpen]);
   useEffect(() => { setMenuOpen(false); setTopicsOpen(false); }, [pathname]);
   useEffect(() => {
     if (!menuOpen && !topicsOpen) return undefined;
@@ -148,13 +160,8 @@ export default function Header() {
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
   const strip = isEnglish ? PLUS_STRIP.en : PLUS_STRIP.uk;
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
-  const topicLinks = TOPIC_NAV.flatMap((t) => {
-    const link = { href: topicPath(t, isEnglish ? 'en' : 'uk'), label: isEnglish ? t.labelEn : t.label };
-    // Путівник Erasmus+ — одразу під «Програмами обміну», як у його хлібних
-    // крихтах. Англійської версії путівника поки немає.
-    return !isEnglish && t.slug === 'prohramy-obminu' ? [link, { href: ERASMUS_PATH, label: 'Erasmus+' }] : [link];
-  });
-  const topicActive = topicLinks.some((l) => l.href === pathname);
+  const topicGroups = topicMenu(isEnglish ? 'en' : 'uk');
+  const topicActive = topicGroups.some((g) => g.links.some((l) => l.href === pathname));
 
   return (
     <header className={headerClass}>
@@ -182,19 +189,32 @@ export default function Header() {
             </button>
             {/* Посилання лишаються в HTML і при закритому списку (hidden):
                 пошуковик бачить внутрішні лінки на всі підбірки з кожної сторінки. */}
-            <ul id="v2-topics-menu" className="v2-nav-drop-panel" hidden={!topicsOpen}>
-              {topicLinks.map((l) => (
-                <li key={l.href}>
-                  <Link
-                    href={l.href}
-                    aria-current={l.href === pathname ? 'page' : undefined}
-                    onClick={() => { track(`topic:${l.label}`)(); setTopicsOpen(false); }}
-                  >
-                    {l.label}
-                  </Link>
-                </li>
+            <div
+              id="v2-topics-menu"
+              className="v2-nav-drop-panel v2-nav-mega"
+              hidden={!topicsOpen}
+              style={megaMax ? { maxWidth: megaMax } : undefined}
+            >
+              {topicGroups.map((g) => (
+                <div key={g.key} className="v2-nav-group">
+                  <p className="v2-nav-group-title" id={`v2-nav-g-${g.key}`}>{g.label}</p>
+                  <ul aria-labelledby={`v2-nav-g-${g.key}`}>
+                    {g.links.map((l) => (
+                      <li key={l.href}>
+                        <Link
+                          href={l.href}
+                          prefetch={false}
+                          aria-current={l.href === pathname ? 'page' : undefined}
+                          onClick={() => { track(`topic:${l.label}`)(); setTopicsOpen(false); }}
+                        >
+                          {l.label}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
           {NAV.map((item) => (
             <Link
@@ -248,7 +268,7 @@ export default function Header() {
           aria-label={isEnglish
             ? (menuOpen ? 'Close menu' : 'Open menu')
             : (menuOpen ? 'Закрити меню' : 'Відкрити меню')}
-          onClick={() => setMenuOpen((v) => { if (!v) setMTopicsOpen(false); return !v; })}
+          onClick={() => setMenuOpen((v) => { if (!v) setMGroupOpen(null); return !v; })}
         >
           <span aria-hidden="true" className={menuOpen ? 'v2-burger-lines is-open' : 'v2-burger-lines'} />
         </button>
@@ -271,32 +291,38 @@ export default function Header() {
 
       {menuOpen ? (
         <nav id="v2-mobile-menu" className="v2-mmenu" aria-label={isEnglish ? 'Menu' : 'Меню'}>
-          <div className="v2-mmenu-group" role="group" aria-labelledby="v2-mmenu-topics">
-            <button
-              type="button"
-              id="v2-mmenu-topics"
-              className={`v2-mmenu-toggle${mTopicsOpen ? ' is-open' : ''}`}
-              aria-expanded={mTopicsOpen}
-              aria-controls="v2-mmenu-topics-list"
-              onClick={() => setMTopicsOpen((v) => !v)}
-            >
-              {TOPICS_LABEL}
-              <span className="v2-nav-caret" aria-hidden="true" />
-            </button>
-            <div id="v2-mmenu-topics-list" hidden={!mTopicsOpen}>
-            {topicLinks.map((l) => (
-              <Link
-                key={l.href}
-                href={l.href}
-                className={`v2-mmenu-sub${l.href === pathname ? ' is-active' : ''}`}
-                aria-current={l.href === pathname ? 'page' : undefined}
-                onClick={() => { track(`topic:${l.label}`)(); setMenuOpen(false); }}
-              >
-                {l.label}
-              </Link>
-            ))}
-            </div>
-          </div>
+          {topicGroups.map((g) => {
+            const open = mGroupOpen === g.key;
+            return (
+              <div key={g.key} className="v2-mmenu-group" role="group" aria-labelledby={`v2-mmenu-g-${g.key}`}>
+                <button
+                  type="button"
+                  id={`v2-mmenu-g-${g.key}`}
+                  className={`v2-mmenu-toggle${open ? ' is-open' : ''}`}
+                  aria-expanded={open}
+                  aria-controls={`v2-mmenu-list-${g.key}`}
+                  onClick={() => setMGroupOpen(open ? null : g.key)}
+                >
+                  {g.label}
+                  <span className="v2-nav-caret" aria-hidden="true" />
+                </button>
+                <div id={`v2-mmenu-list-${g.key}`} className="v2-mmenu-list" hidden={!open}>
+                  {g.links.map((l) => (
+                    <Link
+                      key={l.href}
+                      href={l.href}
+                      prefetch={false}
+                      className={`v2-mmenu-sub${l.href === pathname ? ' is-active' : ''}`}
+                      aria-current={l.href === pathname ? 'page' : undefined}
+                      onClick={() => { track(`topic:${l.label}`)(); setMenuOpen(false); }}
+                    >
+                      {l.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
           {NAV.map((item) => (
             <Link
               key={item.href}
