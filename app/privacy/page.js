@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { AMPLITUDE_ON } from '@/lib/amplitude';
 
 export const metadata = {
   title: 'Політика конфіденційності',
@@ -40,7 +41,7 @@ export default function PrivacyPage() {
         <h2>2. Які дані ми збираємо і навіщо</h2>
         <ul>
           <li>
-            <strong>Відвідування сайту.</strong> Google Analytics, Hotjar і теги
+            <strong>Відвідування сайту.</strong> Google Analytics, Hotjar{AMPLITUDE_ON ? ', Amplitude' : ''} і теги
             Google Ads отримують дані про пристрій, браузер, мову, переглянуті сторінки
             й дії на них. Це потрібно, щоб розуміти, чим користуються люди, і
             вимірювати рекламу.
@@ -132,6 +133,12 @@ export default function PrivacyPage() {
             <strong>Hotjar</strong> — аналітика поведінки на сайті
             (<a href="https://www.hotjar.com/legal/policies/privacy/" target="_blank" rel="noopener noreferrer">політика</a>).
           </li>
+          {AMPLITUDE_ON ? (
+            <li>
+              <strong>Amplitude</strong> — аналітика того, як користуються сайтом
+              (<a href="https://amplitude.com/privacy" target="_blank" rel="noopener noreferrer">політика</a>).
+            </li>
+          ) : null}
           <li>
             <strong>Anthropic</strong> — модель штучного інтелекту, яка розбирає
             запропоновані можливості: отримує назву, посилання й текст сторінки, але
@@ -164,7 +171,7 @@ export default function PrivacyPage() {
         <p>
           Технічні cookie й сховище браузера памʼятають мову, налаштування
           доступності, режим перегляду і те, чи ви вже закрили вікно підписки.
-          Аналітичні й рекламні cookie встановлюють Google Analytics, Google Ads і
+          Аналітичні й рекламні cookie встановлюють Google Analytics, Google Ads{AMPLITUDE_ON ? ', Amplitude' : ''} і
           Hotjar — вони завантажуються разом зі сторінкою. Заблокувати їх можна в
           налаштуваннях браузера або розширенням; сайт працює і без них.
         </p>
