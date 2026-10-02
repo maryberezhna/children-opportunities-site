@@ -176,7 +176,12 @@ async function run() {
         // і справжні биті лінки тонули серед хибних.
         results.unknown += 1;
         unreachable.push({ ...row, reason });
-        patch = { link_checked_at: now };
+        // Лічильник невдач не рухаємо — ми нічого не дізнались. Але ярлик
+        // ставимо свій: інакше запис, позначений «dead» до 02.10.2026, лишався
+        // б мертвим НАЗАВЖДИ, бо з того дня цей шлях його вже не чіпає. Саме
+        // так NASA Space Apps і Фастівська громада щоранку йшли в зведення як
+        // «лінк не відповідає», хоч із браузера обидві сторінки відкриваються.
+        patch = { link_status: 'unknown', link_checked_at: now };
         console.log(`  ? не перевірено: ${reason}  ${row.source_url}`);
       } else if (alive) {
         if (row.link_status !== 'ok') results.recovered += 1;
@@ -192,7 +197,7 @@ async function run() {
         if (siteWide) {
           results.unknown += 1;
           unreachable.push({ ...row, reason: `${reason} — те саме на головній сайту` });
-          patch = { link_checked_at: now };
+          patch = { link_status: 'unknown', link_checked_at: now };
           console.log(`  ? ліг весь сайт, запис не чіпаємо: ${reason}  ${row.source_url}`);
         } else if (failures >= MAX_FAILURES && stillAhead(row, today)) {
           // Подача ще відкрита — закривати не можна. Найімовірніше, сайт

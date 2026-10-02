@@ -9,6 +9,7 @@
 // що без людини не зрушить. Якщо таких пунктів немає — повідомлення не
 // надсилається взагалі: тиша теж інформація.
 import { createClient } from '@supabase/supabase-js';
+import { NUDGE_SILENT_HOURS, provesNudgerSilent } from '../lib/nudge.js';
 
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT = process.env.TELEGRAM_ADMIN_CHAT_ID;
@@ -75,10 +76,17 @@ const [
   rows(base().select('title, slug, deadline').eq('status', 'draft')
     .not('deadline', 'is', null).gte('deadline', today).lte('deadline', inDays(7))
     .order('deadline', { ascending: true }).limit(5)),
-  // Лінк не відповідає, але подача ще попереду: найімовірніше, сайт блокує
-  // саме IP GitHub Actions (verify-links лишає такий запис активним).
-  rows(base().select('title, source_url').eq('status', 'active').is('canonical_slug', null)
-    .eq('link_status', 'dead').limit(5)),
+  // Лінк не живий, а запис на сайті. Два різні випадки, і вони читаються з
+  // одного поля:
+  //   dead    — сторінка не відповіла, але подача попереду, тож verify-links
+  //             лишив запис активним;
+  //   unknown — ми не достукались із наших серверів (з 02.10.2026). Це НЕ
+  //             «сторінки немає»: державні сайти рвуть зʼєднання саме для IP
+  //             GitHub Actions, і з браузера ті самі сторінки відкриваються.
+  // Беремо обидва й розділяємо в тексті: сказати «не відкривається» про живу
+  // сторінку означає надіслати людину видаляти добрий запис.
+  rows(base().select('title, source_url, link_status').eq('status', 'active')
+    .is('canonical_slug', null).in('link_status', ['dead', 'unknown']).limit(10)),
   // Протермінованою вважаємо перевірку, що чекає ДОВШЕ за добу. 21.09.2026
   // зведення кричало «прогін впав» через 12 літніх програм, яким інша сесія
   // поставила перевірку на 20.09 — уже після того, як прогін того дня
@@ -179,6 +187,30 @@ const [
 
 ]);
 
+// Чи нагадувач тим, хто завис, узагалі ходить.
+//
+// Маршрут /api/cron/nudge-stuck розкладений у vercel.json на кожні пʼять
+// хвилин, але тариф Hobby такої частоти не дає — і тоді турбота про тих, хто
+// зупинився перед оплатою, просто не відбувається. Мовчки: нічого не падає,
+// нічого не червоніє. Єдиний спосіб побачити — рядки, що стоять годинами без
+// жодного слова від нас.
+//
+// Окремий запит, а не ще один рядок у Promise.all вище: там позиційна
+// деструктуризація, і вставка в середину зсуває все наступне (так 01.10.2026
+// упала /admin/metrics).
+let nudgerSilent = 0;
+try {
+  const { data } = await supabase.from('digest_subscribers')
+    .select('status, updated_at, created_at, stuck_notice_at')
+    .not('status', 'in', '("active","unsubscribed")')
+    .is('stuck_notice_at', null)
+    .gte('created_at', inDays(-7))
+    .limit(200);
+  nudgerSilent = (data || []).filter((r) => provesNudgerSilent(r)).length;
+} catch {
+  // Таблиці може не бути в тестовому середовищі — зведення через це не падає.
+}
+
 const blocks = [];
 
 // Ворота правди (22.09.2026): скільки пройшло само, скільки притримано.
@@ -224,9 +256,11 @@ if (draftsHot.length) {
 
 if (deadLinkLive.length) {
   blocks.push([
-    `🔗 <b>Лінк не відповідає, але подача попереду</b> (${deadLinkLive.length})`,
-    ...deadLinkLive.map((d) => `• ${esc(cut(d.title))}\n  ${esc(d.source_url || '')}`),
-    'Перевір адресу руками: сайти часто блокують саме IP GitHub.',
+    `🔗 <b>Лінк не живий, а запис на сайті</b> (${deadLinkLive.length})`,
+    ...deadLinkLive.map((d) => `• ${d.link_status === 'unknown' ? 'не змогли перевірити' : 'не відповідає'}`
+      + ` — ${esc(cut(d.title))}\n  ${esc(d.source_url || '')}`),
+    'Перевір адресу руками: сайти часто блокують саме IP GitHub, і тоді «не змогли перевірити» '
+    + 'означає лише це — сторінка може бути цілком жива.',
   ].join('\n'));
 }
 
@@ -255,6 +289,16 @@ if (notesOpen) {
 
 if (needsHuman) {
   blocks.push(`✉️ <b>Пропозиції від людей без відповіді:</b> ${needsHuman}.`);
+}
+
+if (nudgerSilent) {
+  blocks.push([
+    `🔕 <b>Зависли перед оплатою й не отримали ні слова: ${nudgerSilent}</b>`,
+    `Нагадувач має писати через пʼять хвилин, а ці люди стоять понад ${NUDGE_SILENT_HOURS} год. `
+    + 'Отже, /api/cron/nudge-stuck не ходить: на тарифі Hobby Vercel не дає cron частіше за раз на добу. '
+    + 'Перевірити розклад у Vercel → Settings → Cron Jobs.',
+    'Поки він не ходить, кожен, хто зупинився на оплаті, зникає молча — саме так пішли @ttanyaost і @Olka666.',
+  ].join('\n'));
 }
 
 if (dormantCount) {

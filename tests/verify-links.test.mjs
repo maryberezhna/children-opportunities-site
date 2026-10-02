@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { siteWideFailure, stillAhead, verdictForStatus } from '../lib/links.js';
+import { decisionReason } from '../lib/decision-reason.js';
 
 // 20.09.2026: NASA Space Apps Challenge (хакатон 14–15 листопада) закрився
 // як «мертвий лінк». Сайт живий — з мака 200; 403 віддається саме на IP
@@ -104,4 +106,36 @@ test('до кореня не достукались — правило не сп
   // null = зʼєднання не відкрилось. Тоді вирішує звичайний лічильник невдач,
   // щоб відсутність відповіді від головної не ставала вічним щитом.
   assert.equal(siteWideFailure({ pageStatus: 400, rootStatus: null }), false);
+});
+
+// --- «не перевірено» мусить називатися собою в базі (02.10.2026) ---
+//
+// Після того, як «не достукались» перестало рахуватись мертвим, запис, уже
+// позначений dead, лишався мертвим НАЗАВЖДИ: новий шлях його не чіпав. Саме так
+// NASA Space Apps і Фастівська громада щоранку йшли у зведення як «лінк не
+// відповідає», хоч із браузера обидві сторінки відкриваються.
+test('невідомий результат ставить свій ярлик, а не чужий', () => {
+  const src = readFileSync(new URL('../scripts/verify-links.mjs', import.meta.url), 'utf8');
+  // Обидва шляхи «ми нічого не дізнались»: мережа/5xx і «ліг весь сайт».
+  const unknownPatches = src.match(/link_status: 'unknown'/g) || [];
+  assert.equal(unknownPatches.length, 2,
+    'очікую ярлик unknown на обох шляхах «не дізнались»');
+  // І лічильник невдач при цьому не рухається.
+  assert.doesNotMatch(src, /link_status: 'unknown', link_failures/,
+    'невдачу не рахуємо: ми нічого не дізнались');
+});
+
+test('у черзі «не змогли перевірити» не плутають із «не відкривається»', () => {
+  assert.equal(decisionReason({ link_status: 'unknown', source_url: 'https://x.ua/a' }).key,
+    'link_unknown');
+  assert.equal(decisionReason({ link_status: 'dead', source_url: 'https://x.ua/a' }).key, 'link');
+  // Тон інший: це не «стоп», а «подивись».
+  assert.equal(decisionReason({ link_status: 'unknown', source_url: 'https://x.ua/a' }).tone,
+    'check');
+});
+
+test('зведення читає обидва ярлики', () => {
+  const src = readFileSync(new URL('../scripts/morning-brief.mjs', import.meta.url), 'utf8');
+  assert.match(src, /\['dead', 'unknown'\]/, 'зведення бачить лише один випадок');
+  assert.match(src, /не змогли перевірити/, 'у тексті немає різниці між випадками');
 });
