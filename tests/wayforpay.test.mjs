@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
+const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, accessLine, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
@@ -279,4 +279,31 @@ test('«не завершено» не називаємо «не пройшла�
   const a = failureAdviceForPerson({ status: 'Expired' });
   assert.equal(a.title, 'Оплату не завершено');
   assert.doesNotMatch(a.text, /не пройшла/);
+});
+
+// --- зірване продовження: людина мала доступ і втратила його ---
+//
+// 02.10.2026, одразу після того, як почали писати людині: для того, хто вже
+// платив, «спробуйте ще раз» — не вся правда. Його підписка в цю мить стала
+// paused, і найважливіше для нього не причина, а що добірки спинились.
+test('продовження зірвалось — кажемо, що підписка на паузі', () => {
+  const line = accessLine(true);
+  assert.match(line, /на паузі/);
+  assert.match(line, /не надсилаємо/);
+});
+
+test('перша оплата — про втрату доступу не пишемо', () => {
+  // Доступу й не було, тож «підписка на паузі» лише злякало б без причини.
+  assert.equal(accessLine(false), null);
+});
+
+test('рядок про доступ не припускає одну дитину', () => {
+  // У профілі Dityam+ дітей може бути кілька.
+  assert.doesNotMatch(accessLine(true), /вашої дитини|вашій дитині/);
+});
+
+test('колбек розрізняє першу оплату й продовження', () => {
+  const src = readFileSync(new URL('../app/api/pay/wayforpay/route.js', import.meta.url), 'utf8');
+  assert.match(src, /accessLine\(existing\?\.status === 'active'\)/,
+    'рядок про доступ не привʼязаний до того, чи підписка була активна');
 });
