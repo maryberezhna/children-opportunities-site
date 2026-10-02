@@ -114,7 +114,7 @@ export default async function TodayPage() {
       .select('id, title, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international, admin_comment, child_needs')
       .eq('status', 'draft').limit(500),
     count('contact_messages', (q) => q.eq('status', 'new')),
-    count('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human'])),
+    count('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
     supabase.from('digest_subscribers').select('status, created_at, updated_at').limit(1000),
     count('opportunities', (q) => q.eq('status', 'active')),
     count('opportunities', (q) => q.gte('created_at', since7)),
