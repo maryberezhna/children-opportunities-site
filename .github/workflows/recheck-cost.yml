@@ -14,7 +14,7 @@ on:
         required: false
         default: 'false'
       scope:
-        description: 'in_between = лише проміжні й порожні; all = уся активна база'
+        description: 'in_between = проміжні й порожні; no_quote = ті, де немає цитати на вартість; all = уся активна база'
         required: false
         default: 'in_between'
       search:

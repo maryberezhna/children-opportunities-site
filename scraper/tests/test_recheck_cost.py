@@ -7,11 +7,12 @@ decide_cost() не міняє нічого без дослівної цитат�
 import pathlib
 import sys
 import unittest
+from unittest import mock
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from recheck_cost import (  # noqa: E402
     decide_cost, decide_from_search, extract_json_object, page_mentions_title,
-    UsageLimitReached, _stop_if_limit, strip_api_failure_notes,
+    select_rows, UsageLimitReached, _stop_if_limit, strip_api_failure_notes,
 )
 
 PAGE_FREE = "Гурток працює щосереди. Навчання безкоштовне за кошти міського бюджету."
@@ -228,3 +229,44 @@ class EvidenceIsKept(unittest.TestCase):
         patch, _ = decide_cost(row(cost_type="free"),
                                out(verdict="free", evidence="платно, 500 грн"), self.PAGE)
         self.assertEqual(patch, {})
+
+class ScopeNoQuote(unittest.TestCase):
+    """02.10.2026: прохід саме по тих, кому бракує цитати на вартість.
+
+    scope=all питав модель і про записи, у яких цитата вже є — 136 зі 612.
+    Це не помилка в даних, а палені токени: кожен такий запис — зайвий виклик.
+    """
+
+    class FakeQuery:
+        def __init__(self, rows): self.rows = rows
+        def select(self, *a, **k): return self
+        def eq(self, *a): return self
+        def or_(self, *a): return self
+        def order(self, *a, **k): return self
+        def limit(self, n): self.n = n; return self
+        def execute(self): return mock.Mock(data=self.rows[:getattr(self, "n", None)])
+
+    class FakeSb:
+        def __init__(self, rows): self.rows = rows
+        def table(self, _): return ScopeNoQuote.FakeQuery(self.rows)
+
+    def _rows(self):
+        with_quote = {"id": "ok", "title": "є цитата", "opportunity_type": "camp",
+                      "cost_type": "free", "evidence": {"cost": "безкоштовно"}}
+        without = {"id": "no", "title": "немає цитати", "opportunity_type": "camp",
+                   "cost_type": "free", "evidence": {"age": "7–12"}}
+        empty = {"id": "blank", "title": "жодної", "opportunity_type": "camp",
+                 "cost_type": "paid_affordable", "evidence": None}
+        return [with_quote, without, empty]
+
+    def test_only_rows_without_cost_quote(self):
+        got = select_rows(self.FakeSb(self._rows()), "no_quote", 10)
+        self.assertEqual([r["id"] for r in got], ["no", "blank"])
+
+    def test_limit_is_respected_after_filtering(self):
+        got = select_rows(self.FakeSb(self._rows()), "no_quote", 1)
+        self.assertEqual([r["id"] for r in got], ["no"])
+
+    def test_other_scopes_untouched(self):
+        got = select_rows(self.FakeSb(self._rows()), "all", 10)
+        self.assertEqual(len(got), 3)
