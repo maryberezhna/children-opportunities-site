@@ -218,6 +218,46 @@ def guard_same_school(client: Client, record: dict) -> None:
                                + _school_note(twin.get("slug"), twin.get("source"))).strip(" ·")
 
 
+# ── Колонки, які база справді має (02.10.2026) ───────────────────────────────
+#
+# upsert писав запис як є. Один ключ, якого в таблиці немає, і PostgREST
+# відкидає ВЕСЬ рядок: 02.10.2026 так загинула можливість через поле
+# «title_original», якого немає ні в базі, ні в нашому коді, — його придумала
+# модель під час екстракції. Слід лишився один: рядок у лозі нічного прогону.
+#
+# Перелік беремо з самої бази, а не списком у коді: список розʼїхався б із
+# першою ж міграцією, а база — єдине джерело правди про власні колонки.
+# Читаємо один раз на прогін.
+_KNOWN_COLUMNS: set | None = None
+
+
+def known_columns(client: Client) -> set:
+    """Назви колонок opportunities. Порожня множина = не дізнались."""
+    global _KNOWN_COLUMNS
+    if _KNOWN_COLUMNS is None:
+        try:
+            row = client.table("opportunities").select("*").limit(1).execute().data
+            _KNOWN_COLUMNS = set(row[0].keys()) if row else set()
+        except Exception as e:  # база недоступна — не гіршаємо, пишемо як є
+            logger.warning("не вдалося прочитати перелік колонок: %s", e)
+            _KNOWN_COLUMNS = set()
+    return _KNOWN_COLUMNS
+
+
+def drop_unknown(record: dict, columns: set) -> tuple[dict, list]:
+    """Запис без полів, яких таблиця не має. Чиста функція — під тести.
+
+    Порожній columns означає «не знаємо» — тоді не чіпаємо нічого: краще
+    спробувати записати як є, ніж викинути поле через недоступну базу.
+    """
+    if not columns:
+        return record, []
+    extra = sorted(k for k in record if k not in columns)
+    if not extra:
+        return record, []
+    return {k: v for k, v in record.items() if k in columns}, extra
+
+
 def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
     from datetime import datetime, timezone
     # Always stamp updated_at so get_processed_today() can find today's activity.
@@ -296,6 +336,14 @@ def upsert_opportunity(client: Client, data: dict) -> Optional[dict]:
         # Четвертий ключ — лише для шкіл діаспори: та сама школа з каталогу
         # МІОК і з власного сайту (див. same_school вище).
         guard_same_school(client, record)
+        # Поля, яких таблиця не має, прибираємо — інакше PostgREST відкине весь
+        # рядок. Кажемо про це голосно: якщо поле справжнє й нове, бракує
+        # міграції, і про це має дізнатись людина, а не лог.
+        record, extra = drop_unknown(record, known_columns(client))
+        if extra:
+            logger.error("У записі «%s» поля, яких немає в таблиці: %s — прибрано, "
+                         "решту записано. Якщо поле справжнє, бракує міграції.",
+                         (record.get("title") or "")[:60], ", ".join(extra))
         result = client.table("opportunities").upsert(
             record,
             on_conflict="content_hash"
