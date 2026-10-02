@@ -284,3 +284,26 @@
   .o-related-head { margin-bottom: 12px; }
   .opportunity-related-list { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ── Більше повітря на телефоні (02.10.2026) ─────────────────────────────
+   Марія: «hard to read, no space». Бокове поле було 16px, хоча крихти й
+   панель під пальцем уже стояли на 20px — текст виходив ближче до краю, ніж
+   усе довкола. Між чипами, назвою, дедлайном і описом було 4–8px: блоки
+   злипались у суцільну колонку. */
+@media (max-width: 900px) {
+  .container.o-detail { padding-left: 20px; padding-right: 20px; }
+
+  .opportunity-chips { gap: 8px; margin-bottom: 16px; }
+  .opportunity-title { line-height: 1.15; }
+  .o-m-deadline { margin: 18px 0; padding: 16px 18px; }
+  .opportunity-summary { line-height: 1.6; }
+
+  .o-facts { margin-top: 22px; }
+  .o-fact { padding: 16px; }
+
+  .o-who { margin-top: 28px; }
+  .o-who-list { gap: 10px; }
+
+  .o-verified { margin-top: 24px; padding: 16px 18px; }
+  .opportunity-page { gap: 20px; margin-bottom: 36px; }
+}
