@@ -3,7 +3,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminName } from '@/lib/adminAuth';
 import { isoWeek } from '@/lib/week';
-import { missingRequired } from '@/lib/required';
+import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { countryPatch } from '@/lib/country-field';
 import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
@@ -87,7 +87,9 @@ export async function POST(request) {
   // людина, тож конвеєр повторював ті самі помилки — після update старе
   // значення зникає назавжди, і прочитати його можна лише тут.
   const { data: cur } = await supabase.from('opportunities')
-    .select(`slug, source_url, admin_comment, countries, is_international, ${TRACKED_FIELDS.join(', ')}`)
+    // timing_kind і evidence читаємо не для правок, а для воріт публікації:
+    // без них перевірка цитат і періодичності була б сліпа.
+    .select(`slug, admin_comment, ${[...new Set([...TRACKED_FIELDS, ...GATE_SELECT.split(', ')])].join(', ')}`)
     .eq('id', b.id).maybeSingle();
 
   // Джерело — сторінка організатора (Марія, 28.09.2026: «поміняй джерело на
@@ -107,10 +109,12 @@ export async function POST(request) {
   // лягає щойно введене: форма не надсилає країн і позначки міжнародної, і
   // доти запис, де «де» — лише країна, браузер пускав, а сервер відбивав 422.
   if (b.publish) {
-    const missing = missingRequired({ ...(cur || {}), ...patch });
-    if (missing.length) {
-      return Response.json({ ok: false, error: 'missing_required', missing }, { status: 422 });
-    }
+    // Ворота ті самі, що в /admin, боті й воркфлоу: поля, джерело, цитати.
+    // Доти тут перевірялись лише поля, а джерело — лише якщо його щойно
+    // змінили. Запис, що вже лежав із чужим Telegram-каналом чи без цитат,
+    // проходив на сайт, бо форма його джерела не торкалась (02.10.2026).
+    const blocker = publishBlockers({ ...(cur || {}), ...patch });
+    if (blocker) return Response.json({ ok: false, ...blocker }, { status: 422 });
     patch.status = 'active';
     patch.verified_at = new Date().toISOString();
   }

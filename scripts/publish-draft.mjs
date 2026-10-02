@@ -8,8 +8,7 @@
 // (lib/required.js) — інакше скрипт падає й нічого не пише.
 
 import { createClient } from '@supabase/supabase-js';
-import { missingRequired, missingProof } from '../lib/required.js';
-import { sourceProblem } from '../lib/source-rules.js';
+import { GATE_SELECT, publishBlockers } from '../lib/publish-gate.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -33,7 +32,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
 
 const { data: row, error } = await supabase
   .from('opportunities')
-  .select('id, title, status, slug, source_url, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, timing_kind, cost_type, price_note, opportunity_type, format, cities, countries, is_international, evidence, admin_comment')
+  .select(`id, status, slug, price_note, admin_comment, ${GATE_SELECT}`)
   .eq('id', ID)
   .maybeSingle();
 
@@ -51,28 +50,17 @@ const patch = {};
 if (COST_TYPE) patch.cost_type = COST_TYPE;
 if (PRICE_NOTE) patch.price_note = PRICE_NOTE;
 
-const missing = missingRequired({ ...row, ...patch });
-if (missing.length) {
-  console.error(`«${row.title}» не можна публікувати — бракує: ${missing.join(', ')}`);
-  process.exit(1);
-}
-
-// Цитати — обовʼязкові так само, як самі поля («світлофор», 22.09.2026).
-// Перевірка missingProof існувала з того ж дня, але публікація її не кликала,
-// і повз неї пройшли і старі записи, і ті, що я публікувала 01.10.2026. Поле,
-// заповнене без цитати, — це твердження, якого ніхто не підтверджував; на
-// сайті воно виглядає так само впевнено, як перевірене.
-const badSource = sourceProblem(row);
-if (badSource) {
-  console.error(`«${row.title}» не можна публікувати — ${badSource}.`);
-  process.exit(1);
-}
-
-const noProof = missingProof({ ...row, ...patch });
-if (noProof.length) {
-  console.error(`«${row.title}» не можна публікувати — немає цитат зі сторінки: ${noProof.join(', ')}`);
-  console.error('Додайте їх у evidence через «Картка — точкова правка»:');
-  console.error('  {"evidence": {"date": "…", "cost": "…", "age": "…", "type": "…", "place": "…"}}');
+// Поля, джерело й цитати — одними воротами (lib/publish-gate.js), тими самими,
+// що в /admin, редакторі й боті. Цитати обовʼязкові так само, як самі поля
+// («світлофор», 22.09.2026): поле, заповнене без цитати, — це твердження, яке
+// ніхто не підтверджував, а на сайті воно виглядає як перевірене.
+const blocker = publishBlockers({ ...row, ...patch });
+if (blocker) {
+  console.error(`«${row.title}» не можна публікувати — ${blocker.text}`);
+  if (blocker.error === 'missing_proof') {
+    console.error('Додайте цитати в evidence через «Картка — точкова правка»:');
+    console.error('  {"evidence": {"date": "…", "cost": "…", "age": "…", "type": "…", "place": "…"}}');
+  }
   process.exit(1);
 }
 

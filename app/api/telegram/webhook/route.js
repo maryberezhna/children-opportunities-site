@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { pushModeration } from '@/lib/notion';
-import { missingRequired } from '@/lib/required';
+import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { removeRecurring } from '@/lib/wayforpay';
 import { makeBot } from '@/lib/digestFlow';
 import { PLUS_SALES_OPEN, plusBotUrl, PLUS_QUESTION_MATCH, PLUS_QUESTION_MATCH_OLD } from '@/lib/plus';
@@ -75,12 +75,11 @@ function candidateText(o, remaining) {
   else if (o.event_end_date) lines.push(`⏰ Завершення: ${o.event_end_date}`);
   else if (o.recurrence === 'annual') lines.push('🔁 Щорічна');
   else if (o.recurrence === 'ongoing') lines.push('♾ Постійно відкрита');
-  // Обовʼязковий мінімум перед сайтом: дата, тип, вік, вартість і
-  // місце-або-формат (вимога Марії 11.09.2026). Показуємо перелік ДО тапу,
-  // щоб кнопка «Додати» не відмовляла несподівано.
-  const missing = missingRequired(o);
-  if (missing.length) {
-    lines.push(`⛔ Не піде на сайт — бракує: ${missing.join(', ')}`,
+  // Чому запис не піде на сайт — тими самими воротами, якими його не пустить
+  // кнопка. Показуємо ДО тапу, щоб «Додати» не відмовляла несподівано.
+  const blocker = publishBlockers(o);
+  if (blocker) {
+    lines.push(`⛔ Не піде на сайт — ${blocker.text}`,
                '✏️ Редагувати — дозаповнити й опублікувати');
   }
   if (o.dup_of) lines.push(`⚠ можливий дублікат (~${Math.round((o.dup_score || 0) * 100)}%)`);
@@ -114,7 +113,7 @@ async function sendNextCandidate(chatId) {
   const { count } = await supabase.from('opportunities')
     .select('id', { count: 'exact', head: true }).eq('status', 'draft');
   const { data } = await supabase.from('opportunities')
-    .select('id, title, summary, source, source_url, opportunity_type, age_from, age_to, cost_type, deadline, event_start_date, event_end_date, results_date, recurrence, format, cities, countries, is_international, dup_of, dup_score')
+    .select(`id, summary, source, dup_of, dup_score, ${GATE_SELECT}`)
     // updated_at ASC so postponed candidates (touched now) drop to the back.
     .eq('status', 'draft').order('updated_at', { ascending: true }).limit(1);
   if (!data || !data.length) {
@@ -356,17 +355,19 @@ async function handleModeration(action, id, cbq) {
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
   const now = new Date().toISOString();
 
-  // Кнопка могла приїхати зі старої картки, а запис відтоді змінитись —
-  // тож перевіряємо обовʼязковий мінімум на сервері, перед самим записом.
+  // Кнопка могла приїхати зі старої картки, а запис відтоді змінитись — тож
+  // перевіряємо на сервері, перед самим записом. Ворота ті самі, що в /admin,
+  // редакторі й воркфлоу: доти бот дивився лише на поля й пускав на сайт запис
+  // без жодної цитати та з чужим Telegram-каналом як джерелом (02.10.2026).
   if (action === 'add') {
     const { data: row } = await supabase
       .from('opportunities')
-      .select('age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, cost_type, opportunity_type, format, cities, countries, is_international')
+      .select(GATE_SELECT)
       .eq('id', id)
       .maybeSingle();
-    const missing = row ? missingRequired(row) : [];
-    if (missing.length) {
-      await answerCallback(cbq.id, `Не можна публікувати — бракує: ${missing.join(', ')}. Тапни ✏️ Редагувати`);
+    const blocker = publishBlockers(row);
+    if (blocker) {
+      await answerCallback(cbq.id, `Не можна публікувати — ${blocker.text}. Тапни ✏️ Редагувати`);
       return new Response('ok');
     }
   }

@@ -75,9 +75,14 @@ function Card({ o, mode, reason, today, onAction, match, notes = [] }) {
     const res = await onAction(o.id, action, comment);
     setBusy(false);
     if (!res.ok) {
+      // Справжня причина, а не «не вдалося»: сервер відмовляє, коли бракує
+      // поля, цитати чи джерело — чужий Telegram-канал (lib/publish-gate.js).
+      // Доти модератор бачив «Спробуй ще раз» і тиснув кнопку далі.
       alert(res.error === 'note_not_saved'
         ? 'Рішення збережено, а коментар — ні. Натисни ще раз.'
-        : 'Не вдалося. Спробуй ще раз або перезайди.');
+        : res.text
+          ? `Не можна публікувати — ${res.text}. Тисни ✏️ Редагувати.`
+          : 'Не вдалося. Спробуй ще раз або перезайди.');
       return;
     }
     if (action === 'comment') {
@@ -276,7 +281,7 @@ export default function AdminList({
         body: JSON.stringify({ id, action, comment }),
       });
       const json = await res.json().catch(() => ({}));
-      return { ok: res.ok && json.ok !== false, error: json.error, note: json.note };
+      return { ok: res.ok && json.ok !== false, error: json.error, text: json.text, note: json.note };
     } catch { return { ok: false }; }
   }
 
