@@ -10,8 +10,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const { STALL_MINUTES, stallStage, shouldNudge, nudgeText } =
-  await import('../lib/nudge.js');
+const { STALL_MINUTES, stallStage, shouldNudge, nudgeText,
+        NUDGE_SILENT_HOURS, provesNudgerSilent } = await import('../lib/nudge.js');
+const { readFileSync } = await import('node:fs');
 
 const NOW = new Date('2026-09-28T12:00:00Z');
 const agoMin = (m) => new Date(NOW.getTime() - m * 60000).toISOString();
@@ -65,4 +66,50 @@ test('на кроці з телефоном кажемо, що його можн
   // Саме тут стали двоє: крок був глухим кутом, і текст має знімати причину,
   // а не просто нагадувати про існування бота.
   assert.match(nudgeText('phone'), /пропустити/);
+});
+
+// --- cron, що мовчки не ходить (02.10.2026) ---
+//
+// /api/cron/nudge-stuck розкладений у vercel.json на кожні пʼять хвилин, але
+// тариф Hobby такої частоти не дає. Тоді вся турбота про тих, хто зупинився
+// перед оплатою, не відбувається — мовчки, бо нічого не падає. Той самий спосіб
+// ламатись, що й у перевірок з цитатами: правило є, ніхто його не кличе.
+const LATER = new Date('2026-10-02T12:00:00Z');
+
+test('стоїть годинами без жодного слова — нагадувач не ходить', () => {
+  assert.equal(provesNudgerSilent(
+    { status: 'paused', updated_at: '2026-10-02T09:00:00Z' }, LATER), true);
+});
+
+test('стоїть десять хвилин — це ще не доказ', () => {
+  // Межа з запасом у десятки разів від STALL_MINUTES, щоб не кричати на збіг.
+  assert.equal(provesNudgerSilent(
+    { status: 'paused', updated_at: '2026-10-02T11:50:00Z' }, LATER), false);
+  assert.ok(NUDGE_SILENT_HOURS * 60 > STALL_MINUTES * 10);
+});
+
+test('уже писали — тиші немає', () => {
+  assert.equal(provesNudgerSilent({
+    status: 'paused', updated_at: '2026-10-02T06:00:00Z',
+    stuck_notice_at: '2026-10-02T06:10:00Z',
+  }, LATER), false);
+});
+
+test('заплатив або відписався — тиша законна', () => {
+  for (const status of ['active', 'unsubscribed']) {
+    assert.equal(provesNudgerSilent(
+      { status, updated_at: '2026-10-01T06:00:00Z' }, LATER), false, status);
+  }
+});
+
+test('без дат не вигадуємо тишу', () => {
+  assert.equal(provesNudgerSilent({ status: 'paused' }, LATER), false);
+  assert.equal(provesNudgerSilent(null, LATER), false);
+});
+
+test('зведення справді дивиться на це', () => {
+  // Правило без виклику — те саме, що його немає.
+  const src = readFileSync(new URL('../scripts/morning-brief.mjs', import.meta.url), 'utf8');
+  assert.match(src, /provesNudgerSilent\(/, 'зведення не кличе перевірку');
+  assert.match(src, /stuck_notice_at/, 'зведення не читає позначку — перевірка була б сліпа');
 });
