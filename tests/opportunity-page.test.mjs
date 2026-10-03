@@ -10,10 +10,11 @@ const today = '2026-09-29';
 
 test('статус прийому заявок: дедлайн, подія, щорічно, постійно, закрито', () => {
   assert.deepEqual(intakeStatus({ deadline: '2026-10-03' }, today), {
-    kind: 'deadline', label: 'Заявки до', value: '3 жовтня 2026', note: '4 дні', urgent: true,
+    kind: 'deadline', label: 'Заявки до', value: '3 жовтня 2026', urgent: true,
   });
   assert.equal(intakeStatus({ deadline: '2026-11-20' }, today).urgent, false);
   assert.equal(intakeStatus({ deadline: '2026-09-29' }, today).note, 'сьогодні');
+  assert.equal(intakeStatus({ deadline: '2026-09-30' }, today).note, 'завтра');
   assert.deepEqual(intakeStatus({ event_start_date: '2026-11-06', event_end_date: '2026-11-08' }, today), {
     kind: 'event', label: 'Коли', value: '6 — 8 листопада 2026',
   });
@@ -23,6 +24,18 @@ test('статус прийому заявок: дедлайн, подія, що
   // Дат немає, вид невідомий — статусу немає: вигадувати «відкрито» не можна.
   assert.equal(intakeStatus({ opportunity_type: 'course' }, today), null);
   assert.equal(intakeStatus({ deadline: '2026-10-03' }, today, 'en').label, 'Apply by');
+});
+
+// «163 дні» під датою читали як тривалість програми, а не час до дедлайну
+// (Марія, 03.10.2026). Відліку днів на сторінці можливості немає.
+test('під датою дедлайну немає лічильника днів', () => {
+  for (const deadline of ['2026-10-03', '2026-11-20', '2027-03-15']) {
+    const s = intakeStatus({ deadline }, today);
+    assert.equal(s.note, undefined, `${deadline}: «${s.note}»`);
+    const fact = pageFacts({ deadline }, today).find((f) => f.key === 'intake');
+    assert.equal(fact.note, null);
+  }
+  assert.equal(intakeStatus({ deadline: '2026-10-03' }, today, 'en').note, undefined);
 });
 
 test('факти: лише те, що є в записі, у сталому порядку', () => {
@@ -133,7 +146,7 @@ test('довга примітка буває лише не в дедлайна',
     assert.notEqual(periodic.kind, 'deadline');
     assert.ok(periodic.note.length > 12, 'примітка щорічного набору коротка — перевірте тест');
   }
-  const soon = intakeStatus({ status: 'active', deadline: '2026-10-02' }, '2026-09-30');
+  const soon = intakeStatus({ status: 'active', deadline: '2026-10-01' }, '2026-09-30');
   assert.equal(soon.kind, 'deadline');
   assert.ok(soon.note.length <= 12, `відлік задовгий для великого шрифту: «${soon.note}»`);
 });
