@@ -153,9 +153,21 @@ def _clean_tags(tags) -> list[str]:
     return out
 
 
-def _clip(s, limit=80) -> str | None:
+# Модель просимо до 60 знаків, але вона часом пише довше. До 03.10.2026 тут
+# стояло s[:80] — різало посеред слова, і на сторінці виходило «пройти
+# обласний та всеукраїн» (45 записів). Тепер відповідь або ціла, або її
+# немає: обрізана фраза може сказати не те, а порожнє поле просто не видно.
+CLIP_LIMIT = 160
+
+
+def _clip(s, limit=CLIP_LIMIT) -> str | None:
     s = (s or "").strip().rstrip(".")
-    return s[:limit] if s else None
+    if not s:
+        return None
+    if len(s) > limit:
+        logger.warning("Задовга відповідь (%d знаків), не пишемо: %s…", len(s), s[:60])
+        return None
+    return s
 
 
 def main() -> int:
