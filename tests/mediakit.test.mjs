@@ -5,21 +5,31 @@ import {
   audienceTotals, ukraineShare, classifyPath, pathBreakdown, eventCounts, ageBandShares,
 } from '../lib/mediakit.js';
 
-// Реальні числа GA4 за 28 днів до 30.09.2026 (перевірено через конектор).
+// Реальні числа GA4 за 28 днів до 03.10.2026 (перевірено через конектор).
+// Звіт без вимірів — унікальні люди; розбивка — лише для повернень.
 const totals = [
-  { dateRange: 'date_range_0', newVsReturning: 'new', activeUsers: 1962, sessions: 1966, screenPageViews: 6203, userEngagementDuration: 143020 },
-  { dateRange: 'date_range_0', newVsReturning: 'returning', activeUsers: 310, sessions: 645, screenPageViews: 2585, userEngagementDuration: 54706 },
-  { dateRange: 'date_range_0', newVsReturning: '(not set)', activeUsers: 0, sessions: 137, screenPageViews: 123, userEngagementDuration: 0 },
+  { dateRange: 'date_range_0', activeUsers: 2275, sessions: 2992, screenPageViews: 9589, userEngagementDuration: 219918 },
+  { dateRange: 'date_range_1', activeUsers: 3543, sessions: 4809, screenPageViews: 13977, userEngagementDuration: 302998 },
+];
+const byReturning = [
+  { dateRange: 'date_range_0', newVsReturning: 'new', activeUsers: 2234 },
+  { dateRange: 'date_range_0', newVsReturning: 'returning', activeUsers: 350 },
+  { dateRange: 'date_range_0', newVsReturning: '(not set)', activeUsers: 0 },
+  { dateRange: 'date_range_1', newVsReturning: 'new', activeUsers: 3532 },
+  { dateRange: 'date_range_1', newVsReturning: 'returning', activeUsers: 485 },
 ];
 
-test('відвідувачі, перегляди, повернення, час — без рядка (not set)', () => {
-  const t = audienceTotals(totals, 'date_range_0');
-  assert.equal(t.users, 2272);
-  assert.equal(t.views, 8788);
-  assert.equal(t.returningShare, 14);
-  assert.equal(t.pagesPerSession, 3.4);
-  // Час взаємодії / сеанси: 197 726 / 2 611 ≈ 76 с (1:16), як у GA4.
-  assert.equal(t.avgSessionSec, 76);
+test('відвідувачі — унікальні, а не нові + ті, що повернулись', () => {
+  const t = audienceTotals(totals, byReturning, 'date_range_0');
+  // Не 2 234 + 350 = 2 584: одна людина буває в обох рядках розбивки.
+  assert.equal(t.users, 2275);
+  assert.equal(t.sessions, 2992);
+  assert.equal(t.views, 9589);
+  assert.equal(t.returningShare, 15);
+  assert.equal(t.pagesPerSession, 3.2);
+  // Час взаємодії / сеанси: 219 918 / 2 992 ≈ 74 с (1:14), як у GA4.
+  assert.equal(t.avgSessionSec, 74);
+  assert.equal(audienceTotals(totals, byReturning, 'date_range_1').users, 3543);
 });
 
 test('частка України', () => {
