@@ -603,8 +603,21 @@
 
   .opportunity-chips { margin-bottom: 14px; }
   .opportunity-title { margin-bottom: 10px; }
-  .opportunity-summary { margin-bottom: 0; }
+  .opportunity-summary { margin-bottom: 0; font-size: 1.1875rem; }
   .opportunity-details { margin-top: 26px; }
+
+  /* Сторінка можливості — текстова, її читають, а не гортають. Для такої
+     сторінки на десктопі радять 18px (learnui.design, 03.10.2026); колонка
+     ~690px дає при цьому ~75 знаків у рядку — верхня межа зручного. */
+  .opportunity-details,
+  .o-who-list { font-size: 1.125rem; }
+  .details-h { font-size: 1.3125rem; }
+  .o-fact dt { font-size: 0.8125rem; }
+  .o-fact dd { font-size: 1.0625rem; }
+  .o-verified,
+  .o-report,
+  .o-action-sub { font-size: 0.9375rem; }
+  .o-eyebrow { font-size: 0.8125rem; }
 
   /* Картка дії їде за людиною, поки вона читає опис. Відступ — від
      висоти прибитої шапки (--v2-header-h у home-v2.css). */

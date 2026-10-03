@@ -28,7 +28,7 @@
     flex-wrap: wrap;
     align-items: center;
     gap: 4px 8px;
-    font-size: 13px;
+    font-size: 14px;
     color: var(--v2-ink-2);
   }
 
@@ -255,8 +255,8 @@
   .o-fact:last-child:nth-child(odd) { grid-column: span 2; }
   .o-fact:nth-child(2n + 1) { border-left: 0; }
   .o-fact:nth-child(-n + 2) { border-top: 0; }
-  .o-fact dt { font-size: 11px; }
-  .o-fact dd { font-size: 15px; }
+  .o-fact dt { font-size: 12px; }
+  .o-fact dd { font-size: 16px; }
 
   .o-who { margin-top: 20px; }
   .o-h2 { font-size: 20px; }
@@ -275,7 +275,7 @@
     text-decoration: none;
   }
 
-  .o-verified { margin-top: 20px; font-size: 13px; }
+  .o-verified { margin-top: 20px; font-size: 14px; }
   .o-report { margin-left: 0; }
 
   .o-m-deadline.is-urgent { background: #fee2e2; }

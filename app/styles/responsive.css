@@ -63,10 +63,7 @@
   .grid { grid-template-columns: 1fr; }
   .card { padding: 18px; }
   .card h3 { font-size: 1.125rem; }
-  .card-summary { font-size: 0.9375rem; }
-  .meta { font-size: 0.875rem; }
-  .meta-label { font-size: 0.8125rem; }
-  .meta-val { font-size: 0.875rem; }
+  .card-summary { font-size: 1rem; }
   .link-btn { font-size: 0.9375rem; padding: 13px 18px; }
   .count { font-size: 0.9375rem; }
   .sort-select { font-size: 0.84375rem; padding: 8px 12px; }
@@ -107,6 +104,6 @@
   .stats { gap: 12px 20px; }
   .stat-num { font-size: 1.25rem; }
   .filter-btn { font-size: 0.8125rem; padding: 8px 13px; }
-  .card-summary { font-size: 0.875rem; }
+  .card-summary { font-size: 0.9375rem; }
 }
 
