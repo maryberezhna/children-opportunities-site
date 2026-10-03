@@ -56,11 +56,14 @@
 
 /* ── Хіро ── */
 /* Редизайн 29.09.2026 (макет Topic.dc.html): компактний hero без кремової
- * картки — крихти, H1, одне речення, рядок цифр, кнопки; фото 380×240
- * праворуч. Список починається на першому екрані. */
+ * картки — крихти, H1, одне речення, рядок цифр, кнопки; фото праворуч.
+ * Список починається на першому екрані.
+ * 03.10.2026 Марія: «зроби фото на підбірках більше» — 380×240 → до 540×360,
+ * у пропорціях самого знімка (3:2, файли 900×600), тож фото не обрізається.
+ * На вужчих екранах колонка стискається до 40% ширини, але не менше 380. */
 .tp-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
+  grid-template-columns: minmax(0, 1fr) clamp(380px, 40vw, 540px);
   gap: 48px;
   align-items: center;
   padding: 4px 0 8px;
@@ -127,10 +130,10 @@
 .tp-main .tp-btn-white { background: #ffffff; color: #1a1a1a; border: 1px solid #ffffff; padding: 0 22px; }
 .tp-main .tp-btn-white:hover { color: #1a1a1a; background: #f7f1e6; }
 
-/* Фото 380×240, скруглене. Точку фокуса задає heroImage.position. */
+/* Фото на всю ширину колонки, 3:2, скруглене. Точку фокуса задає heroImage.position. */
 .tp-hero-photo {
-  width: 380px;
-  height: 240px;
+  width: 100%;
+  aspect-ratio: 3 / 2;
   border-radius: 20px;
   overflow: hidden;
 }
