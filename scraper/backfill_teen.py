@@ -12,6 +12,7 @@
     python scraper/backfill_teen.py --dry-run       # показати, нічого не писати
     python scraper/backfill_teen.py --limit 40      # обережний перший прогін
     python scraper/backfill_teen.py                 # усе, що без розмітки
+    python scraper/backfill_teen.py --ids a,b       # лише ці записи, наново
 """
 from __future__ import annotations
 
@@ -177,7 +178,11 @@ def main() -> int:
     ap.add_argument("--batch", type=int, default=BATCH)
     ap.add_argument("--dry-run", action="store_true",
                     default=os.environ.get("DRY_RUN", "").lower() == "true")
+    # Лише ці записи (id через кому) — переписати поля, навіть якщо вони вже
+    # є. Без цього повторний прогін брав би всі активні без розмітки.
+    ap.add_argument("--ids", default=os.environ.get("IDS") or "")
     args = ap.parse_args()
+    ids = [x.strip() for x in args.ids.split(",") if x.strip()]
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.error("Немає ANTHROPIC_API_KEY")
@@ -186,12 +191,16 @@ def main() -> int:
     db = get_client()
     ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    # PostgREST віддає до 1000 рядків — сторінкуємо, як усюди.
+    cols = "id, title, summary, details, opportunity_type, cost_type, age_from, age_to"
     rows, start = [], 0
-    while True:
+    if ids:
+        rows = (db.table("opportunities").select(cols)
+                .eq("status", "active").in_("id", ids)
+                .execute().data or [])
+    # PostgREST віддає до 1000 рядків — сторінкуємо, як усюди.
+    while not ids:
         page = (db.table("opportunities")
-                .select("id, title, summary, details, opportunity_type, "
-                        "cost_type, age_from, age_to")
+                .select(cols)
                 .eq("status", "active")
                 .is_("canonical_slug", "null")
                 .is_("teen_benefit", "null")
@@ -205,7 +214,7 @@ def main() -> int:
         start += 1000
     if args.limit:
         rows = rows[:args.limit]
-    logger.info("Записів без розмітки: %d", len(rows))
+    logger.info("Записів до розмітки: %d", len(rows))
 
     written = 0
     for chunk_start in range(0, len(rows), args.batch):

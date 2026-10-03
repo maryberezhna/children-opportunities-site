@@ -13,6 +13,10 @@ on:
         description: 'скільки записів (порожньо = всі)'
         required: false
         default: ''
+      ids:
+        description: 'лише ці записи, id через кому (переписує наявні поля)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -39,4 +43,5 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
           LIMIT: ${{ github.event.inputs.limit }}
+          IDS: ${{ github.event.inputs.ids }}
         run: python backfill_teen.py
