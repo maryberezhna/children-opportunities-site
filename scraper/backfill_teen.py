@@ -12,6 +12,7 @@
     python scraper/backfill_teen.py --dry-run       # показати, нічого не писати
     python scraper/backfill_teen.py --limit 40      # обережний перший прогін
     python scraper/backfill_teen.py                 # усе, що без розмітки
+    python scraper/backfill_teen.py --ids a,b       # лише ці записи, наново
 """
 from __future__ import annotations
 
@@ -153,9 +154,21 @@ def _clean_tags(tags) -> list[str]:
     return out
 
 
-def _clip(s, limit=80) -> str | None:
+# Модель просимо до 60 знаків, але вона часом пише довше. До 03.10.2026 тут
+# стояло s[:80] — різало посеред слова, і на сторінці виходило «пройти
+# обласний та всеукраїн» (45 записів). Тепер відповідь або ціла, або її
+# немає: обрізана фраза може сказати не те, а порожнє поле просто не видно.
+CLIP_LIMIT = 160
+
+
+def _clip(s, limit=CLIP_LIMIT) -> str | None:
     s = (s or "").strip().rstrip(".")
-    return s[:limit] if s else None
+    if not s:
+        return None
+    if len(s) > limit:
+        logger.warning("Задовга відповідь (%d знаків), не пишемо: %s…", len(s), s[:60])
+        return None
+    return s
 
 
 def main() -> int:
@@ -165,7 +178,11 @@ def main() -> int:
     ap.add_argument("--batch", type=int, default=BATCH)
     ap.add_argument("--dry-run", action="store_true",
                     default=os.environ.get("DRY_RUN", "").lower() == "true")
+    # Лише ці записи (id через кому) — переписати поля, навіть якщо вони вже
+    # є. Без цього повторний прогін брав би всі активні без розмітки.
+    ap.add_argument("--ids", default=os.environ.get("IDS") or "")
     args = ap.parse_args()
+    ids = [x.strip() for x in args.ids.split(",") if x.strip()]
 
     if not os.environ.get("ANTHROPIC_API_KEY"):
         logger.error("Немає ANTHROPIC_API_KEY")
@@ -174,12 +191,16 @@ def main() -> int:
     db = get_client()
     ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
-    # PostgREST віддає до 1000 рядків — сторінкуємо, як усюди.
+    cols = "id, title, summary, details, opportunity_type, cost_type, age_from, age_to"
     rows, start = [], 0
-    while True:
+    if ids:
+        rows = (db.table("opportunities").select(cols)
+                .eq("status", "active").in_("id", ids)
+                .execute().data or [])
+    # PostgREST віддає до 1000 рядків — сторінкуємо, як усюди.
+    while not ids:
         page = (db.table("opportunities")
-                .select("id, title, summary, details, opportunity_type, "
-                        "cost_type, age_from, age_to")
+                .select(cols)
                 .eq("status", "active")
                 .is_("canonical_slug", "null")
                 .is_("teen_benefit", "null")
@@ -193,7 +214,7 @@ def main() -> int:
         start += 1000
     if args.limit:
         rows = rows[:args.limit]
-    logger.info("Записів без розмітки: %d", len(rows))
+    logger.info("Записів до розмітки: %d", len(rows))
 
     written = 0
     for chunk_start in range(0, len(rows), args.batch):
