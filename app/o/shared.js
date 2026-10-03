@@ -391,9 +391,9 @@ export function buildMetadata(item, lang = 'uk') {
   // цей капітал перед кожним новим набором. Плашка «завершилась» на сторінці
   // чесно каже людині, що подача закрита.
   const typeLabel = typeLabels(lang)[item.opportunity_type] || '';
-  const ageRange = en
-    ? (item.age_from === 0 && item.age_to >= 17 ? '0–18 yrs' : `${item.age_from}–${item.age_to} yrs`)
-    : (item.age_from === 0 && item.age_to >= 17 ? '0-18 років' : `${item.age_from}-${item.age_to} років`);
+  // Той самий підпис, що на картці (ageRangeLabel): «18+» для студентських
+  // програм, «0-18 років» для всіх, інакше діапазон.
+  const ageRange = ageRangeLabel(item, lang);
 
   const name = field(item, 'title', lang);
   const title = opportunityTitle({ name, typeLabel, ageRange, lang });

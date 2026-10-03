@@ -81,3 +81,19 @@ test('www веде на основну адресу', () => {
   assert.match(src, /value: 'www\.dityam\.com\.ua'/);
   assert.match(src, /destination: 'https:\/\/dityam\.com\.ua\/:path\*'/);
 });
+
+// --- «18+», 03.10.2026 ---
+//
+// База не пускає вік понад 18, тож студентська програма записана як «від 18
+// до 18», і картка читалась «18 років» — ніби лише для тих, кому рівно 18.
+test('вік 18–18 показується як «18+» обома мовами й у заголовку', async () => {
+  const { ageLabel, ageRangeLabel } = await import('../lib/labels.js');
+  assert.equal(ageLabel(18, 18), '18+');
+  assert.equal(ageRangeLabel({ age_from: 18, age_to: 18 }), '18+');
+  assert.equal(ageRangeLabel({ age_from: 18, age_to: 18 }, 'en'), '18+');
+  // Решта підписів не змінюється.
+  assert.equal(ageLabel(7, 11), '7-11 років');
+  assert.equal(ageLabel(0, 18), '0-18 років');
+  assert.equal(ageLabel(12, 12), '12 років');
+  assert.equal(opportunityTitle({ name: 'Інженерна програма', typeLabel: 'Курс', ageRange: '18+' }), 'Інженерна програма — Курс для дітей 18+');
+});
