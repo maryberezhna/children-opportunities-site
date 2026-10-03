@@ -70,5 +70,15 @@
 @media (max-width: 640px) {
   .plus-promo { padding: 22px 20px; gap: 16px; margin-bottom: 28px; }
   .plus-promo-title { font-size: 19px; }
-  .plus-promo .plus-promo-btn { width: 100%; }
+  /* «Почати зараз — від 119 грн на місяць» на вузькому телефоні в один рядок
+     не вміщається — переноситься, кнопка росте у висоту. */
+  .plus-promo .plus-promo-btn {
+    width: 100%;
+    height: auto;
+    min-height: 48px;
+    padding: 12px 20px;
+    white-space: normal;
+    text-align: center;
+    text-wrap: balance;
+  }
 }
