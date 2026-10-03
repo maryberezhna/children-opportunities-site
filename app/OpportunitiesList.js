@@ -13,6 +13,8 @@ import { goesAbroad } from '@/lib/geo';
 import { abroadPlaceText, foreignOnly, abroadCodes } from '@/lib/place';
 import { countryName } from '@/lib/diaspora';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
+import { buildVocabulary, titleHaystack, setSuggestSource } from '@/lib/search-suggest';
+import useSearchSuggest from './useSearchSuggest';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
@@ -593,6 +595,12 @@ export default function OpportunitiesList({
     });
     return m;
   }, [opportunities]);
+  // Окремий індекс назв: збіг у назві піднімає запис угору видачі й дає
+  // підказки-записи під полем пошуку.
+  const titleIndex = useMemo(
+    () => new Map(opportunities.map((o) => [o.id, titleHaystack(o)])),
+    [opportunities],
+  );
 
   // Прострочені разові можливості не показуємо ніде, а в режимі «Підліткам» —
   // ще й те, що закінчується раніше 13 років. Предикати спільні з хіро
@@ -601,6 +609,16 @@ export default function OpportunitiesList({
     () => visibleFor(opportunities, todayIso, teens),
     [opportunities, todayIso, teens],
   );
+
+  // Підказки пошуку (lib/search-suggest.js) беруть той самий набір, що й
+  // список, — тож дописане слово завжди щось знаходить. Сховище спільне з
+  // полем у хіро головної, у якого записів немає.
+  const vocab = useMemo(() => buildVocabulary(liveItems), [liveItems]);
+  useEffect(() => {
+    setSuggestSource({ items: liveItems, index: searchIndex, titles: titleIndex, vocab });
+  }, [liveItems, searchIndex, titleIndex, vocab]);
+  const deskSuggest = useSearchSuggest({ id: 'v2-search', value: query, onPickWord: setQuery, lang });
+  const mSuggest = useSearchSuggest({ id: 'm-search', value: query, onPickWord: setQuery, lang });
 
   // Міста, що трапляються хоч в одному НЕзакордонному записі, — українські.
   // Лише до них у фільтрі «Де» додаються записи «Вся Україна».
@@ -681,6 +699,16 @@ export default function OpportunitiesList({
 
   const filtered = useMemo(() => {
     const list = liveItems.filter((item) => FACETS.every((k) => predicates[k](item)));
+    // З пошуковим запитом спершу записи, у назві яких є всі слова запиту:
+    // до 03.10.2026 «англійська мова» показувала вгорі Regeneron і Yale (у
+    // них лише опис «англійською мовою»), а мовні школи — в самому кінці,
+    // бо без дедлайну.
+    const tokens = queryTokens(query);
+    const inTitle = (item) => {
+      if (!tokens.length) return 0;
+      const hay = titleIndex.get(item.id);
+      return hay && matchesQuery(tokens, hay) ? 0 : 1;
+    };
     // Найближче угорі: дедлайн, а без нього — початок чи кінець події (раніше
     // подія з датами, але без дедлайну, падала в кінець як «без дати»).
     // Без жодної майбутньої дати — вкінці, свіжіші перші.
@@ -688,6 +716,9 @@ export default function OpportunitiesList({
       const pa = pinned.has(a.id) ? 0 : 1;
       const pb = pinned.has(b.id) ? 0 : 1;
       if (pa !== pb) return pa - pb;
+      const ta = inTitle(a);
+      const tb = inTitle(b);
+      if (ta !== tb) return ta - tb;
       if (sort !== 'new') {
         const ra = Math.min(whenRank(a, todayIso), 9999);
         const rb = Math.min(whenRank(b, todayIso), 9999);
@@ -695,7 +726,7 @@ export default function OpportunitiesList({
       }
       return (b.created_at || '').localeCompare(a.created_at || '');
     });
-  }, [liveItems, predicates, todayIso, pinned, sort]);
+  }, [liveItems, predicates, todayIso, pinned, sort, query, titleIndex]);
 
   // Топ тижня: спершу відмічені цього тижня в адмінці (так виконується платне
   // просування організаторам), далі — найближчі живі дедлайни. Показується без
@@ -1459,7 +1490,8 @@ export default function OpportunitiesList({
           <div className="m-band" ref={bandRef}>
             <label className="m-search">
               <span className="m-search-icon" aria-hidden="true">🔍</span>
-              {searchInput()}
+              {searchInput(mSuggest.inputProps)}
+              {mSuggest.popup}
             </label>
             {/* Вік одразу під пошуком (макет Mobile.dc.html): пʼять груп сайту,
                 ті самі, що в шторці й бічній панелі. Над ними — фраза, бо самі
@@ -1593,7 +1625,9 @@ export default function OpportunitiesList({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={teens ? t.searchTeens : t.searchParents}
               aria-label={isEn ? 'Search' : 'Пошук'}
+              {...deskSuggest.inputProps}
             />
+            {deskSuggest.popup}
           </label>
         </div>
 

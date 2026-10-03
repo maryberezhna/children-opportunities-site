@@ -810,6 +810,81 @@ html[data-mode="teens"] .v2-chip.is-on {
 
 .v2-search input::placeholder { color: #b8b3a6; }
 
+/* ── Підказки пошуку (app/useSearchSuggest.js, 03.10.2026) ───────────────
+   Список під полем у хіро, у бічній панелі й на телефоні. Вигляд — як у
+   поля «Де» нижче (.pc-pop), щоб два списки на одній сторінці були одним. */
+.v2-hero-search-field,
+.v2-search,
+.m-search { position: relative; }
+
+.ss-pop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 40;
+  background: #ffffff;
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgba(26, 26, 26, 0.14);
+  overflow: hidden;
+  text-align: left;
+}
+
+.ss-list {
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  max-height: min(420px, 60vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.ss-head {
+  display: block;
+  padding: 8px 10px 4px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--v2-ink-3);
+}
+
+.ss-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--v2-ink);
+  cursor: pointer;
+}
+
+.ss-opt.is-active { background: var(--v2-cream); }
+.ss-opt b { font-weight: 700; }
+.ss-text { min-width: 0; overflow-wrap: anywhere; }
+.ss-word .ss-text { font-weight: 400; }
+
+.ss-n,
+.ss-type {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--v2-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .ss-opt { min-height: 44px; }
+  /* Назва запису на телефоні — до двох рядків, тип під нею не вміщається. */
+  .ss-record .ss-type { display: none; }
+}
+
 /* ── «Де»: поле з підказками (app/PlaceCombobox.js, 27.09.2026) ───────────
    Замість рідного <select> із десятками міст: місто вписують, підказки
    звужуються. Базовий вигляд — під бічну панель; рядок фільтрів (.pc--bar)

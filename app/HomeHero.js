@@ -5,6 +5,7 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { trackConversion } from '@/lib/track';
 import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import HomeTopics from './HomeTopics';
+import useSearchSuggest from './useSearchSuggest';
 
 // Хіро головної (редизайн 29.09.2026, макет Main.dc.html): надпис, заголовок,
 // опис, пошук із кнопкою «Знайти», шість плиток тем із фото, рядок довіри;
@@ -133,13 +134,23 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
 
   const items = (mode === 'teens' ? teenSoon : soon) || [];
 
-  const submit = (e) => {
-    e.preventDefault();
-    const value = q.trim();
+  const runSearch = (raw) => {
+    const value = raw.trim();
     window.dispatchEvent(new CustomEvent(HERO_SEARCH_EVENT, { detail: { q: value } }));
     const target = document.getElementById('catalog');
     if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
+  const submit = (e) => {
+    e.preventDefault();
+    runSearch(q);
+  };
+  // Підказки під полем (app/useSearchSuggest.js): обране слово одразу шукає.
+  const { inputProps: suggestProps, popup: suggestPopup } = useSearchSuggest({
+    id: 'hero-search',
+    value: q,
+    onPickWord: (text) => { setQ(text); runSearch(text); },
+    lang,
+  });
 
   return (
     <section className="v2-hero-band">
@@ -164,7 +175,9 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
                 onChange={(e) => setQ(e.target.value)}
                 placeholder={t.searchPlaceholder}
                 aria-label={t.searchAria}
+                {...suggestProps}
               />
+              {suggestPopup}
             </label>
             <button type="submit" className="v2-hero-search-btn">{t.search}</button>
           </form>
