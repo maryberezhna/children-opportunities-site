@@ -1,6 +1,13 @@
 /* Картки каталогу */
 /* ============ КАРТКИ ============ */
 
+/* Розміри тексту картки (03.10.2026, Марія: «шрифт замалий»). Звірено з
+   learnui.design/blog/mobile-desktop-website-font-size-guidelines: основний
+   текст 16px, другорядний на 2px менший, заголовок більший і жирніший,
+   усього чотири розміри — 18 назва, 16 текст і значення, 14 підписи,
+   13 пігулки. До того на десктопі картка мала 12–14px, дрібніше, ніж на
+   телефоні (13–15), хоча має бути навпаки. */
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
@@ -54,7 +61,7 @@
 .chip {
   display: inline-flex;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   padding: 4px 11px;
   border-radius: 100px;
   font-weight: 500;
@@ -113,7 +120,7 @@
    зяяли порожні картки на пів екрана. Повний текст — на сторінці
    можливості, картка має лише допомогти вирішити, чи відкривати її. */
 .card-summary {
-  font-size: 0.875rem;
+  font-size: 1rem;
   color: var(--ink-soft);
   margin-bottom: 16px;
   line-height: 1.55;
@@ -127,12 +134,13 @@
 .meta {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   margin-bottom: 18px;
-  padding: 12px 14px;
+  padding: 14px 16px;
   background: var(--bg);
   border-radius: 10px;
-  font-size: 0.8125rem;
+  font-size: 1rem;
+  line-height: 1.4;
 }
 
 .meta-row {
@@ -142,7 +150,7 @@
   gap: 8px;
 }
 
-.meta-label { color: var(--ink-muted); font-size: 0.75rem; }
+.meta-label { flex-shrink: 0; color: var(--ink-muted); font-size: 0.875rem; }
 .meta-val { font-weight: 500; color: var(--ink); text-align: right; }
 
 .link-btn {
@@ -212,7 +220,7 @@
 }
 
 .load-more-hint {
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--ink-muted);
 }
 
@@ -290,7 +298,7 @@
   margin: 10px 0 0;
   display: grid;
   gap: 4px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.45;
 }
 .card-fields > div { display: flex; gap: 8px; }
@@ -299,7 +307,7 @@
 
 .card-foot {
   margin-top: 10px;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   color: var(--ink-muted);
 }
 
@@ -308,7 +316,7 @@
 .card-more {
   display: inline-block;
   margin-top: 10px;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--v2-accent-strong, #c8501a);
 }
@@ -342,12 +350,12 @@ html[data-ab-card="B"] .card .meta {
   display: flex;
   margin: 14px 0 0;
 }
-html[data-ab-card="B"] .card .meta-row { min-height: 22px; }
+html[data-ab-card="B"] .card .meta-row { min-height: 24px; }
 html[data-ab-card="B"] .card .meta-val {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-html[data-ab-card="B"] .card .meta .chip { padding: 2px 9px; }
+html[data-ab-card="B"] .card .meta .chip { padding: 2px 9px; font-size: 0.9375rem; }
 
 /* «Детальніше ↗» притиснуте донизу, щоб у ряду стояло на одній лінії. */
 html[data-ab-card="B"] .card .card-b-foot {
@@ -370,7 +378,7 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
   html[data-ab-card="B"] .card .card-b-line {
     display: block;
     margin: 0 0 4px;
-    font-size: 0.875rem;
+    font-size: 0.9375rem;
     line-height: 1.45;
     color: var(--ink-muted);
   }
@@ -385,7 +393,7 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
     display: inline-flex;
     align-items: center;
     min-height: 24px;
-    font-size: 0.8125rem;
+    font-size: 0.875rem;
     color: var(--ink);
   }
 

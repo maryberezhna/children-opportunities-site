@@ -114,10 +114,12 @@ export default function OpportunityCard({
         ))}
         {extraChip}
       </div>
+      {/* Розмір назви — у cards.css (.card h3), не тут: rem росте разом із
+          панеллю доступності, а px в атрибуті style — ні. */}
       <h3
         className="card-title-link"
         lang={lang === 'en' && !item.title_en ? 'uk' : undefined}
-        style={{ fontWeight: 700, fontSize: 16, lineHeight: 1.35, color: 'var(--ink)' }}
+        style={{ fontWeight: 700, lineHeight: 1.35, color: 'var(--ink)' }}
       >
         {title}
       </h3>

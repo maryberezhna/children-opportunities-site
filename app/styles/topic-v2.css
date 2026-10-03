@@ -12,7 +12,10 @@
  */
 
 .tp-main {
-  max-width: 1240px;
+  /* Ширина та сама, що в шапки й головної (--v2-max-w): до 03.10.2026 тут
+     було 1240px, і підбірка стояла вужчою смугою, з лівим краєм на 60px
+     правіше за логотип. */
+  max-width: var(--v2-max-w, 1360px);
   width: 100%;
   margin: 0 auto;
   padding: 0 32px;
@@ -40,7 +43,7 @@
 /* ── Хлібні крихти ── */
 .tp-crumbs {
   padding-top: 20px;
-  font-size: 14px;
+  font-size: 15px;
   color: #6b6b6b;
   display: flex;
   gap: 8px;

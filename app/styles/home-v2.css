@@ -127,7 +127,7 @@
   display: flex;
   gap: 22px;
   margin-left: 20px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
 }
 
@@ -801,7 +801,9 @@ html[data-mode="teens"] .v2-chip.is-on {
   outline: none;
   background: transparent;
   font-family: inherit;
-  font-size: 0.875rem;
+  /* 16px: поле введення дрібніше за основний текст читається гірше, а на
+     iPad Safari ще й збільшує сторінку при фокусі. */
+  font-size: 1rem;
   color: var(--v2-ink);
   padding: 10px 0;
 }
