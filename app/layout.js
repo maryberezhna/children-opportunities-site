@@ -9,6 +9,7 @@ import ServiceWorker from './ServiceWorker';
 import { countActiveOpportunities } from '@/lib/supabase';
 import { AB_CARD_BOOT_SCRIPT } from '@/lib/ab-card';
 import { THEME_BOOT_SCRIPT } from '@/lib/theme';
+import NightThemePrompt from './NightThemePrompt';
 import './globals.css';
 
 // Шрифти вендорнуті локально, а не через next/font/google.
@@ -172,6 +173,7 @@ export default function RootLayout({ children }) {
         <ScrollNav />
         <TelegramFAB />
         <AccessibilityPanel />
+        <NightThemePrompt />
         <Analytics />
         <ServiceWorker />
       </body>

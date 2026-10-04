@@ -1,0 +1,98 @@
+/* «Зараз нічна тема» — смужка знизу (04.10.2026).
+ *
+ * Не модалка: людина прийшла по можливості, і перекривати їх питанням про
+ * колір — невелика, але справжня шкода. Смужка стоїть над плаваючою кнопкою
+ * Telegram і над мобільною панеллю «Фільтри / Сортування», щоб нічого не
+ * ховати собою. */
+.night-ask {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: max(20px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  z-index: 10001;          /* вище за кнопку Telegram (10000) */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(620px, calc(100vw - 32px));
+  padding: 12px 44px 12px 16px;
+  border: 1px solid var(--contrast-line);
+  border-radius: 16px;
+  background: var(--contrast-bg);
+  color: var(--contrast-ink);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  animation: night-ask-in 0.25s ease-out;
+}
+
+@keyframes night-ask-in {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.night-ask-icon { font-size: 18px; line-height: 1; flex: none; }
+
+.night-ask-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+  line-height: 1.35;
+}
+
+.night-ask-btns { display: flex; gap: 8px; flex: none; }
+
+.night-ask-keep,
+.night-ask-light {
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.night-ask-keep {
+  background: transparent;
+  color: var(--contrast-ink);
+  border: 1px solid var(--contrast-ink);
+}
+
+.night-ask-light {
+  background: var(--contrast-ink);
+  color: var(--contrast-bg);
+  border: 1px solid var(--contrast-ink);
+}
+
+.night-ask-x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: var(--contrast-ink);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.7;
+}
+
+.night-ask-x:hover { opacity: 1; }
+
+/* На телефоні кнопки йдуть під текст: у рядок вони з ним не вміщаються. */
+@media (max-width: 560px) {
+  .night-ask {
+    /* Вище за мобільну панель «Фільтри / Сортування». */
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+    flex-wrap: wrap;
+    padding: 14px 40px 14px 14px;
+  }
+  .night-ask-btns { width: 100%; }
+  .night-ask-keep,
+  .night-ask-light { flex: 1; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .night-ask { animation: none; }
+}

@@ -49,8 +49,14 @@ test('ручний вибір «світла» перебиває системн
 test('темна палітра оголошена для обох шляхів увімкнення', () => {
   // Ручний (data-theme="dark") і системний — обидва мусять знати кожен токен,
   // інакше частина сайту лишиться світлою в одному зі способів.
-  const manual = night.slice(night.indexOf(':root[data-theme="dark"]'), night.indexOf('@media'));
-  const auto = night.slice(night.indexOf('@media'));
+  // Зрізи обмежені саме двома блоками палітри: нижче у файлі є ще градієнти
+  // й блок [data-admin], і без межі тест порівнював би палітру з ними.
+  const start = night.indexOf(':root[data-theme="dark"]');
+  const mid = night.indexOf('@media (prefers-color-scheme: dark)');
+  const end = night.indexOf('/* ── Градієнти');
+  assert.ok(start >= 0 && mid > start && end > mid, 'структура night.css змінилась — зрізи більше не ті');
+  const manual = night.slice(start, mid);
+  const auto = night.slice(mid, end);
   const names = (block) => new Set([...block.matchAll(/^\s*(--[a-z0-9-]+):/gm)].map((m) => m[1]));
   const a = names(manual);
   const b = names(auto);
