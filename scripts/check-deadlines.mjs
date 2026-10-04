@@ -27,6 +27,7 @@ import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS } from 
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
+import { tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
 
 const TYPE_LABELS = {
   course: 'Курс',
@@ -430,7 +431,10 @@ async function pickChecked(candidates, need, label) {
 
 /** Відправка в канал. Один шлях для всіх форматів поста. true — пост пішов. */
 async function postToChannel(lines, label) {
-  const text = lines.join('\n');
+  // utm_content — рубрика з плану («topic», «deadlines»…) або «new»: у GA4 видно,
+  // який формат поста приводить людей на сайт.
+  const content = String(label).split(/[:\s(]/)[0] || 'post';
+  const text = tagSiteLinks(lines.join('\n'), { ...UTM_CHANNEL, content });
   if (DRY_RUN || PREVIEW) {
     console.log(`\n--- ПОСТ [${label}] ---\n${text}\n--- /ПОСТ ---`);
     return false;

@@ -42,6 +42,7 @@ import calendar_link
 import ladder
 import plus_profile
 import send_window
+from utm import UTM_PLUS_BOT, tag_keyboard, tag_site_links
 
 logger = logging.getLogger("personal_digest")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -543,9 +544,11 @@ def send_telegram(chat_id, text, reply_markup=None) -> bool:
     if not tokens:
         logger.warning("TELEGRAM_PLUS_BOT_TOKEN not set")
         return False
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML", "disable_web_page_preview": True}
+    # Позначка джерела на посиланнях на сайт — інакше GA4 бачить «прямий» захід.
+    payload = {"chat_id": chat_id, "text": tag_site_links(text, UTM_PLUS_BOT),
+               "parse_mode": "HTML", "disable_web_page_preview": True}
     if reply_markup:
-        payload["reply_markup"] = reply_markup
+        payload["reply_markup"] = tag_keyboard(reply_markup, UTM_PLUS_BOT)
     detail = ""
     for i, token in enumerate(tokens):
         r = httpx.post(f"https://api.telegram.org/bot{token}/sendMessage", json=payload, timeout=20)

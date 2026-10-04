@@ -54,6 +54,7 @@ import usage
 from canonical import canonical_url
 from db import get_client
 from normalizer import Normalizer, missing_required
+from utm import UTM_ORGANIZER_EMAIL, tag_site_links
 
 # Скільки зʼїла екстракція пропозицій — у llm_usage (04.10.2026, після
 # вичерпаного балансу). Той самий Normalizer, що в нічному скрапі (scrape-extract).
@@ -213,7 +214,9 @@ def send_email(to_addr: str, subject: str, html: str) -> bool:
                    else f"{m.group(2)} ({m.group(1)})", html)
     plain = re.sub(r"<[^>]+>", "", plain)
     msg.attach(MIMEText(plain, "plain", "utf-8"))
-    msg.attach(MIMEText(html, "html", "utf-8"))
+    # Позначка лише в HTML-версії і лише в href: видимий текст і текстова
+    # версія лишаються чистими адресами.
+    msg.attach(MIMEText(tag_site_links(html, UTM_ORGANIZER_EMAIL), "html", "utf-8"))
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
             smtp.login(GMAIL_FROM, GMAIL_APP_PASSWORD)
