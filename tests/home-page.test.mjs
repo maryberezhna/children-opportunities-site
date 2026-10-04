@@ -43,7 +43,11 @@ test('хіро: без фото й цифр, пошук шле подію в с�
   assert.ok(!hero.includes('v2-trust'), 'рядка довіри з числом у хіро немає — число вже над списком (30.09.2026)');
   assert.ok(!hero.includes('звіряємо'), 'без «кожну звіряємо» (рішення Марії 29.09.2026)');
   assert.ok(hero.includes('<HomeTopics'), 'шість плиток тем у хіро');
-  assert.ok(hero.includes('className="v2-soon"'), '«Встигніть цього тижня» праворуч');
+  // 04.10.2026 три дрібні рядки стали однією великою карткою, що міняється
+  // (Марія: «ми це продаємо, а зараз це тупо»). Блок лишився на тому самому
+  // місці — праворуч у хіро, — тож перевіряємо його, а не стару розмітку.
+  assert.ok(hero.includes('<TopWeekSlider'), '«Топ тижня» праворуч у хіро');
+  assert.ok(!hero.includes('className="v2-soon-item"'), 'стара розмітка з трьох рядків прибрана');
   const page = read('app/page.js');
   assert.ok(page.includes('topWeekCards({ items: visibleFor(opportunities, today)'), 'трійка з тієї ж weekly-top, що й раніше');
   assert.ok(page.includes('id="catalog"'), 'якір, до якого прокручує пошук із хіро');
