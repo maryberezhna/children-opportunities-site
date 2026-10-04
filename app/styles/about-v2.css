@@ -22,7 +22,7 @@
 
 .ab-section h2 {
   margin: 0;
-  font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: clamp(1.625rem, calc(3vw * var(--a11y-font-scale, 1)), 2.125rem);
   font-weight: 700;
   line-height: 1.15;

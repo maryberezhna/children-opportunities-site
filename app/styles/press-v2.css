@@ -15,7 +15,7 @@
 .pk-section h2,
 .pk-panel h2 {
   margin: 0;
-  font-family: var(--font-cyrillic), var(--font-dm-sans), sans-serif;
+  font-family: var(--font-sans), sans-serif;
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.01em;
