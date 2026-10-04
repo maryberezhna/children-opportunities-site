@@ -1,0 +1,42 @@
+name: Додати можливість у чернетки (manual)
+
+# Знахідка (від Марії чи з пошуку) лягає чернеткою в чергу модерації.
+# НІКОЛИ не публікує: статус завжди draft, рішення — за людиною й за воротами
+# публікації (lib/publish-gate.js). Без confirm = ADD лише показує, що буде
+# записано, і що скажуть ворота.
+#
+# Навіщо окремо від форми пропозицій: та веде через LLM (читає сторінку й
+# витягає поля), а коли на API скінчились кошти — не працює. Тут поля вже
+# відомі, модель не потрібна.
+on:
+  workflow_dispatch:
+    inputs:
+      record:
+        description: 'JSON запису: {"title": "...", "source_url": "...", "evidence": {...}, ...}'
+        required: true
+      confirm:
+        description: 'ADD — записати; порожньо — лише показати'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Додати
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          RECORD: ${{ github.event.inputs.record }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: node scripts/add-draft.mjs
