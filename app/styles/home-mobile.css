@@ -310,10 +310,10 @@
     cursor: pointer;
   }
 
-  .m-bottom-btn.is-on { background: var(--v2-ink); color: var(--surface-2); }
+  .m-bottom-btn.is-on { background: var(--contrast-bg); color: var(--contrast-ink); }
 
   /* Ліворуч — канал: головний заклик сайту, тому темний. */
-  .m-bottom-tg { background: var(--v2-ink); color: var(--surface-2); }
+  .m-bottom-tg { background: var(--contrast-bg); color: var(--contrast-ink); }
   .m-bottom-tg:active { background: #000000; }
 
   /* Місце під панеллю, щоб вона не закривала останній блок і футер. */
@@ -462,7 +462,7 @@
   }
 
   html[data-mode="teens"] .m-chip.is-on {
-    background: var(--v2-ink);
+    background: var(--contrast-bg);
     border-color: var(--v2-ink);
   }
 

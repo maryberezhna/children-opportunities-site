@@ -8,8 +8,8 @@
    Кнопка світла на чорному; контраст тексту — WCAG AA із запасом. */
 .tg-card {
   grid-column: 1 / -1;
-  background: var(--v2-ink);
-  border: 1px solid var(--v2-ink);
+  background: var(--contrast-bg);
+  border: 1px solid var(--contrast-line);
   border-radius: 16px;
   padding: 24px;
   margin: 4px 0;

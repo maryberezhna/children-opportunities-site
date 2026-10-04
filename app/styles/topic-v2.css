@@ -126,10 +126,10 @@
   cursor: pointer;
   box-sizing: border-box;
 }
-.tp-main .tp-btn-dark { background: var(--v2-ink); color: var(--surface-2); border: 1px solid var(--v2-ink); }
+.tp-main .tp-btn-dark { background: var(--contrast-bg); color: var(--contrast-ink); border: 1px solid var(--v2-ink); }
 .tp-main .tp-btn-dark:hover { color: var(--surface-2); background: #4a4a4a; border-color: var(--v2-ink-2); }
 .tp-btn-outline { background: transparent; color: var(--v2-ink); border: 1px solid var(--v2-ink); }
-.tp-btn-outline:hover { background: var(--v2-ink); color: var(--surface-2); }
+.tp-btn-outline:hover { background: var(--contrast-bg); color: var(--contrast-ink); }
 .tp-main .tp-btn-white { background: var(--surface-2); color: var(--v2-ink); border: 1px solid #ffffff; padding: 0 22px; }
 .tp-main .tp-btn-white:hover { color: var(--v2-ink); background: var(--v2-cream); }
 
@@ -472,7 +472,7 @@
   color: var(--v2-ink);
   font-weight: 600;
 }
-.tp-main .suggest-card .suggest-cta:hover { background: var(--v2-ink); color: var(--surface-2); }
+.tp-main .suggest-card .suggest-cta:hover { background: var(--contrast-bg); color: var(--contrast-ink); }
 
 /* ── Сторінка «Підбірки» (app/CollectionsHub.js) ── */
 .tp-hub-head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
@@ -512,7 +512,7 @@
   position: absolute; left: 0; top: 16px;
   width: 34px; height: 34px; border-radius: 50%;
   display: grid; place-items: center;
-  background: var(--v2-ink); color: var(--surface-2); font-weight: 800; font-size: 16px;
+  background: var(--contrast-bg); color: var(--contrast-ink); font-weight: 800; font-size: 16px;
 }
 .er-step:first-child::before { top: 2px; }
 .er-step h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; }
