@@ -15,7 +15,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
+  background: var(--scroll-btn-bg);
   color: var(--ink);
   border: 1px solid var(--border);
   display: flex;
