@@ -1920,3 +1920,181 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   .v2-olymp-subjects { display: none; }
   .v2-olymp-more { flex-basis: 100%; }
 }
+
+/* ── «Топ тижня»: одна картка, що міняється (04.10.2026) ────────────────────
+ *
+ * Марія: «1 можливість яку чітко видно… бо ми це продаємо, а зараз це тупо».
+ * Було три рядки по 9px — тепер одна картка на весь блок: дата великим
+ * числом, назва 20px, під нею факти й «Детальніше».
+ *
+ * Картки лежать стосом (grid-area: 1/1), а не змінюються в DOM: висота блоку
+ * тоді не стрибає від довжини назви, і сусідній контент не смикається. */
+.v2-tw {
+  box-sizing: border-box;
+  padding: 18px;
+  background: var(--v2-cream);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.v2-tw-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.v2-tw-title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--v2-ink-3);
+}
+
+.v2-tw-count {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--v2-ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-tw-stage { display: grid; }
+
+.v2-tw-card {
+  grid-area: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 18px;
+  background: #ffffff;
+  border-radius: 16px;
+  color: var(--v2-ink);
+  text-decoration: none;
+  /* Прихована картка лишається в розмітці заради пошуку й читача екрана,
+     але не ловить мишу й не малюється. */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.v2-tw-card.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
+.v2-tw-card.is-on:hover { box-shadow: 0 10px 28px rgba(26, 26, 26, 0.08); }
+
+/* Дата — помаранчева плашка з білим текстом: лише --v2-accent-strong,
+   бо #e85d24 під білим не проходить WCAG AA. */
+.v2-tw-date {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: var(--v2-accent-strong);
+  color: #ffffff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+/* Колір задаємо явно на самій назві, а не лише на картці: у підбірці стилі
+   посилань (routes/topic.css) фарбували її помаранчевим, бо вся картка —
+   це <a>. Блок має виглядати однаково скрізь, де його продають. */
+.v2-tw-card .v2-tw-name {
+  color: var(--v2-ink);
+}
+
+.v2-tw-card .v2-tw-meta { color: var(--v2-ink-3); }
+.v2-tw-card .v2-tw-more { color: var(--v2-accent-strong); }
+.v2-tw-card .v2-tw-date { color: #ffffff; }
+
+.v2-tw-name {
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.v2-tw-meta {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--v2-ink-3);
+}
+
+.v2-tw-more {
+  margin-top: 2px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--v2-accent-strong);
+}
+
+.v2-tw-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.v2-tw-dots { display: flex; align-items: center; gap: 4px; }
+
+/* Зона дотику 32px навколо крапки 8px: саму крапку більшою робити не треба,
+   а пальцем у 8px не влучиш. */
+.v2-tw-dot {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v2-tw-dot::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--v2-line-strong);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.v2-tw-dot.is-on::before { background: var(--v2-accent-strong); transform: scale(1.25); }
+
+.v2-tw-arrow {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--v2-ink-3);
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.v2-tw-arrow:hover { color: var(--v2-accent-strong); }
+
+.v2-tw-all {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--v2-accent-strong);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.v2-tw-all:hover { text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-tw-card { transition: none; }
+  .v2-tw-dot::before { transition: none; }
+}

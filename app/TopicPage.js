@@ -10,7 +10,13 @@ import { isLive } from '@/lib/audience';
 import { closingThisWeek, splitIntro } from '@/lib/topic-filters';
 import { schoolNotes } from '@/lib/diaspora';
 import { topicCityLinks } from '@/lib/city-topics';
+import { topWeekCards } from '@/lib/weekly-top';
+import { sliderCards } from '@/lib/top-week-slider';
+import { isoWeek } from '@/lib/week';
+import { daysUntil } from '@/lib/dates';
+import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import TopicCards from './topic/TopicCards';
+import TopWeekSlider from './TopWeekSlider';
 import SuggestBlock from './SuggestBlock';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -60,6 +66,10 @@ const CHROME = {
     feedback: (a) => <>Побачили помилку або знаєте, чого тут бракує, — {a}.</>,
     feedbackLink: 'напишіть у Telegram',
     homeLink: 'Усі можливості — на головній →',
+    topWeek: 'Топ 3 цього тижня',
+    topWeekAll: 'Усі дедлайни →',
+    topWeekPinned: 'Топ',
+    topWeekFree: 'безкоштовно',
     sentence: (updated, total, freeCount) =>
       `Станом на ${updated} на платформі Dityam.com.ua — ${total} ${opportunitiesWord(total)} `
       + `у цій підбірці`
@@ -104,6 +114,10 @@ const CHROME = {
     feedback: (a) => <>Spotted a mistake or know what is missing here? {a}.</>,
     feedbackLink: 'Write to us on Telegram',
     homeLink: 'All opportunities on the home page →',
+    topWeek: 'Top 3 this week',
+    topWeekAll: null,
+    topWeekPinned: 'Top',
+    topWeekFree: 'free',
     sentence: (updated, total, freeCount) =>
       `As of ${updated}, Dityam.com.ua lists ${total} `
       + `${total === 1 ? 'opportunity' : 'opportunities'} in this collection`
@@ -336,6 +350,25 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   const schools = schoolNotes(topic.schoolNotes || [], lang);
 
   const subfilters = grouped ? [] : buildSubfilters(topic, items, lang);
+  // «Топ тижня» — у кожній підбірці (Марія, 04.10.2026: «помісти топ 3 у всіх
+  // добірках якось обережно, бо ми це продаємо»). Трійка та сама, що на
+  // головній: рахується з УСІХ живих записів, а не з тих, що підпадають під
+  // цю підбірку. Інакше оплачене місце показувалось би на одних сторінках і
+  // зникало на інших, і продати його було б нічим.
+  //
+  // «Обережно» — про місце: блок стоїть між хіро й списком, тим самим кремовим
+  // прямокутником, що й на головній, і нічого не перекриває.
+  const topWeek = sliderCards(
+    topWeekCards({ items: liveRows, week: isoWeek(), todayIso, daysUntil }),
+    {
+      lang,
+      pinned: ch.topWeekPinned,
+      free: ch.topWeekFree,
+      type: isEn ? TYPE_LABELS_EN : TYPE_LABELS,
+      age: (o) => ageRangeLabel(o, lang),
+    },
+  );
+
   const related = buildRelated(topic, liveRows);
   // Сторінки «місто × підбірка» мають лише українську версію.
   const cityLinks = isEn ? [] : topicCityLinks(liveRows, topic);
@@ -498,6 +531,16 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
             </div>
           ) : null}
         </section>
+
+        {topWeek.length === 3 ? (
+          <TopWeekSlider
+            lang={lang}
+            title={ch.topWeek}
+            allHref={isEn ? null : '/dedlainy'}
+            allLabel={ch.topWeekAll}
+            cards={topWeek}
+          />
+        ) : null}
 
         <TopicCards
           items={grouped ? [] : items.map(slim)}

@@ -5,6 +5,8 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { trackConversion } from '@/lib/track';
 import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import HomeTopics from './HomeTopics';
+import TopWeekSlider from './TopWeekSlider';
+import { sliderCards } from '@/lib/top-week-slider';
 import useSearchSuggest from './useSearchSuggest';
 
 // Хіро головної (редизайн 29.09.2026, макет Main.dc.html): надпис, заголовок,
@@ -92,17 +94,6 @@ const COPY = {
     pinned: 'Top',
     free: 'free',
   },
-};
-
-const MONTHS = {
-  uk: ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'],
-  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-};
-
-const dateParts = (iso, lang) => {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
-  if (!m) return null;
-  return { day: Number(m[3]), month: (MONTHS[lang] || MONTHS.uk)[Number(m[2]) - 1] };
 };
 
 export default function HomeHero({ soon = [], teenSoon = [], today = null, lang = 'uk' }) {
@@ -206,38 +197,19 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
             дедлайни, lib/weekly-top.js). Заголовок обіцяє «цього тижня» лише
             коли всі три справді закриваються за 7 днів. */}
         {items.length === 3 ? (
-          <aside className="v2-soon" aria-labelledby="v2-soon-title">
-            <span id="v2-soon-title" className="v2-soon-title">
-              {t.soonTitle}
-            </span>
-            {items.map((o) => {
-              const d = dateParts(o.deadline, lang);
-              const meta = [
-                TYPES[o.opportunity_type] || null,
-                ageRangeLabel(o, lang),
-                o.cost_type === 'free' ? t.free : null,
-              ].filter(Boolean).join(' · ');
-              return (
-                <Link key={o.slug} href={`${isEn ? '/en' : ''}/o/${o.slug}`} className="v2-soon-item">
-                  <span className="v2-soon-date" aria-hidden="true">
-                    {d ? (
-                      <>
-                        <span className="v2-soon-day">{d.day}</span>
-                        <span className="v2-soon-month">{d.month}</span>
-                      </>
-                    ) : <span className="v2-soon-month">{t.pinned}</span>}
-                  </span>
-                  <span className="v2-soon-text">
-                    <span className="v2-soon-name">{(isEn && o.title_en) || o.title}</span>
-                    <span className="v2-soon-meta">{meta}</span>
-                  </span>
-                </Link>
-              );
+          <TopWeekSlider
+            lang={lang}
+            title={t.soonTitle}
+            allHref={t.allDeadlinesHref}
+            allLabel={t.allDeadlines}
+            cards={sliderCards(items, {
+              lang,
+              pinned: t.pinned,
+              free: t.free,
+              type: TYPES,
+              age: (o) => ageRangeLabel(o, lang),
             })}
-            {t.allDeadlines ? (
-              <Link href={t.allDeadlinesHref} className="v2-soon-all">{t.allDeadlines}</Link>
-            ) : null}
-          </aside>
+          />
         ) : null}
 
         {/* Плитки тем — окремим рядком на всю ширину hero, під обома колонками
