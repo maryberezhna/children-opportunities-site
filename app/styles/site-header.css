@@ -69,7 +69,7 @@
 
 .site-header-cta {
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   font-weight: 700;
   font-size: 0.875rem;
   padding: 9px 16px;
@@ -180,7 +180,7 @@
   flex-wrap: wrap;
 }
 
-.lang-suggest-link { color: #b04312; /* на #fef2eb — ≈5,3:1 */ font-weight: 700; text-decoration: none; white-space: nowrap; }
+.lang-suggest-link { color: var(--accent-ink); /* на #fef2eb — ≈5,3:1 */ font-weight: 700; text-decoration: none; white-space: nowrap; }
 .lang-suggest-link:hover { text-decoration: underline; }
 
 .lang-suggest-close {

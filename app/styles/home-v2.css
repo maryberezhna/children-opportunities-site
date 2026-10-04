@@ -23,7 +23,7 @@
 /* Фон сторінки білий, зверху лише тонкий теплий відтінок на 200px. До
    15.09.2026 крем тягнувся на 520px і вся головна виглядала бежевою. */
 .v2-page {
-  background: #ffffff linear-gradient(180deg, #fbf7f0 0%, #ffffff 200px) no-repeat;
+  background: var(--surface-2) linear-gradient(180deg, #fbf7f0 0%, #ffffff 200px) no-repeat;
   min-height: 100vh;
 }
 
@@ -41,7 +41,7 @@
   position: sticky;
   top: 0;
   z-index: 10;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--v2-line);
@@ -173,7 +173,7 @@
   margin: 10px 0 0;
   padding: 8px;
   list-style: none;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   box-shadow: 0 16px 32px rgba(26, 26, 26, 0.08);
@@ -219,7 +219,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--v2-ink-3);
   white-space: nowrap;
 }
 .v2-nav .v2-nav-mega a { padding: 7px 12px; }
@@ -255,7 +255,7 @@
 
 .v2-mode button.is-on {
   background: var(--v2-ink);
-  color: #ffffff;
+  color: var(--surface-2);
 }
 
 .v2-support-btn {
@@ -267,7 +267,7 @@
   padding: 10px 18px;
   border-radius: 9999px;
   background: var(--v2-accent-strong);
-  color: #ffffff !important;
+  color: var(--surface-2) !important;
   box-shadow: 0 6px 20px rgba(232, 93, 36, 0.35);
   white-space: nowrap;
   text-decoration: none;
@@ -287,7 +287,7 @@
   justify-content: center;
   border: 1px solid var(--v2-line-strong);
   border-radius: 12px;
-  background: #ffffff;
+  background: var(--surface-2);
   cursor: pointer;
 }
 
@@ -328,7 +328,7 @@
   display: flex;
   flex-direction: column;
   padding: 4px 20px 20px;
-  background: #ffffff;
+  background: var(--surface-2);
   border-bottom: 1px solid var(--v2-line);
   box-shadow: 0 16px 32px rgba(26, 26, 26, 0.08);
 }
@@ -398,7 +398,7 @@
   border: 0;
   border-radius: 999px;
   background: var(--v2-accent-strong);
-  color: #ffffff;
+  color: var(--surface-2);
 }
 
 /* Кнопка Dityam+ і так стоїть у шапці — у меню її дублюємо лише там, де
@@ -455,7 +455,7 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
   height: 58px;
   padding: 0 20px;
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1.5px solid var(--v2-ink);
   border-radius: 999px;
   color: var(--v2-ink-3);
@@ -478,7 +478,7 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
   appearance: none;
 }
 
-.v2-hero-search-field input::placeholder { color: #b8b3a6; }
+.v2-hero-search-field input::placeholder { color: var(--v2-ink-3); }
 
 .v2-hero-search-btn {
   flex-shrink: 0;
@@ -487,7 +487,7 @@ body:has(.o-m-bar) .v2-header .v2-mmenu .v2-mmenu-support { display: flex; }
   border: 0;
   border-radius: 999px;
   background: var(--v2-ink);
-  color: #ffffff;
+  color: var(--surface-2);
   font-family: inherit;
   font-size: 1rem;
   font-weight: 600;
@@ -563,7 +563,7 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
   align-items: center;
   gap: 12px;
   padding: 9px 10px;
-  background: #ffffff;
+  background: var(--surface-2);
   border-radius: 14px;
   color: var(--v2-ink);
   text-decoration: none;
@@ -580,7 +580,7 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
   height: 44px;
   border-radius: 10px;
   background: var(--v2-accent-strong);
-  color: #ffffff;
+  color: var(--surface-2);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -738,7 +738,7 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
   padding: 9px 16px;
   border-radius: 9999px;
   border: 1px solid var(--v2-line);
-  background: #ffffff;
+  background: var(--surface-2);
   color: var(--v2-ink-2);
   cursor: pointer;
   transition: all 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
@@ -750,7 +750,7 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
    14.09.2026). Відтінок --v2-accent-strong (#c8501a): білий текст на ньому ≈4,7:1. */
 .v2-chip.is-on {
   background: var(--v2-accent-strong);
-  color: #ffffff;
+  color: var(--surface-2);
   border-color: var(--v2-accent-strong);
 }
 
@@ -774,7 +774,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   padding: 9px 32px 9px 14px;
   border: 1px solid var(--v2-line-strong);
   border-radius: 10px;
-  background: #ffffff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 12px center;
+  background: var(--surface-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 12px center;
   appearance: none;
   -webkit-appearance: none;
   cursor: pointer;
@@ -789,7 +789,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   border: 1px solid var(--v2-line-strong);
   border-radius: 10px;
   padding: 0 14px;
-  background: #ffffff;
+  background: var(--surface-2);
 }
 
 .v2-search .v2-search-icon { font-size: 0.9375rem; color: var(--v2-ink-3); }
@@ -808,7 +808,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   padding: 10px 0;
 }
 
-.v2-search input::placeholder { color: #b8b3a6; }
+.v2-search input::placeholder { color: var(--v2-ink-3); }
 
 /* ── Підказки пошуку (app/useSearchSuggest.js, 03.10.2026) ───────────────
    Список під полем у хіро, у бічній панелі й на телефоні. Вигляд — як у
@@ -823,7 +823,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   right: 0;
   top: calc(100% + 6px);
   z-index: 40;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line-strong);
   border-radius: 14px;
   box-shadow: 0 12px 32px rgba(26, 26, 26, 0.14);
@@ -900,7 +900,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   box-sizing: border-box;
   border: 1px solid var(--v2-line-strong);
   border-radius: 10px;
-  background: #ffffff url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 12px center;
+  background: var(--surface-2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%234a4a4a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>') no-repeat right 12px center;
   font-family: inherit;
   font-size: 15px;
   color: var(--v2-ink);
@@ -924,7 +924,7 @@ html[data-mode="teens"] .v2-chip.is-on {
   right: 0;
   top: calc(100% + 4px);
   z-index: 30;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line-strong);
   border-radius: 12px;
   box-shadow: 0 12px 32px rgba(26, 26, 26, 0.14);
@@ -1122,7 +1122,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
 }
 
 .v2-card {
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   padding: 22px;
@@ -1220,7 +1220,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
   cursor: pointer;
 }
 
-.v2-more-btn:hover { background: var(--v2-ink); color: #ffffff; }
+.v2-more-btn:hover { background: var(--v2-ink); color: var(--surface-2); }
 
 /* ── Нижні блоки ───────────────────────────────────────────────────────── */
 .v2-bottom {
@@ -1272,7 +1272,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
   padding: 12px 20px;
   border-radius: 9999px;
   background: var(--v2-ink);
-  color: #ffffff !important;
+  color: var(--surface-2) !important;
   white-space: nowrap;
   text-decoration: none;
   border: none;
@@ -1293,7 +1293,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
   white-space: nowrap;
 }
 
-.v2-btn-outline:hover { background: var(--v2-ink); color: #ffffff; }
+.v2-btn-outline:hover { background: var(--v2-ink); color: var(--surface-2); }
 
 .v2-panel-note { font-size: 0.8125rem; color: var(--v2-ink-3); }
 .v2-panel-link { font-size: 0.875rem; font-weight: 500; color: var(--v2-ink-2); }
@@ -1452,7 +1452,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
   max-width: 560px;
   max-height: calc(100vh - 48px);
   overflow: auto;
-  background: #ffffff;
+  background: var(--surface-2);
   color: var(--v2-ink);
   border-radius: 24px;
   padding: 44px 40px 40px;
@@ -1523,7 +1523,7 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
   border-radius: 14px;
   border: none;
   background: var(--v2-accent-strong);
-  color: #ffffff;
+  color: var(--surface-2);
   cursor: pointer;
   margin-top: 4px;
 }
@@ -1734,9 +1734,9 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 .v2-cup-body {
   position: relative;
   height: 62px;
-  border: 2px solid var(--v2-ink);
+  border: 2px solid var(--cup-line);
   border-radius: 6px 6px 22px 22px;
-  background: #fffdf8;
+  background: #fffdf8;   /* порцеляна — малюнок, світлий в обох темах */
   overflow: hidden;
 }
 
@@ -1783,7 +1783,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   height: 96px;
   border: 1px solid var(--v2-line-strong);
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--surface-2);
   overflow: hidden;
 }
 
@@ -1861,7 +1861,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   height: 96px;
   border-radius: 16px;
   background: var(--cool-2);
-  color: #0e5449;
+  color: var(--chip-ink-teal);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1887,7 +1887,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   align-items: center;
   min-height: 32px;
   padding: 0 13px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 100px;
   font-size: 0.875rem;
@@ -1970,7 +1970,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   align-items: flex-start;
   gap: 8px;
   padding: 18px;
-  background: #ffffff;
+  background: var(--surface-2);
   border-radius: 16px;
   color: var(--v2-ink);
   text-decoration: none;
@@ -1994,7 +1994,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   padding: 5px 11px;
   border-radius: 999px;
   background: var(--v2-accent-strong);
-  color: #ffffff;
+  color: var(--surface-2);
   font-size: 0.8125rem;
   font-weight: 700;
   line-height: 1.2;
@@ -2009,7 +2009,7 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 
 .v2-tw-card .v2-tw-meta { color: var(--v2-ink-3); }
 .v2-tw-card .v2-tw-more { color: var(--v2-accent-strong); }
-.v2-tw-card .v2-tw-date { color: #ffffff; }
+.v2-tw-card .v2-tw-date { color: var(--surface-2); }
 
 .v2-tw-name {
   font-size: 1.25rem;

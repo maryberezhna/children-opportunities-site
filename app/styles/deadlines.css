@@ -83,7 +83,7 @@
    списку однакових чипів вони б загубились. */
 .chip-intl {
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   border-color: var(--accent);
 }
 
@@ -109,7 +109,7 @@
   padding: 12px 24px;
   font-size: 0.9375rem;
   font-weight: 600;
-  color: #fff;
+  color: var(--surface-2);
   background: var(--ink);
   border-radius: 12px;
   text-decoration: none;

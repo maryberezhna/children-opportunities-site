@@ -72,7 +72,7 @@
 .contact-input:focus,
 .contact-textarea:focus {
   outline: none;
-  background: #fff;
+  background: var(--surface-2);
   border-color: #e85d24;
   box-shadow: 0 0 0 3px rgba(232, 93, 36, 0.15);
 }
@@ -95,7 +95,7 @@
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
-  color: #fff;
+  color: var(--surface-2);
   background: var(--v2-accent-strong);
   border: 0;
   border-radius: 999px;
@@ -127,7 +127,7 @@
   align-items: flex-start;
   font-size: 0.9375rem;
   line-height: 1.45;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   cursor: pointer;
 }
 
@@ -136,7 +136,7 @@
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  accent-color: #c8501a;
+  accent-color: var(--v2-accent-strong);
 }
 
 .contact-privacy {
@@ -169,7 +169,7 @@
   max-width: 46ch;
   font-size: 0.96875rem;
   line-height: 1.55;
-  color: #54617a;
+  color: var(--v2-ink-2);
 }
 
 .contact-form-again {
@@ -187,7 +187,7 @@
 
 .contact-form-again:hover {
   background: #e85d24;
-  color: #fff;
+  color: var(--surface-2);
 }
 
 @media (max-width: 640px) {

@@ -73,12 +73,12 @@
   white-space: nowrap;
 }
 
-.chip-type { background: var(--purple-1); color: #4c3d8c; }
-.chip-age { background: var(--cool-2); color: #0a5348; }
-.chip-free { background: var(--green-1); color: #2d5814; }
-.chip-paid { background: var(--warm-2); color: #8a5a0a; }
+.chip-type { background: var(--purple-1); color: var(--chip-ink-purple); }
+.chip-age { background: var(--cool-2); color: var(--chip-ink-teal); }
+.chip-free { background: var(--green-1); color: var(--chip-ink-green); }
+.chip-paid { background: var(--warm-2); color: var(--chip-ink-amber); }
 .chip-cost-ask { background: var(--warm-2); color: #6b4a0a; }
-.chip-need { background: var(--pink-2); color: #8a1a3a; }
+.chip-need { background: var(--pink-2); color: var(--chip-ink-pink); }
 .chip-aid { background: #e5eefc; color: #1b4a8f; font-weight: 500; }
 .chip-intl { background: #e0f2fe; color: #075985; }
 
@@ -325,7 +325,7 @@
   margin-top: 10px;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--v2-accent-strong, #c8501a);
+  color: var(--v2-accent-strong, var(--v2-accent-strong));
 }
 
 /* ── A/B-тест картки (lib/ab-card.js, 29.09.2026) ─────────────────────────
