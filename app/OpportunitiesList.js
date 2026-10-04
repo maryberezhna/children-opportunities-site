@@ -1022,9 +1022,12 @@ export default function OpportunitiesList({
 
   // Лічильник на кнопці «Фільтри»: лише те, що живе в шторці й не видно в
   // рядку. Тип видно чипом у самому рядку, пошук — у полі.
+  // Види місця (Україна / за кордоном / онлайн) з 04.10.2026 стоять окремим
+  // рядком над списком, тож у шторці їх більше не рахуємо — як і тип, який
+  // видно чипом. Міста й країни лишаються в шторці, тому їх рахуємо далі.
   const sheetActive = age.length + need.length
     + (deadline !== 'all' ? 1 : 0) + (cost !== 'all' ? 1 : 0)
-    + place.filter((v) => v !== presetCity).length;
+    + place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v)).length;
 
   const closeSheet = () => {
     setDraft(null);
@@ -1556,6 +1559,7 @@ export default function OpportunitiesList({
           ) : null}
         </div>
 
+
         <div className="v2-selects">
           {/* Селекти на 901–1099px лишились на одне значення; мультивибір —
               у бічній панелі й шторці. Показуємо перше обране. «Де» — виняток,
@@ -1687,6 +1691,37 @@ export default function OpportunitiesList({
                 </button>
               ))}
               <button type="button" className="m-active-reset" onClick={reset}>{t.reset}</button>
+            </div>
+          ) : null}
+
+          {/* «Де» одразу перед списком — лише на телефоні (Марія, 04.10.2026:
+              «на мобільному не видно одразу можливості в Україні чи за кордоном»).
+              На ширшому екрані цей вибір і так видно в рядку фільтрів під пошуком.
+
+              Три види місця, і їх можна вибрати кілька («можна вибрати 2 обидва
+              разом») — цим відає pickPlace: решта місць додається до обраних,
+              а країна й «за кордоном» заміняють одне одного, бо «або» між ними
+              дало б увесь закордон замість обраної країни.
+
+              Числа поруч — це і є відповідь на питання «скільки чого»: саме їх
+              бракувало, щоб зрозуміти склад каталогу з першого екрана. Беремо
+              готові лічильники фасета (deskPlace), тож вони враховують решту
+              фільтрів. Нульові види ховаємо, обраний лишаємо завжди — інакше
+              він зник би разом зі способом його зняти. */}
+          {mobileLayout && deskPlace ? (
+            <div className="m-places" role="group" aria-label={t.sel.where}>
+              {PLACE_KINDS.filter((v) => deskPlace.counts[v] > 0 || place.includes(v)).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  className={`m-chip m-place${place.includes(v) ? ' is-on' : ''}`}
+                  aria-pressed={place.includes(v)}
+                  onClick={() => setPlace(pickPlace(place, v))}
+                >
+                  {placeLabel(v)}
+                  <span className="m-chip-n">{deskPlace.counts[v] ?? 0}</span>
+                </button>
+              ))}
             </div>
           ) : null}
 
