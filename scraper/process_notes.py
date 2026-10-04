@@ -41,9 +41,15 @@ import anthropic
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
 import rejections
+import usage
 from normalizer import VALID_OPP_TYPES
 logger = logging.getLogger("process_notes")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+
+MODEL = "claude-sonnet-5"
+# Скільки зʼїла обробка коментарів — у llm_usage (04.10.2026, після
+# вичерпаного балансу). Запусків щогодини — рядки дня складаються (usage.record).
+SPEND = usage.Spend("process-notes")
 
 SITE_URL = os.environ.get("SITE_URL", "https://dityam.com.ua")
 BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
@@ -409,7 +415,7 @@ def ask_llm(llm, record: dict, body: str) -> tuple[dict, dict]:
     current = {k: record.get(k) for k in EDITABLE}
     current["status"] = record.get("status")
     resp = llm.messages.create(
-        model="claude-sonnet-5",
+        model=MODEL,
         max_tokens=1500,
         system=SYSTEM.format(today=datetime.now(timezone.utc).date().isoformat()),
         tools=[APPLY_TOOL],
@@ -419,6 +425,7 @@ def ask_llm(llm, record: dict, body: str) -> tuple[dict, dict]:
             f"КОМЕНТАР РЕДАКТОРА:\n{body}\n\n"
             "Поверни лише поля, які змінюються."}],
     )
+    SPEND.add(MODEL, resp)
     tool_use = next((b for b in resp.content if b.type == "tool_use"), None)
     raw = tool_use.input if tool_use else {}
     extra = {
@@ -518,6 +525,14 @@ def adopt_legacy(client) -> int:
 
 
 def main() -> int:
+    # Витрати пишемо в finally: і прогін, що впав посеред, уже заплатив.
+    try:
+        return _main()
+    finally:
+        SPEND.record()
+
+
+def _main() -> int:
     from db import get_client
     client = get_client()
 

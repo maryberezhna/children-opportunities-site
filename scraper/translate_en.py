@@ -10,14 +10,20 @@
 українське поле, а не порожнечу. Тому скрипт можна ганяти частинами й
 зупиняти будь-коли.
 
-Черга: активні записи, у яких перекладу немає зовсім або він старіший за
-останню зміну запису (текст відредагували — переклад застарів).
+Черга: активні записи, у яких перекладу немає зовсім або в яких змінився сам
+текст — назва, короткий чи повний опис (див. text_hash).
+
+До 04.10.2026 застарілим вважався переклад, старший за updated_at. Але
+updated_at рухає не лише правка тексту: повторна екстракція (db.py), планові
+перевірки (proof_recheck.py) і TTL лише «торкаються» запису — і Haiku щоночі
+перекладав наново тексти, у яких не змінилось ні слова.
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, ANTHROPIC_API_KEY,
      TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_CHAT_ID (підсумок у чат),
      BATCH (скільки за прогін, деф. 200), WORKERS (деф. 6),
      DRY_RUN=true — лише лог.
 """
+import hashlib
 import json
 import logging
 import os
@@ -30,6 +36,7 @@ import anthropic
 
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import usage
 logger = logging.getLogger("translate_en")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -42,6 +49,39 @@ DRY = os.environ.get("DRY_RUN", "").lower() == "true"
 # Довгий опис ріжемо: далі йдуть переважно контакти й реквізити, які
 # перекладати нема сенсу, а токени вони з'їдають на кожному записі.
 DETAILS_LIMIT = 6000
+
+MODEL = "claude-haiku-4-5-20251001"
+
+# Скільки зʼїв переклад — у llm_usage (04.10.2026, після вичерпаного балансу).
+SPEND = usage.Spend("translate-en")
+
+# ── Хеш тексту, з якого зроблено переклад ──────────────────────────────────
+# Поля — рівно ті, що йдуть у модель (translate_one). Опис хешуємо цілим, а не
+# перші DETAILS_LIMIT знаків: правка в хвості рідкісна, а одна формула на
+# повний текст простіша й однакова в Python і SQL.
+#
+# Формула мусить побайтно збігатися з SQL у міграції
+# supabase/migrations/20261004_llm_spend_memory.sql — нею заповнено хеш для
+# записів, чий переклад на момент міграції був свіжий. Розійдуться — кожен
+# такий запис перекладеться ще раз. Тест: tests/test_translate_hash.py.
+# NULL і порожній рядок — одне й те саме: translate_one їх теж не розрізняє.
+HASH_FIELDS = ("title", "summary", "details")
+HASH_SEP = "\x1f"   # chr(31), роздільник одиниць: у тексті його не буває
+HASH_SQL = ("md5(coalesce(title, '') || chr(31) || coalesce(summary, '') "
+            "|| chr(31) || coalesce(details, ''))")
+
+
+def text_hash(row: dict) -> str:
+    """md5 тексту запису — той самий, що HASH_SQL рахує в базі."""
+    text = HASH_SEP.join(row.get(k) or "" for k in HASH_FIELDS)
+    return hashlib.md5(text.encode("utf-8")).hexdigest()
+
+
+def is_stale(row: dict) -> bool:
+    """Переклад застарів, лише якщо змінився сам текст. Хешу немає (NULL) —
+    теж застарів: так міграція позначила тих, хто вже тоді чекав перекладу."""
+    return row.get("translated_hash") != text_hash(row)
+
 
 TOOL = {
     "name": "translate",
@@ -110,13 +150,14 @@ def translate_one(llm, row):
 
     try:
         resp = llm.messages.create(
-            model="claude-haiku-4-5-20251001",
+            model=MODEL,
             max_tokens=4000,
             system=SYSTEM,
             tools=[TOOL],
             tool_choice={"type": "tool", "name": "translate"},
             messages=[{"role": "user", "content": body}],
         )
+        SPEND.add(MODEL, resp)
     except Exception as e:
         logger.error("LLM failed for «%s»: %s", row["title"][:60], e)
         return None
@@ -145,9 +186,48 @@ def translate_one(llm, row):
     return patch
 
 
+def has_hash_column(client) -> bool:
+    """Чи застосовано міграцію з translated_hash.
+
+    Без колонки працюємо по-старому (updated_at > translated_at): вважати
+    відсутній хеш застарілим означало б щоночі перекладати BATCH записів
+    наново, а писати його — губити кожен переклад на помилці «немає колонки»."""
+    try:
+        client.table("opportunities").select("translated_hash").limit(1).execute()
+        return True
+    except Exception as e:                                   # noqa: BLE001
+        logger.warning("Колонки translated_hash немає (міграцію 20261004_llm_spend_memory.sql "
+                       "не застосовано?): %s. Застарілість — за updated_at, як до 04.10.2026.", e)
+        return False
+
+
+def stale_by_hash(client, limit: int) -> list[dict]:
+    """Перекладені записи, чий текст змінився після перекладу, — найдавніші
+    переклади першими.
+
+    Читаємо всі перекладені, а не перші `limit` за translated_at, як колись:
+    свіжі давні переклади стояли б на початку черги вічно й закривали собою
+    справді застарілі. Порівняти хеш у PostgREST-фільтрі не можна, тож — тут."""
+    rows, start = [], 0
+    while True:
+        page = (client.table("opportunities")
+                .select("id, title, summary, details, translated_at, translated_hash")
+                .eq("status", "active")
+                .is_("canonical_slug", "null")
+                .not_.is_("translated_at", "null")
+                .order("translated_at").order("id")
+                .range(start, start + 999).execute().data or [])
+        rows.extend(page)
+        if len(page) < 1000:
+            break
+        start += 1000
+    return [r for r in rows if is_stale(r)][:max(0, limit)]
+
+
 def main() -> int:
     from db import get_client
     client = get_client()
+    hashed = has_hash_column(client)
 
     # Спочатку ті, у кого перекладу немає зовсім (translated_at is null),
     # потім найдавніші переклади — так перший прогін дає максимум користі.
@@ -158,8 +238,11 @@ def main() -> int:
             .is_("translated_at", "null")
             .limit(BATCH).execute().data or [])
 
-    if len(rows) < BATCH:
-        # Добираємо застарілі переклади: запис змінили після перекладу.
+    if len(rows) < BATCH and hashed:
+        # Добираємо застарілі переклади: змінився сам текст.
+        rows += stale_by_hash(client, BATCH - len(rows))
+    elif len(rows) < BATCH:
+        # Старий шлях — лише доки міграцію не застосовано (див. has_hash_column).
         stale = (client.table("opportunities")
                  .select("id, title, summary, details, updated_at, translated_at")
                  .eq("status", "active")
@@ -178,27 +261,36 @@ def main() -> int:
 
     llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     done = failed = 0
+    # Сухий прогін — «лише лог»: і витрати лише в лог, не в llm_usage.
+    SPEND.dry = DRY
 
     def work(row):
         patch = translate_one(llm, row)
         if not patch:
             return row, None
+        if hashed:
+            # Хеш того тексту, який щойно переклали, — не того, що в базі
+            # зараз: якщо запис встигли поправити, наступний прогін це побачить.
+            patch["translated_hash"] = text_hash(row)
         return row, patch
 
-    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        for row, patch in pool.map(work, rows):
-            if not patch:
-                failed += 1
-                continue
-            logger.info("%s → %s", row["title"][:45], patch["title_en"][:45])
-            if not DRY:
-                try:
-                    client.table("opportunities").update(patch).eq("id", row["id"]).execute()
-                except Exception as e:
-                    logger.error("update failed for %s: %s", row["id"], e)
+    try:
+        with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+            for row, patch in pool.map(work, rows):
+                if not patch:
                     failed += 1
                     continue
-            done += 1
+                logger.info("%s → %s", row["title"][:45], patch["title_en"][:45])
+                if not DRY:
+                    try:
+                        client.table("opportunities").update(patch).eq("id", row["id"]).execute()
+                    except Exception as e:
+                        logger.error("update failed for %s: %s", row["id"], e)
+                        failed += 1
+                        continue
+                done += 1
+    finally:
+        SPEND.record(client)
 
     left = (client.table("opportunities")
             .select("id", count="exact", head=True)

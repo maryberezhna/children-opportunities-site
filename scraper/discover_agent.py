@@ -58,6 +58,7 @@ from db import get_client, record_crawl_result, same_school
 import rejections
 import anthropic
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import usage
 import deficit  # клітинка дня: попит ÷ надходження (23.09.2026)
 import hubs
 from keywords import (
@@ -81,6 +82,9 @@ MODEL = os.environ.get("DISCOVER_MODEL") or "claude-sonnet-5"
 # і агент три дні не шукав нічого. Тому скрізь `or` — він ловить і "".
 MAX_CANDIDATES = int(os.environ.get("DISCOVER_MAX") or "5")
 DRY_RUN = os.environ.get("DRY_RUN") == "true"
+# Скільки зʼїв агент — токени й вебпошуки — у llm_usage (04.10.2026, після
+# вичерпаного балансу). Імʼя воркфлоу — з файла: discover чи discover-rare.
+SPEND = usage.Spend("discover")
 # Duplicate control: ≥ DUP_SKIP title match → drop the candidate entirely;
 # DUP_TAG..DUP_SKIP → keep but flag as a possible duplicate of the match.
 DUP_SKIP = float(os.environ.get("DUP_SKIP") or "0.80")
@@ -459,6 +463,7 @@ def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str, dict, str
                        f"Кандидат: «{rec['title']}»\nАдреса: {rec['source_url']}\n\n"
                        f"Текст сторінки:\n{page}"}],
         )
+        SPEND.add(VERIFY_MODEL, resp)
         block = next((b for b in resp.content if b.type == "tool_use"), None)
         out = block.input if block else {}
     except Exception as e:
@@ -662,6 +667,7 @@ def search_candidates(kw: str, region: dict) -> list[dict]:
         return []
 
     data = r.json()
+    SPEND.add(MODEL, data)
     # Final answer = concatenation of top-level text blocks, in order.
     text = "".join(b.get("text", "") for b in data.get("content", [])
                    if b.get("type") == "text")
@@ -894,6 +900,16 @@ def remember_cell(kw: str, found: int, saved: int) -> None:
 
 
 def main() -> int:
+    # Витрати пишемо в finally: пошук коштує й тоді, коли кандидатів нуль
+    # (ранній вихід нижче) чи прогін упав посеред. Сухий прогін — лише в лог.
+    SPEND.dry = DRY_RUN
+    try:
+        return _main()
+    finally:
+        SPEND.record()
+
+
+def _main() -> int:
     region = region_of_day()
     diaspora = is_diaspora(region)
     kw = keyword_of_day(diaspora)

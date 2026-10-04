@@ -50,9 +50,14 @@ from urllib.parse import urlparse
 import httpx
 from bs4 import BeautifulSoup
 
+import usage
 from canonical import canonical_url
 from db import get_client
 from normalizer import Normalizer, missing_required
+
+# Скільки зʼїла екстракція пропозицій — у llm_usage (04.10.2026, після
+# вичерпаного балансу). Той самий Normalizer, що в нічному скрапі (scrape-extract).
+SPEND = usage.Spend("process-suggestions")
 
 logger = logging.getLogger("process_suggestions")
 
@@ -555,15 +560,26 @@ def run(apply: bool = False, limit: int = 50) -> dict:
     normalizer = Normalizer()
     stats = {}
     seen = set()
-    for s in rows:
-        status, why = process_one(sb, normalizer, s, apply, seen)
-        stats[status] = stats.get(status, 0) + 1
-        mark = {"imported": "✅", "duplicate": "♻️", "needs_human": "🟡",
-                "rejected": "❌", "new": "⏸"}.get(status, "·")
-        print(f"{mark} {(s.get('title') or s.get('url') or '')[:56]:<56} {why}")
-        if apply and status != "new":
-            sb.table("opportunity_suggestions").update(
-                {"status": status}).eq("id", s["id"]).execute()
+    try:
+        for s in rows:
+            status, why = process_one(sb, normalizer, s, apply, seen)
+            stats[status] = stats.get(status, 0) + 1
+            mark = {"imported": "✅", "duplicate": "♻️", "needs_human": "🟡",
+                    "rejected": "❌", "new": "⏸"}.get(status, "·")
+            print(f"{mark} {(s.get('title') or s.get('url') or '')[:56]:<56} {why}")
+            if apply and status != "new":
+                sb.table("opportunity_suggestions").update(
+                    {"status": status}).eq("id", s["id"]).execute()
+    finally:
+        # Дамп «нічого не записано» — витрати теж лише в лог.
+        SPEND.dry = not apply
+        SPEND.add_totals(normalizer.model,
+                         calls=getattr(normalizer, "api_calls", 0),
+                         uncached_in=normalizer.uncached_input_tokens,
+                         cache_read=normalizer.cache_read_tokens,
+                         cache_write=normalizer.cache_write_tokens,
+                         output=normalizer.output_tokens)
+        SPEND.record(sb)
 
     print("\n" + ", ".join(f"{k}: {v}" for k, v in sorted(stats.items())))
     if not apply:

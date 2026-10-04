@@ -45,6 +45,7 @@ from urllib.parse import urlparse
 import httpx
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import usage
 
 from db import get_client
 
@@ -54,6 +55,9 @@ logger = logging.getLogger(__name__)
 MODEL = os.environ.get("DISCOVER_SOURCES_MODEL") or "claude-sonnet-5"
 MAX_CANDIDATES = int(os.environ.get("DISCOVER_SOURCES_MAX", "6"))
 DRY_RUN = os.environ.get("DRY_RUN") == "true"
+# Скільки зʼїв розвідник — токени й вебпошуки — у llm_usage (04.10.2026, після
+# вичерпаного балансу). Імʼя воркфлоу — з файла: discover-sources чи discover-rare.
+SPEND = usage.Spend("discover-sources")
 
 # Мінімальний бал, щоб кандидат узагалі потрапив у чергу. Нижче — шум:
 # новинні агрегатори, сторінки організацій без програм, комерційні курси.
@@ -215,6 +219,7 @@ def search(theme: str) -> list[dict]:
         logger.error("Anthropic API HTTP %s: %s", r.status_code, detail)
         return []
     data = r.json()
+    SPEND.add(MODEL, data)
     text = "".join(b.get("text", "") for b in data.get("content", [])
                    if b.get("type") == "text")
     used = data.get("usage", {}).get("server_tool_use", {}).get("web_search_requests")
@@ -335,7 +340,9 @@ def score(client_key: str, cand: dict, probe_status: str) -> tuple[int, str]:
         if r.status_code >= 400:
             api_guard.note(r.status_code, r.text[:400])
         r.raise_for_status()
-        for block in r.json().get("content", []):
+        data = r.json()
+        SPEND.add(body["model"], data)
+        for block in data.get("content", []):
             if block.get("type") == "tool_use":
                 out = block["input"]
                 return int(out.get("score", 0)), (out.get("reason") or "")[:400]
@@ -365,6 +372,16 @@ def known_domains(sb) -> set[str]:
 
 
 def main() -> int:
+    # Витрати пишемо в finally: пошук коштує й тоді, коли кандидатів нуль
+    # (ранній вихід нижче) чи прогін упав посеред. Сухий прогін — лише в лог.
+    SPEND.dry = DRY_RUN
+    try:
+        return _main()
+    finally:
+        SPEND.record()
+
+
+def _main() -> int:
     theme = theme_of_day()
     logger.info("🔎 Розвідник джерел — тема дня: «%s» (модель %s)%s",
                 theme, MODEL, " [DRY RUN]" if DRY_RUN else "")
