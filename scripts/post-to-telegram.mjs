@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, isUkrainianPost, placeText } from './post-labels.mjs';
+import { tagKeyboard, tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
+
+// Позначка джерела на посиланнях поста — щоб GA4 бачив канал, а не «прямий» захід.
+const POST_UTM = { ...UTM_CHANNEL, content: 'new' };
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -236,13 +240,13 @@ async function sendTelegramMessage(text, replyMarkup) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       chat_id: TELEGRAM_CHAT_ID,
-      text,
+      text: tagSiteLinks(text, POST_UTM),
       parse_mode: 'HTML',
       // Preview is ON again: /o/[slug] now renders its own OG image (title, age,
       // cost, deadline), so the card carries real information per post rather
       // than repeating one shared picture. Set TELEGRAM_LINK_PREVIEW=off to revert.
       disable_web_page_preview: process.env.TELEGRAM_LINK_PREVIEW === 'off',
-      ...(replyMarkup ? { reply_markup: replyMarkup } : {}),
+      ...(replyMarkup ? { reply_markup: tagKeyboard(replyMarkup, POST_UTM) } : {}),
     }),
   });
   const json = await res.json();

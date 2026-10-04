@@ -19,6 +19,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { resolveTokens, hasTokens } from './telegram-counters.mjs';
+import { tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
 
 const FILE = process.env.FILE || process.argv[2];
 const DRY = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
@@ -101,7 +102,7 @@ const res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    chat_id: CHAT, text, parse_mode: 'HTML',
+    chat_id: CHAT, text: tagSiteLinks(text, { ...UTM_CHANNEL, content: 'post' }), parse_mode: 'HTML',
     ...(EDIT_ID ? { message_id: EDIT_ID } : {}),
   }),
 });
