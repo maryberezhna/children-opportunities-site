@@ -182,6 +182,9 @@ class NotifyPublished(unittest.TestCase):
         self.assertIn("https://dityam.com.ua/o/struny-oseni-2026", body)
         self.assertIn("«Топ тижня»", body)
         self.assertIn("500 грн", body)
+        # Умови з 04.10.2026: 2 тижні в топі й 2 пости лише в Telegram.
+        self.assertIn("2 тижні", body)
+        self.assertNotIn("Instagram", body)
         self.assertIn("Марія Шутяк", body)
         self.assertNotIn("Бережна", body)
         self.assertIsNotNone(self.row(db)["published_letter_at"])
