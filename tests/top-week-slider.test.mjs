@@ -91,8 +91,25 @@ test('картка показується одна, але в розмітці �
   // Інакше пошуковик і читач екрана бачили б лише першу.
   const src = read('app/TopWeekSlider.js');
   assert.match(src, /cards\.map/, 'усі картки мають бути в розмітці');
-  assert.match(src, /aria-hidden=\{n === i \? undefined : 'true'\}/);
-  assert.match(src, /tabIndex=\{n === i \? undefined : -1\}/, 'прихована картка не має ловити таб');
+  assert.match(src, /aria-hidden=\{all \|\| n === i \? undefined : 'true'\}/);
+  assert.match(src, /tabIndex=\{all \|\| n === i \? undefined : -1\}/, 'прихована картка не має ловити таб');
+});
+
+// --- широкий розклад (Марія, 04.10.2026: «там можна всі 3 помістити») ---
+//
+// У підбірці блок на всю ширину, і одна картка в ньому виглядала порожньою
+// коробкою. Три поруч — і каруселі там не треба зовсім.
+test('у широкому розкладі каруселі немає', () => {
+  const src = read('app/TopWeekSlider.js');
+  assert.match(src, /if \(all\) return undefined;/, 'таймер має мовчати, коли видно всі три');
+  assert.match(src, /total > 1 && !all \? \(\s*<div className="v2-tw-dots/, 'крапок при трьох картках бути не має');
+  assert.match(src, /v2-tw--all/, 'немає класу широкого розкладу');
+});
+
+test('підбірка бере широкий розклад, головна — вузький', () => {
+  assert.match(read('app/TopicPage.js'), /<TopWeekSlider\s*\n\s*all\b/, 'у підбірці мають бути всі три');
+  assert.doesNotMatch(read('app/HomeHero.js'), /<TopWeekSlider\s*\n\s*all\b/,
+    'у хіро колонка вузька — там одна картка, що міняється');
 });
 
 test('пауза під мишею й на фокусі — у самому компоненті', () => {
