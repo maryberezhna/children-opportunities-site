@@ -97,3 +97,45 @@ test('вік 18–18 показується як «18+» обома мовами
   assert.equal(ageLabel(12, 12), '12 років');
   assert.equal(opportunityTitle({ name: 'Інженерна програма', typeLabel: 'Курс', ageRange: '18+' }), 'Інженерна програма — Курс для дітей 18+');
 });
+
+// --- типи подій, 04.10.2026 ---
+//
+// Перевірка «чи все оптимізовано під AI-пошук» знайшла 33 активні записи, які
+// МАЮТЬ дату проведення, але віддавали машинам звичайний WebPage — без
+// startDate, місця, ціни й віку. Саме ця розмітка й відрізняє «подія 24
+// жовтня» від «просто сторінка».
+test('подія з датою віддає Event, а не WebPage', () => {
+  for (const type of ['conference', 'hackathon', 'workshop', 'summer_school',
+                      'excursion', 'sport_tournament', 'camp', 'festival',
+                      'competition', 'olympiad']) {
+    assert.equal(structuredType({ opportunity_type: type, event_start_date: '2026-10-24' }),
+      'Event', type);
+  }
+});
+
+// «sport_event» був мертвим рядком: такого типу в словнику немає зовсім,
+// тож спортивні турніри не отримували Event ніколи.
+test('у переліку подій немає вигаданих типів', async () => {
+  const { default: criteria } = await import('../lib/publish-criteria.json', { with: { type: 'json' } });
+  const allowed = new Set(criteria.required.type.allowed);
+  const src = readFileSync(new URL('../lib/opportunity-seo.js', import.meta.url), 'utf8');
+  const list = /const EVENT_TYPES = new Set\(\[([\s\S]*?)\]\)/.exec(src)[1];
+  const types = [...list.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  assert.ok(types.length >= 10, `очікую повний перелік, знайдено ${types.length}`);
+  for (const t of types) assert.ok(allowed.has(t), `«${t}» немає серед дозволених типів`);
+});
+
+// Програма з датою початку — не подія. Називати стипендію Event означало б
+// вигадати категорію, якої немає.
+test('програма з датою початку лишається WebPage', () => {
+  for (const type of ['scholarship', 'internship', 'mentorship', 'study_program', 'grant']) {
+    assert.equal(structuredType({ opportunity_type: type, event_start_date: '2026-10-24' }),
+      'WebPage', type);
+  }
+});
+
+test('без дати проведення Event не вигадуємо', () => {
+  // Google вимагає startDate, і сторінки без неї висіли помилкою в Search Console.
+  assert.equal(structuredType({ opportunity_type: 'conference' }), 'WebPage');
+  assert.equal(structuredType({ opportunity_type: 'camp', deadline: '2026-10-08' }), 'WebPage');
+});
