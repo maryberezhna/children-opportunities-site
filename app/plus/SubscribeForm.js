@@ -9,7 +9,8 @@ import { trackConversion } from '@/lib/track';
  * просимо — написати людині в день запуску можна лише в Telegram.
  */
 const C = {
-  muted: '#54617a',
+  // Токен, а не число: у нічній темі цей сірий давав 2,5:1 на темному тлі.
+  muted: 'var(--v2-ink-2)',
 };
 
 const L = {

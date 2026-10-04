@@ -121,7 +121,7 @@
   width: 100%;
   padding: 16px 20px;
   background: #1a73a3; /* #229ed9 з білим — 3:1 */
-  color: #ffffff;
+  color: var(--surface-2);
   border: none;
   border-radius: 14px;
   font-size: 1rem;
@@ -271,7 +271,7 @@
   align-items: center;
   border-radius: 999px;
   background: #1a73a3;
-  color: #fff;
+  color: var(--surface-2);
   text-decoration: none;
   white-space: nowrap;
 }

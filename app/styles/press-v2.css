@@ -42,7 +42,7 @@
 }
 
 .pk-stat {
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   padding: 18px 18px 16px;
@@ -74,7 +74,7 @@
   flex-direction: column;
   gap: 10px;
   padding: 20px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   color: inherit;
@@ -139,7 +139,7 @@
   padding: 7px 14px;
   border-radius: 9999px;
   border: 1px solid var(--v2-line-strong);
-  background: #ffffff;
+  background: var(--surface-2);
   color: var(--v2-ink);
   cursor: pointer;
   transition: border-color 0.2s;
@@ -181,7 +181,7 @@
   flex-direction: column;
   gap: 6px;
   padding: 16px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   color: inherit;
@@ -207,7 +207,7 @@
   overflow: hidden;
 }
 
-.pk-download-preview.is-cover { background: #ffffff; }
+.pk-download-preview.is-cover { background: var(--surface-2); }
 .pk-download-preview.is-cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .pk-download-preview.is-icon img { width: 56px; height: 56px; display: block; }
 

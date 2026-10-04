@@ -54,7 +54,7 @@
   gap: 32px;
   padding: 40px;
   border-radius: 24px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
 }
 
@@ -95,7 +95,7 @@
   gap: 8px;
   padding: 22px;
   border-radius: 16px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
 }
 
@@ -166,7 +166,7 @@
   justify-content: center;
   width: 140px;
   height: 72px;
-  background: #ffffff;
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
   border-radius: 16px;
   text-decoration: none;

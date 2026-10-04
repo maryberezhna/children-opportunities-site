@@ -23,7 +23,7 @@
   display: flex;
   flex-direction: column;
   gap: 40px;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   font-family: var(--font-sans), -apple-system, sans-serif;
 }
 .tp-main a { color: var(--v2-accent-strong); text-decoration: none; }
@@ -44,15 +44,15 @@
 .tp-crumbs {
   padding-top: 20px;
   font-size: 15px;
-  color: #6b6b6b;
+  color: var(--v2-ink-3);
   display: flex;
   gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
-.tp-main .tp-crumbs a { color: #6b6b6b; }
-.tp-main .tp-crumbs a:hover { color: #1a1a1a; }
-.tp-crumbs [aria-current] { color: #1a1a1a; }
+.tp-main .tp-crumbs a { color: var(--v2-ink-3); }
+.tp-main .tp-crumbs a:hover { color: var(--v2-ink); }
+.tp-crumbs [aria-current] { color: var(--v2-ink); }
 /* Зона дотику 44px: посилання в крихтах було 22px заввишки. */
 .tp-main .tp-crumbs a,
 .tp-main .tp-home-link a { display: inline-flex; align-items: center; min-height: 44px; }
@@ -84,7 +84,7 @@
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--v2-ink-3);
 }
 .tp-h1 {
   margin: 0;
@@ -99,7 +99,7 @@
   margin: 0;
   font-size: 17px;
   line-height: 1.55;
-  color: #4a4a4a;
+  color: var(--v2-ink-2);
   max-width: 600px;
   text-wrap: pretty;
 }
@@ -108,9 +108,9 @@
 .tp-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 2px; }
 
 /* «{N} можливостей · {M} безкоштовних · {K} закриваються цього тижня» */
-.tp-hero-stats { margin: 0; font-size: 15px; line-height: 1.5; color: #6b6b6b; }
-.tp-hero-stats strong { font-weight: 700; color: #1a1a1a; }
-.tp-hero-closing { color: #991b1b; }
+.tp-hero-stats { margin: 0; font-size: 15px; line-height: 1.5; color: var(--v2-ink-3); }
+.tp-hero-stats strong { font-weight: 700; color: var(--v2-ink); }
+.tp-hero-closing { color: var(--state-urgent); }
 
 .tp-btn {
   font-family: inherit;
@@ -126,12 +126,12 @@
   cursor: pointer;
   box-sizing: border-box;
 }
-.tp-main .tp-btn-dark { background: #1a1a1a; color: #ffffff; border: 1px solid #1a1a1a; }
-.tp-main .tp-btn-dark:hover { color: #ffffff; background: #4a4a4a; border-color: #4a4a4a; }
-.tp-btn-outline { background: transparent; color: #1a1a1a; border: 1px solid #1a1a1a; }
-.tp-btn-outline:hover { background: #1a1a1a; color: #ffffff; }
-.tp-main .tp-btn-white { background: #ffffff; color: #1a1a1a; border: 1px solid #ffffff; padding: 0 22px; }
-.tp-main .tp-btn-white:hover { color: #1a1a1a; background: #f7f1e6; }
+.tp-main .tp-btn-dark { background: var(--v2-ink); color: var(--surface-2); border: 1px solid #1a1a1a; }
+.tp-main .tp-btn-dark:hover { color: var(--surface-2); background: #4a4a4a; border-color: var(--v2-ink-2); }
+.tp-btn-outline { background: transparent; color: var(--v2-ink); border: 1px solid #1a1a1a; }
+.tp-btn-outline:hover { background: var(--v2-ink); color: var(--surface-2); }
+.tp-main .tp-btn-white { background: var(--surface-2); color: var(--v2-ink); border: 1px solid #ffffff; padding: 0 22px; }
+.tp-main .tp-btn-white:hover { color: var(--v2-ink); background: var(--v2-cream); }
 
 /* Фото на всю ширину колонки, 3:2, скруглене. Точку фокуса задає heroImage.position. */
 .tp-hero-photo {
@@ -173,9 +173,9 @@
   height: 40px;
   padding: 0 16px;
   border-radius: 9999px;
-  border: 1px solid #d4cfc1;
-  background: #ffffff;
-  color: #1a1a1a;
+  border: 1px solid var(--v2-line-strong);
+  background: var(--surface-2);
+  color: var(--v2-ink);
   cursor: pointer;
   white-space: nowrap;
   flex-shrink: 0;
@@ -183,12 +183,12 @@
   align-items: center;
   gap: 6px;
 }
-.tp-pill:hover { border-color: #1a1a1a; }
+.tp-pill:hover { border-color: var(--v2-ink); }
 /* Підбірки батьківські — активний фільтр помаранчевий, як на головній. */
-.tp-pill.is-on { background: var(--v2-accent-strong); color: #ffffff; border-color: var(--v2-accent-strong); }
-.tp-pill-n { font-size: 12px; color: #6b6b6b; }
-.tp-pill.is-on .tp-pill-n { color: #ffffff; }
-.tp-sort { font-size: 14px; color: #6b6b6b; white-space: nowrap; }
+.tp-pill.is-on { background: var(--v2-accent-strong); color: var(--surface-2); border-color: var(--v2-accent-strong); }
+.tp-pill-n { font-size: 12px; color: var(--v2-ink-3); }
+.tp-pill.is-on .tp-pill-n { color: var(--surface-2); }
+.tp-sort { font-size: 14px; color: var(--v2-ink-3); white-space: nowrap; }
 
 /* Рядок фільтрів: вкладки типів, вік, «Лише безкоштовні», «Онлайн», підпис
    сортування праворуч. Лінії зверху й знизу відділяють його від hero. */
@@ -198,11 +198,11 @@
   align-items: center;
   gap: 12px 20px;
   padding: 14px 0;
-  border-top: 1px solid #e8e3d6;
-  border-bottom: 1px solid #e8e3d6;
+  border-top: 1px solid var(--v2-line);
+  border-bottom: 1px solid var(--v2-line);
 }
 .tp-ages { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.tp-filter-label { font-size: 14px; color: #6b6b6b; margin-right: 4px; }
+.tp-filter-label { font-size: 14px; color: var(--v2-ink-3); margin-right: 4px; }
 .tp-pill-age { padding: 0 12px; }
 .tp-check {
   display: inline-flex;
@@ -210,7 +210,7 @@
   gap: 8px;
   min-height: 36px;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   cursor: pointer;
 }
 .tp-check input { width: 18px; height: 18px; margin: 0; accent-color: #e85d24; cursor: pointer; }
@@ -243,24 +243,24 @@
   gap: 12px;
   padding: 8px 0 0;
 }
-.tp-more-count { font-size: 14px; color: #6b6b6b; }
+.tp-more-count { font-size: 14px; color: var(--v2-ink-3); }
 
 .tp-main .tp-card {
-  background: #ffffff;
-  border: 1px solid #e8e3d6;
+  background: var(--surface-2);
+  border: 1px solid var(--v2-line);
   border-radius: 16px;
   padding: 22px 24px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   min-width: 0;
   transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1), box-shadow 200ms;
 }
 .tp-main .tp-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(26, 26, 26, 0.06);
-  color: #1a1a1a;
+  color: var(--v2-ink);
 }
 .tp-main .tp-card:focus-visible { outline: 2px solid #e85d24; outline-offset: 2px; }
 .tp-card-meta {
@@ -268,13 +268,13 @@
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #4a4a4a;
+  color: var(--v2-ink-2);
   white-space: nowrap;
 }
 .tp-card-meta-l { display: flex; gap: 8px; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .tp-card-tag { font-weight: 600; }
 .tp-card-sep { color: #d4cfc1; }
-.tp-card-dl { margin-left: auto; flex-shrink: 0; font-weight: 500; color: #4a4a4a; }
+.tp-card-dl { margin-left: auto; flex-shrink: 0; font-weight: 500; color: var(--v2-ink-2); }
 .tp-card-dl.is-urgent { font-weight: 700; color: var(--v2-accent-strong); }
 .tp-card-pin {
   align-self: flex-start;
@@ -296,7 +296,7 @@
   margin: 0;
   font-size: 15px;
   line-height: 1.55;
-  color: #4a4a4a;
+  color: var(--v2-ink-2);
   display: -webkit-box;
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
@@ -311,7 +311,7 @@
   padding-top: 10px;
   font-size: 14px;
 }
-.tp-card-place { color: #6b6b6b; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tp-card-place { color: var(--v2-ink-3); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tp-card-more { font-weight: 600; color: var(--v2-accent-strong); white-space: nowrap; }
 
 .tp-empty {
@@ -324,14 +324,14 @@
 }
 .tp-empty span { font-size: 32px; }
 .tp-empty h3 { margin: 0; font-size: 20px; font-weight: 700; }
-.tp-empty p { margin: 0; font-size: 15px; color: #4a4a4a; }
+.tp-empty p { margin: 0; font-size: 15px; color: var(--v2-ink-2); }
 
 /* ── Список групами: хаб «Українським дітям за кордоном» (групи — країни) ──
  * Пігулки тут — зміст сторінки, тож переносяться в рядки, а не ховаються за
  * краєм. Посилання-пігулки мають колір звичайних пігулок, а не посилань. */
 .tp-group-nav { flex-wrap: wrap; overflow: visible; }
-.tp-main a.tp-pill, .tp-main a.tp-pill:hover { color: #1a1a1a; }
-.tp-pill-page { font-weight: 700; border-color: #1a1a1a; }
+.tp-main a.tp-pill, .tp-main a.tp-pill:hover { color: var(--v2-ink); }
+.tp-pill-page { font-weight: 700; border-color: var(--v2-ink); }
 .tp-group { display: flex; flex-direction: column; gap: 14px; scroll-margin-top: 80px; }
 .tp-group-title {
   margin: 0;
@@ -343,21 +343,21 @@
   align-items: baseline;
   gap: 10px;
 }
-.tp-group-n { font-size: 15px; font-weight: 600; color: #6b6b6b; letter-spacing: 0; }
+.tp-group-n { font-size: 15px; font-weight: 600; color: var(--v2-ink-3); letter-spacing: 0; }
 .tp-group-rest {
   margin: 0;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #6b6b6b;
+  color: var(--v2-ink-3);
 }
 
 .tp-home-link { margin: 0; font-size: 15px; font-weight: 600; }
 
 /* ── Важливо знати і Часті питання: заголовок ліворуч ── */
 .tp-note {
-  background: #f7f1e6;
+  background: var(--v2-cream);
   border-radius: 20px;
   padding: 36px 40px;
   display: grid;
@@ -379,15 +379,15 @@
   line-height: 1.1;
 }
 .tp-note-body { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
-.tp-note-text { margin: 0; font-size: 17px; line-height: 1.6; color: #1a1a1a; text-wrap: pretty; }
-.tp-note-meta { margin: 0; font-size: 14px; line-height: 1.5; color: #6b6b6b; }
+.tp-note-text { margin: 0; font-size: 17px; line-height: 1.6; color: var(--v2-ink); text-wrap: pretty; }
+.tp-note-meta { margin: 0; font-size: 14px; line-height: 1.5; color: var(--v2-ink-3); }
 /* Посилання в тексті — не лише кольором (WCAG 1.4.1). */
-.tp-main .tp-note-meta a { color: #b04312; text-decoration: underline; text-underline-offset: 2px; }
+.tp-main .tp-note-meta a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
 
 .tp-faq-list { display: flex; flex-direction: column; max-width: 760px; }
 .tp-faq-item { display: flex; flex-direction: column; gap: 8px; padding: 20px 0; border-top: 1px solid #e8e3d6; }
 .tp-faq-item h3 { margin: 0; font-weight: 700; font-size: 18px; line-height: 1.35; letter-spacing: -0.01em; }
-.tp-faq-item p { margin: 0; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
+.tp-faq-item p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--v2-ink-2); text-wrap: pretty; }
 
 /* ── Ця підбірка у вашому місті ── */
 .tp-cities { display: flex; flex-direction: column; gap: 16px; }
@@ -407,13 +407,13 @@
   padding: 0 18px;
   border: 1px solid var(--v2-line);
   border-radius: 999px;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--surface-2);
+  color: var(--v2-ink);
   font-weight: 600;
   text-decoration: none;
 }
 .tp-main .tp-city-link:hover { border-color: var(--v2-accent-strong); color: var(--v2-accent-strong); }
-.tp-city-n { font-weight: 500; color: #6b6b6b; }
+.tp-city-n { font-weight: 500; color: var(--v2-ink-3); }
 
 /* ── Інші підбірки ── */
 .tp-related { display: flex; flex-direction: column; gap: 16px; }
@@ -423,20 +423,20 @@
   gap: 14px;
 }
 .tp-main .tp-related-card {
-  border: 1px solid #e8e3d6;
+  border: 1px solid var(--v2-line);
   border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   transition: transform 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
 }
-.tp-main .tp-related-card:hover { transform: translateY(-2px); color: #1a1a1a; }
+.tp-main .tp-related-card:hover { transform: translateY(-2px); color: var(--v2-ink); }
 .tp-related-photo { display: block; }
 .tp-related-photo img { display: block; width: 100%; height: 150px; object-fit: cover; }
 .tp-related-body { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px; }
 .tp-related-title { font-size: 16px; font-weight: 700; line-height: 1.3; letter-spacing: -0.01em; }
-.tp-related-n { font-size: 14px; color: #6b6b6b; }
+.tp-related-n { font-size: 14px; color: var(--v2-ink-3); }
 
 /* Для організаторів: той самий SuggestBlock, що в каталозі, але світлий і в
    рядок — у сітці каталогу він чорна картка серед білих, тут окремий блок. */
@@ -450,15 +450,15 @@
   min-height: 0;
   height: auto;
   padding: 28px 32px;
-  background: #ffffff;
-  border: 1px solid #e8e3d6;
+  background: var(--surface-2);
+  border: 1px solid var(--v2-line);
   border-radius: 20px;
-  color: #1a1a1a;
+  color: var(--v2-ink);
   text-align: left;
 }
-.tp-main .suggest-card .suggest-kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #6b6b6b; }
-.tp-main .suggest-card h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: #1a1a1a; }
-.tp-main .suggest-card p { margin: 0; font-size: 16px; color: #4a4a4a; }
+.tp-main .suggest-card .suggest-kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--v2-ink-3); }
+.tp-main .suggest-card h2 { margin: 0; font-size: 24px; font-weight: 800; letter-spacing: -0.02em; color: var(--v2-ink); }
+.tp-main .suggest-card p { margin: 0; font-size: 16px; color: var(--v2-ink-2); }
 .tp-main .suggest-card .suggest-cta {
   grid-column: 2;
   grid-row: 1 / 4;
@@ -468,11 +468,11 @@
   padding: 0 26px;
   border: 1.5px solid #1a1a1a;
   border-radius: 9999px;
-  background: #ffffff;
-  color: #1a1a1a;
+  background: var(--surface-2);
+  color: var(--v2-ink);
   font-weight: 600;
 }
-.tp-main .suggest-card .suggest-cta:hover { background: #1a1a1a; color: #ffffff; }
+.tp-main .suggest-card .suggest-cta:hover { background: var(--v2-ink); color: var(--surface-2); }
 
 /* ── Сторінка «Підбірки» (app/CollectionsHub.js) ── */
 .tp-hub-head { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
@@ -482,23 +482,23 @@
  * Розділи — та сама сітка «заголовок ліворуч», що й «Часті питання»;
  * кольори лише з токенів шаблону. */
 .er-body { display: flex; flex-direction: column; gap: 18px; max-width: 760px; min-width: 0; }
-.er-lead, .er-prose p { margin: 0; font-size: 16px; line-height: 1.65; color: #1a1a1a; text-wrap: pretty; }
+.er-lead, .er-prose p { margin: 0; font-size: 16px; line-height: 1.65; color: var(--v2-ink); text-wrap: pretty; }
 .er-prose { gap: 14px; }
-.tp-main .er-body a:not(.tp-btn) { color: #b04312; text-decoration: underline; text-underline-offset: 2px; }
+.tp-main .er-body a:not(.tp-btn) { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
 
 .er-facts { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.er-fact { background: #f7f1e6; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
-.er-fact-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #6b6b6b; }
-.er-fact-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: #1a1a1a; }
-.er-fact-note { font-size: 14px; line-height: 1.45; color: #4a4a4a; }
+.er-fact { background: var(--v2-cream); border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 4px; }
+.er-fact-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--v2-ink-3); }
+.er-fact-value { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; color: var(--v2-ink); }
+.er-fact-note { font-size: 14px; line-height: 1.45; color: var(--v2-ink-2); }
 
 .er-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
 .er-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .er-col-title { margin: 0; font-size: 18px; font-weight: 700; }
 
 .er-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
-.er-list li { position: relative; padding-left: 28px; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
-.er-list li strong { color: #1a1a1a; }
+.er-list li { position: relative; padding-left: 28px; font-size: 15px; line-height: 1.6; color: var(--v2-ink-2); text-wrap: pretty; }
+.er-list li strong { color: var(--v2-ink); }
 .er-list li::before { content: '•'; position: absolute; left: 8px; top: 0; font-weight: 800; color: #e85d24; }
 .er-list.is-yes li::before { content: '✓'; left: 4px; color: #2d5814; }
 .er-list.is-no li::before { content: '✕'; left: 4px; color: #8a1a3a; }
@@ -512,11 +512,11 @@
   position: absolute; left: 0; top: 16px;
   width: 34px; height: 34px; border-radius: 50%;
   display: grid; place-items: center;
-  background: #1a1a1a; color: #ffffff; font-weight: 800; font-size: 16px;
+  background: var(--v2-ink); color: var(--surface-2); font-weight: 800; font-size: 16px;
 }
 .er-step:first-child::before { top: 2px; }
 .er-step h3 { margin: 0 0 6px; font-size: 18px; font-weight: 700; line-height: 1.35; letter-spacing: -0.01em; }
-.er-step p { margin: 0; font-size: 15px; line-height: 1.6; color: #4a4a4a; text-wrap: pretty; }
+.er-step p { margin: 0; font-size: 15px; line-height: 1.6; color: var(--v2-ink-2); text-wrap: pretty; }
 
 .er-open { display: flex; flex-direction: column; gap: 8px; scroll-margin-top: 80px; }
 
@@ -574,7 +574,7 @@
 .ol-table-caption {
   text-align: left;
   font-size: 0.9rem;
-  color: var(--v2-muted, #6b6b6b);
+  color: var(--v2-muted, var(--v2-ink-3));
   padding-bottom: 12px;
 }
 .ol-table th,
@@ -588,7 +588,7 @@
   font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--v2-muted, #6b6b6b);
+  color: var(--v2-muted, var(--v2-ink-3));
   font-weight: 600;
 }
 .ol-table tbody th {

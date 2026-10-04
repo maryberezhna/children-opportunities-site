@@ -63,7 +63,7 @@
   }
 
   /* ── Хіро: заголовок і пошук, без фото, підзаголовка й цифр ─────────── */
-  .v2-home { background: #ffffff; }
+  .v2-home { background: var(--surface-2); }
   .v2-home .v2-hero-band { background: var(--v2-cream); }
   html[data-mode="teens"] .v2-home .v2-hero-band { background: #141414; }
 
@@ -96,7 +96,7 @@
   .v2-home .v2-hero-sub {
     font-size: 14px;
     line-height: 1.4;
-    color: var(--v2-muted, #6b6b6b);
+    color: var(--v2-muted, var(--v2-ink-3));
     margin: 0;
   }
 
@@ -197,7 +197,7 @@
     height: 48px;
     padding: 0 14px;
     box-sizing: border-box;
-    background: #ffffff;
+    background: var(--surface-2);
     border: 1px solid var(--v2-line-strong);
     border-radius: 12px;
   }
@@ -221,14 +221,14 @@
     appearance: none;
   }
 
-  .m-search input::placeholder { color: #b8b3a6; }
+  .m-search input::placeholder { color: var(--v2-ink-3); }
 
   /* Вік одразу під пошуком: пʼять груп у ряд, зона дотику 44px. */
   .m-ages-hint {
     margin: 12px 0 0;
     font-size: 13px;
     line-height: 1.35;
-    color: #6b6b6b;
+    color: var(--v2-ink-3);
   }
   html[data-mode="teens"] .m-ages-hint { color: rgba(247, 241, 230, 0.75); }
   .m-ages {
@@ -286,7 +286,7 @@
     bottom: 0;
     z-index: 900;
     padding: 8px 16px max(14px, calc(8px + env(safe-area-inset-bottom, 0px)));
-    background: #ffffff;
+    background: var(--surface-2);
     border-top: 1px solid var(--v2-line);
   }
 
@@ -301,7 +301,7 @@
     box-sizing: border-box;
     border: 1.5px solid var(--v2-ink);
     border-radius: 999px;
-    background: #ffffff;
+    background: var(--surface-2);
     color: var(--v2-ink);
     font-family: inherit;
     font-size: 14px;
@@ -310,10 +310,10 @@
     cursor: pointer;
   }
 
-  .m-bottom-btn.is-on { background: var(--v2-ink); color: #ffffff; }
+  .m-bottom-btn.is-on { background: var(--v2-ink); color: var(--surface-2); }
 
   /* Ліворуч — канал: головний заклик сайту, тому темний. */
-  .m-bottom-tg { background: var(--v2-ink); color: #ffffff; }
+  .m-bottom-tg { background: var(--v2-ink); color: var(--surface-2); }
   .m-bottom-tg:active { background: #000000; }
 
   /* Місце під панеллю, щоб вона не закривала останній блок і футер. */
@@ -411,7 +411,7 @@
     top: 0;
     z-index: 20;
     margin: 0 -20px;
-    background: #ffffff;
+    background: var(--surface-2);
     border-bottom: 1px solid var(--v2-line);
     transition: top 200ms cubic-bezier(0.2, 0.9, 0.3, 1);
   }
@@ -443,7 +443,7 @@
     box-sizing: border-box;
     border: 1px solid var(--v2-line-strong);
     border-radius: 9999px;
-    background: #ffffff;
+    background: var(--surface-2);
     color: var(--v2-ink);
     font-family: inherit;
     font-size: 14px;
@@ -458,7 +458,7 @@
   .m-chip.is-on {
     background: var(--v2-accent-strong);
     border-color: var(--v2-accent-strong);
-    color: #ffffff;
+    color: var(--surface-2);
   }
 
   html[data-mode="teens"] .m-chip.is-on {
@@ -469,7 +469,7 @@
   /* Лічильник на активній кнопці «Фільтри»: помаранчевий кружок на
      помаранчевій кнопці зник би — інвертуємо. */
   html:not([data-mode="teens"]) .m-filters-btn.is-on .m-count-dot {
-    background: #ffffff;
+    background: var(--surface-2);
     color: var(--v2-accent-strong);
   }
 
@@ -485,7 +485,7 @@
     box-sizing: border-box;
     border-radius: 9999px;
     background: var(--v2-accent-strong);
-    color: #ffffff;
+    color: var(--surface-2);
     font-size: 12px;
     font-weight: 700;
   }
@@ -624,7 +624,7 @@
   .v2-card-meta .v2-tag { flex-shrink: 0; font-weight: 600; padding: 3px 8px; }
   .v2-card-meta-dl { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
   .v2-card-meta-dl.is-urgent { color: var(--v2-accent-strong); }
-  .v2-card-meta-sep { color: #b8b3a6; }
+  .v2-card-meta-sep { color: var(--v2-ink-3); }
 
   .v2-home .v2-list .v2-card h3 { font-size: 18px; line-height: 1.3; }
   .v2-home .v2-list .v2-card h3 a::after { content: ''; position: absolute; inset: 0; }
@@ -739,7 +739,7 @@
     flex-direction: column;
     max-height: 88vh;
     max-height: 88dvh;
-    background: #ffffff;
+    background: var(--surface-2);
     border-radius: 24px 24px 0 0;
     box-shadow: 0 -8px 32px rgba(26, 26, 26, 0.12);
     outline: none;
@@ -836,14 +836,14 @@
   .m-chip-x { margin-left: 6px; font-size: 12px; opacity: 0.85; }
 
   .m-chip-n { font-size: 12px; font-weight: 500; color: var(--v2-ink-3); }
-  .m-chip.is-on .m-chip-n { color: #ffffff; }
+  .m-chip.is-on .m-chip-n { color: var(--surface-2); }
   html[data-mode="teens"] .m-chip.is-on .m-chip-n { color: #b8b3a6; }
 
   /* Кнопка прибита знизу шторки: вміст над нею скролиться окремо. */
   .m-sheet-foot {
     flex-shrink: 0;
     padding: 12px 20px calc(20px + env(safe-area-inset-bottom, 0px));
-    background: #ffffff;
+    background: var(--surface-2);
     border-top: 1px solid var(--v2-line);
   }
 
@@ -856,7 +856,7 @@
     border: 0;
     border-radius: 14px;
     background: var(--v2-accent-strong);
-    color: #ffffff;
+    color: var(--surface-2);
     font-family: inherit;
     font-size: 16px;
     font-weight: 600;

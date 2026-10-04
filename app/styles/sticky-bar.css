@@ -16,7 +16,7 @@
     bottom: 0;
     z-index: 900;
     padding: 12px 20px max(28px, calc(12px + env(safe-area-inset-bottom, 0px)));
-    background: #ffffff;
+    background: var(--surface-2);
     border-top: 1px solid var(--v2-line);
   }
 
@@ -29,7 +29,7 @@
     padding: 0 16px;
     border-radius: 999px;
     background: var(--v2-accent-strong);
-    color: #ffffff;
+    color: var(--surface-2);
     font-size: 16px;
     font-weight: 600;
     text-decoration: none;
@@ -46,7 +46,7 @@
     padding: 0;
     border: 1.5px solid var(--v2-ink);
     border-radius: 999px;
-    background: #ffffff;
+    background: var(--surface-2);
     color: var(--v2-ink);
     font-family: inherit;
     cursor: pointer;

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
+import { THEME_KEY, isTheme, themeAttr } from '@/lib/theme';
 
 const STORAGE_KEY = 'a11y-settings';
 
@@ -20,6 +21,10 @@ const L = {
     moreSpace: 'Збільшити відступ',
     colour: 'Колір',
     bw: 'Ч/Б',
+    theme: 'Тема',
+    themeAuto: 'Як у системі',
+    themeLight: 'Світла',
+    themeDark: 'Нічна',
     other: 'Інше',
     cursor: 'Великий курсор',
     readingLine: 'Лінія для читання',
@@ -38,6 +43,10 @@ const L = {
     moreSpace: 'More spacing',
     colour: 'Colour',
     bw: 'B/W',
+    theme: 'Theme',
+    themeAuto: 'System',
+    themeLight: 'Light',
+    themeDark: 'Night',
     other: 'More',
     cursor: 'Large cursor',
     readingLine: 'Reading line',
@@ -80,11 +89,30 @@ export default function AccessibilityPanel() {
   const t = pathname.startsWith('/en') ? L.en : L.uk;
   const [open, setOpen] = useState(false);
   const [settings, setSettings] = useState(DEFAULTS);
+  // Тема зберігається окремим ключем, а не всередині a11y-settings: її читає
+  // ще й скрипт у <head> до першої промальовки, і розбирати там JSON — зайвий
+  // ризик заради одного слова.
+  const [theme, setTheme] = useState('auto');
 
   useEffect(() => {
     const s = loadSettings();
     setSettings(s);
     applySettings(s);
+    try {
+      const saved = localStorage.getItem(THEME_KEY);
+      if (isTheme(saved)) setTheme(saved);
+    } catch {}
+  }, []);
+
+  const pickTheme = useCallback((next) => {
+    setTheme(next);
+    const attr = themeAttr(next);
+    if (attr) document.documentElement.setAttribute('data-theme', attr);
+    else document.documentElement.removeAttribute('data-theme');
+    try {
+      if (next === 'auto') localStorage.removeItem(THEME_KEY);
+      else localStorage.setItem(THEME_KEY, next);
+    } catch {}
   }, []);
 
   const update = useCallback((patch) => {
@@ -208,6 +236,27 @@ export default function AccessibilityPanel() {
                 </svg>
                 {t.bw}
               </button>
+            </div>
+          </div>
+
+          {/* Нічний режим. Три стани: за замовчуванням «як у системі» —
+              увечері телефон перемикає сайт сам, і шукати нічого не треба. */}
+          <div className="a11y-row">
+            <label className="a11y-label">{t.theme}</label>
+            <div className="a11y-toggle-group">
+              {[['auto', t.themeAuto], ['light', t.themeLight], ['dark', t.themeDark]].map(
+                ([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={theme === value}
+                    className={`a11y-toggle-btn${theme === value ? ' active' : ''}`}
+                    onClick={() => pickTheme(value)}
+                  >
+                    {label}
+                  </button>
+                ),
+              )}
             </div>
           </div>
 

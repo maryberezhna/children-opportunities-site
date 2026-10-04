@@ -327,7 +327,7 @@
   padding: 3px 9px;
   border-radius: 6px;
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 0.71875rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -405,7 +405,7 @@
   padding: 11px 22px;
   border-radius: 999px;
   background: var(--ink);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 0.90625rem;
   font-weight: 600;
   text-decoration: none;
@@ -479,7 +479,7 @@
   background: var(--ink);
   border: 2px solid var(--accent);
   border-radius: 16px;
-  color: #fff;
+  color: var(--surface-2);
 }
 
 .suggest-kicker {
@@ -496,7 +496,7 @@
   font-weight: 600;
   line-height: 1.25;
   margin: 0 0 10px;
-  color: #fff;
+  color: var(--surface-2);
 }
 
 .suggest-card p {
@@ -514,7 +514,7 @@
   border: none;
   border-radius: 12px;
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
 }
@@ -600,7 +600,7 @@
   padding: 2px 10px;
   border-radius: 999px;
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 0.71875rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -617,7 +617,7 @@
   padding: 12px 22px;
   border-radius: 999px;
   background: var(--ink);
-  color: #fff;
+  color: var(--surface-2);
   text-decoration: none;
   box-shadow: 0 5px 15px rgba(26, 26, 26, 0.16);
   transition: transform 0.15s, box-shadow 0.15s;

@@ -1,0 +1,195 @@
+/* Нічний режим (Марія, 04.10.2026: «зробити нічний режим на сайті»).
+ *
+ * Один палітровий файл замість темних правил, розсипаних по 25 стилях: усе
+ * оформлення сайту вже тримається на токенах (--v2-* і --bg/--ink/--border),
+ * тож нічний режим — це ті самі токени з іншими значеннями. Де колір досі
+ * вписаний числом, його треба замінити токеном, а не дописувати сюди ще одне
+ * правило: інакше темна тема розповзеться тими самими 449 місцями, якими
+ * розповзлась світла.
+ *
+ * Вмикається двома шляхами:
+ *   • сам, за налаштуванням системи (prefers-color-scheme), — але лише якщо
+ *     людина не обрала світлу вручну;
+ *   • вручну з панелі доступності, де вже живуть налаштування вигляду.
+ *     Вибір людини сильніший за систему — як і з мовою.
+ *
+ * Чорно-білий режим (.a11y-bw) залишається сильнішим за обидва: він для тих,
+ * кому кольори заважають читати, і нічний не має його перебивати.
+ *
+ * Палітра тепла, а не сіра: бренд теплий (крем #f7f1e6), і холодний сірий
+ * поруч із помаранчевим виглядає чужим. Контраст звірено числами, не оком —
+ * усі пари ≥ 4.5:1 (WCAG AA), найгірша — приглушений текст 6.4:1.
+ */
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* base.css */
+  --bg: #15130f;
+  --surface: #1d1a15;
+  --ink: #f2ede3;
+  --ink-soft: #c9c2b4;
+  --ink-muted: #a39c8e;
+  --border: #38332b;
+  --border-hover: #4a4438;
+  --accent: #ff7a42;
+  --accent-soft: #2a2018;
+  --frame: #3a2c22;
+
+  /* Кольорові плашки: ті самі відтінки, але як темне тло під світлим текстом.
+     Світлі пастелі лишити не можна — на них чорний текст, а він тут білий. */
+  --warm-1: #2e2819;
+  --warm-2: #3a3120;
+  --cool-1: #1b2a28;
+  --cool-2: #22332f;
+  --pink-1: #2e1f26;
+  --pink-2: #3a2530;
+  --purple-1: #262033;
+  --purple-2: #2f2740;
+  --green-1: #212c1b;
+  --red-1: #33201f;
+  --amber-1: #322a18;
+
+  /* home-v2.css */
+  --v2-cream: #1f1c17;
+  --v2-cream-dark: #26221b;
+  --v2-line: #38332b;
+  --v2-line-strong: #4a4438;
+  --v2-ink: #f2ede3;
+  --v2-ink-2: #c9c2b4;
+  --v2-ink-3: #a39c8e;
+  --v2-accent: #ff7a42;
+  --v2-accent-hover: #ff9057;
+  --v2-accent-strong: #ff8d5c;
+  --v2-input-bg: #221f19;
+  --v2-frame: #3a2c22;
+
+  /* Поверхня картки окремо від тла сторінки: у світлій темі це білий, і він
+     вписаний числом у десятках місць. Токен дає їм спільну точку заміни. */
+  --surface-2: #26221b;
+  --chip-ink-purple: #cbbdf5;
+  --chip-ink-teal: #8fd6c6;
+  --chip-ink-green: #bfe09a;
+  --chip-ink-amber: #f0c98a;
+  --chip-ink-pink: #f2a8bf;
+  --tg-badge-ink: #0b5e85;
+  --tg-card-ink: #3c382f;
+  --state-urgent: #ff9d9d;
+  --state-ok: #86d6a4;
+  --state-link: #8ac4ea;
+  --cup-line: #6b6253;
+  --header-bg: rgba(21, 19, 15, 0.92);
+  --accent-ink: #ff8d5c;
+}
+
+/* Системне налаштування — лише поки людина не обрала тему руками.
+   data-theme="light" ставить панель доступності, і воно б'є систему. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --bg: #15130f;
+    --surface: #1d1a15;
+    --ink: #f2ede3;
+    --ink-soft: #c9c2b4;
+    --ink-muted: #a39c8e;
+    --border: #38332b;
+    --border-hover: #4a4438;
+    --accent: #ff7a42;
+    --accent-soft: #2a2018;
+    --frame: #3a2c22;
+
+    --warm-1: #2e2819;
+    --warm-2: #3a3120;
+    --cool-1: #1b2a28;
+    --cool-2: #22332f;
+    --pink-1: #2e1f26;
+    --pink-2: #3a2530;
+    --purple-1: #262033;
+    --purple-2: #2f2740;
+    --green-1: #212c1b;
+    --red-1: #33201f;
+    --amber-1: #322a18;
+
+    --v2-cream: #1f1c17;
+    --v2-cream-dark: #26221b;
+    --v2-line: #38332b;
+    --v2-line-strong: #4a4438;
+    --v2-ink: #f2ede3;
+    --v2-ink-2: #c9c2b4;
+    --v2-ink-3: #a39c8e;
+    --v2-accent: #ff7a42;
+    --v2-accent-hover: #ff9057;
+    --v2-accent-strong: #ff8d5c;
+    --v2-input-bg: #221f19;
+    --v2-frame: #3a2c22;
+
+    --surface-2: #26221b;
+  --chip-ink-purple: #cbbdf5;
+    --chip-ink-teal: #8fd6c6;
+    --chip-ink-green: #bfe09a;
+  --chip-ink-amber: #f0c98a;
+    --chip-ink-pink: #f2a8bf;
+  --tg-badge-ink: #0b5e85;
+    --tg-card-ink: #3c382f;
+  --state-urgent: #ff9d9d;
+    --state-ok: #86d6a4;
+    --state-link: #8ac4ea;
+    --cup-line: #6b6253;
+  --cup-line: #6b6253;
+  --state-urgent: #ff9d9d;
+  --state-ok: #86d6a4;
+  --state-link: #8ac4ea;
+  --cup-line: #6b6253;
+  --tg-badge-ink: #0b5e85;
+  --tg-card-ink: #3c382f;
+  --state-urgent: #ff9d9d;
+  --state-ok: #86d6a4;
+  --state-link: #8ac4ea;
+  --cup-line: #6b6253;
+  --chip-ink-amber: #f0c98a;
+  --chip-ink-pink: #f2a8bf;
+  --tg-badge-ink: #0b5e85;
+  --tg-card-ink: #3c382f;
+  --state-urgent: #ff9d9d;
+  --state-ok: #86d6a4;
+  --state-link: #8ac4ea;
+  --cup-line: #6b6253;
+  --header-bg: rgba(21, 19, 15, 0.92);
+    --accent-ink: #ff8d5c;
+  }
+}
+
+/* ── Градієнти ──────────────────────────────────────────────────────────────
+ *
+ * Токеном градієнт не заміниш, тож ці кілька правил перевизначаємо тут. Усі
+ * вони — теплі світлі плями: у темряві вони світилися б як діри. Беремо ті
+ * самі переходи, але між темними відтінками, щоб блок лишився виділеним.
+ *
+ * Помаранчеві градієнти (бейджі, кнопка підтримки) не чіпаємо: вони й мають
+ * світитись, і текст на них темніє разом із --surface-2. */
+
+/* Щоб не дублювати селектори двічі (ручний вибір і системний), самі блоки
+   домовляються через ще один токен: кожен градієнт читає --night-flat, і в
+   денній темі його просто немає. */
+:root[data-theme="dark"] .v2-page,
+:root[data-theme="dark"] .support-section,
+:root[data-theme="dark"] .plus-section,
+:root[data-theme="dark"] .v2-choice,
+:root[data-theme="dark"] html:not([data-mode="teens"]) .v2-top,
+:root[data-theme="dark"] .top-week,
+:root[data-theme="dark"] .chip-top {
+  background-image: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .v2-page,
+  :root:not([data-theme="light"]) .support-section,
+  :root:not([data-theme="light"]) .plus-section,
+  :root:not([data-theme="light"]) .v2-choice,
+  :root:not([data-theme="light"]) html:not([data-mode="teens"]) .v2-top,
+  :root:not([data-theme="light"]) .top-week,
+  :root:not([data-theme="light"]) .chip-top {
+    background-image: none;
+  }
+}

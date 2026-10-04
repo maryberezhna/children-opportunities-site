@@ -11,7 +11,7 @@
   --pl-on-black: #f6f1e7;
   --pl-on-black-2: #c9c2b4;
   color: var(--v2-ink);
-  background: #fff;
+  background: var(--surface-2);
 }
 
 .pl-wrap {
@@ -60,7 +60,7 @@
 
 .pl-badge-soon {
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -100,7 +100,7 @@
   padding: 16px 26px;
   border-radius: 12px;
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 1.03125rem;
   font-weight: 700;
   text-decoration: none;
@@ -161,10 +161,10 @@
   color: #ff9a6b;
 }
 
-.pl-stair:nth-child(4) .pl-stair-lvl { color: #ffffff; }
+.pl-stair:nth-child(4) .pl-stair-lvl { color: var(--surface-2); }
 
 .pl-stair-t { font-size: 1.03125rem; font-weight: 600; color: var(--pl-on-black); }
-.pl-stair:nth-child(4) .pl-stair-t { color: #fff; }
+.pl-stair:nth-child(4) .pl-stair-t { color: var(--surface-2); }
 
 .pl-stairs-cap {
   margin-top: 16px;
@@ -240,7 +240,7 @@
 .pl-contrast-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
 .pl-contrast-card li { position: relative; padding-left: 28px; font-size: 1rem; line-height: 1.5; }
 
-.pl-contrast-a { background: #fff; border: 1px solid var(--v2-line); }
+.pl-contrast-a { background: var(--surface-2); border: 1px solid var(--v2-line); }
 .pl-contrast-a h3 { color: var(--v2-ink-3); }
 .pl-contrast-a li { color: var(--v2-ink-2); }
 .pl-contrast-a li::before { content: '—'; position: absolute; left: 0; color: var(--v2-ink-3); }
@@ -291,7 +291,7 @@
   height: 40px;
   border-radius: 999px;
   border: 1px solid var(--v2-line-strong);
-  background: #fff;
+  background: var(--surface-2);
   color: var(--v2-ink);
   font-size: 0.8125rem;
   cursor: pointer;
@@ -309,7 +309,7 @@
   padding: 14px 16px;
   border-radius: 14px;
   border: 1px solid var(--v2-line);
-  background: #fff;
+  background: var(--surface-2);
   font: inherit;
   text-align: left;
   color: var(--v2-ink);
@@ -333,7 +333,7 @@
 }
 
 .pl-fd-step.is-on .pl-fd-num,
-.pl-fd-step.is-done .pl-fd-num { background: var(--v2-accent-strong); color: #fff; }
+.pl-fd-step.is-done .pl-fd-num { background: var(--v2-accent-strong); color: var(--surface-2); }
 
 .pl-fd-step-t { display: flex; flex-direction: column; gap: 2px; }
 .pl-fd-step-t strong { font-size: 1rem; font-weight: 700; }
@@ -357,7 +357,7 @@
   padding: 16px;
   border-radius: 18px;
   border: 1px solid var(--v2-line);
-  background: #fff;
+  background: var(--surface-2);
 }
 
 .pl-fd-chat { min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; }
@@ -377,7 +377,7 @@
   padding: 4px 12px;
   border-radius: 999px;
   background: rgba(20, 20, 20, 0.22);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 0.7812rem;
   font-weight: 600;
 }
@@ -434,7 +434,7 @@
   width: 100%;
   padding: 16px 18px;
   border-radius: 16px;
-  background: #fff;
+  background: var(--surface-2);
   box-shadow: 0 10px 30px rgba(20, 20, 20, 0.18);
   transform: translateY(125%);
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) 0.25s;
@@ -462,7 +462,7 @@
 .pl-fd-cal-info { display: flex; flex-direction: column; gap: 2px; }
 .pl-fd-cal-info strong { font-size: 1rem; color: var(--v2-ink); }
 .pl-fd-cal-info span { font-size: 0.875rem; color: var(--v2-ink-3); }
-.pl-fd-cal-ok { margin-top: 12px !important; font-size: 0.875rem; font-weight: 600; color: #2f7d4f; }
+.pl-fd-cal-ok { margin-top: 12px !important; font-size: 0.875rem; font-weight: 600; color: var(--state-ok); }
 
 /* Telegram: кремово-зелене тло чату, біла бульбашка, напівпрозорі кнопки
    під нею — як виглядає пост нашого каналу у світлій темі. */
@@ -471,13 +471,24 @@
   padding: 18px 16px 16px;
   border-radius: 14px;
   background: #dde6d3;
+  /* Це МАЛЮНОК вікна Telegram у світлій темі, а не наш інтерфейс: він має
+     виглядати однаково і вдень, і вночі. Тому кольори тут свідомо задані
+     числами, а не токенами, — і задані на всьому піддереві, інакше вночі
+     бульбашка темніла б разом із рештою сайту, а текст світлішав. */
+  color: #1a1a1a;
 }
+
+.pl-tg .pl-tg-bubble { background: #ffffff; color: #1a1a1a; }
+.pl-tg .pl-tg-title,
+.pl-tg .pl-tg-meta,
+.pl-tg .pl-tg-text { color: #1a1a1a; }
+.pl-tg .pl-tg-meta { color: #6b6b6b; }
 
 .pl-tg-bubble {
   max-width: 94%;
   padding: 12px 14px 10px;
   border-radius: 14px 14px 14px 4px;
-  background: #ffffff;
+  background: var(--surface-2);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.08);
   font-size: 0.9062rem;
   line-height: 1.45;
@@ -488,7 +499,7 @@
 .pl-tg-title { font-weight: 700; }
 .pl-tg-meta { margin-top: 2px !important; }
 .pl-tg-text { margin-top: 10px !important; }
-.pl-tg-more { margin-top: 10px !important; color: #2a7ab8; }
+.pl-tg-more { margin-top: 10px !important; color: var(--state-link); }
 
 .pl-tg-kb { max-width: 94%; margin-top: 4px; display: flex; flex-direction: column; gap: 4px; }
 .pl-tg-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
@@ -504,7 +515,7 @@
   text-align: center;
 }
 
-.pl-tg-btn.is-on { background: #ffffff; box-shadow: inset 0 0 0 2px var(--v2-accent); color: var(--v2-ink); }
+.pl-tg-btn.is-on { background: var(--surface-2); box-shadow: inset 0 0 0 2px var(--v2-accent); color: var(--v2-ink); }
 
 /* Тост стоїть над бульбашкою по центру, як у Telegram, і не перекриває
    назву поста. */
@@ -514,7 +525,7 @@
   padding: 6px 12px;
   border-radius: 999px;
   background: rgba(20, 20, 20, 0.82);
-  color: #ffffff;
+  color: var(--surface-2);
   font-size: 0.7812rem;
 }
 
@@ -560,7 +571,7 @@
   padding: 36px 36px 32px;
   border-radius: 22px;
   border: 1px solid var(--v2-line);
-  background: #fff;
+  background: var(--surface-2);
 }
 
 .pl-persona {
@@ -616,7 +627,7 @@
   height: 14px;
   box-sizing: border-box;
   border-radius: 50%;
-  background: #fff;
+  background: var(--surface-2);
   border: 2.5px solid var(--v2-accent);
 }
 
@@ -724,7 +735,7 @@
   gap: 20px;
 }
 
-.pl-how-item { padding: 24px; border-radius: 18px; background: #fff; border: 1px solid var(--v2-line); }
+.pl-how-item { padding: 24px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--v2-line); }
 
 .pl-how-n {
   display: block;
@@ -773,7 +784,7 @@
   padding: 24px 26px;
   border-radius: 16px;
   border: 1.5px solid var(--v2-line-strong);
-  background: #fff;
+  background: var(--surface-2);
 }
 
 .pl-price-best { border: 2px solid var(--v2-accent); }
@@ -785,7 +796,7 @@
   padding: 3px 11px;
   border-radius: 999px;
   background: var(--v2-accent-strong);
-  color: #fff;
+  color: var(--surface-2);
   font-size: 0.78125rem;
   font-weight: 700;
 }
@@ -890,7 +901,7 @@
   margin: 0 auto;
   padding: 8px 28px 26px;
   border-radius: 20px;
-  background: #fff;
+  background: var(--surface-2);
   color: var(--v2-ink);
   text-align: left;
 }

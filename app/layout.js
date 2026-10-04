@@ -8,6 +8,7 @@ import AccessibilityPanel from './AccessibilityPanel';
 import ServiceWorker from './ServiceWorker';
 import { countActiveOpportunities } from '@/lib/supabase';
 import { AB_CARD_BOOT_SCRIPT } from '@/lib/ab-card';
+import { THEME_BOOT_SCRIPT } from '@/lib/theme';
 import './globals.css';
 
 // Шрифти вендорнуті локально, а не через next/font/google.
@@ -156,6 +157,11 @@ export default function RootLayout({ children }) {
         {/* Перший скрипт у <body>: варіант картки з cookie ab_card — до того,
             як браузер розбере решту сторінки (lib/ab-card.js). */}
         <script dangerouslySetInnerHTML={{ __html: AB_CARD_BOOT_SCRIPT }} />
+        {/* Тема — теж до першої промальовки, інакше темний сайт блимає білим.
+            Другим, а не першим: завантажувач варіанта картки мусить лишатись
+            першим у <body> (tests/ab-card.test.mjs), а на блимання порядок не
+            впливає — обидва виконуються до того, як браузер щось намалює. */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
