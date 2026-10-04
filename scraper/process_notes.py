@@ -254,7 +254,7 @@ def resolution_text(patch: dict, decided: str = "") -> str:
 def decision_patch(record: dict, decision: str, reason: str = "", now: str | None = None):
     """Рішення за коментарем → (патч, що зроблено, чому не вийшло). Чиста функція.
 
-    publish — лише з усіма обовʼязковими полями (ті самі ворота, що в кнопки
+    publish — лише з тим, без чого запис не йде на сайт (ті самі ворота, що в кнопки
     «Опублікувати»); reject — у archived, як кнопка «Не підходить».
     """
     from normalizer import missing_required

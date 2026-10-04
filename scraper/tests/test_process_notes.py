@@ -201,10 +201,18 @@ class DecisionFromNote(unittest.TestCase):
         self.assertEqual(decided, "опубліковано на сайт")
         self.assertEqual(problem, "")
 
-    def test_publish_without_fields_is_refused_and_says_why(self):
-        patch, decided, problem = decision_patch({**FULL, "cost_type": None}, "publish")
+    def test_publish_without_cost_goes_through(self):
+        # З 03.10.2026 порожня вартість публікацію не тримає.
+        patch, decided, problem = decision_patch({**FULL, "cost_type": None}, "publish",
+                                                 now="2026-09-28T10:00:00+00:00")
+        self.assertEqual(patch["status"], "active")
+        self.assertEqual(problem, "")
+
+    def test_publish_without_date_is_refused_and_says_why(self):
+        patch, decided, problem = decision_patch(
+            {**FULL, "opportunity_type": "camp", "deadline": None}, "publish")
         self.assertEqual(patch, {})
-        self.assertIn("бракує: вартість", problem)
+        self.assertIn("бракує: дата", problem)
 
     def test_reject_goes_to_archive_with_reason(self):
         patch, decided, _ = decision_patch(FULL, "reject", "club")

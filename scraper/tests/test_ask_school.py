@@ -7,8 +7,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import db  # noqa: E402
-from auto_review import GREEN, RED, YELLOW, mechanical  # noqa: E402
-from normalizer import apply_ask_school, missing_required  # noqa: E402
+from auto_review import mechanical  # noqa: E402
+from normalizer import apply_ask_school, missing_field_keys, missing_required  # noqa: E402
 from proof import ASK_SCHOOL, ASK_SCHOOL_VALUE, is_diaspora_school  # noqa: E402
 
 SCHOOL = {
@@ -43,7 +43,9 @@ class AskSchool(unittest.TestCase):
             row = dict(SCHOOL, cost_type=ASK_SCHOOL_VALUE, **patch)
             apply_ask_school(row)
             self.assertIsNone(row["cost_type"], patch)
-            self.assertIn("вартість", missing_required(row))
+            # Вартості бракує, але з 03.10.2026 це підказка, а не ворота.
+            self.assertIn("cost", missing_field_keys(row))
+            self.assertNotIn("вартість", missing_required(row))
 
     def test_no_country_yet_no_note(self):
         # main.py підставляє країну джерела вже після нормалізатора й тоді
@@ -59,13 +61,13 @@ class AskSchool(unittest.TestCase):
         row = dict(SCHOOL, cost_type=ASK_SCHOOL_VALUE)
         self.assertIsNone(mechanical(row, trust_tier=2))
 
-    def test_mechanical_holds_it_elsewhere(self):
-        row = dict(SCHOOL, cost_type=ASK_SCHOOL_VALUE, opportunity_type="camp",
+    def test_elsewhere_the_note_is_no_price_but_no_longer_holds(self):
+        # Табір — не школа: «уточнюйте в школі» йому не належить, вартість
+        # порожня. До 03.10.2026 це тримало запис у жовтому; тепер порожня
+        # вартість не ворота — слово за суддею.
+        row = dict(SCHOOL, cost_type=None, opportunity_type="camp",
                    title="Табір «Сонях» у Німеччині", deadline="2099-01-01")
-        verdict = mechanical(row, trust_tier=2)
-        self.assertEqual(verdict[0], YELLOW)
-        self.assertIn("вартість", verdict[1])
-        self.assertNotIn(verdict[0], (GREEN, RED))
+        self.assertIsNone(mechanical(row, trust_tier=2))
 
     def test_school_word_is_the_same_as_the_dedup_key(self):
         # «Школа» для винятку й «школа» для «одна школа — одна картка» — одне слово.

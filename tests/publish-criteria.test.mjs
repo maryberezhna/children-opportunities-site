@@ -3,7 +3,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { CRITERIA, missingRequired, missingRequiredKeys, missingProofKeys } from '../lib/required.js';
+import {
+  CRITERIA, missingRequired, missingRequiredKeys, missingProofKeys, missingFieldKeys,
+} from '../lib/required.js';
 
 const cases = JSON.parse(readFileSync(new URL('./fixtures/publish-criteria-cases.json', import.meta.url), 'utf8'));
 
@@ -11,6 +13,8 @@ test('спільні приклади дають той самий резуль�
   for (const c of cases) {
     assert.deepEqual(missingRequiredKeys(c.row), c.missing, c.name);
     assert.deepEqual(missingRequired(c.row), c.missing.map((k) => CRITERIA.required[k].label), c.name);
+    // Поля, які варто дозаповнити, — підказка, не ворота (03.10.2026).
+    assert.deepEqual(missingFieldKeys(c.row), c.fields, c.name);
     if (c.missing_proof) assert.deepEqual(missingProofKeys(c.row), c.missing_proof, c.name);
   }
 });
@@ -25,6 +29,11 @@ test('визначення цілісне: порядок покриває вс�
     assert.ok(['all', 'any', 'in'].includes(c.rule), `${k}: правило`);
     assert.ok(c.fields.length > 0, `${k}: поля`);
     if (c.rule === 'in') assert.ok(c.allowed.length > 0, `${k}: словник`);
+  }
+  // Ворота — підмножина полів; типи, яким потрібна дата, — зі словника.
+  for (const k of CRITERIA.blocking) assert.ok(CRITERIA.order.includes(k), `blocking: ${k}`);
+  for (const t of CRITERIA.required.date.types_when_kind_unknown) {
+    assert.ok(CRITERIA.required.type.allowed.includes(t), `types_when_kind_unknown: ${t}`);
   }
   // Виняток для виплат посилається лише на типи зі словника.
   for (const t of CRITERIA.required.date.except_types) {

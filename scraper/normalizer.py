@@ -97,30 +97,54 @@ def _satisfied(crit: dict, data: dict) -> bool:
     if rule == "all":
         return all(_present(data.get(f)) for f in crit["fields"])
     if rule == "any":
-        if any(_present(data.get(f)) for f in crit["fields"]):
-            return True
-        # Поле зі списком значень: не «є щось», а «є саме це». Так
-        # періодичність рахується з timing_kind, а не лише з дат (01.10.2026).
-        return any(data.get(f) in vals for f, vals in (crit.get("any_values") or {}).items())
+        return any(_present(data.get(f)) for f in crit["fields"])
     if rule == "in":
         return data.get(crit["fields"][0]) in crit["allowed"]
     raise ValueError(f"publish-criteria: невідоме правило «{rule}»")
 
 
-def missing_required_keys(data: dict, age_missing: bool = None) -> list:
-    """Ключі критеріїв, яких бракує запису, у сталому порядку."""
+def needs_date(data: dict) -> bool:
+    """Чи потрібна запису дата (рішення Марії 03.10.2026). Програмам із
+    датами — так: одноразовим і періодичним за видом у часі, а коли вид
+    невідомий — за типом. Постійним (гурток, суботня школа, платформа з
+    вільним записом) і виплатам — ні. Дзеркало needsDate у lib/required.js."""
+    crit = _REQUIRED["date"]
+    if data.get("opportunity_type") in crit.get("except_types", ()):
+        return False
+    if data.get("timing_kind"):
+        return data["timing_kind"] in crit["kinds"]
+    return data.get("opportunity_type") in crit["types_when_kind_unknown"]
+
+
+def _applies(key: str, data: dict) -> bool:
+    if key == "date":
+        return needs_date(data)
+    return data.get("opportunity_type") not in _REQUIRED[key].get("except_types", ())
+
+
+def missing_field_keys(data: dict, age_missing: bool = None) -> list:
+    """Усі пʼять полів, які варто дозаповнити, — підказка, а не ворота."""
     missing = []
     for key in PUBLISH_CRITERIA["order"]:
-        crit = _REQUIRED[key]
-        if data.get("opportunity_type") in crit.get("except_types", ()):
+        if not _applies(key, data):
             continue
         if key == "age" and age_missing is not None:
             ok = not age_missing
         else:
-            ok = _satisfied(crit, data)
+            ok = _satisfied(_REQUIRED[key], data)
         if not ok:
             missing.append(key)
     return missing
+
+
+def missing_required_keys(data: dict, age_missing: bool = None) -> list:
+    """Ключі того, без чого запис не йде на сайт, у сталому порядку.
+
+    До 03.10.2026 тут були всі пʼять полів; тепер лише `blocking` із
+    publish-criteria.json — дата для програм із датами. Решта полів
+    заповнюється, скільки знайдемо, і запис не тримає."""
+    blocking = PUBLISH_CRITERIA["blocking"]
+    return [k for k in missing_field_keys(data, age_missing) if k in blocking]
 
 
 def missing_required(data: dict, age_missing: bool = None) -> list:
@@ -568,14 +592,13 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
         data["age_from"], data["age_to"] = 0, 18
         age_missing = True
 
-    # ── Обовʼязковий мінімум перед публікацією ──────────────────────────────
-    # Вимога Марії 11.09.2026: дата, тип, вік, вартість і місце-або-формат
-    # обовʼязкові однаково і для сайту, і для адмінки. Запис без будь-чого з
-    # цього марний: батько не може вирішити, чи це для його дитини, а
-    # платформа не може його вчасно закрити. Перевірка стоїть ПІСЛЯ всіх
-    # нормалізацій вище — інакше сміттєве значення (cost_type "unknown",
-    # країна "xx") зараховувалось би як заповнене поле, а потім мовчки
-    # ставало null уже після воріт.
+    # ── Без чого запис не йде на сайт ──────────────────────────────────────
+    # 11.09.2026 тут були пʼять обовʼязкових полів; 03.10.2026 Марія їх
+    # скасувала: обовʼязкова лише дата (дедлайн або початок) для програм із
+    # датами — без неї запис не закриється сам. Решту заповнюємо, скільки
+    # знайдемо, і порожнє поле запис не тримає. Перевірка стоїть ПІСЛЯ всіх
+    # нормалізацій вище — інакше сміттєва дата зараховувалась би як
+    # заповнене поле, а потім мовчки ставала null уже після воріт.
     if looks_adult_participant(data):
         data["status"] = "draft"
         _note(data, "auto: схоже, учасник — дорослий (батьки, жінки, підприємці), "
@@ -588,9 +611,15 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
     if missing:
         data["status"] = "draft"
         note = "auto: перед публікацією бракує — " + ", ".join(missing)
-        if age_missing:
-            note += "; вік 0–18 поставлено технічно, перевір, чи це для дітей"
         data["admin_comment"] = ((data.get("admin_comment") or "") + " " + note).strip()
+    # Решта порожніх полів запис не тримає, але й одразу на сайт без судді
+    # він не йде: чернетка, і нічний auto_review вирішує (див. нижче).
+    not_found = [k for k in missing_field_keys(data, age_missing=age_missing)
+                 if k not in missing_required_keys(data, age_missing=age_missing)]
+    if not_found:
+        data["status"] = "draft"
+        _note(data, "auto: на сторінці не знайдено — "
+                    + ", ".join(_REQUIRED[k]["label"] for k in not_found))
 
     # opportunity_type — NOT NULL, тож значення поза словником мусить чимось
     # стати. Раніше воно тихо ставало «course» і місклассифікація була
@@ -600,12 +629,12 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
         data["opportunity_type"] = "course"
         drop_proof(data, "type")  # заглушка для бази, не доказ
 
-    # ── Світлофор: без цитати запис не зелений ──────────────────────────
-    # Рішення Марії 22.09.2026: машина публікує сама лише те, на що має
-    # дослівну цитату зі сторінки на кожне обовʼязкове поле. Поле, заповнене
-    # з тексту нашими правилами чи дефолтом, цитати не має — запис жовтий,
-    # до людини, з переліком. Поля, яких бракує зовсім, уже названі вище.
-    no_proof = [k for k in missing_proof(data) if k not in missing_required_keys(data)]
+    # ── Без повного набору цитат — через суддю, а не одразу на сайт ─────
+    # Запис із дослівною цитатою на кожне поле скрапер публікує сам. Решта
+    # іде чернеткою до нічного auto_review: з 03.10.2026 брак цитати там
+    # запис НЕ тримає, але суддя ще дивиться, чи це справді можливість для
+    # дитини (рішення 21.09.2026: скрапер сам не публікує неперевірене).
+    no_proof = [k for k in missing_proof(data) if k not in missing_field_keys(data)]
     if no_proof:
         data["status"] = "draft"
         _note(data, "auto: без цитати зі сторінки — " + ", ".join(PROOF_LABELS[k] for k in no_proof))

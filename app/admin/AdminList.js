@@ -93,8 +93,8 @@ function Card({ o, mode, reason, today, onAction, match, notes = [] }) {
     setDone({ approve: 'approved', skip: 'skipped', verify: 'verified', remove: 'removed' }[action]);
   }
 
-  // Дата, тип, вік, вартість і місце-або-формат обовʼязкові перед виходом на
-  // сайт (вимога Марії 11.09.2026).
+  // Без чого запис не йде на сайт: з 03.10.2026 лише дата програми з датами
+  // (до того — пʼять полів, вимога 11.09.2026).
   const missing = missingRequired(o);
   // Цитати зі сторінки — доказ, що поле не вигадане. Тут вони не на видноті:
   // коли все підтверджено, дивитись на них нема потреби.
@@ -258,7 +258,7 @@ const MAIN = ['decision', 'active'];
 const ALSO = [
   { key: 'raw', label: 'Знахідки скраперів' },
   { key: 'waiting', label: 'Чекає машину' },
-  { key: 'incomplete', label: 'Неповні на сайті' },
+  { key: 'incomplete', label: 'Без дати на сайті' },
   { key: 'overdue', label: 'Прострочені' },
 ];
 const ALL = [...MAIN, ...ALSO.map((x) => x.key)];
@@ -312,9 +312,9 @@ export default function AdminList({
   const queue = useMemo(() => sortByDeadline(forHuman, (x) => x.row.deadline), [forHuman]);
   const waitingSorted = useMemo(() => sortByDeadline(waiting, (x) => x.row.deadline), [waiting]);
 
-  // Окремий список для того, що вже на сайті, але без обовʼязкового мінімуму.
-  // Ворота конвеєра тримають нові записи, а ці лишились з часу, коли правила
-  // ще не було, — і знайти їх інакше нічим (11.09.2026).
+  // Окремий список для того, що вже на сайті, але без дати, хоча це програма
+  // з датами: такий запис не закриється сам. Ворота конвеєра тримають нові
+  // записи, а ці лишились з часу, коли правила ще не було.
   const incomplete = useMemo(
     () => actives.filter((o) => missingRequired(o).length > 0),
     [actives],
@@ -451,12 +451,12 @@ export default function AdminList({
           )
         ) : (
           incomplete.length === 0 ? (
-            <p className="adm-lead">Усі записи на сайті мають дату, тип, вік, вартість і місце.</p>
+            <p className="adm-lead">Усі програми з датами на сайті мають дату.</p>
           ) : (
             <>
               <p className="adm-lead">
-                Ці записи вже на сайті, але без обовʼязкового мінімуму. Нові такими
-                не стають — ворота конвеєра їх не пускають.
+                Ці програми вже на сайті, але без дати — самі вони не закриються.
+                Нові такими не стають — ворота конвеєра їх не пускають.
               </p>
               {incomplete.slice(0, 150).map((o) => (
                 <Card key={o.id} o={o} mode="active" reason={gapReason(o)} today={today}

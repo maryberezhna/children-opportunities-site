@@ -16,7 +16,8 @@
       ],
       "is_international": false
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "вік 0–18 — це заповнений вік, нуль не порожнеча",
@@ -28,7 +29,8 @@
       "opportunity_type": "camp",
       "format": "online"
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "без верхньої межі віку",
@@ -40,7 +42,8 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "age"
     ]
   },
@@ -54,7 +57,8 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ]
   },
@@ -68,7 +72,8 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ]
   },
@@ -82,7 +87,8 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ]
   },
@@ -96,7 +102,8 @@
       "opportunity_type": null,
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "type"
     ]
   },
@@ -110,7 +117,8 @@
       "opportunity_type": "щось",
       "format": "offline"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "type"
     ]
   },
@@ -125,6 +133,9 @@
     },
     "missing": [
       "date"
+    ],
+    "fields": [
+      "date"
     ]
   },
   {
@@ -137,7 +148,8 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "дату закриває початок події",
@@ -149,10 +161,11 @@
       "opportunity_type": "camp",
       "format": "offline"
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
-    "name": "дату закриває періодичність",
+    "name": "recurrence більше не рахується датою — олімпіаді без виду потрібна дата (03.10.2026)",
     "row": {
       "age_from": 6,
       "age_to": 12,
@@ -161,7 +174,12 @@
       "opportunity_type": "olympiad",
       "format": "offline"
     },
-    "missing": []
+    "missing": [
+      "date"
+    ],
+    "fields": [
+      "date"
+    ]
   },
   {
     "name": "дату закриває дата результатів",
@@ -173,7 +191,8 @@
       "opportunity_type": "competition",
       "format": "online"
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "виплаті дата не обовʼязкова",
@@ -186,7 +205,8 @@
         "Львів"
       ]
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "виплата від громади теж без дати",
@@ -199,7 +219,8 @@
         "Рівне"
       ]
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "стипендії дата обовʼязкова",
@@ -211,6 +232,9 @@
       "format": "online"
     },
     "missing": [
+      "date"
+    ],
+    "fields": [
       "date"
     ]
   },
@@ -225,7 +249,8 @@
         "Львів"
       ]
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "age"
     ]
   },
@@ -242,7 +267,8 @@
       "countries": [],
       "is_international": false
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "place"
     ]
   },
@@ -258,7 +284,8 @@
       "cities": [],
       "countries": []
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "місце закриває місто",
@@ -272,7 +299,8 @@
         "Київ"
       ]
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "місце закриває країна",
@@ -286,7 +314,8 @@
         "pl"
       ]
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "місце закриває позначка міжнародної",
@@ -298,14 +327,15 @@
       "opportunity_type": "camp",
       "is_international": true
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
-    "name": "порожній запис — усі пʼять, у сталому порядку",
+    "name": "порожній запис: поля, яких бракує, у сталому порядку; дата не застосовна (немає ні виду, ні типу) — і нічого не тримає",
     "row": {},
-    "missing": [
+    "missing": [],
+    "fields": [
       "age",
-      "date",
       "cost",
       "type",
       "place"
@@ -334,6 +364,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": []
   },
   {
@@ -356,6 +387,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": []
   },
   {
@@ -377,7 +409,8 @@
         "place": "у Лейпцигу"
       }
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ],
     "missing_proof": [
@@ -403,7 +436,8 @@
         "place": "у Лейпцигу"
       }
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ],
     "missing_proof": [
@@ -432,7 +466,8 @@
         "place": "у Лейпцигу"
       }
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ],
     "missing_proof": [
@@ -456,7 +491,8 @@
         "place": "у Лейпцигу"
       }
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ],
     "missing_proof": [
@@ -483,6 +519,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": [
       "cost"
     ]
@@ -503,10 +540,11 @@
         "cz"
       ]
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
-    "name": "періодична без дат — теж відповідь на «коли»",
+    "name": "періодична без дат — з 03.10.2026 потрібна дата цього циклу",
     "row": {
       "age_from": 7,
       "age_to": 17,
@@ -515,7 +553,12 @@
       "timing_kind": "periodic",
       "format": "online"
     },
-    "missing": []
+    "missing": [
+      "date"
+    ],
+    "fields": [
+      "date"
+    ]
   },
   {
     "name": "одноразова без жодної дати лишається неповною",
@@ -528,6 +571,9 @@
       "format": "online"
     },
     "missing": [
+      "date"
+    ],
+    "fields": [
       "date"
     ]
   },
@@ -545,7 +591,8 @@
       ],
       "timing_kind": "permanent"
     },
-    "missing": []
+    "missing": [],
+    "fields": []
   },
   {
     "name": "той самий гурток з іншого джерела — вартість потрібна як усім",
@@ -560,7 +607,8 @@
       ],
       "timing_kind": "permanent"
     },
-    "missing": [
+    "missing": [],
+    "fields": [
       "cost"
     ]
   },
@@ -582,6 +630,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": []
   },
   {
@@ -602,6 +651,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": [
       "cost"
     ]
@@ -627,6 +677,7 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": [
       "cost"
     ]
@@ -649,8 +700,105 @@
       }
     },
     "missing": [],
+    "fields": [],
     "missing_proof": [
       "cost"
+    ]
+  },
+  {
+    "name": "майстер-клас без виду в часі — за типом потрібна дата",
+    "row": {
+      "age_from": 12,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "workshop",
+      "format": "offline",
+      "cities": [
+        "Київ"
+      ]
+    },
+    "missing": [
+      "date"
+    ],
+    "fields": [
+      "date"
+    ]
+  },
+  {
+    "name": "гурток без виду в часі — за типом дата не потрібна",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "cost_type": "free",
+      "opportunity_type": "club",
+      "format": "offline",
+      "cities": [
+        "Київ"
+      ]
+    },
+    "missing": [],
+    "fields": []
+  },
+  {
+    "name": "одноразовий гурток без дат — вид важить більше за тип",
+    "row": {
+      "age_from": 6,
+      "age_to": 12,
+      "cost_type": "free",
+      "opportunity_type": "club",
+      "timing_kind": "one_time",
+      "format": "offline"
+    },
+    "missing": [
+      "date"
+    ],
+    "fields": [
+      "date"
+    ]
+  },
+  {
+    "name": "постійний конкурс без дат — вид важить більше за тип",
+    "row": {
+      "age_from": 0,
+      "age_to": 17,
+      "cost_type": "free",
+      "opportunity_type": "competition",
+      "timing_kind": "permanent",
+      "format": "online"
+    },
+    "missing": [],
+    "fields": []
+  },
+  {
+    "name": "одноразова виплата без дати — виплатам дата не потрібна",
+    "row": {
+      "age_from": 0,
+      "age_to": 18,
+      "cost_type": "free",
+      "opportunity_type": "allowance",
+      "timing_kind": "one_time",
+      "countries": [
+        "ua"
+      ]
+    },
+    "missing": [],
+    "fields": []
+  },
+  {
+    "name": "конкурс із датою, але без віку, вартості й місця — публікується (03.10.2026)",
+    "row": {
+      "age_from": null,
+      "age_to": null,
+      "deadline": "2026-11-13",
+      "cost_type": null,
+      "opportunity_type": "competition",
+      "timing_kind": "one_time"
+    },
+    "missing": [],
+    "fields": [
+      "age",
+      "cost",
+      "place"
     ]
   }
 ]

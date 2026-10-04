@@ -16,9 +16,16 @@ class RiskListsComeFromSpec(unittest.TestCase):
         with open(_SPEC, encoding="utf-8") as f:
             self.risk = json.load(f)["risk"]
 
-    def test_lists_match(self):
-        self.assertEqual(auto_review.SENSITIVE_TYPES, set(self.risk["sensitive_types"]))
-        self.assertEqual(auto_review.SENSITIVE_NEEDS, set(self.risk["sensitive_needs"]))
+    def test_sensitive_no_longer_holds(self):
+        """З 03.10.2026 чутливі теми публікуються самі (Марія: «публікувати
+        самим»). Переліки лишились лише для порядку черги в адмінці."""
+        self.assertFalse(hasattr(auto_review, "SENSITIVE_TYPES"))
+        row = {"title": "Державна допомога дітям з інвалідністю — Пенсійний фонд",
+               "summary": "Щомісячна державна допомога на дитину з інвалідністю до 18 років; "
+                          "заява через Пенсійний фонд або Дію.",
+               "opportunity_type": "allowance", "child_needs": ["disability"],
+               "age_from": 0, "age_to": 18, "link_status": "ok"}
+        self.assertIsNone(auto_review.mechanical(row, trust_tier=1))
 
     def test_every_risk_has_a_label(self):
         self.assertEqual(sorted(self.risk["order"]), sorted(self.risk["labels"]))

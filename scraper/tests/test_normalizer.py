@@ -8,7 +8,7 @@ import re
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from normalizer import Normalizer, _sanitize, missing_required  # noqa: E402
+from normalizer import Normalizer, _sanitize, missing_field_keys, missing_required  # noqa: E402
 from normalizer import _fix_invented_years, published_date, strip_foreign_script  # noqa: E402
 from normalizer import is_state_support  # noqa: E402
 from normalizer import SYSTEM_PROMPT, VALID_OPP_TYPES  # noqa: E402
@@ -129,6 +129,9 @@ class StateSupportIsFree(unittest.TestCase):
              "summary": "Повна оплата навчання за державним замовленням, соціальна стипендія.",
              "age_from": 15, "age_to": 18, "opportunity_type": "scholarship",
              "cost_type": None, "format": "offline", "cities": ["Київ"], "recurrence": "ongoing",
+             # Постійна програма: з 03.10.2026 стипендії без виду потрібна
+             # дата, а тут перевіряється вартість, не дата.
+             "timing_kind": "permanent",
              # Вік без цитати нормалізатор більше не зберігає (23.09.2026), а
              # тут перевіряється вартість — тож вік приходить із доказом.
              "evidence": {"age": "для вступників 15–18 років"}}
@@ -161,9 +164,13 @@ class StateSupportIsFree(unittest.TestCase):
 
 
 class RequiredBeforePublish(unittest.TestCase):
-    """Дата, тип, вік, вартість і місце-або-формат — обовʼязковий мінімум
-    перед публікацією (вимога Марії 11.09.2026). Визначення — в
-    lib/publish-criteria.json, спільні приклади — tests/fixtures/."""
+    """Що тримає запис перед публікацією. До 03.10.2026 — пʼять полів (дата,
+    тип, вік, вартість, місце-або-формат, вимога 11.09.2026); з 03.10.2026
+    Марія лишила лише дату для програм із датами. Решта полів — підказка, що
+    дозаповнити (missing_field_keys). Визначення — в lib/publish-criteria.json,
+    спільні приклади — tests/fixtures/."""
+
+    DATE = "дата: дедлайн або початок"
 
     @staticmethod
     def _full(**over):
@@ -177,43 +184,50 @@ class RequiredBeforePublish(unittest.TestCase):
 
     def test_full_record_needs_nothing(self):
         self.assertEqual(missing_required(self._full()), [])
+        self.assertEqual(missing_field_keys(self._full()), [])
 
-    def test_each_field_blocks_on_its_own(self):
-        self.assertEqual(missing_required(self._full(age_to=None)), ["вік"])
-        self.assertEqual(missing_required(self._full(cost_type=None)), ["вартість"])
-        self.assertEqual(missing_required(self._full(opportunity_type=None)), ["тип"])
-        self.assertEqual(
-            missing_required(self._full(deadline=None)),
-            ["дата, період або періодичність"])
-        self.assertEqual(
-            missing_required(self._full(format=None, cities=[], countries=[])),
-            ["формат або місце (онлайн / офлайн / за кордоном)"])
+    def test_only_date_blocks(self):
+        self.assertEqual(missing_required(self._full(deadline=None)), [self.DATE])
+        for over, key in (({"age_to": None}, "age"), ({"cost_type": None}, "cost"),
+                          ({"opportunity_type": None}, "type"),
+                          ({"format": None, "cities": [], "countries": []}, "place")):
+            with self.subTest(key=key):
+                self.assertEqual(missing_required(self._full(**over)), [])
+                self.assertEqual(missing_field_keys(self._full(**over)), [key])
 
     def test_garbage_is_not_a_filled_field(self):
         # cost_type "unknown" і тип поза словником раніше проходили ворота,
-        # а вже після них мовчки ставали null.
-        self.assertEqual(missing_required(self._full(cost_type="unknown")), ["вартість"])
-        self.assertEqual(missing_required(self._full(opportunity_type="щось")), ["тип"])
+        # а вже після них мовчки ставали null. Тепер це підказка, не ворота.
+        self.assertEqual(missing_field_keys(self._full(cost_type="unknown")), ["cost"])
+        self.assertEqual(missing_field_keys(self._full(opportunity_type="щось")), ["type"])
 
-    def test_date_closed_by_any_of_three(self):
-        for key, val in (("deadline", "2026-10-01"),
-                         ("event_end_date", "2026-12-01"),
-                         ("recurrence", "annual"), ("recurrence", "ongoing")):
+    def test_date_closed_by_any_date(self):
+        for key, val in (("deadline", "2026-10-01"), ("event_start_date", "2026-11-06"),
+                         ("event_end_date", "2026-12-01"), ("results_date", "2026-12-20")):
             row = self._full(deadline=None)
             row[key] = val
             self.assertEqual(missing_required(row), [], key)
 
+    def test_recurrence_is_not_a_date(self):
+        # До 03.10.2026 «щороку» в recurrence рахувалось відповіддю «коли».
+        # Тепер програмі з датами потрібна дата цього циклу.
+        for val in ("annual", "ongoing"):
+            self.assertEqual(missing_required(self._full(deadline=None, recurrence=val)),
+                             [self.DATE], val)
+
+    def test_permanent_needs_no_date(self):
+        self.assertEqual(missing_required(self._full(deadline=None, timing_kind="permanent")), [])
+
     def test_payment_needs_no_date(self):
         # Рішення Марії 14.09.2026: строк подання виплат громад часто ніде
-        # не вказаний. Решта полів для виплати лишаються обовʼязковими.
+        # не вказаний.
         for otype in ("allowance", "support_payment"):
             self.assertEqual(missing_required(self._full(deadline=None, opportunity_type=otype)), [], otype)
         self.assertEqual(
-            missing_required(self._full(deadline=None, opportunity_type="scholarship")),
-            ["дата, період або періодичність"])
-        self.assertEqual(
-            missing_required(self._full(deadline=None, opportunity_type="allowance", age_to=None)),
-            ["вік"])
+            missing_required(self._full(deadline=None, opportunity_type="scholarship")), [self.DATE])
+        row = self._full(deadline=None, opportunity_type="allowance", age_to=None)
+        self.assertEqual(missing_required(row), [])
+        self.assertEqual(missing_field_keys(row), ["age"])
 
     def test_place_closed_by_any_of_four(self):
         nowhere = dict(format=None, cities=[], countries=[], is_international=False)
@@ -221,7 +235,7 @@ class RequiredBeforePublish(unittest.TestCase):
                          ("countries", ["pl"]), ("is_international", True)):
             row = self._full(**nowhere)
             row[key] = val
-            self.assertEqual(missing_required(row), [], key)
+            self.assertEqual(missing_field_keys(row), [], key)
 
 
 class SanitizeGate(unittest.TestCase):
