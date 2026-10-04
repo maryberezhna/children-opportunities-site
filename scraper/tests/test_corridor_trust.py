@@ -130,11 +130,30 @@ class ForeignTelegramOnlyStaysWithHuman(unittest.TestCase):
         self.assertEqual(corridor, auto_review.YELLOW)
         self.assertIn("чужого Telegram", reason)
 
-    def test_foreign_post_with_own_form_is_not_blocked_by_this_rule(self):
-        verdict = auto_review.mechanical(
+    def test_foreign_post_with_a_form_is_still_yellow(self):
+        # До 04.10.2026 форма подачі звільняла допис від цього правила. Але
+        # форма — не першоджерело, і ворота адмінки такий запис не пускали.
+        # Після 03.10.2026 (цитати не ворота) суддя пропустив би «Впливові»
+        # і грант із @grants_ukraine — саме з формою.
+        corridor, reason = auto_review.mechanical(
             row(source_url="https://t.me/tviyspace/11797",
                 apply_url="https://forms.gle/1uvoZqQJCMc7pztHA"), 3)
-        self.assertTrue(verdict is None or "чужого Telegram" not in verdict[1])
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("чужого Telegram", reason)
+
+    def test_eurodesk_catalog_is_yellow(self):
+        corridor, reason = auto_review.mechanical(
+            row(source_url="https://programmes.eurodesk.eu/search/program/abc"), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("Eurodesk", reason)
+
+    def test_same_answer_as_the_admin_gate(self):
+        # Ворота адмінки (lib/source-rules.js) і коридор кажуть те саме.
+        from first_source import is_catalog, is_foreign_telegram
+        self.assertTrue(is_foreign_telegram("https://t.me/tviyspace/1"))
+        self.assertFalse(is_foreign_telegram("https://t.me/dityam_com_ua/512"))
+        self.assertTrue(is_catalog("https://programmes.eurodesk.eu/x"))
+        self.assertFalse(is_catalog("https://example.org/eurodesk.eu-guide"))
 
     def test_our_channel_is_fine(self):
         verdict = auto_review.mechanical(
