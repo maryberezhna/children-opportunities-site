@@ -1310,6 +1310,8 @@ class Normalizer:
         self.output_tokens = 0
         self.cache_write_tokens = 0
         self.uncached_input_tokens = 0
+        # Скільки відповідей API — для llm_usage у пропозиціях (04.10.2026).
+        self.api_calls = 0
 
     def normalize(self, raw_text: str, source: str, source_url: str,
                   raw_title: Optional[str] = None,
@@ -1476,6 +1478,7 @@ URL: {source_url}
                 )
                 u = getattr(resp, "usage", None)
                 if u is not None:
+                    self.api_calls += 1
                     self.cache_read_tokens += getattr(u, "cache_read_input_tokens", 0) or 0
                     self.cache_write_tokens += getattr(u, "cache_creation_input_tokens", 0) or 0
                     self.uncached_input_tokens += getattr(u, "input_tokens", 0) or 0

@@ -50,6 +50,7 @@ from pathlib import Path
 import anthropic
 
 import api_guard
+import usage
 from db import get_client
 from normalizer import missing_required_keys
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
@@ -64,6 +65,10 @@ logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("lifecycle")
 
 MODEL = "claude-haiku-4-5-20251001"
+# Скільки зʼїла перевірка — у llm_usage (04.10.2026, після вичерпаного
+# балансу). Перевірку перед постом у Telegram (verify-before-post.mjs) запускає
+# цей самий скрипт, тож вона пишеться під імʼям свого воркфлоу.
+SPEND = usage.Spend("lifecycle")
 DAILY_LIMIT = int(os.environ.get("LIFECYCLE_LIMIT") or "30")
 PAGE_CHARS = 9000
 DELAY = 0.6
@@ -418,6 +423,7 @@ def _ask(ai, row: dict, page: str, today: date) -> dict:
                            f"Адреса: {row.get('source_url')}\n\n"
                            f"Текст джерела:\n{clean_text(page)[:PAGE_CHARS]}"}],
             )
+            SPEND.add(MODEL, resp)
             block = next((b for b in resp.content if b.type == "tool_use"), None)
             return block.input if block else {}
         except anthropic.APIStatusError as e:
@@ -469,6 +475,15 @@ def _load(db, build) -> list[dict]:
 
 
 def main() -> int:
+    # Витрати пишемо в finally: _ask кидає на неповторюваній помилці API, і
+    # вже зроблені до того виклики теж мають потрапити в llm_usage.
+    try:
+        return _main()
+    finally:
+        SPEND.record()
+
+
+def _main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true",
                     default=os.environ.get("DRY_RUN", "").lower() == "true")
@@ -490,6 +505,8 @@ def main() -> int:
     today = date.today()
     db = get_client()
     dry = " (СУХИЙ ПРОГІН)" if args.dry_run else ""
+    # «У базу нічого не записано» — і витрат теж: сухий прогін пише їх лише в лог.
+    SPEND.dry = args.dry_run
 
     def write(row_id, patch):
         if not args.dry_run:

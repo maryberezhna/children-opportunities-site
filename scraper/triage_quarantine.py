@@ -42,6 +42,7 @@ import re
 from datetime import date, datetime, timezone
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import usage
 from db import get_client
 # Цитата — доказ, а не переказ: той самий звіряч, що й у світлофорі.
 from proof import MAX_QUOTE, quote_in_text
@@ -56,6 +57,9 @@ logger = logging.getLogger("triage")
 # під час екстракції: питати ту саму модель те саме питання — отримати ту саму
 # невпевненість. Разовий розбір сотні записів коштує копійки.
 MODEL = os.environ.get("TRIAGE_MODEL") or "claude-sonnet-5"
+
+# Скільки зʼїв розбір — у llm_usage (04.10.2026, після вичерпаного балансу).
+SPEND = usage.Spend("triage-quarantine")
 
 TEXT_LIMIT = 5000
 
@@ -322,6 +326,7 @@ def ask(client, item: dict) -> dict | None:
             messages=[{"role": "user",
                        "content": json.dumps(payload, ensure_ascii=False)}],
         )
+        SPEND.add(MODEL, resp)
         block = next((b for b in resp.content if b.type == "tool_use"), None)
         return block.input if block else None
     except Exception as e:
@@ -346,23 +351,28 @@ def run(apply: bool = False, limit: int = 100, doubt_to_queue: bool = False) -> 
     counts = {ACCEPT: 0, REJECT: 0, HUMAN: 0}
     written = 0
     report = []
-    for item in rows:
-        text = f"{item.get('raw_title') or ''}\n{item.get('raw_text') or ''}"
-        verdict, reason, quote = decide(ask(client, item), text)
-        counts[verdict] += 1
-        report.append({
-            "id": item["id"], "verdict": verdict, "reason": reason, "quote": quote,
-            "title": (item.get("raw_title") or "")[:120],
-            "url": item.get("source_url"), "source": item.get("source_name"),
-            "classifier_confidence": item.get("confidence"),
-        })
-        icon = {ACCEPT: "✅", REJECT: "🗑", HUMAN: "🙋"}[verdict]
-        logger.info("%s %-58s — %s", icon,
-                    (item.get("raw_title") or item.get("source_url") or "")[:58], reason[:90])
-        if apply:
-            patch = verdict_patch(verdict, reason, quote, doubt_to_queue=doubt_to_queue)
-            if patch and write_verdict(sb, item["id"], patch):
-                written += 1
+    # Сухий прогін обіцяє «у базі нічого не змінено» — витрати теж лише в лог.
+    SPEND.dry = not apply
+    try:
+        for item in rows:
+            text = f"{item.get('raw_title') or ''}\n{item.get('raw_text') or ''}"
+            verdict, reason, quote = decide(ask(client, item), text)
+            counts[verdict] += 1
+            report.append({
+                "id": item["id"], "verdict": verdict, "reason": reason, "quote": quote,
+                "title": (item.get("raw_title") or "")[:120],
+                "url": item.get("source_url"), "source": item.get("source_name"),
+                "classifier_confidence": item.get("confidence"),
+            })
+            icon = {ACCEPT: "✅", REJECT: "🗑", HUMAN: "🙋"}[verdict]
+            logger.info("%s %-58s — %s", icon,
+                        (item.get("raw_title") or item.get("source_url") or "")[:58], reason[:90])
+            if apply:
+                patch = verdict_patch(verdict, reason, quote, doubt_to_queue=doubt_to_queue)
+                if patch and write_verdict(sb, item["id"], patch):
+                    written += 1
+    finally:
+        SPEND.record(sb)
 
     with open(REPORT, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)

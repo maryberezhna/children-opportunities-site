@@ -23,21 +23,28 @@
 допомога, статусні діти) з того ж дня теж публікуються самі. До 03.10.2026
 зеленим був лише запис із цитатою на кожне з пʼяти полів.
 
+Памʼять судді (04.10.2026, після того як 03.10 закінчився баланс API):
+щоночі суддя заново читав кожну чернетку, хоча більшість із них не мінялась
+тижнями. Тепер його слово лежить в opportunities.auto_review разом із хешем
+того, що він бачив; доки запис той самий, суддю не кличемо (див. review).
+
 Запуск:
     python auto_review.py            # дамп: показує, що куди впало
     python auto_review.py --apply    # реально пише в базу
 """
 import argparse
+import hashlib
 import json
 import logging
 import os
 import re
-from datetime import date
+from datetime import date, datetime, timezone
 
 import anthropic
 
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+import usage
 from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
@@ -49,6 +56,10 @@ from first_source import source_problem
 logger = logging.getLogger(__name__)
 
 MODEL = "claude-haiku-4-5-20251001"
+
+# Скільки зʼїв суддя — у llm_usage (04.10.2026): до того облік був лише в
+# нічному скрапі, і на питання «куди пішов баланс» відповіді не було.
+SPEND = usage.Spend("auto-review")
 
 # ── Рівень довіри джерела ───────────────────────────────────────────────────
 # Підписи й рівень за замовчуванням — теж зі спеки: їх показує і черга
@@ -294,9 +305,10 @@ publish=false навіть тоді, коли вона відкрита для �
 хороший зайвий день у черзі."""
 
 
-def judge(client, row: dict) -> dict:
-    """Слово судді. Будь-який збій — трактуємо як «не впевнений»."""
-    payload = {
+def judge_payload(row: dict) -> dict:
+    """Рівно те, що бачить суддя. Одне місце і для запиту, і для хешу памʼяті:
+    поле, яке колись допишуть сюди, саме потрапить і в хеш."""
+    return {
         "Назва": row.get("title"),
         "Опис": row.get("summary"),
         "Тип": row.get("opportunity_type"),
@@ -313,6 +325,31 @@ def judge(client, row: dict) -> dict:
         "Вид за часом": row.get("timing_kind"),
         "Цитати зі сторінки": row.get("evidence") or {},
     }
+
+
+# «Сьогодні» в хеш не йде: з ним хеш мінявся б щоночі й памʼять не працювала б.
+# Дату суддя бачить, щоб помітити минуле, але минуле й так щоночі ловить
+# механіка (is_expired) ще ДО судді, а з памʼяті береться лише «ні» (див.
+# remembered) — тож застаріле «ні» нічого не опублікує.
+_NOT_HASHED = ("Сьогодні",)
+
+
+def judge_hash(row: dict) -> str:
+    """Відбиток того, що бачить суддя, разом із ним самим: модель, промпт і
+    схема відповіді. Зміниться будь-яке поле запису чи промпт — зміниться хеш,
+    і суддя подивиться знову."""
+    seen = {k: v for k, v in judge_payload(row).items() if k not in _NOT_HASHED}
+    blob = json.dumps({"model": MODEL, "prompt": JUDGE_PROMPT, "tool": JUDGE_TOOL,
+                       "input": seen}, ensure_ascii=False, sort_keys=True, default=str)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()
+
+
+def judge(client, row: dict) -> dict:
+    """Слово судді. Будь-який збій — трактуємо як «не впевнений».
+
+    Збій позначено `failed`: його не запамʼятовуємо, інакше вичерпаний
+    баланс (як 03.10.2026) лишив би чернетки жовтими до першої правки."""
+    payload = judge_payload(row)
     try:
         resp = client.messages.create(
             model=MODEL,
@@ -322,13 +359,16 @@ def judge(client, row: dict) -> dict:
             tool_choice={"type": "tool", "name": "verdict"},
             messages=[{"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         )
+        SPEND.add(MODEL, resp)
         block = next((b for b in resp.content if b.type == "tool_use"), None)
         if not block:
-            return {"publish": False, "reason": "суддя не повернув рішення", "confidence": 0.0}
+            return {"publish": False, "reason": "суддя не повернув рішення",
+                    "confidence": 0.0, "failed": True}
         return block.input
     except Exception as e:
         logger.error("суддя впав на %s: %s", row.get("slug"), e)
-        return {"publish": False, "reason": f"збій судді: {e}", "confidence": 0.0}
+        return {"publish": False, "reason": f"збій судді: {e}", "confidence": 0.0,
+                "failed": True}
 
 
 # Нижче цього порогу впевненості зелений коридор закритий, навіть якщо
@@ -336,19 +376,75 @@ def judge(client, row: dict) -> dict:
 MIN_CONFIDENCE = 0.8
 
 
-def classify(row: dict, client, trust: dict | None = None) -> tuple[str, str]:
+def verdict_corridor(j: dict) -> tuple[str, str]:
+    """Слово судді → коридор. Одне правило і для свіжого слова, і для
+    запамʼятованого: поріг MIN_CONFIDENCE діє на обидва однаково."""
+    if j.get("publish") and j.get("confidence", 0) >= MIN_CONFIDENCE:
+        return GREEN, f"суддя: {j.get('reason', '')}"
+    return YELLOW, f"суддя не пропустив: {j.get('reason', '')}"
+
+
+def remembered(row: dict, h: str) -> dict | None:
+    """Збережене слово судді, якщо запис відтоді не змінився, — інакше None.
+
+    Береться лише «ні» (жовтий). Зелений запис і так іде з черги, тож економії
+    на ньому немає, а чернеткою він знову стає, лише коли його туди повернули
+    (lifecycle, audit_clubs), — таке хай суддя подивиться свіжим оком.
+    """
+    mem = row.get("auto_review")
+    if not isinstance(mem, dict) or mem.get("hash") != h:
+        return None
+    j = mem.get("verdict")
+    if not isinstance(j, dict) or verdict_corridor(j)[0] != YELLOW:
+        return None
+    return j
+
+
+def review(row: dict, client, trust: dict | None = None
+           ) -> tuple[str, str, str, dict | None]:
+    """(коридор, причина, звідки слово, памʼять для запису або None).
+
+    Звідки: "mechanical" — вирішила механіка, "memory" — слово судді з
+    минулого прогону, "judge" — суддю питали щойно, "none" — питати нічим.
+    Памʼять повертається лише після справжньої відповіді судді."""
     # Джерела немає в реєстрі — це не «нормальне», а «невідоме»: третій рівень.
     tier = (trust or {}).get(row.get("source"), DEFAULT_TIER)
     verdict = mechanical(row, tier)
     if verdict:
-        return verdict
+        return verdict[0], verdict[1], "mechanical", None
 
-    j = judge(row=row, client=client) if client else {
-        "publish": False, "reason": "суддя не запускався (немає ключа)", "confidence": 0.0,
+    h = judge_hash(row)
+    cached = remembered(row, h)
+    if cached is not None:
+        return (*verdict_corridor(cached), "memory", None)
+
+    if not client:
+        j = {"publish": False, "reason": "суддя не запускався (немає ключа)", "confidence": 0.0}
+        return (*verdict_corridor(j), "none", None)
+
+    j = judge(row=row, client=client)
+    corridor, reason = verdict_corridor(j)
+    if j.get("failed"):
+        return corridor, reason, "judge", None
+    try:
+        confidence = float(j.get("confidence") or 0)
+    except (TypeError, ValueError):
+        confidence = 0.0         # «впевненість» не числом — у памʼяті це «не впевнений»
+    memory = {
+        "hash": h,
+        "corridor": corridor,
+        "reason": reason,
+        "verdict": {"publish": bool(j.get("publish")), "confidence": confidence,
+                    "reason": j.get("reason", "")},
+        "model": MODEL,
+        "at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
-    if j.get("publish") and j.get("confidence", 0) >= MIN_CONFIDENCE:
-        return GREEN, f"суддя: {j.get('reason', '')}"
-    return YELLOW, f"суддя не пропустив: {j.get('reason', '')}"
+    return corridor, reason, "judge", memory
+
+
+def classify(row: dict, client, trust: dict | None = None) -> tuple[str, str]:
+    corridor, reason, _, _ = review(row, client, trust)
+    return corridor, reason
 
 
 def _with_trace(row: dict, note: str) -> str:
@@ -379,6 +475,27 @@ def apply_decision(sb, row: dict, corridor: str, reason: str) -> None:
     sb.table("opportunities").update(patch).eq("id", row["id"]).execute()
 
 
+# Колонку opportunities.auto_review додає міграція 20261004_llm_spend_memory.sql.
+# Доки її не застосували, запис памʼяті падає — тоді до кінця прогону більше не
+# пробуємо, а суддю питаємо щоразу, як до 04.10.2026. Коридори від цього не
+# залежать: памʼять пишеться окремим запитом, уже після рішення.
+_memory_off = False
+
+
+def remember(sb, row: dict, memory: dict) -> bool:
+    global _memory_off
+    if _memory_off:
+        return False
+    try:
+        sb.table("opportunities").update({"auto_review": memory}).eq("id", row["id"]).execute()
+        return True
+    except Exception as e:                                   # noqa: BLE001
+        _memory_off = True
+        logger.warning("Памʼять судді не записалась (%s) — чи застосовано міграцію "
+                       "20261004_llm_spend_memory.sql? До кінця прогону не пробую.", e)
+        return False
+
+
 def run(apply: bool = False, limit: int = 500) -> dict:
     sb = get_client()
     key = os.getenv("ANTHROPIC_API_KEY")
@@ -394,12 +511,26 @@ def run(apply: bool = False, limit: int = 500) -> dict:
     trust = {r["name"]: r.get("trust_tier") or DEFAULT_TIER
              for r in (sb.table("sources").select("name, trust_tier").execute().data or [])}
 
+    # Дамп не пише в базу нічого — ні рішень, ні памʼяті судді, ні витрат
+    # (04.10.2026 «суха» перевірка опублікувала 74 записи, див. #661).
+    # Читати памʼять дамп може: це лише економить виклики.
+    SPEND.dry = not apply
     buckets = {GREEN: [], YELLOW: [], RED: []}
-    for row in rows:
-        corridor, reason = classify(row, client, trust)
-        buckets[corridor].append((row, reason))
-        if apply:
-            apply_decision(sb, row, corridor, reason)
+    asked = {"judge": 0, "memory": 0}
+    try:
+        for row in rows:
+            corridor, reason, whence, memory = review(row, client, trust)
+            buckets[corridor].append((row, reason))
+            if whence in asked:
+                asked[whence] += 1
+            if apply:
+                apply_decision(sb, row, corridor, reason)
+                if memory:
+                    remember(sb, row, memory)
+    finally:
+        SPEND.record(sb)
+    print(f"Суддя: питали {asked['judge']}, з памʼяті {asked['memory']} "
+          f"(чернетка не змінилась від минулого прогону)\n")
 
     for name, emoji in ((GREEN, "🟢"), (YELLOW, "🟡"), (RED, "🔴")):
         items = buckets[name]
