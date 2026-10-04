@@ -6,9 +6,12 @@
 й discover-агент, — тож рівень джерела перебивав якість запису, а зелених не
 бувало взагалі.
 
-Правило тепер: підтверджене цитатою йде на сайт, хай яке джерело. Рівень
+Правило 23.09.2026: підтверджене цитатою йде на сайт, хай яке джерело. Рівень
 важить лише тоді, коли чогось бракує, — і тоді він видно в причині поруч із
-тим, чого бракує. Чутлива тема лишається в людини завжди.
+тим, чого бракує.
+
+03.10.2026 Марія скасувала обовʼязкові поля й цитати: тримає лише брак дати
+в програми з датами, а чутливі теми публікуються самі, як усе інше.
 """
 import os
 import sys
@@ -53,39 +56,37 @@ class TrustTierIsNoLongerAGate(unittest.TestCase):
             with self.subTest(tier=tier):
                 self.assertIsNone(auto_review.mechanical(row(), trust_tier=tier))
 
-    def test_one_missing_quote_goes_to_human_with_both_facts(self):
-        corridor, reason = auto_review.mechanical(
-            row(evidence={k: v for k, v in PAGE_QUOTES.items() if k != "cost"}), trust_tier=3)
-        self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("без цитати", reason)
-        self.assertIn("вартість", reason)   # чого бракує
-        self.assertIn(TIER3, reason)        # і звідки запис
+    def test_missing_quote_no_longer_holds(self):
+        """З 03.10.2026 брак цитати — не ворота: запис іде до судді."""
+        self.assertIsNone(auto_review.mechanical(
+            row(evidence={k: v for k, v in PAGE_QUOTES.items() if k != "cost"}), trust_tier=3))
+        self.assertIsNone(auto_review.mechanical(row(evidence={}), trust_tier=3))
 
-    def test_missing_field_also_carries_the_tier(self):
-        corridor, reason = auto_review.mechanical(row(cost_type=None), trust_tier=1)
+    def test_empty_cost_age_place_no_longer_hold(self):
+        self.assertIsNone(auto_review.mechanical(
+            row(cost_type=None, age_from=None, age_to=None, format=None, cities=[]), trust_tier=3))
+
+    def test_missing_date_carries_the_tier(self):
+        corridor, reason = auto_review.mechanical(row(deadline=None), trust_tier=1)
         self.assertEqual(corridor, auto_review.YELLOW)
         self.assertIn("бракує", reason)
+        self.assertIn("дата", reason)
         self.assertIn(auto_review.TRUST_TIER_LABELS[1], reason)
 
     def test_unknown_tier_reads_as_third(self):
-        _, reason = auto_review.mechanical(row(cost_type=None), trust_tier=7)
+        _, reason = auto_review.mechanical(row(deadline=None), trust_tier=7)
         self.assertIn(TIER3, reason)
 
 
-class SensitiveStaysWithHuman(unittest.TestCase):
-    """Запобіжник, який цитати не відчиняють: помилка тут б'є по найвразливіших."""
+class SensitiveGoesThroughLikeEverythingElse(unittest.TestCase):
+    """До 03.10.2026 чутлива тема лишалась у людини завжди. Марія того дня:
+    «публікувати самим» — механіка її більше не тримає."""
 
-    def test_sensitive_type_with_every_quote_is_still_yellow(self):
-        corridor, reason = auto_review.mechanical(
-            row(opportunity_type="psychology"), trust_tier=1)
-        self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("чутлива категорія", reason)
+    def test_sensitive_type_passes_to_judge(self):
+        self.assertIsNone(auto_review.mechanical(row(opportunity_type="psychology"), trust_tier=1))
 
-    def test_sensitive_need_with_every_quote_is_still_yellow(self):
-        corridor, reason = auto_review.mechanical(
-            row(child_needs=["veteran_family"]), trust_tier=1)
-        self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("статусні діти", reason)
+    def test_sensitive_need_passes_to_judge(self):
+        self.assertIsNone(auto_review.mechanical(row(child_needs=["veteran_family"]), trust_tier=1))
 
 
 class ThreeChecksStillGate(unittest.TestCase):
@@ -110,12 +111,10 @@ class ThreeChecksStillGate(unittest.TestCase):
         self.assertIn("не українською", reason)
         self.assertIn(TIER3, reason)
 
-    def test_source_robot_cannot_read_is_named_without_the_tier(self):
-        """МОН: цитати не буде ніколи, і причина має казати саме це."""
-        corridor, reason = auto_review.mechanical(
-            row(source="МОН України", evidence={}), trust_tier=1)
-        self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("не відкривається роботу", reason)
+    def test_source_robot_cannot_read_no_longer_waits_for_a_quote(self):
+        """МОН: цитати не буде ніколи — з 03.10.2026 вона й не потрібна."""
+        self.assertIsNone(auto_review.mechanical(
+            row(source="МОН України", evidence={}), trust_tier=1))
 
 
 if __name__ == "__main__":

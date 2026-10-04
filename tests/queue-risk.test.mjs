@@ -54,9 +54,10 @@ test('рідкісне міжнародне — останнє в порядку
   assert.equal(queueReason(ready({ is_international: true })).key, 'rare');
 });
 
-test('бракує поля або цитати — чекає машину, не людину', () => {
-  assert.match(waitingReason(ready({ cost_type: null })), /^бракує: /);
-  assert.match(waitingReason(ready({ evidence: { age: 'a' } })), /^без цитати: /);
+test('бракує дати — чекає машину; порожні поля й цитати — ні (03.10.2026)', () => {
+  assert.match(waitingReason(ready({ deadline: null })), /^бракує: дата/);
+  assert.equal(waitingReason(ready({ cost_type: null })), null);
+  assert.equal(waitingReason(ready({ evidence: { age: 'a' } })), null);
 });
 
 // 23.09.2026: рівень джерела більше не ворота (там, у auto_review, він тримав
@@ -64,11 +65,11 @@ test('бракує поля або цитати — чекає машину, н�
 // чого бракує: «бракує вартості» з сайту міністерства і те саме з перепосту
 // в телеграмі — різна робота для модератора.
 test('рівень джерела дописується до причини очікування, коли він відомий', () => {
-  const reason = waitingReason(ready({ cost_type: null }), 3);
+  const reason = waitingReason(ready({ deadline: null }), 3);
   assert.match(reason, /^бракує: /);
   assert.ok(reason.includes(TRUST_TIER_LABELS['3']), reason);
   // Рівня не передали — рядок такий самий, як був.
-  assert.equal(waitingReason(ready({ cost_type: null })), 'бракує: вартість');
+  assert.equal(waitingReason(ready({ deadline: null })), 'бракує: дата: дедлайн або початок');
   // Запис із усіма цитатами не чекає нічого — хай яке джерело.
   assert.equal(waitingReason(ready(), 3), null);
 });
@@ -83,9 +84,9 @@ test('підписи рівнів — зі спеки, невідомий рів
 test('split: ризик уперед за вагою, решта чекає', () => {
   const { forHuman, waiting } = splitQueue([
     ready({ is_international: true }),
-    ready({ evidence: {} }),
+    ready({ deadline: null }),
     ready({ opportunity_type: 'psychology' }),
-    ready({ cost_type: null }),
+    ready({ deadline: null, timing_kind: 'one_time' }),
   ]);
   assert.deepEqual(forHuman.map((x) => x.risk.key), ['sensitive', 'rare']);
   assert.equal(waiting.length, 2);

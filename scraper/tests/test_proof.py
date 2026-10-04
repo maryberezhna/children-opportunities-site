@@ -119,23 +119,26 @@ class SanitizeProofGate(unittest.TestCase):
         self.assertEqual(out["status"], "draft")
 
     def test_missing_field_is_reported_once(self):
-        # Вартості немає зовсім: вона в «бракує», а не ще раз у «без цитати».
+        # Вартості немає зовсім: вона в «не знайдено», а не ще раз у «без
+        # цитати». З 03.10.2026 це не «бракує» (ворота), а підказка — але
+        # чернетка все одно йде через суддю, а не одразу на сайт.
         out = _sanitize(full(cost_type=None, summary="Табір для дітей 7–12 років у Карпатах.",
                              evidence={k: v for k, v in FULL_EVIDENCE.items() if k != "cost"}))
-        self.assertIn("бракує — вартість", out["admin_comment"])
+        self.assertEqual(out["status"], "draft")
+        self.assertIn("не знайдено — вартість", out["admin_comment"])
+        self.assertNotIn("бракує", out["admin_comment"])
         self.assertNotIn("без цитати", out["admin_comment"])
 
 
-class CorridorNeedsProof(unittest.TestCase):
+class CorridorNoLongerNeedsProof(unittest.TestCase):
     def _row(self, **over):
         row = full(link_status="ok", source="Тест", child_needs=[])
         row.update(over)
         return row
 
-    def test_no_quotes_is_yellow(self):
-        corridor, reason = auto_review.mechanical(self._row(evidence={}), trust_tier=2)
-        self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("без цитати", reason)
+    def test_no_quotes_goes_to_judge(self):
+        # До 03.10.2026 — жовтий «без цитати»; тепер цитати не ворота.
+        self.assertIsNone(auto_review.mechanical(self._row(evidence={}), trust_tier=2))
 
     def test_with_quotes_passes_mechanics(self):
         self.assertIsNone(auto_review.mechanical(self._row(), trust_tier=2))

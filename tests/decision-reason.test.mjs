@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  decisionReason, gapReason, deadlineNote, sortByDeadline, isOverdue,
+  decisionReason, gapReason, fillHint, deadlineNote, sortByDeadline, isOverdue,
 } from '../lib/decision-reason.js';
 
 const ready = (over = {}) => ({
@@ -24,17 +24,25 @@ test('готовий запис: причина є завжди, і вона —
   assert.match(r.text, /лишилось рішення/);
 });
 
-test('чого не вистачає — переліком, тими самими підписами, що в конвеєрі', () => {
-  // Без ризику й без дубля причина = обовʼязковий мінімум (lib/required.js).
-  const r = decisionReason(ready({ age_from: null, age_to: null, cost_type: null }));
+test('не вистачає дати — причина й червона рамка, тими самими підписами, що в конвеєрі', () => {
+  // З 03.10.2026 тримає лише дата програми з датами (lib/required.js).
+  const r = decisionReason(ready({ deadline: null }));
   assert.equal(r.key, 'missing');
-  assert.equal(r.text, 'Не вистачає: вік, вартість');
+  assert.equal(r.tone, 'stop');
+  assert.equal(r.text, 'Не вистачає: дата: дедлайн або початок');
 });
 
-test('поле є, а цитати немає — окрема причина, не «не вистачає»', () => {
+test('порожні поля — не причина, а тихий рядок-підказка', () => {
+  const r = decisionReason(ready({ age_from: null, age_to: null, cost_type: null }));
+  assert.equal(r.key, 'ready');
+  assert.equal(r.gap, 'Порожні поля — можна дозаповнити: вік, вартість');
+});
+
+test('поле є, а цитати немає — теж лише підказка', () => {
   const r = decisionReason(ready({ evidence: { age: 'a', date: 'b', cost: 'c', place: 'e' } }));
-  assert.equal(r.key, 'noproof');
-  assert.equal(r.text, 'Модель не знайшла в тексті: тип');
+  assert.equal(r.key, 'ready');
+  assert.equal(r.gap, 'Модель не знайшла в тексті: тип');
+  assert.equal(fillHint(ready()), null);
 });
 
 test('дубль випереджає все: одним кліком знімається питання', () => {
@@ -78,22 +86,24 @@ test('коли причина інша, чого бракує — окремим
   // Інакше виходила пастка: причина одна, кнопка «Додати на сайт» сіра,
   // а чому саме — не сказано ніде.
   const r = decisionReason(ready({
-    admin_comment: 'auto: низька впевненість', age_from: null, age_to: null,
+    admin_comment: 'auto: низька впевненість', deadline: null,
   }));
   assert.equal(r.key, 'threshold');
-  assert.equal(r.gap, 'Не вистачає: вік');
+  assert.equal(r.gap, 'Не вистачає: дата: дедлайн або початок');
   // Якщо головна причина і є «бракує» — другого рядка немає.
-  assert.equal(decisionReason(ready({ age_from: null, age_to: null })).gap, undefined);
-  assert.equal(decisionReason(ready()).gap, undefined);
+  assert.equal(decisionReason(ready({ deadline: null })).gap, undefined);
+  assert.equal(decisionReason(ready()).gap, null);
 });
 
 test('у «Неповних на сайті» питання лише про поля, а не про ризик', () => {
   // Міжнародний запис без віку: decisionReason сказав би «рідкісне
   // міжнародне», а в списку неповних відповідь потрібна інша.
-  const row = ready({ is_international: true, age_from: null, age_to: null });
+  const row = ready({ is_international: true, deadline: null });
   assert.equal(decisionReason(row).key, 'rare');
-  assert.equal(gapReason(row).text, 'Не вистачає: вік');
+  assert.equal(gapReason(row).text, 'Не вистачає: дата: дедлайн або початок');
   assert.equal(gapReason(ready()), null);
+  // Порожній вік більше не робить запис неповним (03.10.2026).
+  assert.equal(gapReason(ready({ age_from: null, age_to: null })), null);
 });
 
 test('кожна причина має тон для рамки', () => {

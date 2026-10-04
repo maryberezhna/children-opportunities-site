@@ -50,17 +50,12 @@ const patch = {};
 if (COST_TYPE) patch.cost_type = COST_TYPE;
 if (PRICE_NOTE) patch.price_note = PRICE_NOTE;
 
-// Поля, джерело й цитати — одними воротами (lib/publish-gate.js), тими самими,
-// що в /admin, редакторі й боті. Цитати обовʼязкові так само, як самі поля
-// («світлофор», 22.09.2026): поле, заповнене без цитати, — це твердження, яке
-// ніхто не підтверджував, а на сайті воно виглядає як перевірене.
+// Дата й джерело — одними воротами (lib/publish-gate.js), тими самими, що в
+// /admin, редакторі й боті. З 03.10.2026 порожні поля й брак цитат публікацію
+// не тримають (рішення Марії); до того цитати були обовʼязкові так само, як поля.
 const blocker = publishBlockers({ ...row, ...patch });
 if (blocker) {
   console.error(`«${row.title}» не можна публікувати — ${blocker.text}`);
-  if (blocker.error === 'missing_proof') {
-    console.error('Додайте цитати в evidence через «Картка — точкова правка»:');
-    console.error('  {"evidence": {"date": "…", "cost": "…", "age": "…", "type": "…", "place": "…"}}');
-  }
   process.exit(1);
 }
 

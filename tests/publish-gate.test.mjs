@@ -5,6 +5,9 @@
 // («світлофор», 22.09.2026). Обидві перевірки були написані. Їх не кликали:
 // з чотирьох шляхів публікації ворота стояли на двох, а бот дивився лише на
 // поля. Тому тут перевіряється не лише правило, а й те, що код його питає.
+//
+// 03.10.2026 Марія скасувала пʼять обовʼязкових полів і цитати як ворота:
+// тримає лише брак дати в програми з датами й чуже джерело.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -32,10 +35,14 @@ test('повний запис проходить', () => {
   assert.equal(publishBlockers(GOOD), null);
 });
 
-test('запису без полів відмовляють першим — бракує поля', () => {
-  const b = publishBlockers({ ...GOOD, cost_type: null });
+test('програмі з датами без дати відмовляють першим', () => {
+  const b = publishBlockers({ ...GOOD, opportunity_type: 'camp', deadline: null });
   assert.equal(b.error, 'missing_required');
-  assert.match(b.text, /вартість/i);
+  assert.match(b.text, /дата/i);
+});
+
+test('порожні вартість, вік і місце більше не тримають', () => {
+  assert.equal(publishBlockers({ ...GOOD, cost_type: null, age_from: null, age_to: null, format: null }), null);
 });
 
 test('чуже Telegram-джерело не пускає', () => {
@@ -49,27 +56,23 @@ test('наш власний канал джерелом не порушення'
   assert.equal(publishBlockers({ ...GOOD, source_url: 'https://t.me/dityam_com_ua/512' }), null);
 });
 
-test('поле без цитати не пускає', () => {
+test('брак цитати більше не тримає (03.10.2026)', () => {
   const { cost, ...rest } = GOOD.evidence;
-  const b = publishBlockers({ ...GOOD, evidence: rest });
-  assert.equal(b.error, 'missing_proof');
-  assert.deepEqual(b.missing, ['вартість']);
-});
-
-test('цитат немає зовсім — теж відмова', () => {
-  assert.equal(publishBlockers({ ...GOOD, evidence: null }).error, 'missing_proof');
+  assert.equal(publishBlockers({ ...GOOD, evidence: rest }), null);
+  assert.equal(publishBlockers({ ...GOOD, evidence: null }), null);
 });
 
 test('порожній запис не валить ворота', () => {
   assert.equal(publishBlockers(null).error, 'not_found');
-  assert.ok(publishBlockers({}).error);
+  assert.doesNotThrow(() => publishBlockers({}));
+  assert.ok(publishBlockers({ opportunity_type: 'camp' }).error);
 });
 
 // Ключі відповіді читають наявні клієнти: `missing` в /admin і редакторі,
 // `problem` у редакторі (EditForm), `detail` у /admin. Якщо котрийсь зникне,
 // модератор побачить «Помилка: undefined» замість причини.
 test('у відмові є всі ключі, які читають клієнти', () => {
-  for (const row of [{}, { ...GOOD, source_url: 'https://t.me/x/1' }, { ...GOOD, evidence: {} }]) {
+  for (const row of [{ opportunity_type: 'camp' }, { ...GOOD, source_url: 'https://t.me/x/1' }]) {
     const b = publishBlockers(row);
     for (const k of ['error', 'missing', 'problem', 'detail', 'text']) {
       assert.ok(b[k] !== undefined, `немає ключа ${k}`);

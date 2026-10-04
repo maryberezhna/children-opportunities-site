@@ -68,8 +68,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
   const up = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
   // Що саме заважає опублікувати — рахуємо на льоту, з того, що в полях
-  // просто зараз. Кнопка публікації гасне, поки перелік не порожній
-  // (вимога Марії 11.09.2026: ці пʼять полів обовʼязкові перед сайтом).
+  // просто зараз. Кнопка публікації гасне, поки перелік не порожній. З
+  // 03.10.2026 це лише дата програми з датами (до того — пʼять полів).
   // Країна з селекта — так, як її запише сервер (lib/country-field.js).
   const initialCountry = countryFieldValue(opp);
   const geo = {
@@ -88,6 +88,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     cost_type: f.cost_type || null,
     opportunity_type: f.opportunity_type,
     format: f.format || null,
+    // Вид у часі вирішує, чи потрібна дата взагалі (постійному — ні).
+    timing_kind: opp.timing_kind || null,
     // Назва потрібна винятку «вартість уточнюйте в школі» (школа діаспори).
     title: f.title,
     cities: f.cities.split(',').map((s) => s.trim()).filter(Boolean),

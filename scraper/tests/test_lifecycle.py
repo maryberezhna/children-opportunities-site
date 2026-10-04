@@ -70,16 +70,16 @@ class PlannedCheck(unittest.TestCase):
         self.assertEqual(patch["evidence"]["date"], QUOTE_OPEN)
         self.assertEqual(patch["evidence"]["age"], PROVEN_BUT_DATE["age"])
 
-    def test_new_season_without_quotes_goes_to_the_queue(self):
-        # 28.09.2026: новий сезон відкривав запис із віком і вартістю на
-        # здогаді моделі. Без цитат на все — чернетка, людині.
+    def test_new_season_with_a_date_reopens_without_quotes(self):
+        # 28.09.2026–03.10.2026 новий сезон без цитат на все йшов чернеткою до
+        # людини. З 03.10.2026 тримає лише брак дати, а новий сезон її й приніс.
         r = row(status="closed", timing_kind="periodic", deadline="2025-10-30")
         out = {"state": "open", "deadline": "2026-10-30", "evidence": QUOTE_OPEN,
                "timing_kind": "periodic"}
         patch = decide_check(r, out, QUOTE_OPEN, TODAY)
-        self.assertEqual(patch["status"], "draft")
+        self.assertEqual(patch["status"], "active")
         self.assertEqual(patch["deadline"], "2026-10-30")
-        self.assertIn("у чергу людині", patch["admin_comment"])
+        self.assertNotIn("у чергу людині", patch["admin_comment"])
 
     def test_live_record_stays_live_without_new_proof(self):
         # Уже на сайті — перевірка не стягує його в чернетку (модель від 22.09:

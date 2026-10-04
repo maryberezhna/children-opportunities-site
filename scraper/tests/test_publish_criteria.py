@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from normalizer import (  # noqa: E402
     PUBLISH_CRITERIA, REQUIRED_FIELDS, VALID_OPP_TYPES, PUBLISHABLE_COST_TYPES,
     PAYMENT_TYPES, missing_required, missing_required_keys, missing_proof,
+    missing_field_keys,
 )
 
 _CASES = os.path.join(os.path.dirname(__file__), "..", "..", "tests", "fixtures",
@@ -26,6 +27,8 @@ class SharedCases(unittest.TestCase):
                 self.assertEqual(missing_required_keys(case["row"]), case["missing"])
                 self.assertEqual(missing_required(case["row"]),
                                  [req[k]["label"] for k in case["missing"]])
+                # Поля, які варто дозаповнити, — підказка, не ворота (03.10.2026).
+                self.assertEqual(missing_field_keys(case["row"]), case["fields"])
                 if "missing_proof" in case:
                     self.assertEqual(missing_proof(case["row"]), case["missing_proof"])
 
