@@ -1,12 +1,16 @@
 import '@/app/styles/routes/topic.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS } from '@/lib/supabase';
-import { TOPICS, topicPath, collectionsPath } from '@/lib/topics';
+import { TOPICS, TOPIC_LIST, topicPath, collectionsPath, pickRelated } from '@/lib/topics';
 import { opportunitiesWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
-import { isLive } from '@/lib/audience';
-import { OLYMPIADS_PATH, ORDER, STAGES, SUBJECTS, isMonOlympiad } from '@/lib/olympiads';
+import { soonestDeadlines } from '@/lib/timing';
+import { isLive, isForTeens } from '@/lib/audience';
+import {
+  OLYMPIADS_PATH, ORDER, STAGES, SUBJECTS, isMonOlympiad, subjectCards, subjectChip,
+} from '@/lib/olympiads';
 import TopicCards from '../topic/TopicCards';
+import OpportunityCard from '../OpportunityCard';
 import ShareButton from '../topic/ShareButton';
 import StickyBar from '../StickyBar';
 import SubscribePopup from '../SubscribePopup';
@@ -28,6 +32,15 @@ import Footer from '../Footer';
  * Усі числа — з наказу МОН (lib/olympiads.js). Вік порахований із класів тим
  * самим правилом, що в скрапері, і поруч завжди показані самі класи: щоб було
  * видно, звідки взялась цифра.
+ *
+ * Куди йти далі (04.10.2026). Сторінка збирала ~230 переходів із Google на
+ * тиждень, але 1,6 сторінки за сеанс (інші підбірки — 3–5,7), до кінця
+ * догортали 9 із 274, 68% — з телефона. Хто таки йшов далі, відкривав
+ * картку свого предмета. Тож предмет тепер веде на свою картку двічі: чипом
+ * у хіро й назвою в таблиці (lib/olympiads.js → subjectCards). Одразу під
+ * таблицею — «Що далі»: чотири найближчі дедлайни інших олімпіад і конкурсів
+ * і дві підбірки. Немає живої картки — назва лишається текстом, без
+ * вгаданого посилання.
  */
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -99,7 +112,7 @@ const CARD_LABELS = {
   details: 'Детальніше →',
   emptyTitle: 'Нічого не знайдено',
   emptyText: 'Спробуйте інший фільтр.',
-  listLabel: 'Олімпіади в каталозі',
+  listLabel: 'Олімпіади на платформі',
   filterLabel: 'Фільтр за типом',
 };
 
@@ -135,10 +148,29 @@ export default async function OlympiadsGuide() {
     .sort((a, b) => (a.title || '').localeCompare(b.title || '', 'uk'));
   const total = items.length;
 
+  // Предмет → його жива картка: чипи в хіро, назви в таблиці, url у JSON-LD.
+  // Посилання — з prefetch={false}: два десятки чипів і рядків у полі зору
+  // тягнули б кожен свою картку, а картки рендеряться на запит із бази.
+  const cards = subjectCards(items);
+  const cardHref = (name) => `/o/${cards.get(name)}`;
+
   const olympiads = TOPICS['mizhnarodni-olimpiady'];
-  const related = ['mizhnarodni-olimpiady', 'konkursy']
-    .map((slug) => TOPICS[slug])
-    .map((t) => ({ topic: t, count: live.filter(t.match).length }));
+  const contests = TOPICS.konkursy;
+  const counted = TOPIC_LIST.map((t) => ({ topic: t, count: live.filter(t.match).length }));
+  const hubs = [olympiads, contests].map((t) => counted.find((c) => c.topic.slug === t.slug));
+
+  // «Що далі»: найближчі дедлайни серед інших олімпіад і конкурсів. Олімпіади
+  // МОН тут не повторюємо — вони вже в таблиці й у списку нижче; записи лише
+  // для молодших за 13 відсікаємо: у наказі класи 8–11.
+  const next = soonestDeadlines(
+    live.filter((o) => !isMonOlympiad(o) && isForTeens(o) && (olympiads.match(o) || contests.match(o))),
+    todayIso,
+    4,
+  );
+
+  // «Інші підбірки» — чотири, як колонок у сітці: олімпіади й конкурси
+  // першими, далі найбільші з решти (рішення Марії 04.10.2026).
+  const related = pickRelated(['mizhnarodni-olimpiady', 'konkursy'], counted);
 
   const updatedLabel = new Intl.DateTimeFormat('uk-UA', {
     timeZone: 'Europe/Kyiv', day: 'numeric', month: 'long', year: 'numeric',
@@ -187,6 +219,8 @@ export default async function OlympiadsGuide() {
           item: {
             '@type': 'EducationalOccupationalProgram',
             name: `Всеукраїнська олімпіада з предмета «${s.name}»`,
+            // Адреса живої картки предмета — лише коли вона є (subjectCards).
+            ...(cards.has(s.name) ? { url: `${SITE_URL}${cardHref(s.name)}` } : {}),
             educationalProgramMode: 'full-time',
             typicalAgeRange: `${s.from}-${s.to}`,
             educationalLevel: `${s.grades} класи`,
@@ -274,6 +308,22 @@ export default async function OlympiadsGuide() {
               цього навчального року, з якого класу можна брати участь, коли три етапи й куди записуватись.
             </p>
             <p className="tp-guide-link"><a href="#ol-subjects">Одразу до переліку предметів ↓</a></p>
+            {/* Вибір предмета: чип веде просто на картку. Лише предмети, що
+                мають живу картку; переносяться в рядки, зона дотику 44px. */}
+            {cards.size ? (
+              <nav className="ol-pick" aria-labelledby="ol-pick-title">
+                <p id="ol-pick-title" className="ol-pick-label">Оберіть предмет</p>
+                <ul className="ol-pick-list">
+                  {[...cards.keys()].map((name) => (
+                    <li key={name}>
+                      <Link href={cardHref(name)} prefetch={false} className="ol-pick-link">
+                        {subjectChip(name)}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            ) : null}
             <div className="tp-actions">
               <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
                 Отримувати нові в Telegram
@@ -317,6 +367,7 @@ export default async function OlympiadsGuide() {
             <p className="er-lead">
               Перелік і класи — за {ext(ORDER.url, `наказом МОН ${ORDER.no} від ${ORDER.date}`)}. Вік поруч
               порахований із класів, щоб було зрозуміло батькам; орієнтуватись варто саме на клас.
+              {cards.size ? ' Підкреслена назва веде на картку олімпіади з цього предмета.' : null}
             </p>
             {/* Саме таблиця, а не список: 24 рядки на чотири колонки читають і
                 скрінрідер, і мовна модель — зі списку зі спанів звʼязок
@@ -336,7 +387,11 @@ export default async function OlympiadsGuide() {
               <tbody>
                 {SUBJECTS.map((s) => (
                   <tr key={s.name}>
-                    <th scope="row">{s.name}</th>
+                    <th scope="row">
+                      {cards.has(s.name)
+                        ? <Link href={cardHref(s.name)} prefetch={false}>{s.name}</Link>
+                        : s.name}
+                    </th>
                     <td>{s.grades}</td>
                     <td>{s.from}–{s.to} років</td>
                     <td>{s.third ? 'так' : 'немає'}</td>
@@ -345,6 +400,32 @@ export default async function OlympiadsGuide() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        {/* Одразу під таблицею, а не внизу: до «Інших підбірок» у самому кінці
+            догортали одиниці. Картки серверні — посилання є в HTML. */}
+        <section id="ol-next" className="ol-next" aria-labelledby="ol-next-title">
+          <h2 id="ol-next-title" className="tp-h2">{titled(['Що', 'далі'])}</h2>
+          {next.length ? (
+            <>
+              <p className="ol-next-lead">Інші олімпіади й конкурси з найближчими дедлайнами.</p>
+              <div className="tp-grid">
+                {next.map((o) => (
+                  <OpportunityCard key={o.id} item={o} lang="uk" today={todayIso} prefetch={false} />
+                ))}
+              </div>
+            </>
+          ) : null}
+          <ul className="ol-pick-list">
+            {hubs.map(({ topic: t, count }) => (
+              <li key={t.slug}>
+                <Link href={topicPath(t)} className="ol-pick-link ol-pick-hub">
+                  Усі {t.nav.toLowerCase()} <span className="ol-pick-n">{count}</span>
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section className="tp-faq er-section" aria-labelledby="ol-how">
@@ -370,7 +451,7 @@ export default async function OlympiadsGuide() {
         </section>
 
         <section id="ol-open" className="er-open" aria-labelledby="ol-open-title">
-          <h2 id="ol-open-title" className="tp-h2">{titled(['Олімпіади', 'в каталозі'])}</h2>
+          <h2 id="ol-open-title" className="tp-h2">{titled(['Олімпіади', 'на платформі'])}</h2>
           {total > 0 ? (
             <TopicCards items={items.map(slim)} todayIso={todayIso} lang="uk" labels={CARD_LABELS} />
           ) : (
@@ -412,11 +493,21 @@ export default async function OlympiadsGuide() {
 
         <section className="tp-related" aria-labelledby="tp-related-title">
           <h2 id="tp-related-title" className="tp-h2">{titled(['Інші', 'підбірки'])}</h2>
+          {/* Та сама картка, що в підбірках (app/TopicPage.js): фото й текст у
+              .tp-related-body. Без обгортки текст стояв упритул до рамки. */}
           <div className="tp-related-grid">
             {related.map(({ topic: t, count }) => (
               <Link key={t.slug} href={topicPath(t)} className="tp-related-card">
-                <span className="tp-related-title">{t.nav}</span>
-                <span className="tp-related-n">{count} {opportunitiesWord(count)}</span>
+                {t.heroImage ? (
+                  <picture className="tp-related-photo">
+                    <source srcSet={`${t.heroImage.src}.webp`} type="image/webp" />
+                    <img src={`${t.heroImage.src}.jpg`} alt="" width="450" height="300" loading="lazy" />
+                  </picture>
+                ) : null}
+                <span className="tp-related-body">
+                  <span className="tp-related-title">{t.nav} →</span>
+                  <span className="tp-related-n">{count} {opportunitiesWord(count)}</span>
+                </span>
               </Link>
             ))}
           </div>
