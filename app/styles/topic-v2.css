@@ -126,9 +126,9 @@
   cursor: pointer;
   box-sizing: border-box;
 }
-.tp-main .tp-btn-dark { background: var(--v2-ink); color: var(--surface-2); border: 1px solid #1a1a1a; }
+.tp-main .tp-btn-dark { background: var(--v2-ink); color: var(--surface-2); border: 1px solid var(--v2-ink); }
 .tp-main .tp-btn-dark:hover { color: var(--surface-2); background: #4a4a4a; border-color: var(--v2-ink-2); }
-.tp-btn-outline { background: transparent; color: var(--v2-ink); border: 1px solid #1a1a1a; }
+.tp-btn-outline { background: transparent; color: var(--v2-ink); border: 1px solid var(--v2-ink); }
 .tp-btn-outline:hover { background: var(--v2-ink); color: var(--surface-2); }
 .tp-main .tp-btn-white { background: var(--surface-2); color: var(--v2-ink); border: 1px solid #ffffff; padding: 0 22px; }
 .tp-main .tp-btn-white:hover { color: var(--v2-ink); background: var(--v2-cream); }
@@ -466,7 +466,7 @@
   width: auto;
   height: 48px;
   padding: 0 26px;
-  border: 1.5px solid #1a1a1a;
+  border: 1.5px solid var(--v2-ink);
   border-radius: 9999px;
   background: var(--surface-2);
   color: var(--v2-ink);

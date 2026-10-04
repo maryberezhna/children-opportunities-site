@@ -221,8 +221,12 @@ export default function AccessibilityPanel() {
                 onClick={() => update({ bw: false })}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                  <circle cx="12" cy="12" r="5" fill="#f6a623" />
-                  <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="#f6a623" strokeWidth="2" strokeLinecap="round" />
+                  {/* currentColor, а не вписаний колір: іконка мусить
+                      контрастувати зі СВОЄЮ кнопкою, а активна кнопка міняє
+                      тло разом із темою. Бурштиновий на помаранчевому давав
+                      1,7:1 — сонце зникало. */}
+                  <circle cx="12" cy="12" r="5" fill="currentColor" />
+                  <path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                 </svg>
                 {t.colour}
               </button>
@@ -231,8 +235,10 @@ export default function AccessibilityPanel() {
                 onClick={() => update({ bw: true })}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" fill="#888" />
-                  <path d="M12 2v20A10 10 0 0 0 12 2z" fill="#222" />
+                  {/* Дві половини одного кольору, різні лише прозорістю:
+                      чорна половина на темній панелі давала 1,1:1. */}
+                  <path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z" fill="currentColor" opacity="0.45" />
+                  <path d="M12 2v20A10 10 0 0 0 12 2z" fill="currentColor" />
                 </svg>
                 {t.bw}
               </button>

@@ -78,6 +78,7 @@
   --state-ok: #86d6a4;
   --state-link: #8ac4ea;
   --cup-line: #6b6253;
+  --scroll-btn-bg: rgba(38, 34, 27, 0.96);
   --header-bg: rgba(21, 19, 15, 0.92);
   --accent-ink: #ff8d5c;
 }
@@ -136,6 +137,7 @@
     --state-ok: #86d6a4;
     --state-link: #8ac4ea;
     --cup-line: #6b6253;
+    --scroll-btn-bg: rgba(38, 34, 27, 0.96);
   --cup-line: #6b6253;
   --state-urgent: #ff9d9d;
   --state-ok: #86d6a4;
@@ -192,4 +194,74 @@
   :root:not([data-theme="light"]) .chip-top {
     background-image: none;
   }
+}
+
+/* ── Адмінка поза темами ────────────────────────────────────────────────────
+ *
+ * Марія, 04.10.2026: «нічна тема не має поширюватися на адмінку». Її сторінки
+ * написані інлайновими стилями з жорстко вписаними кольорами (понад триста),
+ * і темна палітра робила з них суміш: світлі картки на темному тлі, темний
+ * текст на темному. Переписувати адмінку на токени заради нічної теми не
+ * варто — її бачать двоє людей, і вдень.
+ *
+ * Тому всередині [data-admin] токени повертаються до денних значень. Перелік
+ * зібрано з того самого :root у base.css і home-v2.css, тож розійтись їм
+ * ніде. color-scheme теж повертаємо: інакше поля й смуги прокрутки лишаються
+ * темними від системи.
+ */
+[data-admin] {
+  color-scheme: light;
+  /* Обгортка лежить усередині body, а фон сторінки малює саме body — тож
+     повернути самі токени мало: адмінка опинялась темним полотном зі світлими
+     картками. Малюємо свій фон на всю висоту. */
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  --bg: #fefcf7;
+  --surface: #ffffff;
+  --ink: #1a1a1a;
+  --ink-soft: #555;
+  --ink-muted: #6b6b6b;
+  --border: #e8e3d6;
+  --border-hover: #d4cfc1;
+  --accent: #e85d24;
+  --accent-soft: #fef2eb;
+  --frame: #f0e0d8;
+  --warm-1: #fef7e0;
+  --warm-2: #fde8c7;
+  --cool-1: #e8f4f2;
+  --cool-2: #d4ebe6;
+  --pink-1: #fde8ef;
+  --pink-2: #fbd4e0;
+  --purple-1: #ede8f8;
+  --purple-2: #d9cff2;
+  --green-1: #e4f2d6;
+  --red-1: #fde3e3;
+  --amber-1: #fef2d4;
+  --v2-cream: #f7f1e6;
+  --v2-cream-dark: #f1ebde;
+  --v2-line: #e8e3d6;
+  --v2-line-strong: #d4cfc1;
+  --v2-ink: #1a1a1a;
+  --v2-ink-2: #4a4a4a;
+  --v2-ink-3: #6b6b6b;
+  --v2-accent: #e85d24;
+  --v2-accent-hover: #d14c15;
+  --v2-accent-strong: #c8501a;
+  --v2-input-bg: #fdfbf6;
+  --v2-frame: #f0ddd0;
+  --surface-2: #ffffff;
+  --chip-ink-purple: #4c3d8c;
+  --chip-ink-teal: #0a5348;
+  --chip-ink-green: #2d5814;
+  --chip-ink-amber: #8a5a0a;
+  --chip-ink-pink: #8a1a3a;
+  --tg-badge-ink: #8fd0f0;
+  --tg-card-ink: #c9c9c9;
+  --state-urgent: #991b1b;
+  --state-ok: #2f7d4f;
+  --state-link: #2a7ab8;
+  --cup-line: #1a1a1a;
+  --header-bg: rgba(255, 255, 255, 0.9);
+  --accent-ink: #b04312;
 }
