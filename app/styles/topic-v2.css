@@ -24,7 +24,7 @@
   flex-direction: column;
   gap: 40px;
   color: #1a1a1a;
-  font-family: var(--font-cyrillic), var(--font-dm-sans), -apple-system, sans-serif;
+  font-family: var(--font-sans), -apple-system, sans-serif;
 }
 .tp-main a { color: var(--v2-accent-strong); text-decoration: none; }
 .tp-main a:hover { color: #d14c15; }

@@ -18,29 +18,25 @@ import './globals.css';
 // лежали в кеші. Мережевий запит у білді — це відмова, яку неможливо
 // відтворити й від якої нічого не залежить у нашому коді.
 //
-// Файли — ті самі підмножини, що віддає Google: латиниця для DM Sans,
-// кирилиця для Manrope, обидві в одному файлі для Caveat. Разом ~150 КБ.
-
-// DM Sans не має кирилиці в підмножинах Google. Тримаємо його для латиниці,
-// а українські гліфи бере Manrope через fallback у font-family.
-const dmSans = localFont({
-  src: [
-    { path: './fonts/DMSans-400.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/DMSans-500.woff2', weight: '500', style: 'normal' },
-    { path: './fonts/DMSans-700.woff2', weight: '700', style: 'normal' },
-  ],
-  display: 'swap',
-  variable: '--font-dm-sans',
-});
-
+// Один шрифт на весь текст — Manrope, латиниця й кирилиця в одному файлі на
+// кожну вагу (04.10.2026). До того кирилицю малював Manrope, а латиницю,
+// цифри й розділові знаки — DM Sans, і в рядку «5–18 років» чи «Лейпцигу
+// (oseredok-leipzig.de)» стояли два шрифти з різною висотою літер. Марія:
+// «шрифти не консистентні».
+//
+// Файли зібрано зі змінного Manrope 4.505 (github.com/google/fonts, ofl/manrope)
+// у ваги 400/500/700, підмножина latin + cyrillic Google Fonts, стрілки й ₴.
+// У Manrope немає українського апострофа ʼ (U+02BC) — у файлах він веде на
+// гліф ’, інакше «Здоровʼя» брало б апостроф із системного шрифту.
+// Caveat — окремо, для рукописних акцентів.
 const manrope = localFont({
   src: [
-    { path: './fonts/Manrope-cyr-400.woff2', weight: '400', style: 'normal' },
-    { path: './fonts/Manrope-cyr-500.woff2', weight: '500', style: 'normal' },
-    { path: './fonts/Manrope-cyr-700.woff2', weight: '700', style: 'normal' },
+    { path: './fonts/Manrope-400.woff2', weight: '400', style: 'normal' },
+    { path: './fonts/Manrope-500.woff2', weight: '500', style: 'normal' },
+    { path: './fonts/Manrope-700.woff2', weight: '700', style: 'normal' },
   ],
   display: 'swap',
-  variable: '--font-cyrillic',
+  variable: '--font-sans',
 });
 
 const caveat = localFont({
@@ -153,7 +149,7 @@ export default function RootLayout({ children }) {
     // скаржився б на «зайвий» атрибут на кожній сторінці.
     <html
       lang="uk"
-      className={`${dmSans.variable} ${manrope.variable} ${caveat.variable}`}
+      className={`${manrope.variable} ${caveat.variable}`}
       suppressHydrationWarning
     >
       <body>
