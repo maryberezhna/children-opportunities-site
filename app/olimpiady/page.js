@@ -308,12 +308,20 @@ export default async function OlympiadsGuide() {
               цього навчального року, з якого класу можна брати участь, коли три етапи й куди записуватись.
             </p>
             <p className="tp-guide-link"><a href="#ol-subjects">Одразу до переліку предметів ↓</a></p>
-            {/* Вибір предмета: чип веде просто на картку. Лише предмети, що
-                мають живу картку; переносяться в рядки, зона дотику 44px. */}
+            <div className="tp-actions">
+              <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
+                Отримувати нові в Telegram
+              </a>
+              <ShareButton label="Поділитися путівником" doneLabel="Посилання скопійовано" />
+            </div>
+            {/* Вибір предмета: чип веде просто на картку, лише предмети з живою
+                карткою. Стоїть ПІСЛЯ кнопок: канал — головний заклик сайту, і на
+                телефоні 23 чипи в рядки (~450px) зсували його за перший екран.
+                На телефоні чипи — один рядок із прокруткою вбік (topic-v2.css). */}
             {cards.size ? (
               <nav className="ol-pick" aria-labelledby="ol-pick-title">
                 <p id="ol-pick-title" className="ol-pick-label">Оберіть предмет</p>
-                <ul className="ol-pick-list">
+                <ul className="ol-pick-list ol-pick-subjects">
                   {[...cards.keys()].map((name) => (
                     <li key={name}>
                       <Link href={cardHref(name)} prefetch={false} className="ol-pick-link">
@@ -324,12 +332,6 @@ export default async function OlympiadsGuide() {
                 </ul>
               </nav>
             ) : null}
-            <div className="tp-actions">
-              <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
-                Отримувати нові в Telegram
-              </a>
-              <ShareButton label="Поділитися путівником" doneLabel="Посилання скопійовано" />
-            </div>
           </div>
           <div className="tp-hero-photo">
             <picture>

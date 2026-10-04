@@ -608,8 +608,9 @@
 }
 
 /* Вибір предмета в хіро /olimpiady (04.10.2026): чип веде просто на картку.
-   Переносяться в рядки, а не гортаються вбік — схований за краєм предмет
-   людина не побачить. Ті самі пігулки, що «Ця підбірка у вашому місті». */
+   На широкому екрані переносяться в рядки. На телефоні — один рядок із
+   прокруткою вбік (нижче, ≤640px): 23 чипи в рядки займали ~450px і
+   розтягували хіро. Ті самі пігулки, що «Ця підбірка у вашому місті». */
 .ol-pick { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
 .ol-pick-label { margin: 0; font-size: 14px; font-weight: 600; color: var(--v2-ink-3); }
 .ol-pick-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
@@ -634,3 +635,26 @@
 /* «Що далі» під таблицею: чотири картки й дві підбірки. */
 .ol-next { display: flex; flex-direction: column; gap: 16px; scroll-margin-top: 80px; }
 .ol-next-lead { margin: 0; font-size: 16px; line-height: 1.6; color: var(--v2-ink-2); max-width: 760px; }
+
+/* Телефон: чипи предметів — один рядок, гортається всередині себе. Смуга
+   виходить на поля .tp-main (−16px), але не ширша за екран, тож сама
+   сторінка вбік не гортається. Обрізаний чип і згасання справа кажуть, що
+   далі є ще. */
+@media (max-width: 640px) {
+  .ol-pick { max-width: none; }
+  .ol-pick-subjects {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding: 0 16px;
+    scrollbar-width: none;
+    margin: 0 -16px;
+    padding: 0 16px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  }
+  .ol-pick-subjects::-webkit-scrollbar { display: none; }
+  .ol-pick-subjects li { flex: none; scroll-snap-align: start; }
+  .tp-main .ol-pick-subjects .ol-pick-link { white-space: nowrap; }
+}

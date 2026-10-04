@@ -124,10 +124,25 @@ test('сторінка: назва в таблиці й чипи ведуть н
   // Назва предмета в рядку таблиці — посилання, коли картка є, інакше текст.
   assert.match(page, /<th scope="row">\s*\{cards\.has\(s\.name\)\s*\? <Link href=\{cardHref\(s\.name\)\} prefetch=\{false\}>\{s\.name\}<\/Link>\s*: s\.name\}/);
   assert.match(page, /const cardHref = \(name\) => `\/o\/\$\{cards\.get\(name\)\}`/);
-  // Чипи в хіро — поруч із «Одразу до переліку предметів».
-  const hero = page.slice(page.indexOf('Одразу до переліку предметів'), page.indexOf('tp-actions">'));
+  // Чипи в хіро — ПІСЛЯ кнопок: канал — головний заклик сайту, і на телефоні
+  // 23 чипи над кнопкою зсували її за перший екран.
+  const hero = page.slice(page.indexOf('className="tp-actions"'), page.indexOf('className="tp-hero-photo"'));
+  assert.ok(hero.indexOf('Отримувати нові в Telegram') < hero.indexOf('className="ol-pick"'), 'чипи — після кнопки каналу');
   assert.match(hero, /className="ol-pick-link"/);
   assert.match(hero, /subjectChip\(name\)/);
+  assert.ok(!page.slice(0, page.indexOf('className="tp-actions"')).includes('className="ol-pick"'), 'над кнопками чипів немає');
+});
+
+test('телефон: чипи предметів — один рядок із прокруткою всередині себе', () => {
+  const css = readFileSync(new URL('../app/styles/topic-v2.css', import.meta.url), 'utf8');
+  const at = css.indexOf('@media (max-width: 640px)');
+  assert.ok(at > 0, 'немає мобільного блоку для чипів');
+  const block = css.slice(at, css.indexOf('\n}', at));
+  assert.match(block, /\.ol-pick-subjects \{[^}]*flex-wrap: nowrap/);
+  assert.match(block, /\.ol-pick-subjects \{[^}]*overflow-x: auto/);
+  // Смуга виходить рівно на поля .tp-main (16px) — ширша дала б прокрутку сторінці.
+  assert.match(block, /margin: 0 -16px/);
+  assert.match(css, /\.tp-main \.ol-pick-link \{[^}]*min-height: 44px/);
 });
 
 test('сторінка: «Що далі» під таблицею, нічого не знято', () => {
