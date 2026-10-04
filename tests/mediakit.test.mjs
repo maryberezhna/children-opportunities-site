@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { flattenReport } from '../lib/ga4.js';
 import {
-  audienceTotals, ukraineShare, classifyPath, pathBreakdown, eventCounts, ageBandShares,
+  audienceTotals, ukraineShare, classifyPath, pathBreakdown, eventCounts, ageBandShares, OUTBOUND_EVENTS,
 } from '../lib/mediakit.js';
 
 // Реальні числа GA4 за 28 днів до 03.10.2026 (перевірено через конектор).
@@ -77,6 +77,9 @@ test('події й вік дітей із профілів', () => {
     { dateRange: 'date_range_0', eventName: 'apply_click', eventCount: 12 },
   ], 'date_range_0');
   assert.equal(ev.opportunity_click + ev.apply_click, 1658);
+  // apply_click іде на тому ж кліку, що й opportunity_click: до переходів його
+  // не додаємо, інакше кожна подача рахується двічі (04.10.2026: 1 745 замість 1 563).
+  assert.deepEqual(OUTBOUND_EVENTS, ['opportunity_click']);
   const a = ageBandShares([{ age_bands: ['7-10'] }, { age_bands: ['7-10', '11-14'] }, { age_bands: [] }]);
   assert.equal(a.children, 2);
   assert.deepEqual(a.bands[0], { band: '7-10', count: 2, share: 100 });
