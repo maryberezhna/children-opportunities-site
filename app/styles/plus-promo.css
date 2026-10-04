@@ -4,8 +4,8 @@
 .plus-promo {
   margin: 8px 0 40px;
   padding: 28px 32px;
-  background: var(--v2-ink);
-  color: var(--surface-2);
+  background: var(--contrast-bg);
+  color: var(--contrast-ink);
   border-radius: 20px;
   display: flex;
   align-items: center;
