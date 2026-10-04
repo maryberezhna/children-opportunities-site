@@ -35,7 +35,7 @@ const DRAFT_DUP_SIM = 0.35;
 const FIELDS = [
   'id, slug, status, title, summary, source, source_url, apply_url, opportunity_type',
   'age_from, age_to, cost_type, price_note, deadline, recurrence, results_date',
-  'event_start_date, event_end_date, format, cities, countries, is_international',
+  'event_start_date, event_end_date, timing_kind, format, cities, countries, is_international',
   'evidence, child_needs, link_status, dup_of, dup_score, admin_comment, created_at',
 ].join(', ');
 

@@ -170,3 +170,21 @@ test('прострочене: остання дата в минулому', () =
   assert.equal(isOverdue({ recurrence: 'ongoing' }, today), false);
   assert.equal(isOverdue({}, today), false);
 });
+
+// 04.10.2026: постійному запису дата не потрібна — але лише коли сторінка
+// справді передала timing_kind. Черга його не вибирала, і «постійну»
+// конференцію Youth4Ocean тримала з «Не вистачає: дата».
+test('постійна конференція без дат — не «бракує дати»', () => {
+  const row = ready({ opportunity_type: 'conference', timing_kind: 'permanent',
+    deadline: null, event_start_date: null, event_end_date: null, results_date: null });
+  assert.notEqual(decisionReason(row).key, 'missing');
+});
+
+test('сторінки адмінки, що рахують причину, вибирають timing_kind', async () => {
+  const { readFileSync } = await import('node:fs');
+  for (const f of ['app/admin/page.js', 'app/admin/today/page.js',
+    'app/admin/zakhysnyky/page.js', 'app/admin/edit/[id]/page.js']) {
+    const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    assert.ok(src.includes('timing_kind'), `${f} не вибирає timing_kind`);
+  }
+});
