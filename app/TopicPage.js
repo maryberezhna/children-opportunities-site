@@ -534,6 +534,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
 
         {topWeek.length === 3 ? (
           <TopWeekSlider
+            all
             lang={lang}
             title={ch.topWeek}
             allHref={isEn ? null : '/dedlainy'}

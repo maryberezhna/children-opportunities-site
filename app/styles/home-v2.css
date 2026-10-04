@@ -2098,3 +2098,26 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   .v2-tw-card { transition: none; }
   .v2-tw-dot::before { transition: none; }
 }
+
+/* Широкий розклад: усі три картки поруч (Марія, 04.10.2026: «там можна всі 3
+   помістити»). Одна картка на всю ширину підбірки виглядала порожньою
+   коробкою, а крутити те, що й так уміщається, нема сенсу. */
+.v2-tw--all .v2-tw-stage {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.v2-tw--all .v2-tw-card {
+  grid-area: auto;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.v2-tw--all .v2-tw-name { font-size: 1.0625rem; -webkit-line-clamp: 3; }
+.v2-tw--all .v2-tw-foot { justify-content: flex-end; }
+
+/* Нижче 860px три колонки не читаються — стають одна під одною. */
+@media (max-width: 860px) {
+  .v2-tw--all .v2-tw-stage { grid-template-columns: 1fr; }
+}

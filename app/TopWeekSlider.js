@@ -24,8 +24,14 @@ import { SLIDE_MS, nextIndex, prevIndex, shouldAutoPlay, swipeTo } from '@/lib/t
  * Приймає ГОТОВІ рядки (day/month/meta), а не функції-рендери: блок стоїть і
  * на головній (клієнтський хіро), і в кожній підбірці (серверна сторінка), а
  * функцію через межу сервер → клієнт не передати.
+ *
+ * Два розклади, бо місця різні (Марія, 04.10.2026):
+ *   • вузький (головна, права колонка хіро) — одна картка, що сама міняється;
+ *   • широкий (підбірка, вся ширина) — «там можна всі 3 помістити»: три
+ *     картки поруч, без каруселі. Одна картка на всю ширину виглядала
+ *     порожньою коробкою, а крутити те, що й так уміщається, нема сенсу.
  */
-export default function TopWeekSlider({ cards = [], title, allHref, allLabel, lang = 'uk' }) {
+export default function TopWeekSlider({ cards = [], title, allHref, allLabel, lang = 'uk', all = false }) {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const [touched, setTouched] = useState(false);
@@ -42,10 +48,11 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
   }, []);
 
   useEffect(() => {
+    if (all) return undefined;
     if (!shouldAutoPlay({ total, paused, touched, reducedMotion: reduced })) return undefined;
     const timer = setInterval(() => setI((v) => nextIndex(v, total)), SLIDE_MS);
     return () => clearInterval(timer);
-  }, [total, paused, touched, reduced]);
+  }, [all, total, paused, touched, reduced]);
 
   if (!total) return null;
 
@@ -54,7 +61,7 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
 
   return (
     <aside
-      className="v2-tw"
+      className={`v2-tw${all ? ' v2-tw--all' : ''}`}
       aria-labelledby="v2-tw-title"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
@@ -71,7 +78,7 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
     >
       <div className="v2-tw-head">
         <span id="v2-tw-title" className="v2-tw-title">{title}</span>
-        {total > 1 ? (
+        {total > 1 && !all ? (
           <span className="v2-tw-count" aria-hidden="true">{i + 1}/{total}</span>
         ) : null}
       </div>
@@ -81,9 +88,9 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
           <Link
             key={o.slug}
             href={`${isEn ? '/en' : ''}/o/${o.slug}`}
-            className={`v2-tw-card${n === i ? ' is-on' : ''}`}
-            aria-hidden={n === i ? undefined : 'true'}
-            tabIndex={n === i ? undefined : -1}
+            className={`v2-tw-card${all || n === i ? ' is-on' : ''}`}
+            aria-hidden={all || n === i ? undefined : 'true'}
+            tabIndex={all || n === i ? undefined : -1}
           >
             <span className="v2-tw-date">
               {o.day ? <><b>{o.day}</b> {o.month}</> : o.dateLabel}
@@ -98,7 +105,7 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
       </div>
 
       <div className="v2-tw-foot">
-        {total > 1 ? (
+        {total > 1 && !all ? (
           <div className="v2-tw-dots" role="group" aria-label={isEn ? 'Switch opportunity' : 'Перемкнути можливість'}>
             <button
               type="button"
