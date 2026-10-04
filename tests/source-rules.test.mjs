@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { isForeignTelegram, sourceProblem } from '../lib/source-rules.js';
+import { isCatalog, isForeignTelegram, sourceProblem } from '../lib/source-rules.js';
 
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 
@@ -27,6 +27,16 @@ test('сторінка організатора — джерело', () => {
 test('наш канал не вважається порушенням', () => {
   assert.equal(isForeignTelegram('https://t.me/dityam_com_ua'), false);
   assert.equal(isForeignTelegram('https://t.me/DityamPlusBot?start=site'), false);
+});
+
+// «Eurodesk — теж каталог» (масовий прохід 28.09.2026): сторінка програми там
+// переказує організатора. Дзеркало is_catalog у scraper/first_source.py.
+test('каталог Eurodesk — не джерело', () => {
+  assert.equal(isCatalog('https://programmes.eurodesk.eu/search/program/123'), true);
+  assert.equal(isCatalog('https://eurodesk.eu/'), true);
+  assert.equal(isCatalog('https://example.org/eurodesk.eu-guide'), false);
+  assert.equal(isCatalog(''), false);
+  assert.match(sourceProblem({ source_url: 'https://programmes.eurodesk.eu/x' }), /Eurodesk/);
 });
 
 test('причина називається словами', () => {

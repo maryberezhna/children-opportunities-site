@@ -44,7 +44,7 @@ from db import get_client
 from normalizer import latin_fields, missing_required, summary_says_over
 from proof import PUBLISH_CRITERIA
 from timing import is_expired
-from first_source import only_foreign_telegram
+from first_source import source_problem
 
 logger = logging.getLogger(__name__)
 
@@ -152,12 +152,15 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
         last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
         return RED, f"дата в минулому ({last})"
 
-    # ── Жовтий: нема куди вести людину, крім чужого каналу ──────────────
-    # Марія, 27.09.2026: чужі Telegram-канали ніколи не показуємо — сайт їх
-    # ховає (lib/source-link.js). Запис, у якому окрім допису каналу немає ні
-    # сторінки, ні форми, лишається людині: знайти першоджерело або закрити.
-    if only_foreign_telegram(row):
-        return YELLOW, "джерело — лише допис чужого Telegram-каналу; першоджерела немає"
+    # ── Жовтий: джерело — не сторінка організатора ─────────────────────
+    # Марія, 27.09.2026: чужі Telegram-канали ніколи не показуємо, а запис без
+    # першоджерела не публікується. Каталог Eurodesk — теж не першоджерело
+    # (28.09.2026). Ті самі ворота, що на кнопках адмінки (lib/source-rules.js);
+    # до 04.10.2026 тут пускали допис із формою подачі, а форма — не джерело.
+    # Досі це ховав брак цитат; після 03.10.2026 суддя пропустив би такі записи.
+    problem = source_problem(row)
+    if problem:
+        return YELLOW, problem
 
     # Чутливі теми (виплати, психологічна й медична допомога, статусні діти)
     # до 03.10.2026 завжди йшли людині, навіть бездоганні. Марія того дня:
