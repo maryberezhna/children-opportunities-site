@@ -202,3 +202,29 @@ test('уже обране місто тримає поле відкритим', 
   assert.equal(placeFieldMode(['online', 'Львів']), 'both');
   assert.equal(placeFieldMode(['country:de']), 'both');
 });
+
+// --- рядок «Де» над списком на телефоні (04.10.2026) ---
+//
+// Марія: «на мобільному не видно одразу можливості в Україні чи за кордоном —
+// одразу постав цей фільтр перед списком; можна вибрати 2 обидва разом».
+// Три види місця стоять окремим рядком над списком, і головне в них — що
+// вибір не взаємовиключний.
+test('два види місця разом — це «або», а не заміна', () => {
+  assert.deepEqual(pickPlace(['ukraine'], 'abroad'), ['ukraine', 'abroad']);
+  assert.deepEqual(pickPlace(['ukraine', 'abroad'], 'online'),
+    ['ukraine', 'abroad', 'online']);
+});
+
+test('повторний дотик знімає лише свій вид', () => {
+  assert.deepEqual(pickPlace(['ukraine', 'abroad'], 'ukraine'), ['abroad']);
+  assert.deepEqual(pickPlace(['ukraine', 'abroad', 'online'], 'online'),
+    ['ukraine', 'abroad']);
+});
+
+// Країна лишається винятком: «за кордоном» + «Німеччина» через «або» дало б
+// увесь закордон замість обраної країни.
+test('країна й «за кордоном» далі заміняють одне одного', () => {
+  const de = countryValue('de');
+  assert.deepEqual(pickPlace(['ukraine', de], 'abroad'), ['ukraine', 'abroad']);
+  assert.deepEqual(pickPlace(['ukraine', 'abroad'], de), ['ukraine', de]);
+});
