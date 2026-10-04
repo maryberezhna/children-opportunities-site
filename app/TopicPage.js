@@ -2,7 +2,7 @@ import './styles/routes/topic.css';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
-import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
+import { TOPIC_LIST, topicPath, collectionsPath, pickRelated } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
@@ -286,17 +286,11 @@ function buildSubfilters(topic, items, lang) {
     .slice(0, 5);
 }
 
-/** Інші підбірки: з topic.related, а без нього — найбільші за кількістю. */
+/** Інші підбірки: спершу topic.related, решту до 4 — найбільші за кількістю. */
 function buildRelated(topic, liveRows) {
   const others = TOPIC_LIST.filter((t) => t.slug !== topic.slug)
     .map((t) => ({ topic: t, count: liveRows.filter(t.match).length }));
-  if (topic.related?.length) {
-    return topic.related
-      .map((slug) => others.find((o) => o.topic.slug === slug))
-      .filter(Boolean)
-      .slice(0, 4);
-  }
-  return others.sort((a, b) => b.count - a.count).slice(0, 4);
+  return pickRelated(topic.related, others);
 }
 
 // Картці в браузері треба небагато — не тягнемо зайвих полів у HTML.

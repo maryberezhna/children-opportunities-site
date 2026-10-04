@@ -1,7 +1,7 @@
 import '@/app/styles/routes/topic.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS } from '@/lib/supabase';
-import { TOPICS, topicPath, collectionsPath } from '@/lib/topics';
+import { TOPICS, TOPIC_LIST, topicPath, collectionsPath, pickRelated } from '@/lib/topics';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
@@ -186,9 +186,9 @@ export default async function ErasmusGuide() {
   const total = items.length;
   const freeCount = items.filter((o) => o.cost_type === 'free').length;
 
-  const related = ['prohramy-obminu', 'za-kordon']
-    .map((slug) => TOPICS[slug])
-    .map((t) => ({ topic: t, count: live.filter(t.match).length }));
+  // 4 картки, як на всіх підбірках: обмін і закордон першими, решта — найбільші.
+  const related = pickRelated(['prohramy-obminu', 'za-kordon'],
+    TOPIC_LIST.map((t) => ({ topic: t, count: live.filter(t.match).length })));
 
   const updatedLabel = new Intl.DateTimeFormat('uk-UA', {
     timeZone: 'Europe/Kyiv', day: 'numeric', month: 'long', year: 'numeric',
