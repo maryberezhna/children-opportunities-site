@@ -1,11 +1,15 @@
 import '@/app/styles/stem-talant.css';
 import Footer from '../Footer';
-import TelegramCard from '../TelegramCard';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
+import { Rocket, Robot, Atom, Planet, Star, Code, Bulb, Sparkle, Wave } from './Doodles';
 
 // «STEM-талант України» — власний конкурс Dityam.com.ua (рішення Марії
 // 04–05.10.2026): лише STEM, діти 12–17 років, 3 номінації × 2 вікові групи,
-// внесок 50 грн, січень–лютий 2027, партнери — лише IT-компанії.
+// внесок 50 грн, січень–лютий 2027, партнери — IT-компанії.
+//
+// Вигляд — за зразком noospherespace.art (Марія, 05.10.2026: «дизайн якось
+// не дуже веселий»): рукописні заголовки, дудли, жовта «бульбашка», хвиля
+// в синю смугу, номінації-стікери, пігулки партнерів.
 //
 // Поки це АНОНС: положення, форма й точні дати зʼявляться разом зі стартом
 // реєстрації (ст. 1151 ЦК: умови конкурсу оголошуються одночасно з ним). Тому
@@ -35,16 +39,16 @@ export const metadata = {
 };
 
 const FACTS = [
-  ['12–17 років', <>2 вікові групи: <span className="st-nw">12–14</span> і <span className="st-nw">15–17</span></>],
-  ['Січень–лютий 2027', 'реєстрація відкриється в січні'],
-  ['Онлайн', 'з будь-якого міста України й з-за кордону'],
-  ['50 грн', 'внесок за участь'],
+  { big: '12–17 років', small: 'дві вікові групи', tone: 'yellow' },
+  { big: 'Січень–лютий', small: '2027 року', tone: 'mint' },
+  { big: 'Онлайн', small: 'з будь-якого міста й країни', tone: 'coral' },
+  { big: '50 грн', small: 'внесок за участь', tone: 'purple' },
 ];
 
 const NOMINATIONS = [
-  { icon: '💻', title: 'Програмування й ШІ', text: 'Застосунки, ігри, боти, сайти й проєкти зі штучним інтелектом.' },
-  { icon: '🤖', title: 'Робототехніка й інженерія', text: 'Роботи, пристрої, 3D-моделі — усе, що зібрано й працює.' },
-  { icon: '🔬', title: 'Наука й математика', text: 'Дослідження, експерименти й математичні розвʼязки.' },
+  { Icon: Code, title: 'Програмування й ШІ', text: 'Застосунки, ігри, боти, сайти й проєкти зі штучним інтелектом.' },
+  { Icon: Robot, title: 'Робототехніка й інженерія', text: 'Роботи, пристрої, 3D-моделі — усе, що зібрано й працює.' },
+  { Icon: Atom, title: 'Наука й математика', text: 'Дослідження, експерименти й математичні розвʼязки.' },
 ];
 
 const STEPS = [
@@ -101,102 +105,128 @@ export default function StemTalantPage() {
     <div className="v2-page st-page">
       <main>
         <section className="st-hero">
-          <div className="st-wrap st-hero-grid">
-            <div className="st-hero-copy">
-              <p className="st-pill">Анонс · онлайн-конкурс для 12–17 років</p>
-              <h1 className="st-h1">STEM-талант України</h1>
-              <p className="st-lead">
-                Покажи свій проєкт — код, робота чи дослідження — і розкажи, як його
-                зробив. Журі з інженерів і науковців обере переможців у 3 номінаціях.
-              </p>
-              <div className="st-actions">
-                <a href={TELEGRAM_URL} className="st-btn st-btn-accent" target="_blank" rel="noopener">
-                  {CHANNEL_CTA.uk.cta}
-                </a>
-                <a href="#partnery" className="st-btn st-btn-ghost">Стати партнером</a>
+          <Rocket className="st-doodle st-d-rocket" />
+          <Planet className="st-doodle st-d-planet" />
+          <Bulb className="st-doodle st-d-bulb" />
+          <Star className="st-doodle st-d-star" />
+          <Sparkle className="st-doodle st-d-sp1" />
+          <Sparkle className="st-doodle st-d-sp2" />
+          <div className="st-wrap st-hero-inner">
+            <p className="st-kicker">Анонс · онлайн-конкурс для школярів</p>
+            <h1 className="st-title">
+              <span className="st-title-a">STEM-талант</span>
+              <span className="st-title-b">України</span>
+            </h1>
+            <div className="st-hero-row">
+              <div className="st-hero-text">
+                <p className="st-hand">Покажи свій проєкт — і заяви про себе!</p>
+                <p className="st-lead">
+                  Код, робот чи дослідження — покажи свою роботу й розкажи, як вона влаштована.
+                  Журі з інженерів і науковців обере переможців у 3 номінаціях.
+                </p>
+                <div className="st-actions">
+                  <a href={TELEGRAM_URL} className="st-btn st-btn-blue" target="_blank" rel="noopener">
+                    {CHANNEL_CTA.uk.cta}
+                  </a>
+                  <a href="#partnery" className="st-btn st-btn-line">Стати партнером</a>
+                </div>
               </div>
-              <p className="st-hero-note">Старт реєстрації оголосимо в Telegram-каналі Dityam.com.ua.</p>
-            </div>
-            <div className="st-bubble" aria-label="Старт — січень 2027">
-              <span className="st-bubble-top">Старт</span>
-              <span className="st-bubble-main">січень</span>
-              <span className="st-bubble-top">2027</span>
+              <div className="st-bubble" role="img" aria-label="Старт — січень 2027">
+                <span className="st-bubble-top">старт</span>
+                <span className="st-bubble-main">січень</span>
+                <span className="st-bubble-top">2027</span>
+              </div>
             </div>
           </div>
         </section>
 
         <section className="st-wrap st-facts" aria-label="Коротко про конкурс">
-          {FACTS.map(([big, small]) => (
-            <div key={big} className="st-fact">
-              <b>{big}</b>
-              <span>{small}</span>
+          {FACTS.map((f) => (
+            <div key={f.big} className={`st-fact st-fact-${f.tone}`}>
+              <b>{f.big}</b>
+              <span>{f.small}</span>
             </div>
           ))}
         </section>
 
-        <section className="st-wrap st-sec">
-          <h2 className="st-h2">Номінації</h2>
-          <div className="st-noms">
-            {NOMINATIONS.map((n) => (
-              <article key={n.title} className="st-card">
-                <span className="st-icon" aria-hidden="true">{n.icon}</span>
-                <h3>{n.title}</h3>
-                <p>{n.text}</p>
-                <p className="st-card-note">12–14 і 15–17 років</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="st-wrap st-sec">
-          <h2 className="st-h2">Як це працює</h2>
-          <ol className="st-steps">
-            {STEPS.map(([title, text], i) => (
-              <li key={title} className="st-step">
-                <span className="st-step-n" aria-hidden="true">{i + 1}</span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section id="partnery" className="st-band">
+        <Wave className="st-wave" />
+        <section className="st-blue">
+          <Sparkle className="st-doodle st-d-sp3" />
+          <Star className="st-doodle st-d-star2" />
           <div className="st-wrap">
-            <h2 className="st-h2">Партнери</h2>
-            <p className="st-band-lead">
-              Шукаємо IT-компанії, яким важливі майбутні інженери. Партнер дає призи
-              переможцям, його інженери сидять у журі, а назва й логотип — на цій сторінці
-              й на дипломах.
-            </p>
-            <div className="st-partner-row">
-              <span className="st-tag st-tag-main">Генеральний партнер</span>
-              <span className="st-slot">Місце відкрите</span>
-            </div>
-            <div className="st-partner-row">
-              <span className="st-tag">Партнери номінацій</span>
-              {NOMINATIONS.map((n) => (
-                <span key={n.title} className="st-slot">{n.title} — місце відкрите</span>
+            <h2 className="st-h2 st-h2-light">Номінації</h2>
+            <div className="st-noms">
+              {NOMINATIONS.map(({ Icon, title, text }) => (
+                <article key={title} className="st-sticker">
+                  <Icon className="st-sticker-icon" />
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                  <div className="st-ages">
+                    <span>12–14 років</span>
+                    <span>15–17 років</span>
+                  </div>
+                </article>
               ))}
             </div>
-            <a href={PARTNER_MAIL} className="st-btn st-btn-accent">Стати партнером</a>
+
+            <h2 className="st-h2 st-h2-light st-h2-gap">Як це працює</h2>
+            <ol className="st-steps">
+              {STEPS.map(([title, text], i) => (
+                <li key={title} className="st-step">
+                  <span className="st-step-n" aria-hidden="true">{i + 1}</span>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
+        <Wave className="st-wave st-wave-bottom" flip />
 
-        <section className="st-wrap st-sec">
-          <h2 className="st-h2">Питання й відповіді</h2>
-          <div className="st-faq">
-            {FAQ.map((f) => (
-              <details key={f.q} className="st-faq-item">
-                <summary>{f.q}</summary>
-                <p>{f.a}</p>
-              </details>
+        <section id="partnery" className="st-wrap st-sec">
+          <h2 className="st-h2">Партнери</h2>
+          <p className="st-text">
+            Шукаємо IT-компанії, яким важливі майбутні інженери. Партнер дає призи переможцям,
+            його інженери сидять у журі, а назва й логотип — на цій сторінці й на дипломах.
+          </p>
+          <div className="st-partner-row">
+            <span className="st-tag st-tag-coral">Генеральний партнер</span>
+            <span className="st-slot">Тут буде ваш логотип</span>
+          </div>
+          <div className="st-partner-row">
+            <span className="st-tag st-tag-purple">Партнери номінацій</span>
+            {NOMINATIONS.map((n) => (
+              <span key={n.title} className="st-slot">{n.title}</span>
             ))}
           </div>
+          <a href={PARTNER_MAIL} className="st-btn st-btn-coral">Стати партнером</a>
         </section>
 
         <section className="st-wrap st-sec">
-          <TelegramCard lang="uk" place="topic" hub="stem-talant" variant="panel" />
+          <div className="st-faq-frame">
+            <h2 className="st-h2 st-h2-light">Питання й відповіді</h2>
+            <div className="st-faq">
+              {FAQ.map((f) => (
+                <details key={f.q} className="st-faq-item">
+                  <summary>{f.q}</summary>
+                  <p>{f.a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="st-wrap st-sec">
+          <div className="st-tg">
+            <Robot className="st-tg-robot" />
+            <div className="st-tg-copy">
+              <h2 className="st-h2">{CHANNEL_CTA.uk.title}</h2>
+              <p className="st-text">{CHANNEL_CTA.uk.text} Старт реєстрації оголосимо там першими.</p>
+              <a href={TELEGRAM_URL} className="st-btn st-btn-navy" target="_blank" rel="noopener">
+                {CHANNEL_CTA.uk.cta}
+              </a>
+            </div>
+          </div>
         </section>
 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd()) }} />
