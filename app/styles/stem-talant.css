@@ -72,6 +72,7 @@
 .st-btn-ghost { background: rgba(255,255,255,.04); color: #fff !important; border: 1.5px solid rgba(255,255,255,.4); }
 .st-btn-ghost:hover { background: rgba(255,255,255,.1); }
 .st-btn-big { min-height: 60px; padding: 14px 36px; font-size: 18px; }
+.st-btn-sm { min-height: 46px; padding: 10px 20px; font-size: 15px; }
 .st-btn[disabled] { opacity: .7; cursor: default; transform: none; }
 
 /* Орбіта з датою */
@@ -188,6 +189,8 @@
 .st-table thead th.is-main { box-shadow: inset 0 4px 0 var(--t-a); }
 .st-table tr.st-group th { padding: 12px 18px; font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--t-a); background: var(--v2-cream); }
 .st-table tbody tr:last-child th, .st-table tbody tr:last-child td { border-bottom: none; }
+.st-table tfoot td { padding: 20px 18px 24px; border-top: 1px solid var(--v2-line); border-bottom: none; }
+.st-tier-btn { margin-top: 20px; }
 .st-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 :root[data-theme="dark"] .st-table thead th em, :root[data-theme="dark"] .st-table tr.st-group th, :root[data-theme="dark"] .st-tier-price, :root[data-theme="dark"] .st-tier-group { color: #9fb2ff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-table thead th em, :root:not([data-theme="light"]) .st-table tr.st-group th, :root:not([data-theme="light"]) .st-tier-price, :root:not([data-theme="light"]) .st-tier-group { color: #9fb2ff; } }
@@ -219,6 +222,18 @@
   transition: border-color .2s, transform .2s;
 }
 .st-press .press-logos a:hover { border-color: var(--v2-line-strong); transform: translateY(-2px); }
+
+/* Інформаційні партнери: логотипи + плитка-запрошення */
+.st-info-partners { list-style: none; margin: 0 0 44px; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.st-info-partners a, .st-info-join {
+  display: flex; align-items: center; justify-content: center; min-width: 150px; height: 76px; padding: 0 22px;
+  border-radius: 16px; text-decoration: none; font: inherit; transition: border-color .2s, transform .2s;
+}
+.st-info-partners a { background: #fff; border: 1px solid var(--v2-line); }
+.st-info-partners a:hover, .st-info-join:hover { border-color: var(--v2-line-strong); transform: translateY(-2px); }
+.st-info-join { background: transparent; border: 2px dashed var(--v2-line-strong); color: var(--v2-ink-2); font-size: 15px; font-weight: 600; cursor: pointer; }
+.st-logo-hub { font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: #8b5cf6; background: linear-gradient(135deg, #8b5cf6, #c47ba0 50%, #ed9a5f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.st-press-sub { margin-top: 0; }
 
 /* Підтримати репостом */
 .st-share {
