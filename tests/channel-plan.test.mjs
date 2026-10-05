@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
-import { ROTATION, PLAN_START, FALLBACK_TOPIC, MONTHLY_DAY, MONTHLY_ENTRY, planEntryFor, addDays } from '../scripts/channel-plan.mjs';
+import {
+  ROTATION, PLAN_START, FALLBACK_TOPIC, MONTHLY_DAY, MONTHLY_ENTRY, planEntryFor, addDays,
+  COLLECTIONS, COLLECTION_START, DEADLINES_WEEK,
+} from '../scripts/channel-plan.mjs';
 
 // До 16.09.2026 канал жив за шаблоном тижня: ті самі формати в ті самі дні.
 // Марія попросила план, де кожен день має свою тему. Ці тести не дають плану
@@ -17,12 +20,38 @@ test('цикл довший за вікно, в якому можливості 
   assert.ok(ROTATION.length > 30, `у циклі ${ROTATION.length} днів`);
 });
 
-test('план стартує 16.09, перший цикл закінчується 31.10 і йде по колу', () => {
+test('план стартував 16.09; з 06.10 щоденна тема — лише підбірка', () => {
   assert.equal(PLAN_START, '2026-09-16');
-  assert.equal(planEntryFor(PLAN_START).index, 0);
-  assert.equal(planEntryFor('2026-10-31').index, ROTATION.length - 1);
-  assert.equal(planEntryFor('2026-11-01').index, 0);
-  assert.equal(planEntryFor('2026-09-15').index, ROTATION.length - 1);
+  assert.equal(COLLECTION_START, '2026-10-06');
+  for (let i = 0; i < 70; i += 1) {
+    const e = planEntryFor(addDays(COLLECTION_START, i));
+    if (e.key === MONTHLY_ENTRY.key) continue;
+    assert.ok(e.kind === 'digest' || e.kind === 'file', `${e.key}: ${e.kind}`);
+  }
+  assert.ok(!COLLECTIONS.some((e) => ['situation', 'number', 'story', 'deadlines'].includes(e.kind)));
+  assert.ok(!COLLECTIONS.some((e) => e.file === 'dedlainy-dva-tyzhni.html'), 'дедлайни тепер щоранку окремо');
+});
+
+test('підбірки йдуть по колу, і жодна не повторюється раніше, ніж за 30 днів', () => {
+  const keys = COLLECTIONS.map((e) => e.key);
+  assert.equal(new Set(keys).size, keys.length);
+  assert.ok(COLLECTIONS.length > 30, `у черзі ${COLLECTIONS.length} підбірок`);
+  assert.equal(planEntryFor(COLLECTION_START).index, 0);
+  assert.equal(planEntryFor(addDays(COLLECTION_START, COLLECTIONS.length)).index, 0);
+});
+
+test('черга починається з підбірок, яких 16.09–05.10 ще не було', () => {
+  const posted = ROTATION.slice(0, 20).map((e) => e.key);
+  assert.ok(!posted.includes(planEntryFor(COLLECTION_START).key));
+  // Ті, що вже вийшли, стоять у кінці черги — після всіх нових.
+  const firstOld = COLLECTIONS.findIndex((e) => posted.includes(e.key));
+  assert.ok(COLLECTIONS.slice(firstOld).every((e) => posted.includes(e.key)));
+});
+
+test('ранковий пост «Дедлайни цього тижня» веде на сторінку дедлайнів', () => {
+  assert.equal(DEADLINES_WEEK.kind, 'deadlines-week');
+  assert.ok(DEADLINES_WEEK.heading.includes('цього тижня'));
+  assert.equal(DEADLINES_WEEK.link, 'https://dityam.com.ua/dedlainy');
 });
 
 test('кожна з шести ситуацій і кожна з трьох цифр — рівно раз за цикл', () => {

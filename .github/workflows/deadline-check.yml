@@ -1,13 +1,19 @@
 name: Deadline check
 
 on:
-  # Два пости — у різний час (рішення Марії 17.09.2026): до цього обидва йшли
-  # одним запуском із різницею в секунду. GitHub запускає розклад із
-  # запізненням до ~5 годин, тож зазор великий: навіть якщо ранковий запуск
-  # спізниться до 11:00 UTC, а вечірній прийде вчасно, між постами — 3 години.
+  # Три пости на день, кожен своїм запуском (Марія, 05.10.2026: «дедлайни,
+  # які закінчуються на цьому тижні; нова можливість; підбірки»). До цього —
+  # два (17.09.2026), а ще раніше обидва йшли одним запуском із різницею в
+  # секунду.
+  #
+  # Хвилини не нульові навмисно: GitHub пише, що розклад найчастіше
+  # запізнюється на початку години. Рядки '0 6' і '0 14' приходили на 3–5
+  # годин пізніше (пости о 13:40–15:40 і 20:00–23:20 за Києвом).
+  # Час нижче — київський літній (UTC+3); після 25.10 — на годину раніше.
   schedule:
-    - cron: '0 6 * * *'   # тематичний пост дня: 09:00 Kyiv (літо)
-    - cron: '0 14 * * *'  # «🆕 Нова можливість»: 17:00 Kyiv (літо)
+    - cron: '23 5 * * *'   # «⏰ Дедлайни цього тижня»: 08:23
+    - cron: '41 9 * * *'   # підбірка дня: 12:41
+    - cron: '17 14 * * *'  # «🆕 Нова можливість»: 17:17
   workflow_dispatch:
     inputs:
       preview:
@@ -23,9 +29,9 @@ on:
         required: false
         default: 'true'
       post:
-        description: 'Який пост: digest (тематичний), new (Нова можливість) або both'
+        description: 'Який пост: deadlines (дедлайни тижня), digest (підбірка), new (нова можливість) або all'
         required: false
-        default: 'both'
+        default: 'all'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -72,7 +78,7 @@ jobs:
           NOTIFY: ${{ github.event.inputs.notify || 'true' }}
           PREVIEW: ${{ github.event.inputs.preview || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          POST: ${{ github.event.schedule == '0 14 * * *' && 'new' || (github.event_name == 'schedule' && 'digest' || github.event.inputs.post || 'both') }}
+          POST: ${{ github.event.schedule == '23 5 * * *' && 'deadlines' || github.event.schedule == '41 9 * * *' && 'digest' || github.event.schedule == '17 14 * * *' && 'new' || github.event.inputs.post || 'all' }}
         run: node scripts/check-deadlines.mjs
 
       - name: Upload report

@@ -23,7 +23,7 @@ import { opportunitiesWord } from '../lib/plural.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS } from './channel-plan.mjs';
+import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLINES_WEEK } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
@@ -59,15 +59,18 @@ const DRY_RUN = process.env.DRY_RUN === 'true' || process.argv.includes('--dry-r
 // PREVIEW=true — зібрати пости й надрукувати, нічого не шлючи і не змінюючи
 // в базі. PREVIEW_DAYS — на скільки днів уперед показати план (типово 14).
 const PREVIEW = process.env.PREVIEW === 'true';
-// Який пост надсилає цей запуск (17.09.2026, рішення Марії «рознести в часі»):
-//   digest — лише щоденний тематичний (ранковий запуск);
-//   new    — лише «🆕 Нова можливість» (вечірній запуск);
-//   both   — обидва поспіль (ручний запуск і превʼю, як було до 17.09).
-// Раніше обидва пости йшли одним запуском з різницею в секунду: 17.09 вони
+// Який пост надсилає цей запуск. З 06.10.2026 три пости на день, кожен своїм
+// запуском (Марія, 05.10: «дедлайни, які закінчуються на цьому тижні; нова
+// можливість; підбірки»):
+//   deadlines — «⏰ Дедлайни цього тижня» (ранок);
+//   digest    — підбірка дня з плану каналу (день);
+//   new       — «🆕 Нова можливість» (вечір);
+//   all       — усі три поспіль (ручний запуск і превʼю).
+// Окремі запуски — з 17.09.2026: тоді обидва пости йшли одним запуском і
 // прийшли разом о 13:49 замість 09:00, бо GitHub запустив розклад на 5 годин
-// пізніше. Новинка, що вже вийшла в ранковому пості, ввечері не повториться:
-// її telegram_posted_at уже стоїть.
-const POST = ['digest', 'new'].includes(process.env.POST) ? process.env.POST : 'both';
+// пізніше. Те, що вже вийшло вранці, вдень і ввечері не повториться: його
+// telegram_posted_at уже стоїть.
+const POST = ['deadlines', 'digest', 'new'].includes(process.env.POST) ? process.env.POST : 'all';
 const PREVIEW_DAYS = Number(process.env.PREVIEW_DAYS || 14);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
@@ -174,6 +177,17 @@ const repeatCutoff = new Date(Date.now() - REPEAT_DAYS * 86400000).toISOString()
 // Превʼю нічого не пише в базу, тож «уже показане» тримаємо в памʼяті —
 // інакше превʼю на 14 днів показувало б ті самі можливості щодня.
 const shownInPreview = new Set();
+// «⏰ Дедлайни цього тижня»: заявки з дедлайном від завтра до +7 днів, до 6
+// у пості. Правило «не повторювати 30 днів» тут не діє — за тиждень дедлайнів
+// менше, ніж місць у щоденних постах, і нагадати про них удруге корисно. Але
+// те, що вже було в каналі за останні 2 дні, пропускаємо, щоб пости сусідніх
+// ранків не збігались.
+const WEEK_DAYS = 7;
+const WEEK_MAX = 6;
+const weekGapCutoff = new Date(Date.now() - 2 * 86400000).toISOString();
+// Записи для постів одного запуску тягнемо з бази раз (loadPool): у превʼю
+// інакше 14 днів × 2 пости = 28 однакових вибірок.
+let poolRows = null;
 const SUPPORT_LINE = '🧡 Платформа безкоштовна і живе без реклами. Підтримати — <a href="https://send.monobank.ua/jar/F72fDrV2c">банка monobank</a> або <a href="https://dityam.com.ua/support">інші способи</a>.';
 // Dityam+ продає не доступ, а роботу: відбір, нагадування, допомогу із
 // заявкою. Тому в каналі не тизер «що ви пропустили», а пропозиція зняти
@@ -239,8 +253,9 @@ if (PREVIEW) {
   for (let i = 0; i < PREVIEW_DAYS; i += 1) {
     const date = addDays(start, i);
     const entry = planEntryFor(date);
-    console.log(`\n${'='.repeat(64)}\n${date} — день ${entry.index + 1} плану: «${entry.key}» (${entry.kind})\n${'='.repeat(64)}`);
-    const shown = await sendDailyDigest(date);
+    console.log(`\n${'='.repeat(64)}\n${date} — підбірка ${entry.index + 1}: «${entry.key}» (${entry.kind})\n${'='.repeat(64)}`);
+    const shown = await sendDeadlinesWeek(date);
+    shown.push(...await sendDailyDigest(date, shown));
     await sendNewOpportunityPost(shown);
   }
 // DRY_RUN тепер теж збирає пост — і друкує його замість відправки
@@ -248,44 +263,87 @@ if (PREVIEW) {
 // прогін завершувався на звіті, тож перевірити добір і ворота публікації перед
 // змінами в проді було ніяк.
 } else if (NOTIFY && TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-  const shown = POST === 'new' ? [] : await sendDailyDigest();
-  if (POST !== 'digest') await sendNewOpportunityPost(shown || []);
+  const shown = [];
+  if (POST === 'all' || POST === 'deadlines') shown.push(...await sendDeadlinesWeek());
+  if (POST === 'all' || POST === 'digest') shown.push(...await sendDailyDigest(kyivIso(), shown));
+  if (POST === 'all' || POST === 'new') await sendNewOpportunityPost(shown);
 }
 
-/** Щоденний пост за планом каналу. Повертає id можливостей, які в нього потрапили. */
-async function sendDailyDigest(dateIso = kyivIso()) {
-  const entry = planEntryFor(dateIso);
-
-  // Посторінково: PostgREST віддає максимум 1000 рядків, а відкритих записів
-  // уже понад тисячу — без цього частина тихо не потрапляла б у добір.
-  const rows = [];
-  for (let from = 0; ; from += 1000) {
-    const { data: page, error: poolErr } = await supabase
-      .from('opportunities')
-      .select(POOL_COLUMNS)
-      .eq('status', 'active')
-      .is('canonical_slug', null)
-      .or(`deadline.is.null,deadline.gte.${minLeadIso}`)
-      .order('id')
-      .range(from, from + 999);
-    if (poolErr) {
-      console.error(`Pool fetch failed: ${poolErr.message}`);
-      return [];
+/**
+ * Відкриті записи з днями до дедлайну від dateIso. Дедлайн — від завтра:
+ * MIN_LEAD_DAYS відсікає кожен пост сам, бо «Дедлайнам цього тижня» потрібні
+ * й найближчі дні. null — якщо база не відповіла.
+ */
+async function loadPool(dateIso) {
+  if (!poolRows) {
+    // Посторінково: PostgREST віддає максимум 1000 рядків, а відкритих записів
+    // уже понад тисячу — без цього частина тихо не потрапляла б у добір.
+    const rows = [];
+    for (let from = 0; ; from += 1000) {
+      const { data: page, error: poolErr } = await supabase
+        .from('opportunities')
+        .select(POOL_COLUMNS)
+        .eq('status', 'active')
+        .is('canonical_slug', null)
+        .or(`deadline.is.null,deadline.gt.${kyivIso()}`)
+        .order('id')
+        .range(from, from + 999);
+      if (poolErr) {
+        console.error(`Pool fetch failed: ${poolErr.message}`);
+        return null;
+      }
+      rows.push(...(page || []));
+      if (!page || page.length < 1000) break;
     }
-    rows.push(...(page || []));
-    if (!page || page.length < 1000) break;
+    poolRows = rows;
   }
-
   // Дні до дедлайну рахуємо від дати поста: у превʼю це дні наперед.
   const dayMs = Date.parse(`${dateIso}T00:00:00Z`);
-  const pool = rows
-    .map((r) => ({
-      ...r,
-      daysLeft: r.deadline ? Math.round((Date.parse(`${r.deadline}T00:00:00Z`) - dayMs) / 86400000) : null,
-    }))
-    .filter((r) => r.daysLeft == null || r.daysLeft >= MIN_LEAD_DAYS);
+  return poolRows.map((r) => ({
+    ...r,
+    daysLeft: r.deadline ? Math.round((Date.parse(`${r.deadline}T00:00:00Z`) - dayMs) / 86400000) : null,
+  }));
+}
+
+/** «⏰ Дедлайни цього тижня». Повертає id можливостей, що потрапили в пост. */
+async function sendDeadlinesWeek(dateIso = kyivIso()) {
+  const all = await loadPool(dateIso);
+  if (!all) return [];
+  const week = all
+    .filter((r) => r.daysLeft != null && r.daysLeft >= 1 && r.daysLeft <= WEEK_DAYS
+      && !shownInPreview.has(r.id)
+      && !(r.telegram_posted_at && r.telegram_posted_at >= weekGapCutoff)
+      && isUkrainianPost(r))
+    // Спершу те, що закінчується раніше; того самого дня — безкоштовне вище.
+    .sort((a, b) => a.daysLeft - b.daysLeft
+      || (a.cost_type === 'free' ? 0 : 1) - (b.cost_type === 'free' ? 0 : 1));
+  const items = await pickChecked(week, WEEK_MAX, 'дедлайни тижня');
+  if (items.length === 0) {
+    console.log('Дедлайнів на найближчі 7 днів немає — ранковий пост не йде.');
+    return [];
+  }
+  const lines = [`<b>${DEADLINES_WEEK.heading}</b>`, `<i>${DEADLINES_WEEK.description}</i>`, ''];
+  items.forEach((r, i) => {
+    lines.push(formatLine(r, i));
+    if (i < items.length - 1) lines.push('');
+  });
+  lines.push('', `👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
+  const sent = await postToChannel(lines, `deadlines-week ${items.length}`);
+  if (sent || PREVIEW) await markPosted(items);
+  return items.map((r) => r.id);
+}
+
+/**
+ * Підбірка дня за планом каналу. excludeIds — те, що вже вийшло в ранковому
+ * пості цього запуску. Повертає id можливостей, які в неї потрапили.
+ */
+async function sendDailyDigest(dateIso = kyivIso(), excludeIds = []) {
+  const entry = planEntryFor(dateIso);
+  const all = await loadPool(dateIso);
+  if (!all) return [];
+  const pool = all.filter((r) => r.daysLeft == null || r.daysLeft >= MIN_LEAD_DAYS);
   // Лише українською: запис англійською чекає перекладу (post-labels.isUkrainianPost).
-  const eligible = pool.filter((r) => !shownInPreview.has(r.id)
+  const eligible = pool.filter((r) => !shownInPreview.has(r.id) && !excludeIds.includes(r.id)
     && !(r.telegram_posted_at && r.telegram_posted_at >= repeatCutoff)
     && isUkrainianPost(r));
 
