@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN } from '@/lib/supabase';
 import { CITY_META } from '@/lib/cities';
+import { fitTitle } from '@/lib/seo-title';
 import OpportunitiesList from '../../OpportunitiesList';
 import StickyBar from '../../StickyBar';
 import SubscribePopup from '../../SubscribePopup';
@@ -21,7 +22,17 @@ export async function generateMetadata({ params }) {
   const name = cityData.en || cityData.ua;
   const url = `${SITE_URL}/en/${params.city}`;
   return {
-    title: { absolute: `Opportunities for children in ${name} — courses, olympiads, scholarships` },
+    // Назви міст різної довжини: із «Zaporizhzhia» чи «Chernivtsi» повний
+    // хвіст виходив за 65 символів і пошук його обрізав. Беремо найдовший
+    // варіант, що вміщається (05.10.2026, Site Scan у Bing).
+    title: {
+      absolute: fitTitle(
+        `Opportunities for children in ${name} — courses, olympiads, scholarships`,
+        `Opportunities for children in ${name} — courses and scholarships`,
+        `Opportunities for children in ${name} — courses and camps`,
+        `Opportunities for children in ${name}`,
+      ),
+    },
     description: `A free catalogue of opportunities for children aged 0–18 in ${name}: courses, olympiads, scholarships, camps, medical help. Updated daily.`,
     alternates: {
       canonical: url,

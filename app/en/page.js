@@ -20,7 +20,10 @@ export async function generateMetadata() {
   const count = await countActiveOpportunities().catch(() => null);
   const n = count && count >= 50 ? Math.floor(count / 50) * 50 : 400;
   return {
-    title: 'Dityam — opportunities for Ukrainian children worldwide',
+    // absolute: без нього шаблон із app/layout.js дописував українське
+    // «| Можливості для дитини» до англійського заголовка — 79 символів і
+    // дві мови в одному рядку. І назва повна: не «Dityam», а «Dityam.com.ua».
+    title: { absolute: 'Dityam.com.ua — opportunities for Ukrainian children worldwide' },
     description:
       `A free platform with ${n}+ verified opportunities for Ukrainian children aged 0–18 — in Ukraine and abroad: camps, scholarships, olympiads, exchange programs, grants and aid. Updated daily, every link checked nightly.`,
     alternates: {
@@ -31,8 +34,8 @@ export async function generateMetadata() {
       type: 'website',
       locale: 'en_US',
       url: `${SITE_URL}/en`,
-      siteName: 'Dityam',
-      title: 'Dityam — opportunities for Ukrainian children worldwide',
+      siteName: 'Dityam.com.ua',
+      title: 'Dityam.com.ua — opportunities for Ukrainian children worldwide',
       description:
         'Free platform with verified opportunities for Ukrainian children 0–18, in Ukraine and abroad. Updated daily.',
     },
