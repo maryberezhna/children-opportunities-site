@@ -170,7 +170,7 @@
 /* Партнери — по центру */
 .st-partners { text-align: center; }
 .st-partners .st-text { margin-left: auto; margin-right: auto; }
-.st-h3 { margin: 36px 0 16px; font-size: 22px; font-weight: 700; color: var(--v2-ink); }
+.st-h3 { margin: 44px 0 14px; font-size: 22px; font-weight: 700; color: var(--v2-ink); }
 /* Без рамок і фону: шість карток поспіль над таблицею перевантажували сторінку */
 .st-benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px 40px; margin-bottom: 12px; text-align: left; }
 .st-benefit { display: flex; flex-direction: column; gap: 4px; padding-top: 14px; border-top: 2px solid var(--v2-line); }
@@ -185,6 +185,13 @@
 .st-table thead th span { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; color: var(--v2-ink-3); }
 .st-table thead th em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 20px; font-weight: 700; color: var(--t-a); }
 .st-table thead th:first-child { width: 22%; }
+.st-table-corner { vertical-align: top !important; }
+.st-table-corner > span { margin-top: 0; }
+.st-table-corner ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.st-table-corner li { position: relative; padding-left: 16px; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--v2-ink); }
+.st-table-corner li::before { content: ''; position: absolute; left: 0; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--t-a); }
+.st-table-corner li.tone-b::before { background: var(--t-b); }
+.st-table-corner li.tone-c::before { background: var(--t-c); }
 .st-table tbody th[scope="row"] { font-weight: 700; color: var(--v2-ink); }
 .st-table td.is-main, .st-table th.is-main { background: color-mix(in srgb, var(--t-a) 7%, transparent); }
 .st-table thead th.is-main { box-shadow: inset 0 4px 0 var(--t-a); }

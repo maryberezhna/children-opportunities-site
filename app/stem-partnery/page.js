@@ -274,7 +274,13 @@ export default function StemTalantPage() {
             <table className="st-table">
               <thead>
                 <tr>
-                  <th scope="col"><span className="st-sr">Умова</span></th>
+                  {/* Порожній кут таблиці — туди номінації (Марія, 05.10.2026) */}
+                  <th scope="col" className="st-table-corner">
+                    <span>3 номінації</span>
+                    <ul>
+                      {NOMINATIONS.map((n) => <li key={n.title} className={`tone-${n.tone}`}>{n.title}</li>)}
+                    </ul>
+                  </th>
                   {TIER_HEAD.map((t) => (
                     <th key={t.name} scope="col" className={t.main ? 'is-main' : ''}>
                       <b>{t.name}</b>
