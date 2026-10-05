@@ -1,0 +1,44 @@
+name: Сказати Bing про нові сторінки (щодня)
+
+# ChatGPT, шукаючи в інтернеті, спирається на індекс Bing — а звідти до нас
+# приходить 96% усього AI-трафіку. Можливість із дедлайном за два тижні не має
+# сенсу, якщо її проіндексують через місяць, тому не чекаємо обходу, а
+# повідомляємо самі (протокол IndexNow).
+#
+# Щодня після нічного скрапу: до того часу нові записи вже на сайті.
+on:
+  schedule:
+    - cron: '30 7 * * *'
+  workflow_dispatch:
+    inputs:
+      hours:
+        description: 'за скільки годин брати зміни (типово 26)'
+        required: false
+        default: '26'
+      confirm:
+        description: 'SEND — надіслати; порожньо — лише показати'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: IndexNow
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SINCE_HOURS: ${{ github.event.inputs.hours || '26' }}
+          # За розкладом надсилаємо завжди; руками — лише з підтвердженням.
+          CONFIRM: ${{ github.event_name == 'schedule' && 'SEND' || github.event.inputs.confirm }}
+        run: node scripts/indexnow.mjs
