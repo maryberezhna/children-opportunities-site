@@ -316,13 +316,25 @@
   .m-bottom-tg { background: var(--contrast-bg); color: var(--contrast-ink); }
   .m-bottom-tg:active { background: #000000; }
 
-  /* Місце під панеллю, щоб вона не закривала останній блок і футер. */
-  .v2-home .v2-container { padding-bottom: 80px; }
+  /* Місце під фіксованою нижньою панеллю.
+   *
+   * 05.10.2026 Марія: «після "знаєте можливості, якої нема" дуже великий
+   * відступ на мобільному». Ці 80px стояли на контейнері — тобто порожньою
+   * білою смугою між останнім блоком і футером; разом із margin-top футера
+   * виходило 152px. Самого футера вони при цьому не захищали: панель
+   * фіксована, і нижній ряд посилань вона однаково закривала.
+   *
+   * Тепер відступ стоїть там, де він справді потрібен, — унизу футера, під
+   * останнім рядом посилань. Перед футером лишається 12px. */
+  .v2-home .v2-container { padding-bottom: 12px; }
+  body:has(.m-bottom) .v2-footer-inner { padding-bottom: calc(36px + 80px); }
   body:has(.m-bottom) .a11y-trigger,
   body:has(.m-bottom) .telegram-fab { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   /* ── «Або оберіть тему»: плитки з фото прокруткою вбік ──────────────── */
+  /* Стоять у хіро, останнім рядком під віковими пігулками. */
   .v2-topics-mobile { display: block; }
+  .v2-home .v2-hero .v2-topics-mobile { margin: 22px 0 2px; }
   .v2-topics-mobile h2 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
   .v2-topics-mobile .v2-tiles {
     display: flex;
@@ -338,11 +350,11 @@
   .v2-topics-mobile .v2-tile { flex: 0 0 140px; }
   .v2-topics-mobile .v2-tile img { height: 96px; aspect-ratio: auto; }
 
-  /* Порядок після списку: канал → теми → організатори. Сітка нижніх блоків
-     розчиняється, і її дві картки стають дітьми контейнера. */
+  /* Порядок після списку: канал → організатори. Сітка нижніх блоків
+     розчиняється, і її дві картки стають дітьми контейнера. Теми звідси пішли
+     05.10.2026 — вони тепер у хіро («перенеси у хедер»). */
   .v2-home .v2-bottom { display: contents; }
   .v2-home .v2-bottom > .tg-card-panel { order: 1; }
-  .v2-home .v2-topics-mobile { order: 2; }
   .v2-home .v2-bottom > .v2-panel { order: 3; }
   .v2-home .v2-bottom > * { margin-top: 40px; }
   .v2-home .v2-topics { display: none; }
