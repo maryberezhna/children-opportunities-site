@@ -152,9 +152,36 @@
 .st-step h3 { margin: 10px 0 6px; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
 .st-step p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
 
+/* Навіщо цей конкурс */
+.st-goals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.st-goal { padding: 26px; border-radius: 22px; background: var(--surface-2); border: 1px solid var(--v2-line); }
+.st-goal-n { font-size: 15px; font-weight: 700; letter-spacing: .08em; color: var(--t-d); }
+.st-goal h3 { margin: 10px 0 8px; font-size: 22px; font-weight: 700; color: var(--v2-ink); letter-spacing: -0.01em; }
+.st-goal p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
+.st-target {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; padding: 26px 30px;
+  border-radius: 22px; background: var(--st-navy); color: #fff;
+}
+.st-target div { display: flex; align-items: baseline; gap: 12px; }
+.st-target b { font-size: 44px; font-weight: 700; color: var(--st-yellow); letter-spacing: -0.02em; line-height: 1; }
+.st-target span { font-size: 15px; color: #c9d0f5; }
+
 /* Партнери — по центру */
 .st-partners { text-align: center; }
 .st-partners .st-text { margin-left: auto; margin-right: auto; }
+.st-h3 { margin: 36px 0 16px; font-size: 22px; font-weight: 700; color: var(--v2-ink); }
+.st-benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; text-align: left; }
+.st-benefit { display: flex; flex-direction: column; gap: 6px; padding: 20px 22px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--v2-line); }
+.st-benefit b { font-size: 17px; font-weight: 700; color: var(--v2-ink); }
+.st-benefit span { font-size: 15px; line-height: 1.5; color: var(--v2-ink-2); }
+.st-tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: left; margin-bottom: 32px; }
+.st-tier { display: flex; flex-direction: column; gap: 4px; padding: 24px; border-radius: 22px; border: 2px dashed var(--v2-line-strong); background: var(--surface-2); }
+.st-tier.is-main { border: 2px solid var(--t-a); box-shadow: 0 20px 44px -28px var(--t-a); }
+.st-tier b { font-size: 19px; font-weight: 700; color: var(--v2-ink); }
+.st-tier-who { font-size: 14px; color: var(--v2-ink-3); }
+.st-tier ul { margin: 12px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.st-tier li { position: relative; padding-left: 22px; font-size: 15px; line-height: 1.45; color: var(--v2-ink-2); }
+.st-tier li::before { content: ''; position: absolute; left: 2px; top: 7px; width: 9px; height: 9px; border-radius: 50%; background: var(--t-a); }
 .st-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 290px)); justify-content: center; gap: 16px; margin-bottom: 32px; }
 .st-slot {
   display: flex; flex-direction: column; gap: 4px; padding: 22px; border-radius: 20px;
@@ -292,6 +319,8 @@
   .st-core small { font-size: 11px; }
   .st-facts { grid-template-columns: repeat(2, 1fr); margin-top: -48px; }
   .st-noms { grid-template-columns: 1fr; }
+  .st-goals, .st-benefits, .st-tiers { grid-template-columns: 1fr; }
+  .st-target { grid-template-columns: 1fr; gap: 14px; }
   .st-steps { grid-template-columns: repeat(2, 1fr); }
   .st-steps::before { display: none; }
   .st-slots { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
