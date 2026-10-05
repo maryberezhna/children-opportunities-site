@@ -10,13 +10,14 @@ import { useRef, useState } from 'react';
 const NOMINATIONS = ['Програмування й ШІ', 'Робототехніка й інженерія', 'Наука й математика'];
 const FORMATS = ['Генеральний партнер', 'Партнер номінації', 'Інформаційний партнер', 'Ще не знаю — розкажіть більше'];
 
-export default function PartnerModal({ label = 'Стати партнером', className = '' }) {
+export default function PartnerModal({ label = 'Стати партнером', className = '', initialFormat = FORMATS[0] }) {
   const dialogRef = useRef(null);
-  const [format, setFormat] = useState(FORMATS[0]);
+  const [format, setFormat] = useState(initialFormat);
   const [state, setState] = useState('idle'); // idle | sending | sent | error | contact
 
   const open = () => {
     setState('idle');
+    setFormat(initialFormat);
     dialogRef.current?.showModal();
     if (typeof window !== 'undefined' && window.gtag) {
       window.gtag('event', 'partner_form_open', { event_label: 'stem_talant' });

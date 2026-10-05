@@ -73,6 +73,12 @@ const CHIPS = ['</>', 'E=mc²', 'π', 'H₂O', 'AI', '3D'];
 // Цілі й вигоди партнерів (Марія, 05.10.2026: «де цілі проєкту, щоб якось
 // залучала, а що отримають партнери»). Лише те, що конкурс справді дає;
 // ціни партнерства — у таблиці «Формати партнерства» нижче.
+// Інформаційні партнери конкурсу — лише ті, хто погодився (Марія,
+// 05.10.2026: «додай теж» — .HUB, її HubSpot-студія).
+const INFO_PARTNERS = [
+  { name: '.HUB', url: 'https://www.dot-hub.club/', title: '.HUB — HubSpot: CRM, автоматизація, сайти', logoClass: 'st-logo-hub' },
+];
+
 const GOALS = [
   { n: '01', title: 'Таланти є всюди', text: 'Конкурс онлайн, тож узяти участь може школяр з будь-якого міста — і з прифронтової громади, і з-за кордону.' },
   { n: '02', title: 'Справжня оцінка', text: 'Проєкти дивляться інженери й науковці, а не автоматичний тест. Так діти бачать, чого варта їхня робота.' },
@@ -291,6 +297,18 @@ export default function StemTalantPage() {
                   </tr>
                 ))}
               </tbody>
+              {/* Кнопка в кожній колонці: одна по центру стояла під
+                  «Генеральним» і читалась як лише для нього (Марія, 05.10.2026) */}
+              <tfoot>
+                <tr>
+                  <td />
+                  {TIER_HEAD.map((t) => (
+                    <td key={t.name} className={t.main ? 'is-main' : ''}>
+                      <PartnerModal label="Обрати цей формат" initialFormat={t.name} className="st-btn st-btn-yellow st-btn-sm" />
+                    </td>
+                  ))}
+                </tr>
+              </tfoot>
             </table>
           </div>
           {/* На телефоні таблиця не влазить — ті самі умови картками */}
@@ -310,11 +328,9 @@ export default function StemTalantPage() {
                     </ul>
                   </div>
                 ))}
+                <PartnerModal label="Обрати цей формат" initialFormat={t.name} className="st-btn st-btn-yellow st-btn-sm st-tier-btn" />
               </article>
             ))}
-          </div>
-          <div className="st-center st-reveal">
-            <PartnerModal className="st-btn st-btn-yellow st-btn-big" />
           </div>
         </section>
 
@@ -352,8 +368,24 @@ export default function StemTalantPage() {
         </section>
 
         <section className="st-wrap st-sec st-press">
-          <p className="st-eyebrow st-reveal">Про Dityam.com.ua писали</p>
-          <h2 className="st-h2 st-reveal">Нас уже знають</h2>
+          <p className="st-eyebrow st-reveal">Разом із нами</p>
+          <h2 className="st-h2 st-reveal">Наші інформаційні партнери</h2>
+          <ul className="st-info-partners st-reveal">
+            {INFO_PARTNERS.map((p) => (
+              <li key={p.url}>
+                <a href={p.url} target="_blank" rel="noopener" title={p.title}>
+                  <span className={p.logoClass}>{p.name}</span>
+                </a>
+              </li>
+            ))}
+            <li>
+              <PartnerModal label="+ Станьте інформаційним партнером" initialFormat="Інформаційний партнер" className="st-info-join" />
+            </li>
+          </ul>
+          {/* Видання нижче писали про Dityam.com.ua, але згоди бути
+              інформаційними партнерами конкурсу не давали — тому окремо,
+              під чесним підписом. Погодяться — переносимо вище. */}
+          <p className="st-eyebrow st-press-sub st-reveal">Про Dityam.com.ua писали</p>
           <div className="st-reveal"><PressLogos /></div>
         </section>
 
