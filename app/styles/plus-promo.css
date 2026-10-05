@@ -1,11 +1,22 @@
-/* Блок Dityam+ на сторінці можливості (app/PlusPromo.js, 30.09.2026): чорна
-   картка з помаранчевим бейджем і білою кнопкою — той самий вигляд, що мала
-   картка Dityam+ у підбірках (#532), лише окремим компонентом. */
+/* Блок Dityam+ на сторінці можливості (app/PlusPromo.js, 30.09.2026).
+ *
+ * 05.10.2026 змінено вигляд (Марія: «реклама просто телеграм-каналу і платного
+ * Dityam+ майже однакова; для людей не зрозуміло, де платна послуга, а де
+ * безкоштовний канал»). І справді: обидва блоки стояли на одному токені
+ * --contrast-bg, тобто були однаковими чорними плитами, обидва вели в Telegram
+ * і обидва обіцяли можливості щодня.
+ *
+ * Тепер чорна плита лишається одна — безкоштовний канал, головний заклик сайту
+ * (сходинка сайт → канал → Dityam+). Платна підписка виглядає як пропозиція:
+ * світла картка в помаранчевій рамці, де ціна — не дрібний рядок під текстом,
+ * а частина самої пропозиції. Два різні на вигляд блоки людина не сплутає,
+ * навіть не читаючи. */
 .plus-promo {
   margin: 8px 0 40px;
-  padding: 28px 32px;
-  background: var(--contrast-bg);
-  color: var(--contrast-ink);
+  padding: 26px 30px;
+  background: var(--v2-cream);
+  color: var(--v2-ink);
+  border: 2px solid var(--v2-accent-strong);
   border-radius: 20px;
   display: flex;
   align-items: center;
@@ -23,6 +34,9 @@
 
 .plus-promo-badge {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -32,21 +46,46 @@
   color: var(--surface-2);
 }
 
+/* «платна підписка» — тим самим рядком, але тихіше за назву: назва це бренд,
+   а це пояснення, без якого бренд нічого не каже новому відвідувачу. */
+.plus-promo-kind {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.85;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+}
+
 .plus-promo-title {
   margin: 0;
   font-weight: 800;
   font-size: 22px;
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: var(--surface-2);
+  color: var(--v2-ink);
   text-wrap: balance;
 }
 
-.plus-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: #d4cfc1; }
+.plus-promo-text { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink-soft); }
+
+/* Чим це відрізняється від каналу — окремим рядком із помаранчевою рискою,
+   бо саме його людина має побачити, якщо більше нічого не прочитає. Риска, а
+   не помаранчевий текст: #c8501a на кремовому дає 4,04 — для 14px замало
+   (потрібно 4,5), а чорнило на рисці лишається 15:1 у двох темах. */
+.plus-promo-diff {
+  margin: 4px 0 0;
+  padding-left: 12px;
+  border-left: 3px solid var(--v2-accent-strong);
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+  color: var(--v2-ink);
+}
 
 /* Ціна в самому банері (Марія, 30.09.2026): людина має бачити, скільки це
    коштує, ще до того, як кудись натисне. */
-.plus-promo-price { margin: 10px 0 0; font-size: 15px; font-weight: 700; color: var(--surface-2); }
+.plus-promo-price { margin: 10px 0 0; font-size: 15px; font-weight: 700; color: var(--v2-ink); }
 
 .plus-promo .plus-promo-btn {
   flex-shrink: 0;
@@ -56,16 +95,18 @@
   height: 48px;
   padding: 0 24px;
   border-radius: 9999px;
-  background: var(--surface-2);
-  color: var(--v2-ink);
+  background: var(--v2-accent-strong);
+  color: var(--surface-2);
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
   white-space: nowrap;
 }
 
-.plus-promo .plus-promo-btn:hover { background: var(--v2-cream); color: var(--v2-ink); }
-.plus-promo .plus-promo-btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
+/* Залита помаранчевим кнопка — єдина така на сторінці можливості: у каналі
+   кнопка біла на темному, тож дві дії не змагаються за той самий вигляд. */
+.plus-promo .plus-promo-btn:hover { background: var(--v2-ink); color: var(--surface-2); }
+.plus-promo .plus-promo-btn:focus-visible { outline: 2px solid var(--v2-ink); outline-offset: 3px; }
 
 @media (max-width: 640px) {
   .plus-promo { padding: 22px 20px; gap: 16px; margin-bottom: 28px; }

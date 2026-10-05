@@ -142,3 +142,63 @@ test('підбірка: жодного Dityam+ — ні картки, ні кн�
   const place = 'topic_ukrainskym-ditiam-za-kordonom_en';
   assert.equal(parseSourceArg(new URL(plusFromUrl(place)).searchParams.get('start')), place);
 });
+
+// Безкоштовний канал і платна підписка не мають виглядати однаково.
+//
+// До 05.10.2026 на сторінці можливості стояли два блоки, обидва на токені
+// --contrast-bg (тобто однакові темні плити), обидва вели в Telegram і обидва
+// обіцяли «можливості щодня». Марія: «реклама просто телеграм-каналу і
+// платного Dityam+ майже однакова — для людей не зрозуміло, де платна послуга,
+// а де безкоштовний канал». Тест стереже три речі, бо саме вони й розійшлися:
+// ціну названо в обох блоках, тло в них різне, і платний блок каже, чим він
+// відрізняється від каналу, а не повторює його обіцянку.
+test('канал каже «безкоштовно», Dityam+ каже «платна підписка»', () => {
+  const card = read('app/TelegramCard.js');
+  assert.match(card, /безкоштовно/, 'картка каналу не називає себе безкоштовною');
+
+  const promo = read('app/PlusPromo.js');
+  assert.match(promo, /платна підписка/, 'банер Dityam+ не називає себе платною підпискою');
+  assert.match(promo, /paid subscription/, 'англійська версія банера не називає ціну словами');
+});
+
+test('у двох блоках різне тло', () => {
+  const tg = read('app/styles/telegram-card.css');
+  const plus = read('app/styles/plus-promo.css');
+
+  // Канал лишається темною плитою — головний заклик сайту.
+  assert.match(tg, /\.tg-card\s*\{[^}]*--contrast-bg/s, 'картка каналу більше не темна плита');
+  // А платна підписка — ні, інакше знову два однакові прямокутники.
+  assert.doesNotMatch(
+    plus.slice(plus.indexOf('.plus-promo {'), plus.indexOf('.plus-promo-copy')),
+    /--contrast-bg/,
+    'банер Dityam+ знову на тому самому тлі, що й безкоштовний канал',
+  );
+});
+
+test('банер Dityam+ каже, чим відрізняється від каналу', () => {
+  const promo = read('app/PlusPromo.js');
+  assert.match(promo, /diff:/, 'у банері немає рядка про різницю з каналом');
+  for (const [lang, re] of [['uk', /diff: 'У каналі/], ['en', /diff: 'The channel/]]) {
+    assert.match(promo, re, `${lang}: рядок різниці не починається з того, що робить канал`);
+  }
+  assert.match(read('app/styles/plus-promo.css'), /\.plus-promo-diff/, 'рядок різниці без стилю');
+});
+
+// Картка каналу завжди темна — отже й чорнило на ній завжди світле.
+// 05.10.2026 у нічній темі заголовок на ній був майже невидимий: він брав
+// --surface-2, а той у темній темі стає темним разом із тлом сторінки, тоді як
+// сама картка лишається на --contrast-bg. Пара --contrast-bg / --contrast-ink
+// світлішає й темнішає разом, тож тест стереже саме її.
+test('на темній картці каналу — токени контрастної пари, не тло сторінки', () => {
+  const css = read('app/styles/telegram-card.css');
+  const block = (sel) => {
+    const i = css.indexOf(`${sel} {`);
+    assert.ok(i > 0, `немає правила ${sel}`);
+    return css.slice(i, css.indexOf('}', i));
+  };
+  for (const sel of ['.tg-card-title', '.tg-card-btn']) {
+    assert.doesNotMatch(block(sel), /var\(--surface-2\)/, `${sel} фарбується тлом сторінки`);
+  }
+  assert.match(block('.tg-card-title'), /var\(--contrast-ink\)/);
+  assert.match(block('.tg-card-btn'), /var\(--contrast-ink\)/);
+});

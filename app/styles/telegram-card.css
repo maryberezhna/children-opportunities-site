@@ -25,8 +25,21 @@
   flex-direction: column;
   gap: 6px;
 }
+/* Назва каналу й слово «безкоштовно» — в одному бейджі: саме ціна відрізняє
+   цей блок від платного Dityam+ нижче, і доти її не називав жоден із двох. */
+.tg-card-free {
+  margin-left: 8px;
+  padding-left: 8px;
+  border-left: 1px solid currentColor;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
 .tg-card-badge {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -41,7 +54,10 @@
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: var(--surface-2);
+  /* Не --surface-2: у нічній темі він темніє разом із тлом сторінки, а картка
+     лишається темною — 05.10.2026 заголовок на ній був майже невидимий.
+     --contrast-ink іде в парі з --contrast-bg і світлий в обох темах. */
+  color: var(--contrast-ink);
   text-wrap: balance;
 }
 .tg-card-text {
@@ -57,8 +73,8 @@
   height: 46px;
   padding: 0 22px;
   border-radius: 12px;
-  background: var(--surface-2);
-  color: var(--v2-ink);
+  background: var(--contrast-ink);
+  color: var(--contrast-bg);
   font-size: 15px;
   font-weight: 700;
   text-decoration: none;
@@ -67,8 +83,8 @@
 }
 /* Подвійний селектор: у підбірках загальне правило для посилань фарбує
    текст у помаранчевий і перебиває одиночний клас. */
-.tg-card .tg-card-btn { color: var(--v2-ink); }
-.tg-card .tg-card-btn:hover { background: #f1ede7; color: var(--v2-ink); }
+.tg-card .tg-card-btn { color: var(--contrast-bg); }
+.tg-card .tg-card-btn:hover { background: #f1ede7; color: #1a1a1a; }
 .tg-card-btn:focus-visible { outline: 2px solid #ffffff; outline-offset: 3px; }
 
 @media (max-width: 640px) {

@@ -91,7 +91,14 @@ export default function TelegramCard({
       aria-label={t.aria}
     >
       <div className="tg-card-copy">
-        <span className="tg-card-badge">Telegram</span>
+        {/* «Безкоштовно» поряд із назвою — не зайве слово (Марія, 05.10.2026:
+            «для людей не зрозуміло, де платна послуга, а де безкоштовний
+            канал»). Обидва заклики ведуть у Telegram і обидва обіцяють
+            можливості щодня; єдине, чим вони різняться для людини, — ціна, а
+            її не називав жоден. */}
+        <span className="tg-card-badge">
+          Telegram-канал<span className="tg-card-free">безкоштовно</span>
+        </span>
         {/* Не заголовок: у списку h3 — назви можливостей, і «Щоб не шукати
             вручну» серед них читачі екрана й пошуковики брали б за ще одну. */}
         <p className="tg-card-title">{t.title}</p>
