@@ -52,7 +52,11 @@ export async function generateMetadata({ params }) {
   if (!cityData || !texts) return {};
   const url = `${SITE_URL}/${params.city}/${params.topic}`;
   return {
-    title: texts.title(cityData),
+    // absolute: шаблон із app/layout.js дописував «| Можливості для дитини»,
+    // і «Курси англійської та іноземних мов для дітей у Харкові» ставало 78
+    // символів — пошук обрізав рядок рівно на назві сайту, яку він і так
+    // показує окремо (05.10.2026, Site Scan у Bing).
+    title: { absolute: texts.title(cityData) },
     description: texts.description(cityData),
     // Без hreflang: англійського двійника немає, обіцяти його Google не можна.
     alternates: { canonical: url },
