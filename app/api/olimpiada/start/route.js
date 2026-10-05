@@ -46,7 +46,9 @@ export async function POST(request) {
   }
   const testPath = `/olimpiada/test?t=${entry.token}`;
 
-  if (admin || devFree) {
+  // ?pay=1 у режимі перевірки: адмін іде через справжню оплату, щоб побачити
+  // сторінку WayForPay і весь шлях до тесту ще до запуску.
+  if ((admin && b.realPay !== true) || devFree) {
     await markPaid(store, entry, { test: true });
     return json({ url: testPath, t: entry.token });
   }

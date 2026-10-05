@@ -1,0 +1,53 @@
+name: Олімпіада — запрошення до тесту
+
+# Після оплати онлайн-олімпіади батькам іде лист із посиланням на тест і
+# часом, до якого його треба почати (72 години). Сайт листів не шле — на
+# Vercel немає поштових ключів, — тому це робить scraper/olimpiada_invites.py
+# з пошти проєкту. Кожен запис позначається invite_sent_at: двічі не піде.
+#
+# Кожні 10 хвилин і не на початку години: такі запуски GitHub затримує
+# найменше. Сторінка тесту відкривається й одразу після оплати, тож лист —
+# це запасний вхід, а не єдиний.
+on:
+  schedule:
+    - cron: '4-59/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'send = надіслати; dry = лише показати, кому; check = перевірити вхід у пошту'
+        required: false
+        default: 'send'
+
+concurrency:
+  group: olimpiada-invites
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  invites:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Надіслати запрошення
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DITYAM_GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
+        run: |
+          case "${{ github.event.inputs.mode }}" in
+            check) python olimpiada_invites.py --check ;;
+            dry) python olimpiada_invites.py --dry-run ;;
+            *) python olimpiada_invites.py ;;
+          esac
