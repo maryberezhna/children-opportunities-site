@@ -145,7 +145,8 @@
   background: linear-gradient(140deg, var(--t-a), var(--t-d)); color: #fff; font-weight: 700; font-size: 18px;
   box-shadow: 0 0 0 6px var(--bg);
 }
-.st-step-date { display: inline-block; margin: 16px 0 0; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 700; color: var(--t-a); background: color-mix(in srgb, var(--t-a) 12%, transparent); }
+/* Дата — окремим рядком під номером: у рядку з ним її перекреслювала лінія часу. */
+.st-step-date { display: table; margin: 16px 0 0; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 700; color: var(--t-a); background: color-mix(in srgb, var(--t-a) 12%, transparent); }
 :root[data-theme="dark"] .st-step-date { color: #9fb2ff; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-step-date { color: #9fb2ff; } }
 .st-step h3 { margin: 10px 0 6px; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
@@ -174,12 +175,24 @@
 
 /* Підтримати репостом */
 .st-share {
-  display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; padding: 36px;
+  display: grid; grid-template-columns: 1fr; gap: 20px; padding: 36px;
   border-radius: 28px; background: color-mix(in srgb, var(--t-a) 8%, var(--surface-2)); border: 1px solid var(--v2-line);
 }
 .st-share .st-h2 { margin-bottom: 10px; }
 .st-share .st-text { margin: 0; }
-.st-share-btns { display: flex; flex-wrap: wrap; gap: 10px; max-width: 420px; justify-content: flex-end; }
+.st-share-btns { display: flex; flex-wrap: wrap; gap: 10px; }
+.st-posts-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.st-posts-tabs button {
+  font: inherit; font-size: 15px; font-weight: 700; padding: 9px 16px; border-radius: 9999px; cursor: pointer;
+  border: 1.5px solid var(--v2-line-strong); background: transparent; color: var(--v2-ink-2);
+}
+.st-posts-tabs button.is-on { background: var(--t-a); border-color: var(--t-a); color: #fff; }
+.st-posts-tabs button:focus-visible { outline: 3px solid var(--t-a); outline-offset: 2px; }
+.st-post-text {
+  margin: 0 0 16px; padding: 18px 20px; border-radius: 16px; white-space: pre-wrap; font-size: 16px; line-height: 1.55;
+  background: var(--surface-2); border: 1px solid var(--v2-line); color: var(--v2-ink);
+}
+.st-posts-note { min-height: 22px; margin: 10px 0 0; font-size: 14px; font-weight: 600; color: var(--t-b); }
 .st-share-btn {
   display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 18px;
   border-radius: 9999px; border: 1.5px solid var(--v2-line-strong); background: var(--surface-2);
@@ -262,7 +275,7 @@
 @keyframes st-fade { from { opacity: 0; } to { opacity: 1; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .st-page *, .st-modal, .st-modal * { animation: none !important; transition: none !important; }
+  .st-page *, .st-modal, .st-modal *, .st-steps::before { animation: none !important; transition: none !important; }
 }
 
 /* ---------- Телефон ---------- */
@@ -279,7 +292,6 @@
   .st-steps::before { display: none; }
   .st-slots { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
   .st-share { grid-template-columns: 1fr; padding: 28px 22px; }
-  .st-share-btns { justify-content: flex-start; max-width: none; }
   .st-press .press-logos li { width: calc(50% - 6px); }
   .st-press .press-logos a { width: 100%; }
   .st-chip { display: none; }

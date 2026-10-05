@@ -4,7 +4,7 @@ import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { CodeIcon, RobotIcon, AtomIcon } from './Icons';
 import PartnerModal from './PartnerModal';
 import PressLogos from '../PressLogos';
-import ShareButton from '../ShareButton';
+import SharePosts from './SharePosts';
 
 // «STEM-талант України» — власний конкурс Dityam.com.ua (рішення Марії
 // 04–05.10.2026): лише STEM, діти 12–17 років, 3 номінації × 2 вікові групи,
@@ -37,9 +37,9 @@ export const metadata = {
   openGraph: {
     type: 'website', locale: 'uk_UA', url: URL, siteName: 'Dityam.com.ua',
     title: TITLE, description: DESCRIPTION,
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Dityam.com.ua' }],
   },
-  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/og-image.png'] },
+  // Картинка прев'ю — opengraph-image.js / twitter-image.js у цій теці.
+  twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 };
 
 const FACTS = [
@@ -66,15 +66,6 @@ const STEPS = [
 // інженерія (3D), математика (π). Марія, 05.10.2026: «а це все асоціюється зі стемом?»
 const CHIPS = ['</>', 'E=mc²', 'π', 'H₂O', 'AI', '3D'];
 
-// «Підтримати репостом» (Марія, 05.10.2026: «щоб всі бачили, що можуть просто
-// підтримати нас репостом»). Ділимось канонічною адресою.
-const SHARE_TEXT = 'STEM-талант України — онлайн-конкурс STEM-проєктів для школярів 12–17 років на зимових канікулах. Журі з інженерів і науковців.';
-const SHARE = [
-  ['Telegram', `https://t.me/share/url?url=${encodeURIComponent(URL)}&text=${encodeURIComponent(SHARE_TEXT)}`],
-  ['Facebook', `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`],
-  ['LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(URL)}`],
-  ['Viber', `viber://forward?text=${encodeURIComponent(`${SHARE_TEXT} ${URL}`)}`],
-];
 
 const FAQ = [
   { q: 'Хто організовує конкурс?', a: 'Платформа Dityam.com.ua — вона збирає перевірені можливості для українських дітей 0–18 років в Україні та за кордоном.' },
@@ -263,23 +254,12 @@ export default function StemTalantPage() {
             <div className="st-share-copy">
               <h2 className="st-h2">Підтримайте репостом</h2>
               <p className="st-text">
-                Не компанія і не медіа? Ви все одно можете допомогти: поділіться сторінкою
-                з батьками, вчителями чи друзями, яким цікаві технології. Кожен репост — шанс,
-                що про конкурс дізнається ще одна дитина.
+                Не компанія і не медіа? Ви все одно можете допомогти: оберіть готовий текст,
+                скопіюйте й поділіться з батьками, вчителями чи друзями, яким цікаві технології.
+                Кожен репост — шанс, що про конкурс дізнається ще одна дитина.
               </p>
             </div>
-            <div className="st-share-btns">
-              {SHARE.map(([name, href]) => (
-                <a key={name} href={href} className="st-share-btn" target="_blank" rel="noopener noreferrer">{name}</a>
-              ))}
-              <ShareButton
-                title="STEM-талант України"
-                label="Скопіювати посилання"
-                copiedLabel="Посилання скопійовано ✓"
-                className="st-share-btn st-share-copy-btn"
-                place="stem_talant"
-              />
-            </div>
+            <SharePosts />
           </div>
         </section>
 
