@@ -193,9 +193,9 @@ export default async function TodayPage() {
         </Card>
 
         <Card title="📣 Telegram-канал" href={PLAN_URL} linkText="План">
-          <Row label="сьогодні" value={planLabel(todayPost)} />
-          <Row label="завтра" value={planLabel(tomorrowPost)} />
-          <p style={noteS}>Окремим постом — «🆕 Нова можливість», якщо є новинка.</p>
+          <Row label="підбірка сьогодні" value={planLabel(todayPost)} />
+          <Row label="підбірка завтра" value={planLabel(tomorrowPost)} />
+          <p style={noteS}>Щодня три пости: зранку «⏰ Дедлайни цього тижня», вдень підбірка, увечері «🆕 Нова можливість», якщо є новинка.</p>
         </Card>
 
         <Card title="📈 Сайт" href="/admin/metrics" linkText="Метрики">

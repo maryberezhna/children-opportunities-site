@@ -22,6 +22,15 @@
  * записів), «спорт» (пошук за словом ловить «паспорт»), «академії від
  * компаній» (ловить Малу академію наук — заголовок збрехав би).
  *
+ * З 06.10.2026 — три пости на день (Марія, 05.10: «нам треба так — дедлайни,
+ * які закінчуються на цьому тижні; нова можливість; підбірки»):
+ *   ранок — «⏰ Дедлайни цього тижня» (DEADLINES_WEEK);
+ *   день  — підбірка з черги COLLECTIONS (planEntryFor);
+ *   вечір — «🆕 Нова можливість».
+ * Ситуації, цифри й історії щодня більше не виходять: за GA4 (05.10) на сайт
+ * з каналу ведуть саме підбірки — ~11 переходів на пост проти ~3 у «Нової
+ * можливості» і ~1 у «Ситуації». Самі формати лишились у ROTATION і коді.
+ *
  * Формати:
  *   digest    — заголовок теми + до трьох можливостей + посилання;
  *   story     — одна можливість розгорнуто;
@@ -263,17 +272,48 @@ export const kyivIso = (date = new Date()) =>
  * посилання веде на /contacts?type=story, де людина лишає імʼя, контакт і
  * окремо ставить позначку, що історію можна опублікувати.
  *
- * Пост займає місце теми дня, а не додається до неї: у каналі один пост на
- * день (21.09.2026). Тема, що випала на цей день, просто пропускається.
+ * Пост займає місце підбірки дня, а не додається до неї. Підбірка, що
+ * випала на цей день, просто пропускається.
  */
 export const MONTHLY_DAY = 15;
 export const MONTHLY_ENTRY = { key: 'file-istoriyi', kind: 'file', file: 'istoriyi.html' };
 
-/** Запис плану на дату. До PLAN_START і після кінця циклу — по колу. */
+/**
+ * Ранковий пост: заявки з дедлайном у найближчі 7 днів (check-deadlines.mjs,
+ * sendDeadlinesWeek). Окремо від ROTATION: виходить щодня, а не раз за цикл.
+ */
+export const DEADLINES_WEEK = {
+  key: 'deadlines-week',
+  kind: 'deadlines-week',
+  heading: '⏰ Дедлайни цього тижня',
+  description: 'Заявки, які треба подати за найближчі 7 днів.',
+  link: `${SITE}/dedlainy`,
+};
+
+// Готові тексти, які теж є підбірками: анонс сторінки на сайті з живим числом.
+// «dedlainy-dva-tyzhni» сюди не входить — дедлайни тепер щоранку окремо.
+const COLLECTION_FILES = new Set([
+  'obminy.html', 'dity-zakhysnykiv.html', 'olimpiady.html', 'onlain.html', 'za-kordonom.html',
+]);
+const isCollection = (e) => e.kind === 'digest' || (e.kind === 'file' && COLLECTION_FILES.has(e.file));
+
+/** Перший день трьох постів на день. */
+export const COLLECTION_START = '2026-10-06';
+// 06.10 — 21-й день першого циклу ROTATION (індекс 20). Черга підбірок
+// починається з тем, яких у цьому циклі ще не було, а ті, що вже вийшли
+// 16.09–05.10, стають у кінець: так жодна тема не повторюється раніше, ніж
+// за місяць.
+const RESUME_AT = 20;
+export const COLLECTIONS = [...ROTATION.slice(RESUME_AT), ...ROTATION.slice(0, RESUME_AT)].filter(isCollection);
+
+/**
+ * Підбірка дня. По колу від COLLECTION_START; 15-го числа її місце займає
+ * щомісячне прохання розповісти історію.
+ */
 export function planEntryFor(dateIso) {
-  const n = ROTATION.length;
-  const days = Math.round((Date.parse(`${dateIso}T00:00:00Z`) - Date.parse(`${PLAN_START}T00:00:00Z`)) / DAY_MS);
+  const n = COLLECTIONS.length;
+  const days = Math.round((Date.parse(`${dateIso}T00:00:00Z`) - Date.parse(`${COLLECTION_START}T00:00:00Z`)) / DAY_MS);
   const index = ((days % n) + n) % n;
   if (Number(dateIso.slice(8, 10)) === MONTHLY_DAY) return { ...MONTHLY_ENTRY, index };
-  return { ...ROTATION[index], index };
+  return { ...COLLECTIONS[index], index };
 }

@@ -13,16 +13,19 @@
 import { readFileSync } from 'node:fs';
 
 const FILE = 'scripts/check-deadlines.mjs';
-const LAUNCH = 'await sendDailyDigest()';
+// З 06.10.2026 постів три, і першим може запуститися будь-який — орієнтир
+// найраніший виклик із них.
+const LAUNCHES = ['await sendDeadlinesWeek(', 'await sendDailyDigest(', 'await sendNewOpportunityPost('];
 
 const src = readFileSync(FILE, 'utf8');
 const lineOf = (i) => src.slice(0, i).split('\n').length;
 
-const launchAt = src.indexOf(LAUNCH);
-if (launchAt < 0) {
-  console.error(`✗ ${FILE}: не знайдено «${LAUNCH}» — вартовий втратив орієнтир, перевір його.`);
+const found = LAUNCHES.map((l) => src.indexOf(l)).filter((i) => i >= 0);
+if (!found.length) {
+  console.error(`✗ ${FILE}: не знайдено жодного запуску поста — вартовий втратив орієнтир, перевір його.`);
   process.exit(1);
 }
+const launchAt = Math.min(...found);
 
 const late = [];
 for (const m of src.matchAll(/^const (\w+)/gm)) {
