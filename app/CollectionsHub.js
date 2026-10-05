@@ -173,8 +173,13 @@ export default async function CollectionsHub({ lang = 'uk' }) {
         <div className="tp-related-grid tp-hub-grid">
           {cards.map((c) => (
             <Link key={c.href} href={c.href} className="tp-related-card">
-              <span className="tp-related-title">{c.name}</span>
-              <span className="tp-related-n">{t.count(c.count)}</span>
+              {/* Відступи картки живуть у .tp-related-body (з #667, коли картки
+                  отримали фото). Без обгортки текст упирався в рамку, а
+                  заокруглений край обрізав першу літеру: «ноземні мови». */}
+              <span className="tp-related-body">
+                <span className="tp-related-title">{c.name}</span>
+                <span className="tp-related-n">{t.count(c.count)}</span>
+              </span>
             </Link>
           ))}
         </div>
