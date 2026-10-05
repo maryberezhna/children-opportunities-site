@@ -17,6 +17,7 @@ import { daysUntil } from '@/lib/dates';
 import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import TopicCards from './topic/TopicCards';
 import TopWeekSlider from './TopWeekSlider';
+import TopWeekStrip from './TopWeekStrip';
 import SuggestBlock from './SuggestBlock';
 import ShareButton from './topic/ShareButton';
 import StickyBar from './StickyBar';
@@ -526,15 +527,23 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           ) : null}
         </section>
 
+        {/* Широкий екран — три великі картки поруч; телефон — та сама трійка
+            компактною смужкою, як на головній (Марія, 05.10.2026: «у підбірках
+            так само, як на головній сторінці, а зараз там теж величезний
+            слайдер»). Великий блок займав ~700px перед списком. Один із двох
+            завжди схований CSS, тож людина бачить рівно один. */}
         {topWeek.length === 3 ? (
-          <TopWeekSlider
-            all
-            lang={lang}
-            title={ch.topWeek}
-            allHref={isEn ? null : '/dedlainy'}
-            allLabel={ch.topWeekAll}
-            cards={topWeek}
-          />
+          <>
+            <TopWeekSlider
+              all
+              lang={lang}
+              title={ch.topWeek}
+              allHref={isEn ? null : '/dedlainy'}
+              allLabel={ch.topWeekAll}
+              cards={topWeek}
+            />
+            <TopWeekStrip lang={lang} title={ch.topWeek} cards={topWeek} />
+          </>
         ) : null}
 
         <TopicCards

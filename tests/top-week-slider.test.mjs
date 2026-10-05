@@ -122,3 +122,47 @@ test('пауза під мишею й на фокусі — у самому ко
 test('картку видно достатньо, щоб прочитати назву', () => {
   assert.ok(SLIDE_MS >= 5000, 'швидше 5 секунд назву не дочитати');
 });
+
+// На телефоні «Топ 3 цього тижня» показується рівно один раз і рівно одним
+// виглядом — компактною смужкою.
+//
+// 05.10.2026 Марія: «о боже, як так сталося, що на мобільному 2 рази майже
+// поруч показуються топ 3 тижня». На головній справді стояли обидва вигляди:
+// великий блок у хіро (283px) і смужка над списком (787px). А в підбірці був
+// лише великий — три картки одна під одною на ~700px до першої можливості
+// («у підбірках мають бути видно так само, як на головній»).
+test('великий блок ховається на телефоні, смужка — в обох місцях', () => {
+  const css = read('app/styles/home-v2.css');
+  // Поріг той самий, на якому .m-top вмикається в home-mobile.css, інакше
+  // знайдеться ширина з двома блоками або з жодним.
+  assert.match(css, /@media \(max-width: 900px\) \{\s*\.v2-tw \{ display: none; \}/,
+    'великий «Топ тижня» не схований на телефоні');
+  assert.match(read('app/styles/home-mobile.css'), /@media \(max-width: 900px\)/);
+
+  for (const f of ['app/OpportunitiesList.js', 'app/TopicPage.js']) {
+    assert.match(read(f), /<TopWeekStrip/, `${f}: немає компактної смужки`);
+  }
+});
+
+// Розмітка смужки — одна на головну й підбірки. Доти картку збирав
+// OpportunitiesList у себе, і в підбірці такої просто не існувало.
+test('смужка одна на обидва місця й бере ті самі дані', () => {
+  const strip = read('app/TopWeekStrip.js');
+  assert.match(strip, /className="m-top-card"/);
+  assert.match(strip, /o\.dateLabel/, 'закріплені без дати лишаються з підписом «Топ»');
+  // Дані — з sliderCards, тієї самої функції, що годує великий блок.
+  for (const f of ['app/OpportunitiesList.js', 'app/TopicPage.js']) {
+    const src = read(f);
+    assert.ok(/sliderCards\(/.test(src) || /cards=\{topWeek\}/.test(src),
+      `${f}: смужка годується не з sliderCards`);
+  }
+  assert.doesNotMatch(read('app/OpportunitiesList.js'), /renderTopCard/,
+    'у списку лишилась власна копія картки — підписи знову розійдуться');
+});
+
+test('sliderCards позначає назву, що лишилась українською', () => {
+  const [uk] = sliderCards([{ slug: 'a', title: 'Назва', cost_type: 'free' }], { lang: 'en', free: 'free' });
+  assert.equal(uk.titleIsUk, true);
+  const [en] = sliderCards([{ slug: 'b', title: 'Назва', title_en: 'Name' }], { lang: 'en' });
+  assert.equal(en.titleIsUk, false);
+});

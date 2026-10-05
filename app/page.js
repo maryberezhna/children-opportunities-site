@@ -7,7 +7,6 @@ import { isoWeek } from '@/lib/week';
 import { daysUntil } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
 import HomeHero from './HomeHero';
-import HomeTopics from './HomeTopics';
 import HomeBlocks from './HomeBlocks';
 import Footer from './Footer';
 import SubscribePopup from './SubscribePopup';
@@ -18,9 +17,9 @@ export const revalidate = 300;
 // Головна, редизайн 29.09.2026 (макет Main.dc.html / Mobile.dc.html): хіро з
 // пошуком, плитками тем і «Встигніть цього тижня» праворуч, фільтри лише в
 // бічній панелі, олімпіади МОН однією карткою, два нижні блоки (Telegram +
-// «Запропонувати можливість»). На телефоні: заголовок → пошук → вік →
-// «Встигніть цього тижня» → список → канал → «Або оберіть тему» → блок для
-// організаторів, знизу панель «Фільтри / Сортування». Email-підписки,
+// «Запропонувати можливість»). На телефоні (05.10.2026): заголовок → «Або
+// оберіть тему» → пошук → вік → «Топ 3 цього тижня» смужкою → список → канал →
+// блок для організаторів, знизу панель «Фільтри / Сортування». Email-підписки,
 // стікі-бар і плаваюче сердечко зняті свідомо — один заклик на екран.
 
 async function getOpportunities() {
@@ -95,12 +94,6 @@ export default async function Home() {
             <Link key={t.slug} href={`/${t.slug}`}>{t.label}</Link>
           ))}
         </nav>
-
-        {/* Телефон: «Або оберіть тему» після списку (на десктопі плитки в хіро).
-            Порядок «список → канал → теми → організатори» задає CSS
-            (home-mobile.css): блоки HomeBlocks на телефоні стають окремими
-            дітьми контейнера. */}
-        <HomeTopics variant="mobile" />
 
         <HomeBlocks />
       </main>

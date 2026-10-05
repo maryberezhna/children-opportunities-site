@@ -20,6 +20,8 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import { packFullRows } from '@/lib/grid-rows';
 import { topWeekCards } from '@/lib/weekly-top';
+import { sliderCards } from '@/lib/top-week-slider';
+import TopWeekStrip from './TopWeekStrip';
 import { groupMonOlympiads, subjectLabel } from '@/lib/olympiad-group';
 import { STAGES, OLYMPIADS_PATH } from '@/lib/olympiads';
 import { plural } from '@/lib/plural';
@@ -508,7 +510,6 @@ export default function OpportunitiesList({
   // шапка з тим самим полем пошуку, а липкий рядок фільтрів сідає під неї.
   const bandRef = useRef(null);
   const [compact, setCompact] = useState(false);
-  const [topIndex, setTopIndex] = useState(0);
   const chipsRowRef = useRef(null);
   // Шторка фільтрів (6c): поки відкрита, зміни живуть у чернетці й до
   // списку не доходять — застосовуються лише кнопкою «Показати N».
@@ -886,41 +887,6 @@ export default function OpportunitiesList({
         footer={fmt || null}
         moreLabel={t.details}
       />
-    );
-  };
-
-  // Картка стрічки «Найближчі дедлайни» на телефоні (макет Mobile.dc.html):
-  // помаранчевий квадрат із датою, назва, рядок «тип · вік · безкоштовно» —
-  // те саме, що в панелі хіро на десктопі. Без дедлайну (відмічена в
-  // адмінці) — «Топ» замість дати.
-  const renderTopCard = (item) => {
-    const typeLabel = (isEn ? TYPE_LABELS_EN : TYPE_LABELS)[item.opportunity_type]
-      || item.opportunity_type;
-    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(item.deadline || ''));
-    const months = isEn ? MONTHS_EN
-      : ['січ', 'лют', 'бер', 'квіт', 'трав', 'черв', 'лип', 'сер', 'вер', 'жовт', 'лист', 'груд'];
-    const meta = [typeLabel, ageText(item), item.cost_type === 'free' ? (isEn ? 'free' : 'безкоштовно') : null]
-      .filter(Boolean).join(' · ');
-    return (
-      <Link
-        key={item.id}
-        href={`${isEn ? '/en' : ''}/o/${item.slug}`}
-        className="m-top-card"
-        lang={isEn && !item.title_en ? 'uk' : undefined}
-      >
-        <span className="v2-soon-date" aria-hidden="true">
-          {m ? (
-            <>
-              <span className="v2-soon-day">{Number(m[3])}</span>
-              <span className="v2-soon-month">{months[Number(m[2]) - 1]}</span>
-            </>
-          ) : <span className="v2-soon-month">{isEn ? 'Top' : 'Топ'}</span>}
-        </span>
-        <span className="m-top-text">
-          <span className="m-top-name">{enField(item, 'title')}</span>
-          <span className="m-top-meta">{meta}</span>
-        </span>
-      </Link>
     );
   };
 
@@ -1658,22 +1624,21 @@ export default function OpportunitiesList({
             </section>
           ) : null}
 
-          {mobileLayout && topCards.length === 3 ? (
-            <section className="m-top" aria-labelledby="m-top-title">
-              <div className="m-top-head">
-                <h2 id="m-top-title">{t.mTop}</h2>
-                <span aria-hidden="true">{`${topIndex + 1} / 3 · ${t.swipe}`}</span>
-              </div>
-              <div
-                className="m-top-strip"
-                onScroll={(e) => {
-                  const i = Math.round(e.currentTarget.scrollLeft / 272);
-                  setTopIndex(Math.min(2, Math.max(0, i)));
-                }}
-              >
-                {topCards.map(renderTopCard)}
-              </div>
-            </section>
+          {/* Телефон: ті самі три можливості компактною смужкою. Розмітка
+              спільна з підбірками (app/TopWeekStrip.js) — великий блок на
+              телефоні ховає CSS. */}
+          {mobileLayout ? (
+            <TopWeekStrip
+              lang={lang}
+              title={t.mTop}
+              cards={sliderCards(topCards, {
+                lang,
+                pinned: isEn ? 'Top' : 'Топ',
+                free: isEn ? 'free' : 'безкоштовно',
+                type: isEn ? TYPE_LABELS_EN : TYPE_LABELS,
+                age: (o) => ageText(o),
+              })}
+            />
           ) : null}
 
           {mobileLayout && activeChips.length ? (
