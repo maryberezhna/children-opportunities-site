@@ -78,7 +78,10 @@ jobs:
           NOTIFY: ${{ github.event.inputs.notify || 'true' }}
           PREVIEW: ${{ github.event.inputs.preview || 'false' }}
           DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
-          POST: ${{ github.event.schedule == '23 5 * * *' && 'deadlines' || github.event.schedule == '41 9 * * *' && 'digest' || github.event.schedule == '17 14 * * *' && 'new' || github.event.inputs.post || 'all' }}
+          # Розклад, якого вже немає у файлі (старий '0 6', що спізнився на години
+          # після зміни 05.10.2026), не шле нічого: інакше він став би «all» і
+          # надіслав усі три пости разом.
+          POST: ${{ github.event.schedule == '23 5 * * *' && 'deadlines' || github.event.schedule == '41 9 * * *' && 'digest' || github.event.schedule == '17 14 * * *' && 'new' || github.event_name == 'schedule' && 'none' || github.event.inputs.post || 'all' }}
         run: node scripts/check-deadlines.mjs
 
       - name: Upload report

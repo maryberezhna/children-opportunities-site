@@ -65,12 +65,13 @@ const PREVIEW = process.env.PREVIEW === 'true';
 //   deadlines — «⏰ Дедлайни цього тижня» (ранок);
 //   digest    — підбірка дня з плану каналу (день);
 //   new       — «🆕 Нова можливість» (вечір);
-//   all       — усі три поспіль (ручний запуск і превʼю).
+//   all       — усі три поспіль (ручний запуск і превʼю);
+//   none      — нічого (запуск за розкладом, якого вже немає у воркфлоу).
 // Окремі запуски — з 17.09.2026: тоді обидва пости йшли одним запуском і
 // прийшли разом о 13:49 замість 09:00, бо GitHub запустив розклад на 5 годин
 // пізніше. Те, що вже вийшло вранці, вдень і ввечері не повториться: його
 // telegram_posted_at уже стоїть.
-const POST = ['deadlines', 'digest', 'new'].includes(process.env.POST) ? process.env.POST : 'all';
+const POST = ['deadlines', 'digest', 'new', 'none'].includes(process.env.POST) ? process.env.POST : 'all';
 const PREVIEW_DAYS = Number(process.env.PREVIEW_DAYS || 14);
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
