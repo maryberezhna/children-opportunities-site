@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, countActiveOpportunities, countActiveSources, FALLBACK } from '@/lib/supabase';
+import { liveStats, FALLBACK } from '@/lib/supabase';
 import Footer from '../../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -51,14 +51,8 @@ export const metadata = {
 
 async function getStats() {
   try {
-    if (!supabase) return {};
-    const [active, verified, sources] = await Promise.all([
-      countActiveOpportunities(),
-      publicOpportunities('id', { count: 'exact', head: true })
-        .gte('last_verified_at', new Date(Date.now() - 3 * 86400000).toISOString()),
-      countActiveSources(),
-    ]);
-    return { active, verified: verified.count, sources };
+    const stats = await liveStats();
+    return stats ? { active: stats.total, verified: stats.verified, sources: stats.sources } : {};
   } catch {
     return {};
   }
