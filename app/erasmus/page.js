@@ -467,8 +467,10 @@ export default async function ErasmusGuide() {
           <div className="tp-related-grid">
             {related.map(({ topic: t, count }) => (
               <Link key={t.slug} href={topicPath(t)} className="tp-related-card">
-                <span className="tp-related-title">{t.nav}</span>
-                <span className="tp-related-n">{count} {opportunitiesWord(count)}</span>
+                <span className="tp-related-body">
+                  <span className="tp-related-title">{t.nav}</span>
+                  <span className="tp-related-n">{count} {opportunitiesWord(count)}</span>
+                </span>
               </Link>
             ))}
           </div>
