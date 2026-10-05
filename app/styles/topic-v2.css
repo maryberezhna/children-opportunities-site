@@ -542,6 +542,13 @@
   .tp-check { flex-shrink: 0; white-space: nowrap; min-height: 44px; }
   .tp-reset { flex-shrink: 0; min-height: 44px; }
   .tp-filters .tp-sort { display: none; }
+  /* «Топ 3 цього тижня» йде одразу за кнопками хіро: це продовження того
+     самого блоку, а не новий розділ. 40px ритму .tp-main плюс власні 16px
+     смужки давали 56px порожнечі, і Марія обвела саме її (05.10.2026, зі
+     скриншотом). Відʼємний відступ — єдиний спосіб звузити один проміжок у
+     контейнері на gap; 16px — той самий крок, що й на головній. */
+  .tp-main > .m-top { margin-top: -24px; padding-top: 0; }
+
   .tp-grid { grid-template-columns: minmax(0, 1fr); }
   .tp-related-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tp-related-photo img { height: 96px; }
