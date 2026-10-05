@@ -215,14 +215,6 @@
 .st-slot span { font-size: 14px; color: var(--v2-ink-3); }
 .st-center { display: flex; justify-content: center; }
 
-/* Партнери й преса — одна сітка на всю ширину, плитки однакові (Марія, 05.10.2026: «розтягнути») */
-.st-press .press-logos { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
-.st-press .press-logos a {
-  display: flex; align-items: center; justify-content: center; width: 100%; height: 76px;
-  background: #fff; border: 1px solid var(--v2-line); border-radius: 16px; text-decoration: none;
-  transition: border-color .2s, transform .2s;
-}
-.st-press .press-logos a:hover { border-color: var(--v2-line-strong); transform: translateY(-2px); }
 
 /* Інформаційні партнери: логотипи + плитка-запрошення */
 .st-info-partners { list-style: none; margin: 0 0 44px; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
@@ -234,9 +226,11 @@
 }
 .st-info-partners a { background: #fff; border: 1px solid var(--v2-line); }
 .st-info-partners a:hover, .st-info-join:hover { border-color: var(--v2-line-strong); transform: translateY(-2px); }
+.st-info-partners img { display: block; width: auto; max-width: 88px; max-height: 22px; }
+.st-info-partners img.is-square { max-height: 40px; }
+.st-info-partners img.is-stacked { max-height: 38px; }
 .st-info-join { background: transparent; border: 2px dashed var(--v2-line-strong); color: var(--v2-ink-2); font-size: 15px; font-weight: 600; cursor: pointer; }
 .st-logo-hub { font-size: 28px; font-weight: 800; letter-spacing: -.02em; color: #8b5cf6; background: linear-gradient(135deg, #8b5cf6, #c47ba0 50%, #ed9a5f); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-.st-press-sub { margin-top: 0; }
 
 /* Підтримати репостом */
 .st-share {
@@ -365,7 +359,7 @@
   .st-steps::before { display: none; }
   .st-slots { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
   .st-share { grid-template-columns: 1fr; padding: 28px 22px; }
-  .st-press .press-logos, .st-info-partners { grid-template-columns: repeat(2, 1fr); }
+  .st-info-partners { grid-template-columns: repeat(2, 1fr); }
   .st-info-join-cell { grid-column: span 1; }
   .st-info-join { padding: 0 14px; line-height: 1.3; }
   .st-chip { display: none; }
