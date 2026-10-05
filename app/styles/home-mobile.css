@@ -176,7 +176,12 @@
   .v2-home .v2-filters,
   .v2-home .v2-top { display: none; }
 
-  .v2-home .v2-container > :not([class^="m-"]):not(.v2-filters):not(.v2-top):not(.v2-grid):not(.v2-empty):not(.v2-more-row) {
+  /* Плитки тем винятком: 40px тут читаються як кінець одного розділу й
+     початок іншого, а вони — продовження вибору віку, прямо під ним.
+     Виняток саме списком, а не окремим правилом нижче: шість :not() дають
+     цьому селектору таку вагу, що простіше правило його не перебʼє (05.10.2026
+     перша спроба на 22px так і не подіяла — Марія: «там багато»). */
+  .v2-home .v2-container > :not([class^="m-"]):not(.v2-filters):not(.v2-top):not(.v2-grid):not(.v2-empty):not(.v2-more-row):not(.v2-topics-mobile) {
     margin-top: 40px;
   }
 
@@ -332,11 +337,11 @@
   body:has(.m-bottom) .telegram-fab { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   /* ── «Або оберіть тему»: плитки з фото прокруткою вбік ──────────────── */
-  /* Стоять одразу під кремовою смугою з пошуком і віком. 40px від загального
-     правила контейнера тут завеликі: плитки читаються як продовження вибору
-     віку, а не як окремий розділ сторінки. */
+  /* Стоять одразу під кремовою смугою з пошуком і віком. 16px — той самий
+     відступ, з яким нижче починається «Топ 3 цього тижня» (.m-top), тож три
+     блоки поспіль ідуть одним ритмом. */
   .v2-topics-mobile { display: block; }
-  .v2-home .v2-container > .v2-topics-mobile { margin-top: 22px; }
+  .v2-home .v2-container > .v2-topics-mobile { margin-top: 16px; }
   .v2-topics-mobile h2 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
   .v2-topics-mobile .v2-tiles {
     display: flex;

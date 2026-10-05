@@ -84,3 +84,18 @@ test('список: сортування, фільтри лише в панел�
   assert.ok(list.includes('className="m-ages"'), 'вік під пошуком на телефоні');
   assert.ok(!list.includes('className={`m-bar'), 'липкого рядка чипів угорі більше немає');
 });
+
+// Відступ перед «Або оберіть тему» на телефоні.
+//
+// 05.10.2026 плитки стали під вікові пігулки, і правило на 22px не подіяло:
+// загальне правило контейнера має шість :not(), тобто вагу 0,8,0, а просте
+// .v2-home .v2-container > .v2-topics-mobile — лише 0,3,0. На сайті лишались
+// 40px (Марія: «там багато»). Тому виняток стоїть у самому списку :not().
+test('плитки тем виключені із загального правила 40px', () => {
+  const css = read('app/styles/home-mobile.css');
+  const generic = css.match(/\.v2-home \.v2-container > :not\(\[class\^="m-"\]\)[^{]*\{\s*margin-top: 40px;/);
+  assert.ok(generic, 'загального правила ритму контейнера більше немає — перевірити відступи');
+  assert.match(generic[0], /:not\(\.v2-topics-mobile\)/,
+    'плитки тем знову ловить правило на 40px, і власний відступ не подіє');
+  assert.match(css, /\.v2-home \.v2-container > \.v2-topics-mobile \{ margin-top: 16px; \}/);
+});
