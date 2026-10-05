@@ -177,6 +177,7 @@
 .st-benefit b { font-size: 17px; font-weight: 700; color: var(--v2-ink); }
 .st-benefit span { font-size: 15px; line-height: 1.5; color: var(--v2-ink-2); }
 /* Формати партнерства — таблиця «що просимо / що даємо» */
+.st-tiers-note { margin: -8px auto 0; font-size: 15px; color: var(--v2-ink-2); }
 .st-table-wrap { overflow-x: auto; margin-bottom: 32px; border-radius: 22px; border: 1px solid var(--v2-line); background: var(--surface-2); text-align: left; -webkit-overflow-scrolling: touch; }
 .st-table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 15px; line-height: 1.45; color: var(--v2-ink-2); }
 .st-table th, .st-table td { padding: 14px 18px; vertical-align: top; border-bottom: 1px solid var(--v2-line); }
@@ -353,6 +354,7 @@
   .st-noms { grid-template-columns: 1fr; }
   .st-goals, .st-benefits, .st-tiers { grid-template-columns: 1fr; }
   .st-table-wrap { display: none; }
+  .st-tiers-note { margin: -8px 0 0; }
   .st-tiers { display: grid; }
   .st-target { grid-template-columns: 1fr; gap: 14px; }
   .st-steps { grid-template-columns: repeat(2, 1fr); }
