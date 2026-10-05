@@ -155,11 +155,6 @@ export default function OlimpiadaPage() {
                   <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн` : 'Реєстрація скоро'}</a>
                   <a href="#yak" className="ol-btn ol-btn-ghost">Як це працює</a>
                 </div>
-                <ul className="ol-facts">
-                  {FACTS.map((f) => (
-                    <li key={f.big}><b>{f.big}</b><span>{f.small}</span></li>
-                  ))}
-                </ul>
               </div>
               <div className="ol-badge">
                 <b>{OLIMP.questionCount}</b>
@@ -187,6 +182,12 @@ export default function OlimpiadaPage() {
             </div>
 
             <h2 id="yak" className="ol-hand ol-hand-gap">Як це працює</h2>
+            {/* Короткі цифри — тут, а не в першому екрані: там їх було забагато (Марія, 05.10.2026) */}
+            <ul className="ol-facts">
+              {FACTS.map((f) => (
+                <li key={f.big}><b>{f.big}</b><span>{f.small}</span></li>
+              ))}
+            </ul>
             <ol className="ol-steps">
               {STEPS.map(([title, text], i) => (
                 <li key={title}>
@@ -284,7 +285,10 @@ export default function OlimpiadaPage() {
         </section>
 
         <section className="ol-wrap ol-sec">
-          <h2 className="ol-hand ol-hand-blue">Правила олімпіади</h2>
+          {/* Правила — довідковий текст: згорнуті, щоб сторінка (особливо на
+              телефоні) не закінчувалась стіною дрібного тексту. */}
+          <details className="ol-rules-box">
+          <summary><h2 className="ol-hand ol-hand-blue">Правила олімпіади</h2><span>показати</span></summary>
           <ol className="ol-rules">
             <li>Організатор — платформа Dityam.com.ua, ФОП Шутяк Марія Олександрівна. Звʼязок: {EMAIL}.</li>
             <li>Учасники — діти {OLIMP.groupLabel}. Заявку подає й оплачує мама, тато чи опікун.</li>
@@ -299,6 +303,7 @@ export default function OlimpiadaPage() {
             <li>Дані: імʼя дитини потрібне для диплома, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
+          </details>
         </section>
 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(FAQ)) }} />
