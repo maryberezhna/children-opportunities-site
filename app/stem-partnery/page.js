@@ -379,7 +379,7 @@ export default function StemTalantPage() {
                 </a>
               </li>
             ))}
-            <li>
+            <li className="st-info-join-cell">
               <PartnerModal label="+ Станьте інформаційним партнером" initialFormat="Інформаційний партнер" className="st-info-join" />
             </li>
           </ul>
