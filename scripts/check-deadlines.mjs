@@ -23,7 +23,7 @@ import { opportunitiesWord } from '../lib/plural.js';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLINES_WEEK } from './channel-plan.mjs';
+import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLINES_WEEK, pollFor } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
@@ -367,7 +367,41 @@ async function sendDailyDigest(dateIso = kyivIso(), excludeIds = []) {
   }
   const sent = await postToChannel(built.lines, `${entry.key}: ${built.label}`);
   if (sent || PREVIEW) await markPosted(built.items);
+  // 15-го — ще й опитування батьків, одразу після «Вашої історії».
+  const poll = pollFor(dateIso);
+  if (poll) await sendPoll(poll);
   return built.items.map((r) => r.id);
+}
+
+/** Опитування в канал. Голосування в каналі Telegram завжди анонімне. */
+async function sendPoll(poll) {
+  if (DRY_RUN || PREVIEW) {
+    console.log(`\n--- ОПИТУВАННЯ [${poll.key}] ---\n${poll.question}${poll.multiple ? ' (кілька варіантів)' : ''}\n`
+      + `${poll.options.map((o) => `  ○ ${o}`).join('\n')}\n--- /ОПИТУВАННЯ ---`);
+    return false;
+  }
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPoll`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: TELEGRAM_CHAT_ID,
+        question: poll.question,
+        options: poll.options.map((text) => ({ text })),
+        is_anonymous: true,
+        allows_multiple_answers: poll.multiple,
+      }),
+    });
+    const json = await res.json();
+    if (json.ok) {
+      console.log(`📊 Опитування надіслано — ${poll.key}.`);
+      return true;
+    }
+    console.error(`Telegram poll error: ${json.description}`);
+  } catch (e) {
+    console.error(`Telegram poll failed: ${e.message}`);
+  }
+  return false;
 }
 
 /**
