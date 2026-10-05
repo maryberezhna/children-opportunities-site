@@ -38,13 +38,14 @@ export async function GET() {
     rows = data || [];
   }
 
-  const total = rows.length;
-  const free = rows.filter((o) => o.cost_type === 'free').length;
-  const sources = new Set(rows.map((o) => o.source).filter(Boolean)).size;
-
-  // Число — те саме, що на сторінці підбірки: живі записи, той самий match.
+  // Число — те саме, що на сторінці підбірки й на головній: живі записи.
+  // До 05.10.2026 загальні цифри рахувались по rows разом із простроченим
+  // і розходились із головною (718 проти 711).
   const today = kyivToday();
   const liveRows = rows.filter((o) => isLive(o, today));
+  const total = liveRows.length;
+  const free = liveRows.filter((o) => o.cost_type === 'free').length;
+  const sources = new Set(liveRows.map((o) => o.source).filter(Boolean)).size;
   const topicLines = TOPIC_LIST.map((t) => {
     const count = liveRows.filter(t.match).length;
     const countNote = count > 0 ? ` Зараз у підбірці ${count} ${opportunitiesWord(count)}.` : '';

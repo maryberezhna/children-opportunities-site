@@ -1,5 +1,5 @@
 import PlusLanding from '../../plus/PlusLanding';
-import { supabase, publicOpportunities } from '@/lib/supabase';
+import { supabase, publicOpportunities, countActiveOpportunities } from '@/lib/supabase';
 import { kyivToday } from '@/lib/dates';
 import { PLUS_SALES_OPEN } from '@/lib/plus';
 
@@ -34,10 +34,8 @@ export const metadata = {
 };
 
 async function activeCount() {
-  if (!supabase) return null;
   try {
-    const { count, error } = await publicOpportunities('id', { count: 'exact', head: true });
-    return error ? null : count;
+    return await countActiveOpportunities();
   } catch {
     return null;
   }
