@@ -166,3 +166,20 @@ test('sliderCards позначає назву, що лишилась украї�
   const [en] = sliderCards([{ slug: 'b', title: 'Назва', title_en: 'Name' }], { lang: 'en' });
   assert.equal(en.titleIsUk, false);
 });
+
+// У підбірці смужка стоїть одразу за кнопками хіро.
+//
+// 05.10.2026 Марія прислала скриншот /bezkoshtovni-tabory з обведеною
+// порожнечею між «Поділитися підбіркою» і «Топ 3 цього тижня»: 40px ритму
+// .tp-main плюс власні 16px смужки = 56px діри. Смужка — продовження хіро, а
+// не новий розділ сторінки.
+test('у підбірці смужка не відірвана від хіро', () => {
+  const css = read('app/styles/topic-v2.css');
+  const rule = css.match(/\.tp-main > \.m-top \{[^}]*\}/);
+  assert.ok(rule, 'немає правила проміжку перед смужкою в підбірці');
+  assert.match(rule[0], /padding-top: 0/, 'лишились власні 16px смужки');
+  assert.match(rule[0], /margin-top: -24px/, 'проміжок .tp-main не звужено');
+  // Правило має бути в мобільному медіа-блоці: на десктопі смужки немає.
+  const mobile = css.slice(css.indexOf('@media (max-width: 900px)'));
+  assert.ok(mobile.includes('.tp-main > .m-top'), 'правило поза мобільним блоком');
+});
