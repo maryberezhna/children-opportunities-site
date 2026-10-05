@@ -46,7 +46,9 @@ export async function POST(request) {
   }
   const testPath = `/olimpiada/test?t=${entry.token}`;
 
-  if (admin || devFree) {
+  // ?pay=1 у режимі перевірки: адмін іде через справжню оплату, щоб побачити
+  // сторінку WayForPay і весь шлях до тесту ще до запуску.
+  if ((admin && b.realPay !== true) || devFree) {
     await markPaid(store, entry, { test: true });
     return json({ url: testPath, t: entry.token });
   }
@@ -56,7 +58,7 @@ export async function POST(request) {
   const inv = await createOneTimeInvoice({
     orderReference,
     amount: OLIMP.price,
-    product: `Участь в онлайн-олімпіаді з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
+    product: `Організаційний внесок: онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
     email,
     returnUrl: `${SITE_URL}/api/olimpiada/return?t=${entry.token}`,
     serviceUrl: `${SITE_URL}/api/olimpiada/pay`,

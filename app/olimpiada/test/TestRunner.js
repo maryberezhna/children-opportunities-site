@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const pad = (n) => String(n).padStart(2, '0');
 
-export default function TestRunner({ token, name, started, count, minutes }) {
+export default function TestRunner({ token, name, started, count, minutes, until }) {
   const [phase, setPhase] = useState(started ? 'loading' : 'intro'); // intro | loading | run | sending | error
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -28,7 +28,7 @@ export default function TestRunner({ token, name, started, count, minutes }) {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token }),
       });
       const j = await r.json().catch(() => ({}));
-      if (r.status === 409) { window.location.reload(); return; }
+      if (r.status === 409 || r.status === 410) { window.location.reload(); return; }
       if (!r.ok || !Array.isArray(j.questions)) throw new Error(j.error || 'bad');
       // Годинник дитини може поспішати чи відставати — рахуємо від серверного «зараз».
       const skew = Date.now() - new Date(j.now).getTime();
@@ -115,7 +115,9 @@ export default function TestRunner({ token, name, started, count, minutes }) {
           <li>{minutes} хвилин — час піде, щойно натиснеш «Почати»</li>
           <li>1 спроба: завдання можна гортати вперед і назад та міняти відповідь</li>
           <li>відповідай сам чи сама — так диплом буде справді твоїм</li>
+          <li>останнє завдання — відкрите, без таймера: воно вирішує, хто отримає приз місяця</li>
         </ul>
+        {until && <p className="ol-deadline">Почати тест треба до {until} за київським часом.</p>}
         {error && <p className="ol-error" role="alert">{error}</p>}
         <button type="button" className="ol-btn ol-btn-main ol-btn-wide" onClick={begin} disabled={phase === 'loading'}>
           {phase === 'loading' ? 'Завантажуємо завдання…' : 'Почати олімпіаду'}

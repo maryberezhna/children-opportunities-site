@@ -1,11 +1,12 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, levelByKey, diplomaNo, monthKey, monthName } from '@/lib/olimpiada';
+import { OLIMP, OPEN_TASK, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
 import { getStore, validToken } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
 import WaitPayment from './WaitPayment';
 import OpenTask from './OpenTask';
+import PrintOrder from './PrintOrder';
 
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
 // після оплати. Стани: оплата ще не підтверджена → тест → диплом.
@@ -62,6 +63,18 @@ export default async function TestPage({ searchParams }) {
     );
   }
 
+  if (accessExpired(entry)) {
+    return (
+      <Message title="Час на проходження минув">
+        <p className="ol-text">
+          Почати тест можна було протягом {OLIMP.accessHours} годин після оплати — до {kyivDateTime(accessUntil(entry.paid_at))}.
+          Якщо сталося щось непередбачене, напишіть на {EMAIL}.
+        </p>
+        <a href="/olimpiada" className="ol-btn ol-btn-main">До олімпіади</a>
+      </Message>
+    );
+  }
+
   if (!entry.finished_at) {
     return (
       <Shell>
@@ -71,6 +84,7 @@ export default async function TestPage({ searchParams }) {
           started={Boolean(entry.started_at)}
           count={OLIMP.questionCount}
           minutes={OLIMP.minutes}
+          until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
         />
       </Shell>
     );
@@ -101,11 +115,21 @@ export default async function TestPage({ searchParams }) {
       </div>
 
       <div className="ol-panel ol-open">
-        <p className="ol-kicker">Конкурс місяця · {month}</p>
+        <p className="ol-kicker">Останнє завдання · приз місяця: {month}</p>
         <h2 className="ol-h2">{OPEN_TASK.title}</h2>
         <p className="ol-text">{OPEN_TASK.text}</p>
-        <p className="ol-note">Журі оцінює: {OPEN_TASK.criteria.join(', ')}. За 3 найкращі відповіді місяця — призи.</p>
+        <p className="ol-note">
+          Саме це завдання вирішує, хто отримає приз місяця. Журі оцінює: {OPEN_TASK.criteria.join(', ')}.
+          Таймера тут немає, на диплом воно не впливає.
+        </p>
         <OpenTask token={entry.token} done={Boolean(entry.open_answer)} max={OPEN_TASK.maxLength} />
+      </div>
+
+      <div className="ol-panel ol-open">
+        <p className="ol-kicker">За бажанням</p>
+        <h2 className="ol-h2">Друкований диплом</h2>
+        <p className="ol-text">Надрукуємо диплом і надішлемо Новою поштою по Україні — {OLIMP.printPrice} грн.</p>
+        <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
       </div>
     </Shell>
   );

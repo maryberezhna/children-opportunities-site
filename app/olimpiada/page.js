@@ -4,10 +4,11 @@ import { OLIMP, OLIMP_OPEN, LEVELS, PRIZES, OPEN_TASK, monthKey, monthName } fro
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
-import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave } from './Doodles';
+import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave, PrizeAstronaut, PrizeMicrobit, PrizePen } from './Doodles';
 
 // Онлайн-олімпіада Dityam.com.ua — пілот (рішення Марії 05.10.2026): одна
-// група 9–11 років, логіка, 30 завдань за 40 хвилин, участь 150 грн. Кожен
+// група 9–11 років, логіка, 30 завдань за 40 хвилин, організаційний внесок
+// 150 грн (Марія: «орг внесок, який не повертається» — після початку тесту). Кожен
 // учасник одразу отримує диплом і місяць Dityam+; щомісяця — призи за
 // найкращі відповіді на відкрите завдання (обирає журі, не жереб).
 // Дизайн — за референсом Марії noospherespace.art: мальований заголовок із
@@ -20,7 +21,7 @@ const URL = `${SITE_URL}${PATH}`;
 const EMAIL = 'hellodityam.com.ua@gmail.com';
 
 const TITLE = 'Онлайн-олімпіада з логіки для дітей 9–11 років — Dityam.com.ua';
-const DESCRIPTION = `Онлайн-олімпіада з логіки для дітей ${OLIMP.groupLabel}: ${OLIMP.questionCount} завдань за ${OLIMP.minutes} хвилин у зручний час. Диплом одразу, місяць Dityam+ кожному, призи щомісяця. Участь ${OLIMP.price} грн.`;
+const DESCRIPTION = `Онлайн-олімпіада з логіки для дітей ${OLIMP.groupLabel}: ${OLIMP.questionCount} завдань за ${OLIMP.minutes} хвилин у зручний час. Диплом одразу, місяць Dityam+ кожному, призи щомісяця. Внесок ${OLIMP.price} грн.`;
 
 // Місяць конкурсу в текстах оновлюється сам.
 export const revalidate = 3600;
@@ -43,21 +44,23 @@ const FACTS = [
   { big: OLIMP.groupLabel, small: 'вік учасників' },
   { big: `${OLIMP.questionCount} завдань`, small: 'з варіантами відповідей' },
   { big: `${OLIMP.minutes} хвилин`, small: '1 спроба, у зручний час' },
-  { big: `${OLIMP.price} грн`, small: 'участь, диплом і Dityam+' },
+  { big: `${OLIMP.price} грн`, small: 'організаційний внесок' },
 ];
 
 const GETS = [
   { title: 'Диплом одразу', text: 'З іменем дитини, балами й рівнем. Готовий, щойно дитина завершила тест: можна зберегти, надрукувати чи отримати в Telegram.' },
   { title: `Dityam+ на ${OLIMP.giftDays} днів`, text: 'Особиста добірка можливостей у Telegram під вік та інтереси дитини й нагадування про дедлайни.' },
-  { title: 'Шанс на приз місяця', text: 'Після тесту дитина може відповісти на відкрите завдання. За 3 найкращі відповіді місяця — призи.' },
+  { title: 'Шанс на приз місяця', text: 'Останнє завдання олімпіади — відкрите. Саме воно вирішує, хто отримає приз місяця: журі обирає 3 найкращі відповіді.' },
 ];
 
 const STEPS = [
-  ['Заявка й оплата', `Вкажіть імʼя дитини для диплома та свій email, сплатіть ${OLIMP.price} грн карткою.`],
-  ['Тест', `Дитина відповідає сама: ${OLIMP.questionCount} завдань, ${OLIMP.minutes} хвилин, 1 спроба. З компʼютера чи телефона.`],
+  ['Заявка й оплата', `Вкажіть імʼя дитини для диплома та свій email, сплатіть організаційний внесок ${OLIMP.price} грн карткою. На email прийде запрошення до тесту.`],
+  ['Тест', `Протягом ${OLIMP.accessHours} годин після оплати дитина проходить тест сама: ${OLIMP.questionCount} завдань, ${OLIMP.minutes} хвилин, 1 спроба. З компʼютера чи телефона.`],
   ['Диплом', 'Результат і диплом зʼявляються на екрані одразу після тесту.'],
-  ['Відкрите завдання', 'За бажанням: придумати власну логічну задачу й позмагатися за приз місяця.'],
+  ['Останнє завдання', 'Відкрите й без таймера: придумати власну логічну задачу. Воно вирішує, хто отримає приз місяця.'],
 ];
+
+const PRIZE_ART = { astronaut: PrizeAstronaut, microbit: PrizeMicrobit, pen: PrizePen };
 
 // Зразки — не з тесту: показують рівень, а не відповіді.
 const SAMPLES = [
@@ -73,12 +76,13 @@ const levelRange = (i) => {
 function faq(month) {
   return [
     { q: 'Для кого ця олімпіада?', a: `Для дітей ${OLIMP.groupLabel} з будь-якого міста України й для дітей з України, які живуть за кордоном. Завдання — на логіку й кмітливість, шкільна програма не потрібна.` },
-    { q: 'Скільки коштує участь і що в неї входить?', a: `${OLIMP.price} грн. У цю суму входить тест, диплом з результатом і ${OLIMP.giftDays} днів Dityam+.` },
-    { q: 'Коли можна проходити тест?', a: `У будь-який зручний час після оплати. Від натискання «Почати» дитина має ${OLIMP.minutes} хвилин і 1 спробу.` },
+    { q: 'Скільки коштує участь і що в неї входить?', a: `Організаційний внесок — ${OLIMP.price} грн. У нього входить тест, диплом з результатом і ${OLIMP.giftDays} днів Dityam+.` },
+    { q: 'Коли можна проходити тест?', a: `У зручний час протягом ${OLIMP.accessHours} годин після оплати: посилання на тест прийде на ваш email. Від натискання «Почати» дитина має ${OLIMP.minutes} хвилин і 1 спробу.` },
     { q: 'Коли ми отримаємо диплом?', a: 'Одразу після завершення тесту — на екрані. Його можна завантажити, надрукувати або отримати в Telegram.' },
+    { q: 'Чи можна замовити доставку диплома?', a: `Так, за додаткові ${OLIMP.printPrice} грн. Після тесту на сторінці з результатом вкажіть отримувача й відділення Нової пошти — надішлемо друкований диплом. Доставка — по Україні.` },
     { q: 'Як визначається рівень диплома?', a: `За кількістю правильних відповідей: золотий рівень — від ${LEVELS[0].min} балів із ${OLIMP.questionCount}, срібний — від ${LEVELS[1].min}, бронзовий — від ${LEVELS[2].min}. Решта учасників отримують диплом учасника.` },
-    { q: 'Як обирають переможців місяця?', a: `Журі Dityam.com.ua читає відповіді на відкрите завдання, надіслані протягом місяця, і обирає 3 найкращі за критеріями: ${OPEN_TASK.criteria.join(', ')}. Жеребкування немає. Переможців за ${month} оголосимо до 7-го числа наступного місяця.` },
-    { q: 'Чи можна повернути гроші?', a: `Так, якщо дитина ще не починала тест: напишіть на ${EMAIL} протягом 14 днів після оплати. Після початку тесту внесок не повертається.` },
+    { q: 'Як обирають переможців місяця?', a: `За останнім, відкритим завданням олімпіади. Журі Dityam.com.ua читає відповіді, надіслані протягом місяця, і обирає 3 найкращі за критеріями: ${OPEN_TASK.criteria.join(', ')}. Жеребкування немає. Переможців за ${month} оголосимо до 7-го числа наступного місяця.` },
+    { q: 'Чи повертається внесок?', a: `На проходження тесту є ${OLIMP.accessHours} години після оплати. Якщо за цей час дитина ще не починала тест, внесок можна повернути: напишіть на ${EMAIL}. Після початку тесту або коли ${OLIMP.accessHours} години минули, внесок не повертається.` },
     { q: 'Хто організатор?', a: 'Платформа Dityam.com.ua, ФОП Шутяк Марія Олександрівна. Це незалежна онлайн-олімпіада: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.' },
   ];
 }
@@ -142,20 +146,15 @@ export default function OlimpiadaPage() {
             </h1>
             <div className="ol-hero-grid">
               <div>
-                <p className="ol-hand ol-hand-blue">Онлайн, для дітей {OLIMP.groupLabel}</p>
+                <p className="ol-hand ol-hand-blue">від Dityam.com.ua · онлайн, для дітей {OLIMP.groupLabel}</p>
                 <p className="ol-lead">
-                  {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин — у зручний для вас час.
+                  {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин — у зручний час протягом {OLIMP.accessHours} годин після оплати.
                   Диплом з результатом зʼявляється одразу після тесту, а разом із ним {OLIMP.giftDays} днів Dityam+.
                 </p>
                 <div className="ol-actions">
                   <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн` : 'Реєстрація скоро'}</a>
                   <a href="#yak" className="ol-btn ol-btn-ghost">Як це працює</a>
                 </div>
-                <ul className="ol-facts">
-                  {FACTS.map((f) => (
-                    <li key={f.big}><b>{f.big}</b><span>{f.small}</span></li>
-                  ))}
-                </ul>
               </div>
               <div className="ol-badge">
                 <b>{OLIMP.questionCount}</b>
@@ -183,6 +182,12 @@ export default function OlimpiadaPage() {
             </div>
 
             <h2 id="yak" className="ol-hand ol-hand-gap">Як це працює</h2>
+            {/* Короткі цифри — тут, а не в першому екрані: там їх було забагато (Марія, 05.10.2026) */}
+            <ul className="ol-facts">
+              {FACTS.map((f) => (
+                <li key={f.big}><b>{f.big}</b><span>{f.small}</span></li>
+              ))}
+            </ul>
             <ol className="ol-steps">
               {STEPS.map(([title, text], i) => (
                 <li key={title}>
@@ -212,11 +217,15 @@ export default function OlimpiadaPage() {
             ))}
           </div>
 
-          <h2 className="ol-hand ol-hand-blue ol-hand-gap">Рівні диплома</h2>
-          <p className="ol-text">Рівень залежить лише від балів дитини, тому диплом готовий одразу.</p>
-          <ul className="ol-levels">
+          <h2 className="ol-hand ol-hand-blue ol-hand-gap">Диплом, який хочеться повісити на стіну</h2>
+          <p className="ol-text">З іменем дитини, медаллю й результатом. Готовий одразу після тесту: рівень залежить лише від її балів.</p>
+          {/* Зразки малює той самий маршрут, що й справжні дипломи (?sample=…),
+              тож на сторінці — рівно те, що отримає дитина. */}
+          <ul className="ol-dips">
             {LEVELS.map((l, i) => (
-              <li key={l.key} className={`ol-level ol-level-${l.key}`}>
+              <li key={l.key} className={`ol-dip ol-dip-${l.key}`}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={`/api/olimpiada/diploma?sample=${l.key}`} width={877} height={620} loading="lazy" alt={`Зразок диплома: ${l.label.toLowerCase()}`} />
                 <b>{l.label}</b>
                 <span>{levelRange(i)}</span>
               </li>
@@ -229,18 +238,23 @@ export default function OlimpiadaPage() {
           <div className="ol-wrap">
             <h2 className="ol-hand">Призи місяця: {month}</h2>
             <p className="ol-text ol-text-light">
-              Після тесту дитина може виконати відкрите завдання: «{OPEN_TASK.title}». Журі Dityam.com.ua
-              обирає 3 найкращі відповіді місяця за критеріями: {OPEN_TASK.criteria.join(', ')}.
+              Останнє завдання олімпіади — відкрите: «{OPEN_TASK.title}». Воно прямо впливає на приз місяця:
+              журі Dityam.com.ua обирає 3 найкращі відповіді за критеріями: {OPEN_TASK.criteria.join(', ')}.
             </p>
             <ul className="ol-prizes">
-              {PRIZES.map((p) => (
-                <li key={p.place}>
-                  <span className="ol-pill">{p.place} місце</span>
-                  <b className="ol-tile">{p.title}</b>
-                </li>
-              ))}
+              {PRIZES.map((p) => {
+                const Art = PRIZE_ART[p.art];
+                return (
+                  <li key={p.place} className="ol-prize-card">
+                    <span className="ol-pill">{p.place} місце</span>
+                    <span className="ol-prize-art">{Art ? <Art /> : null}</span>
+                    <b>{p.title}</b>
+                    <span className="ol-prize-note">{p.note}</span>
+                  </li>
+                );
+              })}
             </ul>
-            <p className="ol-note ol-note-light">Переможців оголошуємо до 7-го числа наступного місяця в Telegram-каналі й на цій сторінці.</p>
+            <p className="ol-note ol-note-light">Переможців оголошуємо до 7-го числа наступного місяця в Telegram-каналі й на цій сторінці. Малюнки — ілюстрації, не фото товарів.</p>
 
             <div id="uchast" className="ol-frame">
               <MonsterBlue className="ol-doodle ol-frame-monster" />
@@ -248,14 +262,15 @@ export default function OlimpiadaPage() {
                 <div className="ol-form-copy">
                   <h2 className="ol-hand ol-hand-blue">Взяти участь</h2>
                   <p className="ol-text">
-                    Після оплати одразу відкриється сторінка тесту. Починати можна тоді, коли дитині зручно:
-                    час піде лише після натискання «Почати».
+                    На вказаний email прийде запрошення до тесту. Пройти його можна в зручний час
+                    протягом {OLIMP.accessHours} годин після оплати: {OLIMP.minutes} хвилин підуть лише після натискання «Почати».
                   </p>
                   <ul className="ol-ticks">
-                    <li>тест, диплом і {OLIMP.giftDays} днів Dityam+ — {OLIMP.price} грн</li>
+                    <li>організаційний внесок {OLIMP.price} грн: тест, диплом і {OLIMP.giftDays} днів Dityam+</li>
                     <li>оплата карткою через WayForPay</li>
-                    <li>якщо дитина не починала тест — повернемо гроші протягом 14 днів</li>
+                    <li>на проходження є {OLIMP.accessHours} години після оплати</li>
                   </ul>
+                  <p className="ol-note ol-note-form">Після початку тесту або через {OLIMP.accessHours} години після оплати внесок не повертається.</p>
                 </div>
                 <EntryForm price={OLIMP.price} ages={[9, 10, 11]} open={OLIMP_OPEN} channelUrl={TELEGRAM_URL} />
               </div>
@@ -270,19 +285,25 @@ export default function OlimpiadaPage() {
         </section>
 
         <section className="ol-wrap ol-sec">
-          <h2 className="ol-hand ol-hand-blue">Правила олімпіади</h2>
+          {/* Правила — довідковий текст: згорнуті, щоб сторінка (особливо на
+              телефоні) не закінчувалась стіною дрібного тексту. */}
+          <details className="ol-rules-box">
+          <summary><h2 className="ol-hand ol-hand-blue">Правила олімпіади</h2><span>показати</span></summary>
           <ol className="ol-rules">
             <li>Організатор — платформа Dityam.com.ua, ФОП Шутяк Марія Олександрівна. Звʼязок: {EMAIL}.</li>
             <li>Учасники — діти {OLIMP.groupLabel}. Заявку подає й оплачує мама, тато чи опікун.</li>
-            <li>Участь коштує {OLIMP.price} грн. Це плата за тест, диплом і {OLIMP.giftDays} днів Dityam+.</li>
+            <li>Організаційний внесок — {OLIMP.price} грн. У нього входить тест, диплом і {OLIMP.giftDays} днів Dityam+.</li>
+            <li>Після оплати на вказаний email надходить запрошення до тесту. Почати тест треба протягом {OLIMP.accessHours} годин після оплати.</li>
             <li>Тест: {OLIMP.questionCount} завдань із 4 варіантами відповіді, {OLIMP.minutes} хвилин, 1 спроба. Усі учасники отримують однакові завдання в різному порядку. Дитина відповідає самостійно.</li>
             <li>Диплом: {LEVELS.map((l, i) => `${l.label.toLowerCase()} — ${levelRange(i)}`).join('; ')}.</li>
-            <li>Конкурс місяця: відповідь на відкрите завдання можна надіслати 1 раз після тесту. Журі Dityam.com.ua обирає 3 найкращі відповіді календарного місяця за критеріями: {OPEN_TASK.criteria.join(', ')}. Жеребкування не проводиться.</li>
-            <li>Призи місяця: {PRIZES.map((p) => `${p.place} місце — ${p.title.toLowerCase()}`).join('; ')}. Про доставку призу домовляємось із батьками переможця.</li>
-            <li>Повернення: якщо дитина не починала тест, внесок повертаємо за листом на {EMAIL} протягом 14 днів після оплати.</li>
+            <li>Останнє завдання олімпіади — відкрите: його виконують після тесту, без таймера, відповідь надсилають 1 раз. Саме за ним журі Dityam.com.ua обирає 3 переможців календарного місяця за критеріями: {OPEN_TASK.criteria.join(', ')}. Жеребкування не проводиться.</li>
+            <li>Призи місяця: {PRIZES.map((p) => `${p.place} місце — ${p.title}`).join('; ')}. Якщо товару на момент вручення немає в продажу, замінимо його на рівноцінний за вартістю. Про доставку призу домовляємось із батьками переможця.</li>
+            <li>Друкований диплом — за бажанням: {OLIMP.printPrice} грн з доставкою Новою поштою по Україні. Замовити можна після тесту на сторінці з результатом.</li>
+            <li>Повернення внеску: протягом {OLIMP.accessHours} годин після оплати, якщо дитина ще не починала тест, — за листом на {EMAIL}. Після початку тесту або коли {OLIMP.accessHours} години минули, внесок не повертається.</li>
             <li>Дані: імʼя дитини потрібне для диплома, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
-            <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.</li>
+            <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
+          </details>
         </section>
 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(FAQ)) }} />

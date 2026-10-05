@@ -10,8 +10,9 @@ process.env.WAYFORPAY_SECRET_KEY = 'test_secret';
 
 const { BANK } = await import('../content/olimpiada/lohika-9-11.js');
 const {
-  OLIMP, LEVELS, levelFor, buildOrder, publicQuestions, scoreAnswers, monthKey, monthName,
+  OLIMP, LEVELS, PRIZES, levelFor, buildOrder, publicQuestions, scoreAnswers, monthKey, monthName,
   deadlineOf, diplomaNo, diplomaDate, cleanName, isEmail, giftActive, giftExpired,
+  accessUntil, accessExpired, kyivDateTime, cleanPrintOrder,
 } = await import('../lib/olimpiada.js');
 const { oneTimeInvoiceBody, isOurOrderRef } = await import('../lib/wayforpay.js');
 
@@ -30,12 +31,9 @@ test('банк: стільки завдань, скільки в налашту�
 });
 
 test('відповіді, які можна перерахувати, — правильні', () => {
-  assert.equal(right('l02'), '10');
   assert.equal(right('l03'), String(3 + 1));
   assert.equal(right('l05'), String(3 * 2 + 2 * 4));
-  assert.equal(right('l06'), '20');
   assert.equal(right('l11'), String(5 + 8));
-  assert.equal(right('l12'), `${9 + 5}:00`);
   // 24 учні, дівчат удвічі більше
   assert.equal(right('l13'), String((24 / 3) * 2));
   assert.equal(right('l14'), `у ${36 / 9}`);
@@ -50,7 +48,6 @@ test('відповіді, які можна перерахувати, — пра
   assert.equal(right('l19'), String(same));
   assert.equal(right('l20'), String((20 + 4) / 2));
   assert.equal(right('l22'), '3');
-  assert.equal(right('l23'), String(6 * 6));
   assert.equal(right('l24'), '8:00');
   // найбільше тризначне з 12345 без 2 цифр, порядок зберігаємо
   const digits = '12345'.split('');
@@ -80,10 +77,11 @@ test('порядок: той самий токен — той самий пор�
   assert.notDeepEqual(a.map((o) => o.id), b.map((o) => o.id));
   assert.equal(a.length, OLIMP.questionCount);
   assert.deepEqual([...a.map((o) => o.id)].sort(), BANK.map((q) => q.id).sort());
-  const easy = new Set(BANK.slice(0, 10).map((q) => q.id));
-  const hard = new Set(BANK.slice(20).map((q) => q.id));
-  assert.ok(a.slice(0, 10).every((o) => easy.has(o.id)));
-  assert.ok(a.slice(20).every((o) => hard.has(o.id)));
+  const tier = Math.ceil(BANK.length / 3);
+  const easy = new Set(BANK.slice(0, tier).map((q) => q.id));
+  const hard = new Set(BANK.slice(2 * tier).map((q) => q.id));
+  assert.ok(a.slice(0, tier).every((o) => easy.has(o.id)));
+  assert.ok(a.slice(2 * tier).every((o) => hard.has(o.id)));
   for (const o of a) assert.deepEqual([...o.options].sort(), [0, 1, 2, 3]);
 });
 
@@ -102,8 +100,9 @@ test('у браузер питання йдуть без правильних в
 test('бали: лише за видані завдання, порожнє й хибне — 0', () => {
   const order = buildOrder(BANK, 'dddddddddddddddddddddddddddddddd');
   const all = Object.fromEntries(BANK.map((q) => [q.id, q.answer]));
-  assert.deepEqual(scoreAnswers(BANK, order, all), { score: 30, max: 30, answered: 30 });
-  assert.deepEqual(scoreAnswers(BANK, order, {}), { score: 0, max: 30, answered: 0 });
+  const n = OLIMP.questionCount;
+  assert.deepEqual(scoreAnswers(BANK, order, all), { score: n, max: n, answered: n });
+  assert.deepEqual(scoreAnswers(BANK, order, {}), { score: 0, max: n, answered: 0 });
   const wrong = Object.fromEntries(BANK.map((q) => [q.id, (q.answer + 1) % 4]));
   assert.equal(scoreAnswers(BANK, order, wrong).score, 0);
   // чужий ключ у запиті не додає балів
@@ -111,20 +110,22 @@ test('бали: лише за видані завдання, порожнє й �
   assert.equal(scoreAnswers(BANK, order, { [BANK[0].id]: String(BANK[0].answer) }).score, 1);
 });
 
-test('рівні диплома: пороги 26 / 20 / 14', () => {
-  assert.deepEqual(LEVELS.map((l) => l.min), [26, 20, 14, 0]);
-  assert.equal(levelFor(30).key, 'gold');
-  assert.equal(levelFor(26).key, 'gold');
-  assert.equal(levelFor(25).key, 'silver');
-  assert.equal(levelFor(20).key, 'silver');
-  assert.equal(levelFor(19).key, 'bronze');
-  assert.equal(levelFor(14).key, 'bronze');
-  assert.equal(levelFor(13).key, 'participant');
+test('25 завдань, 35 хвилин; рівні диплома: пороги 22 / 17 / 12', () => {
+  assert.equal(OLIMP.questionCount, 25);
+  assert.equal(OLIMP.minutes, 35);
+  assert.deepEqual(LEVELS.map((l) => l.min), [22, 17, 12, 0]);
+  assert.equal(levelFor(25).key, 'gold');
+  assert.equal(levelFor(22).key, 'gold');
+  assert.equal(levelFor(21).key, 'silver');
+  assert.equal(levelFor(17).key, 'silver');
+  assert.equal(levelFor(16).key, 'bronze');
+  assert.equal(levelFor(12).key, 'bronze');
+  assert.equal(levelFor(11).key, 'participant');
   assert.equal(levelFor(0).key, 'participant');
 });
 
 test('час і дати — за Києвом', () => {
-  assert.equal(deadlineOf('2026-10-05T10:00:00Z').toISOString(), '2026-10-05T10:40:00.000Z');
+  assert.equal(deadlineOf('2026-10-05T10:00:00Z').toISOString(), '2026-10-05T10:35:00.000Z');
   // 31 жовтня 23:30 UTC — у Києві вже 1 листопада
   assert.equal(monthKey(new Date('2026-10-31T23:30:00Z')), '2026-11');
   assert.equal(monthKey(new Date('2026-10-05T12:00:00Z')), '2026-10');
@@ -207,4 +208,52 @@ test('колбек WayForPay: Approved відкриває тест і дає м�
 
   // чужий номер замовлення нічого не ламає
   await handleOlimpCallback({ orderReference: 'olimp-00000000000000000000000000000000-1', transactionStatus: 'Approved' });
+});
+
+test('72 години на початок тесту: потім доступ закрито, розпочатий тест не «згорає»', () => {
+  const paid = '2026-10-05T10:00:00Z';
+  assert.equal(OLIMP.accessHours, 72);
+  assert.equal(accessUntil(paid).toISOString(), '2026-10-08T10:00:00.000Z');
+  assert.equal(accessExpired({ paid_at: paid }, new Date('2026-10-08T09:59:00Z')), false);
+  assert.equal(accessExpired({ paid_at: paid }, new Date('2026-10-08T10:01:00Z')), true);
+  assert.equal(accessExpired({ paid_at: paid, started_at: '2026-10-08T09:50:00Z' }, new Date('2026-10-09T00:00:00Z')), false);
+  assert.equal(accessExpired({}, new Date()), false);
+  assert.equal(kyivDateTime('2026-10-08T10:00:00Z'), '8 жовтня, 13:00');
+});
+
+test('призи місяця: 3 місця, усі з точною назвою й малюнком, без планшета', () => {
+  assert.deepEqual(PRIZES.map((p) => p.place), [1, 2, 3]);
+  for (const p of PRIZES) {
+    assert.ok(p.title.length > 10 && p.note && p.art, `приз ${p.place}`);
+    assert.ok(!/планшет/i.test(p.title));
+  }
+});
+
+test('друкований диплом: дані доставки з форми', () => {
+  assert.equal(OLIMP.printPrice, 100);
+  assert.deepEqual(cleanPrintOrder({ name: ' Олена  Коваленко ', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' }),
+    { order: { name: 'Олена Коваленко', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' } });
+  assert.deepEqual(cleanPrintOrder({ name: 'Ол' }), { error: 'name' });
+  assert.deepEqual(cleanPrintOrder({ name: 'Олена Коваленко', phone: '12345' }), { error: 'phone' });
+  assert.deepEqual(cleanPrintOrder({ name: 'Олена Коваленко', phone: '0671234567', city: '' }), { error: 'city' });
+  assert.deepEqual(cleanPrintOrder({ name: 'Олена Коваленко', phone: '0671234567', city: 'Львів', branch: '' }), { error: 'branch' });
+});
+
+test('друкований диплом: оплата приходить своїм номером замовлення і не плутається з внеском', async () => {
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { getStore, handleOlimpCallback, isPrintOrder, isOlimpOrder } = await import('../lib/olimpiada-server.js');
+  const store = getStore();
+  const entry = await store.create({ child_name: 'Марко Шевчук', child_age: 9, parent_email: 'tato@example.com', paid_at: '2026-10-05T10:00:00Z', finished_at: '2026-10-05T11:00:00Z', score: 20, max_score: 25 });
+  const ref = `olimp-d-${entry.token}-1791200000000`;
+  assert.equal(isPrintOrder(ref), true);
+  assert.equal(isOlimpOrder(ref), true);
+  assert.equal(isPrintOrder(`olimp-${entry.token}-1791200000000`), false);
+  await store.update(entry.token, { print_ref: ref, print_order: { name: 'Тато', phone: '0671234567', city: 'Київ', branch: '5' } });
+  await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Declined' });
+  assert.equal((await store.get(entry.token)).print_paid_at, undefined);
+  await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Approved' });
+  const paidAt = (await store.get(entry.token)).print_paid_at;
+  assert.ok(paidAt);
+  await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Approved' });
+  assert.equal((await store.get(entry.token)).print_paid_at, paidAt);
 });

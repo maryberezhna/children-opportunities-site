@@ -2,7 +2,7 @@
 // Повторний виклик (оновили сторінку) повертає той самий порядок і той самий
 // дедлайн — час не починається заново.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
-import { OLIMP, buildOrder, publicQuestions, deadlineOf } from '@/lib/olimpiada';
+import { OLIMP, buildOrder, publicQuestions, deadlineOf, accessExpired } from '@/lib/olimpiada';
 import { getStore, validToken, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
@@ -19,6 +19,8 @@ export async function POST(request) {
   if (!entry) return json({ error: 'not_found' }, 404);
   if (!entry.paid_at) return json({ error: 'unpaid' }, 402);
   if (entry.finished_at) return json({ error: 'finished' }, 409);
+  // На початок тесту є 72 години після оплати.
+  if (accessExpired(entry)) return json({ error: 'expired' }, 410);
 
   if (!entry.started_at) {
     entry = await store.update(entry.token, {

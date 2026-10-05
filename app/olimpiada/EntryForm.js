@@ -23,13 +23,16 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
   // До запуску форму бачить лише той, хто прийшов перевіряти: ?preview=1.
   // Справжній замок — на сервері (вхід в адмінку), це лише щоб не плутати людей.
   const [preview, setPreview] = useState(false);
+  const [realPay, setRealPay] = useState(false);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(KEY);
       if (raw) setSaved(JSON.parse(raw));
     } catch { /* приватний режим — просто без «Продовжити» */ }
-    setPreview(new URLSearchParams(window.location.search).has('preview'));
+    const query = new URLSearchParams(window.location.search);
+    setPreview(query.has('preview'));
+    setRealPay(query.has('pay'));
   }, []);
 
   async function submit(e) {
@@ -42,6 +45,7 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
       consent: f.get('consent') === 'on',
       website: String(f.get('website') || ''),
       source: new URLSearchParams(window.location.search).get('utm_source') || '',
+      realPay,
     };
     setState('sending');
     setError('');
@@ -113,7 +117,7 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
       </label>
       {error && <p className="ol-error" role="alert">{error}</p>}
       <button type="submit" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Відкриваємо оплату…' : `Перейти до оплати · ${price} грн`}
+        {state === 'sending' ? 'Відкриваємо…' : (!open && preview && !realPay) ? 'Перевірка без оплати' : `Перейти до оплати · ${price} грн`}
       </button>
     </form>
   );
