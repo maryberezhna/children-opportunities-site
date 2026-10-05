@@ -96,6 +96,7 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-text-light { color: #e6edff; }
 .ol-note { margin: 16px 0 0; font-size: 14px; line-height: 1.5; color: var(--v2-ink-3); }
 .ol-note-light { color: #cfdcff; }
+.ol-form-box .ol-note-form { color: #5a72b5; }
 .ol-kicker { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ol-orange); }
 .ol-h2 { margin: 0 0 14px; font-size: clamp(1.45rem, calc(3vw * var(--a11y-font-scale, 1)), 2rem); font-weight: 700; line-height: 1.15; color: var(--ol-blue-deep); }
 

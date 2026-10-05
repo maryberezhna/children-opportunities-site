@@ -56,7 +56,7 @@ export async function POST(request) {
   const inv = await createOneTimeInvoice({
     orderReference,
     amount: OLIMP.price,
-    product: `Участь в онлайн-олімпіаді з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
+    product: `Організаційний внесок: онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
     email,
     returnUrl: `${SITE_URL}/api/olimpiada/return?t=${entry.token}`,
     serviceUrl: `${SITE_URL}/api/olimpiada/pay`,
