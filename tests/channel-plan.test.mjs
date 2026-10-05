@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { existsSync } from 'node:fs';
 import {
   ROTATION, PLAN_START, FALLBACK_TOPIC, MONTHLY_DAY, MONTHLY_ENTRY, planEntryFor, addDays,
-  COLLECTIONS, COLLECTION_START, DEADLINES_WEEK,
+  COLLECTIONS, COLLECTION_START, DEADLINES_WEEK, MONTHLY_POLLS, pollFor,
 } from '../scripts/channel-plan.mjs';
 
 // До 16.09.2026 канал жив за шаблоном тижня: ті самі формати в ті самі дні.
@@ -113,4 +113,26 @@ test('раз на місяць замість теми дня — проханн
 test('addDays рахує календарні дні', () => {
   assert.equal(addDays('2026-09-30', 1), '2026-10-01');
   assert.equal(addDays('2026-10-25', 1), '2026-10-26');
+});
+
+test('15-го — опитування батьків: з жовтня 2026 по черзі, без повтору за пів року', () => {
+  assert.equal(pollFor('2026-10-15').key, 'age');
+  assert.equal(pollFor('2026-11-15').key, 'looking-for');
+  // Жовтень — 1-ше, березень 2027 — 6-те (останнє), квітень — знову вік.
+  assert.equal(pollFor('2027-03-15').key, MONTHLY_POLLS[MONTHLY_POLLS.length - 1].key);
+  assert.equal(pollFor('2027-04-15').key, 'age');
+  assert.equal(pollFor('2026-10-14'), null);
+  assert.equal(pollFor('2026-10-16'), null);
+  const keys = MONTHLY_POLLS.map((p) => p.key);
+  assert.equal(new Set(keys).size, keys.length);
+});
+
+test('опитування вкладаються в обмеження Telegram', () => {
+  for (const p of MONTHLY_POLLS) {
+    assert.ok(p.question.length >= 1 && p.question.length <= 300, p.key);
+    assert.ok(p.options.length >= 2 && p.options.length <= 10, `${p.key}: ${p.options.length} варіантів`);
+    for (const o of p.options) assert.ok(o.length >= 1 && o.length <= 100, `${p.key}: «${o}»`);
+    assert.equal(new Set(p.options).size, p.options.length, `${p.key}: однакові варіанти`);
+    assert.equal(typeof p.multiple, 'boolean');
+  }
 });

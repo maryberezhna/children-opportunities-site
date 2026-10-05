@@ -279,6 +279,41 @@ export const MONTHLY_DAY = 15;
 export const MONTHLY_ENTRY = { key: 'file-istoriyi', kind: 'file', file: 'istoriyi.html' };
 
 /**
+ * Опитування батьків, одне на місяць: 15-го, одразу після «Вашої історії»
+ * (Марія, 05.10.2026: «щоб краще дізнаватися свою аудиторію»). Голосування в
+ * каналі завжди анонімне; результати видно під постом.
+ *
+ * Порядок — з жовтня 2026: 15.10 — вік, 15.11 — що шукають, і так далі; за
+ * пів року по колу. Обмеження Telegram: питання до 300 знаків, варіантів
+ * 2–10, кожен до 100 знаків (перевіряє tests/channel-plan.test.mjs).
+ */
+export const POLLS_START = '2026-10';
+export const MONTHLY_POLLS = [
+  { key: 'age', question: 'Скільки років вашій дитині? Можна обрати кілька варіантів', multiple: true,
+    options: ['0–6 років', '7–11 років', '12–14 років', '15–17 років', '18 і більше'] },
+  { key: 'looking-for', question: 'Що ви зараз шукаєте найбільше?', multiple: true,
+    options: ['Гуртки й курси', 'Конкурси й олімпіади', 'Табори', 'Навчання й обміни за кордоном', 'Стипендії й виплати'] },
+  { key: 'where', question: 'Де ви зараз живете?', multiple: false,
+    options: ['У великому місті в Україні', 'У невеликому місті чи селі в Україні', 'За кордоном'] },
+  { key: 'barrier', question: 'Що найбільше заважає дитині брати участь у програмах?', multiple: false,
+    options: ['Не знаємо, що існує', 'Не встигаємо до дедлайнів', 'Немає грошей', 'Дитина не хоче', 'Далеко їхати'] },
+  { key: 'reader', question: 'Хто читає цей канал?', multiple: false,
+    options: ['Мама чи тато', 'Сам підліток', 'Вчитель', 'Інше'] },
+  { key: 'source', question: 'Як ви дізналися про Dityam.com.ua?', multiple: false,
+    options: ['Google', 'Знайомі', 'Instagram', 'ChatGPT чи інший ШІ', 'Медіа', 'Інше'] },
+];
+
+/** Опитування місяця для дати 15-го числа; інші дні — null. */
+export function pollFor(dateIso) {
+  if (Number(dateIso.slice(8, 10)) !== MONTHLY_DAY) return null;
+  const [y0, m0] = POLLS_START.split('-').map(Number);
+  const [y, m] = dateIso.slice(0, 7).split('-').map(Number);
+  const n = MONTHLY_POLLS.length;
+  const months = (y - y0) * 12 + (m - m0);
+  return MONTHLY_POLLS[((months % n) + n) % n];
+}
+
+/**
  * Ранковий пост: заявки з дедлайном у найближчі 7 днів (check-deadlines.mjs,
  * sendDeadlinesWeek). Окремо від ROTATION: виходить щодня, а не раз за цикл.
  */
