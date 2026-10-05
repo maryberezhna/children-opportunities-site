@@ -322,12 +322,20 @@ async function sendDeadlinesWeek(dateIso = kyivIso()) {
     console.log('Дедлайнів на найближчі 7 днів немає — ранковий пост не йде.');
     return [];
   }
-  const lines = [`<b>${DEADLINES_WEEK.heading}</b>`, `<i>${DEADLINES_WEEK.description}</i>`, ''];
-  items.forEach((r, i) => {
-    lines.push(formatLine(r, i));
-    if (i < items.length - 1) lines.push('');
-  });
-  lines.push('', `👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
+  // Шість записів із повними описами не влазять у 4096 знаків повідомлення
+  // Telegram, тож опис короткий; а якщо й так задовго — відкидаємо з кінця.
+  const build = (list) => {
+    const out = [`<b>${DEADLINES_WEEK.heading}</b>`, `<i>${DEADLINES_WEEK.description}</i>`, ''];
+    list.forEach((r, i) => {
+      out.push(formatLine(r, i, 180));
+      if (i < list.length - 1) out.push('');
+    });
+    out.push('', `👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
+    return out;
+  };
+  const visible = (ls) => ls.join('\n').replace(/<[^>]+>/g, '').length;
+  while (items.length > 1 && visible(build(items)) > 3900) items.pop();
+  const lines = build(items);
   const sent = await postToChannel(lines, `deadlines-week ${items.length}`);
   if (sent || PREVIEW) await markPosted(items);
   return items.map((r) => r.id);
@@ -708,7 +716,7 @@ function whenLine(r, indent = '') {
   return lines.length ? lines.join('\n') : null;
 }
 
-function formatLine(r, index) {
+function formatLine(r, index, summaryMax = 500) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const typeLabel = TYPE_LABELS[r.opportunity_type];
   const age = ageLabel(r);
@@ -733,7 +741,7 @@ function formatLine(r, index) {
   // Full description (up to 500 chars, same as individual post)
   if (r.summary) {
     const s = r.summary.replace(/\s+/g, ' ').trim();
-    const sum = s.length > 500 ? `${s.slice(0, 500)}…` : s;
+    const sum = s.length > summaryMax ? `${s.slice(0, summaryMax).trimEnd()}…` : s;
     lines.push(`   <i>${escapeHtml(sum)}</i>`);
   }
 
