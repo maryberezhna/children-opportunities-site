@@ -13,6 +13,10 @@ name: Увімкнути LLM-воркфлоу після ліміту API
 # спрацьовував би КОЖНОГО 1 жовтня, а не раз: через рік він мовчки увімкнув би
 # вісім LLM-воркфлоу, навіть якщо їх вимкнули свідомо (як після вичерпаного
 # балансу 03.10.2026). Вмикати платні воркфлоу має людина, а не календар.
+#
+# content-agent.yml («Контент на тиждень») тут більше немає: 05.10.2026 Марія
+# вимкнула його назовсім — щопонеділка слав в адмінчат однакові чернетки
+# Instagram («це жесть»). Instagram тепер готується окремо, партіями з людиною.
 on:
   workflow_dispatch:
 
@@ -30,7 +34,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           for wf in discover.yml discover-sources.yml discover-rare.yml process-notes.yml \
-                    backfill-deadlines.yml content-agent.yml recheck-dates.yml translate-en.yml; do
+                    backfill-deadlines.yml recheck-dates.yml translate-en.yml; do
             if gh workflow enable "$wf" --repo "$REPO"; then
               echo "✓ $wf"
             else
