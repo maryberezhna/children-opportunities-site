@@ -100,6 +100,11 @@ export async function generateMetadata() {
   robots: { index: true, follow: true },
   verification: {
     google: 'RvvznKHFJZWAqvC-wcGyakBzZo11cazkLQ6WfGuzRFk',
+    // Bing Webmaster Tools (05.10.2026). Потрібен не заради самого Bing, а
+    // заради ChatGPT: він шукає через його індекс, і звідти приходить 96%
+    // нашого AI-трафіку. Кабінет — єдине місце, де видно, що саме Bing має й
+    // за якими запитами показує, тобто що взагалі може процитувати ChatGPT.
+    other: { 'msvalidate.01': 'E401C3BF365320085ACFA472D5B943CF' },
   },
   openGraph: {
     type: 'website',
