@@ -2,8 +2,9 @@
 
 // «Підтримайте репостом» з готовими текстами постів (Марія, 05.10.2026:
 // «а отут ти можеш предефайнити пости»). Telegram і Viber беруть текст
-// у посилання самі; Facebook і LinkedIn текст із посилання не приймають
-// (беруть лише прев'ю сторінки), тож перед відкриттям копіюємо його в буфер.
+// у посилання самі. LinkedIn — через feed/?shareActive=true&text=… (недокументовано,
+// тож текст ще й копіюємо в буфер). Facebook текст із посилання не приймає
+// з 2017 року — лише копія в буфер і помітна підказка «вставте».
 
 import { useState } from 'react';
 
@@ -45,19 +46,19 @@ export default function SharePosts() {
     } catch {
       setNote('Не вдалося скопіювати — виділіть текст вище й скопіюйте вручну.');
     }
-    setTimeout(() => setNote(''), 4000);
+    setTimeout(() => setNote(''), 9000);
   }
 
-  async function openWithCopy(href, network) {
+  async function openWithCopy(href, network, msg) {
     track(`stem_talant_${network}_${post.id}`);
-    await copy('Текст скопійовано — вставте його в пост.');
+    await copy(msg);
     window.open(href, '_blank', 'noopener,noreferrer');
   }
 
   const tg = `https://t.me/share/url?url=${encodeURIComponent(URL)}&text=${encodeURIComponent(post.text)}`;
   const viber = `viber://forward?text=${encodeURIComponent(withUrl(post.text))}`;
   const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`;
-  const li = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(URL)}`;
+  const li = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(withUrl(post.text))}`;
 
   return (
     <div className="st-posts">
@@ -85,10 +86,10 @@ export default function SharePosts() {
           onClick={() => track(`stem_talant_telegram_${post.id}`)}>Telegram</a>
         <a href={viber} className="st-share-btn"
           onClick={() => track(`stem_talant_viber_${post.id}`)}>Viber</a>
-        <button type="button" className="st-share-btn" onClick={() => openWithCopy(fb, 'facebook')}>Facebook</button>
-        <button type="button" className="st-share-btn" onClick={() => openWithCopy(li, 'linkedin')}>LinkedIn</button>
+        <button type="button" className="st-share-btn" onClick={() => openWithCopy(fb, 'facebook', 'Текст скопійовано ✓ Facebook не дозволяє вставити його сам — натисніть у полі поста Ctrl+V (на Mac — ⌘+V).')}>Facebook</button>
+        <button type="button" className="st-share-btn" onClick={() => openWithCopy(li, 'linkedin', 'Текст уже в пості LinkedIn. Якщо поле порожнє — він скопійований: вставте Ctrl+V (на Mac — ⌘+V).')}>LinkedIn</button>
       </div>
-      <p className="st-posts-note" aria-live="polite">{note}</p>
+      <p className={note ? 'st-posts-note is-on' : 'st-posts-note'} aria-live="polite">{note}</p>
     </div>
   );
 }
