@@ -458,7 +458,7 @@ export default function OpportunitiesList({
   // Скільки карток видно одразу. На головній 6 і «Показати ще»; підбірка —
   // одна сторінка з можливостями, тож там більше (рішення Марії 14.09.2026).
   initialLimit = 6,
-  mobileLayout = false, sidebarLayout = false,
+  mobileLayout = false, sidebarLayout = false, afterAges = null,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
@@ -1480,6 +1480,12 @@ export default function OpportunitiesList({
               ))}
             </div>
           </div>
+
+          {/* Місце одразу під віком (Марія, 05.10.2026: «"або оберіть тему"
+              має бути під віком для дитини»). Слот, а не сам блок: цей список
+              обслуговує ще міські сторінки й /en, а плитки тем — лише
+              головної. */}
+          {afterAges}
 
           <div className={`m-compact${compact ? ' is-on' : ''}`} aria-hidden={compact ? undefined : 'true'}>
             <a
