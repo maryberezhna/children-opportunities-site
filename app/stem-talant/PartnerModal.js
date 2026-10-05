@@ -8,7 +8,7 @@
 import { useRef, useState } from 'react';
 
 const NOMINATIONS = ['Програмування й ШІ', 'Робототехніка й інженерія', 'Наука й математика'];
-const FORMATS = ['Генеральний партнер', 'Партнер номінації', 'Ще не знаю — розкажіть більше'];
+const FORMATS = ['Генеральний партнер', 'Партнер номінації', 'Інформаційний партнер', 'Ще не знаю — розкажіть більше'];
 
 export default function PartnerModal({ label = 'Стати партнером', className = '' }) {
   const dialogRef = useRef(null);
@@ -32,7 +32,7 @@ export default function PartnerModal({ label = 'Стати партнером', 
     const note = String(f.get('note') || '').trim();
     const message = [
       'STEM-талант України — заявка на партнерство',
-      `Компанія: ${company}`,
+      `Компанія чи організація: ${company}`,
       `Формат: ${format}`,
       nomination ? `Номінація: ${nomination}` : null,
       note ? `Коментар: ${note}` : null,
@@ -81,10 +81,10 @@ export default function PartnerModal({ label = 'Стати партнером', 
           ) : (
             <form onSubmit={submit} className="st-form">
               <h2 id="st-modal-title">Стати партнером</h2>
-              <p className="st-form-sub">«STEM-талант України» · для IT-компаній</p>
+              <p className="st-form-sub">«STEM-талант України» · для компаній і медіа</p>
 
               <label className="st-field">
-                <span>Компанія</span>
+                <span>Компанія, медіа чи організація</span>
                 <input name="company" required maxLength={120} autoComplete="organization" />
               </label>
               <label className="st-field">

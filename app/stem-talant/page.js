@@ -3,6 +3,8 @@ import Footer from '../Footer';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { CodeIcon, RobotIcon, AtomIcon } from './Icons';
 import PartnerModal from './PartnerModal';
+import PressLogos from '../PressLogos';
+import ShareButton from '../ShareButton';
 
 // «STEM-талант України» — власний конкурс Dityam.com.ua (рішення Марії
 // 04–05.10.2026): лише STEM, діти 12–17 років, 3 номінації × 2 вікові групи,
@@ -15,16 +17,18 @@ import PartnerModal from './PartnerModal';
 // плямами, сіткою й орбітою, плавна поява блоків. «Стати партнером» — по
 // центру й одразу відкриває форму (PartnerModal → /api/contact).
 //
-// Поки це АНОНС: положення, форма реєстрації й точні дати зʼявляться разом
-// зі стартом реєстрації (ст. 1151 ЦК). Тому немає жодної дати з числом і
-// жодного партнера, якого ще немає. Event у JSON-LD — лише коли буде день старту.
+// Графік (Марія, 05.10.2026): реєстрація 1–20 грудня 2026, проєкти до 4 січня
+// 2027, журі 5–9 січня, переможці 10 січня — наприкінці канікул. Внесок
+// називаємо «організаційний» (плата за організацію, а не ставка).
+// Поки це АНОНС: положення й форма реєстрації зʼявляться разом зі стартом
+// реєстрації (ст. 1151 ЦК); партнерів, яких ще немає, не показуємо.
 
 const SITE_URL = 'https://dityam.com.ua';
 const PATH = '/stem-talant';
 const URL = `${SITE_URL}${PATH}`;
 
 const TITLE = 'STEM-талант України — онлайн-конкурс для школярів 12–17';
-const DESCRIPTION = 'Онлайн-конкурс STEM-проєктів для дітей 12–17 років на зимових канікулах 2026–2027: програмування й ШІ, робототехніка, наука. Журі з інженерів, участь — 100 грн.';
+const DESCRIPTION = 'Онлайн-конкурс STEM-проєктів для школярів 12–17 років: програмування й ШІ, робототехніка, наука. 1 грудня 2026 – 10 січня 2027, журі з інженерів.';
 
 export const metadata = {
   title: { absolute: TITLE },
@@ -40,9 +44,9 @@ export const metadata = {
 
 const FACTS = [
   { big: '12–17 років', small: 'дві вікові групи', tone: 'a' },
-  { big: 'Зимові канікули', small: '2026–2027', tone: 'b' },
+  { big: 'Зимові канікули', small: '1 грудня 2026 – 10 січня 2027', tone: 'b' },
   { big: 'Онлайн', small: 'з будь-якого міста й країни', tone: 'c' },
-  { big: '100 грн', small: 'внесок за участь', tone: 'd' },
+  { big: '100 грн', small: 'організаційний внесок', tone: 'd' },
 ];
 
 const NOMINATIONS = [
@@ -52,21 +56,34 @@ const NOMINATIONS = [
 ];
 
 const STEPS = [
-  ['Реєстрація', 'Онлайн-форма й внесок 100 грн. Відкриється в грудні 2026 року.'],
-  ['Проєкт', 'Працюєте над проєктом на зимових канікулах і надсилаєте опис та посилання на код, відео чи фото.'],
-  ['Журі', 'Інженери й науковці оцінюють за критеріями з правил конкурсу.'],
-  ['Переможці', '6 переможців — дипломи й призи від партнерів. Оголосимо після канікул.'],
+  ['Реєстрація', '1–20 грудня 2026', 'Онлайн-форма й організаційний внесок 100 грн.'],
+  ['Проєкт', 'до 4 січня 2027', 'Працюєте над проєктом на канікулах і надсилаєте опис та посилання на код, відео чи фото.'],
+  ['Журі', '5–9 січня 2027', 'Інженери й науковці оцінюють за критеріями з правил конкурсу.'],
+  ['Переможці', '10 січня 2027', 'Оголошуємо наприкінці канікул: 6 переможців, дипломи й призи від партнерів.'],
 ];
 
-const CHIPS = ['</>', 'AI', '∑', '{ }', '3D', 'λ'];
+// Значки — усі чотири літери STEM: наука (E=mc², H₂O), технології (</>, AI),
+// інженерія (3D), математика (π). Марія, 05.10.2026: «а це все асоціюється зі стемом?»
+const CHIPS = ['</>', 'E=mc²', 'π', 'H₂O', 'AI', '3D'];
+
+// «Підтримати репостом» (Марія, 05.10.2026: «щоб всі бачили, що можуть просто
+// підтримати нас репостом»). Ділимось канонічною адресою.
+const SHARE_TEXT = 'STEM-талант України — онлайн-конкурс STEM-проєктів для школярів 12–17 років на зимових канікулах. Журі з інженерів і науковців.';
+const SHARE = [
+  ['Telegram', `https://t.me/share/url?url=${encodeURIComponent(URL)}&text=${encodeURIComponent(SHARE_TEXT)}`],
+  ['Facebook', `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`],
+  ['LinkedIn', `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(URL)}`],
+  ['Viber', `viber://forward?text=${encodeURIComponent(`${SHARE_TEXT} ${URL}`)}`],
+];
 
 const FAQ = [
   { q: 'Хто організовує конкурс?', a: 'Платформа Dityam.com.ua — вона збирає перевірені можливості для українських дітей 0–18 років в Україні та за кордоном.' },
   { q: 'Хто може взяти участь?', a: 'Школярі 12–17 років з будь-якого міста України й діти з України, які зараз живуть за кордоном. Конкурс проходить онлайн.' },
-  { q: 'Коли проходить конкурс?', a: 'На зимових канікулах 2026–2027, щоб у дітей був час на проєкт. Реєстрація відкриється в грудні 2026 року, переможців оголосимо після канікул. Повні правила опублікуємо разом зі стартом реєстрації.' },
-  { q: 'Скільки коштує участь?', a: 'Внесок — 100 грн за заявку. Переможців обирає журі за критеріями, а не жеребкування.' },
+  { q: 'Коли проходить конкурс?', a: 'На зимових канікулах, щоб у дітей був час на проєкт: реєстрація 1–20 грудня 2026 року, проєкти — до 4 січня 2027, журі — 5–9 січня, переможців оголосимо 10 січня 2027. Повні правила опублікуємо разом зі стартом реєстрації.' },
+  { q: 'Скільки коштує участь?', a: 'Організаційний внесок — 100 грн за заявку. Переможців обирає журі за критеріями, а не жеребкування.' },
   { q: 'Як обирають переможців?', a: 'Журі з інженерів і науковців оцінює проєкти в кожній номінації окремо для груп 12–14 і 15–17 років. У кожній групі — один переможець, разом 6.' },
   { q: 'Як компанії стати партнером?', a: 'Натисніть «Стати партнером» на цій сторінці й залиште контакт — ми напишемо з умовами. Партнери — IT-компанії: їхні інженери в журі, а назва й логотип — на сторінці конкурсу й на дипломах.' },
+  { q: 'Як допомогти, якщо я не компанія?', a: 'Поділіться сторінкою конкурсу з батьками, вчителями чи друзями — кнопки є вище. Медіа, спільноти й школи можуть стати інформаційними партнерами: натисніть «Стати партнером» і оберіть цей формат.' },
 ];
 
 function jsonLd() {
@@ -82,6 +99,22 @@ function jsonLd() {
         inLanguage: 'uk',
         isPartOf: { '@id': `${SITE_URL}/#website` },
         publisher: { '@id': `${SITE_URL}/#org` },
+      },
+      {
+        '@type': 'Event',
+        '@id': `${URL}#event`,
+        name: 'STEM-талант України',
+        description: DESCRIPTION,
+        url: URL,
+        startDate: '2026-12-01',
+        endDate: '2027-01-10',
+        eventStatus: 'https://schema.org/EventScheduled',
+        eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
+        location: { '@type': 'VirtualLocation', url: URL },
+        organizer: { '@id': `${SITE_URL}/#org` },
+        audience: { '@type': 'PeopleAudience', suggestedMinAge: 12, suggestedMaxAge: 17 },
+        offers: { '@type': 'Offer', price: '100', priceCurrency: 'UAH', url: URL, validFrom: '2026-12-01' },
+        inLanguage: 'uk',
       },
       {
         '@type': 'FAQPage',
@@ -180,9 +213,10 @@ export default function StemTalantPage() {
           <p className="st-eyebrow st-reveal">4 кроки</p>
           <h2 className="st-h2 st-reveal">Як це працює</h2>
           <ol className="st-steps">
-            {STEPS.map(([title, text], i) => (
+            {STEPS.map(([title, date, text], i) => (
               <li key={title} className="st-step st-reveal">
                 <span className="st-step-n" aria-hidden="true">{i + 1}</span>
+                <p className="st-step-date">{date}</p>
                 <h3>{title}</h3>
                 <p>{text}</p>
               </li>
@@ -191,24 +225,61 @@ export default function StemTalantPage() {
         </section>
 
         <section id="partnery" className="st-wrap st-sec st-partners">
-          <p className="st-eyebrow st-reveal">Для IT-компаній</p>
+          <p className="st-eyebrow st-reveal">Для компаній і медіа</p>
           <h2 className="st-h2 st-reveal">Партнери</h2>
           <p className="st-text st-reveal">
-            Шукаємо IT-компанії, яким важливі майбутні інженери. Партнер дає призи переможцям,
+            Шукаємо IT-компанії, яким важливі майбутні інженери: партнер дає призи переможцям,
             його інженери сидять у журі, а назва й логотип — на цій сторінці й на дипломах.
+            Медіа, спільноти й школи можуть стати інформаційними партнерами й розповісти
+            про конкурс своїй аудиторії.
           </p>
           <div className="st-slots st-reveal">
             <div className="st-slot">
               <b>Генеральний партнер</b>
-              <span>місце відкрите</span>
+              <span>IT-компанія · місце відкрите</span>
             </div>
             <div className="st-slot">
               <b>Партнери номінацій</b>
-              <span>3 місця відкриті</span>
+              <span>IT-компанії · 3 місця відкриті</span>
+            </div>
+            <div className="st-slot">
+              <b>Інформаційні партнери</b>
+              <span>медіа, спільноти, школи</span>
             </div>
           </div>
           <div className="st-center st-reveal">
             <PartnerModal className="st-btn st-btn-yellow st-btn-big" />
+          </div>
+        </section>
+
+        <section className="st-wrap st-sec st-press">
+          <p className="st-eyebrow st-reveal">Про Dityam.com.ua писали</p>
+          <h2 className="st-h2 st-reveal">Нас уже знають</h2>
+          <div className="st-reveal"><PressLogos /></div>
+        </section>
+
+        <section className="st-wrap st-sec">
+          <div className="st-share st-reveal">
+            <div className="st-share-copy">
+              <h2 className="st-h2">Підтримайте репостом</h2>
+              <p className="st-text">
+                Не компанія і не медіа? Ви все одно можете допомогти: поділіться сторінкою
+                з батьками, вчителями чи друзями, яким цікаві технології. Кожен репост — шанс,
+                що про конкурс дізнається ще одна дитина.
+              </p>
+            </div>
+            <div className="st-share-btns">
+              {SHARE.map(([name, href]) => (
+                <a key={name} href={href} className="st-share-btn" target="_blank" rel="noopener noreferrer">{name}</a>
+              ))}
+              <ShareButton
+                title="STEM-талант України"
+                label="Скопіювати посилання"
+                copiedLabel="Посилання скопійовано ✓"
+                className="st-share-btn st-share-copy-btn"
+                place="stem_talant"
+              />
+            </div>
           </div>
         </section>
 

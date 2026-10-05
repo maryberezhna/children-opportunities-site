@@ -145,13 +145,16 @@
   background: linear-gradient(140deg, var(--t-a), var(--t-d)); color: #fff; font-weight: 700; font-size: 18px;
   box-shadow: 0 0 0 6px var(--bg);
 }
-.st-step h3 { margin: 16px 0 6px; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
+.st-step-date { display: inline-block; margin: 16px 0 0; padding: 4px 12px; border-radius: 9999px; font-size: 14px; font-weight: 700; color: var(--t-a); background: color-mix(in srgb, var(--t-a) 12%, transparent); }
+:root[data-theme="dark"] .st-step-date { color: #9fb2ff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .st-step-date { color: #9fb2ff; } }
+.st-step h3 { margin: 10px 0 6px; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
 .st-step p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
 
 /* Партнери — по центру */
 .st-partners { text-align: center; }
 .st-partners .st-text { margin-left: auto; margin-right: auto; }
-.st-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 300px)); justify-content: center; gap: 16px; margin-bottom: 32px; }
+.st-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 290px)); justify-content: center; gap: 16px; margin-bottom: 32px; }
 .st-slot {
   display: flex; flex-direction: column; gap: 4px; padding: 22px; border-radius: 20px;
   border: 2px dashed var(--v2-line-strong); background: var(--surface-2);
@@ -159,6 +162,33 @@
 .st-slot b { font-size: 18px; font-weight: 700; color: var(--v2-ink); }
 .st-slot span { font-size: 14px; color: var(--v2-ink-3); }
 .st-center { display: flex; justify-content: center; }
+
+/* Про нас писали — плитки логотипів (як на /about) */
+.st-press .press-logos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+.st-press .press-logos a {
+  display: flex; align-items: center; justify-content: center; width: 150px; height: 76px;
+  background: #fff; border: 1px solid var(--v2-line); border-radius: 16px; text-decoration: none;
+  transition: border-color .2s, transform .2s;
+}
+.st-press .press-logos a:hover { border-color: var(--v2-line-strong); transform: translateY(-2px); }
+
+/* Підтримати репостом */
+.st-share {
+  display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: center; padding: 36px;
+  border-radius: 28px; background: color-mix(in srgb, var(--t-a) 8%, var(--surface-2)); border: 1px solid var(--v2-line);
+}
+.st-share .st-h2 { margin-bottom: 10px; }
+.st-share .st-text { margin: 0; }
+.st-share-btns { display: flex; flex-wrap: wrap; gap: 10px; max-width: 420px; justify-content: flex-end; }
+.st-share-btn {
+  display: inline-flex; align-items: center; justify-content: center; min-height: 46px; padding: 10px 18px;
+  border-radius: 9999px; border: 1.5px solid var(--v2-line-strong); background: var(--surface-2);
+  color: var(--v2-ink) !important; font: inherit; font-size: 15px; font-weight: 700; text-decoration: none; cursor: pointer;
+  transition: transform .18s ease, border-color .18s ease;
+}
+.st-share-btn:hover { transform: translateY(-2px); border-color: var(--t-a); }
+.st-share-btn:focus-visible { outline: 3px solid var(--t-a); outline-offset: 2px; }
+.st-share-copy-btn { background: var(--st-yellow); border-color: var(--st-yellow); color: var(--st-ink-on-yellow) !important; }
 
 /* FAQ — на всю ширину, як і решта блоків */
 .st-faq { display: flex; flex-direction: column; gap: 10px; }
@@ -247,12 +277,16 @@
   .st-noms { grid-template-columns: 1fr; }
   .st-steps { grid-template-columns: repeat(2, 1fr); }
   .st-steps::before { display: none; }
+  .st-slots { grid-template-columns: 1fr; max-width: 420px; margin-left: auto; margin-right: auto; }
+  .st-share { grid-template-columns: 1fr; padding: 28px 22px; }
+  .st-share-btns { justify-content: flex-start; max-width: none; }
+  .st-press .press-logos li { width: calc(50% - 6px); }
+  .st-press .press-logos a { width: 100%; }
   .st-chip { display: none; }
   .st-sec { padding-top: 64px; }
 }
 @media (max-width: 560px) {
   .st-steps { grid-template-columns: 1fr; }
-  .st-slots { grid-template-columns: 1fr; }
   .st-btn { width: 100%; }
   .st-tg { padding: 30px 22px; }
   .st-modal-box { padding: 26px 18px 20px; }
