@@ -144,7 +144,9 @@ export default async function PlusAdminPage() {
   const active = subs.filter((s) => s.status === 'active');
   const half = active.filter((s) => s.billing_period === 'halfyear').length;
   const yearly = active.filter((s) => s.billing_period === 'yearly').length;
-  const monthly = active.length - half - yearly;
+  // Подарунковий місяць за участь в олімпіаді — активна підписка, але не дохід.
+  const gift = active.filter((s) => s.billing_period === 'gift').length;
+  const monthly = active.length - half - yearly - gift;
   const mrr = Math.round(monthly * PRICE + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
   const pending = subs.filter((s) => s.status === 'pending');
   const paused = subs.filter((s) => s.status === 'paused');
@@ -270,7 +272,7 @@ export default async function PlusAdminPage() {
                     <td style={{ ...cell, color: st.color, fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</td>
                     <td style={cell}>{who(s)}</td>
                     <td style={cell}>{kidsBySub[s.id] || 0}</td>
-                    <td style={cell}>{s.status === 'active' ? (s.billing_period === 'halfyear' ? 'пів року' : s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
+                    <td style={cell}>{s.status === 'active' ? (s.billing_period === 'gift' ? 'подарунок' : s.billing_period === 'halfyear' ? 'пів року' : s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
                     <td style={cell}>{fmtDate(s.created_at)}</td>
                     <td style={cell}>{fmtDate(s.last_sent_at)}</td>
                     <td style={{ ...cell, color: C.ink2 }}>

@@ -277,6 +277,49 @@ def parse_ts(s):
         return None
 
 
+# Подарунковий місяць Dityam+ за участь в онлайн-олімпіаді (lib/olimpiada.js):
+# billing_period = gift, діє до gift_until. Коли минув — знімаємо з розсилки й
+# кажемо людині один раз; оплата в боті повертає звичайну підписку.
+GIFT_OVER_TEXT = (
+    "🎁 Подарунковий місяць Dityam+ закінчився.\n\n"
+    "Щоб і далі отримувати добірки під вашу дитину й нагадування про дедлайни, "
+    "оформіть підписку — /start"
+)
+
+
+def gift_expired(sub: dict, now=None) -> bool:
+    if sub.get("billing_period") != "gift":
+        return False
+    until = parse_ts(sub.get("gift_until"))
+    if until is None:
+        return True
+    if until.tzinfo is None:
+        until = until.replace(tzinfo=timezone.utc)
+    return until <= (now or datetime.now(timezone.utc))
+
+
+def expire_gifts(client, subs: list, dry_run: bool = False) -> list:
+    """Лишає тих, кому добірку слати; подарунки, що минули, ставить на паузу."""
+    keep = []
+    for sub in subs:
+        if not gift_expired(sub):
+            keep.append(sub)
+            continue
+        if dry_run:
+            logger.info("gift over (dry-run): %s", sub.get("id"))
+            continue
+        stamp = datetime.now(timezone.utc).isoformat()
+        if sub.get("telegram_chat_id") and not sub.get("gift_notice_at"):
+            send_telegram(sub["telegram_chat_id"], GIFT_OVER_TEXT)
+        try:
+            client.table("digest_subscribers").update(
+                {"status": "paused", "gift_notice_at": stamp, "updated_at": stamp}
+            ).eq("id", sub["id"]).execute()
+        except Exception:
+            logger.exception("gift expiry update failed for %s", sub.get("id"))
+    return keep
+
+
 EMPTY_NOTICE_DAYS = 30    # як рідко нагадувати, що під профіль нічого немає
 
 
@@ -651,6 +694,7 @@ def main():
         ]
     else:
         subs = client.table("digest_subscribers").select("*").eq("status", "active").execute().data or []
+        subs = expire_gifts(client, subs, dry_run=args.dry_run)
         ids = [s["id"] for s in subs]
         child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
                       .execute().data or []) if ids else []

@@ -24,6 +24,7 @@ import {
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
+import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
@@ -407,6 +408,66 @@ async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
   await bot.sendMessage(chatId, WAITLIST_WELCOME());
 }
 
+// Подарунковий місяць Dityam+ за участь в онлайн-олімпіаді (lib/olimpiada.js).
+// Рядок створює оплата олімпіади — без чату й у статусі pending. Активним він
+// стає тут, коли людина відкриває бота за посиланням біля диплома: інакше
+// щоденна добірка шукала б чат, якого ще немає. Повертає рядок підписника,
+// з яким іти далі, або null, якщо токен не з олімпіади.
+async function claimOlimpGift(bot, supabase, { chatId, handle, token, sub }) {
+  if (!/^[0-9a-f]{32}$/.test(String(token || ''))) return null;
+  const { data: gift } = await supabase.from('digest_subscribers').select('*')
+    .eq('unsub_token', token).eq('billing_period', 'gift').maybeSingle();
+  if (!gift) return null;
+  const now = new Date();
+  const stamp = now.toISOString();
+  let current = sub || null;
+  let entryToken = token;
+
+  if (!gift.telegram_chat_id) {
+    if (!sub) {
+      const { data: linked } = await supabase.from('digest_subscribers')
+        .update({ telegram_chat_id: chatId, telegram_handle: handle, status: giftActive(gift, now) ? 'active' : 'pending', updated_at: stamp })
+        .eq('id', gift.id).is('telegram_chat_id', null).select('*').maybeSingle();
+      current = linked || null;
+    } else if (sub.id !== gift.id) {
+      // У людини вже є рядок у боті (друга дитина чи наступна олімпіада):
+      // подарунок додаємо до нього, а порожній рядок без чату прибираємо.
+      // Хто вже платить за підписку — тому додавати нічого, лише диплом.
+      const paying = sub.status === 'active' && sub.wfp_order_reference && sub.billing_period !== 'gift';
+      if (!paying && giftActive(gift, now)) {
+        const from = Math.max(now.getTime(), sub.gift_until ? new Date(sub.gift_until).getTime() : 0);
+        const until = new Date(from + OLIMP.giftDays * 24 * 60 * 60 * 1000).toISOString();
+        const { data: upd } = await supabase.from('digest_subscribers')
+          .update({ status: 'active', plan: 'premium', billing_period: 'gift', gift_until: until, gift_notice_at: null, updated_at: stamp })
+          .eq('id', sub.id).select('*').maybeSingle();
+        current = upd || sub;
+      }
+      await supabase.from('olimpiada_entries').update({ plus_token: sub.unsub_token, updated_at: stamp }).eq('plus_token', token);
+      await supabase.from('digest_subscribers').delete().eq('id', gift.id).is('telegram_chat_id', null);
+      entryToken = sub.unsub_token;
+    }
+  } else if (String(gift.telegram_chat_id) === String(chatId)) {
+    current = gift;
+  } else {
+    return null;   // чуже посилання — далі як звичайний /start
+  }
+  if (!current) return null;
+
+  // Диплом — картинкою: Telegram сам забирає її з сайту за адресою.
+  const { data: entries } = await supabase.from('olimpiada_entries')
+    .select('token, child_name, score, max_score, level, finished_at')
+    .eq('plus_token', entryToken).not('finished_at', 'is', null).order('finished_at', { ascending: false }).limit(3);
+  for (const e of entries || []) {
+    await bot.sendPhoto(chatId, `${SITE_URL}/api/olimpiada/diploma?t=${e.token}`,
+      `🧩 <b>Диплом: ${esc(e.child_name)}</b>\n${e.score} з ${e.max_score} · ${esc(levelByKey(e.level).label)}`);
+  }
+  if (giftActive(current, now)) {
+    const until = new Date(current.gift_until).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', timeZone: 'Europe/Kyiv' });
+    await bot.sendMessage(chatId, `🎁 <b>Dityam+ у подарунок за участь в олімпіаді</b>\nДіє до ${until}. Розкажіть про дитину — і добірки будуть саме під неї.`);
+  }
+  return current;
+}
+
 // Промокод: перевіряємо, запамʼятовуємо на підписнику й ведемо людину далі
 // звичайним шляхом — знижку вона побачить на кнопці оплати. Про кожне
 // введення пишемо в адмін-чат: інакше незрозуміло, скільки людей код привів.
@@ -555,6 +616,10 @@ export async function POST(request) {
       }
 
       let { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+
+      // Діп-лінк біля диплома олімпіади: /start <токен подарункового місяця>.
+      const gifted = await claimOlimpGift(bot, supabase, { chatId, handle, token: startArg, sub });
+      if (gifted) sub = gifted;
 
       // Deep-link із форми на сайті: /start <unsub_token>. Привʼязуємо чат до
       // вже створеного рядка, інакше нижче створився б дубль, а зібраний на

@@ -215,7 +215,9 @@ export default async function MetricsPage() {
   const funnelFirst = funnel[0]?.n || 0;
   const half = subs.filter((s) => s.billing_period === 'halfyear').length;
   const yearly = subs.filter((s) => s.billing_period === 'yearly').length;
-  const monthly = subs.length - half - yearly;
+  // Подарунковий місяць за участь в олімпіаді — активна підписка, але не дохід.
+  const gift = subs.filter((s) => s.billing_period === 'gift').length;
+  const monthly = subs.length - half - yearly - gift;
   const mrr = Math.round(monthly * PRICE_MONTH + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
 
   // Промокоди: рахуємо і введення, і оплати. Різниця між ними — головне,
