@@ -95,6 +95,7 @@ export default async function sitemap() {
     // Путівник Erasmus+ поки лише українською.
     { url: `${SITE_URL}/erasmus`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/olimpiady`, changeFrequency: 'weekly', priority: 0.8 },
+    { url: `${SITE_URL}/stem-talant`, changeFrequency: 'weekly', priority: 0.6 },
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]
