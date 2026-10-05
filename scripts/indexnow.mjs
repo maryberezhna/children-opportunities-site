@@ -37,6 +37,9 @@ async function main() {
   const { data, error } = await supabase.from('opportunities')
     .select('slug, updated_at')
     .eq('status', 'active')
+    // Дублі не надсилаємо: вони віддають 301 на оригінал, і Bing отримав би
+    // адресу-перенаправлення замість сторінки (перевірка prebuild це й ловить).
+    .is('canonical_slug', null)
     .gte('updated_at', since)
     .order('updated_at', { ascending: false })
     .limit(2000);

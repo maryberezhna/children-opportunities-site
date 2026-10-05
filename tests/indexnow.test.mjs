@@ -67,3 +67,12 @@ test('без підтвердження нічого не надсилаєтьс
   const yml = read('.github/workflows/indexnow.yml');
   assert.match(yml, /schedule' && 'SEND'/, 'за розкладом має надсилати само');
 });
+
+// Передзбіркова перевірка (scripts/check-catalogue-queries.mjs) упіймала це
+// на першому ж PR: без фільтра дублів ми надсилали б у Bing адреси, які
+// віддають 301 на оригінал.
+test('дублі не надсилаємо — вони віддають 301', () => {
+  const src = read('scripts/indexnow.mjs');
+  assert.match(src, /\.is\('canonical_slug', null\)/,
+    'без цього фільтра в Bing підуть адреси-перенаправлення');
+});
