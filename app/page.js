@@ -8,6 +8,7 @@ import { daysUntil } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
 import HomeHero from './HomeHero';
 import HomeBlocks from './HomeBlocks';
+import HomeTopics from './HomeTopics';
 import Footer from './Footer';
 import SubscribePopup from './SubscribePopup';
 import { TOPIC_NAV } from '@/lib/topics';
@@ -17,8 +18,8 @@ export const revalidate = 300;
 // Головна, редизайн 29.09.2026 (макет Main.dc.html / Mobile.dc.html): хіро з
 // пошуком, плитками тем і «Встигніть цього тижня» праворуч, фільтри лише в
 // бічній панелі, олімпіади МОН однією карткою, два нижні блоки (Telegram +
-// «Запропонувати можливість»). На телефоні (05.10.2026): заголовок → «Або
-// оберіть тему» → пошук → вік → «Топ 3 цього тижня» смужкою → список → канал →
+// «Запропонувати можливість»). На телефоні (05.10.2026): заголовок → пошук →
+// вік → «Або оберіть тему» → «Топ 3 цього тижня» смужкою → список → канал →
 // блок для організаторів, знизу панель «Фільтри / Сортування». Email-підписки,
 // стікі-бар і плаваюче сердечко зняті свідомо — один заклик на екран.
 
@@ -78,6 +79,7 @@ export default async function Home() {
           today={today}
           modeAware
           mobileLayout
+          afterAges={<HomeTopics variant="mobile" />}
           sidebarLayout
           // 40, а не 6 (Марія, 28.09.2026). Шість карток — це пів екрана
           // на десктопі: людина бачила кнопку «Показати ще» раніше, ніж

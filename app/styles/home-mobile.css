@@ -332,9 +332,11 @@
   body:has(.m-bottom) .telegram-fab { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   /* ── «Або оберіть тему»: плитки з фото прокруткою вбік ──────────────── */
-  /* Стоять у хіро, останнім рядком під віковими пігулками. */
+  /* Стоять одразу під кремовою смугою з пошуком і віком. 40px від загального
+     правила контейнера тут завеликі: плитки читаються як продовження вибору
+     віку, а не як окремий розділ сторінки. */
   .v2-topics-mobile { display: block; }
-  .v2-home .v2-hero .v2-topics-mobile { margin: 22px 0 2px; }
+  .v2-home .v2-container > .v2-topics-mobile { margin-top: 22px; }
   .v2-topics-mobile h2 { margin: 0 0 12px; font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
   .v2-topics-mobile .v2-tiles {
     display: flex;
