@@ -269,18 +269,28 @@ export default function StemTalantPage() {
               </div>
             ))}
           </div>
+          {/* Номінації — між вигодами й форматами, щоб легше читати
+              (Марія, 05.10.2026): партнер номінації обирає одну з них */}
+          <h3 className="st-h3 st-reveal">3 номінації</h3>
+          <div className="st-noms">
+            {NOMINATIONS.map(({ Icon, tone, title, text }) => (
+              <article key={title} className={`st-card st-tone-${tone} st-reveal`}>
+                <span className="st-icon"><Icon /></span>
+                <h4>{title}</h4>
+                <p>{text}</p>
+                <div className="st-ages">
+                  <span>12–14 років</span>
+                  <span>15–17 років</span>
+                </div>
+              </article>
+            ))}
+          </div>
           <h3 className="st-h3 st-reveal">Формати партнерства</h3>
           <div className="st-table-wrap st-reveal">
             <table className="st-table">
               <thead>
                 <tr>
-                  {/* Порожній кут таблиці — туди номінації (Марія, 05.10.2026) */}
-                  <th scope="col" className="st-table-corner">
-                    <span>3 номінації</span>
-                    <ul>
-                      {NOMINATIONS.map((n) => <li key={n.title} className={`tone-${n.tone}`}>{n.title}</li>)}
-                    </ul>
-                  </th>
+                  <th scope="col"><span className="st-sr">Умова</span></th>
                   {TIER_HEAD.map((t) => (
                     <th key={t.name} scope="col" className={t.main ? 'is-main' : ''}>
                       <b>{t.name}</b>
@@ -338,24 +348,6 @@ export default function StemTalantPage() {
                   </div>
                 ))}
                 <PartnerModal label="Обрати цей формат" initialFormat={t.name} className="st-btn st-btn-yellow st-btn-sm st-tier-btn" />
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="st-wrap st-sec">
-          <p className="st-eyebrow st-reveal">3 напрями</p>
-          <h2 className="st-h2 st-reveal">Номінації</h2>
-          <div className="st-noms">
-            {NOMINATIONS.map(({ Icon, tone, title, text }) => (
-              <article key={title} className={`st-card st-tone-${tone} st-reveal`}>
-                <span className="st-icon"><Icon /></span>
-                <h3>{title}</h3>
-                <p>{text}</p>
-                <div className="st-ages">
-                  <span>12–14 років</span>
-                  <span>15–17 років</span>
-                </div>
               </article>
             ))}
           </div>

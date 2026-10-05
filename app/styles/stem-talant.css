@@ -117,7 +117,7 @@
 .st-h2 { margin: 0 0 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; font-size: clamp(2rem, calc(4vw * var(--a11y-font-scale, 1)), 2.9rem); color: var(--v2-ink); }
 .st-text { margin: 0 0 28px; max-width: 720px; font-size: 17px; line-height: 1.6; color: var(--v2-ink-2); }
 
-.st-noms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.st-noms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; }
 .st-card {
   position: relative; display: flex; flex-direction: column; gap: 10px; padding: 28px;
   background: var(--surface-2); border: 1px solid var(--v2-line); border-radius: 22px;
@@ -129,7 +129,7 @@
   background: linear-gradient(140deg, var(--tone), color-mix(in srgb, var(--tone) 55%, #0e1330));
 }
 .st-icon svg { width: 30px; height: 30px; }
-.st-card h3 { margin: 8px 0 0; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
+.st-card h4 { margin: 8px 0 0; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
 .st-card p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
 .st-ages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
 .st-ages span { padding: 5px 12px; border-radius: 9999px; font-size: 13px; font-weight: 700; color: var(--v2-ink-2); background: var(--v2-cream); }
@@ -185,13 +185,6 @@
 .st-table thead th span { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; color: var(--v2-ink-3); }
 .st-table thead th em { display: inline-block; margin-top: 10px; font-style: normal; font-size: 20px; font-weight: 700; color: var(--t-a); }
 .st-table thead th:first-child { width: 22%; }
-.st-table-corner { vertical-align: top !important; }
-.st-table-corner > span { margin-top: 0; }
-.st-table-corner ul { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.st-table-corner li { position: relative; padding-left: 16px; font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--v2-ink); }
-.st-table-corner li::before { content: ''; position: absolute; left: 0; top: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--t-a); }
-.st-table-corner li.tone-b::before { background: var(--t-b); }
-.st-table-corner li.tone-c::before { background: var(--t-c); }
 .st-table tbody th[scope="row"] { font-weight: 700; color: var(--v2-ink); }
 .st-table td.is-main, .st-table th.is-main { background: color-mix(in srgb, var(--t-a) 7%, transparent); }
 .st-table thead th.is-main { box-shadow: inset 0 4px 0 var(--t-a); }
