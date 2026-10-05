@@ -3,7 +3,7 @@ import Footer from '../Footer';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { CodeIcon, RobotIcon, AtomIcon } from './Icons';
 import PartnerModal from './PartnerModal';
-import PressLogos from '../PressLogos';
+import { MENTIONS, logoClass } from '@/lib/press';
 import SharePosts from './SharePosts';
 
 // «STEM-талант України» — власний конкурс Dityam.com.ua (рішення Марії
@@ -73,8 +73,9 @@ const CHIPS = ['</>', 'E=mc²', 'π', 'H₂O', 'AI', '3D'];
 // Цілі й вигоди партнерів (Марія, 05.10.2026: «де цілі проєкту, щоб якось
 // залучала, а що отримають партнери»). Лише те, що конкурс справді дає;
 // ціни партнерства — у таблиці «Формати партнерства» нижче.
-// Інформаційні партнери конкурсу — лише ті, хто погодився (Марія,
-// 05.10.2026: «додай теж» — .HUB, її HubSpot-студія).
+// Інформаційні партнери конкурсу: .HUB (HubSpot-студія Марії) і видання,
+// що писали про Dityam.com.ua (lib/press.js) — одним блоком, рішення
+// Марії 05.10.2026.
 const INFO_PARTNERS = [
   { name: '.HUB', url: 'https://www.dot-hub.club/', title: '.HUB — HubSpot: CRM, автоматизація, сайти', logoClass: 'st-logo-hub' },
 ];
@@ -379,15 +380,17 @@ export default function StemTalantPage() {
                 </a>
               </li>
             ))}
+            {MENTIONS.map((m) => (
+              <li key={m.url}>
+                <a href={m.url} target="_blank" rel="noopener noreferrer" title={m.title}>
+                  <img src={m.logo.src} width={m.logo.width} height={m.logo.height} alt={m.outlet} className={logoClass(m.logo)} />
+                </a>
+              </li>
+            ))}
             <li className="st-info-join-cell">
               <PartnerModal label="+ Станьте інформаційним партнером" initialFormat="Інформаційний партнер" className="st-info-join" />
             </li>
           </ul>
-          {/* Видання нижче писали про Dityam.com.ua, але згоди бути
-              інформаційними партнерами конкурсу не давали — тому окремо,
-              під чесним підписом. Погодяться — переносимо вище. */}
-          <p className="st-eyebrow st-press-sub st-reveal">Про Dityam.com.ua писали</p>
-          <div className="st-reveal"><PressLogos /></div>
         </section>
 
         <section className="st-wrap st-sec">
