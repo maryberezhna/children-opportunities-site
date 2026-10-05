@@ -4,6 +4,7 @@ import { TOPIC_LIST, qualifyingCountryTopics } from '@/lib/topics';
 import { qualifyingCombos } from '@/lib/city-topics';
 import { kyivToday } from '@/lib/dates';
 import { isLive } from '@/lib/audience';
+import { OLIMP_OPEN } from '@/lib/olimpiada';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -96,6 +97,8 @@ export default async function sitemap() {
     { url: `${SITE_URL}/erasmus`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/olimpiady`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/stem-partnery`, changeFrequency: 'weekly', priority: 0.6 },
+    // Онлайн-олімпіада — у карті сайту лише після запуску продажу.
+    ...(OLIMP_OPEN ? [{ url: `${SITE_URL}/olimpiada`, changeFrequency: 'weekly', priority: 0.7 }] : []),
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]

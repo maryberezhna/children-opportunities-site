@@ -8,6 +8,7 @@ import {
   failureAdviceForPerson, accessLine, payStartUrl,
 } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
+import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,6 +37,18 @@ export async function POST(request) {
   if (!b || !b.orderReference) return new Response('bad request', { status: 400 });
   if (!verifyCallback(b)) return new Response('bad signature', { status: 403 });
 
+  // Разова оплата онлайн-олімпіади (номер `olimp-…`) — не підписка: нею
+  // займається своя логіка, а статуси Dityam+ нижче її не стосуються.
+  if (isOlimpOrder(b.orderReference)) {
+    try {
+      await handleOlimpCallback(b);
+    } catch (e) {
+      console.error('[pay/wayforpay] olimpiada', e);
+      return new Response('retry', { status: 500 });
+    }
+    return Response.json(acceptResponse(b.orderReference));
+  }
+
   if (SUPABASE_URL && SERVICE_ROLE) {
     const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
     const token = tokenFromOrderRef(b.orderReference);
@@ -43,12 +56,15 @@ export async function POST(request) {
 
     if (b.transactionStatus === 'Approved') {
       const { data: existing } = await supabase.from('digest_subscribers')
-        .select('consent_at, status, wfp_order_reference').eq('unsub_token', token).maybeSingle();
+        .select('consent_at, status, wfp_order_reference, billing_period').eq('unsub_token', token).maybeSingle();
       // Щомісячне (щорічне) списання приходить тим самим колбеком. Тоді це
       // продовження, а не нова підписка: номер ПЕРШОГО замовлення не
       // перезаписуємо — саме за ним WayForPay скасовує регулярне списання
       // (REMOVE у /stop), — і не шлемо щоразу «Оплата пройшла, профіль готовий».
-      const renewal = existing?.status === 'active' && Boolean(existing?.wfp_order_reference);
+      // Подарунковий місяць за олімпіаду (billing_period = gift) — не оплачена
+      // підписка: перший платіж після нього є новою підпискою, а не поновленням.
+      const renewal = existing?.status === 'active' && Boolean(existing?.wfp_order_reference)
+        && existing?.billing_period !== 'gift';
       // Причину минулої невдачі стираємо: з першої спроби платіж проходить не
       // завжди (24.09.2026 — спершу 1101 «банк відхилив», потім успіх), і
       // лишити її означало б показувати в адмінці відмову там, де людина вже
