@@ -28,8 +28,8 @@ export default async function Image() {
         backgroundImage: 'radial-gradient(circle at 12% 8%, rgba(59,91,255,.55) 0%, rgba(14,19,48,0) 45%), radial-gradient(circle at 92% 30%, rgba(124,92,255,.5) 0%, rgba(14,19,48,0) 45%), radial-gradient(circle at 55% 110%, rgba(20,184,143,.45) 0%, rgba(14,19,48,0) 40%)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', fontSize: 26, fontWeight: 500, color: '#c9d0f5' }}>Онлайн-конкурс для школярів 12–17 років</div>
-          <div style={{ display: 'flex', fontSize: 24, fontWeight: 500, color: '#c9d0f5' }}>dityam.com.ua/stem-talant</div>
+          <div style={{ display: 'flex', fontSize: 26, fontWeight: 500, color: '#c9d0f5' }}>STEM-партнери · онлайн-конкурс для школярів 12–17 років</div>
+          <div style={{ display: 'flex', fontSize: 24, fontWeight: 500, color: '#c9d0f5' }}>dityam.com.ua/stem-partnery</div>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', fontSize: 112, fontWeight: 700, color: '#ffffff', lineHeight: 1, letterSpacing: '-0.035em' }}>STEM-талант</div>

@@ -8,27 +8,33 @@
 
 import { useState } from 'react';
 
-const URL = 'https://dityam.com.ua/stem-talant';
+// Батькам і вчителям — /stem-talant (у грудні там буде сторінка для дітей,
+// до того вона веде на /stem-partnery); IT-спільноті — одразу сторінка партнерів.
+const KIDS_URL = 'https://dityam.com.ua/stem-talant';
+const PARTNERS_URL = 'https://dityam.com.ua/stem-partnery';
 
 const POSTS = [
   {
     id: 'parents',
+    url: KIDS_URL,
     label: 'Для батьків',
     text: '🚀 STEM-талант України — онлайн-конкурс для школярів 12–17 років!\n\nКод, робот чи дослідження — дитина показує свій проєкт, а журі з інженерів і науковців обирає переможців у 3 номінаціях: програмування й ШІ, робототехніка й інженерія, наука й математика.\n\n📅 Реєстрація 1–20 грудня 2026, проєкти — на зимових канікулах, переможці — 10 січня 2027.',
   },
   {
     id: 'teachers',
+    url: KIDS_URL,
     label: 'Для вчителів',
     text: 'Колеги, якщо у вас є учні 12–17 років, які пишуть код, збирають роботів чи проводять дослідження, — розкажіть їм про онлайн-конкурс «STEM-талант України».\n\nРеєстрація 1–20 грудня 2026, проєкти — на зимових канікулах, журі з інженерів і науковців, переможців оголосять 10 січня 2027.',
   },
   {
     id: 'it',
+    url: PARTNERS_URL,
     label: 'Для IT-спільноти',
     text: 'Шукаємо IT-компанії, які хочуть підтримати майбутніх інженерів 🇺🇦\n\nDityam.com.ua проводить «STEM-талант України» — онлайн-конкурс проєктів для школярів 12–17 років на зимових канікулах. Журі — інженери й науковці, призи — від партнерів.\n\nМожна стати генеральним партнером, партнером номінації чи інформаційним партнером — або просто поширити цей пост.',
   },
 ];
 
-const withUrl = (t) => `${t}\n\n${URL}`;
+const withUrl = (p) => `${p.text}\n\n${p.url}`;
 
 function track(label) {
   if (typeof window !== 'undefined' && window.gtag) window.gtag('event', 'share_click', { event_label: label });
@@ -41,7 +47,7 @@ export default function SharePosts() {
 
   async function copy(msg) {
     try {
-      await navigator.clipboard.writeText(withUrl(post.text));
+      await navigator.clipboard.writeText(withUrl(post));
       setNote(msg);
     } catch {
       setNote('Не вдалося скопіювати — виділіть текст вище й скопіюйте вручну.');
@@ -55,10 +61,10 @@ export default function SharePosts() {
     window.open(href, '_blank', 'noopener,noreferrer');
   }
 
-  const tg = `https://t.me/share/url?url=${encodeURIComponent(URL)}&text=${encodeURIComponent(post.text)}`;
-  const viber = `viber://forward?text=${encodeURIComponent(withUrl(post.text))}`;
-  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(URL)}`;
-  const li = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(withUrl(post.text))}`;
+  const tg = `https://t.me/share/url?url=${encodeURIComponent(post.url)}&text=${encodeURIComponent(post.text)}`;
+  const viber = `viber://forward?text=${encodeURIComponent(withUrl(post))}`;
+  const fb = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(post.url)}`;
+  const li = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(withUrl(post))}`;
 
   return (
     <div className="st-posts">
@@ -76,7 +82,7 @@ export default function SharePosts() {
           </button>
         ))}
       </div>
-      <p className="st-post-text" role="tabpanel">{withUrl(post.text)}</p>
+      <p className="st-post-text" role="tabpanel">{withUrl(post)}</p>
       <div className="st-share-btns">
         <button type="button" className="st-share-btn st-share-copy-btn"
           onClick={() => { track(`stem_talant_copy_${post.id}`); copy('Текст поста скопійовано ✓'); }}>

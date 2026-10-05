@@ -1,6 +1,6 @@
 'use client';
 
-// «Стати партнером» на /stem-talant: кнопка одразу відкриває спливне вікно
+// «Стати партнером» на /stem-partnery: кнопка одразу відкриває спливне вікно
 // з короткою формою (Марія, 05.10.2026: «щоб було просто і зрозуміло»).
 // Заявка йде тим самим шляхом, що й контактна форма сайту: /api/contact,
 // тип 'partnership' → таблиця contact_messages і повідомлення в адмін-бот.
@@ -48,7 +48,7 @@ export default function PartnerModal({ label = 'Стати партнером', 
           name: String(f.get('name') || '').trim(),
           contact: String(f.get('contact') || '').trim(),
           message,
-          page: '/stem-talant',
+          page: '/stem-partnery',
           website: String(f.get('website') || ''),
         }),
       });
