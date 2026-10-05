@@ -50,7 +50,7 @@
 .st-dot { width: 8px; height: 8px; border-radius: 50%; background: #2ee6b6; box-shadow: 0 0 0 0 rgba(46,230,182,.7); animation: st-pulse 2s infinite; }
 .st-title {
   margin: 0; font-weight: 700; line-height: 0.98; letter-spacing: -0.035em; color: #fff;
-  font-size: clamp(2.9rem, calc(7.2vw * var(--a11y-font-scale, 1)), 6.25rem);
+  font-size: clamp(2.6rem, calc(6vw * var(--a11y-font-scale, 1)), 5.2rem);
 }
 .st-title-grad {
   display: inline-block; background: linear-gradient(90deg, #ffd447, #ff7a59, #b49cff, #ffd447);
