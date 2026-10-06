@@ -55,6 +55,21 @@ class InvitesTest(unittest.TestCase):
         self.assertNotIn("Dityam+ —", text)
         self.assertNotIn("розіграш", text.lower())
 
+    def test_diploma_message(self):
+        entry = {**ENTRY, "finished_at": "2026-10-05T11:00:00+00:00", "score": 23, "max_score": 25}
+        self.assertTrue(inv.needs_diploma(entry))
+        self.assertFalse(inv.needs_diploma({**entry, "diploma_sent_at": "2026-10-05T11:05:00+00:00"}))
+        self.assertFalse(inv.needs_diploma(ENTRY))   # тест ще не пройдено
+        subject, text, body = inv.build_diploma_message(entry)
+        self.assertIn("Диплом", subject)
+        self.assertIn("23 з 25", text)
+        self.assertIn("23 з 25", body)
+        msg = inv.make_diploma_email(entry, b"\x89PNG fake")
+        parts = [p.get_content_type() for p in msg.walk()]
+        self.assertIn("image/png", parts)
+        self.assertIn("text/html", parts)
+        self.assertIn("dyplom-olimpiada-dityam.png", msg.as_string())
+
     def test_email_headers(self):
         msg = inv.make_email(ENTRY)
         self.assertEqual(msg["To"], "mama@example.com")

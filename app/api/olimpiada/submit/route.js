@@ -3,7 +3,7 @@
 // браузері сам здає роботу, коли час вийшов.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { OLIMP, scoreAnswers, levelFor, deadlineOf, monthKey } from '@/lib/olimpiada';
-import { getStore, validToken, notifyAdmin, esc, json } from '@/lib/olimpiada-server';
+import { getStore, validToken, notifyAdmin, esc, json, loadKeys } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,7 +31,10 @@ export async function POST(request) {
       if (Number.isInteger(v) && v >= 0 && v < 4) answers[o.id] = v;
     }
   }
-  const { score, max } = scoreAnswers(BANK, entry.question_order, answers);
+  // Без ключів бали були б нулями — краще чесно відмовити й дати повторити.
+  const keys = await loadKeys(OLIMP.slug);
+  if (!keys) return json({ error: 'unavailable' }, 503);
+  const { score, max } = scoreAnswers(BANK, entry.question_order, answers, keys);
   const level = levelFor(score);
   const now = new Date();
   await store.update(entry.token, {

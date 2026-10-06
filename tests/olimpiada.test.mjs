@@ -17,56 +17,40 @@ const {
 const { oneTimeInvoiceBody, isOurOrderRef } = await import('../lib/wayforpay.js');
 
 const byId = Object.fromEntries(BANK.map((q) => [q.id, q]));
-const right = (id) => byId[id].options[byId[id].answer];
+const optKey = (o) => JSON.stringify(o);
 
-test('банк: стільки завдань, скільки в налаштуваннях, і кожне коректне', () => {
+// Маленький банк із ключами — для перевірки підрахунку: справжні ключі
+// лежать у базі, не в репозиторії.
+const MINI = [
+  { id: 'm1', tier: 1, q: 'a', options: ['1', '2', '3', '4'] },
+  { id: 'm2', tier: 2, q: 'b', options: [{ art: '<svg/>' }, { art: '<svg />' }, { art: '<svg></svg>' }, { art: '<svg><g/></svg>' }] },
+  { id: 'm3', tier: 3, q: 'c', options: ['x', 'y', 'z', 'w'] },
+];
+const MINI_KEYS = { m1: 2, m2: 0, m3: 3 };
+
+test('банк: 25 ілюстрованих завдань, кожне коректне, без відповідей у коді', () => {
   assert.equal(BANK.length, OLIMP.questionCount);
   assert.equal(new Set(BANK.map((q) => q.id)).size, BANK.length);
+  let withArt = 0;
   for (const q of BANK) {
     assert.equal(q.options.length, 4, q.id);
-    assert.equal(new Set(q.options).size, 4, `${q.id}: варіанти повторюються`);
-    assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < 4, q.id);
+    assert.equal(new Set(q.options.map(optKey)).size, 4, `${q.id}: варіанти повторюються`);
+    assert.ok([1, 2, 3].includes(q.tier), `${q.id}: tier`);
     assert.ok(q.q.length > 5, q.id);
+    // репозиторій публічний — відповідь у банку означала б, що її видно всім
+    assert.equal('answer' in q, false, `${q.id}: відповідь у коді`);
+    const arts = [q.art, ...q.options.map((o) => o && o.art)].filter(Boolean);
+    for (const a of arts) assert.ok(a.startsWith('<svg') && a.endsWith('</svg>'), `${q.id}: SVG`);
+    if (arts.length) withArt += 1;
+    for (const o of q.options) assert.ok(typeof o === 'string' ? o.length > 0 : (o.art || o.text), `${q.id}: порожній варіант`);
+    // жодних емодзі чи Unicode-фігур — на різних телефонах вони різні
+    assert.ok(!/[\u2600-\u27BF\u2B00-\u2BFF\u{1F300}-\u{1FAFF}]/u.test(JSON.stringify(q)), `${q.id}: символи`);
   }
-});
-
-test('відповіді, які можна перерахувати, — правильні', () => {
-  assert.equal(right('l03'), String(3 + 1));
-  assert.equal(right('l05'), String(3 * 2 + 2 * 4));
-  assert.equal(right('l11'), String(5 + 8));
-  // 24 учні, дівчат удвічі більше
-  assert.equal(right('l13'), String((24 / 3) * 2));
-  assert.equal(right('l14'), `у ${36 / 9}`);
-  // цифра 7 у числах 1..50
-  const sevens = Array.from({ length: 50 }, (_, i) => String(i + 1)).join('').split('7').length - 1;
-  assert.equal(right('l15'), String(sevens));
-  // равлик: +3 за день, −2 за ніч, стовп 5 м
-  let h = 0; let day = 0;
-  for (;;) { day += 1; h += 3; if (h >= 5) break; h -= 2; }
-  assert.equal(right('l17'), `на ${day}-й`);
-  const same = Array.from({ length: 90 }, (_, i) => String(i + 10)).filter((n) => n[0] === n[1]).length;
-  assert.equal(right('l19'), String(same));
-  assert.equal(right('l20'), String((20 + 4) / 2));
-  assert.equal(right('l22'), '3');
-  assert.equal(right('l24'), '8:00');
-  // найбільше тризначне з 12345 без 2 цифр, порядок зберігаємо
-  const digits = '12345'.split('');
-  let best = 0;
-  for (let a = 0; a < 5; a += 1) for (let b = a + 1; b < 5; b += 1) {
-    best = Math.max(best, Number(digits.filter((_, i) => i !== a && i !== b).join('')));
-  }
-  assert.equal(right('l25'), String(best));
-  // кури й кролики: 10 голів, 28 ніг
-  let rabbits = null;
-  for (let r = 0; r <= 10; r += 1) if (r * 4 + (10 - r) * 2 === 28) rabbits = r;
-  assert.equal(right('l26'), String(rabbits));
-  assert.equal(right('l27'), String((4 * 3) / 2));
-  // мама старша на 24; через 2 роки — втричі
-  let olia = null;
-  for (let o = 1; o < 40; o += 1) if (o + 24 + 2 === 3 * (o + 2)) olia = o;
-  assert.equal(right('l28'), String(olia));
-  assert.equal(right('l29'), String(17 + 16));
-  assert.equal(right('l30'), String(3 * 2 * 1));
+  assert.ok(withArt >= 22, `з малюнком лише ${withArt}`);
+  // від легких до складних, рівнів порівну
+  const tiers = BANK.map((q) => q.tier);
+  assert.deepEqual(tiers, [...tiers].sort((a, b) => a - b));
+  assert.ok(tiers.filter((t) => t === 1).length >= 7 && tiers.filter((t) => t === 3).length >= 7);
 });
 
 test('порядок: той самий токен — той самий порядок; легкі завдання першими', () => {
@@ -77,37 +61,40 @@ test('порядок: той самий токен — той самий пор�
   assert.notDeepEqual(a.map((o) => o.id), b.map((o) => o.id));
   assert.equal(a.length, OLIMP.questionCount);
   assert.deepEqual([...a.map((o) => o.id)].sort(), BANK.map((q) => q.id).sort());
-  const tier = Math.ceil(BANK.length / 3);
-  const easy = new Set(BANK.slice(0, tier).map((q) => q.id));
-  const hard = new Set(BANK.slice(2 * tier).map((q) => q.id));
-  assert.ok(a.slice(0, tier).every((o) => easy.has(o.id)));
-  assert.ok(a.slice(2 * tier).every((o) => hard.has(o.id)));
+  const tierOf = (id) => byId[id].tier;
+  const seq = a.map((o) => tierOf(o.id));
+  assert.deepEqual(seq, [...seq].sort((x, y) => x - y), 'легкі мають іти першими');
   for (const o of a) assert.deepEqual([...o.options].sort(), [0, 1, 2, 3]);
 });
 
-test('у браузер питання йдуть без правильних відповідей', () => {
+test('у браузер питання йдуть з малюнками, але без правильних відповідей', () => {
   const order = buildOrder(BANK, 'cccccccccccccccccccccccccccccccc');
   const pub = publicQuestions(BANK, order);
   assert.equal(pub.length, OLIMP.questionCount);
   for (const q of pub) {
-    assert.deepEqual(Object.keys(q).sort(), ['id', 'options', 'q']);
+    assert.deepEqual(Object.keys(q).sort(), ['art', 'id', 'options', 'q']);
     assert.equal(q.options.length, 4);
-    assert.equal(byId[q.id].options[q.options[0].id], q.options[0].text);
+    const src = byId[q.id].options[q.options[0].id];
+    if (typeof src === 'string') assert.equal(q.options[0].text, src);
+    else assert.equal(q.options[0].art, src.art || null);
   }
   assert.ok(!JSON.stringify(pub).includes('"answer"'));
 });
 
-test('бали: лише за видані завдання, порожнє й хибне — 0', () => {
-  const order = buildOrder(BANK, 'dddddddddddddddddddddddddddddddd');
-  const all = Object.fromEntries(BANK.map((q) => [q.id, q.answer]));
-  const n = OLIMP.questionCount;
-  assert.deepEqual(scoreAnswers(BANK, order, all), { score: n, max: n, answered: n });
-  assert.deepEqual(scoreAnswers(BANK, order, {}), { score: 0, max: n, answered: 0 });
-  const wrong = Object.fromEntries(BANK.map((q) => [q.id, (q.answer + 1) % 4]));
-  assert.equal(scoreAnswers(BANK, order, wrong).score, 0);
-  // чужий ключ у запиті не додає балів
-  assert.equal(scoreAnswers(BANK, order.slice(0, 5), { ...all, zzz: 0 }).max, 5);
-  assert.equal(scoreAnswers(BANK, order, { [BANK[0].id]: String(BANK[0].answer) }).score, 1);
+test('бали: за ключами з бази, лише за видані завдання; без ключів — 0', () => {
+  const order = buildOrder(MINI, 'dddddddddddddddddddddddddddddddd', 3);
+  assert.deepEqual(scoreAnswers(MINI, order, { m1: 2, m2: 0, m3: 3 }, MINI_KEYS), { score: 3, max: 3, answered: 3 });
+  assert.deepEqual(scoreAnswers(MINI, order, {}, MINI_KEYS), { score: 0, max: 3, answered: 0 });
+  assert.equal(scoreAnswers(MINI, order, { m1: 3, m2: 1, m3: 0 }, MINI_KEYS).score, 0);
+  // рядок «2» — теж відповідь; чужий ключ у запиті не додає балів; без ключа питання не зараховується
+  assert.equal(scoreAnswers(MINI, order, { m1: '2', zzz: 0 }, MINI_KEYS).score, 1);
+  assert.equal(scoreAnswers(MINI, order.slice(0, 2), { m1: 2, m2: 0, m3: 3 }, MINI_KEYS).max, 2);
+  assert.equal(scoreAnswers(MINI, order, { m1: 2 }, { m2: 0 }).score, 0);
+  assert.equal(scoreAnswers(MINI, order, { m1: 2 }, null).score, 0);
+  // варіанти-картинки йдуть у браузер як art, без тексту
+  const pub = publicQuestions(MINI, order);
+  const m2 = pub.find((q) => q.id === 'm2');
+  assert.ok(m2.options.every((o) => o.art && o.text === null));
 });
 
 test('25 завдань, 35 хвилин; рівні диплома: пороги 22 / 17 / 12', () => {
@@ -221,11 +208,13 @@ test('72 години на початок тесту: потім доступ з
   assert.equal(kyivDateTime('2026-10-08T10:00:00Z'), '8 жовтня, 13:00');
 });
 
-test('призи місяця: 3 місця, усі з точною назвою й малюнком, без планшета', () => {
+test('призи місяця: 3 місця, усі з точною назвою й фото, без планшета й артикулів', () => {
   assert.deepEqual(PRIZES.map((p) => p.place), [1, 2, 3]);
   for (const p of PRIZES) {
-    assert.ok(p.title.length > 10 && p.note && p.art, `приз ${p.place}`);
+    assert.ok(p.title.length > 10 && p.note, `приз ${p.place}`);
+    assert.match(p.image, /^\/olimpiada\/prize-[a-z]+\.jpg$/);
     assert.ok(!/планшет/i.test(p.title));
+    assert.ok(!/\(\d{4,}\)/.test(p.title), `${p.title}: артикул у назві`);
   }
 });
 
