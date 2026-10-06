@@ -425,20 +425,5 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 /* Текст лише для пошуковиків і скрінрідерів (повна назва в h1). */
 .ol-sr { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
-/* ---------- Справжнє відкрите завдання в «Призах місяця» ---------- */
-/* Марія, 06.10.2026: «покажи дійсно відкрите завдання» — той самий малюнок і
-   текст, що дитина бачить у кінці тесту, а не переказ словами. */
-.ol-opentask { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 26px; align-items: center; margin: 28px 0 0; padding: 22px; border-radius: 28px; background: #fff; color: var(--ol-blue-deep); }
-.ol-opentask-art { padding: 10px 12px; border-radius: 20px; background: #eef4ff; }
-.ol-opentask-art svg { display: block; width: 100%; height: auto; }
-.ol-opentask-body { display: flex; flex-direction: column; gap: 10px; }
-.ol-opentask-kicker { align-self: flex-start; padding: 6px 14px; border-radius: 9999px; background: var(--ol-yellow); color: var(--ol-navy); font-size: 13px; font-weight: 700; line-height: 1.2; }
-.ol-opentask-title { font-family: var(--font-caveat), cursive; font-size: 36px; font-weight: 700; line-height: 1.05; color: var(--ol-navy); }
-.ol-opentask-text { font-size: 16px; font-weight: 500; line-height: 1.6; color: #2c4a9a; }
-.ol-opentask-crit { font-size: 14px; line-height: 1.5; color: #2c4a9a; }
-.ol-opentask + .ol-prizes { margin-top: 60px; }
+/* Посилання у відповідях FAQ («Dityam+» → /plus). */
 .ol-faq-panel a, .ol-faq-inline a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
-@media (max-width: 860px) {
-  .ol-opentask { grid-template-columns: 1fr; gap: 16px; padding: 16px; }
-  .ol-opentask-title { font-size: 32px; }
-}
