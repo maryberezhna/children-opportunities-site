@@ -41,6 +41,8 @@
 .ol-hero-grid { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: center; margin-top: 44px; max-width: 900px; }
 .ol-hand { margin: 0 0 22px; font-family: var(--font-caveat), cursive; font-size: clamp(2.1rem, calc(4.8vw * var(--a11y-font-scale, 1)), 3.3rem); font-weight: 700; line-height: 1.05; color: var(--ol-yellow); }
 .ol-hand-blue { color: var(--ol-ink); }
+/* Назва бренду в заголовку — як логотип у шапці: рукописна, помаранчева (Марія, 06.10.2026: «тільки у стилі бренду») */
+.ol-brand { color: #e85d24; }
 .ol-hand-gap { margin-top: 72px; }
 p.ol-hand { margin-bottom: 10px; }
 .ol-lead { margin: 0; max-width: 620px; font-size: 18px; font-weight: 500; line-height: 1.6; color: var(--ol-ink); }
@@ -118,6 +120,12 @@ p.ol-hand { margin-bottom: 10px; }
 /* ---------- Світлі блоки: зразки й рівні ---------- */
 .ol-samples { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 .ol-sample { padding: 24px; border-radius: 28px; background: var(--surface-2); border: 2.5px solid var(--ol-card-line); }
+.ol-sample-art { display: flex; justify-content: center; margin: 0 0 14px; padding: 8px 10px; border-radius: 18px; background: var(--v2-cream); }
+.ol-sample-art svg { display: block; width: 100%; height: auto; max-height: 170px; }
+.ol-sample ul.is-pics { grid-template-columns: repeat(4, 1fr); }
+.ol-sample-pic { display: block; width: 100%; }
+.ol-sample-pic svg { display: block; width: 100%; height: auto; }
+.ol-sample li em { display: block; margin-top: 4px; font-style: normal; font-size: 12px; color: #1f8f5f; }
 .ol-sample-q { margin: 0 0 14px; font-size: 18px; font-weight: 700; line-height: 1.4; color: var(--ol-ink); }
 .ol-sample ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .ol-sample li { padding: 10px 14px; border-radius: 14px; border: 2px solid var(--ol-card-line); font-size: 16px; color: var(--v2-ink-2); }
@@ -145,8 +153,7 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-pill { position: absolute; top: -22px; left: 50%; transform: translateX(-50%) rotate(-3deg); padding: 10px 26px; border-radius: 9999px; background: var(--ol-orange); color: var(--ol-navy); font-family: var(--font-caveat), cursive; font-size: 28px; font-weight: 700; line-height: 1; white-space: nowrap; }
 .ol-prize-card:nth-child(2) .ol-pill { background: var(--ol-yellow); }
 .ol-prize-card:nth-child(3) .ol-pill { background: #ff9ecb; }
-.ol-prize-art { display: block; width: 100%; max-width: 210px; }
-.ol-prize-art svg { display: block; width: 100%; height: auto; }
+.ol-prize-photo { display: block; width: 100%; max-width: 230px; height: auto; border-radius: 18px; }
 .ol-prize-card b { font-size: 18px; font-weight: 700; line-height: 1.3; }
 .ol-prize-note { font-size: 14px; line-height: 1.45; color: #2c4a9a; }
 
@@ -203,13 +210,6 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-faq-panel h3 { margin: 0 0 14px; font-family: var(--font-caveat), cursive; font-size: 32px; font-weight: 700; line-height: 1.1; }
 .ol-faq-panel p { margin: 0; font-size: 16px; font-weight: 500; line-height: 1.65; color: #2c4a9a; }
 
-.ol-rules-box summary { display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; cursor: pointer; list-style: none; }
-.ol-rules-box summary::-webkit-details-marker { display: none; }
-.ol-rules-box summary .ol-hand { margin: 0; }
-.ol-rules-box summary span { font-size: 15px; font-weight: 700; color: var(--v2-accent-strong); text-decoration: underline; }
-.ol-rules-box[open] summary span { display: none; }
-.ol-rules-box[open] summary { margin-bottom: 20px; }
-.ol-rules-box summary:focus-visible { outline: 3px solid #ff5fa2; outline-offset: 4px; }
 .ol-rules { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; max-width: 820px; font-size: 16px; line-height: 1.6; color: var(--v2-ink-2); }
 
 /* ---------- Тест ---------- */
@@ -227,7 +227,15 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-timer.is-low { background: #ff6b6b; color: #fff; }
 .ol-track { height: 10px; border-radius: 99px; background: rgba(255, 255, 255, .3); overflow: hidden; }
 .ol-track i { display: block; height: 100%; border-radius: 99px; background: var(--ol-yellow); transition: width .25s ease; }
-.ol-q { padding: 30px; border-radius: 30px; background: #fff; }
+.ol-q { padding: 22px 30px 30px; border-radius: 30px; background: #fff; }
+.ol-q-art { display: flex; justify-content: center; margin: 0 0 18px; padding: 10px 14px; border-radius: 22px; background: #eef4ff; }
+.ol-q-art svg { display: block; width: 100%; height: auto; max-height: 240px; }
+.ol-options.is-pics { grid-template-columns: repeat(4, 1fr); }
+/* Широкі картинки (намисто в рядок) — по 2 в ряд, інакше намистини дрібні */
+.ol-options.is-pics.is-wide { grid-template-columns: repeat(2, 1fr); }
+.ol-option.is-pic { flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 10px; text-align: center; font-size: 15px; }
+.ol-option-art { display: block; width: 100%; }
+.ol-option-art svg { display: block; width: 100%; height: auto; max-height: 120px; }
 .ol-q-text { margin: 0 0 24px; font-size: clamp(1.3rem, calc(3.4vw * var(--a11y-font-scale, 1)), 1.7rem); font-weight: 700; line-height: 1.35; color: var(--ol-blue-deep); }
 .ol-options { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
 .ol-option {
@@ -285,7 +293,7 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
   /* Менше «зірок» під текстом: дрібні крапки між рядками читались як розділові знаки */
   .ol-space { background-image: radial-gradient(#fff 1.2px, transparent 1.8px), radial-gradient(rgba(126, 87, 255, .9) 1.6px, transparent 2.2px); background-size: 230px 260px, 310px 340px; background-position: 14px 20px, 150px 120px; }
   .ol-prize-card { padding: 32px 18px 20px; }
-  .ol-prize-art { max-width: 150px; }
+  .ol-prize-photo { max-width: 170px; }
   .ol-sample { padding: 20px 16px; }
   .ol-dips { gap: 22px 10px; }
   .ol-dip b { font-size: 15px; }
@@ -307,7 +315,12 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 }
 @media (max-width: 560px) {
   .ol-options { grid-template-columns: 1fr; }
+  .ol-options.is-pics { grid-template-columns: repeat(2, 1fr); }
+  .ol-options.is-pics.is-wide { grid-template-columns: 1fr; }
+  .ol-q-art svg { max-height: 200px; }
   .ol-sample li { padding: 10px 12px; font-size: 15px; }
+  .ol-sample ul.is-pics { grid-template-columns: repeat(4, 1fr); gap: 6px; }
+  .ol-sample ul.is-pics li { padding: 6px; }
   .ol-option { min-height: 58px; padding: 12px 16px; font-size: 18px; }
   .ol-run { gap: 14px; }
   .ol-space-full { padding: 20px 0 72px; }

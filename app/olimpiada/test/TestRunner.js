@@ -56,14 +56,17 @@ export default function TestRunner({ token, name, started, count, minutes, until
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ t: token, answers: current }),
       });
+      if (r.status === 503) throw new Error('later');
       if (!r.ok) throw new Error('bad');
       try { window.localStorage.removeItem(storeKey); } catch { /* ок */ }
       if (typeof window.gtag === 'function') window.gtag('event', 'olimpiada_finish', { event_label: 'lohika_9_11' });
       window.location.replace(`/olimpiada/test?t=${token}`);
-    } catch {
+    } catch (e) {
       sentRef.current = false;
       setPhase('run');
-      setError('Не вдалося надіслати відповіді. Перевірте інтернет і натисніть «Завершити» ще раз.');
+      setError(e && e.message === 'later'
+        ? 'Сервер тимчасово не приймає відповіді. Вони збережені — зачекай хвилину й натисни «Завершити» ще раз.'
+        : 'Не вдалося надіслати відповіді. Перевірте інтернет і натисніть «Завершити» ще раз.');
     }
   }, [token, storeKey]);
 
@@ -143,17 +146,21 @@ export default function TestRunner({ token, name, started, count, minutes, until
       <div className="ol-track" aria-hidden="true"><i style={{ width: `${(answeredCount / questions.length) * 100}%` }} /></div>
 
       <div className="ol-q">
+        {/* Малюнок до умови й варіанти-картинки — SVG, які склав наш сервер
+            (content/olimpiada/art.js), тому вставляємо їх як є. */}
+        {q.art && <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: q.art }} />}
         <h1 className="ol-q-text">{q.q}</h1>
-        <div className="ol-options" role="radiogroup" aria-label="Варіанти відповіді">
-          {q.options.map((o) => {
+        <div className={`ol-options${q.options.some((o) => o.art) ? ' is-pics' : ''}${q.options.some((o) => o.art && /viewBox="0 0 2\d\d \d\d"/.test(o.art)) ? ' is-wide' : ''}`} role="radiogroup" aria-label="Варіанти відповіді">
+          {q.options.map((o, i) => {
             const on = answers[q.id] === o.id;
             return (
               <button
                 key={o.id} type="button" role="radio" aria-checked={on}
-                className={`ol-option${on ? ' is-on' : ''}`} onClick={() => choose(q.id, o.id)}
-                disabled={phase === 'sending'}
+                className={`ol-option${on ? ' is-on' : ''}${o.art ? ' is-pic' : ''}`} onClick={() => choose(q.id, o.id)}
+                disabled={phase === 'sending'} aria-label={o.text || `Варіант ${i + 1}`}
               >
-                {o.text}
+                {o.art && <span className="ol-option-art" dangerouslySetInnerHTML={{ __html: o.art }} />}
+                {o.text && <span>{o.text}</span>}
               </button>
             );
           })}

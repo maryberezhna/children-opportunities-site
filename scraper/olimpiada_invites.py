@@ -1,4 +1,4 @@
-"""Запрошення до тесту онлайн-олімпіади — лист батькам після оплати.
+"""Листи батькам від онлайн-олімпіади: запрошення після оплати й диплом після тесту.
 
 Марія, 05.10.2026: «на вказаний імейл прийде запрошення до тесту» і «є 72
 години до проходження». Сайт листів не шле (на Vercel немає поштових ключів),
@@ -10,7 +10,7 @@ Env:
   DITYAM_GMAIL_APP_PASSWORD — пароль застосунку пошти проєкту
   DITYAM_GMAIL_FROM         — адреса (типово hellodityam.com.ua@gmail.com)
 
-  python olimpiada_invites.py            # надіслати всім, хто чекає
+  python olimpiada_invites.py            # надіслати всім, хто чекає (запрошення й дипломи)
   python olimpiada_invites.py --dry-run  # лише показати, кому пішло б
   python olimpiada_invites.py --check    # лише перевірити вхід у пошту
 """
@@ -20,7 +20,9 @@ import logging
 import os
 import smtplib
 import sys
+import urllib.request
 from datetime import datetime, timedelta, timezone
+from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
@@ -116,6 +118,64 @@ def build_message(entry: dict):
     return subject, text, body
 
 
+def needs_diploma(entry: dict) -> bool:
+    """Тест пройдено, диплом листом ще не йшов."""
+    return bool(entry.get("finished_at")) and not entry.get("diploma_sent_at") \
+        and "@" in str(entry.get("parent_email") or "")
+
+
+def build_diploma_message(entry: dict):
+    """(тема, текст, html) листа з дипломом — сам диплом іде вкладенням."""
+    name = str(entry.get("child_name") or "").strip() or "ваша дитина"
+    link = f"{SITE}/olimpiada/test?t={entry['token']}"
+    score = entry.get("score")
+    maximum = entry.get("max_score")
+    subject = f"Диплом онлайн-олімпіади з логіки — {name}"
+    text = "\n".join([
+        "Добрий день!",
+        "",
+        f"{name} пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат {score} з {maximum} балів.",
+        "Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.",
+        "",
+        f"Сторінка з результатом, дипломом і відкритим завданням на приз місяця: {link}",
+        "",
+        "Марія Шутяк, Dityam.com.ua",
+        FROM,
+    ])
+    esc = html.escape
+    body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
+<p>Добрий день!</p>
+<p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
+<p>Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.</p>
+<p><a href="{esc(link)}">Сторінка з результатом, дипломом і відкритим завданням на приз місяця</a></p>
+<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
+</div>"""
+    return subject, text, body
+
+
+def fetch_diploma(entry: dict) -> bytes:
+    url = f"{SITE}/api/olimpiada/diploma?t={entry['token']}"
+    with urllib.request.urlopen(url, timeout=60) as r:
+        return r.read()
+
+
+def make_diploma_email(entry: dict, png: bytes) -> MIMEMultipart:
+    subject, text, body = build_diploma_message(entry)
+    msg = MIMEMultipart("mixed")
+    msg["Subject"] = subject
+    msg["From"] = formataddr(("Dityam.com.ua", FROM))
+    msg["To"] = entry["parent_email"]
+    msg["Reply-To"] = FROM
+    alt = MIMEMultipart("alternative")
+    alt.attach(MIMEText(text, "plain", "utf-8"))
+    alt.attach(MIMEText(body, "html", "utf-8"))
+    msg.attach(alt)
+    image = MIMEImage(png, "png")
+    image.add_header("Content-Disposition", "attachment", filename="dyplom-olimpiada-dityam.png")
+    msg.attach(image)
+    return msg
+
+
 def make_email(entry: dict) -> MIMEMultipart:
     subject, text, body = build_message(entry)
     msg = MIMEMultipart("alternative")
@@ -150,12 +210,24 @@ def main() -> int:
             .not_.is_("paid_at", "null").is_("invite_sent_at", "null")
             .gte("paid_at", since).execute().data or [])
     todo = [r for r in rows if needs_invite(r)]
-    logger.info("Чекають на запрошення: %d", len(todo))
-    if not todo:
+    try:
+        done_rows = (client.table("olimpiada_entries").select("*")
+                     .not_.is_("finished_at", "null").is_("diploma_sent_at", "null")
+                     .execute().data or [])
+    except Exception:
+        # Колонки diploma_sent_at ще немає (міграція не застосована) —
+        # запрошення від цього страждати не мають.
+        logger.exception("Дипломи листом: не вдалося прочитати записи")
+        done_rows = []
+    diplomas = [r for r in done_rows if needs_diploma(r)]
+    logger.info("Чекають на запрошення: %d, на диплом: %d", len(todo), len(diplomas))
+    if not todo and not diplomas:
         return 0
     if args.dry_run:
         for r in todo:
-            logger.info("dry-run: %s → %s", r.get("child_name"), r.get("parent_email"))
+            logger.info("dry-run запрошення: %s → %s", r.get("child_name"), r.get("parent_email"))
+        for r in diplomas:
+            logger.info("dry-run диплом: %s → %s", r.get("child_name"), r.get("parent_email"))
         return 0
     if not PASSWORD:
         logger.error("DITYAM_GMAIL_APP_PASSWORD не задано — листи не надіслано")
@@ -174,6 +246,17 @@ def main() -> int:
             except Exception:
                 failed += 1
                 logger.exception("Не вдалося надіслати: %s", r.get("parent_email"))
+        for r in diplomas:
+            try:
+                png = fetch_diploma(r)
+                smtp.sendmail(FROM, [r["parent_email"]], make_diploma_email(r, png).as_string())
+                client.table("olimpiada_entries").update(
+                    {"diploma_sent_at": datetime.now(timezone.utc).isoformat()}
+                ).eq("id", r["id"]).execute()
+                logger.info("Диплом надіслано: %s", r.get("parent_email"))
+            except Exception:
+                failed += 1
+                logger.exception("Не вдалося надіслати диплом: %s", r.get("parent_email"))
     return 1 if failed else 0
 
 
