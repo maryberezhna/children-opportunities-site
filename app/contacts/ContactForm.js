@@ -53,10 +53,12 @@ const L = {
   },
 };
 
-export default function ContactForm({ lang = 'uk' }) {
+// defaultType / fixedType — для форми на окремій сторінці (напр., /olimpiada):
+// тема вже відома, тож селект не показуємо.
+export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', fixedType = false }) {
   const t = L[lang] || L.uk;
   const isEn = lang === 'en';
-  const [type, setType] = useState('opportunity');
+  const [type, setType] = useState(CONTACT_TYPE_MAP[defaultType] ? defaultType : 'opportunity');
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [form, setForm] = useState({ message: '', name: '', contact: '', url: '', website: '' });
   const [consent, setConsent] = useState(false);
@@ -71,7 +73,7 @@ export default function ContactForm({ lang = 'uk' }) {
   useEffect(() => {
     const q = new URLSearchParams(window.location.search);
     const wanted = q.get('type');
-    if (wanted && CONTACT_TYPE_MAP[wanted]) setType(wanted);
+    if (!fixedType && wanted && CONTACT_TYPE_MAP[wanted]) setType(wanted);
     const url = q.get('url');
     if (url && /^https?:\/\//i.test(url)) setForm((f) => ({ ...f, url }));
   }, []);
@@ -130,18 +132,20 @@ export default function ContactForm({ lang = 'uk' }) {
 
   return (
     <form className="contact-form" onSubmit={submit}>
-      <label className="contact-field">
-        <span className="contact-label">{t.topic}</span>
-        <select
-          className="contact-select"
-          value={type}
-          onChange={(e) => { setType(e.target.value); setState('idle'); }}
-        >
-          {CONTACT_TYPES.map((o) => (
-            <option key={o.value} value={o.value}>{o.emoji} {(isEn && o.labelEn) || o.label}</option>
-          ))}
-        </select>
-      </label>
+      {!fixedType && (
+        <label className="contact-field">
+          <span className="contact-label">{t.topic}</span>
+          <select
+            className="contact-select"
+            value={type}
+            onChange={(e) => { setType(e.target.value); setState('idle'); }}
+          >
+            {CONTACT_TYPES.map((o) => (
+              <option key={o.value} value={o.value}>{o.emoji} {(isEn && o.labelEn) || o.label}</option>
+            ))}
+          </select>
+        </label>
+      )}
 
       <p className="contact-hint">{(isEn && active.hintEn) || active.hint}</p>
 
