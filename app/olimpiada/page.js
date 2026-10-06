@@ -4,7 +4,7 @@ import { OLIMP, OLIMP_OPEN, LEVELS, PRIZES, OPEN_TASK, monthKey, monthName } fro
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
-import { svg, shape, SHAPE_COLOR, unknown, balance, star, circle } from '@/content/olimpiada/art';
+import { svg, shape, SHAPE_COLOR, balance, star, circle, line, text, INK } from '@/content/olimpiada/art';
 import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave } from './Doodles';
 
 // Онлайн-олімпіада Dityam.com.ua — пілот (рішення Марії 05.10.2026): одна
@@ -62,21 +62,25 @@ const STEPS = [
 ];
 
 // Зразки — не з тесту: показують стиль (малюнок + 4 варіанти), а не відповіді.
-const sampleRow = svg(360, 90, [
-  ...['triangle', 'circle', 'circle', 'triangle', 'circle', 'circle', 'triangle'].map((k, n) => shape(k, 34 + n * 44, 45, 17, SHAPE_COLOR[k])),
-  unknown(34 + 7 * 44, 45, 18),
+// Беремо середні за складністю: найлегші для 9–11 років виглядають як тест
+// для першокласників (Марія, 05.10.2026).
+const sampleLog = svg(360, 120, [
+  `<rect x="40" y="40" width="280" height="44" rx="22" fill="#c9924a" stroke="${INK}" stroke-width="3"/>`,
+  `<ellipse cx="40" cy="62" rx="14" ry="22" fill="#e8c38a" stroke="${INK}" stroke-width="3"/>`,
+  line(180, 30, 180, 94, 4, '#ff5a5f', '8 6'),
+  text(180, 22, '1 розпил = 2 хвилини', 16, '#ff5a5f'),
 ].join(''));
-const samplePic = (kind) => svg(120, 100, shape(kind, 60, 50, 28, SHAPE_COLOR[kind]));
 const SAMPLES = [
   {
-    q: 'Фігури йдуть за правилом. Яка фігура має бути наступною?', art: sampleRow,
-    options: [{ art: samplePic('triangle') }, { art: samplePic('circle') }, { art: samplePic('square') }, { art: samplePic('star') }], answer: 1,
+    q: 'Щоб розпиляти колоду на 2 частини, потрібно 2 хвилини. Скільки хвилин піде, щоб розпиляти таку саму колоду на 4 частини?',
+    art: sampleLog, options: ['4', '6', '8', '10'], answer: 1,
   },
   {
     q: 'Терези в рівновазі: 1 зірка важить стільки ж, скільки 2 кружечки. Скільки кружечків важать стільки, скільки 2 зірки?',
     art: svg(360, 196, balance(360, (x, y) => star(x, y - 18, 20, SHAPE_COLOR.star), (x, y) => `${circle(x - 20, y - 14, 13, SHAPE_COLOR.circle)}${circle(x + 20, y - 14, 13, SHAPE_COLOR.circle)}`)),
     options: ['2', '3', '4', '6'], answer: 2,
   },
+];
 ];
 
 const levelRange = (i) => {
@@ -92,7 +96,7 @@ function faq(month) {
     { q: 'Коли ми отримаємо диплом?', a: 'Одразу після завершення тесту — на екрані. Його можна завантажити, надрукувати або отримати в Telegram.' },
     { q: 'Чи можна замовити доставку диплома?', a: `Так, за додаткові ${OLIMP.printPrice} грн. Після тесту на сторінці з результатом вкажіть отримувача й відділення Нової пошти — надішлемо друкований диплом. Доставка — по Україні.` },
     { q: 'Як визначається рівень диплома?', a: `За кількістю правильних відповідей: золотий рівень — від ${LEVELS[0].min} балів із ${OLIMP.questionCount}, срібний — від ${LEVELS[1].min}, бронзовий — від ${LEVELS[2].min}. Решта учасників отримують диплом учасника.` },
-    { q: 'Як обирають переможців місяця?', a: `За останнім, відкритим завданням олімпіади. Журі Dityam.com.ua читає відповіді, надіслані протягом місяця, і обирає 3 найкращі за критеріями: ${OPEN_TASK.criteria.join(', ')}. Жеребкування немає. Переможців за ${month} оголосимо до 7-го числа наступного місяця.` },
+    { q: 'Як обирають переможців місяця?', a: `За останнім, відкритим завданням олімпіади. Журі Dityam.com.ua читає відповіді, надіслані протягом місяця, і обирає 3 найкращі за критеріями: ${OPEN_TASK.criteria.join(', ')}. Жеребкування немає. Переможців за ${month} оголосимо до 7-го числа наступного місяця й окремо напишемо кожному на email із заявки.` },
     { q: 'Чи повертається внесок?', a: `На проходження тесту є ${OLIMP.accessHours} години після оплати. Якщо за цей час дитина ще не починала тест, внесок можна повернути: напишіть на ${EMAIL}. Після початку тесту або коли ${OLIMP.accessHours} години минули, внесок не повертається.` },
     { q: 'Хто організатор?', a: 'Платформа Dityam.com.ua, ФОП Шутяк Марія Олександрівна. Це незалежна онлайн-олімпіада: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.' },
   ];
@@ -271,7 +275,7 @@ export default function OlimpiadaPage() {
                 </li>
               ))}
             </ul>
-            <p className="ol-note ol-note-light">Переможців оголошуємо до 7-го числа наступного місяця в Telegram-каналі й на цій сторінці. Фото товарів — з магазинів.</p>
+            <p className="ol-note ol-note-light">Переможців оголошуємо до 7-го числа наступного місяця в Telegram-каналі й на цій сторінці. Переможцям також пишемо окремо: на email із заявки. Фото товарів — з магазинів.</p>
 
             <div id="uchast" className="ol-frame">
               <MonsterBlue className="ol-doodle ol-frame-monster" />
