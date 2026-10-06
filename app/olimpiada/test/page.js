@@ -140,7 +140,8 @@ export default async function TestPage({ searchParams }) {
         )}
       </div>
 
-      <div className="ol-panel ol-open">
+      {/* #dostavka — сюди веде лист із дипломом («Бажаєте отримати диплом Новою поштою?»). */}
+      <div className="ol-panel ol-open" id="dostavka">
         <p className="ol-kicker">За бажанням</p>
         <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
         <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
