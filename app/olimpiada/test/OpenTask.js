@@ -9,7 +9,7 @@ export default function OpenTask({ token, done, max }) {
   const [error, setError] = useState('');
 
   if (state === 'sent') {
-    return <p className="ol-ok" role="status">Відповідь надіслано. Переможців місяця оголосимо в Telegram-каналі Dityam.com.ua.</p>;
+    return <p className="ol-ok" role="status">Відповідь надіслано. Переможців місяця оголосимо в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.</p>;
   }
 
   async function submit(e) {
