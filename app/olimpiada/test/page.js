@@ -103,7 +103,7 @@ export default async function TestPage({ searchParams }) {
           Результат: <b>{entry.score} з {entry.max_score}</b> · {level.label}.
         </p>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="ol-diploma" src={diploma} width={1754} height={1240} alt={`Диплом: ${entry.child_name}, ${level.label}, ${entry.score} з ${entry.max_score}`} />
+        <img className="ol-diploma" src={diploma} width={1240} height={1754} alt={`Диплом: ${entry.child_name}, ${level.label}, ${entry.score} з ${entry.max_score}`} />
         <div className="ol-actions ol-actions-center">
           <a href={`${diploma}&dl=1`} className="ol-btn ol-btn-main">Завантажити диплом</a>
           {entry.plus_token && (

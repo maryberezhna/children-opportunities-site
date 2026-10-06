@@ -17,8 +17,8 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const fontDir = path.join(process.cwd(), 'public', 'fonts');
-const W = 1754;
-const H = 1240;
+const W = 1240;
+const H = 1754;
 const BLUE = '#2a5cc0';
 const NAVY = '#16307a';
 
@@ -34,8 +34,9 @@ const SAMPLE_SCORE = { gold: 23, silver: 19, bronze: 14, participant: 9 };
 
 // Зірки на небі: сталі координати, щоб диплом щоразу був однаковий.
 const STARS = [
-  [60, 90, 5], [210, 50, 3], [330, 150, 4], [520, 40, 3], [700, 110, 5], [900, 60, 3], [1100, 130, 4], [1300, 50, 3], [1500, 100, 5], [1680, 160, 3],
-  [40, 420, 3], [1710, 520, 4], [30, 760, 4], [1715, 860, 3], [90, 1130, 4], [300, 1190, 3], [560, 1150, 5], [820, 1200, 3], [1050, 1160, 4], [1330, 1195, 3], [1560, 1140, 5], [1690, 1210, 3],
+  [40, 300, 5], [160, 420, 3], [60, 760, 4], [120, 880, 3], [40, 1200, 5], [150, 1340, 3], [60, 1660, 4],
+  [1180, 330, 5], [1080, 430, 3], [1200, 760, 4], [1120, 900, 3], [1190, 1200, 5], [1090, 1360, 3], [1180, 1680, 4],
+  [330, 60, 3], [700, 90, 4], [860, 40, 3], [1160, 180, 3], [420, 1700, 3], [980, 1700, 4], [620, 1720, 3],
 ];
 
 function Sky({ k }) {
@@ -43,8 +44,9 @@ function Sky({ k }) {
   return (
     <svg width={px(W)} height={px(H)} viewBox={`0 0 ${W} ${H}`} style={{ position: 'absolute', left: 0, top: 0 }}>
       {STARS.map(([x, y, r], i) => <circle key={i} cx={x} cy={y} r={r} fill="#ffffff" opacity={r === 3 ? 0.55 : 0.95} />)}
-      <circle cx={1610} cy={330} r={5} fill="#7e57ff" />
-      <circle cx={140} cy={980} r={5} fill="#7e57ff" />
+      <circle cx={1100} cy={600} r={5} fill="#ffc93c" />
+      <circle cx={120} cy={1100} r={5} fill="#ffc93c" />
+      <circle cx={600} cy={180} r={4} fill="#ff5fa2" />
     </svg>
   );
 }
@@ -129,88 +131,179 @@ function Medal({ tone, size }) {
   );
 }
 
-// Конфеті навколо картки: сталі координати, кольори сайту.
-const CONFETTI = [
-  [120, 160, 0, '#ffc93c'], [210, 520, 30, '#ff5fa2'], [70, 640, -20, '#7be0a3'], [160, 1030, 15, '#ffc93c'], [330, 1150, -35, '#ff7a45'],
-  [1560, 180, 25, '#ff5fa2'], [1690, 420, -15, '#ffc93c'], [1600, 700, 40, '#7be0a3'], [1690, 1000, -30, '#ff7a45'], [1450, 1170, 20, '#ffc93c'],
-  [600, 50, 35, '#7be0a3'], [980, 30, -25, '#ff5fa2'], [1250, 70, 15, '#ffc93c'], [760, 1190, -40, '#ff7a45'], [1120, 1200, 30, '#7be0a3'],
+// Персонажі з обличчями навколо «хмарки» — як на дитячих дипломах, тільки
+// не інструменти, а речі з логічних завдань: робот, гральний кубик, лампочка,
+// пазл, годинник, фігури. Усі — прості SVG без картинок.
+// Обличчя — масив елементів: ні фрагменти, ні <g> satori всередині SVG не малює.
+const face = (cx, cy, r, ink = '#1c1c1c') => [
+  <circle key="l" cx={cx - r * 0.35} cy={cy - r * 0.1} r={r * 0.12} fill={ink} />,
+  <circle key="r" cx={cx + r * 0.35} cy={cy - r * 0.1} r={r * 0.12} fill={ink} />,
+  <path key="m" d={`M ${cx - r * 0.38} ${cy + r * 0.3} q ${r * 0.38} ${r * 0.4} ${r * 0.76} 0`} fill="none" stroke={ink} strokeWidth={r * 0.1} strokeLinecap="round" />,
 ];
+function Robot({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <rect x="22" y="34" width="76" height="66" rx="14" fill="#c9d4ea" stroke={NAVY} strokeWidth="4" />
+      <line x1="60" y1="34" x2="60" y2="16" stroke={NAVY} strokeWidth="4" />
+      <circle cx="60" cy="12" r="7" fill="#ff5a5f" stroke={NAVY} strokeWidth="3" />
+      <rect x="34" y="48" width="52" height="30" rx="10" fill="#ffffff" stroke={NAVY} strokeWidth="3" />
+      {face(60, 63, 16)}
+      <rect x="8" y="50" width="14" height="30" rx="6" fill="#c9d4ea" stroke={NAVY} strokeWidth="4" />
+      <rect x="98" y="50" width="14" height="30" rx="6" fill="#c9d4ea" stroke={NAVY} strokeWidth="4" />
+      <rect x="36" y="100" width="16" height="14" rx="4" fill={NAVY} />
+      <rect x="68" y="100" width="16" height="14" rx="4" fill={NAVY} />
+    </svg>
+  );
+}
+function Die({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <rect x="14" y="14" width="92" height="92" rx="20" fill="#ffffff" stroke={NAVY} strokeWidth="4" transform="rotate(-10 60 60)" />
+      <circle cx="40" cy="36" r="8" fill="#ff5a5f" />
+      <circle cx="82" cy="38" r="8" fill="#ff5a5f" />
+      <circle cx="36" cy="86" r="8" fill="#ff5a5f" />
+      <circle cx="86" cy="82" r="8" fill="#ff5a5f" />
+      {face(61, 60, 14)}
+    </svg>
+  );
+}
+function Bulb({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <path d="M60 10 a34 34 0 0 1 20 61 l-4 12 h-32 l-4 -12 a34 34 0 0 1 20 -61z" fill="#ffc93c" stroke={NAVY} strokeWidth="4" />
+      <rect x="44" y="86" width="32" height="10" rx="4" fill="#c9d4ea" stroke={NAVY} strokeWidth="3" />
+      <rect x="48" y="98" width="24" height="8" rx="4" fill="#c9d4ea" stroke={NAVY} strokeWidth="3" />
+      {face(60, 46, 18)}
+      <path d="M14 30 l10 6 M106 30 l-10 6 M60 -2 v8" stroke="#ffc93c" strokeWidth="5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function Puzzle({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <path d="M22 30 h26 a10 10 0 0 1 20 0 h26 v26 a10 10 0 0 0 0 20 v26 h-26 a10 10 0 0 1 -20 0 h-26 v-26 a10 10 0 0 1 0 -20z" fill="#7be0a3" stroke={NAVY} strokeWidth="4" />
+      {face(58, 66, 16)}
+    </svg>
+  );
+}
+function Clock({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      <circle cx="60" cy="62" r="44" fill="#ffffff" stroke={NAVY} strokeWidth="4" />
+      <path d="M60 30 v6 M60 88 v6 M28 62 h6 M86 62 h6" stroke={NAVY} strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 62 v-22 M60 62 l16 10" stroke="#ff5a5f" strokeWidth="5" strokeLinecap="round" />
+      {face(60, 72, 12)}
+      <path d="M36 22 l-10 -8 M84 22 l10 -8" stroke={NAVY} strokeWidth="5" strokeLinecap="round" />
+    </svg>
+  );
+}
+function Shape({ size, kind }) {
+  const fill = { tri: '#ffc93c', sq: '#2f7df6', circle: '#ff5a5f' }[kind];
+  return (
+    <svg width={size} height={size} viewBox="0 0 120 120">
+      {{
+        tri: <path d="M60 14 l50 86 h-100z" fill={fill} stroke={NAVY} strokeWidth="4" strokeLinejoin="round" />,
+        sq: <rect x="16" y="16" width="88" height="88" rx="14" fill={fill} stroke={NAVY} strokeWidth="4" />,
+        circle: <circle cx="60" cy="60" r="46" fill={fill} stroke={NAVY} strokeWidth="4" />,
+      }[kind]}
+      {face(60, kind === 'tri' ? 72 : 60, 16, kind === 'sq' ? '#ffffff' : '#1c1c1c')}
+    </svg>
+  );
+}
+
+// Розташування персонажів (портрет 1240×1754): по краях, за «хмаркою».
+function Characters({ k }) {
+  const px = (n) => Math.round(n * k);
+  const put = (x, y, rot, node) => (
+    <div key={`${x}-${y}`} style={{ position: 'absolute', left: px(x), top: px(y), display: 'flex', transform: `rotate(${rot}deg)` }}>{node}</div>
+  );
+  return (
+    <>
+      {put(70, 70, -8, <MonsterPink size={px(190)} />)}
+      {put(980, 60, 10, <MonsterYellow size={px(170)} />)}
+      {put(540, 20, 0, <Robot size={px(150)} />)}
+      {put(40, 560, -6, <Die size={px(140)} />)}
+      {put(1060, 520, 8, <Bulb size={px(150)} />)}
+      {put(30, 1000, 6, <Puzzle size={px(150)} />)}
+      {put(1050, 980, -8, <Clock size={px(150)} />)}
+      {put(70, 1470, 0, <Shape size={px(130)} kind="tri" />)}
+      {put(1040, 1450, 6, <Shape size={px(130)} kind="sq" />)}
+      {put(560, 1560, 0, <Shape size={px(130)} kind="circle" />)}
+      {put(300, 1600, -10, <Rocket size={px(120)} />)}
+      {put(800, 1590, 0, <Planet size={px(120)} />)}
+    </>
+  );
+}
+
+// Біла «хмарка»: велика округла картка з опуклостями по краях — як на
+// дитячих дипломах (референс Марії, 06.10.2026), але в нашому стилі.
+function Cloud({ k }) {
+  const px = (n) => Math.round(n * k);
+  const bump = (x, y, r) => (
+    <div key={`${x}-${y}`} style={{ position: 'absolute', left: px(x - r), top: px(y - r), width: px(r * 2), height: px(r * 2), borderRadius: '50%', backgroundColor: '#ffffff', display: 'flex' }} />
+  );
+  return (
+    <>
+      <div style={{ position: 'absolute', left: px(190), top: px(230), width: px(860), height: px(1300), borderRadius: px(120), backgroundColor: '#ffffff', display: 'flex' }} />
+      {bump(300, 250, 120)}{bump(520, 210, 130)}{bump(760, 220, 125)}{bump(960, 270, 110)}
+      {bump(210, 480, 90)}{bump(1040, 460, 95)}{bump(200, 760, 100)}{bump(1050, 760, 100)}
+      {bump(200, 1040, 95)}{bump(1050, 1050, 95)}{bump(230, 1300, 100)}{bump(1020, 1310, 100)}
+      {bump(360, 1520, 120)}{bump(620, 1560, 130)}{bump(880, 1520, 120)}
+    </>
+  );
+}
 
 function diploma({ name, levelKey, score, max, date, no, k }) {
   const level = levelByKey(levelKey);
   const tone = TONES[level.key] || TONES.participant;
   const px = (n) => Math.round(n * k);
-  const nameSize = name.length > 34 ? 60 : name.length > 24 ? 76 : 96;
+  const nameSize = name.length > 30 ? 76 : name.length > 22 ? 96 : 118;
   return (
-    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', backgroundColor: BLUE, padding: px(54), fontFamily: 'Manrope' }}>
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', backgroundColor: BLUE, fontFamily: 'Manrope',
+      backgroundImage: 'linear-gradient(160deg, #1d3f94 0%, #2a5cc0 55%, #3b6fd6 100%)' }}>
       <Sky k={k} />
-      {CONFETTI.map(([x, y, rot, color], i) => (
-        <div key={i} style={{ position: 'absolute', left: px(x), top: px(y), width: px(i % 3 === 0 ? 26 : 16), height: px(i % 3 === 0 ? 12 : 16), borderRadius: i % 2 ? 999 : px(3), backgroundColor: color, transform: `rotate(${rot}deg)`, display: 'flex' }} />
-      ))}
-      <div style={{ position: 'absolute', left: px(58), top: px(300), display: 'flex' }}><Rocket size={px(130)} /></div>
-      <div style={{ position: 'absolute', right: px(52), bottom: px(300), display: 'flex' }}><Planet size={px(140)} /></div>
+      <Cloud k={k} />
+      <Characters k={k} />
 
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative',
-        margin: `${px(10)}px ${px(150)}px`, backgroundColor: '#ffffff', borderRadius: px(48), padding: `${px(44)}px ${px(70)}px ${px(36)}px`,
-        border: `${px(10)}px solid ${tone.ring}`,
-      }}>
-        <div style={{ position: 'absolute', left: px(28), top: px(30), display: 'flex' }}><Star size={px(40)} color={tone.shine} /></div>
-        <div style={{ position: 'absolute', right: px(28), top: px(30), display: 'flex' }}><Star size={px(40)} color={tone.shine} /></div>
-        <div style={{ position: 'absolute', left: px(60), bottom: px(150), display: 'flex' }}><Star size={px(26)} color={tone.shine} /></div>
-        <div style={{ position: 'absolute', right: px(60), bottom: px(150), display: 'flex' }}><Star size={px(26)} color={tone.shine} /></div>
-
+      <div style={{ position: 'absolute', left: px(250), top: px(300), width: px(740), height: px(1180), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', textAlign: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'baseline' }}>
-            <div style={{ display: 'flex', fontSize: px(24), fontWeight: 700, letterSpacing: '0.2em', color: '#5a72b5' }}>ОНЛАЙН-ОЛІМПІАДА З ЛОГІКИ ·</div>
-            <div style={{ display: 'flex', marginLeft: px(14), fontFamily: 'Caveat', fontSize: px(44), fontWeight: 700, color: '#e85d24', lineHeight: 1 }}>dityam.com.ua</div>
+            <div style={{ display: 'flex', fontSize: px(22), fontWeight: 700, letterSpacing: '0.22em', color: '#5a72b5' }}>ОНЛАЙН-ОЛІМПІАДА З ЛОГІКИ ·</div>
+            <div style={{ display: 'flex', marginLeft: px(12), fontFamily: 'Caveat', fontSize: px(42), fontWeight: 700, color: '#e85d24', lineHeight: 1 }}>dityam.com.ua</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: px(4) }}>
-            <div style={{ display: 'flex' }}><Medal tone={tone} size={px(200)} /></div>
-            <div style={{ display: 'flex', position: 'relative', marginLeft: px(30) }}>
-              <div style={{ position: 'absolute', left: px(-10), top: px(96), width: px(520), height: px(54), backgroundColor: tone.pill, borderRadius: px(14), transform: 'rotate(-2deg)', display: 'flex', opacity: 0.9 }} />
-              <div style={{ display: 'flex', fontFamily: 'Caveat', fontSize: px(200), fontWeight: 700, color: '#1d3f94', lineHeight: 1, position: 'relative' }}>Диплом</div>
+          <div style={{ display: 'flex', marginTop: px(14), fontSize: px(168), fontWeight: 700, letterSpacing: '0.04em', color: '#e85d24', lineHeight: 1 }}>ДИПЛОМ</div>
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: px(18) }}>
+            <div style={{ display: 'flex' }}><Medal tone={tone} size={px(120)} /></div>
+            <div style={{ display: 'flex', marginLeft: px(18), fontSize: px(40), fontWeight: 700, color: tone.pillInk, backgroundColor: tone.pill, borderRadius: 999, padding: `${px(12)}px ${px(44)}px`, transform: 'rotate(-2deg)' }}>
+              {level.key === 'participant' ? 'учасника олімпіади' : level.label}
             </div>
-          </div>
-          <div style={{
-            display: 'flex', marginTop: px(6), fontSize: px(38), fontWeight: 700, color: tone.pillInk, backgroundColor: tone.pill,
-            borderRadius: 999, padding: `${px(10)}px ${px(44)}px`, transform: 'rotate(-2deg)',
-          }}>
-            {level.key === 'participant' ? 'учасника олімпіади' : level.label}
           </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ display: 'flex', fontSize: px(30), fontWeight: 500, color: '#5a72b5' }}>нагороджується</div>
-          <div style={{ display: 'flex', position: 'relative', marginTop: px(4) }}>
-            <div style={{ position: 'absolute', left: px(-16), right: px(-16), bottom: px(6), height: px(26), backgroundColor: '#dbe8ff', borderRadius: px(10), transform: 'rotate(-1deg)', display: 'flex' }} />
-            <div style={{ display: 'flex', position: 'relative', fontSize: px(nameSize), fontWeight: 700, color: NAVY, textAlign: 'center', lineHeight: 1.1 }}>{name}</div>
-          </div>
-          <div style={{ display: 'flex', marginTop: px(16), fontSize: px(30), fontWeight: 500, color: '#2c4a9a', textAlign: 'center' }}>
+          <div style={{ display: 'flex', fontSize: px(26), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>НАГОРОДЖУЄТЬСЯ</div>
+          <div style={{ display: 'flex', marginTop: px(10), fontFamily: 'Caveat', fontSize: px(nameSize), fontWeight: 700, color: '#1d3f94', lineHeight: 1.05 }}>{name}</div>
+          <div style={{ display: 'flex', marginTop: px(22), fontSize: px(28), fontWeight: 500, color: '#2c4a9a', lineHeight: 1.4 }}>
             {`за участь в онлайн-олімпіаді з логіки для дітей ${OLIMP.groupLabel}`}
           </div>
-          <div style={{ display: 'flex', marginTop: px(8), fontFamily: 'Caveat', fontSize: px(64), fontWeight: 700, color: '#f5a023' }}>
+          <div style={{ display: 'flex', marginTop: px(14), fontFamily: 'Caveat', fontSize: px(66), fontWeight: 700, color: '#f5a023' }}>
             {`Результат: ${score} з ${max} балів`}
           </div>
         </div>
 
-        <div style={{ display: 'flex', width: '100%', alignItems: 'flex-end', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', width: px(420) }}>
-            <div style={{ display: 'flex', fontSize: px(24), fontWeight: 500, color: '#5a72b5' }}>{date}</div>
-            <div style={{ display: 'flex', marginTop: px(4), fontSize: px(22), fontWeight: 500, color: '#8a98c4' }}>{no}</div>
+        <div style={{ display: 'flex', width: '100%', alignItems: 'flex-end', justifyContent: 'space-between', padding: `0 ${px(40)}px` }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', fontSize: px(20), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>ДАТА</div>
+            <div style={{ display: 'flex', marginTop: px(6), fontSize: px(24), fontWeight: 700, color: NAVY }}>{date}</div>
+            <div style={{ display: 'flex', marginTop: px(4), fontSize: px(20), fontWeight: 500, color: '#8a98c4' }}>{no}</div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', width: px(420) }}>
-            <div style={{ display: 'flex', fontFamily: 'Caveat', fontSize: px(40), fontWeight: 700, color: NAVY }}>Марія Шутяк</div>
-            <div style={{ display: 'flex', alignItems: 'baseline', marginTop: px(2) }}>
-              <div style={{ display: 'flex', fontSize: px(22), fontWeight: 500, color: '#5a72b5' }}>засновниця</div>
-              <div style={{ display: 'flex', marginLeft: px(8), fontFamily: 'Caveat', fontSize: px(34), fontWeight: 700, color: '#e85d24', lineHeight: 1 }}>dityam.com.ua</div>
-            </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <div style={{ display: 'flex', fontSize: px(20), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>ПІДПИС</div>
+            <div style={{ display: 'flex', marginTop: px(2), fontFamily: 'Caveat', fontSize: px(44), fontWeight: 700, color: NAVY }}>Марія Шутяк</div>
+            <div style={{ display: 'flex', fontSize: px(20), fontWeight: 500, color: '#5a72b5' }}>засновниця Dityam.com.ua</div>
           </div>
         </div>
       </div>
-
-      <div style={{ position: 'absolute', left: px(70), bottom: px(40), display: 'flex' }}><MonsterPink size={px(200)} /></div>
-      <div style={{ position: 'absolute', right: px(80), top: px(34), display: 'flex' }}><MonsterYellow size={px(170)} /></div>
     </div>
   );
 }

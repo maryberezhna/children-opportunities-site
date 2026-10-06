@@ -5,26 +5,25 @@
 // «неможливо визначити» (не помітити, що кольори не повторюються).
 import { svg, rect, circle, text, smiley, C } from '../art.js';
 
-const COLS = [60, 180, 300]; // центри 3 колонок
-
-// Верхній ряд — 3 дівчинки з іменами над смайликами.
+// Дівчатка — ліворуч, палітра — праворуч: раніше плями стояли точно під
+// іменами, і дитина могла прочитати колонки як підказку (перевірка 06.10.2026).
 const GIRLS = ['Аня', 'Віка', 'Соня'];
-const FACE_Y = 62;
-const FACE_R = 30;
-const girls = GIRLS.map((name, i) => `${text(COLS[i], 22, name, 18)}${smiley(COLS[i], FACE_Y, FACE_R, C.yellow)}`).join('');
+const GIRL_X = [48, 118, 188];
+const FACE_Y = 112;
+const FACE_R = 28;
+const girls = GIRLS.map((name, i) => `${text(GIRL_X[i], 66, name, 18)}${smiley(GIRL_X[i], FACE_Y, FACE_R, C.yellow)}`).join('');
 
-// Нижній ряд — 3 кольорові плями з підписами на світлій «палітрі»:
-// рамка показує, що це окремий набір кольорів, а не підпис до дівчаток.
+// Палітра — стовпчиком у рамці, щоб це читалось як набір кольорів,
+// а не як підпис до дівчаток.
 const PAINTS = [
   [C.red, 'червоний'],
   [C.blue, 'синій'],
   [C.green, 'зелений'],
 ];
-const BLOB_Y = 146;
-const BLOB_R = 34;
-const paints = PAINTS.map(([fill, label], i) => `${circle(COLS[i], BLOB_Y, BLOB_R, fill)}${text(COLS[i], 204, label, 16)}`).join('');
+const BLOB_X = 262;
+const paints = PAINTS.map(([fill, label], i) => `${circle(BLOB_X, 46 + i * 64, 22, fill)}${text(BLOB_X + 32, 52 + i * 64, label, 16, undefined, 'start')}`).join('');
 
-const art = svg(360, 220, `${rect(14, 104, 332, 110, C.paper, 14, 2)}${girls}${paints}`);
+const art = svg(360, 220, `${rect(228, 12, 122, 196, C.paper, 14, 2)}${girls}${paints}`);
 
 export const task = {
   id: 'v25',

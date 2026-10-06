@@ -247,7 +247,7 @@ export default function OlimpiadaPage() {
             {LEVELS.map((l, i) => (
               <li key={l.key} className={`ol-dip ol-dip-${l.key}`}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={`/api/olimpiada/diploma?sample=${l.key}`} width={877} height={620} loading="lazy" alt={`Зразок диплома: ${l.label.toLowerCase()}`} />
+                <img src={`/api/olimpiada/diploma?sample=${l.key}`} width={620} height={877} loading="lazy" alt={`Зразок диплома: ${l.label.toLowerCase()}`} />
                 <b>{l.label}</b>
                 <span>{levelRange(i)}</span>
               </li>

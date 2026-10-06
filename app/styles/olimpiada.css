@@ -133,7 +133,7 @@ p.ol-hand { margin-bottom: 10px; }
 /* Зразки дипломів: справжні картинки, трохи «розкидані», як на столі */
 .ol-dips { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 22px; }
 /* Золотий — великий і перший: саме його хочеться побачити зі своїм імʼям. */
-.ol-dip-gold { grid-column: 1 / -1; width: 100%; max-width: 640px; justify-self: center; }
+.ol-dip-gold { grid-column: 1 / -1; width: 100%; max-width: 440px; justify-self: center; }
 .ol-dip-gold b { font-size: 22px; }
 .ol-dip { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .ol-dip img { display: block; width: 100%; height: auto; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 18px 34px -18px rgba(22, 48, 122, .55); transition: transform .2s ease; }
@@ -217,6 +217,8 @@ p.ol-hand { margin-bottom: 10px; }
 
 /* ---------- Тест ---------- */
 .ol-space-full { min-height: 78vh; padding: 36px 0 96px; }
+/* Між синім полем і футером була біла смуга — відступ футера (Марія, 06.10.2026) */
+.ol-page .v2-footer { margin-top: 0; }
 .ol-test-main { max-width: 760px; }
 .ol-panel { padding: 34px; border-radius: 30px; background: #fff; color: var(--ol-blue-deep); }
 .ol-panel .ol-text { color: #2c4a9a; }
@@ -279,7 +281,7 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-result .ol-hand { margin-bottom: 8px; }
 .ol-result .ol-lead { margin: 0 auto; color: #fff; }
 .ol-result .ol-note { color: #cfdcff; }
-.ol-diploma { display: block; width: 100%; height: auto; margin: 26px 0 4px; border-radius: 22px; box-shadow: 0 30px 60px -30px rgba(4, 12, 50, .9); }
+.ol-diploma { display: block; width: 100%; max-width: 560px; height: auto; margin: 26px auto 4px; border-radius: 22px; box-shadow: 0 30px 60px -30px rgba(4, 12, 50, .9); }
 .ol-open { margin-top: 56px; }
 .ol-open-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
 .ol-open-form .ol-btn { align-self: flex-start; }
