@@ -12,6 +12,7 @@ import ShareDiploma from './ShareDiploma';
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
 // після оплати. Стани: оплата ще не підтверджена → тест → диплом.
 export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
 
 export const metadata = {
   title: { absolute: 'Тест — онлайн-олімпіада з логіки Dityam.com.ua' },
