@@ -81,7 +81,6 @@ const SAMPLES = [
     options: ['2', '3', '4', '6'], answer: 2,
   },
 ];
-];
 
 const levelRange = (i) => {
   const top = i === 0 ? OLIMP.questionCount : LEVELS[i - 1].min - 1;
