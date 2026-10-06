@@ -3,6 +3,7 @@ import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/
 import { kyivToday } from '@/lib/dates';
 import { audienceStats, visibleFor } from '@/lib/audience';
 import { topWeekCards } from '@/lib/weekly-top';
+import { OLIMP_TOP } from '@/lib/olimpiada';
 import { isoWeek } from '@/lib/week';
 import { daysUntil } from '@/lib/dates';
 import OpportunitiesList from './OpportunitiesList';
@@ -47,8 +48,10 @@ export default async function Home() {
   const slim = (o) => ({
     slug: o.slug, title: o.title, title_en: o.title_en || null, deadline: o.deadline || null,
     opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to, cost_type: o.cost_type || null,
+    href: o.href || null, label: o.label || null,
   });
-  const soon = topWeekCards({ items: visibleFor(opportunities, today), week, todayIso: today, daysUntil }).map(slim);
+  // Олімпіада (9–11 років) — лише в загальній трійці: підліткам вона не за віком.
+  const soon = topWeekCards({ items: visibleFor(opportunities, today), week, todayIso: today, daysUntil, own: OLIMP_TOP }).map(slim);
   const teenSoon = topWeekCards({ items: visibleFor(opportunities, today, true), week, todayIso: today, daysUntil }).map(slim);
 
   const itemListLd = {

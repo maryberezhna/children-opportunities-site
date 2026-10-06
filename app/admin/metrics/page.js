@@ -329,7 +329,7 @@ export default async function MetricsPage() {
         <Card value={olimp.paid} label={`оплатили участь (${OLIMP.price} грн)`} />
         <Card value={olimp.unpaid} label="почали заявку, але не оплатили" />
         <Card value={olimp.finished} label={`пройшли тест (почали: ${olimp.started})`} />
-        <Card value={olimp.open} label="надіслали відкрите завдання" />
+        <Card value={olimp.open} label="відповіли на останнє, відкрите завдання тесту" />
         <Card value={olimp.prints} label={`замовили друкований диплом (${OLIMP.printPrice} грн)`} />
         <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: внески + доставка" />
       </div>

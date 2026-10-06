@@ -221,7 +221,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
   return (
     <div className="ol-run">
       <div className="ol-bar">
-        <span className="ol-progress">{onOpen ? 'Відкрите завдання' : `Завдання ${index + 1} з ${total}`}</span>
+        <span className="ol-progress">{onOpen ? 'Останнє завдання' : `Завдання ${index + 1} з ${total}`}</span>
         <span className={`ol-timer${low ? ' is-low' : ''}`} role="timer" aria-live="off">
           {left === null ? '' : clock(left)}
         </span>
@@ -293,7 +293,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
           </button>
         ))}
         <button
-          type="button" aria-label={`Відкрите завдання${openEmpty ? '' : ', є відповідь'}`}
+          type="button" aria-label={`Останнє, відкрите завдання${openEmpty ? '' : ', є відповідь'}`}
           className={`ol-dot ol-dot-open${onOpen ? ' is-here' : ''}${openEmpty ? '' : ' is-done'}`}
           onClick={() => setIndex(total)} disabled={phase === 'sending'}
         >
