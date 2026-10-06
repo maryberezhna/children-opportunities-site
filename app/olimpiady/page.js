@@ -452,6 +452,18 @@ export default async function OlympiadsGuide() {
           </div>
         </section>
 
+        {/* Власна онлайн-олімпіада Dityam.com.ua — сюди приходять саме ті, кому
+            цікаві олімпіади (Марія, 06.10.2026: «опублікуй її у нас»). */}
+        <section className="ol-own" aria-labelledby="ol-own-title">
+          <p className="ol-own-kicker">Від Dityam.com.ua · для дітей 9–11 років</p>
+          <h2 id="ol-own-title" className="ol-own-title">Онлайн-олімпіада з логіки</h2>
+          <p className="ol-own-text">
+            25 завдань на кмітливість і 1 відкрите за 35 хвилин — у зручний час, з телефона чи компʼютера.
+            Диплом з результатом одразу після тесту, щомісяця — призи за найкращі відповіді.
+          </p>
+          <Link href="/olimpiada" className="ol-own-btn">Дізнатися й залишити email →</Link>
+        </section>
+
         <section id="ol-open" className="er-open" aria-labelledby="ol-open-title">
           <h2 id="ol-open-title" className="tp-h2">{titled(['Олімпіади', 'на платформі'])}</h2>
           {total > 0 ? (

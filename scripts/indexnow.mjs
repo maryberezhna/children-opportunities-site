@@ -16,7 +16,11 @@ const HOURS = Number(process.env.SINCE_HOURS || 26);
 const CONFIRM = process.env.CONFIRM;
 
 /** Адреси, які варто надіслати: свіжі можливості + усі підбірки. */
-export function urlsToSubmit(rows, topics) {
+// Сторінки, яких немає ні в базі, ні серед підбірок, але їх треба тримати
+// свіжими в Bing: власна олімпіада (06.10.2026).
+export const STATIC_PAGES = ['/olimpiada', '/olimpiady'];
+
+export function urlsToSubmit(rows, topics, pages = STATIC_PAGES) {
   const opportunities = rows.map((r) => `${SITE}/o/${r.slug}`);
   // Підбірки — завжди: їхній вміст міняється щодня разом із записами, а
   // окремого сигналу «сторінка оновилась» у них немає.
@@ -24,7 +28,7 @@ export function urlsToSubmit(rows, topics) {
     `${SITE}/${t.slug}`,
     ...(t.en?.slug ? [`${SITE}/en/${t.en.slug}`] : []),
   ]);
-  return [...new Set([SITE, ...hubs, ...opportunities])];
+  return [...new Set([SITE, ...hubs, ...pages.map((p) => `${SITE}${p}`), ...opportunities])];
 }
 
 async function main() {

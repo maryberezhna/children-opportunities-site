@@ -21,6 +21,7 @@ const T = {
     categories: 'Всі категорії',
     deadlines: 'Дедлайни',
     plus: 'Dityam+',
+    olimp: 'Онлайн-олімпіада',
     topics: 'Підбірки',
     about: 'Про нас',
     aboutProject: 'Про проєкт',
@@ -38,7 +39,7 @@ const T = {
     terms: 'Умови',
     made: "Зроблено з любов'ю в Україні 🇺🇦",
     hrefs: {
-      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus',
+      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus', olimp: '/olimpiada',
       about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
       contacts: '/contacts', support: '/support',
       privacy: '/privacy', terms: '/terms',
@@ -94,6 +95,7 @@ export default function Footer({ lang = 'uk' }) {
             <Link href={h.categories}>{t.categories}</Link>
             {h.deadlines && <Link href={h.deadlines}>{t.deadlines}</Link>}
             <Link href={h.plus}>{t.plus}</Link>
+            {h.olimp && <Link href={h.olimp} prefetch={false}>{t.olimp}</Link>}
           </div>
 
           <div className="v2-footer-col">
