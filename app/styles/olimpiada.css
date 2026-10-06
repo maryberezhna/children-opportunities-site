@@ -135,11 +135,8 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-dips { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 18px; }
 .ol-dip { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .ol-dip img { display: block; width: 100%; height: auto; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 18px 34px -18px rgba(22, 48, 122, .55); transition: transform .2s ease; }
-.ol-dip:nth-child(1) img { transform: rotate(-2.5deg); }
-.ol-dip:nth-child(2) img { transform: rotate(1.8deg); }
-.ol-dip:nth-child(3) img { transform: rotate(-1.4deg); }
-.ol-dip:nth-child(4) img { transform: rotate(2.2deg); }
-.ol-dip:hover img { transform: rotate(0) scale(1.06); }
+/* Рівно, без нахилу (Марія, 06.10.2026: «тут має бути написано рівно»). */
+.ol-dip:hover img { transform: scale(1.04); }
 .ol-dip b { font-size: 16px; font-weight: 700; color: var(--ol-ink); }
 .ol-dip span { font-size: 14px; color: var(--v2-ink-3); }
 
@@ -212,6 +209,11 @@ p.ol-hand { margin-bottom: 10px; }
 
 /* ---------- Питання — форма як на /contacts ---------- */
 .ol-contact .contact-form { max-width: 680px; }
+/* Правила й форма — на одному білому тлі: без подвійного відступу між ними
+   (Марія, 06.10.2026: «чому тут нічого немає»). */
+.ol-sec.ol-sec-rules { padding-bottom: 0; }
+.ol-sec-rules + .ol-contact { padding-top: 56px; padding-bottom: 64px; }
+.ol-contact .ol-hand { margin-bottom: 8px; }
 
 /* ---------- Тест ---------- */
 .ol-space-full { min-height: 78vh; padding: 36px 0 96px; }
@@ -221,6 +223,9 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-panel { padding: 34px; border-radius: 30px; background: #fff; color: var(--ol-blue-deep); }
 .ol-panel .ol-text { color: #2c4a9a; }
 .ol-panel .ol-note { color: #5a72b5; }
+/* Біла картка завдання — сталі кольори й у нічній темі. */
+.ol-q .ol-text, .ol-overtime-task { color: #2c4a9a; }
+.ol-q .ol-note { color: #5a72b5; }
 .ol-intro .ol-btn { margin-top: 26px; }
 .ol-deadline { margin: 18px 0 0; padding: 12px 16px; border-radius: 16px; background: #fff4d6; color: var(--ol-navy); font-size: 16px; font-weight: 700; }
 .ol-run { display: flex; flex-direction: column; gap: 18px; }
@@ -342,12 +347,65 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
   .ol-nav .ol-btn { flex: 1; padding-left: 14px; padding-right: 14px; }
   .ol-bar { padding: 10px 14px; }
 }
+/* Анімація, щоб сторінка жила (Марія, 06.10.2026: «додай трохи анімації,
+   щоб інтерактивніше було»): монстрики в заголовку підморгують, ракета й
+   планета плавають, головна кнопка «дихає», картки й призи підстрибують під
+   курсором, синій монстрик біля форми махає. Усе вимикається нижче для
+   prefers-reduced-motion. */
+@keyframes ol-bob { 0%, 100% { transform: translateY(0) rotate(0); } 50% { transform: translateY(-10px) rotate(4deg); } }
+@keyframes ol-wiggle { 0%, 86%, 100% { transform: rotate(0) scale(1); } 90% { transform: rotate(-10deg) scale(1.08); } 95% { transform: rotate(8deg) scale(1.08); } }
+@keyframes ol-breathe { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(0) scale(1.04); } }
+@keyframes ol-twinkle { 0%, 100% { opacity: 1; transform: scale(1) rotate(0); } 50% { opacity: .55; transform: scale(.82) rotate(20deg); } }
+@keyframes ol-wave-hi { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-12deg); } 86% { transform: rotate(10deg); } 94% { transform: rotate(-6deg); } }
+.ol-mega-o { animation: ol-wiggle 4.5s ease-in-out infinite; transform-origin: 50% 60%; }
+.ol-mega-row + .ol-mega-row .ol-mega-o { animation-delay: 1.6s; }
+.ol-rocket, .ol-planet { animation: ol-bob 5s ease-in-out infinite; }
+.ol-planet { animation-duration: 6.5s; animation-delay: -2s; }
+.ol-star-1, .ol-star-2 { animation: ol-twinkle 3s ease-in-out infinite; }
+.ol-star-2 { animation-delay: -1.4s; }
+.ol-frame-monster { animation: ol-wave-hi 5s ease-in-out infinite; transform-origin: 50% 90%; }
+.ol-hero .ol-btn-main, .ol-form .ol-btn-main { animation: ol-breathe 2.6s ease-in-out infinite; }
+.ol-hero .ol-btn-main:hover, .ol-form .ol-btn-main:hover { animation-play-state: paused; }
+.ol-badge { transition: transform .25s ease; }
+.ol-badge:hover { transform: rotate(-4deg) scale(1.05); }
+.ol-card, .ol-prize-card, .ol-sample { transition: transform .25s ease, box-shadow .25s ease; }
+.ol-card:hover, .ol-prize-card:hover, .ol-sample:hover { transform: translateY(-6px) rotate(-.6deg); box-shadow: 0 22px 40px -24px rgba(10, 25, 80, .6); }
+.ol-prize-photo { transition: transform .3s ease; }
+.ol-prize-card:hover .ol-prize-photo { transform: scale(1.06) rotate(2deg); }
+.ol-facts li { transition: transform .2s ease, background-color .2s ease; }
+.ol-facts li:hover { transform: translateY(-3px); background: rgba(255, 255, 255, .24); }
+.ol-steps li .ol-step-n { transition: transform .25s ease; }
+.ol-steps li:hover .ol-step-n { transform: scale(1.15) rotate(-8deg); }
+.ol-field input:focus, .ol-field select:focus, .ol-field textarea:focus { box-shadow: 0 0 0 4px rgba(245, 160, 35, .35); }
+
 @media (prefers-reduced-motion: reduce) {
   .ol-btn, .ol-option, .ol-track i, .ol-dip img { transition: none; }
   .ol-btn:hover, .ol-option:hover { transform: none; }
+  .ol-mega-o, .ol-rocket, .ol-planet, .ol-star-1, .ol-star-2, .ol-frame-monster, .ol-hero .ol-btn-main, .ol-form .ol-btn-main { animation: none; }
+  .ol-card, .ol-prize-card, .ol-sample, .ol-prize-photo, .ol-badge, .ol-facts li, .ol-steps li .ol-step-n { transition: none; }
+  .ol-card:hover, .ol-prize-card:hover, .ol-sample:hover, .ol-prize-card:hover .ol-prize-photo, .ol-badge:hover, .ol-facts li:hover, .ol-steps li:hover .ol-step-n { transform: none; }
 }
 
 /* До запуску замість форми — запрошення в канал */
 .ol-soon { justify-content: center; padding: 26px; border-radius: 24px; background: #fff4d6; border: 2px dashed var(--ol-orange); }
 .ol-soon-title { margin: 0; font-family: var(--font-caveat), cursive; font-size: 30px; font-weight: 700; line-height: 1.1; color: var(--ol-navy); }
 .ol-soon-text { margin: 0; font-size: 16px; line-height: 1.55; color: #2c4a9a; }
+
+/* Відкрите завдання — останній крок тесту, і табло «Час вийшов» з відліком
+   (Марія, 06.10.2026: «у тих самих хвилинах», «ще 2 хвилини і таймер»). */
+.ol-q-open .ol-kicker { margin-bottom: 6px; }
+.ol-q-open textarea { min-height: 180px; }
+.ol-dot-open { font-size: 16px; }
+.ol-overtime { text-align: left; }
+.ol-overtime-timer {
+  margin: 6px 0 18px; text-align: center; font: 700 64px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .04em; color: #16307a;
+}
+.ol-overtime-timer.is-low { color: #d6293e; }
+.ol-overtime-task { margin: 0 0 10px; font-size: 16px; line-height: 1.55; }
+.ol-overtime textarea { min-height: 160px; }
+.ol-quote {
+  margin: 14px 0 0; padding: 14px 18px; white-space: pre-wrap; font-size: 16px; line-height: 1.55;
+  color: var(--v2-ink); background: var(--v2-cream); border-left: 4px solid #f5a023; border-radius: 12px;
+}
+@media (max-width: 560px) { .ol-overtime-timer { font-size: 52px; } }

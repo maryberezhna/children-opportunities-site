@@ -5,7 +5,6 @@ import { getStore, validToken } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
 import WaitPayment from './WaitPayment';
-import OpenTask from './OpenTask';
 import PrintOrder from './PrintOrder';
 import ShareDiploma from './ShareDiploma';
 
@@ -86,6 +85,8 @@ export default async function TestPage({ searchParams }) {
           started={Boolean(entry.started_at)}
           count={OLIMP.questionCount}
           minutes={OLIMP.minutes}
+          overtime={OLIMP.overtimeSeconds}
+          openTask={OPEN_TASK}
           until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
         />
       </Shell>
@@ -119,15 +120,22 @@ export default async function TestPage({ searchParams }) {
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
 
+      {/* Відкрите завдання — частина самого тесту (у тих самих хвилинах), тож
+          тут лише показуємо, що журі отримало. */}
       <div className="ol-panel ol-open">
-        <p className="ol-kicker">Останнє завдання · приз місяця: {month}</p>
+        <p className="ol-kicker">Відкрите завдання · приз місяця: {month}</p>
         <h2 className="ol-h2">{OPEN_TASK.title}</h2>
-        <p className="ol-text">{OPEN_TASK.text}</p>
-        <p className="ol-note">
-          Саме це завдання вирішує, хто отримає приз місяця. Журі оцінює: {OPEN_TASK.criteria.join(', ')}.
-          Таймера тут немає, на диплом воно не впливає.
-        </p>
-        <OpenTask token={entry.token} done={Boolean(entry.open_answer)} max={OPEN_TASK.maxLength} />
+        {entry.open_answer ? (
+          <>
+            <p className="ol-ok" role="status">
+              Задачу отримали. Журі оцінює: {OPEN_TASK.criteria.join(', ')}. Переможців за {month} оголосимо
+              до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
+            </p>
+            <blockquote className="ol-quote">{entry.open_answer}</blockquote>
+          </>
+        ) : (
+          <p className="ol-text">Відкрите завдання не надіслано, тож цього разу без участі в конкурсі на приз місяця. Диплом від цього не залежить.</p>
+        )}
       </div>
 
       <div className="ol-panel ol-open">
