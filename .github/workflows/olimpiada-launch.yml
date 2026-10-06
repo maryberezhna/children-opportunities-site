@@ -1,0 +1,61 @@
+name: Олімпіада — лист про старт
+
+# Один лист кожному зі списку очікування олімпіади (olimpiada_waitlist), коли
+# відкриваємо реєстрацію. Лише вручну: розкладу немає. Скрипт сам перевіряє,
+# що на сайті вже відкрито продаж (OLIMP_OPEN = true), і без цього не шле.
+# Кожен лист позначається notified_at — повторний запуск продовжить решту
+# (за раз щонайбільше 400, ліміт Gmail).
+#
+# Запуск: Actions → «Олімпіада — лист про старт» → Run workflow:
+#   mode = dry  — лише показати, скільки й кому;
+#   mode = send і confirm = СТАРТ — надіслати.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'dry = лише показати; send = надіслати'
+        required: true
+        default: 'dry'
+      confirm:
+        description: 'Для send напишіть СТАРТ'
+        required: false
+        default: ''
+
+concurrency:
+  group: olimpiada-launch
+  cancel-in-progress: false
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Лист про старт
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          DITYAM_GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
+          MODE: ${{ github.event.inputs.mode }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+        run: |
+          if [ "$MODE" = "send" ]; then
+            if [ "$CONFIRM" != "СТАРТ" ]; then
+              echo "Для надсилання впишіть СТАРТ у поле confirm"; exit 1
+            fi
+            python olimpiada_launch.py --send
+          else
+            python olimpiada_launch.py --dry-run
+          fi
