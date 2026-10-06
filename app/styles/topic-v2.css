@@ -665,3 +665,21 @@
   .ol-pick-subjects li { flex: none; scroll-snap-align: start; }
   .tp-main .ol-pick-subjects .ol-pick-link { white-space: nowrap; }
 }
+
+/* Блок власної онлайн-олімпіади на /olimpiady — синій, як сама сторінка
+   олімпіади, щоб читався як окрема пропозиція, а не ще одна картка. */
+.ol-own {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+  padding: 28px; border-radius: 24px; color: #fff;
+  background: linear-gradient(140deg, #1d3f94 0%, #2a5cc0 60%, #3b6fd6 100%);
+}
+.ol-own-kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #ffc93c; }
+.ol-own-title { margin: 0; font-size: clamp(1.5rem, calc(3vw * var(--a11y-font-scale, 1)), 2rem); font-weight: 700; line-height: 1.2; color: #fff; }
+.ol-own-text { margin: 0; max-width: 680px; font-size: 16px; line-height: 1.6; color: #e6edff; }
+.ol-own-btn {
+  margin-top: 6px; display: inline-flex; padding: 13px 22px; border-radius: 9999px; font-weight: 700; font-size: 16px;
+  background: #f5a023; color: #16307a !important; text-decoration: none; box-shadow: 0 5px 0 #c97a0a;
+  transition: transform .15s ease;
+}
+.ol-own-btn:hover { transform: translateY(-2px); }
+@media (prefers-reduced-motion: reduce) { .ol-own-btn { transition: none; } .ol-own-btn:hover { transform: none; } }

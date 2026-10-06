@@ -121,6 +121,9 @@ function jsonLd(FAQ) {
       {
         '@type': 'Service',
         '@id': `${URL}#service`,
+        serviceType: 'Онлайн-олімпіада для дітей',
+        areaServed: [{ '@type': 'Country', name: 'Україна' }, 'Українські діти за кордоном'],
+        about: ['логіка', 'кмітливість', 'олімпіада для дітей', 'диплом'],
         name: 'Онлайн-олімпіада з логіки Dityam.com.ua',
         description: DESCRIPTION,
         url: URL,
@@ -168,7 +171,11 @@ export default function OlimpiadaPage() {
       <main>
         <section className="ol-hero">
           <div className="ol-wrap">
-            <h1 className="ol-mega" aria-label={`Олімпіада з логіки для дітей ${OLIMP.groupLabel}`}>
+            {/* Видимий заголовок — малюнок із монстриками замість «О», тому
+                пошуковикам і AI-агентам — повна назва прихованим текстом:
+                з одного aria-label вони читали «лімпіада з лгіки». */}
+            <h1 className="ol-mega">
+              <span className="ol-sr">Онлайн-олімпіада з логіки для дітей {OLIMP.groupLabel} від Dityam.com.ua</span>
               <span className="ol-mega-row" aria-hidden="true"><MonsterPink className="ol-mega-o" />лімпіада</span>
               <span className="ol-mega-row" aria-hidden="true">з л<MonsterYellow className="ol-mega-o" />гіки</span>
             </h1>

@@ -142,7 +142,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
   const openField = (
     <>
       <label className="ol-field">
-        <span>Твоя задача й розвʼязок</span>
+        <span>Твоє питання й відповідь</span>
         <textarea
           value={openText} onChange={(e) => writeOpen(e.target.value)} maxLength={openTask.maxLength} rows={8}
           placeholder="Питання… Відповідь… Як до неї дійти…" disabled={phase === 'sending'}

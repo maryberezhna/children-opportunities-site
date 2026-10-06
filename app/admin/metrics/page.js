@@ -6,9 +6,14 @@ import { plusFunnel, plusSources } from '@/lib/funnel';
 import { allNamed } from '@/lib/allNamed';
 import { mediaKit } from '@/lib/mediakit';
 import LoginForm from '../LoginForm';
+import { olimpStats } from '@/lib/olimpiada-stats';
+import { OLIMP, OLIMP_OPEN } from '@/lib/olimpiada';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+// Свіжі числа: без цього Data Cache Next.js віддає застарілі відповіді Supabase
+// навіть при force-dynamic (див. #723).
+export const fetchCache = 'force-no-store';
 export const metadata = {
   title: 'Метрики',
   robots: { index: false, follow: false },
@@ -171,6 +176,7 @@ export default async function MetricsPage() {
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
     subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes, siteRes,
+    olimpWaitRes, olimpEntriesRes,
   } = await allNamed({
     active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     drafts: count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -195,7 +201,13 @@ export default async function MetricsPage() {
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
     actionsRes: supabase.from('moderation_actions').select('actor, action, created_at')
       .gte('created_at', iso(30)).limit(5000),
+    // Онлайн-олімпіада: список очікування й заявки (06.10.2026).
+    olimpWaitRes: supabase.from('olimpiada_waitlist').select('created_at, source').limit(10000),
+    olimpEntriesRes: supabase.from('olimpiada_entries')
+      .select('created_at, paid_at, started_at, finished_at, score, level, open_answer_at, print_paid_at, wfp_last_status, amount, source')
+      .limit(10000),
   });
+  const olimp = olimpStats({ waitlist: olimpWaitRes?.data || [], entries: olimpEntriesRes?.data || [], now: new Date() });
 
   const subs = subsRes.data || [];
   const allSubs = allSubsRes.data || [];
@@ -308,6 +320,24 @@ export default async function MetricsPage() {
       <p style={noteS}>
         Органіка і AI-трафік — у <a href="https://analytics.google.com" target="_blank" rel="noreferrer">GA4</a> та{' '}
         <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>.
+      </p>
+
+      <h2 style={h2S}>🧩 Онлайн-олімпіада {OLIMP_OPEN ? '' : '· продаж ще закритий'}</h2>
+      <div style={grid}>
+        <Card value={olimp.waitlist} delta={olimp.waitlist7 || null} label="email у списку очікування (Δ за 7 днів)" />
+        <Card value={olimp.waitlist1} label="нових email за 24 години" />
+        <Card value={olimp.paid} label={`оплатили участь (${OLIMP.price} грн)`} />
+        <Card value={olimp.unpaid} label="почали заявку, але не оплатили" />
+        <Card value={olimp.finished} label={`пройшли тест (почали: ${olimp.started})`} />
+        <Card value={olimp.open} label="надіслали відкрите завдання" />
+        <Card value={olimp.prints} label={`замовили друкований диплом (${OLIMP.printPrice} грн)`} />
+        <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: внески + доставка" />
+      </div>
+      <p style={noteS}>
+        {olimp.levels.length ? `Рівні: ${olimp.levels.map(([k, n]) => `${k} — ${n}`).join(', ')}. ` : ''}
+        {olimp.avgScore != null ? `Середній бал: ${olimp.avgScore}. ` : ''}
+        {olimp.sources.length ? `Звідки email: ${olimp.sources.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
+        Тестові записи адміна (без оплати) сюди не входять: {olimp.tests}.
       </p>
 
       <h2 style={h2S}>📊 Медіакіт — показники для рекламодавця</h2>
