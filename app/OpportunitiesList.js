@@ -20,6 +20,7 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import { packFullRows } from '@/lib/grid-rows';
 import { topWeekCards } from '@/lib/weekly-top';
+import { OLIMP_TOP } from '@/lib/olimpiada';
 import { sliderCards } from '@/lib/top-week-slider';
 import TopWeekStrip from './TopWeekStrip';
 import { groupMonOlympiads, subjectLabel } from '@/lib/olympiad-group';
@@ -732,10 +733,14 @@ export default function OpportunitiesList({
   // Топ тижня: спершу відмічені цього тижня в адмінці (так виконується платне
   // просування організаторам), далі — найближчі живі дедлайни. Показується без
   // активних фільтрів і виключається з основної стрічки, щоб не дублювався.
+  // Олімпіада (OLIMP_TOP) — лише в смужці телефона на українській головній і
+  // не в режимі «Підліткам» (вона для 9–11 років). Великий блок на сторінках
+  // міст малює картки можливостей (renderCard), а олімпіада — не запис у базі.
+  const withOlimp = mobileLayout && !isEn && !teens;
   const topCards = useMemo(() => {
     if (hasActive) return [];
-    return topWeekCards({ items: liveItems, week: isoWeek(), todayIso, daysUntil });
-  }, [liveItems, hasActive, todayIso]);
+    return topWeekCards({ items: liveItems, week: isoWeek(), todayIso, daysUntil, own: withOlimp ? OLIMP_TOP : [] });
+  }, [liveItems, hasActive, todayIso, withOlimp]);
 
   const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
   const stream = useMemo(

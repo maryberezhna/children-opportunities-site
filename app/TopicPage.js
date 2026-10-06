@@ -11,6 +11,7 @@ import { closingThisWeek, splitIntro } from '@/lib/topic-filters';
 import { schoolNotes } from '@/lib/diaspora';
 import { topicCityLinks } from '@/lib/city-topics';
 import { topWeekCards } from '@/lib/weekly-top';
+import { OLIMP_TOP } from '@/lib/olimpiada';
 import { sliderCards } from '@/lib/top-week-slider';
 import { isoWeek } from '@/lib/week';
 import { daysUntil } from '@/lib/dates';
@@ -354,7 +355,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   // «Обережно» — про місце: блок стоїть між хіро й списком, тим самим кремовим
   // прямокутником, що й на головній, і нічого не перекриває.
   const topWeek = sliderCards(
-    topWeekCards({ items: liveRows, week: isoWeek(), todayIso, daysUntil }),
+    topWeekCards({ items: liveRows, week: isoWeek(), todayIso, daysUntil, own: isEn ? [] : OLIMP_TOP }),
     {
       lang,
       pinned: ch.topWeekPinned,

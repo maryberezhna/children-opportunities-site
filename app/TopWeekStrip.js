@@ -49,7 +49,7 @@ export default function TopWeekStrip({ cards = [], title, lang = 'uk' }) {
         {cards.map((o) => (
           <Link
             key={o.slug}
-            href={`${isEn ? '/en' : ''}/o/${o.slug}`}
+            href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`}
             className="m-top-card"
             // Назва лишилась українською на англійській сторінці — кажемо це
             // браузеру, інакше синтезатор мови читає її як англійську.

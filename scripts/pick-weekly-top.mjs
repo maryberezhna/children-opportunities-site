@@ -22,6 +22,7 @@ import { createClient } from '@supabase/supabase-js';
 import { isoWeek } from '../lib/week.js';
 import { cutTitle } from '../lib/text.js';
 import { selectWeeklyTop, topWeekEligible, day, MIN_DAYS, MAX_DAYS } from '../lib/weekly-top.js';
+import { OLIMP_TOP } from '../lib/olimpiada.js';
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -84,7 +85,9 @@ async function main() {
     + (stalePins.length ? `, з них закрито для подачі: ${stalePins.length}` : ''));
   for (const o of stalePins) console.log(`  ✗ знято: ${o.title.slice(0, 70)}`);
 
-  const picked = selectWeeklyTop({ free: data || [], pinned, today });
+  // Олімпіада займає 1 місце в блоці на сайті (lib/olimpiada.js OLIMP_TOP),
+  // тож правило добирає на 1 менше.
+  const picked = selectWeeklyTop({ free: data || [], pinned, today, slots: 3 - OLIMP_TOP.length });
 
   if (!picked.length) {
     console.log('Кандидатів немає — позначку цього тижня не ставимо.');
@@ -125,7 +128,8 @@ async function main() {
   const lines = picked.map((o, i) =>
     `${i + 1}. <a href="https://dityam.com.ua/o/${o.slug}">${cutTitle(o.title, 80)}</a>`
     + (o.featured_week === week ? ' — <i>твій вибір</i>' : ` — ${o.days} дн. до дедлайну`));
-  await tg(`⭐ <b>Топ-3 тижня ${week}</b>\n\n${lines.join('\n')}\n\nПеребити можна в адмінці: поле «Топ тижня».`);
+  const olimp = OLIMP_TOP.length ? '\n🧩 + Онлайн-олімпіада — перше місце в блоці на сайті.' : '';
+  await tg(`⭐ <b>Топ-3 тижня ${week}</b>\n\n${lines.join('\n')}${olimp}\n\nПеребити можна в адмінці: поле «Топ тижня».`);
   console.log('\nЗаписано.');
 }
 

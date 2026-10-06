@@ -586,6 +586,10 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
   align-items: center;
   justify-content: center;
   line-height: 1;
+  /* Підпис замість дати («Скоро старт» в олімпіади) переноситься на 2 рядки —
+     по центру квадрата, а не притиснутий до лівого краю. */
+  text-align: center;
+  padding: 0 3px;
 }
 
 .v2-soon-day { font-size: 1.125rem; font-weight: 600; }

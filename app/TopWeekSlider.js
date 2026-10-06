@@ -87,7 +87,7 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
         {cards.map((o, n) => (
           <Link
             key={o.slug}
-            href={`${isEn ? '/en' : ''}/o/${o.slug}`}
+            href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`}
             className={`v2-tw-card${all || n === i ? ' is-on' : ''}`}
             aria-hidden={all || n === i ? undefined : 'true'}
             tabIndex={all || n === i ? undefined : -1}
