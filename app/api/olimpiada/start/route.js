@@ -4,7 +4,7 @@
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
 import { createOneTimeInvoice, wayforpayConfigured } from '@/lib/wayforpay';
-import { OLIMP, OLIMP_OPEN, cleanName, isEmail } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, cleanName, isEmail, isBundle } from '@/lib/olimpiada';
 import { SITE_URL, getStore, markPaid, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
@@ -17,10 +17,8 @@ export async function POST(request) {
   if (b.website) return json({ url: '/olimpiada' });
 
   const name = cleanName(b.name);
-  const age = Number(b.age);
   const email = String(b.email || '').trim().toLowerCase();
   if (name.length < 2) return json({ error: 'name' }, 400);
-  if (!Number.isInteger(age) || age < OLIMP.ageMin || age > OLIMP.ageMax) return json({ error: 'age' }, 400);
   if (!isEmail(email)) return json({ error: 'email' }, 400);
   if (b.consent !== true) return json({ error: 'consent' }, 400);
 
@@ -36,8 +34,9 @@ export async function POST(request) {
   let entry;
   try {
     entry = await store.create({
-      olimp: OLIMP.slug, child_name: name, child_age: age, parent_email: email,
-      consent_at: new Date().toISOString(), amount: OLIMP.price,
+      olimp: OLIMP.slug, child_name: name, parent_email: email,
+      // Друга кнопка форми — участь разом із друкованим дипломом (OLIMP.bundlePrice).
+      consent_at: new Date().toISOString(), amount: b.withPrint === true ? OLIMP.bundlePrice : OLIMP.price,
       source: String(b.source || '').slice(0, 60) || null,
     });
   } catch (e) {
@@ -57,8 +56,10 @@ export async function POST(request) {
   const orderReference = `olimp-${entry.token}-${Date.now()}`;
   const inv = await createOneTimeInvoice({
     orderReference,
-    amount: OLIMP.price,
-    product: `Організаційний внесок: онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
+    amount: isBundle(entry) ? OLIMP.bundlePrice : OLIMP.price,
+    product: isBundle(entry)
+      ? `Онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel}) + друкований диплом із доставкою Новою поштою`
+      : `Організаційний внесок: онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
     email,
     returnUrl: `${SITE_URL}/api/olimpiada/return?t=${entry.token}`,
     serviceUrl: `${SITE_URL}/api/olimpiada/pay`,

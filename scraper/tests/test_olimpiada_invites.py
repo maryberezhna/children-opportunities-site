@@ -79,9 +79,17 @@ class InvitesTest(unittest.TestCase):
         competing = {**entry, "open_answer": "Задача про трьох котів"}
         for part in inv.build_diploma_message(competing)[1:]:
             self.assertIn("якщо Соломія Коваленко виграє, повідомимо вас окремим листом", part)
-        printed = {**competing, "print_paid_at": "2026-10-05T11:10:00+00:00"}
+        printed = {**competing, "print_paid_at": "2026-10-05T11:10:00+00:00",
+                   "print_order": {"city": "Київ", "branch": "відділення 12"}}
         for part in inv.build_diploma_message(printed)[1:]:
             self.assertNotIn("Новою поштою", part)
+            self.assertNotIn("Вкажіть, куди його надіслати", part)
+        # Участь разом із дипломом (249 грн): оплачено, адреси ще немає — просимо її.
+        bundle = {**competing, "amount": 249, "print_paid_at": "2026-10-05T11:10:00+00:00"}
+        for part in inv.build_diploma_message(bundle)[1:]:
+            self.assertNotIn("Бажаєте отримати диплом Новою поштою?", part)
+            self.assertIn("Вкажіть, куди його надіслати", part)
+            self.assertIn("#dostavka", part)
         msg = inv.make_diploma_email(entry, b"\x89PNG fake")
         parts = [p.get_content_type() for p in msg.walk()]
         self.assertIn("image/png", parts)

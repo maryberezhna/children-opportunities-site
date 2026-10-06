@@ -6,7 +6,8 @@ import { plusFunnel, plusSources } from '@/lib/funnel';
 import { allNamed } from '@/lib/allNamed';
 import { mediaKit } from '@/lib/mediakit';
 import LoginForm from '../LoginForm';
-import { olimpStats } from '@/lib/olimpiada-stats';
+import { olimpStats, olimpTraffic } from '@/lib/olimpiada-stats';
+import { fetchAllRows } from '@/lib/supabase';
 import { OLIMP, OLIMP_OPEN } from '@/lib/olimpiada';
 
 export const runtime = 'nodejs';
@@ -175,8 +176,9 @@ export default async function MetricsPage() {
   const {
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
-    subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes, siteRes,
-    olimpWaitRes, olimpEntriesRes,
+    subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
+    siteVisit, sitePlusView, sitePlusClick,
+    olimpWaitRes, olimpEntriesRes, olimpEventsRes,
   } = await allNamed({
     active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     drafts: count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -195,7 +197,13 @@ export default async function MetricsPage() {
       .select('id, status, consent_at, flow_step, wfp_order_reference, wfp_last_status, source'),
     kidsRes: supabase.from('plus_children').select('subscriber_id, age_bands'),
     // Верхні кроки воронки — власні лічильники сайту (lib/site-events.js).
-    siteRes: supabase.from('site_events').select('name'),
+    // Лічимо count-запитами, а не вибіркою рядків: PostgREST віддає щонайбільше
+    // 1000 рядків, а «visit» пишеться на кожну сесію — список обрізався б.
+    // (Таблиці site_events у базі не було до 06.10.2026 — міграцію 20260929
+    // не застосували, тож до того тут були нулі.)
+    siteVisit: count(supabase, 'site_events', (q) => q.eq('name', 'visit')),
+    sitePlusView: count(supabase, 'site_events', (q) => q.eq('name', 'plus_view')),
+    sitePlusClick: count(supabase, 'site_events', (q) => q.eq('name', 'plus_click')),
     snapshotsRes: supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
     promoRes: supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
@@ -203,11 +211,14 @@ export default async function MetricsPage() {
       .gte('created_at', iso(30)).limit(5000),
     // Онлайн-олімпіада: список очікування й заявки (06.10.2026).
     olimpWaitRes: supabase.from('olimpiada_waitlist').select('created_at, source').limit(10000),
+    // Події сторінки олімпіади й попапу (olimp_*) — сторінками, без межі в 1000.
+    olimpEventsRes: fetchAllRows(() => supabase.from('site_events').select('name, source, created_at').like('name', 'olimp_%').order('id')),
     olimpEntriesRes: supabase.from('olimpiada_entries')
       .select('created_at, paid_at, started_at, finished_at, score, level, open_answer_at, print_paid_at, wfp_last_status, amount, source')
       .limit(10000),
   });
   const olimp = olimpStats({ waitlist: olimpWaitRes?.data || [], entries: olimpEntriesRes?.data || [], now: new Date() });
+  const olimpT = olimpTraffic({ events: olimpEventsRes?.data || [], waitlist: olimpWaitRes?.data || [], now: new Date() });
 
   const subs = subsRes.data || [];
   const allSubs = allSubsRes.data || [];
@@ -220,8 +231,7 @@ export default async function MetricsPage() {
   } catch (e) {
     kit = { configured: true, error: String(e.message || e).slice(0, 300) };
   }
-  const site = {};
-  for (const e of siteRes.data || []) site[e.name] = (site[e.name] || 0) + 1;
+  const site = { visit: siteVisit, plus_view: sitePlusView, plus_click: sitePlusClick };
   const funnel = plusFunnel({ subs: allSubs, childIds, site });
   const sources = plusSources(allSubs);
   const funnelFirst = funnel[0]?.n || 0;
@@ -330,7 +340,7 @@ export default async function MetricsPage() {
         <Card value={olimp.unpaid} label="почали заявку, але не оплатили" />
         <Card value={olimp.finished} label={`пройшли тест (почали: ${olimp.started})`} />
         <Card value={olimp.open} label="відповіли на останнє, відкрите завдання тесту" />
-        <Card value={olimp.prints} label={`замовили друкований диплом (${OLIMP.printPrice} грн)`} />
+        <Card value={olimp.prints} label={`друкований диплом: ${olimp.bundles} у заявці за ${OLIMP.bundlePrice} грн, решта після тесту за ${OLIMP.printPrice}`} />
         <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: внески + доставка" />
       </div>
       <p style={noteS}>
@@ -338,6 +348,24 @@ export default async function MetricsPage() {
         {olimp.avgScore != null ? `Середній бал: ${olimp.avgScore}. ` : ''}
         {olimp.sources.length ? `Звідки email: ${olimp.sources.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
         Тестові записи адміна (без оплати) сюди не входять: {olimp.tests}.
+      </p>
+
+      <h3 style={{ ...h2S, fontSize: 17, marginTop: 18 }}>Сторінка /olimpiada і попап на фільтрі</h3>
+      <div style={grid}>
+        <Card value={olimpT.views} delta={olimpT.views7 || null} label="відкрили сторінку олімпіади (сесій; Δ за 7 днів)" />
+        <Card value={olimpT.views1} label="відкрили за 24 години" />
+        <Card value={olimpT.cta} label="натиснули кнопку-заклик на сторінці" />
+        <Card value={olimpT.pageEmails} label={`email зі сторінки${olimpT.pageRate != null ? ` · ${olimpT.pageRate}% від тих, хто відкрив` : ''}`} />
+        <Card value={olimpT.top} label="клікнули олімпіаду в «Топ 3 цього тижня»" />
+        <Card value={olimpT.popupShow} label="попап на фільтрі: показано" />
+        <Card value={olimpT.popupEmails} label={`попап: залишили email${olimpT.popupRate != null ? ` · ${olimpT.popupRate}% показів` : ''}`} />
+        <Card value={`${olimpT.popupMore} / ${olimpT.popupClose}`} label="попап: «Детальніше» / закрили без дії" />
+      </div>
+      <p style={noteS}>
+        {olimpT.viewSources.length ? `Звідки відкривають: ${olimpT.viewSources.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
+        {olimpT.ctaSpots.length ? `Які кнопки: ${olimpT.ctaSpots.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
+        Рахуємо з 06.10.2026, власними лічильниками сайту (site_events): GA4 не бачить тих, хто блокує аналітику.
+        Браузери, позначені через ?noga=1 (ваш і модераторів), не рахуються.
       </p>
 
       <h2 style={h2S}>📊 Медіакіт — показники для рекламодавця</h2>

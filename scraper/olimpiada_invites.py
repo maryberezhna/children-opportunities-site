@@ -143,9 +143,13 @@ def build_diploma_message(entry: dict):
               "повідомимо вас окремим листом на цю адресу.")
     # Друкований диплом уже оплачено — пропонувати вдруге нема чого.
     offer_post = not entry.get("print_paid_at")
+    # Оплачено разом з участю (249 грн), а адреси ще немає — просимо вказати.
+    need_address = bool(entry.get("print_paid_at")) and not entry.get("print_order")
     post_link = f"{link}#dostavka"
     post_offer = (f"Надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — "
                   f"додатково {PRINT_PRICE} грн, друк і доставка включені у вартість.")
+    address_ask = ("Друкований диплом ви оплатили разом з участю. Вкажіть, куди його надіслати: "
+                   "отримувач, телефон, місто й відділення чи поштомат Нової пошти.")
     subject = f"Диплом онлайн-олімпіади з логіки — {name}"
     text = "\n".join([
         "Добрий день!",
@@ -163,6 +167,10 @@ def build_diploma_message(entry: dict):
             "Бажаєте отримати диплом Новою поштою?",
             f"{post_offer} Замовити доставку: {post_link}",
         ] if offer_post else []),
+        *([
+            "",
+            f"{address_ask} {post_link}",
+        ] if need_address else []),
         "",
         "Марія Шутяк, Dityam.com.ua",
         FROM,
@@ -176,6 +184,13 @@ def build_diploma_message(entry: dict):
         f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
         f"Замовити доставку · {PRINT_PRICE} грн</a></p>\n"
     ) if offer_post else ""
+    if need_address:
+        post_html = (
+            f"<p><b>Куди надіслати друкований диплом?</b><br>{esc(address_ask)}</p>\n"
+            f'<p><a href="{esc(post_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
+            f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
+            f"Вказати адресу доставки</a></p>\n"
+        )
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>

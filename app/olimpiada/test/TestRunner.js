@@ -169,7 +169,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
         <h1 className="ol-h2">{name}, готуємось до старту</h1>
         <ul className="ol-ticks">
           <li>{count} завдань, у кожному 4 варіанти відповіді й 1 правильний</li>
-          <li>останнє завдання — відкрите: без варіантів, відповідь пишеш сам чи сама. Саме воно вирішує, хто отримає приз місяця</li>
+          <li>останнє завдання — відкрите: без варіантів, відповідь пишеш сам чи сама</li>
           <li>{minutes} хвилин на все, разом із відкритим завданням — час піде, щойно натиснеш «Почати»</li>
           <li>коли час вийде, буде ще {overtimeMin} хвилини, щоб дописати й відправити відповіді, — потім вони відправляться самі</li>
           <li>1 спроба: завдання можна гортати вперед і назад та міняти відповідь</li>
@@ -235,10 +235,8 @@ export default function TestRunner({ token, name, started, count, minutes, overt
           {/* Малюнок склав наш сервер (content/olimpiada/open-task-art.js). */}
           {openArt && <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: openArt }} />}
           <p className="ol-text">{openTask.text}</p>
-          <p className="ol-note">
-            Саме воно вирішує, хто отримає приз місяця. Журі оцінює: {openTask.criteria.join(', ')}.
-            На диплом воно не впливає.
-          </p>
+          {/* Без примітки про приз і журі (Марія, 06.10.2026: «це трохи тисне у
+              тесті») — умови конкурсу дитина й батьки бачать на сторінці. */}
           {openField}
         </div>
       ) : (
@@ -312,7 +310,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
           <div className="ol-confirm-box">
             <h2 className="ol-h2">Завершити тест?</h2>
             {missing > 0 && <p className="ol-text">Без відповіді лишилось завдань: {missing}.</p>}
-            {openEmpty && <p className="ol-text">Відкрите завдання ще порожнє — без нього немає участі в конкурсі на приз місяця.</p>}
+            {openEmpty && <p className="ol-text">Останнє, відкрите завдання ще порожнє — можна повернутися й написати свою відповідь.</p>}
             <p className="ol-text">Після завершення змінити відповіді не можна.</p>
             <div className="ol-actions">
               <button type="button" className="ol-btn ol-btn-ghost" onClick={() => setConfirm(false)}>Повернутися до завдань</button>

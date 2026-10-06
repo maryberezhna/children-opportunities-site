@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { SLIDE_MS, nextIndex, prevIndex, shouldAutoPlay, swipeTo } from '@/lib/top-week-slider';
 
 /**
@@ -88,6 +89,8 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
           <Link
             key={o.slug}
             href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`}
+            // Картка олімпіади — у статистику сторінки олімпіади (/admin/metrics).
+            onClick={o.href === '/olimpiada' ? () => sendSiteEvent(SITE_EVENTS.OLIMP_TOP_CLICK, window.location.pathname) : undefined}
             className={`v2-tw-card${all || n === i ? ' is-on' : ''}`}
             aria-hidden={all || n === i ? undefined : 'true'}
             tabIndex={all || n === i ? undefined : -1}

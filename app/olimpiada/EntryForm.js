@@ -1,6 +1,8 @@
 'use client';
 
-// Заявка на олімпіаду: імʼя дитини для диплома, вік, email батьків → оплата.
+// Заявка на олімпіаду: імʼя дитини для диплома й email батьків → оплата.
+// Віку не питаємо (Марія, 06.10.2026: «навіщо нам вік»): він ні на що не
+// впливав — ні на диплом, ні на подарунок Dityam+; група 9–11 названа на сторінці.
 // Токен запису лишаємо в браузері: якщо людина закрила вкладку після оплати,
 // на цій сторінці зʼявиться «Продовжити» — листів із посиланням ми не шлемо.
 import { useEffect, useState } from 'react';
@@ -9,7 +11,6 @@ const KEY = 'olimp_entry';
 const WAIT_KEY = 'olimp_wait';
 const ERRORS = {
   name: 'Вкажіть імʼя та прізвище дитини — так, як має бути на дипломі.',
-  age: 'Оберіть вік дитини.',
   email: 'Перевірте email — на нього ми напишемо, якщо щось піде не так.',
   consent: 'Потрібна ваша згода з правилами.',
   pay: 'Не вдалося відкрити оплату. Спробуйте ще раз за хвилину.',
@@ -17,7 +18,7 @@ const ERRORS = {
   closed: 'Реєстрація ще не відкрита. Старт оголосимо в Telegram-каналі.',
 };
 
-export default function EntryForm({ price, ages, open, channelUrl }) {
+export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
   const [state, setState] = useState('idle'); // idle | sending | error
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(null);
@@ -41,12 +42,14 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
     const f = new FormData(e.currentTarget);
     const body = {
       name: String(f.get('name') || ''),
-      age: Number(f.get('age')),
       email: String(f.get('email') || ''),
       consent: f.get('consent') === 'on',
       website: String(f.get('website') || ''),
       source: new URLSearchParams(window.location.search).get('utm_source') || '',
       realPay,
+      // Друга кнопка — участь разом із друкованим дипломом Новою поштою
+      // (Марія, 06.10.2026: «2 кнопки… з надсиланням диплома — 249 грн»).
+      withPrint: e.nativeEvent?.submitter?.value === 'print',
     };
     setState('sending');
     setError('');
@@ -61,7 +64,7 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
         return;
       }
       if (typeof window.gtag === 'function') {
-        window.gtag('event', 'olimpiada_start', { event_label: 'lohika_9_11', value: price });
+        window.gtag('event', 'olimpiada_start', { event_label: body.withPrint ? 'lohika_9_11_print' : 'lohika_9_11', value: body.withPrint ? bundlePrice : price });
       }
       try {
         if (j.t) window.localStorage.setItem(KEY, JSON.stringify({ t: j.t, name: body.name.trim() }));
@@ -87,13 +90,6 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
         <input name="name" type="text" autoComplete="off" maxLength={60} required placeholder="Як на дипломі" />
       </label>
       <label className="ol-field">
-        <span>Вік дитини</span>
-        <select name="age" required defaultValue="">
-          <option value="" disabled>Оберіть</option>
-          {ages.map((a) => <option key={a} value={a}>{a} років</option>)}
-        </select>
-      </label>
-      <label className="ol-field">
         <span>Ваш email</span>
         <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="mama@example.com" />
       </label>
@@ -109,9 +105,18 @@ export default function EntryForm({ price, ages, open, channelUrl }) {
         </span>
       </label>
       {error && <p className="ol-error" role="alert">{error}</p>}
-      <button type="submit" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Відкриваємо…' : (!open && preview && !realPay) ? 'Перевірка без оплати' : `Перейти до оплати · ${price} грн`}
-      </button>
+      {/* 2 варіанти: як було — лише участь; або одразу з друкованим дипломом. */}
+      <div className="ol-pay-choice">
+        <button type="submit" name="variant" value="base" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
+          {state === 'sending' ? 'Відкриваємо…' : (!open && preview && !realPay) ? 'Перевірка без оплати' : `Взяти участь · ${price} грн`}
+        </button>
+        {bundlePrice ? (
+          <button type="submit" name="variant" value="print" className="ol-btn ol-btn-ghost ol-btn-wide ol-btn-print" disabled={state === 'sending'}>
+            <span>Участь + друкований диплом · {bundlePrice} грн</span>
+            <small>доставка Новою поштою включена, адресу вкажете після тесту</small>
+          </button>
+        ) : null}
+      </div>
     </form>
   );
 }
@@ -143,7 +148,9 @@ function Waitlist({ channelUrl }) {
       email: String(f.get('email') || ''),
       consent: f.get('consent') === 'on',
       website: String(f.get('website') || ''),
-      source: new URLSearchParams(window.location.search).get('utm_source') || '',
+      // Звідки email: utm з каналу чи листа, інакше — сама сторінка (попап на
+      // фільтрі пише своє 'popup-…'), щоб в адмінці було видно, що спрацювало.
+      source: new URLSearchParams(window.location.search).get('utm_source') || 'page',
     };
     setState('sending');
     setError('');
@@ -172,7 +179,7 @@ function Waitlist({ channelUrl }) {
     return (
       <div className="ol-form ol-soon" role="status">
         <p className="ol-soon-title">Дякуємо! Ви в списку</p>
-        <p className="ol-soon-text">Щойно відкриємо реєстрацію, напишемо {email ? `на ${email}` : 'вам'} — 1 лист, без розсилок.</p>
+        <p className="ol-soon-text">Щойно відкриємо реєстрацію, напишемо {email ? `на ${email}` : 'вам'}.</p>
         <a href={channelUrl} className="ol-btn ol-btn-ghost ol-btn-wide" target="_blank" rel="noopener">Telegram-канал Dityam.com.ua</a>
       </div>
     );

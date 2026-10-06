@@ -359,8 +359,12 @@ export async function GET(request) {
 
   const headers = { 'Cache-Control': 'private, max-age=3600' };
   if (searchParams.get('dl')) headers['Content-Disposition'] = 'attachment; filename="dyplom-olimpiada-dityam.png"';
+  // ?s=screen — для показу на сторінці результату: 75% розміру малюється
+  // помітно швидше (повний — ~5 с на проді, Марія: «дуже довго грузиться»),
+  // а на екрані шириною 560px різниці не видно. Завантаження й лист — повний.
+  const k = searchParams.get('s') === 'screen' && !searchParams.get('dl') ? 0.75 : 1;
   return render({
     name: String(entry.child_name || ''), levelKey: entry.level, score: entry.score, max: entry.max_score,
     date: diplomaDate(entry.finished_at), no: `№ ${diplomaNo(entry.token)}`,
-  }, { headers });
+  }, { k, headers });
 }

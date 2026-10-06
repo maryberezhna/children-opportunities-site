@@ -13,11 +13,14 @@ const ERRORS = {
 };
 
 export default function PrintOrder({ token, price, paid, order }) {
-  const [open, setOpen] = useState(false);
+  // Доставку оплачено разом з участю (249 грн), адреси ще немає — одразу форма,
+  // без оплати.
+  const prepaid = paid && !order;
+  const [open, setOpen] = useState(prepaid);
   const [state, setState] = useState('idle'); // idle | sending | error
   const [error, setError] = useState('');
 
-  if (paid) {
+  if (paid && order) {
     return (
       <p className="ol-ok" role="status">
         Друкований диплом замовлено. Надішлемо Новою поштою: {order?.city}, {order?.branch}.
@@ -47,7 +50,7 @@ export default function PrintOrder({ token, price, paid, order }) {
         setError(ERRORS[j.error] || ERRORS.unavailable);
         return;
       }
-      if (typeof window.gtag === 'function') window.gtag('event', 'olimpiada_print_order', { value: price });
+      if (typeof window.gtag === 'function' && !prepaid) window.gtag('event', 'olimpiada_print_order', { value: price });
       window.location.assign(j.url);
     } catch {
       setState('error');
@@ -83,7 +86,9 @@ export default function PrintOrder({ token, price, paid, order }) {
       </label>
       {error && <p className="ol-error" role="alert">{error}</p>}
       <button type="submit" className="ol-btn ol-btn-main" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Відкриваємо оплату…' : `Замовити й оплатити · ${price} грн`}
+        {prepaid
+          ? (state === 'sending' ? 'Зберігаємо…' : 'Надіслати сюди')
+          : (state === 'sending' ? 'Відкриваємо оплату…' : `Замовити й оплатити · ${price} грн`)}
       </button>
     </form>
   );

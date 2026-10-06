@@ -24,5 +24,5 @@ test('лист-запрошення й екран перед «Почати» н
 });
 
 test('публічні критерії журі не підказують, яке завдання', () => {
-  for (const c of OPEN_TASK.criteria) assert.doesNotMatch(c, /малюн|питання/i);
+  for (const c of OPEN_TASK.criteria) assert.doesNotMatch(`${c.name} ${c.text}`, /малюн|питання/i);
 });

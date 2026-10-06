@@ -224,6 +224,14 @@
 }
 .v2-nav .v2-nav-mega a { padding: 7px 12px; }
 
+/* «Наші можливості»: власні продукти — назва й рядок пояснення під нею. */
+.v2-nav-own[hidden] { display: none; }
+.v2-nav-own { min-width: 280px; }
+.v2-nav-own li + li { margin-top: 2px; }
+.v2-nav .v2-nav-own a { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; white-space: normal; }
+.v2-nav-own b { font-weight: 600; color: var(--v2-ink); }
+.v2-nav-own span { font-size: 0.8125rem; color: var(--v2-ink-3); }
+
 .v2-header-right {
   margin-left: auto;
   display: flex;

@@ -46,7 +46,7 @@ export async function POST(request) {
     ...(open ? { open_answer: open, open_answer_at: now.toISOString() } : {}),
   });
   await notifyAdmin(
-    `🧩 <b>Олімпіада: результат</b>\n${esc(entry.child_name)}, ${esc(entry.child_age)} р.\n`
+    `🧩 <b>Олімпіада: результат</b>\n${esc(entry.child_name)}${entry.child_age ? `, ${esc(entry.child_age)} р.` : ''}\n`
     + `${score} з ${max} · ${esc(level.label)}${late ? ' · здано після часу' : ''}`
     + (open ? `\n\n✍️ <b>Відкрите завдання (${esc(monthName(month))})</b>\n${esc(open)}` : '\n✍️ відкрите завдання не надіслано'),
   );
