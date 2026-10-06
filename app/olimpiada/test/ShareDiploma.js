@@ -3,16 +3,19 @@
 // Поділитися дипломом: на телефоні — системне вікно з самою картинкою
 // (Web Share API з файлом), інакше — Telegram, Viber і копіювання тексту.
 // Ділимося сторінкою олімпіади, а не приватним посиланням на результат.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const PAGE = 'https://dityam.com.ua/olimpiada';
 
 export default function ShareDiploma({ name, score, max, diplomaUrl }) {
   const [note, setNote] = useState('');
+  // Чи вміє браузер показати системне вікно «Поділитися» — дізнаємось після
+  // гідрації, інакше сервер і клієнт малювали б різні кнопки.
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => { setCanShare(typeof navigator.share === 'function'); }, []);
   const text = `${name} отримує диплом онлайн-олімпіади з логіки Dityam.com.ua: ${score} з ${max} балів! Спробуйте й ви: ${PAGE}`;
   const tg = `https://t.me/share/url?url=${encodeURIComponent(PAGE)}&text=${encodeURIComponent(text.replace(` ${PAGE}`, ''))}`;
   const viber = `viber://forward?text=${encodeURIComponent(text)}`;
-  const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
 
   async function share() {
     try {
