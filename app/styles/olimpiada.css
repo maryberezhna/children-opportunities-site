@@ -212,6 +212,9 @@ p.ol-hand { margin-bottom: 10px; }
 
 .ol-rules { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; max-width: 820px; font-size: 16px; line-height: 1.6; color: var(--v2-ink-2); }
 
+/* ---------- Питання — форма як на /contacts ---------- */
+.ol-contact .contact-form { max-width: 680px; }
+
 /* ---------- Тест ---------- */
 .ol-space-full { min-height: 78vh; padding: 36px 0 96px; }
 .ol-test-main { max-width: 760px; }

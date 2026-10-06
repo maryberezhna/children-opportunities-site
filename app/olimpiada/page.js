@@ -4,6 +4,7 @@ import { OLIMP, OLIMP_OPEN, LEVELS, PRIZES, OPEN_TASK, monthKey, monthName } fro
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
+import ContactForm from '../contacts/ContactForm';
 import { svg, shape, SHAPE_COLOR, balance, star, circle, line, text, INK } from '@/content/olimpiada/art';
 import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave } from './Doodles';
 
@@ -160,7 +161,7 @@ export default function OlimpiadaPage() {
             </h1>
             <div className="ol-hero-grid">
               <div>
-                <p className="ol-hand ol-hand-blue">від <span className="ol-brand">dityam.com.ua</span> · онлайн, для дітей {OLIMP.groupLabel}</p>
+                <p className="ol-hand ol-hand-blue">від <span className="ol-brand">dityam.com.ua</span><br />онлайн, для дітей {OLIMP.groupLabel}</p>
                 <p className="ol-lead">
                   {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин — у зручний час протягом {OLIMP.accessHours} годин після оплати.
                   Диплом з результатом зʼявляється одразу після тесту, а разом із ним {OLIMP.giftDays} днів Dityam+.
@@ -322,6 +323,12 @@ export default function OlimpiadaPage() {
             <li>Дані: імʼя дитини потрібне для диплома, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
+        </section>
+
+        <section className="ol-wrap ol-sec ol-contact">
+          <h2 className="ol-hand ol-hand-blue">Залишилися питання? Напишіть нам</h2>
+          <p className="ol-text">Відповідаємо на email або телефон, який ви лишите. Та сама форма, що й на сторінці контактів.</p>
+          <ContactForm defaultType="olimpiada" fixedType />
         </section>
 
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd(FAQ)) }} />
