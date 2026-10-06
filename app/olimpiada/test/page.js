@@ -1,6 +1,6 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
+import { OLIMP, OPEN_TASK, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
 import { getStore, validToken } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
@@ -92,7 +92,7 @@ export default async function TestPage({ searchParams }) {
   }
 
   const level = levelByKey(entry.level);
-  const diploma = `/api/olimpiada/diploma?t=${entry.token}`;
+  const diploma = `/api/olimpiada/diploma?t=${entry.token}&v=${DIPLOMA_VERSION}`;
   const month = monthName(entry.month_key || monthKey());
   return (
     <Shell>
@@ -132,7 +132,7 @@ export default async function TestPage({ searchParams }) {
       <div className="ol-panel ol-open">
         <p className="ol-kicker">За бажанням</p>
         <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
-        <p className="ol-text">Надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — {OLIMP.printPrice} грн.</p>
+        <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
         <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
       </div>
     </Shell>

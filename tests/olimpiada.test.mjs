@@ -219,7 +219,7 @@ test('призи місяця: 3 місця, усі з точною назвою
 });
 
 test('друкований диплом: дані доставки з форми', () => {
-  assert.equal(OLIMP.printPrice, 100);
+  assert.equal(OLIMP.printPrice, 120);
   assert.deepEqual(cleanPrintOrder({ name: ' Олена  Коваленко ', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' }),
     { order: { name: 'Олена Коваленко', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' } });
   assert.deepEqual(cleanPrintOrder({ name: 'Ол' }), { error: 'name' });
