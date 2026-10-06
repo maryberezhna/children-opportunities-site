@@ -20,7 +20,8 @@ import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
 import { packFullRows } from '@/lib/grid-rows';
 import { topWeekCards } from '@/lib/weekly-top';
-import { OLIMP_TOP } from '@/lib/olimpiada';
+import { OLIMP_TOP, olimpFilterMatch } from '@/lib/olimpiada';
+import OlimpPopup, { claimOlimpPopup } from './OlimpPopup';
 import { sliderCards } from '@/lib/top-week-slider';
 import TopWeekStrip from './TopWeekStrip';
 import { groupMonOlympiads, subjectLabel } from '@/lib/olympiad-group';
@@ -743,6 +744,20 @@ export default function OpportunitiesList({
   }, [liveItems, hasActive, todayIso, withOlimp]);
 
   const topIds = useMemo(() => new Set(topCards.map((c) => c.id)), [topCards]);
+
+  // Попап олімпіади: людина САМА вибрала вік 7–11 чи «Олімпіади» (а не
+  // відкрила посилання з ними — перший прохід після читання URL пропускаємо).
+  // Один раз на людину — правило в claimOlimpPopup (app/OlimpPopup.js).
+  const [olimpOpen, setOlimpOpen] = useState(false);
+  const olimpPrev = useRef(null);
+  useEffect(() => {
+    if (!hydrated) return;
+    const now = !isEn && !teens && olimpFilterMatch({ age, type });
+    const prev = olimpPrev.current;
+    olimpPrev.current = now;
+    if (prev === null || !now || prev) return;
+    if (claimOlimpPopup()) setOlimpOpen(true);
+  }, [hydrated, age, type, teens, isEn]);
   const stream = useMemo(
     // Прибираємо зі стрічки лише тоді, коли блок топу справді показано (він
     // рендериться тільки з трьома картками). Раніше з одним-двома живими
@@ -1895,6 +1910,7 @@ export default function OpportunitiesList({
           </div>
         </div>
       ) : null}
+      <OlimpPopup open={olimpOpen} onClose={() => setOlimpOpen(false)} place={presetCity ? 'city' : 'home'} />
     </>
   );
 }

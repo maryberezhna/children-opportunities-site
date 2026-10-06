@@ -1,0 +1,74 @@
+/* Попап онлайн-олімпіади на фільтрі каталогу (app/OlimpPopup.js).
+ * Кольори олімпіади (синє небо, жовтий Caveat, помаранчева кнопка) — щоб
+ * попап одразу читався як окрема наша подія, а не як ще одна картка списку.
+ * Кольори свої й однакові вдень і вночі, як і на /olimpiada. */
+.olp-backdrop {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: rgba(10, 22, 60, 0.55);
+  animation: olp-fade .2s ease-out;
+}
+.olp-box {
+  position: relative; width: 100%; max-width: 440px; max-height: calc(100vh - 32px); overflow: auto;
+  border-radius: 28px; background: #fff; color: #1d3f94; color-scheme: light;
+  box-shadow: 0 30px 70px -20px rgba(4, 12, 50, 0.6);
+  animation: olp-rise .25s ease-out;
+}
+.olp-box:focus { outline: none; }
+.olp-close {
+  position: absolute; top: 10px; right: 12px; z-index: 2;
+  width: 40px; height: 40px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18); color: #fff; font-size: 26px; line-height: 1; cursor: pointer;
+}
+.olp-close:hover { background: rgba(255, 255, 255, 0.3); }
+.olp-close:focus-visible { outline: 2px solid #ffc93c; outline-offset: 2px; }
+.olp-head {
+  position: relative; overflow: hidden; padding: 26px 24px 22px;
+  background: #2a5cc0; color: #fff;
+}
+.olp-monster { position: absolute; right: 18px; bottom: -14px; width: 92px; height: 92px; }
+.olp-star { position: absolute; right: 120px; top: 18px; width: 22px; height: 22px; }
+.olp-pill {
+  display: inline-block; padding: 5px 12px; border-radius: 999px;
+  background: #ffc93c; color: #16307a; font-size: 13px; font-weight: 700;
+}
+.olp-title {
+  margin: 12px 0 0; max-width: 260px;
+  font-family: var(--font-caveat), cursive; font-size: 40px; font-weight: 700; line-height: 1; color: #ffc93c;
+}
+.olp-by { margin: 6px 0 0; font-size: 14px; color: #dfe8ff; }
+.olp-body { padding: 20px 24px 22px; }
+.olp-text { margin: 0 0 14px; font-size: 16px; line-height: 1.55; color: #2c4a9a; }
+.olp-form { display: flex; flex-direction: column; gap: 12px; }
+.olp-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; }
+.olp-field input {
+  min-height: 48px; padding: 10px 14px; border: 2px solid #c9d8ff; border-radius: 14px;
+  font: inherit; font-size: 16px; font-weight: 500; color: #16307a; background: #f6f8ff;
+}
+.olp-field input:focus { outline: none; border-color: #2a5cc0; }
+.olp-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.olp-check { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; line-height: 1.45; color: #2c4a9a; }
+.olp-check input { width: 20px; height: 20px; margin: 1px 0 0; flex-shrink: 0; accent-color: #2a5cc0; }
+.olp-check a { color: inherit; }
+.olp-error { margin: 0; font-size: 14px; color: #b3372e; }
+.olp-btn {
+  display: flex; align-items: center; justify-content: center; min-height: 52px; padding: 12px 20px;
+  border: 0; border-radius: 999px; background: #f5a023; color: #16307a;
+  font: inherit; font-size: 17px; font-weight: 700; text-decoration: none; cursor: pointer;
+  box-shadow: 0 5px 0 #c27711;
+}
+.olp-btn:disabled { opacity: .7; cursor: default; }
+.olp-btn-ghost { margin-top: 14px; background: #fff; border: 2px solid #1d3f94; box-shadow: none; }
+.olp-more { display: inline-block; margin-top: 14px; font-size: 15px; font-weight: 700; color: #2a5cc0; }
+.olp-done-title { margin: 0 0 6px; font-family: var(--font-caveat), cursive; font-size: 34px; font-weight: 700; color: #1d3f94; }
+@keyframes olp-fade { from { opacity: 0; } }
+@keyframes olp-rise { from { opacity: 0; transform: translateY(18px); } }
+/* Телефон: шторка знизу — палець і так там, а список лишається видно зверху. */
+@media (max-width: 560px) {
+  .olp-backdrop { align-items: flex-end; padding: 0; }
+  .olp-box { max-width: none; border-radius: 26px 26px 0 0; max-height: 92vh; }
+  .olp-title { font-size: 36px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .olp-backdrop, .olp-box { animation: none; }
+}

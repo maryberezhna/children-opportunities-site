@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
 import { createOneTimeInvoice, wayforpayConfigured } from '@/lib/wayforpay';
 import { OLIMP, cleanPrintOrder } from '@/lib/olimpiada';
-import { SITE_URL, getStore, validToken, markPrintPaid, json } from '@/lib/olimpiada-server';
+import { SITE_URL, getStore, validToken, markPrintPaid, savePrintAddress, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,9 +23,14 @@ export async function POST(request) {
   if (!entry) return json({ error: 'not_found' }, 404);
   // Друкуємо лише готовий диплом — після тесту.
   if (!entry.finished_at) return json({ error: 'not_finished' }, 409);
-  if (entry.print_paid_at) return json({ ok: true, already: true, url: `/olimpiada/test?t=${entry.token}` });
-
   const testPath = `/olimpiada/test?t=${entry.token}`;
+  // Оплачено разом з участю (OLIMP.bundlePrice), адреси ще немає — лише зберігаємо.
+  if (entry.print_paid_at && !entry.print_order) {
+    await savePrintAddress(store, entry, order);
+    return json({ url: testPath });
+  }
+  if (entry.print_paid_at) return json({ ok: true, already: true, url: testPath });
+
   const admin = isAdmin(cookies().get('dityam_admin')?.value);
   const devFree = !wayforpayConfigured && process.env.NODE_ENV !== 'production';
   if (admin || devFree) {

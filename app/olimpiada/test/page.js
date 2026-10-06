@@ -1,6 +1,6 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
+import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
 import { getStore, validToken } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
@@ -8,6 +8,7 @@ import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
 import ShareDiploma from './ShareDiploma';
+import DiplomaImage from './DiplomaImage';
 
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
 // після оплати. Стани: оплата ще не підтверджена → тест → диплом.
@@ -107,7 +108,7 @@ export default async function TestPage({ searchParams }) {
           Результат: <b>{entry.score} з {entry.max_score}</b> · {level.label}.
         </p>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="ol-diploma" src={diploma} width={1240} height={1754} alt={`Диплом: ${entry.child_name}, ${level.label}, ${entry.score} з ${entry.max_score}`} />
+        <DiplomaImage src={`${diploma}&s=screen`} name={entry.child_name} alt={`Диплом: ${entry.child_name}, ${level.label}, ${entry.score} з ${entry.max_score}`} />
         <div className="ol-actions ol-actions-center">
           <a href={`${diploma}&dl=1`} className="ol-btn ol-btn-main">Завантажити диплом</a>
           {entry.plus_token && (
@@ -119,6 +120,29 @@ export default async function TestPage({ searchParams }) {
         <p className="ol-note">
           Номер диплома: {diplomaNo(entry.token)}. Диплом також надішлемо на email із заявки. Збережіть це посилання — диплом лишається доступним за ним.
         </p>
+      </div>
+
+      {/* #dostavka — сюди веде лист із дипломом («Бажаєте отримати диплом Новою поштою?»).
+          Одразу під дипломом, а не в кінці сторінки (Марія, 06.10.2026: «постав
+          вище, щоб одразу було видно, як диплом завантажиться»). */}
+      <div className="ol-panel ol-open" id="dostavka">
+        {entry.print_paid_at && !entry.print_order ? (
+          <>
+            <p className="ol-kicker">Оплачено разом з участю</p>
+            <h2 className="ol-h2">Куди надіслати друкований диплом?</h2>
+            <p className="ol-text">Доставку Новою поштою ви вже оплатили. Вкажіть отримувача й відділення чи поштомат — надрукуємо диплом і надішлемо.</p>
+          </>
+        ) : (
+          <>
+            <p className="ol-kicker">За бажанням</p>
+            <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
+            <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
+          </>
+        )}
+        <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
+      </div>
+
+      <div className="ol-result ol-result-share">
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
 
@@ -130,7 +154,7 @@ export default async function TestPage({ searchParams }) {
         {entry.open_answer ? (
           <>
             <p className="ol-ok" role="status">
-              Відповідь отримали. Журі оцінює: {OPEN_TASK.criteria.join(', ')}. Переможців за {month} оголосимо
+              Відповідь отримали. Журі оцінює: {criteriaText()}. Переможців за {month} оголосимо
               до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
             </p>
             <blockquote className="ol-quote">{entry.open_answer}</blockquote>
@@ -140,13 +164,6 @@ export default async function TestPage({ searchParams }) {
         )}
       </div>
 
-      {/* #dostavka — сюди веде лист із дипломом («Бажаєте отримати диплом Новою поштою?»). */}
-      <div className="ol-panel ol-open" id="dostavka">
-        <p className="ol-kicker">За бажанням</p>
-        <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
-        <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
-        <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
-      </div>
     </Shell>
   );
 }

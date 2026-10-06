@@ -17,7 +17,9 @@ export async function POST(request) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    await supabase.from('site_events').insert({ name });
+    // source — коротка мітка «звідки» (lib/site-events.js), не більше 60 знаків.
+    const source = typeof b.source === 'string' && b.source.trim() ? b.source.trim().slice(0, 60) : null;
+    await supabase.from('site_events').insert(source ? { name, source } : { name });
   }
   return new Response(null, { status: 204 });
 }

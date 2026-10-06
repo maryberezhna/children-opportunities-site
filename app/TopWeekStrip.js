@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { useState } from 'react';
 
 /**
@@ -50,6 +51,8 @@ export default function TopWeekStrip({ cards = [], title, lang = 'uk' }) {
           <Link
             key={o.slug}
             href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`}
+            // Картка олімпіади — у статистику сторінки олімпіади (/admin/metrics).
+            onClick={o.href === '/olimpiada' ? () => sendSiteEvent(SITE_EVENTS.OLIMP_TOP_CLICK, window.location.pathname) : undefined}
             className="m-top-card"
             // Назва лишилась українською на англійській сторінці — кажемо це
             // браузеру, інакше синтезатор мови читає її як англійську.
