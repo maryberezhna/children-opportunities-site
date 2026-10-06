@@ -59,7 +59,7 @@ const GETS = [
 const STEPS = [
   ['Заявка й оплата', `Вкажіть імʼя дитини для диплома та свій email, сплатіть організаційний внесок ${OLIMP.price} грн карткою. На email прийде запрошення до тесту.`],
   ['Тест', `Протягом ${OLIMP.accessHours} годин після оплати дитина проходить тест сама: ${OLIMP.questionCount} завдань і 1 відкрите, ${OLIMP.minutes} хвилин на все, 1 спроба. З компʼютера чи телефона.`],
-  ['Відкрите завдання', `Останнє завдання тесту — придумати власну логічну задачу. Воно в тих самих ${OLIMP.minutes} хвилинах і вирішує, хто отримає приз місяця.`],
+  ['Відкрите завдання', `Останнє завдання тесту — подивитися на малюнок і придумати до нього своє питання. Воно в тих самих ${OLIMP.minutes} хвилинах і вирішує, хто отримає приз місяця.`],
   ['Диплом', 'Результат і диплом зʼявляються на екрані одразу після тесту й приходять на email.'],
 ];
 
@@ -148,6 +148,17 @@ function jsonLd(FAQ) {
   };
 }
 
+// Заклики до форми після кожного великого блоку (Марія, 06.10.2026: «мало cta»).
+// До старту продажу — у список очікування, після — до оплати.
+function Cta({ note, light = false }) {
+  return (
+    <div className={`ol-cta${light ? ' is-light' : ''}`}>
+      <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн` : 'Повідомити про старт'}</a>
+      {note && <span>{note}</span>}
+    </div>
+  );
+}
+
 export default function OlimpiadaPage() {
   const key = monthKey();
   const month = monthName(key);
@@ -197,6 +208,7 @@ export default function OlimpiadaPage() {
                 </article>
               ))}
             </div>
+            <Cta light note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
 
             <h2 id="yak" className="ol-hand ol-hand-gap">Як це працює</h2>
             {/* Короткі цифри — тут, а не в першому екрані: там їх було забагато (Марія, 05.10.2026) */}
@@ -213,6 +225,7 @@ export default function OlimpiadaPage() {
                 </li>
               ))}
             </ol>
+            <Cta light note={`${OLIMP.questionCount} завдань і 1 відкрите · ${OLIMP.minutes} хвилин · з телефона чи компʼютера`} />
           </div>
           <Planet className="ol-doodle ol-planet" />
           <Wave className="ol-wave ol-wave-bottom" flip />
@@ -240,6 +253,7 @@ export default function OlimpiadaPage() {
               </article>
             ))}
           </div>
+          <Cta note={`У тесті — ${OLIMP.questionCount} таких завдань, від легких до хитрих`} />
 
           <h2 className="ol-hand ol-hand-blue ol-hand-gap">Диплом, який хочеться повісити на стіну</h2>
           <p className="ol-text">З іменем дитини, медаллю й результатом. Готовий одразу після тесту: рівень залежить лише від її балів.</p>
@@ -255,6 +269,7 @@ export default function OlimpiadaPage() {
               </li>
             ))}
           </ul>
+          <Cta note="Диплом з іменем дитини — одразу після тесту й на email" />
         </section>
 
         <section className="ol-space ol-space-2">
@@ -303,6 +318,7 @@ export default function OlimpiadaPage() {
             <div className="ol-frame ol-frame-faq">
               <FaqTabs items={FAQ} />
             </div>
+            <Cta light note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
           </div>
           <Wave className="ol-wave ol-wave-bottom" flip />
         </section>
@@ -325,6 +341,7 @@ export default function OlimpiadaPage() {
             <li>Дані: імʼя дитини потрібне для диплома, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
+          <Cta note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
         </section>
 
         <section className="ol-wrap ol-sec ol-contact">
