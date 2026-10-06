@@ -57,8 +57,8 @@ export default function PrintOrder({ token, price, paid, order }) {
 
   if (!open) {
     return (
-      <button type="button" className="ol-btn ol-btn-ghost" onClick={() => setOpen(true)}>
-        Замовити друкований диплом · {price} грн
+      <button type="button" className="ol-btn ol-btn-main" onClick={() => setOpen(true)}>
+        Так, замовити · {price} грн
       </button>
     );
   }
@@ -66,7 +66,7 @@ export default function PrintOrder({ token, price, paid, order }) {
   return (
     <form className="ol-open-form" onSubmit={submit} noValidate>
       <label className="ol-field">
-        <span>Імʼя та прізвище отримувача</span>
+        <span>Прізвище та імʼя отримувача</span>
         <input name="name" type="text" autoComplete="name" maxLength={80} required />
       </label>
       <label className="ol-field">
