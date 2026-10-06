@@ -117,21 +117,20 @@
 .st-h2 { margin: 0 0 28px; font-weight: 700; letter-spacing: -0.025em; line-height: 1.1; font-size: clamp(2rem, calc(4vw * var(--a11y-font-scale, 1)), 2.9rem); color: var(--v2-ink); }
 .st-text { margin: 0 0 28px; max-width: 720px; font-size: 17px; line-height: 1.6; color: var(--v2-ink-2); }
 
-.st-noms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; text-align: left; }
-.st-card {
-  position: relative; display: flex; flex-direction: column; gap: 10px; padding: 28px;
-  background: var(--surface-2); border: 1px solid var(--v2-line); border-radius: 22px;
-  transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
-}
-.st-card:hover { transform: translateY(-6px); border-color: var(--tone); box-shadow: 0 24px 50px -28px var(--tone); }
-.st-icon {
-  display: inline-flex; width: 56px; height: 56px; border-radius: 16px; align-items: center; justify-content: center; color: #fff;
+.st-noms { display: grid; grid-template-columns: repeat(3, 1fr); gap: 36px 28px; text-align: left; }
+/* Номінація без коробки: фото у «вирізаній» рамці з дудлами (NomPhoto.js),
+   нижче — значок, назва, текст і вікові групи. */
+.st-nom { display: flex; flex-direction: column; gap: 10px; }
+.st-nom-photo { display: block; width: 100%; height: auto; margin-bottom: 6px; color: var(--v2-ink); transition: transform .25s ease; }
+.st-nom:hover .st-nom-photo { transform: translateY(-4px); }
+.st-nom h4 { display: flex; align-items: center; gap: 10px; margin: 0; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
+.st-nom-ic {
+  display: inline-flex; flex: none; width: 36px; height: 36px; border-radius: 11px; align-items: center; justify-content: center; color: #fff;
   background: linear-gradient(140deg, var(--tone), color-mix(in srgb, var(--tone) 55%, #0e1330));
 }
-.st-icon svg { width: 30px; height: 30px; }
-.st-card h4 { margin: 8px 0 0; font-size: 20px; font-weight: 700; color: var(--v2-ink); }
-.st-card p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
-.st-ages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto; padding-top: 12px; }
+.st-nom-ic svg { width: 20px; height: 20px; }
+.st-nom p { margin: 0; font-size: 16px; line-height: 1.55; color: var(--v2-ink-2); }
+.st-ages { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 2px; }
 .st-ages span { padding: 5px 12px; border-radius: 9999px; font-size: 13px; font-weight: 700; color: var(--v2-ink-2); background: var(--v2-cream); }
 
 /* Етапи — лінія часу */
@@ -351,7 +350,8 @@
   .st-core b { font-size: 19px; }
   .st-core small { font-size: 11px; }
   .st-facts { grid-template-columns: repeat(2, 1fr); margin-top: -48px; }
-  .st-noms { grid-template-columns: 1fr; }
+  .st-noms { grid-template-columns: 1fr; gap: 32px; }
+  .st-nom { width: 100%; max-width: 520px; margin: 0 auto; }
   .st-goals, .st-benefits, .st-tiers { grid-template-columns: 1fr; }
   .st-table-wrap { display: none; }
   .st-tiers-note { margin: -8px 0 0; }

@@ -2,6 +2,7 @@ import '@/app/styles/stem-talant.css';
 import Footer from '../Footer';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { CodeIcon, RobotIcon, AtomIcon } from './Icons';
+import NomPhoto from './NomPhoto';
 import PartnerModal from './PartnerModal';
 import { MENTIONS, logoClass } from '@/lib/press';
 import SharePosts from './SharePosts';
@@ -52,10 +53,11 @@ const FACTS = [
   { big: '100 грн', small: 'організаційний внесок', tone: 'd' },
 ];
 
+// Фото у «вирізаних» рамках із дудлами — див. NomPhoto.js (референс DevFest, Марія 06.10.2026).
 const NOMINATIONS = [
-  { Icon: CodeIcon, tone: 'a', title: 'Програмування й ШІ', text: 'Застосунки, ігри, боти, сайти й проєкти зі штучним інтелектом.' },
-  { Icon: RobotIcon, tone: 'b', title: 'Робототехніка й інженерія', text: 'Роботи, пристрої, 3D-моделі — усе, що зібрано й працює.' },
-  { Icon: AtomIcon, tone: 'c', title: 'Наука й математика', text: 'Дослідження, експерименти й математичні розвʼязки.' },
+  { Icon: CodeIcon, tone: 'a', title: 'Програмування й ШІ', text: 'Застосунки, ігри, боти, сайти й проєкти зі штучним інтелектом.', photo: '/stem/nom-code.jpg', alt: 'Підліток пише код за компʼютером' },
+  { Icon: RobotIcon, tone: 'b', title: 'Робототехніка й інженерія', text: 'Роботи, пристрої, 3D-моделі — усе, що зібрано й працює.', photo: '/stem/nom-robot.jpg', alt: 'Дівчинка збирає робота на колесах' },
+  { Icon: AtomIcon, tone: 'c', title: 'Наука й математика', text: 'Дослідження, експерименти й математичні розвʼязки.', photo: '/stem/nom-science.jpg', alt: 'Хлопець у захисних окулярах проводить дослід із колбою' },
 ];
 
 const STEPS = [
@@ -281,10 +283,10 @@ export default function StemTalantPage() {
               (Марія, 05.10.2026): партнер номінації обирає одну з них */}
           <h3 className="st-h3 st-reveal">3 номінації</h3>
           <div className="st-noms">
-            {NOMINATIONS.map(({ Icon, tone, title, text }) => (
-              <article key={title} className={`st-card st-tone-${tone} st-reveal`}>
-                <span className="st-icon"><Icon /></span>
-                <h4>{title}</h4>
+            {NOMINATIONS.map(({ Icon, tone, title, text, photo, alt }, i) => (
+              <article key={title} className={`st-nom st-tone-${tone} st-reveal`}>
+                <NomPhoto index={i} src={photo} alt={alt} />
+                <h4><span className="st-nom-ic"><Icon /></span>{title}</h4>
                 <p>{text}</p>
                 <div className="st-ages">
                   <span>12–14 років</span>
