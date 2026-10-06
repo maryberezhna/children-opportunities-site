@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 const pad = (n) => String(n).padStart(2, '0');
 const clock = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 
-export default function TestRunner({ token, name, started, count, minutes, overtime, openTask, until }) {
+export default function TestRunner({ token, name, started, count, minutes, overtime, openTask, openArt, until }) {
   const [phase, setPhase] = useState(started ? 'loading' : 'intro'); // intro | loading | run | sending | done | error
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -145,7 +145,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
         <span>Твоя задача й розвʼязок</span>
         <textarea
           value={openText} onChange={(e) => writeOpen(e.target.value)} maxLength={openTask.maxLength} rows={8}
-          placeholder="Умова задачі… Розвʼязок…" disabled={phase === 'sending'}
+          placeholder="Питання… Відповідь… Як до неї дійти…" disabled={phase === 'sending'}
         />
       </label>
       <p className="ol-count">{openText.length} / {openTask.maxLength}</p>
@@ -169,7 +169,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
         <h1 className="ol-h2">{name}, готуємось до старту</h1>
         <ul className="ol-ticks">
           <li>{count} завдань, у кожному 4 варіанти відповіді й 1 правильний</li>
-          <li>останнє завдання — відкрите: придумай свою логічну задачу. Саме воно вирішує, хто отримає приз місяця</li>
+          <li>останнє завдання — відкрите: придумай питання до малюнка. Саме воно вирішує, хто отримає приз місяця</li>
           <li>{minutes} хвилин на все, разом із відкритим завданням — час піде, щойно натиснеш «Почати»</li>
           <li>коли час вийде, буде ще {overtimeMin} хвилини, щоб дописати й відправити відповіді, — потім вони відправляться самі</li>
           <li>1 спроба: завдання можна гортати вперед і назад та міняти відповідь</li>
@@ -200,6 +200,7 @@ export default function TestRunner({ token, name, started, count, minutes, overt
           {overLeft === null ? clock(overtime) : clock(overLeft)}
         </p>
         <p className="ol-overtime-task"><b>{openTask.title}.</b> {openTask.text}</p>
+        {openArt && <div className="ol-q-art ol-overtime-art" dangerouslySetInnerHTML={{ __html: openArt }} />}
         {openField}
         {error && <p className="ol-error" role="alert">{error}</p>}
         <button type="button" className="ol-btn ol-btn-main ol-btn-wide" onClick={() => submit(answers, openText)} disabled={phase === 'sending'}>
@@ -231,6 +232,8 @@ export default function TestRunner({ token, name, started, count, minutes, overt
         <div className="ol-q ol-q-open">
           <p className="ol-kicker">Останнє завдання · відкрите</p>
           <h1 className="ol-q-text">{openTask.title}</h1>
+          {/* Малюнок склав наш сервер (content/olimpiada/open-task-art.js). */}
+          {openArt && <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: openArt }} />}
           <p className="ol-text">{openTask.text}</p>
           <p className="ol-note">
             Саме воно вирішує, хто отримає приз місяця. Журі оцінює: {openTask.criteria.join(', ')}.

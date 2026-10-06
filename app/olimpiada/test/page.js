@@ -4,6 +4,7 @@ import { OLIMP, OPEN_TASK, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, mon
 import { getStore, validToken } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
+import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
 import ShareDiploma from './ShareDiploma';
@@ -87,6 +88,7 @@ export default async function TestPage({ searchParams }) {
           minutes={OLIMP.minutes}
           overtime={OLIMP.overtimeSeconds}
           openTask={OPEN_TASK}
+          openArt={OPEN_TASK_ART}
           until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
         />
       </Shell>
@@ -128,7 +130,7 @@ export default async function TestPage({ searchParams }) {
         {entry.open_answer ? (
           <>
             <p className="ol-ok" role="status">
-              Задачу отримали. Журі оцінює: {OPEN_TASK.criteria.join(', ')}. Переможців за {month} оголосимо
+              Відповідь отримали. Журі оцінює: {OPEN_TASK.criteria.join(', ')}. Переможців за {month} оголосимо
               до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
             </p>
             <blockquote className="ol-quote">{entry.open_answer}</blockquote>
