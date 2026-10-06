@@ -107,6 +107,14 @@ function Planet({ size }) {
   );
 }
 
+function Star({ size, color }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 40 40">
+      <path d="M20 3 l4.6 11 l11.9 1 l-9 7.8 l2.8 11.6 L20 28.2 L9.7 34.4 l2.8 -11.6 l-9 -7.8 l11.9 -1z" fill={color} />
+    </svg>
+  );
+}
+
 // Медаль: дві стрічки й коло із зіркою в кольорі рівня.
 function Medal({ tone, size }) {
   return (
@@ -121,35 +129,52 @@ function Medal({ tone, size }) {
   );
 }
 
+// Конфеті навколо картки: сталі координати, кольори сайту.
+const CONFETTI = [
+  [120, 160, 0, '#ffc93c'], [210, 520, 30, '#ff5fa2'], [70, 640, -20, '#7be0a3'], [160, 1030, 15, '#ffc93c'], [330, 1150, -35, '#ff7a45'],
+  [1560, 180, 25, '#ff5fa2'], [1690, 420, -15, '#ffc93c'], [1600, 700, 40, '#7be0a3'], [1690, 1000, -30, '#ff7a45'], [1450, 1170, 20, '#ffc93c'],
+  [600, 50, 35, '#7be0a3'], [980, 30, -25, '#ff5fa2'], [1250, 70, 15, '#ffc93c'], [760, 1190, -40, '#ff7a45'], [1120, 1200, 30, '#7be0a3'],
+];
+
 function diploma({ name, levelKey, score, max, date, no, k }) {
   const level = levelByKey(levelKey);
   const tone = TONES[level.key] || TONES.participant;
   const px = (n) => Math.round(n * k);
-  const nameSize = name.length > 34 ? 60 : name.length > 24 ? 76 : 92;
+  const nameSize = name.length > 34 ? 60 : name.length > 24 ? 76 : 96;
   return (
     <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', backgroundColor: BLUE, padding: px(54), fontFamily: 'Manrope' }}>
       <Sky k={k} />
-      <div style={{ position: 'absolute', left: px(70), top: px(250), display: 'flex' }}><Rocket size={px(120)} /></div>
-      <div style={{ position: 'absolute', right: px(66), bottom: px(230), display: 'flex' }}><Planet size={px(130)} /></div>
-      <div style={{ position: 'absolute', left: px(96), bottom: px(76), display: 'flex' }}><MonsterPink size={px(150)} /></div>
-      <div style={{ position: 'absolute', right: px(112), top: px(70), display: 'flex' }}><MonsterYellow size={px(130)} /></div>
+      {CONFETTI.map(([x, y, rot, color], i) => (
+        <div key={i} style={{ position: 'absolute', left: px(x), top: px(y), width: px(i % 3 === 0 ? 26 : 16), height: px(i % 3 === 0 ? 12 : 16), borderRadius: i % 2 ? 999 : px(3), backgroundColor: color, transform: `rotate(${rot}deg)`, display: 'flex' }} />
+      ))}
+      <div style={{ position: 'absolute', left: px(58), top: px(300), display: 'flex' }}><Rocket size={px(130)} /></div>
+      <div style={{ position: 'absolute', right: px(52), bottom: px(300), display: 'flex' }}><Planet size={px(140)} /></div>
 
       <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
-        margin: `0 ${px(150)}px`, backgroundColor: '#ffffff', borderRadius: px(44), padding: `${px(40)}px ${px(70)}px ${px(36)}px`,
+        flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', position: 'relative',
+        margin: `${px(10)}px ${px(150)}px`, backgroundColor: '#ffffff', borderRadius: px(48), padding: `${px(44)}px ${px(70)}px ${px(36)}px`,
+        border: `${px(10)}px solid ${tone.ring}`,
       }}>
+        <div style={{ position: 'absolute', left: px(28), top: px(30), display: 'flex' }}><Star size={px(40)} color={tone.shine} /></div>
+        <div style={{ position: 'absolute', right: px(28), top: px(30), display: 'flex' }}><Star size={px(40)} color={tone.shine} /></div>
+        <div style={{ position: 'absolute', left: px(60), bottom: px(150), display: 'flex' }}><Star size={px(26)} color={tone.shine} /></div>
+        <div style={{ position: 'absolute', right: px(60), bottom: px(150), display: 'flex' }}><Star size={px(26)} color={tone.shine} /></div>
+
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', alignItems: 'baseline' }}>
             <div style={{ display: 'flex', fontSize: px(24), fontWeight: 700, letterSpacing: '0.2em', color: '#5a72b5' }}>ОНЛАЙН-ОЛІМПІАДА З ЛОГІКИ ·</div>
             <div style={{ display: 'flex', marginLeft: px(14), fontFamily: 'Caveat', fontSize: px(44), fontWeight: 700, color: '#e85d24', lineHeight: 1 }}>dityam.com.ua</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', marginTop: px(6) }}>
-            <div style={{ display: 'flex' }}><Medal tone={tone} size={px(150)} /></div>
-            <div style={{ display: 'flex', marginLeft: px(28), fontFamily: 'Caveat', fontSize: px(176), fontWeight: 700, color: '#1d3f94', lineHeight: 1 }}>Диплом</div>
+          <div style={{ display: 'flex', alignItems: 'center', marginTop: px(4) }}>
+            <div style={{ display: 'flex' }}><Medal tone={tone} size={px(200)} /></div>
+            <div style={{ display: 'flex', position: 'relative', marginLeft: px(30) }}>
+              <div style={{ position: 'absolute', left: px(-10), top: px(96), width: px(520), height: px(54), backgroundColor: tone.pill, borderRadius: px(14), transform: 'rotate(-2deg)', display: 'flex', opacity: 0.9 }} />
+              <div style={{ display: 'flex', fontFamily: 'Caveat', fontSize: px(200), fontWeight: 700, color: '#1d3f94', lineHeight: 1, position: 'relative' }}>Диплом</div>
+            </div>
           </div>
           <div style={{
-            display: 'flex', marginTop: px(2), fontSize: px(36), fontWeight: 700, color: tone.pillInk, backgroundColor: tone.pill,
-            borderRadius: 999, padding: `${px(10)}px ${px(40)}px`,
+            display: 'flex', marginTop: px(6), fontSize: px(38), fontWeight: 700, color: tone.pillInk, backgroundColor: tone.pill,
+            borderRadius: 999, padding: `${px(10)}px ${px(44)}px`, transform: 'rotate(-2deg)',
           }}>
             {level.key === 'participant' ? 'учасника олімпіади' : level.label}
           </div>
@@ -157,13 +182,14 @@ function diploma({ name, levelKey, score, max, date, no, k }) {
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <div style={{ display: 'flex', fontSize: px(30), fontWeight: 500, color: '#5a72b5' }}>нагороджується</div>
-          <div style={{ display: 'flex', marginTop: px(6), fontSize: px(nameSize), fontWeight: 700, color: NAVY, textAlign: 'center', lineHeight: 1.1 }}>
-            {name}
+          <div style={{ display: 'flex', position: 'relative', marginTop: px(4) }}>
+            <div style={{ position: 'absolute', left: px(-16), right: px(-16), bottom: px(6), height: px(26), backgroundColor: '#dbe8ff', borderRadius: px(10), transform: 'rotate(-1deg)', display: 'flex' }} />
+            <div style={{ display: 'flex', position: 'relative', fontSize: px(nameSize), fontWeight: 700, color: NAVY, textAlign: 'center', lineHeight: 1.1 }}>{name}</div>
           </div>
-          <div style={{ display: 'flex', marginTop: px(18), fontSize: px(30), fontWeight: 500, color: '#2c4a9a', textAlign: 'center' }}>
+          <div style={{ display: 'flex', marginTop: px(16), fontSize: px(30), fontWeight: 500, color: '#2c4a9a', textAlign: 'center' }}>
             {`за участь в онлайн-олімпіаді з логіки для дітей ${OLIMP.groupLabel}`}
           </div>
-          <div style={{ display: 'flex', marginTop: px(12), fontFamily: 'Caveat', fontSize: px(56), fontWeight: 700, color: '#f5a023' }}>
+          <div style={{ display: 'flex', marginTop: px(8), fontFamily: 'Caveat', fontSize: px(64), fontWeight: 700, color: '#f5a023' }}>
             {`Результат: ${score} з ${max} балів`}
           </div>
         </div>
@@ -182,6 +208,9 @@ function diploma({ name, levelKey, score, max, date, no, k }) {
           </div>
         </div>
       </div>
+
+      <div style={{ position: 'absolute', left: px(70), bottom: px(40), display: 'flex' }}><MonsterPink size={px(200)} /></div>
+      <div style={{ position: 'absolute', right: px(80), top: px(34), display: 'flex' }}><MonsterYellow size={px(170)} /></div>
     </div>
   );
 }
