@@ -131,10 +131,8 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-sample li { padding: 10px 14px; border-radius: 14px; border: 2px solid var(--ol-card-line); font-size: 16px; color: var(--v2-ink-2); }
 .ol-sample li.is-right { border-color: #1f8f5f; background: rgba(31, 143, 95, .1); color: var(--v2-ink); font-weight: 700; }
 /* Зразки дипломів: справжні картинки, трохи «розкидані», як на столі */
-.ol-dips { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px 22px; }
-/* Золотий — великий і перший: саме його хочеться побачити зі своїм імʼям. */
-.ol-dip-gold { grid-column: 1 / -1; width: 100%; max-width: 440px; justify-self: center; }
-.ol-dip-gold b { font-size: 22px; }
+/* Усі 4 рівні в один рядок (Марія, 06.10.2026: «стільки місця займають дипломи»). */
+.ol-dips { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px 18px; }
 .ol-dip { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
 .ol-dip img { display: block; width: 100%; height: auto; margin-bottom: 12px; border-radius: 12px; box-shadow: 0 18px 34px -18px rgba(22, 48, 122, .55); transition: transform .2s ease; }
 .ol-dip:nth-child(1) img { transform: rotate(-2.5deg); }
@@ -142,7 +140,7 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-dip:nth-child(3) img { transform: rotate(-1.4deg); }
 .ol-dip:nth-child(4) img { transform: rotate(2.2deg); }
 .ol-dip:hover img { transform: rotate(0) scale(1.06); }
-.ol-dip b { font-size: 18px; font-weight: 700; color: var(--ol-ink); }
+.ol-dip b { font-size: 16px; font-weight: 700; color: var(--ol-ink); }
 .ol-dip span { font-size: 14px; color: var(--v2-ink-3); }
 
 /* ---------- Призи ---------- */
@@ -308,10 +306,10 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
   .ol-prize-card { padding: 32px 18px 20px; }
   .ol-prize-photo { max-width: 170px; }
   .ol-sample { padding: 20px 16px; }
-  .ol-dips { gap: 22px 10px; }
-  .ol-dip b { font-size: 15px; }
-  .ol-dip-gold b { font-size: 18px; }
-  .ol-dip span { font-size: 13px; }
+  .ol-dips { gap: 16px 8px; }
+  .ol-dip img { margin-bottom: 8px; border-radius: 6px; }
+  .ol-dip b { font-size: 12px; }
+  .ol-dip span { font-size: 11px; }
   .ol-hand-gap { margin-top: 56px; }
   .ol-frame { margin-top: 96px; padding: 16px 12px; border-radius: 60px 18px 50px 18px / 18px 50px 18px 60px; }
   .ol-frame::before { display: none; }
