@@ -263,6 +263,14 @@ p.ol-hand { margin-bottom: 10px; }
 body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !important; }
 @media (max-width: 560px) { body:has(.ol-run) .a11y-trigger { display: none !important; } }
 
+/* ---------- Поділитися дипломом ---------- */
+.ol-share { margin-top: 26px; padding: 20px 22px; border-radius: 24px; background: rgba(255, 255, 255, .12); border: 1.5px dashed rgba(255, 255, 255, .5); }
+.ol-share-title { margin: 0 0 12px; font-family: var(--font-caveat), cursive; font-size: 30px; font-weight: 700; color: var(--ol-yellow); }
+.ol-share-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.ol-share-row .ol-btn { min-height: 48px; padding: 10px 20px; font-size: 15px; }
+.ol-share-note { margin: 12px 0 0; font-size: 14px; color: #fff; }
+@media (hover: hover) { .ol-share-viber { display: none; } }
+
 /* ---------- Результат ---------- */
 .ol-result { text-align: center; }
 .ol-result .ol-hand { margin-bottom: 8px; }

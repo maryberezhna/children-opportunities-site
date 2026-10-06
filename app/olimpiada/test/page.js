@@ -7,6 +7,7 @@ import TestRunner from './TestRunner';
 import WaitPayment from './WaitPayment';
 import OpenTask from './OpenTask';
 import PrintOrder from './PrintOrder';
+import ShareDiploma from './ShareDiploma';
 
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
 // після оплати. Стани: оплата ще не підтверджена → тест → диплом.
@@ -111,7 +112,10 @@ export default async function TestPage({ searchParams }) {
             </a>
           )}
         </div>
-        <p className="ol-note">Номер диплома: {diplomaNo(entry.token)}. Збережіть це посилання — диплом лишається доступним за ним.</p>
+        <p className="ol-note">
+          Номер диплома: {diplomaNo(entry.token)}. Диплом також надішлемо на email із заявки. Збережіть це посилання — диплом лишається доступним за ним.
+        </p>
+        <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
 
       <div className="ol-panel ol-open">
@@ -127,8 +131,8 @@ export default async function TestPage({ searchParams }) {
 
       <div className="ol-panel ol-open">
         <p className="ol-kicker">За бажанням</p>
-        <h2 className="ol-h2">Друкований диплом</h2>
-        <p className="ol-text">Надрукуємо диплом і надішлемо Новою поштою по Україні — {OLIMP.printPrice} грн.</p>
+        <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
+        <p className="ol-text">Надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — {OLIMP.printPrice} грн.</p>
         <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
       </div>
     </Shell>

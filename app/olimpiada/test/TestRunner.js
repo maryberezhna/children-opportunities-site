@@ -60,6 +60,7 @@ export default function TestRunner({ token, name, started, count, minutes, until
       if (!r.ok) throw new Error('bad');
       try { window.localStorage.removeItem(storeKey); } catch { /* ок */ }
       if (typeof window.gtag === 'function') window.gtag('event', 'olimpiada_finish', { event_label: 'lohika_9_11' });
+      setPhase('done');
       window.location.replace(`/olimpiada/test?t=${token}`);
     } catch (e) {
       sentRef.current = false;
@@ -106,6 +107,16 @@ export default function TestRunner({ token, name, started, count, minutes, until
       try { window.localStorage.setItem(storeKey, JSON.stringify(next)); } catch { /* ок */ }
       return next;
     });
+  }
+
+  if (phase === 'done') {
+    return (
+      <div className="ol-panel ol-intro">
+        <p className="ol-kicker">Онлайн-олімпіада з логіки</p>
+        <h1 className="ol-h2">Готово! Рахуємо бали й малюємо диплом…</h1>
+        <p className="ol-text">Зараз відкриється сторінка з результатом і дипломом.</p>
+      </div>
+    );
   }
 
   if (phase === 'intro' || phase === 'error' || phase === 'loading') {
