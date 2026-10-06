@@ -7,7 +7,6 @@ import FaqTabs from './FaqTabs';
 import ContactForm from '../contacts/ContactForm';
 import { svg, shape, SHAPE_COLOR, balance, star, circle, line, text, INK } from '@/content/olimpiada/art';
 import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave } from './Doodles';
-import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 
 // Онлайн-олімпіада Dityam.com.ua — пілот (рішення Марії 05.10.2026): одна
 // група 9–11 років, логіка, 30 завдань за 40 хвилин, організаційний внесок
@@ -284,23 +283,14 @@ export default function OlimpiadaPage() {
           <Wave className="ol-wave" />
           <div className="ol-wrap">
             <h2 className="ol-hand">Призи місяця</h2>
+            {/* Яке саме відкрите завдання — секрет до тесту (Марія, 06.10.2026:
+                «це має бути секретом»): ні малюнка, ні назви на сторінці, у листі
+                й на екрані перед «Почати». Дитина бачить його лише в кінці тесту. */}
             <p className="ol-text ol-text-light">
               Останнє завдання олімпіади — відкрите: тут немає варіантів відповіді, дитина пише свою.
-              За цими відповідями журі Dityam.com.ua щомісяця обирає 3 найкращі й дарує призи.
-              Ось це завдання — саме його дитина побачить у кінці тесту:
+              Яке саме — секрет, дитина побачить його лише в кінці тесту. За цими відповідями журі
+              Dityam.com.ua щомісяця обирає 3 найкращі за критеріями: {OPEN_TASK.criteria.join(', ')}.
             </p>
-            {/* Справжнє відкрите завдання, а не переказ (Марія, 06.10.2026:
-                «покажи дійсно відкрите завдання») — той самий малюнок і текст,
-                що в тесті (lib/olimpiada.js, content/olimpiada/open-task-art.js). */}
-            <figure className="ol-opentask">
-              <div className="ol-opentask-art" dangerouslySetInnerHTML={{ __html: OPEN_TASK_ART }} />
-              <figcaption className="ol-opentask-body">
-                <span className="ol-opentask-kicker">Останнє завдання · відкрите</span>
-                <b className="ol-opentask-title">{OPEN_TASK.title}</b>
-                <span className="ol-opentask-text">{OPEN_TASK.text}</span>
-                <span className="ol-opentask-crit">Журі оцінює: {OPEN_TASK.criteria.join(', ')}. На диплом це завдання не впливає.</span>
-              </figcaption>
-            </figure>
             <ul className="ol-prizes">
               {PRIZES.map((p) => (
                 <li key={p.place} className="ol-prize-card">
