@@ -40,6 +40,7 @@ KYIV = ZoneInfo("Europe/Kyiv")
 QUESTIONS = 25
 MINUTES = 35
 ACCESS_HOURS = 72
+PRINT_PRICE = 120
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня",
               "серпня", "вересня", "жовтня", "листопада", "грудня"]
@@ -89,7 +90,10 @@ def build_message(entry: dict):
         f"{QUESTIONS} завдань і 1 відкрите, {MINUTES} хвилин на все, 1 спроба; час піде після натискання «Почати»;",
         "останнє завдання — відкрите: придумати питання до малюнка; воно вирішує, хто отримає приз місяця;",
         "коли час вийде, буде ще 2 хвилини, щоб дописати й відправити відповіді, — потім вони відправляться самі;",
-        "диплом зʼявиться на тій самій сторінці одразу після тесту.",
+        "диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням його можна отримати Новою поштою "
+        f"— додатково {PRINT_PRICE} грн;",
+        f"переможців місяця оголосимо до 7-го числа наступного місяця; якщо {name} виграє, повідомимо вас "
+        "окремим листом на цю адресу.",
     ]
     text = "\n".join([
         "Добрий день!",
@@ -131,6 +135,15 @@ def build_diploma_message(entry: dict):
     link = f"{SITE}/olimpiada/test?t={entry['token']}"
     score = entry.get("score")
     maximum = entry.get("max_score")
+    # Приз місяця розігрується лише серед тих, хто надіслав відкрите завдання.
+    competes = bool(str(entry.get("open_answer") or "").strip())
+    winner = (f"Переможців оголосимо до 7-го числа наступного місяця; якщо {name} виграє, "
+              "повідомимо вас окремим листом на цю адресу.")
+    # Друкований диплом уже оплачено — пропонувати вдруге нема чого.
+    offer_post = not entry.get("print_paid_at")
+    post_link = f"{link}#dostavka"
+    post_offer = (f"Надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — "
+                  f"додатково {PRINT_PRICE} грн, друк і доставка включені у вартість.")
     subject = f"Диплом онлайн-олімпіади з логіки — {name}"
     text = "\n".join([
         "Добрий день!",
@@ -139,17 +152,34 @@ def build_diploma_message(entry: dict):
         "Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.",
         "",
         f"Сторінка з результатом, дипломом і відкритим завданням на приз місяця: {link}",
+        *([
+            "",
+            f"Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {winner}",
+        ] if competes else []),
+        *([
+            "",
+            "Бажаєте отримати диплом Новою поштою?",
+            f"{post_offer} Замовити доставку: {post_link}",
+        ] if offer_post else []),
         "",
         "Марія Шутяк, Dityam.com.ua",
         FROM,
     ])
     esc = html.escape
+    prize_html = (f"<p>Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {esc(winner)}</p>\n"
+                  if competes else "")
+    post_html = (
+        f"<p><b>Бажаєте отримати диплом Новою поштою?</b><br>{esc(post_offer)}</p>\n"
+        f'<p><a href="{esc(post_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
+        f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
+        f"Замовити доставку · {PRINT_PRICE} грн</a></p>\n"
+    ) if offer_post else ""
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
 <p>Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.</p>
 <p><a href="{esc(link)}">Сторінка з результатом, дипломом і відкритим завданням на приз місяця</a></p>
-<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
+{prize_html}{post_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
 

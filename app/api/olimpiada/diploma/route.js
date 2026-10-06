@@ -11,6 +11,9 @@
 // v7 (06.10.2026): «паперовий» v6 Марії не сподобався («диплом попередній був
 // краще») — повернули хмару з персонажами, але небо в кольорі рівня («фон у
 // них має відрізнятися також») і напис рівня рівно, без нахилу.
+//
+// v8 (06.10.2026): небо золотого рівня мандаринове замість охри — охра
+// виглядала брудно-коричневою («жовтий не підходить»); Марія обрала з 6 варіантів.
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -30,7 +33,7 @@ const NAVY = '#16307a';
 
 // sky — небо за хмарою: у кожного рівня своє.
 const TONES = {
-  gold: { main: '#b7791f', deep: '#8a5606', ring: '#f2b93b', shine: '#ffe08a', pill: '#ffc93c', pillInk: NAVY, sky: 'linear-gradient(160deg, #9a5b00 0%, #c98410 55%, #e3a42a 100%)' },
+  gold: { main: '#b7791f', deep: '#8a5606', ring: '#f2b93b', shine: '#ffe08a', pill: '#ffc93c', pillInk: NAVY, sky: 'linear-gradient(160deg, #e2570f 0%, #f57f1f 55%, #ffa43d 100%)' },
   silver: { main: '#55687a', deep: '#3f4f5f', ring: '#aab8c6', shine: '#e3eaf1', pill: '#d7dfe8', pillInk: NAVY, sky: 'linear-gradient(160deg, #3b4756 0%, #5d6c7e 55%, #8494a6 100%)' },
   bronze: { main: '#9a5426', deep: '#7c4119', ring: '#d9925c', shine: '#f3c39f', pill: '#f0b07a', pillInk: NAVY, sky: 'linear-gradient(160deg, #5a2410 0%, #87401f 55%, #a85a30 100%)' },
   participant: { main: '#2f66d0', deep: '#1d3f94', ring: '#5b8cf0', shine: '#bcd0ff', pill: '#5b8cf0', pillInk: '#ffffff', sky: 'linear-gradient(160deg, #1d3f94 0%, #2a5cc0 55%, #3b6fd6 100%)' },
