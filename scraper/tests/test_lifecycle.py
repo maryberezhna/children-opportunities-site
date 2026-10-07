@@ -28,22 +28,20 @@ def row(**over):
 
 
 class CloseByDate(unittest.TestCase):
-    def test_one_time_closes_for_good(self):
-        patch = plan_close(row(timing_kind="one_time", deadline="2026-09-10"), TODAY)
-        self.assertEqual(patch["status"], "closed")
-        self.assertIsNone(patch["recheck_at"])
-
-    def test_periodic_closes_with_next_season_check(self):
-        patch = plan_close(row(timing_kind="periodic", season_months=[9],
-                               deadline="2026-09-15"), TODAY)
-        self.assertEqual(patch["status"], "closed")
-        self.assertEqual(patch["recheck_at"], "2027-08-01")
+    def test_every_kind_closes_then_page_is_read_once_in_two_days(self):
+        # Sikorsky Challenge (07.10.2026): закрився 30.09 без жодної перевірки,
+        # а подачу подовжили до 20.10. Тепер за 2 дні сторінку читають.
+        for kind in ("one_time", "periodic", "permanent", None):
+            patch = plan_close(row(timing_kind=kind, season_months=[9],
+                                   deadline="2026-09-15"), TODAY)
+            self.assertEqual(patch["status"], "closed")
+            self.assertEqual(patch["recheck_at"], "2026-09-19")
+            self.assertIn("чи не подовжили", patch["admin_comment"])
 
     def test_competition_with_past_deadline_no_longer_stays_active(self):
         # Раніше: дедлайн стирався, запис лишався «🔄 щорічно».
         patch = plan_close(row(deadline="2026-09-01"), TODAY)
         self.assertEqual(patch["status"], "closed")
-        self.assertEqual(patch["recheck_at"], "2026-10-17")
 
     def test_future_or_closed_records_untouched(self):
         self.assertIsNone(plan_close(row(deadline="2026-10-01"), TODAY))
@@ -52,6 +50,35 @@ class CloseByDate(unittest.TestCase):
 
 
 QUOTE_OPEN = "Реєстрація на І етап триває до 30 жовтня 2026 року."
+QUOTE_EXTENDED = "Прийом заявок на Конкурс - до 20 ЖОВТНЯ 2026р."
+
+
+class ConfirmAfterClose(unittest.TestCase):
+    """Друга половина plan_close: що вирішує перечитування за 2 дні."""
+
+    def just_closed_row(self, kind):
+        return row(status="closed", timing_kind=kind, season_months=[9], deadline="2026-09-15")
+
+    def test_extended_deadline_reopens(self):
+        out = {"state": "open", "deadline": "2026-10-20", "evidence": QUOTE_EXTENDED}
+        patch = decide_check(self.just_closed_row("one_time"), out, QUOTE_EXTENDED, TODAY)
+        self.assertEqual(patch["status"], "active")
+        self.assertEqual(patch["deadline"], "2026-10-20")
+
+    def test_unclear_falls_back_to_the_old_schedule(self):
+        out = {"state": "unclear"}
+        one = decide_check(self.just_closed_row("one_time"), out, "текст", TODAY)
+        self.assertIsNone(one["recheck_at"])
+        self.assertNotIn("status", one)
+        per = decide_check(self.just_closed_row("periodic"), out, "текст", TODAY)
+        self.assertEqual(per["recheck_at"], "2027-08-01")
+
+    def test_old_closed_record_still_retries_in_two_weeks(self):
+        # Сезонна перевірка давно закритого запису — як і раніше, RETRY_DAYS.
+        r = row(status="closed", timing_kind="periodic", deadline="2025-10-30")
+        patch = decide_check(r, {"state": "unclear"}, "текст", TODAY)
+        self.assertEqual(patch["recheck_at"], "2026-10-01")
+
 PROVEN_BUT_DATE = {"age": "для учнів 8–11 класів", "cost": "участь безкоштовна",
                    "type": "Всеукраїнський конкурс", "place": "онлайн"}
 

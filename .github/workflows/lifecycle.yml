@@ -26,6 +26,10 @@ on:
         description: 'скільки планових перевірок за прогін'
         required: false
         default: '30'
+      ids:
+        description: 'id записів через кому — перечитати саме їх зараз (порожньо = за розкладом)'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -54,4 +58,5 @@ jobs:
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || github.event.inputs.dry_run }}
           BOOTSTRAP: ${{ github.event.inputs.bootstrap || 'false' }}
           LIFECYCLE_LIMIT: ${{ github.event.inputs.limit || '30' }}
+          LIFECYCLE_IDS: ${{ github.event.inputs.ids || '' }}
         run: python lifecycle.py
