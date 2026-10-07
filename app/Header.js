@@ -6,7 +6,6 @@ import { TOPIC_LIST, DIASPORA_COUNTRY_TOPICS, topicMenu } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
-import { SIA_AWARD } from '@/lib/awards';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
 // навігації, перемикач «Батькам / Підліткам» на сторінках каталогу і одна
@@ -181,22 +180,9 @@ export default function Header() {
   ];
   const ownActive = OWN.some((l) => pathname.startsWith(l.href));
 
-  const siaLang = isEnglish ? 'en' : 'uk';
-  // Нагорода (lib/awards.js): на широкому екрані — пігулка поруч із лого. На
-  // телефоні в шапці місця немає — там печатка праворуч від заголовка
-  // головної (app/HomeHero.js; Марія 07.10.2026: «має бути десь отут»).
-  const siaLink = (className, text) => (
-    <a
-      href={SIA_AWARD.href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-      title={SIA_AWARD.full[siaLang]}
-      onClick={track('sia_award')}
-    >
-      <span aria-hidden="true">🏆</span> {text}
-    </a>
-  );
+  // Пігулки «🏆 Переможець SIA Ukraine 2026» біля лого більше немає (Марія,
+  // 07.10.2026: «прибери то з хедера»). Нагороду показують кільце на
+  // заголовку головної (app/HomeHero.js) і медаль під кнопкою на /olimpiada.
 
   return (
     <header className={headerClass}>
@@ -204,7 +190,6 @@ export default function Header() {
         <Link href={isEnglish ? '/en' : '/'} className="v2-logo" prefetch={false} onClick={track('logo')}>
           <span className="v2-logo-script">dityam.com.ua</span>
         </Link>
-        {siaLink('v2-sia', SIA_AWARD.short[siaLang])}
 
         <nav className="v2-nav" aria-label={isEnglish ? 'Main navigation' : 'Головна навігація'}>
           <div
