@@ -155,3 +155,14 @@ test('у підбірці смужка не відірвана від хіро',
   const mobile = css.slice(css.indexOf('@media (max-width: 900px)'));
   assert.ok(mobile.includes('.tp-main > .m-top'), 'правило поза мобільним блоком');
 });
+
+// Марія, 07.10.2026: «видали усі дедлайни, щоб рівно було». У хіро під
+// рейтингом немає посилання, а панель тягнеться на висоту лівої колонки —
+// низ урівень із пошуком.
+test('у хіро рейтинг без «Усі дедлайни» і врівень із пошуком', () => {
+  const hero = read('app/HomeHero.js');
+  assert.doesNotMatch(hero, /allHref=|allDeadlines/, 'під рейтингом у хіро знову посилання');
+  const css = read('app/styles/home-v2.css');
+  assert.match(css, /\.v2-hero > \.v2-tw \{ align-self: stretch; \}/, 'панель не тягнеться до низу колонки');
+  assert.match(read('app/TopicPage.js'), /allLabel=\{ch\.topWeekAll\}/, 'у підбірках посилання лишається');
+});
