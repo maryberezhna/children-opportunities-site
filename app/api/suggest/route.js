@@ -1,6 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { parseContact } from '@/lib/contactAddress';
 
+// Рядок-позначка в коментарі пропозиції: людина попросила умови реклами.
+const ADS_MARK = '💼 Хоче ознайомитися з рекламними розміщеннями';
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -35,6 +38,14 @@ export async function POST(request) {
   if (rawContact && !parsed) {
     return Response.json({ ok: false, error: 'contact' }, { status: 400 });
   }
+  // Галочка «Хочу ознайомитися з рекламними розміщеннями» (07.10.2026). Без
+  // контакту умови нема куди надіслати. Окремої колонки немає: позначка
+  // лягає рядком у коментар — його бачать і «Звернення», і сповіщення.
+  const wantsAds = b.ads === true;
+  if (wantsAds && !parsed) {
+    return Response.json({ ok: false, error: 'ads_contact' }, { status: 400 });
+  }
+  const storedComment = [comment, wantsAds ? ADS_MARK : null].filter(Boolean).join('\n\n');
 
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -44,7 +55,7 @@ export async function POST(request) {
   const { error } = await supabase.from('opportunity_suggestions').insert({
     title: title || url,
     url: url || null,
-    comment: comment || null,
+    comment: storedComment || null,
     contact: contact || null,
     // Явно: порожній origin адмінка теж вважає «людиною з сайту», але ручні
     // вставки мусять ставити своє (maria / research), а не мовчати.
@@ -62,6 +73,7 @@ export async function POST(request) {
       url ? esc(url) : null,
       comment ? `\n${esc(comment)}` : null,
       contact ? `\nКонтакт: ${esc(contact)}` : null,
+      wantsAds ? `\n${ADS_MARK}` : null,
     ].filter(Boolean);
     try {
       await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {

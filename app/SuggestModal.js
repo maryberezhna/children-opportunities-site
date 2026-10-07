@@ -35,6 +35,9 @@ const T = {
     contactOpt: 'якщо можна щось уточнити',
     contactPh: '@telegram або email',
     contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
+    ads: 'Хочу ознайомитися з рекламними розміщеннями на Dityam.com.ua',
+    adsContact: 'щоб надіслати умови',
+    adsErr: 'Щоб надіслати умови реклами, вкажіть email або нік у Telegram, наприклад @olena.',
     send: 'Надіслати',
     sending: 'Надсилаємо…',
     error: 'Не вдалося надіслати. Спробуйте ще раз або напишіть у Telegram.',
@@ -55,6 +58,9 @@ const T = {
     contactOpt: 'if we may clarify details',
     contactPh: '@telegram or email',
     contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
+    ads: 'I’d like to learn about advertising placements on Dityam.com.ua',
+    adsContact: 'so we can send the terms',
+    adsErr: 'To receive the advertising terms, enter an email or a Telegram username, e.g. @olena.',
     send: 'Send',
     sending: 'Sending…',
     error: 'Could not send. Try again or write on Telegram.',
@@ -70,7 +76,7 @@ export default function SuggestModal({ lang = 'uk' }) {
   const [state, setState] = useState('idle'); // idle | sending | done | error
   // website — honeypot: людина його не бачить, бот заповнює (той самий
   // трюк, що у старому SuggestBlock, і той самий API).
-  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '' });
+  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
 
   useEffect(() => {
     const onOpen = () => { setOpen(true); setState('idle'); };
@@ -103,6 +109,11 @@ export default function SuggestModal({ lang = 'uk' }) {
       setState('contact');
       return;
     }
+    // Попросили умови реклами — без контакту їх нема куди надіслати.
+    if (form.ads && !parseContact(form.contact)) {
+      setState('ads');
+      return;
+    }
     setState('sending');
     try {
       const res = await fetch('/api/suggest', {
@@ -113,7 +124,7 @@ export default function SuggestModal({ lang = 'uk' }) {
       const data = await res.json();
       if (!data.ok) throw new Error('server');
       setState('done');
-      setForm({ title: '', url: '', comment: '', contact: '', website: '' });
+      setForm({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
       if (window.gtag) {
         window.gtag('event', 'suggest_submit', { event_category: 'conversion' });
       }
@@ -161,9 +172,20 @@ export default function SuggestModal({ lang = 'uk' }) {
               <textarea id="sg-note" rows={4} placeholder={t.notePh} value={form.comment} onChange={set('comment')} />
             </div>
             <div className="v2-field">
-              <label htmlFor="sg-contact">{t.contact} <span>{t.contactOpt}</span></label>
+              <label htmlFor="sg-contact">{t.contact} <span>{form.ads ? t.adsContact : t.contactOpt}</span></label>
               <input id="sg-contact" type="text" placeholder={t.contactPh} value={form.contact} onChange={set('contact')} />
             </div>
+            {/* Організатори, які приносять можливість, — найтепліші рекламодавці
+                (Марія, 07.10.2026). Галочка знята за замовчуванням: це явне
+                бажання людини, а не підписка «за мовчанням». */}
+            <label className="v2-check">
+              <input
+                type="checkbox"
+                checked={form.ads}
+                onChange={(e) => setForm((f) => ({ ...f, ads: e.target.checked }))}
+              />
+              <span>{t.ads}</span>
+            </label>
             <input
               type="text"
               value={form.website}
@@ -173,8 +195,10 @@ export default function SuggestModal({ lang = 'uk' }) {
               aria-hidden="true"
               style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
             />
-            {state === 'error' || state === 'contact' ? (
-              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>{state === 'contact' ? t.contactErr : t.error}</p>
+            {state === 'error' || state === 'contact' || state === 'ads' ? (
+              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>
+                {state === 'contact' ? t.contactErr : state === 'ads' ? t.adsErr : t.error}
+              </p>
             ) : null}
             <button type="submit" className="v2-dialog-submit" disabled={state === 'sending'}>
               {state === 'sending' ? t.sending : t.send}
