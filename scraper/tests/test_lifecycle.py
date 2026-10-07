@@ -11,7 +11,7 @@ from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from lifecycle import (  # noqa: E402
-    MANUAL_MARK, decide_check, plan_bootstrap, plan_close, plan_unreadable,
+    MANUAL_MARK, PAGE_CHARS, decide_check, focus_text, plan_bootstrap, plan_close, plan_unreadable,
 )
 
 TODAY = date(2026, 9, 17)
@@ -51,6 +51,26 @@ class CloseByDate(unittest.TestCase):
 
 QUOTE_OPEN = "Реєстрація на І етап триває до 30 жовтня 2026 року."
 QUOTE_EXTENDED = "Прийом заявок на Конкурс - до 20 ЖОВТНЯ 2026р."
+
+
+class FocusText(unittest.TestCase):
+    """Довга сторінка: модель мусить бачити дату, навіть якщо вона далеко."""
+
+    def test_short_page_goes_whole(self):
+        self.assertEqual(focus_text("коротко"), "коротко")
+
+    def test_date_beyond_the_cut_reaches_the_model(self):
+        # Sikorsky Challenge, 07.10.2026: «до 20 жовтня» на 9 960-му символі.
+        filler = "1.1. Загальні засади конкурсу. 2.5. Пункт положення. " * 220
+        page = filler + "Подання заявок ( 1 січня 2026 року - 20 жовтня 2026р . )." + " кінець" * 50
+        out = focus_text(page)
+        self.assertGreater(page.find("20 жовтня"), PAGE_CHARS)
+        self.assertIn("20 жовтня 2026", out)
+        self.assertLessEqual(len(out), PAGE_CHARS)
+
+    def test_section_numbers_are_not_dates(self):
+        page = "Вступ. " * 1500 + " 2.5. Пункт. 2.14. Пункт. " * 40
+        self.assertEqual(focus_text(page), page[:PAGE_CHARS])
 
 
 class ConfirmAfterClose(unittest.TestCase):
