@@ -150,12 +150,15 @@ test('сторінка олімпіади: цінність і справжні 
   const page = read('app/olimpiada/page.js');
   assert.ok(!page.includes('Диплом з іменем дитини — одразу після тесту й на email'));
   assert.ok(!page.includes('1 лист, щойно стартуємо'));
-  // Одне число можливостей на весь сайт — з liveStats, як на головній.
-  assert.match(page, /countActiveOpportunities\(\)/);
-  assert.match(page, /className="ol-proof"/);
+  // Картки цифр прибрано (07.10.2026): лишився рядок довіри під кнопкою —
+  // «3 000+ родин» і перемога SIA.
+  assert.doesNotMatch(page, /className="ol-proof"/);
+  assert.match(page, /className="ol-trust"/);
+  assert.match(page, /SIA_AWARD\.href/);
   const { AUDIENCE_MONTHLY } = await import('../lib/olimpiada.js');
-  assert.equal(AUDIENCE_MONTHLY, '2 000+');
-  assert.match(read('lib/olimpiada.js'), /вересень 2026 — 2 245/, 'джерело цифри записане поруч');
+  assert.equal(AUDIENCE_MONTHLY, '3 000+');
+  assert.match(read('lib/olimpiada.js'), /07\.09–06\.10\.2026 — 3 080/, 'джерело цифри записане поруч');
+  assert.doesNotMatch(page, /щомісяця шукають/, 'число за останні 30 днів, не «щомісяця»: у вересні було 2 245');
   const { PLUS_PRICE_MONTH } = await import('../lib/plus.js');
   assert.equal(PLUS_PRICE_MONTH, 119);
   assert.doesNotMatch(page, /Dityam\+ —/, '«Dityam+ —» читається як «плюс мінус»');

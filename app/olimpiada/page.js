@@ -2,7 +2,7 @@ import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
 import { PLUS_PRICE_MONTH } from '@/lib/plus';
-import { countActiveOpportunities, FALLBACK } from '@/lib/supabase';
+import { SIA_AWARD } from '@/lib/awards';
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
@@ -172,11 +172,9 @@ function Cta({ note, light = false, at }) {
 // тесту й на email — ти думаєш, це та цінність, за яку батьки хочуть платити?»).
 const NOTE_GIFT = `Місяць Dityam+ за ${PLUS_PRICE_MONTH} грн — у подарунок кожному учаснику`;
 const NOTE_NEXT = 'Після тесту — місяць особистої добірки можливостей під вік та інтереси дитини';
-const NOTE_AUDIENCE = `${AUDIENCE_MONTHLY} батьків і підлітків щомісяця шукають можливості на Dityam.com.ua`;
+const NOTE_AUDIENCE = `${AUDIENCE_MONTHLY} родин за останній місяць шукали можливості на Dityam.com.ua`;
 
 export default async function OlimpiadaPage() {
-  // Одне число можливостей на весь сайт — те саме, що на головній (liveStats).
-  const total = await countActiveOpportunities().catch(() => null);
   const key = monthKey();
   const month = monthName(key);
   const FAQ = faq(month);
@@ -204,19 +202,22 @@ export default async function OlimpiadaPage() {
                   <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн` : 'Повідомити про старт'}</a>
                   <a href="#yak" className="ol-btn ol-btn-ghost">Як це працює</a>
                 </div>
+                {/* Довіра — одним рядком під кнопкою замість трьох карток цифр (Марія,
+                    07.10.2026: «прибрати, але залишити 3к родин і підкріпити це
+                    чимось», «десь біля CTA»). Число — AUDIENCE_MONTHLY (GA4),
+                    підкріплення — перемога на SIA Ukraine (lib/awards.js). */}
+                <p className="ol-trust">
+                  <span><b>{AUDIENCE_MONTHLY} родин</b> за останній місяць шукали можливості на Dityam.com.ua</span>
+                  <a href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
+                    <span aria-hidden="true">🏆</span> {SIA_AWARD.short.uk}
+                  </a>
+                </p>
               </div>
               <div className="ol-badge">
                 <b>{OLIMP.questionCount}</b>
                 <span>завдань<br />за {OLIMP.minutes} хвилин</span>
               </div>
             </div>
-            {/* Цифри платформи — справжні: аудиторія з GA4 (AUDIENCE_MONTHLY),
-                можливості — той самий лічильник, що на головній. */}
-            <ul className="ol-proof" aria-label="Dityam.com.ua у цифрах">
-              <li><b>{AUDIENCE_MONTHLY}</b><span>батьків і підлітків щомісяця шукають можливості на Dityam.com.ua</span></li>
-              <li><b>{total ? total.toLocaleString('uk-UA') : FALLBACK.opportunities}</b><span>можливостей для дітей на платформі: олімпіади, конкурси, табори, гуртки</span></li>
-              <li><b>{PLUS_PRICE_MONTH} грн</b><span>коштує місяць підписки Dityam+, а учасникам олімпіади він у подарунок</span></li>
-            </ul>
           </div>
           <Star className="ol-doodle ol-star-1" />
           <Star className="ol-doodle ol-star-2" />
