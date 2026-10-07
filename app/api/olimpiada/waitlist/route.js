@@ -2,7 +2,7 @@
 // на старті кожному 1 лист (Марія, 06.10.2026: «починай збирати імейли кому
 // цікаво»). Адмінка дізнається про кожен новий email і скільки їх уже.
 import { OLIMP, isEmail } from '@/lib/olimpiada';
-import { getStore, notifyAdmin, esc, json } from '@/lib/olimpiada-server';
+import { getStore, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -30,11 +30,7 @@ export async function POST(request) {
     console.error('[olimpiada/waitlist]', e);
     return json({ error: 'unavailable' }, 503);
   }
-  if (!res.already) {
-    await notifyAdmin(
-      `🧩 <b>Олімпіада: чекають старту</b>\n${esc(email)}${b.source ? ` · ${esc(String(b.source).slice(0, 60))}` : ''}`
-      + `${res.count ? `\nУсього в списку: ${res.count}` : ''}`,
-    );
-  }
+  // Сповіщення про кожен email у списку очікування знято: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  // Список — у /admin/metrics, блок «Онлайн-олімпіада».
   return json({ ok: true, already: res.already });
 }

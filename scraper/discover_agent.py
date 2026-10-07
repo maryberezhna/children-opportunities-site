@@ -1074,7 +1074,8 @@ def _main() -> int:
     if not diaspora:
         remember_cell(kw, len(candidates), added)
 
-    notify_new(added, kw)  # ping the admin chat with a ▶️ button to start review
+    # Пінг «N нових кандидатів» в адмін-чат знято: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+    # Чернетки чекають на /admin.
     logger.info("\nГотово: %d драфтів (%d з тегом «дубль»), %d як дублікати відкинуто, "
                 "%d інших пропущено. З цитатою на всі пʼять полів: %d. "
                 "Модерація — на /admin або в боті.",
