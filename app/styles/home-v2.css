@@ -117,7 +117,20 @@
    стоїть одразу після останнього слова заголовка, тож коло лягає на кінець
    фрази за будь-якої ширини екрана. */
 @keyframes v2-sia-spin { to { transform: rotate(360deg); } }
-.v2-sia-glue { white-space: nowrap; }
+/* Слово, на якому лежить кільце, — з «підкладкою» кольору фону навколо
+   літер (Марія, 07.10.2026: кільце вже позаду, але «наче перекриває
+   слово»). Кільце обривається біля кожної літери, і слово читається
+   чисто, на першому плані. Тінь кольору фону, а не обведення: обведення без
+   paint-order у старих браузерах з'їдало б самі літери. */
+.v2-hero h1 { --v2-halo: var(--surface-2); }
+html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
+.v2-sia-glue {
+  white-space: nowrap;
+  text-shadow:
+    4px 0 var(--v2-halo), -4px 0 var(--v2-halo), 0 4px var(--v2-halo), 0 -4px var(--v2-halo),
+    3px 3px var(--v2-halo), -3px 3px var(--v2-halo), 3px -3px var(--v2-halo), -3px -3px var(--v2-halo);
+}
+.v2-sia-glue .v2-sia-ring span { text-shadow: none; }
 .v2-sia-anchor {
   position: relative;
   display: inline-block;
