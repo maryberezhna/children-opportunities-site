@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { parseContact } from '@/lib/contactAddress';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,10 +23,17 @@ export async function POST(request) {
   const title = typeof b.title === 'string' ? b.title.trim().slice(0, 300) : '';
   const url = typeof b.url === 'string' ? b.url.trim().slice(0, 500) : '';
   const comment = typeof b.comment === 'string' ? b.comment.trim().slice(0, 2000) : '';
-  const contact = typeof b.contact === 'string' ? b.contact.trim().slice(0, 200) : '';
+  const rawContact = typeof b.contact === 'string' ? b.contact.trim().slice(0, 200) : '';
+  // Контакт необовʼязковий, але лише email або нік у Telegram (07.10.2026):
+  // на номер телефону ми відповісти не можемо. Нік зберігаємо як @nick.
+  const parsed = rawContact ? parseContact(rawContact) : null;
+  const contact = parsed ? parsed.value : '';
 
   if (title.length < 5 && !url) {
     return Response.json({ ok: false, error: 'empty' }, { status: 400 });
+  }
+  if (rawContact && !parsed) {
+    return Response.json({ ok: false, error: 'contact' }, { status: 400 });
   }
 
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,6 +46,9 @@ export async function POST(request) {
     url: url || null,
     comment: comment || null,
     contact: contact || null,
+    // Явно: порожній origin адмінка теж вважає «людиною з сайту», але ручні
+    // вставки мусять ставити своє (maria / research), а не мовчати.
+    origin: 'popup',
   });
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
 
