@@ -683,3 +683,5 @@
 }
 .ol-own-btn:hover { transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .ol-own-btn { transition: none; } .ol-own-btn:hover { transform: none; } }
+/* Той самий блок у підбірках (app/OlimpPromo.js) — між «Топ 3» і списком. */
+.ol-own-hub { margin: 28px 0; }

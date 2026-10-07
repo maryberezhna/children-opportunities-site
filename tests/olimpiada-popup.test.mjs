@@ -160,3 +160,14 @@ test('сторінка олімпіади: цінність і справжні 
   assert.equal(PLUS_PRICE_MONTH, 119);
   assert.doesNotMatch(page, /Dityam\+ —/, '«Dityam+ —» читається як «плюс мінус»');
 });
+
+test('блок олімпіади — у потрібних підбірках і на /olimpiady, лише українською', async () => {
+  const { OLIMP_HUBS } = await import('../lib/olimpiada.js');
+  assert.deepEqual(OLIMP_HUBS, ['konkursy', 'mizhnarodni-olimpiady', 'ukrainskym-ditiam-za-kordonom']);
+  const topic = read('app/TopicPage.js');
+  assert.match(topic, /!isEn && \(OLIMP_OPEN \|\| OLIMP_PUBLIC\) && OLIMP_HUBS\.includes\(topic\.slug\)/);
+  assert.match(read('app/olimpiady/page.js'), /<OlimpPromo \/>/);
+  const promo = read('app/OlimpPromo.js');
+  assert.match(promo, /href="\/olimpiada"/);
+  assert.doesNotMatch(promo, /Dityam\+ —/);
+});
