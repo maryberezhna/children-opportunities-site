@@ -7,6 +7,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import HomeTopics from './HomeTopics';
 import TopWeekSlider from './TopWeekSlider';
 import { sliderCards } from '@/lib/top-week-slider';
+import { SIA_AWARD } from '@/lib/awards';
 import useSearchSuggest from './useSearchSuggest';
 
 // Хіро головної (редизайн 29.09.2026, макет Main.dc.html): надпис, заголовок,
@@ -147,6 +148,23 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
     <section className="v2-hero-band">
       <div className="v2-hero">
         <div className="v2-hero-copy">
+          {/* Печатка нагороди — лише на телефоні, праворуч від заголовка, де
+              порожньо (Марія, 07.10.2026). На широкому екрані нагорода —
+              пігулка біля лого в шапці. Адреса — lib/awards.js. */}
+          <a
+            href={SIA_AWARD.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="v2-sia-seal"
+            aria-label={SIA_AWARD.full[isEn ? 'en' : 'uk']}
+            title={SIA_AWARD.full[isEn ? 'en' : 'uk']}
+            onClick={() => {
+              if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero' });
+            }}
+          >
+            <span className="v2-sia-seal-cup" aria-hidden="true">🏆</span>
+            {SIA_AWARD.seal[isEn ? 'en' : 'uk'].map((line) => <span key={line}>{line}</span>)}
+          </a>
           <div className="v2-hero-status">
             <span className="v2-dot" aria-hidden="true" />
             {t.live}
