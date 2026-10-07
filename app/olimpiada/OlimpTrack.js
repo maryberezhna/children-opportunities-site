@@ -20,7 +20,14 @@ export default function OlimpTrack() {
       window.sessionStorage.setItem(KEY, '1');
     } catch { /* приватне вікно — краще двічі, ніж нуль */ }
     if (first) {
-      const source = olimpSource({ search: window.location.search, referrer: document.referrer, host: window.location.hostname });
+      // Звідки перейшли всередині сайту: якщо Analytics уже записав цю
+      // сторінку — попередня в __dityamPrevPath, інакше ще в __dityamPath.
+      const here = window.location.pathname;
+      const prev = window.__dityamPath === here ? window.__dityamPrevPath : window.__dityamPath;
+      const source = olimpSource({
+        search: window.location.search, referrer: document.referrer, host: window.location.hostname,
+        prevPath: prev && prev !== here ? prev : null,
+      });
       sendSiteEvent(SITE_EVENTS.OLIMP_VIEW, source);
       trackConversion('olimpiada_view', { event_label: source, event_source: source });
     }
