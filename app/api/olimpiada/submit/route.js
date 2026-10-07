@@ -1,7 +1,7 @@
-// Здача тесту: бали рахує сервер за порядком, виданим цій дитині. Разом із
-// відповідями приходить відкрите завдання — воно в тих самих хвилинах. Коли
-// час вийшов, браузер ще 2 хвилини показує табло «Відправити відповідь», а
-// потім здає роботу сам; після цього (плюс запас на мережу) не приймаємо.
+// Здача завдань із варіантами: бали рахує сервер за порядком, виданим цій
+// дитині. Коли час вийшов, браузер здає роботу сам; що прийшло пізніше
+// (плюс запас на мережу), не зараховуємо. Відкрите завдання — без таймера
+// (07.10.2026) і йде окремо, після цього кроку: /api/olimpiada/open.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { OLIMP, scoreAnswers, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
 import { getStore, validToken, json, loadKeys } from '@/lib/olimpiada-server';
@@ -32,8 +32,9 @@ export async function POST(request) {
       if (Number.isInteger(v) && v >= 0 && v < 4) answers[o.id] = v;
     }
   }
-  // Відкрите завдання: що дитина встигла написати — журі читає саме це.
-  const open = late ? '' : cleanOpenAnswer(b.open);
+  // Відкрите завдання тепер надсилає /api/olimpiada/open. Якщо воно все ж
+  // прийшло разом із завданнями (стара вкладка), беремо: таймера на ньому немає.
+  const open = cleanOpenAnswer(b.open);
   // Без ключів бали були б нулями — краще чесно відмовити й дати повторити.
   const keys = await loadKeys(OLIMP.slug);
   if (!keys) return json({ error: 'unavailable' }, 503);

@@ -229,7 +229,7 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-panel .ol-text { color: #2c4a9a; }
 .ol-panel .ol-note { color: #5a72b5; }
 /* Біла картка завдання — сталі кольори й у нічній темі. */
-.ol-q .ol-text, .ol-overtime-task { color: #2c4a9a; }
+.ol-q .ol-text, .ol-open-step .ol-text { color: #2c4a9a; }
 .ol-q .ol-note { color: #5a72b5; }
 .ol-intro .ol-btn { margin-top: 26px; }
 .ol-deadline { margin: 18px 0 0; padding: 12px 16px; border-radius: 16px; background: #fff4d6; color: var(--ol-navy); font-size: 16px; font-weight: 700; }
@@ -396,31 +396,22 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-soon-title { margin: 0; font-family: var(--font-caveat), cursive; font-size: 30px; font-weight: 700; line-height: 1.1; color: var(--ol-navy); }
 .ol-soon-text { margin: 0; font-size: 16px; line-height: 1.55; color: #2c4a9a; }
 
-/* Відкрите завдання — останній крок тесту, і табло «Час вийшов» з відліком
-   (Марія, 06.10.2026: «у тих самих хвилинах», «ще 2 хвилини і таймер»). */
-.ol-q-open .ol-kicker { margin-bottom: 6px; }
-.ol-q-open textarea { min-height: 180px; }
-.ol-dot-open { font-size: 16px; }
-.ol-overtime { text-align: left; }
-.ol-overtime-timer {
-  margin: 6px 0 18px; text-align: center; font: 700 64px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
-  letter-spacing: .04em; color: #16307a;
-}
-.ol-overtime-timer.is-low { color: #d6293e; }
-.ol-overtime-task { margin: 0 0 10px; font-size: 16px; line-height: 1.55; }
-.ol-overtime textarea { min-height: 160px; }
+/* Відкрите завдання — останній крок тесту, без таймера (Марія, 07.10.2026:
+   «без таймера»; до того — у тих самих хвилинах і табло «Час вийшов»). */
+.ol-open-step { text-align: left; }
+.ol-open-step .ol-kicker { margin-bottom: 6px; }
+.ol-open-step .ol-note { margin: 4px 0 14px; }
+.ol-open-step textarea, .ol-open textarea { min-height: 180px; }
 .ol-quote {
   margin: 14px 0 0; padding: 14px 18px; white-space: pre-wrap; font-size: 16px; line-height: 1.55;
   color: var(--v2-ink); background: var(--v2-cream); border-left: 4px solid #f5a023; border-radius: 12px;
 }
-@media (max-width: 560px) { .ol-overtime-timer { font-size: 52px; } }
 
 /* Заклики після блоків («мало cta», Марія, 06.10.2026). */
 .ol-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 32px; }
 .ol-cta span { font-size: 15px; font-weight: 500; color: var(--v2-ink-2); }
 .ol-cta.is-light span { color: #dbe6ff; }
-.ol-q-open .ol-q-art, .ol-overtime-art { margin: 4px 0 16px; }
-.ol-overtime-art { max-width: 420px; }
+.ol-open-step .ol-q-art, .ol-open .ol-q-art { margin: 4px 0 16px; max-width: 420px; }
 @media (max-width: 560px) {
   .ol-cta { flex-direction: column; align-items: stretch; text-align: center; }
   .ol-cta .ol-btn { width: 100%; }
