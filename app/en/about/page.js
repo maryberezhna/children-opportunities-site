@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Footer from '../../Footer';
 import PressLogos from '../../PressLogos';
 import { pressStats } from '@/lib/press';
+import { SuggestOpenButton } from '../../SuggestModal';
 
 export const metadata = {
   title: 'About the project — Dityam.com.ua',
@@ -179,7 +180,9 @@ export default async function AboutPageEn() {
               we will check and fix it.
             </p>
             <div className="v2-panel-actions">
-              <a href={`mailto:${EMAIL}`} className="v2-btn-dark">{EMAIL}</a>
+              {/* Та сама форма, що у футері (Марія, 07.10.2026: «чому тут нема такої самої форми»). */}
+              <SuggestOpenButton className="v2-btn-dark">Suggest an opportunity</SuggestOpenButton>
+              <a href={`mailto:${EMAIL}`} className="v2-btn-outline">{EMAIL}</a>
               <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Instagram</a>
             </div>
           </div>
@@ -187,7 +190,7 @@ export default async function AboutPageEn() {
             <h2>Support</h2>
             <p>
               The platform is free for families, for good. What helps it
-              grow is the Dityam+ subscription (the waiting list is open now), and a
+              grow is the Dityam+ subscription, and a
               donation pays for new sources, the domain and hosting.
             </p>
             <div className="v2-panel-actions">
