@@ -7,7 +7,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN, ageRangeLabel } from '@/lib/labels';
 import HomeTopics from './HomeTopics';
 import TopWeekSlider from './TopWeekSlider';
 import { sliderCards } from '@/lib/top-week-slider';
-import { SIA_AWARD } from '@/lib/awards';
+import { SIA_AWARD, ringLayout } from '@/lib/awards';
 import useSearchSuggest from './useSearchSuggest';
 
 // Хіро головної (редизайн 29.09.2026, макет Main.dc.html): надпис, заголовок,
@@ -143,46 +143,44 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
     lang,
   });
 
+  // Наліпка нагороди (див. коментар біля якорів у заголовку).
+  const siaSeal = (
+    <a
+      href={SIA_AWARD.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="v2-sia-seal"
+      aria-label={SIA_AWARD.full[isEn ? 'en' : 'uk']}
+      title={SIA_AWARD.full[isEn ? 'en' : 'uk']}
+      onClick={() => {
+        if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero' });
+      }}
+    >
+      <span className="v2-sia-ring" aria-hidden="true">
+        {ringLayout(SIA_AWARD.ring[isEn ? 'en' : 'uk']).map(({ ch, deg }, i) => (
+          <span key={i} style={{ transform: `rotate(${deg}deg)` }}>{ch}</span>
+        ))}
+      </span>
+    </a>
+  );
+
   return (
     <section className="v2-hero-band">
       <div className="v2-hero">
         <div className="v2-hero-copy">
-          {/* Печатка нагороди — лише на телефоні, праворуч від заголовка, де
-              порожньо (Марія, 07.10.2026). На широкому екрані нагорода —
-              пігулка біля лого в шапці. Адреса — lib/awards.js. */}
-          <a
-            href={SIA_AWARD.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="v2-sia-seal"
-            aria-label={SIA_AWARD.full[isEn ? 'en' : 'uk']}
-            title={SIA_AWARD.full[isEn ? 'en' : 'uk']}
-            onClick={() => {
-              if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero' });
-            }}
-          >
-            {/* Текст по колу, що повільно обертається (Марія, 07.10.2026: «ось
-                типу так … і крутиться»; центр порожній — «не треба кубок»). Коло
-                r=38 у viewBox 100 — довжина ≈ 239; letter-spacing у CSS підібраний
-                так, щоб текст ліг рівно на один оберт (textLength на textPath
-                Chrome не тримає). */}
-            <svg className="v2-sia-ring" viewBox="0 0 100 100" aria-hidden="true">
-              <defs>
-                <path id="v2-sia-ring-path" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0" />
-              </defs>
-              <text>
-                <textPath href="#v2-sia-ring-path">
-                  {SIA_AWARD.ring[isEn ? 'en' : 'uk']}
-                </textPath>
-              </text>
-            </svg>
-          </a>
           <div className="v2-hero-status">
             <span className="v2-dot" aria-hidden="true" />
             {t.live}
           </div>
           <h1>
-            {c.lead} <span className="v2-script">{c.script}</span><span className="v2-hero-tail">{c.tail}</span>
+            {c.lead}<span className="v2-sia-anchor v2-sia-anchor--lead">{siaSeal}</span> <br className="v2-hero-br" /><span className="v2-script">{c.script}</span><span className="v2-hero-tail">{c.tail}</span>
+            {/* Наліпка нагороди на кінці головної фрази (Марія, 07.10.2026: «наклади
+                цей кружечок прямо на кінець головної фрази»). Помаранчеве коло з
+                білим текстом, що повільно обертається; центр порожній («не треба
+                кубок»). Літери стоять по колу кожна своїм поворотом, а не через
+                SVG textPath: iOS Safari не тримає letter-spacing у SVG-тексті, і
+                коло там «не відмальовувалось нормально». Адреса — lib/awards.js. */}
+            <span className="v2-sia-anchor v2-sia-anchor--end">{siaSeal}</span>
           </h1>
           <p className="v2-hero-sub">{c.sub}</p>
 

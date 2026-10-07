@@ -131,49 +131,97 @@
   transition: border-color 0.15s;
 }
 .v2-sia:hover { border-color: var(--v2-accent-strong); }
-.v2-sia-seal { display: none; }
 
 @media (max-width: 1100px) {
   .v2-sia { display: none; }
 }
 
-/* Печатка нагороди праворуч від заголовка головної на телефоні: текст по
-   колу, що повільно обертається; центр порожній (07.10.2026). */
+/* Наліпка нагороди на кінці головної фрази (07.10.2026): помаранчеве коло,
+   білий текст по колу обертається, центр порожній. Якір нульової ширини
+   стоїть одразу після останнього слова заголовка, тож коло лягає на кінець
+   фрази за будь-якої ширини екрана. На головній ширше 1100px пігулку в
+   шапці ховаємо — наліпка вже є. */
 @keyframes v2-sia-spin { to { transform: rotate(360deg); } }
-@media (max-width: 900px) {
-  .v2-home .v2-hero-copy { position: relative; }
-  .v2-home .v2-hero h1 { padding-right: 88px; }
-  .v2-sia-seal {
-    display: flex;
-    position: absolute;
-    top: -14px;
-    right: -4px;
-    width: 86px;
-    height: 86px;
-    align-items: center;
-    justify-content: center;
-    color: var(--v2-ink);
-    text-decoration: none;
-  }
-  html[data-mode="teens"] .v2-sia-seal { color: #f7f1e6; }
-  .v2-sia-ring {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: visible;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 800;
-    /* 0.12em — текст «ПЕРЕМОЖЕЦЬ • SIA UKRAINE 2026 •» на 11px дає ≈ 236 з
-       239 довжини кола: один оберт без дірки на стику. */
-    letter-spacing: 0.12em;
-    fill: currentColor;
-    animation: v2-sia-spin 16s linear infinite;
-  }
+.v2-sia-anchor {
+  position: relative;
+  display: inline-block;
+  width: 0;
+  height: 1em;
+  vertical-align: baseline;
 }
-@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+.v2-sia-seal {
+  --seal: 88px;
+  --lift: 0.9em;
+  display: block;
+  position: absolute;
+  /* Коло лише трохи заходить на останню літеру (≈12% своєї ширини), а
+     центр — на висоті середини рядка: «наклади на кінець фрази», але слово
+     має лишатись читабельним. */
+  left: calc(var(--seal) * -0.12);
+  bottom: calc(var(--seal) * -0.5 + var(--lift));
+  width: var(--seal);
+  height: var(--seal);
+  border-radius: 50%;
+  background: var(--v2-accent-strong);
+  color: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  text-decoration: none;
+  transform: rotate(-10deg);
+  z-index: 1;
+}
+.v2-sia-ring {
+  position: absolute;
+  inset: 0;
+  animation: v2-sia-spin 18s linear infinite;
+}
+.v2-sia-ring span {
+  position: absolute;
+  left: 50%;
+  top: 6%;
+  height: 44%;
+  width: 1em;
+  margin-left: -0.5em;
+  transform-origin: 50% 100%;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: calc(var(--seal) * 0.12);
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0;
+  color: #fff;
+}
+@media (prefers-reduced-motion: reduce) {
   .v2-sia-ring { animation: none; }
+}
+/* На телефоні друга половина заголовка — завжди окремим рядком: у режимі
+   підлітків «Можливості для тебе» вміщалось в один рядок, кінець фрази
+   опинявся біля краю екрана, і наліпка вилазила за нього. */
+/* Розрив рядка лише на телефоні (а не display: block у script — тоді якір
+   наліпки опинявся на початку нового рядка). */
+.v2-hero-br { display: none; }
+@media (max-width: 900px) {
+  .v2-home .v2-hero-br { display: inline; }
+}
+/* Два якорі наліпки: в кінці фрази (основний) і після першого рядка. Другий
+   — лише для підліткового режиму на телефоні: там «для тебе» коротке, і коло
+   в його кінці закривало «Можливості» над ним (Марія: «особливо перевір
+   вкладку для підлітків»). Тож коло стає в кінець першого рядка, на висоті
+   другого — праворуч від «для тебе», нічого не закриваючи. */
+.v2-sia-anchor--lead { display: none; }
+@media (max-width: 900px) {
+  html[data-mode="teens"] .v2-sia-anchor--lead { display: inline-block; }
+  html[data-mode="teens"] .v2-sia-anchor--end { display: none; }
+  html[data-mode="teens"] .v2-sia-anchor--lead .v2-sia-seal {
+    --seal: 80px;
+    left: calc(var(--seal) * -0.1);
+    bottom: calc(var(--seal) * -0.72);
+  }
+  html[data-mode="teens"] .v2-home .v2-hero-sub { margin-top: 8px; }
+}
+@media (min-width: 1101px) {
+  .v2-sia-seal { --seal: 116px; --lift: 0.6em; }
+  .v2-header--home .v2-sia { display: none; }
 }
 
 .v2-logo-script {
