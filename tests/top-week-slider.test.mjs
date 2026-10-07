@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
-  SLIDE_MS, dateParts, nextIndex, prevIndex, shouldAutoPlay, sliderCards, swipeTo,
+  SLIDE_MS, dateParts, indexAtScroll, nextIndex, prevIndex, shouldAutoPlay, sliderCards,
 } from '../lib/top-week-slider.js';
 
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
@@ -22,23 +22,28 @@ test('порожній список не ламає лічильник', () => {
 // Автокарусель, яка не спиняється, — класична проблема доступності
 // (WCAG 2.2.2): людина не встигає ні дочитати, ні натиснути.
 test('сама крутиться лише тоді, коли нікому не заважає', () => {
-  assert.equal(shouldAutoPlay({ total: 3, paused: false, touched: false, reducedMotion: false }), true);
-  assert.equal(shouldAutoPlay({ total: 3, paused: true, touched: false, reducedMotion: false }), false);
-  assert.equal(shouldAutoPlay({ total: 3, paused: false, touched: true, reducedMotion: false }), false);
-  assert.equal(shouldAutoPlay({ total: 3, paused: false, touched: false, reducedMotion: true }), false);
-  assert.equal(shouldAutoPlay({ total: 1, paused: false, touched: false, reducedMotion: false }), false);
+  assert.equal(shouldAutoPlay({ total: 3, touched: false, reducedMotion: false }), true);
+  assert.equal(shouldAutoPlay({ total: 3, touched: true, reducedMotion: false }), false);
+  assert.equal(shouldAutoPlay({ total: 3, touched: false, reducedMotion: true }), false);
+  assert.equal(shouldAutoPlay({ total: 1, touched: false, reducedMotion: false }), false);
 });
 
 test('після ручного перемикання таймер більше не втручається', () => {
   // touched лишається true назавжди — далі вирішує людина, а не таймер.
-  assert.equal(shouldAutoPlay({ total: 3, paused: false, touched: true, reducedMotion: false }), false);
+  assert.equal(shouldAutoPlay({ total: 3, touched: true, reducedMotion: false }), false);
 });
 
-test('свайп рахує тільки справжній рух', () => {
-  assert.equal(swipeTo(200, 100, 0, 3), 1, 'вліво — наступна');
-  assert.equal(swipeTo(100, 200, 0, 3), 2, 'вправо — попередня, по колу');
-  // Тремтіння пальця під час вертикальної прокрутки не має гортати картку.
-  assert.equal(swipeTo(200, 180, 1, 3), 1);
+// Поточна картка рахується з прокрутки стрічки: її гортають і тачпадом, і
+// пальцем, і табом, а не лише стрілками.
+test('поточна картка — та, що ближче до початку стрічки', () => {
+  const offsets = [0, 300, 600];
+  assert.equal(indexAtScroll(0, offsets, 520), 0);
+  assert.equal(indexAtScroll(140, offsets, 520), 0);
+  assert.equal(indexAtScroll(170, offsets, 520), 1);
+  // Остання картка не стає на початок — стрічка впирається раніше. У кінці
+  // поточна все одно остання, інакше крапка «3» не загорялась би ніколи.
+  assert.equal(indexAtScroll(520, offsets, 520), 2);
+  assert.equal(indexAtScroll(0, [], 0), 0);
 });
 
 test('картка збирається однаково з рядка бази', () => {
@@ -87,12 +92,20 @@ test('у підбірці трійка рахується з усіх живих
     'трійка має бути та сама, що на головній, інакше її нічим продати');
 });
 
-test('картка показується одна, але в розмітці лишаються всі три', () => {
-  // Інакше пошуковик і читач екрана бачили б лише першу.
+// Марія, 07.10.2026: «має бути одразу видно, що це слайдер». Картки стосом,
+// що мінялись на місці, виглядали як одна картка — тепер вони стоять у ряд,
+// і край наступної видно праворуч.
+test('видно, що це слайдер: край наступної картки й стрілки', () => {
   const src = read('app/TopWeekSlider.js');
   assert.match(src, /cards\.map/, 'усі картки мають бути в розмітці');
-  assert.match(src, /aria-hidden=\{all \|\| n === i \? undefined : 'true'\}/);
-  assert.match(src, /tabIndex=\{all \|\| n === i \? undefined : -1\}/, 'прихована картка не має ловити таб');
+  assert.doesNotMatch(src, /aria-hidden=\{all \|\| n === i/,
+    'картки знову ховаються — тоді краю наступної не видно');
+  const css = read('app/styles/home-v2.css');
+  const card = css.match(/\.v2-tw-card \{[^}]*\}/)[0];
+  assert.match(card, /flex: 0 0 calc\(100% - \d+px\)/, 'картка на всю ширину — наступної не видно');
+  assert.match(card, /scroll-snap-align: start/);
+  assert.match(css, /\.v2-tw-track \{[^}]*overflow-x: auto/, 'стрічку не гортає тачпад');
+  assert.match(src, /className="v2-tw-arrow"/);
 });
 
 // --- широкий розклад (Марія, 04.10.2026: «там можна всі 3 помістити») ---
@@ -101,8 +114,9 @@ test('картка показується одна, але в розмітці �
 // коробкою. Три поруч — і каруселі там не треба зовсім.
 test('у широкому розкладі каруселі немає', () => {
   const src = read('app/TopWeekSlider.js');
-  assert.match(src, /if \(all\) return undefined;/, 'таймер має мовчати, коли видно всі три');
-  assert.match(src, /total > 1 && !all \? \(\s*<div className="v2-tw-dots/, 'крапок при трьох картках бути не має');
+  assert.match(src, /const auto = slider && shouldAutoPlay/, 'таймер має мовчати, коли видно всі три');
+  assert.match(src, /const slider = total > 1 && !all;/, 'крапок і стрілок при трьох картках поруч бути не має');
+  assert.match(src, /slider \? \(\s*<div className="v2-tw-dots/);
   assert.match(src, /v2-tw--all/, 'немає класу широкого розкладу');
 });
 
@@ -112,11 +126,17 @@ test('підбірка бере широкий розклад, головна �
     'у хіро колонка вузька — там одна картка, що міняється');
 });
 
-test('пауза під мишею й на фокусі — у самому компоненті', () => {
+// Таймер — це анімація смужки на поточній крапці: картка міняється, коли
+// вона добігає. Тому пауза — це пауза анімації, і смужка з таймером не
+// розходяться. Людина бачить, що під мишею блок чекає, а не зламався.
+test('пауза під мишею й на фокусі — смужка й таймер стають разом', () => {
   const src = read('app/TopWeekSlider.js');
-  for (const h of ['onMouseEnter', 'onMouseLeave', 'onFocusCapture', 'onBlurCapture']) {
-    assert.ok(src.includes(h), `немає ${h} — карусель крутитиметься під рукою`);
-  }
+  assert.match(src, /onAnimationEnd=\{\(\) => show\(nextIndex\(i, total\)\)\}/,
+    'картку має міняти кінець смужки, а не окремий таймер');
+  assert.doesNotMatch(src, /setInterval/, 'окремий таймер розійдеться зі смужкою під мишею');
+  const css = read('app/styles/home-v2.css');
+  assert.match(css, /\.v2-tw:hover \.v2-tw-fill,\s*\.v2-tw:focus-within \.v2-tw-fill \{ animation-play-state: paused; \}/,
+    'карусель крутитиметься під рукою');
 });
 
 test('картку видно достатньо, щоб прочитати назву', () => {

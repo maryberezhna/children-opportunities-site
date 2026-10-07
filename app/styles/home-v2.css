@@ -2022,14 +2022,19 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   .v2-olymp-more { flex-basis: 100%; }
 }
 
-/* ── «Топ тижня»: одна картка, що міняється (04.10.2026) ────────────────────
+/* ── «Топ тижня»: стрічка великих карток (04.10.2026, 07.10.2026) ──────────
  *
- * Марія: «1 можливість яку чітко видно… бо ми це продаємо, а зараз це тупо».
- * Було три рядки по 9px — тепер одна картка на весь блок: дата великим
- * числом, назва 20px, під нею факти й «Детальніше».
+ * Марія 04.10: «1 можливість яку чітко видно… бо ми це продаємо, а зараз це
+ * тупо». Було три рядки по 9px — тепер велика картка: дата плашкою, назва
+ * 20px, під нею факти й «Детальніше».
  *
- * Картки лежать стосом (grid-area: 1/1), а не змінюються в DOM: висота блоку
- * тоді не стрибає від довжини назви, і сусідній контент не смикається. */
+ * Марія 07.10: «має бути одразу видно, що це слайдер». До того картки лежали
+ * стосом і мінялись на місці — блок виглядав як одна картка зі сірими
+ * значками внизу. Тепер вони стоять у ряд у стрічці з прокруткою, і праворуч
+ * видно край наступної: так виглядає карусель у будь-якому застосунку.
+ *
+ * Стрічка виходить на внутрішній відступ панелі (margin 0 -18px), тож
+ * наступна картка обрізається самим краєм панелі, а не повітрям усередині. */
 .v2-tw {
   box-sizing: border-box;
   padding: 18px;
@@ -2037,12 +2042,12 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   border-radius: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .v2-tw-head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
@@ -2055,17 +2060,63 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   color: var(--v2-ink-3);
 }
 
-.v2-tw-count {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--v2-ink-3);
-  font-variant-numeric: tabular-nums;
+/* Стрілки — круглі білі кнопки нагорі, де їх шукають очі. До 07.10 це були
+   сірі знаки ‹ › шрифтом у 20px, і Марія їх як керування не прочитала. */
+.v2-tw-arrows { display: flex; gap: 8px; flex-shrink: 0; }
+
+.v2-tw-arrow {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--v2-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
 }
 
-.v2-tw-stage { display: grid; }
+.v2-tw-arrow svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
+.v2-tw-arrow:hover { border-color: var(--v2-accent-strong); color: var(--v2-accent-strong); }
+.v2-tw-arrow:focus-visible { outline: 2px solid var(--v2-accent-strong); outline-offset: 2px; }
+
+/* Прокрутку бачить і тачпад, і палець, і таб — без жодного JS. Смуги
+   прокрутки не показуємо: про стрічку і так каже край наступної картки.
+   Вертикальний запас із від'ємним полем — інакше overflow обрізає тінь
+   карток, а відстані в блоці лишаються ті самі. */
+.v2-tw-track {
+  display: flex;
+  gap: 10px;
+  margin: -8px -18px -16px;
+  padding: 8px 18px 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 18px;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+}
+
+.v2-tw-track::-webkit-scrollbar { display: none; }
+
+/* 56px — стільки лишається на край наступної картки (≈ 64px видно разом із
+   відступом панелі): досить, щоб прочитати «тут є ще», і замало, щоб
+   відібрати увагу в поточної. */
 .v2-tw-card {
-  grid-area: 1 / 1;
+  flex: 0 0 calc(100% - 56px);
+  box-sizing: border-box;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -2073,18 +2124,14 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   padding: 18px;
   background: var(--surface-2);
   border-radius: 16px;
+  box-shadow: 0 1px 2px rgba(26, 26, 26, 0.04), 0 4px 10px rgba(26, 26, 26, 0.05);
   color: var(--v2-ink);
   text-decoration: none;
-  /* Прихована картка лишається в розмітці заради пошуку й читача екрана,
-     але не ловить мишу й не малюється. */
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity 0.35s ease;
+  transition: box-shadow 0.2s;
 }
 
-.v2-tw-card.is-on { opacity: 1; visibility: visible; pointer-events: auto; }
-.v2-tw-card.is-on:hover { box-shadow: 0 10px 28px rgba(26, 26, 26, 0.08); }
+.v2-tw-card:hover { box-shadow: 0 1px 2px rgba(26, 26, 26, 0.05), 0 4px 12px rgba(26, 26, 26, 0.1); }
+.v2-tw-card:focus-visible { outline: 2px solid var(--v2-accent-strong); outline-offset: -2px; }
 
 /* Дата — помаранчева плашка з білим текстом: лише --v2-accent-strong,
    бо #e85d24 під білим не проходить WCAG AA. */
@@ -2129,8 +2176,11 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   color: var(--v2-ink-3);
 }
 
+/* «Детальніше» — завжди внизу картки. Картки в ряду однієї висоти (за
+   найдовшою назвою), і без цього під короткою назвою зяяла порожнеча. */
 .v2-tw-more {
-  margin-top: 2px;
+  margin-top: auto;
+  padding-top: 4px;
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--v2-accent-strong);
@@ -2143,47 +2193,57 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   gap: 10px;
 }
 
-.v2-tw-dots { display: flex; align-items: center; gap: 4px; }
+.v2-tw-dots { display: flex; align-items: center; margin-left: -6px; }
 
-/* Зона дотику 32px навколо крапки 8px: саму крапку більшою робити не треба,
+/* Зона дотику 28px навколо крапки 8px: саму крапку більшою робити не треба,
    а пальцем у 8px не влучиш. */
 .v2-tw-dot {
-  width: 28px;
   height: 28px;
-  padding: 0;
+  padding: 0 6px;
   border: none;
   background: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  justify-content: center;
 }
 
-.v2-tw-dot::before {
-  content: "";
+.v2-tw-dot:focus-visible { outline: 2px solid var(--v2-accent-strong); outline-offset: -2px; border-radius: 999px; }
+
+.v2-tw-pip {
+  display: block;
   width: 8px;
   height: 8px;
   border-radius: 999px;
   background: var(--v2-line-strong);
-  transition: background 0.2s, transform 0.2s;
+  overflow: hidden;
+  transition: width 0.25s, background 0.25s;
 }
 
-.v2-tw-dot.is-on::before { background: var(--v2-accent-strong); transform: scale(1.25); }
+/* Поточна крапка — витягнута. Поки блок гортається сам, вона сіра, і по ній
+   біжить помаранчева смужка часу до наступної картки; коли людина взяла
+   керування на себе — просто помаранчева. */
+.v2-tw-dot.is-on .v2-tw-pip { width: 28px; background: var(--v2-accent-strong); }
+.v2-tw-dot.is-auto .v2-tw-pip { background: var(--v2-line-strong); }
 
-.v2-tw-arrow {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-  border: none;
-  border-radius: 999px;
-  background: none;
-  color: var(--v2-ink-3);
-  font-size: 1.25rem;
-  line-height: 1;
-  cursor: pointer;
+.v2-tw-fill {
+  display: block;
+  height: 100%;
+  background: var(--v2-accent-strong);
+  transform-origin: left center;
+  animation-name: v2-tw-fill;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
 
-.v2-tw-arrow:hover { color: var(--v2-accent-strong); }
+@keyframes v2-tw-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+/* Під мишею й на фокусі смужка стає — а з нею і таймер, бо картку міняє
+   кінець цієї анімації. Людина бачить, що блок чекає на неї. */
+.v2-tw:hover .v2-tw-fill,
+.v2-tw:focus-within .v2-tw-fill { animation-play-state: paused; }
 
 .v2-tw-all {
   font-size: 0.875rem;
@@ -2196,24 +2256,21 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 .v2-tw-all:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
-  .v2-tw-card { transition: none; }
-  .v2-tw-dot::before { transition: none; }
+  .v2-tw-card, .v2-tw-arrow, .v2-tw-pip { transition: none; }
 }
 
 /* Широкий розклад: усі три картки поруч (Марія, 04.10.2026: «там можна всі 3
    помістити»). Одна картка на всю ширину підбірки виглядала порожньою
    коробкою, а крутити те, що й так уміщається, нема сенсу. */
-.v2-tw--all .v2-tw-stage {
+.v2-tw--all .v2-tw-track {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
 }
 
-.v2-tw--all .v2-tw-card {
-  grid-area: auto;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
+.v2-tw--all .v2-tw-card { flex: none; }
 
 .v2-tw--all .v2-tw-name { font-size: 1.0625rem; -webkit-line-clamp: 3; }
 .v2-tw--all .v2-tw-foot { justify-content: flex-end; }
