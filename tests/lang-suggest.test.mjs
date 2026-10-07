@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { langSuggestion, isEnglishPath, readsUkrainian } from '../lib/lang.js';
+import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
+import {
+  langSuggestion, isEnglishPath, readsUkrainian, LANG_SUGGEST_BOOT_SCRIPT, LANG_SUGGEST_KEY,
+} from '../lib/lang.js';
 
 // Головне, чого не було до 30.09.2026. За 28 днів на англійські сторінки
 // зайшли 326 разів, із них 103 з ChatGPT, а 81% трафіку з ChatGPT — з
@@ -47,4 +51,45 @@ test('/en розпізнається точно, а схожі адреси — 
 test('українська в кінці списку мов усе одно рахується', () => {
   assert.equal(readsUkrainian(['pl-PL', 'pl', 'uk']), true);
   assert.equal(langSuggestion({ pathname: '/en', uaReader: readsUkrainian(['pl-PL', 'pl', 'uk']) }), 'to_uk');
+});
+
+// 07.10.2026: банер вирішується до першої промальовки inline-скриптом, а не
+// після гідратації (інакше він зсував сторінку на 70px). Скрипт — окрема копія
+// правил, тож звіряємо його з langSuggestion на тих самих випадках.
+
+const runBoot = ({ path, languages, dismissed = false }) => {
+  const attrs = {};
+  const ctx = {
+    location: { pathname: path },
+    navigator: { languages, language: languages[0] },
+    localStorage: { getItem: (k) => (dismissed && k === LANG_SUGGEST_KEY ? '1' : null) },
+    document: { documentElement: { setAttribute: (k, v) => { attrs[k] = v; } } },
+    String,
+  };
+  vm.runInNewContext(LANG_SUGGEST_BOOT_SCRIPT, ctx);
+  return attrs['data-lang-suggest'] || null;
+};
+
+test('скрипт до промальовки вирішує так само, як langSuggestion', () => {
+  const paths = ['/', '/konkursy', '/o/abc', '/en', '/en/contests', '/admin', '/admin/metrics'];
+  const langs = [['uk-UA', 'uk'], ['ru'], ['en-US', 'en'], ['pl-PL', 'pl', 'uk'], ['pl-PL'], ['de']];
+  for (const path of paths) {
+    for (const languages of langs) {
+      const expected = langSuggestion({ pathname: path, uaReader: readsUkrainian(languages) });
+      assert.equal(runBoot({ path, languages }), expected, `${path} ${languages}`);
+    }
+  }
+});
+
+test('закритий банер скрипт не повертає', () => {
+  assert.equal(runBoot({ path: '/', languages: ['en-US'], dismissed: true }), null);
+});
+
+test('банер схований CSS-ом, доки скрипт не поставив атрибут', () => {
+  const css = readFileSync(new URL('../app/styles/site-header.css', import.meta.url), 'utf8');
+  assert.match(css, /\.lang-suggest \{\s*display: none;/);
+  assert.match(css, /html\[data-lang-suggest="to_en"\] \.lang-suggest\[data-variant="to_en"\]/);
+  const layout = readFileSync(new URL('../app/layout.js', import.meta.url), 'utf8');
+  assert.ok(layout.indexOf('LANG_SUGGEST_BOOT_SCRIPT }}') < layout.indexOf('<LangSuggest />'),
+    'скрипт має стояти до банера, інакше банер зʼявиться після показу сторінки');
 });

@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
+import { clientRows } from '@/lib/client-rows';
 import { CITY_META } from '@/lib/cities';
 import { TOPIC_LIST } from '@/lib/topics';
 import { MIN_LOCAL, localTopicCount } from '@/lib/city-topics';
@@ -133,7 +134,7 @@ export default async function CityPage({ params }) {
           ))}
         </nav>
 
-        <OpportunitiesList opportunities={opportunities} presetCity={cityName} today={kyivToday()} />
+        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} today={kyivToday()} />
       </div>
       <Footer />
 

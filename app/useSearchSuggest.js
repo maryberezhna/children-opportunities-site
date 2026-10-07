@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  suggest, subscribeSuggestSource, getSuggestSource, getServerSuggestSource,
+  suggest, subscribeSuggestSource, getSuggestSource, getServerSuggestSource, wantSuggestSource,
 } from '@/lib/search-suggest';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { trackSearchSuggest } from '@/lib/track';
@@ -106,7 +106,8 @@ export default function useSearchSuggest({ id, value, onPickWord, lang = 'uk' })
     'aria-activedescendant': expanded && cur >= 0 ? optId(cur) : undefined,
     autoComplete: 'off',
     onKeyDown,
-    onFocus: () => { focused.current = true; if (value.trim()) setOpen(true); },
+    // Перший фокус — сигнал списку зібрати пошукові індекси (lib/search-suggest.js).
+    onFocus: () => { focused.current = true; wantSuggestSource(); if (value.trim()) setOpen(true); },
     onBlur: () => { focused.current = false; close(); },
   };
 

@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { rememberLang, counterpart } from './Header';
-import { readsUkrainian, langSuggestion } from '@/lib/lang';
+import { readsUkrainian, langSuggestion, isEnglishPath, LANG_SUGGEST_KEY } from '@/lib/lang';
 
 /**
  * Пропозиція іншої мовної версії — в обидва боки.
@@ -21,48 +21,52 @@ import { readsUkrainian, langSuggestion } from '@/lib/lang';
  *
  * Тих, хто заходить на головну з-за кордону з неукраїнським браузером,
  * /middleware.js веде на /en одразу — сюди вони не доходять.
+ *
+ * Показ вирішує не цей компонент, а LANG_SUGGEST_BOOT_SCRIPT (lib/lang.js) ще
+ * до першої промальовки: розмітка банера завжди в HTML, а CSS показує її, лише
+ * коли на <html> стоїть data-lang-suggest. Раніше банер з'являвся після
+ * гідратації й зсував сторінку на 70px (07.10.2026). Тут — лише синхронізація
+ * атрибута при переходах усередині сайту й кнопка «закрити».
  */
-const KEY = 'dityam_lang_suggest_dismissed';
-
 export default function LangSuggest() {
   const pathname = usePathname() || '/';
-  // null — ще не знаємо: до перевірки браузера не показуємо нічого, щоб банер
-  // не блимнув не тією мовою.
-  const [uaReader, setUaReader] = useState(null);
+  // Який банер може знадобитись на цій адресі. Чи він видимий — каже атрибут.
+  const variant = pathname.startsWith('/admin') ? null : (isEnglishPath(pathname) ? 'to_uk' : 'to_en');
+  const toEnglish = variant === 'to_en';
+  const shown = useRef(null);
 
+  // Переходи всередині сайту: скрипт у <body> бачив лише першу адресу.
+  // Рішення — у lib/lang.js, щоб його перевіряв тест.
   useEffect(() => {
+    let s = null;
     try {
-      if (localStorage.getItem(KEY)) return;
-      setUaReader(readsUkrainian(navigator.languages || [navigator.language || '']));
+      if (!localStorage.getItem(LANG_SUGGEST_KEY)) {
+        s = langSuggestion({ pathname, uaReader: readsUkrainian(navigator.languages || [navigator.language || '']) });
+      }
     } catch {
       /* приватний режим — просто не показуємо */
     }
-  }, []);
-
-  // Рішення — у lib/lang.js, щоб його перевіряв тест: сам банер зібрати в
-  // тесті нічим, а помилка тут показала б людині не ту мову.
-  const suggest = langSuggestion({ pathname, uaReader });
-  const toEnglish = suggest === 'to_en';
-  const show = Boolean(suggest);
-
-  useEffect(() => {
-    if (show && window.gtag) {
-      window.gtag('event', 'lang_suggest_shown', { event_label: toEnglish ? 'to_en' : 'to_uk' });
+    const root = document.documentElement;
+    if (s) root.setAttribute('data-lang-suggest', s);
+    else root.removeAttribute('data-lang-suggest');
+    // Подію шлемо раз на появу варіанта, а не на кожен перехід, поки він видимий.
+    if (s && s !== shown.current && window.gtag) {
+      window.gtag('event', 'lang_suggest_shown', { event_label: s });
     }
-    // Раніше подію слали з ефекту, що не знав про адресу: на /en вона
-    // спрацьовувала, хоча банер не малювався. Тепер шлемо лише те, що видно.
-  }, [show, toEnglish]);
+    shown.current = s;
+  }, [pathname]);
 
-  if (!show) return null;
+  if (!variant) return null;
 
   const href = counterpart(pathname, toEnglish);
   const dismiss = () => {
-    try { localStorage.setItem(KEY, '1'); } catch { /* noop */ }
-    setUaReader(null);
+    try { localStorage.setItem(LANG_SUGGEST_KEY, '1'); } catch { /* noop */ }
+    document.documentElement.removeAttribute('data-lang-suggest');
+    shown.current = null;
   };
 
   return (
-    <div className="lang-suggest" lang={toEnglish ? 'en' : 'uk'}>
+    <div className="lang-suggest" data-variant={variant} lang={toEnglish ? 'en' : 'uk'}>
       <span className="lang-suggest-text">
         {toEnglish
           ? '🇺🇦 Opportunities for Ukrainian children — worldwide.'

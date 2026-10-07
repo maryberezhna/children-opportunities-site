@@ -13,7 +13,7 @@ import { goesAbroad } from '@/lib/geo';
 import { abroadPlaceText, foreignOnly, abroadCodes } from '@/lib/place';
 import { countryName } from '@/lib/diaspora';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
-import { buildVocabulary, titleHaystack, setSuggestSource } from '@/lib/search-suggest';
+import { buildVocabulary, titleHaystack, setSuggestSource, onSuggestSourceWanted } from '@/lib/search-suggest';
 import useSearchSuggest from './useSearchSuggest';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
@@ -373,7 +373,7 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
     }),
     query: (item) => {
       if (!tokens.length) return true;
-      const hay = searchIndex.get(item.id);
+      const hay = searchIndex?.get(item.id);
       return Boolean(hay) && matchesQuery(tokens, hay);
     },
   };
@@ -601,8 +601,17 @@ export default function OpportunitiesList({
     return () => clearTimeout(timer);
   }, [hydrated, type, age, deadline, need, cost, place, query, sort, presetCity]);
 
+  // Пошукові індекси — лише коли людина взялась шукати: стала в поле пошуку
+  // чи прийшла з ?q= (lib/search-suggest.js wantSuggestSource). До 07.10.2026
+  // вони рахувались на кожному відкритті сторінки для всіх ~730 записів, і
+  // телефон робив це, перш ніж сторінка оживала, — хоча шукає меншість.
+  const [searchWanted, setSearchWanted] = useState(false);
+  useEffect(() => onSuggestSourceWanted(() => setSearchWanted(true)), []);
+  const wantSearch = searchWanted || Boolean(query.trim());
+
   // Пошуковий індекс: рахується раз на набір записів (див. lib/search).
   const searchIndex = useMemo(() => {
+    if (!wantSearch) return null;
     const m = new Map();
     opportunities.forEach((o) => {
       m.set(o.id, buildHaystack([
@@ -615,12 +624,12 @@ export default function OpportunitiesList({
       ]));
     });
     return m;
-  }, [opportunities]);
+  }, [opportunities, wantSearch]);
   // Окремий індекс назв: збіг у назві піднімає запис угору видачі й дає
   // підказки-записи під полем пошуку.
   const titleIndex = useMemo(
-    () => new Map(opportunities.map((o) => [o.id, titleHaystack(o)])),
-    [opportunities],
+    () => (wantSearch ? new Map(opportunities.map((o) => [o.id, titleHaystack(o)])) : null),
+    [opportunities, wantSearch],
   );
 
   // Прострочені разові можливості не показуємо ніде, а в режимі «Підліткам» —
@@ -634,10 +643,11 @@ export default function OpportunitiesList({
   // Підказки пошуку (lib/search-suggest.js) беруть той самий набір, що й
   // список, — тож дописане слово завжди щось знаходить. Сховище спільне з
   // полем у хіро головної, у якого записів немає.
-  const vocab = useMemo(() => buildVocabulary(liveItems), [liveItems]);
+  const vocab = useMemo(() => (wantSearch ? buildVocabulary(liveItems) : null), [liveItems, wantSearch]);
   useEffect(() => {
+    if (!wantSearch) return;
     setSuggestSource({ items: liveItems, index: searchIndex, titles: titleIndex, vocab });
-  }, [liveItems, searchIndex, titleIndex, vocab]);
+  }, [wantSearch, liveItems, searchIndex, titleIndex, vocab]);
   const deskSuggest = useSearchSuggest({ id: 'v2-search', value: query, onPickWord: setQuery, lang });
   const mSuggest = useSearchSuggest({ id: 'm-search', value: query, onPickWord: setQuery, lang });
 
@@ -727,7 +737,7 @@ export default function OpportunitiesList({
     const tokens = queryTokens(query);
     const inTitle = (item) => {
       if (!tokens.length) return 0;
-      const hay = titleIndex.get(item.id);
+      const hay = titleIndex?.get(item.id);
       return hay && matchesQuery(tokens, hay) ? 0 : 1;
     };
     // Найближче угорі: дедлайн, а без нього — початок чи кінець події (раніше

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN, countActiveOpportunities, countActiveSources, FALLBACK,  } from '@/lib/supabase';
+import { clientRows } from '@/lib/client-rows';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import { kyivToday } from '@/lib/dates';
 import { audienceStats } from '@/lib/audience';
@@ -95,7 +96,7 @@ export default async function EnglishPage() {
             описи — англійські поля з бази, а доки перекладу для запису немає,
             показуємо оригінал, а не порожнечу. */}
         <OpportunitiesList
-          opportunities={opportunities}
+          opportunities={clientRows(opportunities)}
           today={today}
           lang="en"
           modeAware

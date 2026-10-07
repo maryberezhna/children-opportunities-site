@@ -165,9 +165,12 @@
   .site-header-inner .site-header-cta { margin-left: auto; padding: 7px 13px; font-size: 0.8125rem; }
 }
 
-/* Банер-пропозиція англійської версії (LangSuggest) — тонкий рядок над хедером. */
+/* Банер-пропозиція іншої мовної версії (LangSuggest) — тонкий рядок над хедером.
+   Схований за замовчуванням: показує його атрибут data-lang-suggest на <html>,
+   який ставить скрипт у <body> до першої промальовки (lib/lang.js). Так банер
+   стоїть на місці з першого кадру й не зсуває сторінку (07.10.2026). */
 .lang-suggest {
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -179,6 +182,9 @@
   position: relative;
   flex-wrap: wrap;
 }
+
+html[data-lang-suggest="to_en"] .lang-suggest[data-variant="to_en"],
+html[data-lang-suggest="to_uk"] .lang-suggest[data-variant="to_uk"] { display: flex; }
 
 .lang-suggest-link { color: var(--accent-ink); /* на #fef2eb — ≈5,3:1 */ font-weight: 700; text-decoration: none; white-space: nowrap; }
 .lang-suggest-link:hover { text-decoration: underline; }

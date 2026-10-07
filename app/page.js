@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
+import { clientRows } from '@/lib/client-rows';
 import { kyivToday } from '@/lib/dates';
 import { audienceStats, visibleFor } from '@/lib/audience';
 import { topWeekCards } from '@/lib/weekly-top';
@@ -78,7 +79,9 @@ export default async function Home() {
 
       <main className="v2-container" id="catalog">
         <OpportunitiesList
-          opportunities={opportunities}
+          // Без порожніх полів: у HTML головної вони були кожним п'ятим
+          // байтом даних списку (lib/client-rows.js).
+          opportunities={clientRows(opportunities)}
           today={today}
           modeAware
           mobileLayout

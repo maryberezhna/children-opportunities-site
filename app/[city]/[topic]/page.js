@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
+import { clientRows } from '@/lib/client-rows';
 import { CITY_META } from '@/lib/cities';
 import { TOPICS, TOPIC_LIST } from '@/lib/topics';
 import {
@@ -188,7 +189,7 @@ export default async function CityTopicPage({ params }) {
         </nav>
 
         <OpportunitiesList
-          opportunities={opportunities}
+          opportunities={clientRows(opportunities)}
           presetCity={cityData.ua}
           today={kyivToday()}
           initialLimit={24}
