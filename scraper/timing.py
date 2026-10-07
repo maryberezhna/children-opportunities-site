@@ -231,6 +231,8 @@ PERMANENT_RECHECK_DAYS = 90      # постійна: не рідше раз на
 ASSUMED_RECHECK_DAYS = 30        # «постійна» за замовчуванням — це здогад, а не факт
 UNKNOWN_RECHECK_DAYS = 30        # вид невідомий: подивитись на джерело найближчим часом
 RETRY_DAYS = 14                  # сторінка не відкрилась / сезон ще не відкрито
+CONFIRM_AFTER_CLOSE_DAYS = 2     # закрито за датою — раз перечитати: чи не подовжили подачу
+JUST_CLOSED_DAYS = 14            # дата минула нещодавно — це перевірка-підтвердження
 
 
 def permanent_recheck_days(row: dict) -> int:

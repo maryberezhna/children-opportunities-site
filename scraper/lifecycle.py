@@ -56,7 +56,7 @@ from normalizer import missing_required_keys
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
 from remark import telegram_text, _TG_POST
 from timing import (
-    LABELS, RETRY_DAYS, UNKNOWN_RECHECK_DAYS,
+    CONFIRM_AFTER_CLOSE_DAYS, JUST_CLOSED_DAYS, LABELS, RETRY_DAYS, UNKNOWN_RECHECK_DAYS,
     clean_kind, clean_months, clean_text, evidence_in_text, is_expired,
     next_season_check, permanent_recheck_days, recheck_after_close, spread_date,
 )
@@ -200,15 +200,31 @@ def plan_close(row: dict, today: date) -> dict | None:
     if row.get("status") != "active" or not is_expired(row, today):
         return None
     kind = row.get("timing_kind")
-    dates = [row.get("deadline"), row.get("event_start_date"), row.get("event_end_date")]
-    recheck = recheck_after_close(kind, row.get("season_months"), dates, today)
+    # Закриваємо за датою, не читаючи сторінки, — але за 2 дні читаємо її один
+    # раз: організатори часто подовжують подачу. Без цього запис лишався
+    # закритим назавжди: Sikorsky Challenge закрився 30.09.2026 і не мав жодної
+    # перевірки, хоча заявки приймали до 20.10 (Марія, 07.10.2026: «чому
+    # оновлення не працює»). Якщо перечитування нічого не прояснить, далі
+    # розклад той самий, що й без нього (decide_check → recheck_after_close).
+    recheck = today + timedelta(days=CONFIRM_AFTER_CLOSE_DAYS)
     last = row.get("deadline") or row.get("event_end_date") or row.get("event_start_date")
     label = LABELS.get(kind, "вид невідомий")
-    note = (f"lifecycle: закрито {today.isoformat()} — дата {last} минула ({label})"
-            + (f", перевірка {recheck.isoformat()}" if recheck else ""))
+    note = (f"lifecycle: закрито {today.isoformat()} — дата {last} минула ({label}), "
+            f"перевірка {recheck.isoformat()}: чи не подовжили")
     return {"status": "closed",
             "recheck_at": recheck.isoformat() if recheck else None,
             "admin_comment": _with_trace(row, note)}
+
+
+def just_closed(row: dict, today: date) -> bool:
+    """Остання дата запису минула щойно — це перевірка після закриття за датою,
+    а не сезонна. Чиста функція — під тести."""
+    dates = [str(d)[:10] for d in (row.get("deadline"), row.get("event_start_date"),
+                                   row.get("event_end_date")) if d]
+    if not dates:
+        return False
+    last = max(dates)
+    return (today - timedelta(days=JUST_CLOSED_DAYS)).isoformat() <= last < today.isoformat()
 
 
 # ── B. Планова перевірка ────────────────────────────────────────────────────
@@ -333,8 +349,18 @@ def decide_check(row: dict, out: dict, page: str, today: date,
     else:
         # unclear, або «open» без жодної майбутньої дати в цитаті.
         days = UNKNOWN_RECHECK_DAYS if row.get("status") == "active" else RETRY_DAYS
-        patch["recheck_at"] = (today + timedelta(days=days)).isoformat()
-        note = f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}"
+        recheck = today + timedelta(days=days)
+        if row.get("status") == "closed" and just_closed(row, today):
+            # Перевірка-підтвердження після закриття за датою (plan_close) не
+            # знайшла подовження — далі як до неї: одноразова більше не
+            # перевіряється, періодична — перед наступним сезоном. Інакше
+            # кожен закритий запис із незрозумілою сторінкою крутився б раз на
+            # 2 тижні назавжди.
+            dates = [row.get("deadline"), row.get("event_start_date"), row.get("event_end_date")]
+            recheck = recheck_after_close(kind, months, dates, today)
+        patch["recheck_at"] = recheck.isoformat() if recheck else None
+        note = (f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}" if recheck
+                else f"стан не зрозумілий, подовження не видно — більше не перевіряємо: {quote}")
 
     # Дата змістової перевірки — окремо від пінга лінка (last_verified_at):
     # на сторінці можливості «Перевірено» має означати, що хтось справді читав
