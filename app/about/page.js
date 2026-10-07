@@ -63,6 +63,16 @@ export default async function AboutPage() {
           </div>
         </section>
 
+        {/* Одразу під кнопками першого екрана (Марія, 07.10.2026): згадки в
+            медіа — найкоротший доказ, що проєкту можна вірити. */}
+        <section className="ab-section" aria-labelledby="ab-press">
+          <h2 id="ab-press">Про нас пишуть</h2>
+          <PressLogos />
+          <p className="ab-more">
+            <Link href="/press">Усі публікації й матеріали для журналістів →</Link>
+          </p>
+        </section>
+
         {tiles.length ? (
           <section className="ab-section" aria-label="Цифри проєкту">
             <div className="pk-stats ab-stats">
@@ -148,14 +158,6 @@ export default async function AboutPage() {
             <li>Платні програми позначаємо платними, а безкоштовні можна відфільтрувати окремо</li>
           </ul>
           <p className="ab-more"><Link href="/yak-my-pereviriaiemo">Докладно — як ми перевіряємо →</Link></p>
-        </section>
-
-        <section className="ab-section" aria-labelledby="ab-press">
-          <h2 id="ab-press">Про нас пишуть</h2>
-          <PressLogos />
-          <p className="ab-more">
-            <Link href="/press">Усі публікації й матеріали для журналістів →</Link>
-          </p>
         </section>
 
         <section className="v2-bottom">
