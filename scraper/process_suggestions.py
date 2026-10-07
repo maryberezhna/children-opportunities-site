@@ -55,6 +55,7 @@ from canonical import canonical_url
 from db import get_client
 from normalizer import Normalizer, missing_required
 from utm import UTM_ORGANIZER_EMAIL, tag_site_links
+from log_privacy import mask_email
 
 # Скільки зʼїла екстракція пропозицій — у llm_usage (04.10.2026, після
 # вичерпаного балансу). Той самий Normalizer, що в нічному скрапі (scrape-extract).
@@ -369,7 +370,7 @@ def notify_published(sb, apply: bool = False) -> int:
     sent = 0
     for letter in letters.values():
         opp = letter["opp"]
-        print(f"📬 {letter['title'][:56]:<56} опубліковано → {letter['email']}")
+        print(f"📬 {letter['title'][:56]:<56} опубліковано → {mask_email(letter['email'])}")
         if not apply:
             sent += 1
             continue

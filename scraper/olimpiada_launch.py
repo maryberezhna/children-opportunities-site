@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
+from log_privacy import mask_email
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("olimpiada_launch")
@@ -136,7 +137,7 @@ def main() -> int:
 
     if args.dry_run:
         for r in todo:
-            logger.info("dry-run: %s", r["email"])
+            logger.info("dry-run: %s", mask_email(r["email"]))
         return 0
     if not is_open:
         logger.error("Реєстрацію ще не відкрито — лист не надіслано. Спершу OLIMP_OPEN = true і деплой.")
@@ -154,11 +155,11 @@ def main() -> int:
                 client.table("olimpiada_waitlist").update(
                     {"notified_at": datetime.now(timezone.utc).isoformat()}
                 ).eq("id", r["id"]).execute()
-                logger.info("Надіслано: %s", r["email"])
+                logger.info("Надіслано: %s", mask_email(r["email"]))
                 time.sleep(1)
             except Exception:
                 failed += 1
-                logger.exception("Не вдалося надіслати: %s", r.get("email"))
+                logger.exception("Не вдалося надіслати: %s", mask_email(r.get("email")))
     return 1 if failed else 0
 
 
