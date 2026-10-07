@@ -239,7 +239,9 @@
   .v2-sia-anchor--end { display: none; }
   .v2-sia-anchor--lead .v2-sia-seal {
     --lift: 0.7em;
-    left: calc(var(--seal) * -0.6);
+    /* −0,6 кільця — лягало на «сті»; «ще трошки правіше» (07.10.2026) —
+       тепер заходить лише на кінець слова. */
+    left: calc(var(--seal) * -0.42);
   }
 }
 
