@@ -50,16 +50,16 @@
 /* ── Історія ───────────────────────────────────────────────────────────── */
 .ab-story {
   display: grid;
-  grid-template-columns: minmax(200px, 0.34fr) minmax(0, 1fr);
-  gap: 32px;
+  grid-template-columns: minmax(240px, 0.46fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 48px;
   padding: 40px;
   border-radius: 24px;
   background: var(--surface-2);
   border: 1px solid var(--v2-line);
 }
 
-.ab-story-side { position: sticky; top: 96px; align-self: start; display: flex; flex-direction: column; gap: 20px; }
-.ab-story-side h2 { margin: 0; }
+.ab-story-text h2 { margin: 0 0 4px; }
 .ab-photo img { display: block; width: 100%; height: auto; border-radius: 18px; }
 
 .ab-story-text { display: flex; flex-direction: column; gap: 18px; max-width: 68ch; }
@@ -196,7 +196,6 @@
   .ab-page .press-logos li { width: calc(50% - 6px); }
   .ab-page .press-logos a { width: 100%; }
   .ab-story { grid-template-columns: 1fr; gap: 16px; padding: 26px 22px; }
-  .ab-story-side { position: static; }
   .ab-photo { max-width: 280px; }
   .ab-story-text p { font-size: 1.09375rem; }
   .ab-checks { grid-template-columns: 1fr; }

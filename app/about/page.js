@@ -88,23 +88,22 @@ export default async function AboutPage() {
         ) : null}
 
         <section className="ab-story" aria-labelledby="ab-why">
-          <div className="ab-story-side">
-            <h2 id="ab-why">Чому я це роблю</h2>
-            {/* Фото засновниці (Марія, 07.10.2026). Обрізане й без EXIF —
-                public/about/mariia-shutiak.{webp,jpg}. */}
-            <picture className="ab-photo">
-              <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
-              <img
-                src="/about/mariia-shutiak.jpg"
-                alt="Марія Шутяк, засновниця Dityam.com.ua, з дитиною"
-                width="720"
-                height="900"
-                loading="lazy"
-                decoding="async"
-              />
-            </picture>
-          </div>
+          {/* Фото засновниці (Марія, 07.10.2026). Обрізане й без EXIF —
+              public/about/mariia-shutiak.{webp,jpg}. Ліворуч на всю висоту, а
+              заголовок, текст і підпис — однією колонкою праворуч, по центру. */}
+          <picture className="ab-photo">
+            <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
+            <img
+              src="/about/mariia-shutiak.jpg"
+              alt="Марія Шутяк, засновниця Dityam.com.ua, з дитиною"
+              width="720"
+              height="900"
+              loading="lazy"
+              decoding="async"
+            />
+          </picture>
           <div className="ab-story-text">
+            <h2 id="ab-why">Чому я це роблю</h2>
             <p>
               Я Марія Шутяк. Вірю, що кожна українська дитина має знати про свої
               можливості — від безкоштовного гуртка у своєму місті до стипендії
