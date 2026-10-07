@@ -182,9 +182,9 @@ export default function Header() {
   const ownActive = OWN.some((l) => pathname.startsWith(l.href));
 
   const siaLang = isEnglish ? 'en' : 'uk';
-  // Нагорода (lib/awards.js): на широкому екрані — пігулка поруч із лого; на
-  // вузькому в шапці місця немає, тож там — смужка НАД шапкою, яка
-  // прокручується разом зі сторінкою й не з'їдає прибиту шапку.
+  // Нагорода (lib/awards.js): на широкому екрані — пігулка поруч із лого. На
+  // телефоні в шапці місця немає — там печатка праворуч від заголовка
+  // головної (app/HomeHero.js; Марія 07.10.2026: «має бути десь отут»).
   const siaLink = (className, text) => (
     <a
       href={SIA_AWARD.href}
@@ -199,8 +199,6 @@ export default function Header() {
   );
 
   return (
-    <>
-    {siaLink('v2-sia-bar', SIA_AWARD.bar[siaLang])}
     <header className={headerClass}>
       <div className="v2-header-inner">
         <Link href={isEnglish ? '/en' : '/'} className="v2-logo" prefetch={false} onClick={track('logo')}>
@@ -460,6 +458,5 @@ export default function Header() {
         </nav>
       ) : null}
     </header>
-    </>
   );
 }
