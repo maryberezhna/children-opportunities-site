@@ -14,7 +14,8 @@
  * самим Telegram, тож перевіряємо це до відправки, а не ловимо 400 у відповіді.
  *
  * Env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, FILE, DRY_RUN=true,
- * MESSAGE_ID (необовʼязково: виправити цей пост, а не публікувати новий).
+ * MESSAGE_ID (необовʼязково: виправити цей пост, а не публікувати новий),
+ * PHOTOS (необовʼязково: картинки через кому — пост піде альбомом).
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -25,6 +26,11 @@ const FILE = process.env.FILE || process.argv[2];
 const DRY = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
 // PIN=true — закріпити пост у каналі одразу після відправки (без сповіщення).
 const PIN = String(process.env.PIN || '').toLowerCase() === 'true';
+// PHOTOS — шляхи до картинок у репозиторії через кому. Тоді пост іде
+// альбомом, а текст стає підписом до першої картинки: Telegram показує це
+// одним постом (Марія, 07.10.2026: «можна і телеграм ці картинки як для
+// інстаграму»). Підпис у Telegram коротший за повідомлення — 1024 символи.
+const PHOTOS = String(process.env.PHOTOS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const CHAT = process.env.TELEGRAM_CHAT_ID;
 
@@ -77,13 +83,35 @@ if (bad.length) {
 }
 
 const plain = text.replace(/<[^>]+>/g, '');
-if (plain.length > 4096) {
-  console.error(`Задовго: ${plain.length} символів, ліміт 4096.`);
+const LIMIT = PHOTOS.length ? 1024 : 4096;
+if (plain.length > LIMIT) {
+  console.error(`Задовго: ${plain.length} символів, ліміт ${LIMIT}${PHOTOS.length ? ' (підпис до картинок)' : ''}.`);
   process.exit(1);
+}
+if (PHOTOS.length > 10) {
+  console.error(`Картинок ${PHOTOS.length}, в альбомі Telegram — не більше 10.`);
+  process.exit(1);
+}
+if (PHOTOS.length && process.env.MESSAGE_ID) {
+  console.error('Виправити альбом цим скриптом не можна: MESSAGE_ID лише для текстових постів.');
+  process.exit(1);
+}
+// Читаємо картинки до відправки: помилка в шляху має зупинити запуск ще
+// в сухому прогоні, а не після того, як текст уже пішов у канал.
+const photos = [];
+for (const p of PHOTOS) {
+  try {
+    photos.push({ name: p.split('/').pop(), data: await readFile(resolve(p)) });
+  } catch {
+    console.error(`Немає картинки: ${p}`);
+    process.exit(1);
+  }
 }
 
 console.log(`Файл: ${FILE}`);
-console.log(`Символів: ${plain.length} з 4096\n`);
+console.log(`Символів: ${plain.length} з ${LIMIT}`);
+for (const ph of photos) console.log(`Картинка: ${ph.name} (${Math.round(ph.data.length / 1024)} КБ)`);
+console.log('');
 console.log('─'.repeat(60));
 console.log(plain.trim());
 console.log('─'.repeat(60));
@@ -97,28 +125,52 @@ if (DRY) {
 // про конкурс вийшов із посиланням на організатора замість сторінки на сайті;
 // видалити й надіслати заново — це ще одне сповіщення підписникам того ж дня.
 const EDIT_ID = Number(process.env.MESSAGE_ID) || null;
-const method = EDIT_ID ? 'editMessageText' : 'sendMessage';
-const res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    chat_id: CHAT, text: tagSiteLinks(text, { ...UTM_CHANNEL, content: 'post' }), parse_mode: 'HTML',
-    ...(EDIT_ID ? { message_id: EDIT_ID } : {}),
-  }),
-});
+const body = tagSiteLinks(text, { ...UTM_CHANNEL, content: 'post' });
+let res;
+if (photos.length) {
+  // Файли йдуть самі (multipart), а не посиланнями: картинки лежать у
+  // репозиторії, на сайті їх немає. Одна картинка — sendPhoto, кілька — альбом.
+  const form = new FormData();
+  form.append('chat_id', CHAT);
+  if (photos.length === 1) {
+    form.append('photo', new Blob([photos[0].data]), photos[0].name);
+    form.append('caption', body);
+    form.append('parse_mode', 'HTML');
+  } else {
+    photos.forEach((ph, i) => form.append(`p${i}`, new Blob([ph.data]), ph.name));
+    form.append('media', JSON.stringify(photos.map((ph, i) => ({
+      type: 'photo', media: `attach://p${i}`,
+      ...(i === 0 ? { caption: body, parse_mode: 'HTML' } : {}),
+    }))));
+  }
+  const method = photos.length === 1 ? 'sendPhoto' : 'sendMediaGroup';
+  res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, { method: 'POST', body: form });
+} else {
+  const method = EDIT_ID ? 'editMessageText' : 'sendMessage';
+  res = await fetch(`https://api.telegram.org/bot${TOKEN}/${method}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: CHAT, text: body, parse_mode: 'HTML',
+      ...(EDIT_ID ? { message_id: EDIT_ID } : {}),
+    }),
+  });
+}
 const json = await res.json();
 if (!json.ok) {
   console.error(`\nTelegram відмовив: ${json.description}`);
   process.exit(1);
 }
+// Альбом повертає масив повідомлень; закріплюємо й називаємо перше — з підписом.
+const messageId = Array.isArray(json.result) ? json.result[0].message_id : json.result.message_id;
 console.log(EDIT_ID
   ? `\n✅ Пост ${EDIT_ID} виправлено.`
-  : `\n✅ Опубліковано. message_id ${json.result.message_id}`);
+  : `\n✅ Опубліковано. message_id ${messageId}`);
 if (PIN && !EDIT_ID) {
   const pin = await fetch(`https://api.telegram.org/bot${TOKEN}/pinChatMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: CHAT, message_id: json.result.message_id, disable_notification: true }),
+    body: JSON.stringify({ chat_id: CHAT, message_id: messageId, disable_notification: true }),
   });
   const pj = await pin.json();
   if (!pj.ok) {
