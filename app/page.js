@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { clientRows } from '@/lib/client-rows';
+import { lightCatalog, detailsUrl } from '@/lib/catalog-split';
 import { kyivToday } from '@/lib/dates';
 import { audienceStats, visibleFor } from '@/lib/audience';
 import { topWeekCards } from '@/lib/weekly-top';
@@ -81,7 +82,10 @@ export default async function Home() {
         <OpportunitiesList
           // Без порожніх полів: у HTML головної вони були кожним п'ятим
           // байтом даних списку (lib/client-rows.js).
-          opportunities={clientRows(opportunities)}
+          // Тексти карток поза першим екраном не їдуть у HTML — список
+          // довантажує їх після показу (lib/catalog-split.js, 07.10.2026).
+          opportunities={lightCatalog(clientRows(opportunities), { todayIso: today })}
+          detailsUrl={detailsUrl('uk')}
           today={today}
           modeAware
           mobileLayout

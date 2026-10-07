@@ -45,7 +45,7 @@ test('публічний код не порівнює поля записів і
 
 test('усі сторінки з повним каталогом віддають у браузер clientRows', () => {
   for (const f of ['app/page.js', 'app/en/page.js', 'app/[city]/page.js', 'app/en/[city]/page.js', 'app/[city]/[topic]/page.js']) {
-    assert.match(read(f), /opportunities=\{clientRows\(opportunities\)\}/, f);
+    assert.match(read(f), /opportunities=\{(lightCatalog\()?clientRows\(opportunities\)/, f);
   }
 });
 
@@ -53,8 +53,8 @@ test('усі сторінки з повним каталогом віддают�
 test('індекси пошуку рахуються не на кожному відкритті сторінки', () => {
   const list = read('app/OpportunitiesList.js');
   assert.match(list, /const wantSearch = searchWanted \|\| Boolean\(query\.trim\(\)\);/);
-  assert.match(list, /if \(!wantSearch\) return null;/);
-  assert.match(list, /wantSearch \? buildVocabulary\(liveItems\) : null/);
+  assert.match(list, /if \(!wantSearch \|\| !searchRows\) return null;/);
+  assert.match(list, /searchLive \? buildVocabulary\(searchLive\) : null/);
   assert.match(read('app/useSearchSuggest.js'), /onFocus: \(\) => \{ focused\.current = true; wantSuggestSource\(\);/,
     'поле пошуку має будити індекси на першому фокусі');
 });
