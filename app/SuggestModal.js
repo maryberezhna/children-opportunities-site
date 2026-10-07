@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { parseContact } from '@/lib/contactAddress';
 
 // Поп-ап «Запропонувати можливість» (редизайн, вересень 2026). Відкривається
 // з будь-якого місця сторінки через подію — кнопки живуть і в нижньому блоці
@@ -33,6 +34,7 @@ const T = {
     contact: 'Ваш контакт',
     contactOpt: 'якщо можна щось уточнити',
     contactPh: '@telegram або email',
+    contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
     send: 'Надіслати',
     sending: 'Надсилаємо…',
     error: 'Не вдалося надіслати. Спробуйте ще раз або напишіть у Telegram.',
@@ -52,6 +54,7 @@ const T = {
     contact: 'Your contact',
     contactOpt: 'if we may clarify details',
     contactPh: '@telegram or email',
+    contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
     send: 'Send',
     sending: 'Sending…',
     error: 'Could not send. Try again or write on Telegram.',
@@ -92,6 +95,12 @@ export default function SuggestModal({ lang = 'uk' }) {
     e.preventDefault();
     if (form.title.trim().length < 5 && !form.url.trim()) {
       setState('error');
+      return;
+    }
+    // Контакт необовʼязковий, але якщо вписали — лише email або нік у Telegram
+    // (07.10.2026): на номер телефону ми відповісти не можемо.
+    if (form.contact.trim() && !parseContact(form.contact)) {
+      setState('contact');
       return;
     }
     setState('sending');
@@ -164,8 +173,8 @@ export default function SuggestModal({ lang = 'uk' }) {
               aria-hidden="true"
               style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
             />
-            {state === 'error' ? (
-              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>{t.error}</p>
+            {state === 'error' || state === 'contact' ? (
+              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>{state === 'contact' ? t.contactErr : t.error}</p>
             ) : null}
             <button type="submit" className="v2-dialog-submit" disabled={state === 'sending'}>
               {state === 'sending' ? t.sending : t.send}
