@@ -112,6 +112,43 @@
   text-decoration: none;
 }
 
+/* Нагорода біля лого (lib/awards.js, 07.10.2026). Пігулка — на широкому
+   екрані; на вузькому (де навігацію сховано) — смужка над шапкою. */
+.v2-sia {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border: 1px solid var(--v2-line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--v2-ink);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: border-color 0.15s;
+}
+.v2-sia:hover { border-color: var(--v2-accent-strong); }
+.v2-sia-bar { display: none; }
+
+@media (max-width: 1100px) {
+  .v2-sia { display: none; }
+  .v2-sia-bar {
+    display: block;
+    padding: 8px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--v2-line);
+    color: var(--v2-ink);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-align: center;
+    text-decoration: none;
+  }
+}
+
 .v2-logo-script {
   font-family: var(--font-caveat), cursive;
   font-style: italic;

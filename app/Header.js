@@ -6,6 +6,7 @@ import { TOPIC_LIST, DIASPORA_COUNTRY_TOPICS, topicMenu } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
+import { SIA_AWARD } from '@/lib/awards';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
 // навігації, перемикач «Батькам / Підліткам» на сторінках каталогу і одна
@@ -180,12 +181,32 @@ export default function Header() {
   ];
   const ownActive = OWN.some((l) => pathname.startsWith(l.href));
 
+  const siaLang = isEnglish ? 'en' : 'uk';
+  // Нагорода (lib/awards.js): на широкому екрані — пігулка поруч із лого; на
+  // вузькому в шапці місця немає, тож там — смужка НАД шапкою, яка
+  // прокручується разом зі сторінкою й не з'їдає прибиту шапку.
+  const siaLink = (className, text) => (
+    <a
+      href={SIA_AWARD.href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className={className}
+      title={SIA_AWARD.full[siaLang]}
+      onClick={track('sia_award')}
+    >
+      <span aria-hidden="true">🏆</span> {text}
+    </a>
+  );
+
   return (
+    <>
+    {siaLink('v2-sia-bar', SIA_AWARD.bar[siaLang])}
     <header className={headerClass}>
       <div className="v2-header-inner">
         <Link href={isEnglish ? '/en' : '/'} className="v2-logo" prefetch={false} onClick={track('logo')}>
           <span className="v2-logo-script">dityam.com.ua</span>
         </Link>
+        {siaLink('v2-sia', SIA_AWARD.short[siaLang])}
 
         <nav className="v2-nav" aria-label={isEnglish ? 'Main navigation' : 'Головна навігація'}>
           <div
@@ -439,5 +460,6 @@ export default function Header() {
         </nav>
       ) : null}
     </header>
+    </>
   );
 }
