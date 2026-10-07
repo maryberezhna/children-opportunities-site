@@ -34,7 +34,12 @@ export default function HomeTopics({ lang = 'uk', variant = 'hero' }) {
           {tile.img ? (
             <picture>
               <source srcSet={`${tile.img.src}.webp`} type="image/webp" />
-              <img src={`${tile.img.src}.jpg`} alt="" width="300" height="200" loading={variant === 'hero' ? 'eager' : 'lazy'} />
+              {/* Завжди lazy (07.10.2026, «швидкість понад усе»). У хіро було
+                  eager — і телефон, де цей блок схований CSS, усе одно тягнув
+                  шість фото (~370 КБ) разом із текстом і шрифтами, забираючи
+                  канал у першого екрана. На комп'ютері головне на екрані —
+                  заголовок, а фото, що вже в полі зору, lazy вантажить одразу. */}
+              <img src={`${tile.img.src}.jpg`} alt="" width="300" height="200" loading="lazy" decoding="async" />
             </picture>
           ) : null}
           <span className="v2-tile-label">{tile.label} →</span>
