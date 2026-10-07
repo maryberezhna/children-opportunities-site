@@ -202,16 +202,30 @@ export default async function OlimpiadaPage() {
                   <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн` : 'Повідомити про старт'}</a>
                   <a href="#yak" className="ol-btn ol-btn-ghost">Як це працює</a>
                 </div>
-                {/* Довіра — одним рядком під кнопкою замість трьох карток цифр (Марія,
-                    07.10.2026: «прибрати, але залишити 3к родин і підкріпити це
-                    чимось», «десь біля CTA»). Число — AUDIENCE_MONTHLY (GA4),
-                    підкріплення — перемога на SIA Ukraine (lib/awards.js). */}
-                <p className="ol-trust">
-                  <span><b>{AUDIENCE_MONTHLY} родин</b> за останній місяць шукали можливості на Dityam.com.ua</span>
-                  <a href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
-                    <span aria-hidden="true">🏆</span> {SIA_AWARD.short.uk}
+                {/* Довіра під кнопкою замість трьох карток цифр (Марія, 07.10.2026:
+                    «прибрати, але залишити 3к родин і підкріпити це чимось», «десь
+                    біля CTA»). Число — AUDIENCE_MONTHLY (GA4), підкріплення —
+                    перемога на SIA Ukraine (lib/awards.js).
+
+                    Того ж дня рядок із кремовою пігулкою й 🏆 — «це виглядає
+                    убого»: з трьох варіантів обрано медаль у стилі жовтого значка
+                    «25 завдань» і підпис рукописним шрифтом сторінки. Медаль —
+                    декор (з табу виключена), посилання — сам підпис. */}
+                <div className="ol-trust">
+                  <a className="ol-trust-medal" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" tabIndex={-1} aria-hidden="true">
+                    <span className="ol-trust-disc">
+                      <svg viewBox="0 0 24 24"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4 6.1 20.5l1.2-6.5L2.5 9.4l6.6-.9z" /></svg>
+                      <b>SIA</b>
+                      <i>2026</i>
+                    </span>
                   </a>
-                </p>
+                  <div className="ol-trust-text">
+                    <a className="ol-trust-award" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
+                      {SIA_AWARD.short.uk}
+                    </a>
+                    <span><b>{AUDIENCE_MONTHLY} родин</b> за останній місяць шукали можливості на Dityam.com.ua</span>
+                  </div>
+                </div>
               </div>
               <div className="ol-badge">
                 <b>{OLIMP.questionCount}</b>
