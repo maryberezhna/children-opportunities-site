@@ -99,3 +99,11 @@ test('плитки тем виключені із загального прав�
     'плитки тем знову ловить правило на 40px, і власний відступ не подіє');
   assert.match(css, /\.v2-home \.v2-container > \.v2-topics-mobile \{ margin-top: 16px; \}/);
 });
+
+// 07.10.2026: фото плиток тем — лише lazy. Eager у хіро змушував телефон
+// (де блок схований) тягнути ~370 КБ разом із першим екраном.
+test('фото плиток тем не вантажаться примусово', () => {
+  const src = readFileSync(new URL('../app/HomeTopics.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /loading=\{?['"]?eager|loading=\{variant/, 'фото плиток знову eager');
+  assert.match(src, /loading="lazy"/);
+});
