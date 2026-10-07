@@ -1,147 +1,90 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
-import { SLIDE_MS, nextIndex, prevIndex, shouldAutoPlay, swipeTo } from '@/lib/top-week-slider';
 
 /**
- * «Топ тижня» — одна велика картка, що по черзі показує кожну з трьох.
+ * «Топ 3 цього тижня» — рейтинг: три місця з великими цифрами 1, 2, 3.
  *
- * Марія, 04.10.2026: «1 можливість яку чітко видно… бо ми це продаємо, а
- * зараз це тупо». Було три дрібні рядки, де назва ламалась на два рядки
- * дев'ятим кеглем: ні прочитати, ні показати організаторові за гроші.
+ * Історія, щоб не ходити по колу:
+ *   • до 04.10.2026 — три дрібні рядки, назва ламалась дев'ятим кеглем;
+ *   • 04.10 — одна велика картка, що сама перемикається (Марія: «1 можливість
+ *     яку чітко видно… бо ми це продаємо, а зараз це тупо»);
+ *   • 07.10 — «чому слайдер не працює, має бути одразу видно, що це слайдер»:
+ *     картки мінялись на місці, і що їх три, видно не було. Стрічка з краєм
+ *     наступної картки й стрілками — «не подобається дизайн… придумай якось
+ *     краще, все таки це топ 3». З трьох показаних варіантів Марія обрала
+ *     рейтинг: гортати три пункти нема чого, а цифри 1, 2, 3 і кажуть «топ».
  *
- * Правила каруселі, які тут не прикраса:
- *   • спиняється під мишею й на фокусі — інакше людина не встигає натиснути;
- *   • після першого ручного перемикання не крутиться взагалі: далі вирішує
- *     людина, а не таймер;
- *   • поважає prefers-reduced-motion;
- *   • крапки — справжні кнопки з підписами, а не декоративні діви;
- *   • усі три картки лишаються в розмітці (прихована — aria-hidden +
- *     inert), тож пошуковик і читач екрана бачать усі три, а не одну.
- *
- * Логіка перемикання — у lib/top-week-slider.js, щоб її перевіряв тест.
+ * Тому слайдера тут більше немає, і повертати його не треба: усі три місця
+ * видно однаково, жодне оплачене не ховається «за кадром». Назва файлу
+ * лишилась від каруселі — її імпортують головна, підбірки й тести.
  *
  * Приймає ГОТОВІ рядки (day/month/meta), а не функції-рендери: блок стоїть і
  * на головній (клієнтський хіро), і в кожній підбірці (серверна сторінка), а
  * функцію через межу сервер → клієнт не передати.
  *
  * Два розклади, бо місця різні (Марія, 04.10.2026):
- *   • вузький (головна, права колонка хіро) — одна картка, що сама міняється;
+ *   • вузький (головна, права колонка хіро) — рейтинг стовпчиком;
  *   • широкий (підбірка, вся ширина) — «там можна всі 3 помістити»: три
- *     картки поруч, без каруселі. Одна картка на всю ширину виглядала
- *     порожньою коробкою, а крутити те, що й так уміщається, нема сенсу.
+ *     картки поруч.
  */
 export default function TopWeekSlider({ cards = [], title, allHref, allLabel, lang = 'uk', all = false }) {
-  const [i, setI] = useState(0);
-  const [paused, setPaused] = useState(false);
-  const [touched, setTouched] = useState(false);
-  const [reduced, setReduced] = useState(false);
-  const startX = useRef(null);
-  const total = cards.length;
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const apply = () => setReduced(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
-
-  useEffect(() => {
-    if (all) return undefined;
-    if (!shouldAutoPlay({ total, paused, touched, reducedMotion: reduced })) return undefined;
-    const timer = setInterval(() => setI((v) => nextIndex(v, total)), SLIDE_MS);
-    return () => clearInterval(timer);
-  }, [all, total, paused, touched, reduced]);
-
-  if (!total) return null;
-
-  const go = (n) => { setTouched(true); setI(n); };
+  if (!cards.length) return null;
   const isEn = lang === 'en';
 
+  // Картка олімпіади — у статистику сторінки олімпіади (/admin/metrics).
+  const clickOf = (o) => (o.href === '/olimpiada'
+    ? () => sendSiteEvent(SITE_EVENTS.OLIMP_TOP_CLICK, window.location.pathname)
+    : undefined);
+
   return (
-    <aside
-      className={`v2-tw${all ? ' v2-tw--all' : ''}`}
-      aria-labelledby="v2-tw-title"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocusCapture={() => setPaused(true)}
-      onBlurCapture={() => setPaused(false)}
-      onTouchStart={(e) => { startX.current = e.touches[0]?.clientX ?? null; }}
-      onTouchEnd={(e) => {
-        if (startX.current === null) return;
-        const end = e.changedTouches[0]?.clientX ?? startX.current;
-        const to = swipeTo(startX.current, end, i, total);
-        startX.current = null;
-        if (to !== i) go(to);
-      }}
-    >
-      <div className="v2-tw-head">
-        <span id="v2-tw-title" className="v2-tw-title">{title}</span>
-        {total > 1 && !all ? (
-          <span className="v2-tw-count" aria-hidden="true">{i + 1}/{total}</span>
-        ) : null}
-      </div>
+    <aside className={`v2-tw${all ? ' v2-tw--all' : ''}`} aria-labelledby="v2-tw-title">
+      <span id="v2-tw-title" className="v2-tw-title">{title}</span>
 
-      <div className="v2-tw-stage">
-        {cards.map((o, n) => (
-          <Link
-            key={o.slug}
-            href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`}
-            // Картка олімпіади — у статистику сторінки олімпіади (/admin/metrics).
-            onClick={o.href === '/olimpiada' ? () => sendSiteEvent(SITE_EVENTS.OLIMP_TOP_CLICK, window.location.pathname) : undefined}
-            className={`v2-tw-card${all || n === i ? ' is-on' : ''}`}
-            aria-hidden={all || n === i ? undefined : 'true'}
-            tabIndex={all || n === i ? undefined : -1}
-          >
-            <span className="v2-tw-date">
-              {o.day ? <><b>{o.day}</b> {o.month}</> : o.dateLabel}
-            </span>
-            <span className="v2-tw-name">{o.title}</span>
-            <span className="v2-tw-meta">{o.meta}</span>
-            <span className="v2-tw-more" aria-hidden="true">
-              {isEn ? 'See details →' : 'Детальніше →'}
-            </span>
-          </Link>
-        ))}
-      </div>
+      {all ? (
+        <div className="v2-tw-grid">
+          {cards.map((o) => (
+            <Link key={o.slug} href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`} onClick={clickOf(o)} className="v2-tw-card">
+              <span className="v2-tw-date">
+                {o.day ? <><b>{o.day}</b> {o.month}</> : o.dateLabel}
+              </span>
+              <span className="v2-tw-name" lang={o.titleIsUk ? 'uk' : undefined}>{o.title}</span>
+              <span className="v2-tw-meta">{o.meta}</span>
+              <span className="v2-tw-more" aria-hidden="true">
+                {isEn ? 'See details →' : 'Детальніше →'}
+              </span>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        // role="list": Safari з list-style: none перестає читати <ol> як
+        // список, і читач екрана не каже «1 з 3».
+        <ol className="v2-tw-list" role="list">
+          {cards.map((o, n) => (
+            <li key={o.slug}>
+              <Link href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`} onClick={clickOf(o)} className="v2-tw-row">
+                {/* Місце вже каже сам <ol>, цифра — для очей. */}
+                <span className="v2-tw-num" aria-hidden="true">{n + 1}</span>
+                <span className="v2-tw-body">
+                  <span className="v2-tw-name" lang={o.titleIsUk ? 'uk' : undefined}>{o.title}</span>
+                  <span className="v2-tw-meta">
+                    {/* Дата — дедлайн подачі (sliderCards бере deadline), тож
+                        «до 9 жовт». Без дати — підпис на кшталт «Скоро старт». */}
+                    <span className="v2-tw-when">
+                      {o.day ? `${isEn ? 'by' : 'до'} ${o.day} ${o.month}` : o.dateLabel}
+                    </span>
+                    {o.meta ? ` · ${o.meta}` : null}
+                  </span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      )}
 
-      <div className="v2-tw-foot">
-        {total > 1 && !all ? (
-          <div className="v2-tw-dots" role="group" aria-label={isEn ? 'Switch opportunity' : 'Перемкнути можливість'}>
-            <button
-              type="button"
-              className="v2-tw-arrow"
-              aria-label={isEn ? 'Previous' : 'Попередня'}
-              onClick={() => go(prevIndex(i, total))}
-            >
-              ‹
-            </button>
-            {cards.map((o, n) => (
-              <button
-                key={o.slug}
-                type="button"
-                className={`v2-tw-dot${n === i ? ' is-on' : ''}`}
-                aria-label={`${isEn ? 'Opportunity' : 'Можливість'} ${n + 1}`}
-                aria-current={n === i ? 'true' : undefined}
-                onClick={() => go(n)}
-              />
-            ))}
-            <button
-              type="button"
-              className="v2-tw-arrow"
-              aria-label={isEn ? 'Next' : 'Наступна'}
-              onClick={() => go(nextIndex(i, total))}
-            >
-              ›
-            </button>
-          </div>
-        ) : <span />}
-        {allHref && allLabel ? (
-          <Link href={allHref} className="v2-tw-all">{allLabel}</Link>
-        ) : null}
-      </div>
+      {allHref && allLabel ? (
+        <Link href={allHref} className="v2-tw-all">{allLabel}</Link>
+      ) : null}
     </aside>
   );
 }
