@@ -269,7 +269,7 @@ export default async function OlimpiadaPage() {
                 </li>
               ))}
             </ol>
-            <Cta at="after-steps" light note={`${OLIMP.questionCount} завдань і 1 відкрите · ${OLIMP.minutes} хвилин · з телефона чи компʼютера`} />
+            <Cta at="after-steps" light note={`${OLIMP.questionCount} завдань за ${OLIMP.minutes} хвилин і 1 відкрите · з телефона чи компʼютера`} />
           </div>
           <Planet className="ol-doodle ol-planet" />
           <Wave className="ol-wave ol-wave-bottom" flip />

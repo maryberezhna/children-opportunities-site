@@ -166,7 +166,11 @@ test('сторінка олімпіади: цінність і справжні 
 
 test('блок олімпіади — у потрібних підбірках і на /olimpiady, лише українською', async () => {
   const { OLIMP_HUBS } = await import('../lib/olimpiada.js');
-  assert.deepEqual(OLIMP_HUBS, ['konkursy', 'mizhnarodni-olimpiady', 'ukrainskym-ditiam-za-kordonom']);
+  // Табори й гуртки — з 07.10.2026: туди приходять батьки молодших дітей.
+  assert.deepEqual(OLIMP_HUBS, [
+    'konkursy', 'mizhnarodni-olimpiady', 'ukrainskym-ditiam-za-kordonom',
+    'bezkoshtovni-tabory', 'bezkoshtovni-hurtky',
+  ]);
   const topic = read('app/TopicPage.js');
   assert.match(topic, /!isEn && \(OLIMP_OPEN \|\| OLIMP_PUBLIC\) && OLIMP_HUBS\.includes\(topic\.slug\)/);
   assert.match(read('app/olimpiady/page.js'), /<OlimpPromo \/>/);

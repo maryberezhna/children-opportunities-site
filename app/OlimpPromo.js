@@ -13,7 +13,7 @@ export default function OlimpPromo({ abroad = false, className = '' }) {
       <p className="ol-own-kicker">Від Dityam.com.ua · для дітей {OLIMP.groupLabel}</p>
       <h2 id="ol-own-title" className="ol-own-title">Онлайн-олімпіада з логіки</h2>
       <p className="ol-own-text">
-        {OLIMP.questionCount} завдань на кмітливість і 1 відкрите за {OLIMP.minutes} хвилин — з телефона чи компʼютера
+        {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин і 1 відкрите без таймера — з телефона чи компʼютера
         {abroad ? ', з будь-якої країни' : ''}. Кожен учасник отримує диплом і місяць Dityam+ ({PLUS_PRICE_MONTH} грн)
         у подарунок, а 3 найкращі відповіді щомісяця — призи.
       </p>
