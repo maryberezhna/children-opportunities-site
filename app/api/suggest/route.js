@@ -27,24 +27,22 @@ export async function POST(request) {
   const url = typeof b.url === 'string' ? b.url.trim().slice(0, 500) : '';
   const comment = typeof b.comment === 'string' ? b.comment.trim().slice(0, 2000) : '';
   const rawContact = typeof b.contact === 'string' ? b.contact.trim().slice(0, 200) : '';
-  // Контакт необовʼязковий, але лише email або нік у Telegram (07.10.2026):
-  // на номер телефону ми відповісти не можемо. Нік зберігаємо як @nick.
-  const parsed = rawContact ? parseContact(rawContact) : null;
-  const contact = parsed ? parsed.value : '';
+  // Контакт обовʼязковий (Марія, 07.10.2026: треба знати, хто пише) і лише
+  // email або нік у Telegram — на номер телефону ми відповісти не можемо.
+  // Нік зберігаємо як @nick.
+  const parsed = parseContact(rawContact);
 
   if (title.length < 5 && !url) {
     return Response.json({ ok: false, error: 'empty' }, { status: 400 });
   }
-  if (rawContact && !parsed) {
+  if (!parsed) {
     return Response.json({ ok: false, error: 'contact' }, { status: 400 });
   }
-  // Галочка «Хочу ознайомитися з рекламними розміщеннями» (07.10.2026). Без
-  // контакту умови нема куди надіслати. Окремої колонки немає: позначка
-  // лягає рядком у коментар — його бачать і «Звернення», і сповіщення.
+  const contact = parsed.value;
+  // Галочка «Хочу ознайомитися з рекламними розміщеннями» (07.10.2026).
+  // Окремої колонки немає: позначка лягає рядком у коментар — його бачать і
+  // «Звернення», і сповіщення адміну.
   const wantsAds = b.ads === true;
-  if (wantsAds && !parsed) {
-    return Response.json({ ok: false, error: 'ads_contact' }, { status: 400 });
-  }
   const storedComment = [comment, wantsAds ? ADS_MARK : null].filter(Boolean).join('\n\n');
 
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -56,7 +54,7 @@ export async function POST(request) {
     title: title || url,
     url: url || null,
     comment: storedComment || null,
-    contact: contact || null,
+    contact,
     // Явно: порожній origin адмінка теж вважає «людиною з сайту», але ручні
     // вставки мусять ставити своє (maria / research), а не мовчати.
     origin: 'popup',

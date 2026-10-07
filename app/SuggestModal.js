@@ -32,12 +32,10 @@ const T = {
     noteOpt: "необов'язково",
     notePh: 'Для кого, коли, що треба для участі',
     contact: 'Ваш контакт',
-    contactOpt: 'якщо можна щось уточнити',
+    contactOpt: 'обовʼязково',
     contactPh: '@telegram або email',
     contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
     ads: 'Хочу ознайомитися з рекламними розміщеннями на Dityam.com.ua',
-    adsContact: 'щоб надіслати умови',
-    adsErr: 'Щоб надіслати умови реклами, вкажіть email або нік у Telegram, наприклад @olena.',
     send: 'Надіслати',
     sending: 'Надсилаємо…',
     error: 'Не вдалося надіслати. Спробуйте ще раз або напишіть у Telegram.',
@@ -55,12 +53,10 @@ const T = {
     noteOpt: 'optional',
     notePh: 'Who it is for, when, what is needed',
     contact: 'Your contact',
-    contactOpt: 'if we may clarify details',
+    contactOpt: 'required',
     contactPh: '@telegram or email',
     contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
     ads: 'I’d like to learn about advertising placements on Dityam.com.ua',
-    adsContact: 'so we can send the terms',
-    adsErr: 'To receive the advertising terms, enter an email or a Telegram username, e.g. @olena.',
     send: 'Send',
     sending: 'Sending…',
     error: 'Could not send. Try again or write on Telegram.',
@@ -103,15 +99,10 @@ export default function SuggestModal({ lang = 'uk' }) {
       setState('error');
       return;
     }
-    // Контакт необовʼязковий, але якщо вписали — лише email або нік у Telegram
-    // (07.10.2026): на номер телефону ми відповісти не можемо.
-    if (form.contact.trim() && !parseContact(form.contact)) {
+    // Контакт обовʼязковий (Марія, 07.10.2026): треба знати, хто пише. І лише
+    // email або нік у Telegram — на номер телефону ми відповісти не можемо.
+    if (!parseContact(form.contact)) {
       setState('contact');
-      return;
-    }
-    // Попросили умови реклами — без контакту їх нема куди надіслати.
-    if (form.ads && !parseContact(form.contact)) {
-      setState('ads');
       return;
     }
     setState('sending');
@@ -172,8 +163,8 @@ export default function SuggestModal({ lang = 'uk' }) {
               <textarea id="sg-note" rows={4} placeholder={t.notePh} value={form.comment} onChange={set('comment')} />
             </div>
             <div className="v2-field">
-              <label htmlFor="sg-contact">{t.contact} <span>{form.ads ? t.adsContact : t.contactOpt}</span></label>
-              <input id="sg-contact" type="text" placeholder={t.contactPh} value={form.contact} onChange={set('contact')} />
+              <label htmlFor="sg-contact">{t.contact} <span>{t.contactOpt}</span></label>
+              <input id="sg-contact" type="text" placeholder={t.contactPh} value={form.contact} onChange={set('contact')} required />
             </div>
             {/* Організатори, які приносять можливість, — найтепліші рекламодавці
                 (Марія, 07.10.2026). Галочка знята за замовчуванням: це явне
@@ -195,9 +186,9 @@ export default function SuggestModal({ lang = 'uk' }) {
               aria-hidden="true"
               style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
             />
-            {state === 'error' || state === 'contact' || state === 'ads' ? (
+            {state === 'error' || state === 'contact' ? (
               <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>
-                {state === 'contact' ? t.contactErr : state === 'ads' ? t.adsErr : t.error}
+                {state === 'contact' ? t.contactErr : t.error}
               </p>
             ) : null}
             <button type="submit" className="v2-dialog-submit" disabled={state === 'sending'}>
