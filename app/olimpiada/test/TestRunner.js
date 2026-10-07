@@ -12,7 +12,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 const pad = (n) => String(n).padStart(2, '0');
 const clock = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 
-export default function TestRunner({ token, name, started, count, minutes, overtime, openTask, openArt, until }) {
+export default function TestRunner({ token, name, started, count, minutes, overtime, openTask, openArt, until, email, invited }) {
   const [phase, setPhase] = useState(started ? 'loading' : 'intro'); // intro | loading | run | sending | done | error
   const [questions, setQuestions] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -176,6 +176,15 @@ export default function TestRunner({ token, name, started, count, minutes, overt
           <li>відповідай сам чи сама — так диплом буде справді твоїм</li>
         </ul>
         {until && <p className="ol-deadline">Почати тест треба до {until} за київським часом.</p>}
+        {/* Посилання на цю сторінку — єдиний вхід до тесту: кажемо, де воно є
+            ще, якщо вкладку закриють (07.10.2026). */}
+        {until && email && (
+          <p className="ol-note">
+            {invited
+              ? `Посилання на цю сторінку ми надіслали на ${email}. Листа немає у «Вхідних» — перегляньте «Спам» і «Промоакції».`
+              : `Посилання на цю сторінку надішлемо й на ${email}. А поки — збережіть його в закладки.`}
+          </p>
+        )}
         {error && <p className="ol-error" role="alert">{error}</p>}
         <button type="button" className="ol-btn ol-btn-main ol-btn-wide" onClick={begin} disabled={phase === 'loading'}>
           {phase === 'loading' ? 'Завантажуємо завдання…' : 'Почати олімпіаду'}

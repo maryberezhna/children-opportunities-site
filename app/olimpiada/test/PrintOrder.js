@@ -10,9 +10,10 @@ const ERRORS = {
   branch: 'Вкажіть номер відділення або поштомата Нової пошти.',
   pay: 'Не вдалося відкрити оплату. Спробуйте ще раз за хвилину.',
   unavailable: 'Замовлення тимчасово недоступне. Спробуйте трохи пізніше.',
+  pending: 'Оплата доставки ще обробляється — не оплачуйте вдруге. Оновіть сторінку за хвилину.',
 };
 
-export default function PrintOrder({ token, price, paid, order }) {
+export default function PrintOrder({ token, price, paid, order, pending = false }) {
   // Доставку оплачено разом з участю (249 грн), адреси ще немає — одразу форма,
   // без оплати.
   const prepaid = paid && !order;
@@ -24,6 +25,16 @@ export default function PrintOrder({ token, price, paid, order }) {
     return (
       <p className="ol-ok" role="status">
         Друкований диплом замовлено. Надішлемо Новою поштою: {order?.city}, {order?.branch}.
+      </p>
+    );
+  }
+
+  // Рахунок за доставку відкривали, а WayForPay ще не підтвердив оплату —
+  // форму вдруге не показуємо, щоб не заплатили двічі (07.10.2026).
+  if (pending) {
+    return (
+      <p className="ol-ok" role="status">
+        Оплату доставки перевіряємо — зазвичай це кілька хвилин. Не оплачуйте вдруге: щойно WayForPay підтвердить, тут зʼявиться «Друкований диплом замовлено».
       </p>
     );
   }

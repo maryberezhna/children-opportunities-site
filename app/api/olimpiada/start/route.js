@@ -3,9 +3,9 @@
 // (для адміна й у локальній розробці, де платіжних ключів немає).
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
-import { createOneTimeInvoice, wayforpayConfigured } from '@/lib/wayforpay';
-import { OLIMP, OLIMP_OPEN, cleanName, isEmail, isBundle } from '@/lib/olimpiada';
-import { SITE_URL, getStore, markPaid, json } from '@/lib/olimpiada-server';
+import { wayforpayConfigured } from '@/lib/wayforpay';
+import { OLIMP, OLIMP_OPEN, cleanName, isEmail } from '@/lib/olimpiada';
+import { getStore, markPaid, createEntryInvoice, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -53,21 +53,11 @@ export async function POST(request) {
   }
   if (!wayforpayConfigured) return json({ error: 'unavailable' }, 503);
 
-  const orderReference = `olimp-${entry.token}-${Date.now()}`;
-  const inv = await createOneTimeInvoice({
-    orderReference,
-    amount: isBundle(entry) ? OLIMP.bundlePrice : OLIMP.price,
-    product: isBundle(entry)
-      ? `Онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel}) + друкований диплом із доставкою Новою поштою`
-      : `Організаційний внесок: онлайн-олімпіада з логіки Dityam.com.ua (${OLIMP.groupLabel})`,
-    email,
-    returnUrl: `${SITE_URL}/api/olimpiada/return?t=${entry.token}`,
-    serviceUrl: `${SITE_URL}/api/olimpiada/pay`,
-  });
+  const inv = await createEntryInvoice(entry);
   if (!inv.url) {
     console.error(`[olimpiada/start] invoice failed: ${inv.error || 'no url'}`);
     return json({ error: 'pay' }, 502);
   }
-  await store.update(entry.token, { wfp_order_reference: orderReference });
+  await store.update(entry.token, { wfp_order_reference: inv.orderReference });
   return json({ url: inv.url, t: entry.token });
 }

@@ -3,9 +3,9 @@
 // після оплати адмінка отримує повідомлення з адресою й посиланням на диплом.
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
-import { createOneTimeInvoice, wayforpayConfigured } from '@/lib/wayforpay';
+import { createOneTimeInvoice, checkStatus, wayforpayConfigured } from '@/lib/wayforpay';
 import { OLIMP, cleanPrintOrder } from '@/lib/olimpiada';
-import { SITE_URL, getStore, validToken, markPrintPaid, savePrintAddress, json } from '@/lib/olimpiada-server';
+import { SITE_URL, getStore, validToken, markPrintPaid, savePrintAddress, payFailed, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,18 @@ export async function POST(request) {
     return json({ url: testPath });
   }
   if (!wayforpayConfigured) return json({ error: 'unavailable' }, 503);
+
+  // Попередній рахунок за доставку: оплачено — лише позначаємо; оплата ще йде —
+  // другого рахунку не даємо, щоб не заплатили двічі (07.10.2026).
+  if (entry.print_ref) {
+    const r = await checkStatus(entry.print_ref);
+    if (r.error) return json({ error: 'unavailable' }, 503);
+    if (r.status === 'Approved') {
+      await markPrintPaid(store, entry);
+      return json({ url: testPath });
+    }
+    if (r.status && !payFailed(r.status)) return json({ error: 'pending' }, 409);
+  }
 
   const orderReference = `olimp-d-${entry.token}-${Date.now()}`;
   const inv = await createOneTimeInvoice({

@@ -1,9 +1,11 @@
 name: Олімпіада — запрошення до тесту
 
 # Після оплати онлайн-олімпіади батькам іде лист із посиланням на тест і
-# часом, до якого його треба почати (72 години). Сайт листів не шле — на
-# Vercel немає поштових ключів, — тому це робить scraper/olimpiada_invites.py
-# з пошти проєкту. Кожен запис позначається invite_sent_at: двічі не піде.
+# часом, до якого його треба почати (72 години). З 07.10.2026 його шле сам
+# сайт у мить оплати (lib/olimpiada-mail.js), а цей воркфлоу — запасний шлях
+# для запрошень і єдиний для дипломів. Запис «бронюється» через
+# invite_sent_at: двічі лист не піде. test_email — пробний лист на будь-яку
+# адресу, щоб перевірити доставку (ukr.net, i.ua, Outlook).
 #
 # Кожні 10 хвилин і не на початку години: такі запуски GitHub затримує
 # найменше. Сторінка тесту відкривається й одразу після оплати, тож лист —
@@ -17,6 +19,10 @@ on:
         description: 'send = надіслати; dry = лише показати, кому; check = перевірити вхід у пошту'
         required: false
         default: 'send'
+      test_email:
+        description: 'пробне запрошення на цю адресу (демо-запис) — перевірити доставку'
+        required: false
+        default: ''
 
 concurrency:
   group: olimpiada-invites
@@ -45,7 +51,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           DITYAM_GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
+          TEST_EMAIL: ${{ github.event.inputs.test_email }}
         run: |
+          if [ -n "$TEST_EMAIL" ]; then python olimpiada_invites.py --test-email "$TEST_EMAIL"; exit $?; fi
           case "${{ github.event.inputs.mode }}" in
             check) python olimpiada_invites.py --check ;;
             dry) python olimpiada_invites.py --dry-run ;;
