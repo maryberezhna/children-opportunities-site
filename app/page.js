@@ -50,7 +50,7 @@ export default async function Home() {
   const slim = (o) => ({
     slug: o.slug, title: o.title, title_en: o.title_en || null, deadline: o.deadline || null,
     opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to, cost_type: o.cost_type || null,
-    href: o.href || null, label: o.label || null,
+    href: o.href || null, label: o.label || null, perk: o.perk || null,
   });
   // Олімпіада (9–11 років) — лише в загальній трійці: підліткам вона не за віком.
   const soon = topWeekCards({ items: visibleFor(opportunities, today), week, todayIso: today, daysUntil, own: OLIMP_TOP }).map(slim);

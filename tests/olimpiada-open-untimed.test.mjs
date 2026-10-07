@@ -49,3 +49,11 @@ test('сторінка, правила й лист кажуть «без тай�
   assert.match(text, /без варіантів і без таймера/);
   assert.doesNotMatch(text, /хвилин на все|ще 2 хвилини/);
 });
+
+test('блок у підбірках і опис для AI-асистентів — теж «без таймера»', () => {
+  assert.match(read('app/OlimpPromo.js'), /і 1 відкрите без таймера/);
+  assert.match(read('app/llms.txt/route.js'), /і 1 відкрите без таймера/);
+  for (const f of ['app/OlimpPromo.js', 'app/llms.txt/route.js', 'app/olimpiada/page.js']) {
+    assert.doesNotMatch(read(f), /1 відкрите за \$?\{OLIMP\.minutes\}|і 1 відкрите · \$\{OLIMP\.minutes\}/, f);
+  }
+});
