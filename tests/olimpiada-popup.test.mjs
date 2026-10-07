@@ -40,6 +40,11 @@ test('звідки прийшли на сторінку: utm, свій шлях,
   assert.equal(olimpSource({ referrer: 'https://dityam.com.ua/', host }), '/');
   assert.equal(olimpSource({ referrer: 'https://www.google.com/', host }), 'google.com');
   assert.equal(olimpSource({ referrer: '', host }), 'direct');
+  // Перехід усередині сайту: реферер лишається першим зовнішнім (07.10.2026
+  // вхід із «Топ 3» записався як google.com) — береться попередній шлях.
+  assert.equal(olimpSource({ referrer: 'https://www.google.com/', host, prevPath: '/prohramy-obminu' }), '/prohramy-obminu');
+  assert.match(read('app/Analytics.js'), /window\.__dityamPrevPath = window\.__dityamPath/);
+  assert.match(read('app/olimpiada/OlimpTrack.js'), /window\.__dityamPath === here \? window\.__dityamPrevPath : window\.__dityamPath/);
 });
 
 test('події олімпіади дозволені в /api/event і пишуть source', () => {

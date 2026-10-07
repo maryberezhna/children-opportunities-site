@@ -90,6 +90,17 @@ export function Analytics() {
     sendSiteEvent(SITE_EVENTS.PLUS_VIEW);
   }, [internal, pathname]);
 
+  // Шлях поточної сторінки — для «звідки прийшли» при переході всередині
+  // сайту (lib/site-events.js olimpSource). document.referrer при таких
+  // переходах не міняється й лишається першим зовнішнім, тож 07.10.2026 вхід
+  // з картки «Топ 3» на /prohramy-obminu записався як «google.com».
+  // Тримаємо і поточний, і попередній шлях: тоді неважливо, чий ефект
+  // (сторінки чи цей) спрацює першим — див. app/olimpiada/OlimpTrack.js.
+  useEffect(() => {
+    if (window.__dityamPath && window.__dityamPath !== pathname) window.__dityamPrevPath = window.__dityamPath;
+    window.__dityamPath = pathname;
+  }, [pathname]);
+
   // Перехід у бота Dityam+ звідки завгодно. Слухаємо документ, а не правимо
   // шість файлів із такими посиланнями: так жодна кнопка не загубиться й
   // наступна порахується сама.
