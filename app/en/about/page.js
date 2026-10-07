@@ -57,6 +57,15 @@ export default async function AboutPageEn() {
           </div>
         </section>
 
+        {/* Under the first-screen buttons, as on /about (07.10.2026). */}
+        <section className="ab-section" aria-labelledby="ab-press">
+          <h2 id="ab-press">In the media</h2>
+          <PressLogos />
+          <p className="ab-more">
+            <Link href="/en/press">All publications and materials for journalists →</Link>
+          </p>
+        </section>
+
         {tiles.length ? (
           <section className="ab-section" aria-label="Project figures">
             <div className="pk-stats ab-stats">
@@ -145,14 +154,6 @@ export default async function AboutPageEn() {
             <li>Paid programmes are marked as paid, and free ones can be filtered separately</li>
           </ul>
           <p className="ab-more"><Link href="/en/how-we-verify">How we verify, in detail →</Link></p>
-        </section>
-
-        <section className="ab-section" aria-labelledby="ab-press">
-          <h2 id="ab-press">In the media</h2>
-          <PressLogos />
-          <p className="ab-more">
-            <Link href="/en/press">All publications and materials for journalists →</Link>
-          </p>
         </section>
 
         <section className="v2-bottom">
