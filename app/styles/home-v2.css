@@ -1527,6 +1527,16 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
 
 .v2-field textarea { resize: vertical; }
 
+/* Два поля в рядок (вік від/до, дати) у формі «Запропонувати можливість». */
+.v2-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.v2-field-row > * { min-width: 0; }
+.v2-field-row input { min-width: 0; width: 100%; box-sizing: border-box; }
+/* Поле дати в Chrome має власну мінімальну ширину — без тіснішого відступу
+   друге поле на телефоні вилазило за край форми. */
+.v2-field-row input[type="date"] { padding-left: 10px; padding-right: 8px; }
+.v2-mini { display: flex; flex-direction: column; gap: 4px; min-width: 0; font-size: 0.8125rem; color: var(--v2-ink-3); }
+.v2-field input:disabled { opacity: 0.45; }
+
 /* Галочка у формі «Запропонувати можливість» (умови реклами, 07.10.2026). */
 .v2-check {
   display: flex;
