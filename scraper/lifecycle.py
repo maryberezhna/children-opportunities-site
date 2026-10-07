@@ -71,6 +71,9 @@ MODEL = "claude-haiku-4-5-20251001"
 SPEND = usage.Spend("lifecycle")
 DAILY_LIMIT = int(os.environ.get("LIFECYCLE_LIMIT") or "30")
 PAGE_CHARS = 9000
+# Скільки тексту сторінки взагалі читати. Моделі все одно йде не більше
+# PAGE_CHARS — початок і місця з датами (focus_text).
+FETCH_CHARS = 60000
 DELAY = 0.6
 
 SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind, "
@@ -424,6 +427,48 @@ def plan_unreadable(row: dict, why: str, today: date) -> dict:
     return patch
 
 
+# Дата в тексті: «20 жовтня», «1–15 листопада», «20.10.2026», «October 20».
+# Числа без року («2.5.») не беремо: так нумеруються пункти положень.
+_DATE_HINT = re.compile(
+    r"\b\d{1,2}[./]\d{1,2}[./](?:20)?\d{2}\b"
+    r"|\b\d{1,2}(?:\s*[-–]\s*\d{1,2})?\s+(?:січн|лют|берез|квітн|трав|червн|липн|серпн"
+    r"|вересн|жовтн|листопад|грудн)\w*"
+    r"|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2}\b",
+    re.IGNORECASE)
+FOCUS_WINDOW = 220
+
+
+def focus_text(text: str, limit: int = PAGE_CHARS) -> str:
+    """Що віддати моделі з довгої сторінки. Чиста функція — під тести.
+
+    Перші 9 000 символів положення — це часто лише «Загальні засади». У
+    Sikorsky Challenge (07.10.2026) строк «до 20 жовтня» стояв на 9 960-му
+    символі: перевірка бачила конкурс відкритим, але без жодної дати, і не
+    могла повернути його на сайт. Тому з довгої сторінки — початок і всі
+    місця з датами далі, у тому ж порядку."""
+    if len(text) <= limit:
+        return text
+    head_len = limit * 2 // 3
+    head, rest = text[:head_len], text[head_len:]
+    spans: list[list[int]] = []
+    for m in _DATE_HINT.finditer(rest):
+        a, b = max(0, m.start() - FOCUS_WINDOW), min(len(rest), m.end() + FOCUS_WINDOW)
+        if spans and a <= spans[-1][1]:
+            spans[-1][1] = max(spans[-1][1], b)
+        else:
+            spans.append([a, b])
+    parts, room = [], limit - head_len
+    for a, b in spans:
+        piece = rest[a:b]
+        if len(piece) + 3 > room:
+            break
+        parts.append(piece)
+        room -= len(piece) + 3
+    if not parts:
+        return text[:limit]
+    return head + "".join(" … " + p for p in parts)
+
+
 def _source_text(row: dict) -> tuple[str | None, str]:
     url = (row.get("source_url") or "").strip()
     if _TG_POST.match(url):
@@ -433,7 +478,7 @@ def _source_text(row: dict) -> tuple[str | None, str]:
     if not url.startswith("http"):
         return None, "немає адреси"
     time.sleep(DELAY)
-    text, why, kind = fetch_text(url)
+    text, why, kind = fetch_text(url, limit=FETCH_CHARS)
     return (text, "сторінка") if kind == "ok" else (None, why)
 
 
@@ -447,7 +492,7 @@ def _ask(ai, row: dict, page: str, today: date) -> dict:
                 messages=[{"role": "user", "content":
                            f"Можливість: «{row.get('title')}» (тип: {row.get('opportunity_type')})\n"
                            f"Адреса: {row.get('source_url')}\n\n"
-                           f"Текст джерела:\n{clean_text(page)[:PAGE_CHARS]}"}],
+                           f"Текст джерела:\n{focus_text(clean_text(page))}"}],
             )
             SPEND.add(MODEL, resp)
             block = next((b for b in resp.content if b.type == "tool_use"), None)

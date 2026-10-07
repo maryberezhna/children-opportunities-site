@@ -164,8 +164,8 @@ def classify_status(code: int) -> str:
     return "ok"
 
 
-def fetch_text(url: str, _retry: bool = True) -> tuple[str | None, str, str]:
-    """Текст сторінки або (None, причина, вид).
+def fetch_text(url: str, _retry: bool = True, limit: int = 12000) -> tuple[str | None, str, str]:
+    """Текст сторінки (перші limit символів) або (None, причина, вид).
 
     Вид: "ok" | "transient" (не прочитали: бот-захист, таймаут, збій сервера)
     | "missing" (сторінки справді немає: 404/410). Транзієнтне — не діагноз.
@@ -178,7 +178,7 @@ def fetch_text(url: str, _retry: bool = True) -> tuple[str | None, str, str]:
     except Exception as e:
         if _retry:
             time.sleep(3)
-            return fetch_text(url, _retry=False)
+            return fetch_text(url, _retry=False, limit=limit)
         return None, f"не відповів: {type(e).__name__}", "transient"
     kind = classify_status(r.status_code)
     if kind == "missing":
@@ -188,7 +188,7 @@ def fetch_text(url: str, _retry: bool = True) -> tuple[str | None, str, str]:
         # були тимчасовими — ті самі адреси за кілька секунд давали 200.
         if _retry and r.status_code in TRANSIENT_STATUSES:
             time.sleep(3)
-            return fetch_text(url, _retry=False)
+            return fetch_text(url, _retry=False, limit=limit)
         return None, f"HTTP {r.status_code}", "transient"
     soup = BeautifulSoup(r.text, "html.parser")
     for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
@@ -196,7 +196,7 @@ def fetch_text(url: str, _retry: bool = True) -> tuple[str | None, str, str]:
     text = " ".join(soup.get_text(" ").split())
     if len(text) < 200:
         return None, f"порожня сторінка ({len(text)} символів)", "transient"
-    return text[:12000], f"HTTP {r.status_code}", "ok"
+    return text[:limit], f"HTTP {r.status_code}", "ok"
 
 
 def ask(llm, row: dict, page: str) -> dict:
