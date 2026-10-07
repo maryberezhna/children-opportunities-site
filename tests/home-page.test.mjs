@@ -107,3 +107,17 @@ test('фото плиток тем не вантажаться примусов�
   assert.doesNotMatch(src, /loading=\{?['"]?eager|loading=\{variant/, 'фото плиток знову eager');
   assert.match(src, /loading="lazy"/);
 });
+
+// Марія, 07.10.2026 (скриншот: коло закривало «і» в «місці»): «прозорий фон і
+// вище, десь отут» — ширше телефона наліпка стоїть після «можливості».
+test('наліпка SIA — без фону, на компʼютері після першого рядка', () => {
+  const css = readFileSync(new URL('../app/styles/home-v2.css', import.meta.url), 'utf8');
+  const seal = css.match(/\.v2-sia-seal \{[^}]*\}/)[0];
+  assert.match(seal, /background: none;/, 'у наліпки знову фон');
+  assert.doesNotMatch(seal, /box-shadow/);
+  assert.match(css, /@media \(min-width: 901px\) \{\s*\.v2-sia-anchor--lead \{ display: inline-block; \}\s*\.v2-sia-anchor--end \{ display: none; \}/);
+  // Перед inline-block браузер може перенести рядок — останнє слово склеєне з якорем.
+  const hero = readFileSync(new URL('../app/HomeHero.js', import.meta.url), 'utf8');
+  assert.match(hero, /<span className="v2-sia-glue">\{leadLast\}<span className="v2-sia-anchor v2-sia-anchor--lead">/);
+  assert.match(css, /\.v2-sia-glue \{ white-space: nowrap; \}/);
+});

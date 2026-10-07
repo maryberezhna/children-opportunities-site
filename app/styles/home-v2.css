@@ -142,6 +142,7 @@
    фрази за будь-якої ширини екрана. На головній ширше 1100px пігулку в
    шапці ховаємо — наліпка вже є. */
 @keyframes v2-sia-spin { to { transform: rotate(360deg); } }
+.v2-sia-glue { white-space: nowrap; }
 .v2-sia-anchor {
   position: relative;
   display: inline-block;
@@ -162,9 +163,10 @@
   width: var(--seal);
   height: var(--seal);
   border-radius: 50%;
-  background: var(--v2-accent-strong);
-  color: #fff;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  /* Прозорий фон (Марія, 07.10.2026: «прозорий фон») — лише кільце тексту
+     кольору бренду. Помаранчеве коло з тінню було важчим за сам заголовок. */
+  background: none;
+  color: var(--v2-accent-strong);
   text-decoration: none;
   transform: rotate(-10deg);
   z-index: 1;
@@ -189,7 +191,7 @@
   line-height: 1;
   text-align: center;
   letter-spacing: 0;
-  color: #fff;
+  color: var(--v2-accent-strong);
 }
 @media (prefers-reduced-motion: reduce) {
   .v2-sia-ring { animation: none; }
@@ -210,6 +212,9 @@
    другого — праворуч від «для тебе», нічого не закриваючи. */
 .v2-sia-anchor--lead { display: none; }
 @media (max-width: 900px) {
+  /* Без фону кільце не кладемо на літери: на телефоні воно заходило на
+     кінець «дитини», і два тексти перетинались. Тепер — одразу після слова. */
+  .v2-sia-anchor--end .v2-sia-seal { left: 0.1em; }
   html[data-mode="teens"] .v2-sia-anchor--lead { display: inline-block; }
   html[data-mode="teens"] .v2-sia-anchor--end { display: none; }
   html[data-mode="teens"] .v2-sia-anchor--lead .v2-sia-seal {
@@ -222,6 +227,20 @@
 @media (min-width: 1101px) {
   .v2-sia-seal { --seal: 116px; --lift: 0.6em; }
   .v2-header--home .v2-sia { display: none; }
+}
+/* Ширше телефона — після першого рядка, «Усі можливості», і вище (Марія,
+   07.10.2026, скриншот: на кінці «в одному місці» коло закривало «і»).
+   Праворуч від першого рядка порожньо, а центр кола піднято так, що його низ
+   — на лінії рядка: другий рядок («для вашої дитини», довший) кільце не
+   зачіпає. Без фону кільце не можна класти на літери — тож відступ, а не
+   заступ. */
+@media (min-width: 901px) {
+  .v2-sia-anchor--lead { display: inline-block; }
+  .v2-sia-anchor--end { display: none; }
+  .v2-sia-anchor--lead .v2-sia-seal {
+    --lift: 0.95em;
+    left: 0.2em;
+  }
 }
 
 .v2-logo-script {

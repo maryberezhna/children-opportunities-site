@@ -143,6 +143,10 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
     lang,
   });
 
+  const leadCut = c.lead.lastIndexOf(' ') + 1;
+  const leadHead = c.lead.slice(0, leadCut);
+  const leadLast = c.lead.slice(leadCut);
+
   // Наліпка нагороди (див. коментар біля якорів у заголовку).
   const siaSeal = (
     <a
@@ -173,7 +177,11 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
             {t.live}
           </div>
           <h1>
-            {c.lead}<span className="v2-sia-anchor v2-sia-anchor--lead">{siaSeal}</span> <br className="v2-hero-br" /><span className="v2-script">{c.script}</span><span className="v2-hero-tail">{c.tail}</span>
+            {/* Останнє слово першого рядка склеєне з якорем наліпки: перед
+                inline-block браузер має право перенести рядок, і з text-wrap:
+                balance коло опинялось на початку другого рядка, а не після
+                «можливості». */}
+            {leadHead}<span className="v2-sia-glue">{leadLast}<span className="v2-sia-anchor v2-sia-anchor--lead">{siaSeal}</span></span> <br className="v2-hero-br" /><span className="v2-script">{c.script}</span><span className="v2-hero-tail">{c.tail}</span>
             {/* Наліпка нагороди на кінці головної фрази (Марія, 07.10.2026: «наклади
                 цей кружечок прямо на кінець головної фрази»). Помаранчеве коло з
                 білим текстом, що повільно обертається; центр порожній («не треба
