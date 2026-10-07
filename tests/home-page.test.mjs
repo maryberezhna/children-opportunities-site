@@ -119,5 +119,7 @@ test('наліпка SIA — без фону, на компʼютері післ
   // Перед inline-block браузер може перенести рядок — останнє слово склеєне з якорем.
   const hero = readFileSync(new URL('../app/HomeHero.js', import.meta.url), 'utf8');
   assert.match(hero, /<span className="v2-sia-glue">\{leadLast\}<span className="v2-sia-anchor v2-sia-anchor--lead">/);
-  assert.match(css, /\.v2-sia-glue \{ white-space: nowrap; \}/);
+  assert.match(css, /\.v2-sia-glue \{\s*white-space: nowrap;/);
+  // «Наче перекриває слово» (07.10.2026): у слова з кільцем — підкладка кольору фону.
+  assert.match(css, /\.v2-sia-glue \{[^}]*text-shadow:[^}]*var\(--v2-halo\)/);
 });
