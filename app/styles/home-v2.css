@@ -2031,13 +2031,23 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
  * ховається за іншим. */
 .v2-tw {
   box-sizing: border-box;
-  padding: 18px;
+  padding: 16px;
   background: var(--v2-cream);
   border-radius: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
+
+/* У хіро низ панелі — врівень із пошуком (Марія, 07.10.2026: «видали усі
+ * дедлайни, щоб рівно було»). Панель тягнеться на висоту лівої колонки, а
+ * рядки рейтингу ділять зайве місце порівну, тож рівно виходить за будь-якої
+ * довжини назв цього тижня. Довші за колонку назви панель усе одно покаже
+ * повністю — тоді вона виходить нижче, а не обрізає текст. */
+.v2-hero > .v2-tw { align-self: stretch; }
+.v2-hero > .v2-tw .v2-tw-list { flex: 1; display: flex; flex-direction: column; }
+.v2-hero > .v2-tw .v2-tw-list > li { flex: 1; display: flex; }
+.v2-hero > .v2-tw .v2-tw-row { flex: 1; align-content: center; }
 
 .v2-tw-title {
   font-size: 0.8125rem;
@@ -2058,11 +2068,13 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 
 .v2-tw-list > li + li { border-top: 1px solid var(--v2-line); }
 
+/* Колонка цифри 32px, а не ширше: кожні зекономлені пікселі йдуть на назву
+   й рядок із датою, і ті рідше переносяться — блок нижчий за пошук. */
 .v2-tw-row {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 12px;
-  padding: 14px 16px 14px 14px;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
   color: var(--v2-ink);
   text-decoration: none;
   transition: background 0.15s;

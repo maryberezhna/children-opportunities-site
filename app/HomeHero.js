@@ -61,9 +61,10 @@ const COPY = {
     searchAria: 'Пошук можливостей',
     // Панель — «Топ 3 цього тижня» (Марія, 30.09.2026): закріплені «Топ»
     // і найближчі дедлайни разом, а не «найближчі дедлайни» як такі.
+    // Посилання «Усі дедлайни →» під рейтингом прибрано (Марія, 07.10.2026:
+    // «видали усі дедлайни, щоб рівно було») — низ панелі стає врівень із
+    // пошуком. У підбірках воно лишається.
     soonTitle: 'Топ 3 цього тижня',
-    allDeadlines: 'Усі дедлайни →',
-    allDeadlinesHref: '/dedlainy',
     pinned: 'Топ',
     free: 'безкоштовно',
   },
@@ -90,8 +91,6 @@ const COPY = {
     search: 'Search',
     searchAria: 'Search opportunities',
     soonTitle: 'Top 3 this week',
-    allDeadlines: null,
-    allDeadlinesHref: null,
     pinned: 'Top',
     free: 'free',
   },
@@ -218,8 +217,6 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
           <TopWeekSlider
             lang={lang}
             title={t.soonTitle}
-            allHref={t.allDeadlinesHref}
-            allLabel={t.allDeadlines}
             cards={sliderCards(items, {
               lang,
               pinned: t.pinned,
