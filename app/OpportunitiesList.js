@@ -1,5 +1,5 @@
 'use client';
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState } from '@/lib/timing';
@@ -18,7 +18,7 @@ import useSearchSuggest from './useSearchSuggest';
 import { TAG_COLORS, TAG_FALLBACK } from '@/lib/tag-colors';
 import { readMode, onModeChange } from '@/lib/mode';
 import { inlineCardPositions } from '@/lib/inline-card';
-import { packFullRows } from '@/lib/grid-rows';
+import { packFullRows, fillLastRow } from '@/lib/grid-rows';
 import { topWeekCards } from '@/lib/weekly-top';
 import { OLIMP_TOP, olimpFilterMatch } from '@/lib/olimpiada';
 import OlimpPopup, { claimOlimpPopup } from './OlimpPopup';
@@ -497,6 +497,24 @@ export default function OpportunitiesList({
   const [place, setPlace] = useState(presetCity ? [presetCity] : []);
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(initialLimit);
+  // Скільки колонок у сітці зараз: auto-fill дає 2 на головній, 3 і більше на
+  // широких сторінках міст, 1 у мобільному списку. Міряємо саму сітку, бо
+  // з JS ширини колонок не вгадати.
+  const [gridCols, setGridCols] = useState(mobileLayout ? 1 : 2);
+  const gridObserver = useRef(null);
+  const gridRef = useCallback((el) => {
+    gridObserver.current?.disconnect();
+    gridObserver.current = null;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const measure = () => {
+      const tracks = getComputedStyle(el).gridTemplateColumns.split(' ').filter((x) => x && x !== 'none');
+      const n = Math.max(1, tracks.length);
+      setGridCols((c) => (c === n ? c : n));
+    };
+    measure();
+    gridObserver.current = new ResizeObserver(measure);
+    gridObserver.current.observe(el);
+  }, []);
   // Сортування (редизайн 29.09.2026): найближчий дедлайн, як було, або нові.
   const [sort, setSort] = useState('deadline');
   // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
@@ -974,7 +992,10 @@ export default function OpportunitiesList({
   // Олімпіади МОН — однією карткою на місці найближчої (lib/olympiad-group.js).
   // Лічильник «Знайдено N» і далі рахує записи, а не картки.
   const entries = useMemo(() => groupMonOlympiads(stream), [stream]);
-  const shown = entries.slice(0, limit);
+  // Останній рядок перед «Показати ще» — повний (lib/grid-rows.js,
+  // 07.10.2026): ліміт добирає картки до кратного колонкам.
+  const shownEnd = fillLastRow(entries, limit, (e) => Boolean(e.group), gridCols);
+  const shown = entries.slice(0, shownEnd);
   useEffect(() => {
     if (!hydrated) return undefined;
     const q = query.trim();
@@ -1763,7 +1784,7 @@ export default function OpportunitiesList({
           ) : null}
 
           {shown.length ? (
-            <section className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
+            <section ref={gridRef} className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
               {/* Telegram-картка кожні 20 можливостей (lib/inline-card.js):
                   без таймерів, замість 4-секундної спливної підказки. */}
               {/* Група олімпіад і Telegram-картка — на весь рядок; перед неповним
@@ -1777,6 +1798,7 @@ export default function OpportunitiesList({
                     : [cell];
                 }),
                 (c) => c.full,
+                gridCols,
               ).map((c) => c.node)}
             </section>
           ) : (
@@ -1787,9 +1809,9 @@ export default function OpportunitiesList({
             </div>
           )}
 
-          {entries.length > limit ? (
+          {entries.length > shownEnd ? (
             <div className="v2-more-row">
-              <button type="button" className="v2-more-btn" onClick={() => setLimit(limit + pageSize.current)}>
+              <button type="button" className="v2-more-btn" onClick={() => setLimit(shownEnd + pageSize.current)}>
                 {t.showMore}
               </button>
             </div>
