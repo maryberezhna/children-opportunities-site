@@ -400,11 +400,8 @@ async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
     telegram_username: handle,
     source: `plus_bot:${from}`,
   });
-  // Сповіщення адміну — з основного бота, у ваш адмінський чат; людина його не бачить.
-  if (MAIN_TOKEN && ADMIN_CHAT_ID) {
-    await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
-      `🚀 <b>Новий у списку очікування Dityam+</b>\n${esc(handle || chatId)} · через бот Dityam+ · ${esc(from)}`);
-  }
+  // Сповіщення адміну про новий запис у списку очікування знято: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  // Список — у /admin/plus.
   await bot.sendMessage(chatId, WAITLIST_WELCOME());
 }
 
@@ -500,11 +497,8 @@ async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
       .eq('id', sub.id).select('*').maybeSingle();
     sub = upd || { ...sub, promo_code: c };
   }
+  // Введення промокоду — ще не покупка: в адмін-чат іде лише оплата (pay/wayforpay).
   await claimPromo(supabase, { code: c, chatId, handle, source });
-  if (MAIN_TOKEN && ADMIN_CHAT_ID) {
-    await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
-      `<b>Промокод ${esc(c.toUpperCase())}</b> ввів ${esc(handle || chatId)} · ${esc(source || 'typed')}`);
-  }
   await bot.sendMessage(chatId, `Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
   await continueStart(bot, supabase, sub, chatId, handle);
   return true;

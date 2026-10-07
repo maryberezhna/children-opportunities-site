@@ -647,7 +647,7 @@ async def amain():
         # send_daily_report повертає канал ('telegram'/'email') або False —
         # старий підпис «Email ✅» брехав, коли звіт ішов у бот.
         channel = {'telegram': 'Telegram-бот', 'email': 'Email (запасний)'}.get(sent)
-        print(f"📨 Звіт: {'надіслано у ' + channel + ' ✅' if channel else 'не надіслано ❌'}")
+        print(f"📨 Звіт: {'надіслано у ' + channel + ' ✅' if channel else 'лише в лозі (в адмін-чат — тільки великі проблеми)'}")
     if any(r["status"] == "error" for r in results):
         sys.exit(1)
 

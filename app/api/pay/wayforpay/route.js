@@ -89,18 +89,27 @@ export async function POST(request) {
 
       // Промокод: оплату зараховуємо лише на ПЕРШОМУ платежі — знижка діє
       // один раз, а колбек приходить і на кожне поновлення.
+      let promoUse = null;
       if (!renewal && sub?.promo_code && sub?.telegram_chat_id) {
-        const use = await markPromoPaid(supabase, {
+        promoUse = await markPromoPaid(supabase, {
           code: sub.promo_code,
           chatId: sub.telegram_chat_id,
           orderReference: b.orderReference,
           amount: b.amount,
         });
-        if (use && MAIN_TOKEN && ADMIN_CHAT_ID) {
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
-            `💳 <b>Оплата за промокодом ${String(sub.promo_code).toUpperCase()}</b>\n`
-            + `${sub.telegram_handle || sub.telegram_chat_id} · ${b.amount} грн · джерело: ${use.source || '—'}`);
-        }
+      }
+
+      // Нова підписка — покупка, тож в адмін-чат (Марія, 07.10.2026: «покупки з
+      // сайту»). До цього дня адмінка чула лише оплати за промокодом, а звичайна
+      // оплата за 119 грн проходила мовчки. Поновлення не шлемо: це не нова
+      // покупка, а повторний колбек першого платежу теж читається як поновлення,
+      // тож дубля не буде.
+      if (!renewal && sub && MAIN_TOKEN && ADMIN_CHAT_ID) {
+        const period = { halfyear: 'пів року', yearly: 'рік' }[sub.billing_period] || 'місяць';
+        await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+          `💳 <b>Dityam+: нова підписка</b>\n`
+          + `${esc(sub.telegram_handle || sub.telegram_chat_id || '—')} · ${esc(b.amount)} грн · ${period}`
+          + (promoUse ? `\nПромокод ${esc(String(sub.promo_code).toUpperCase())} · джерело: ${esc(promoUse.source || '—')}` : ''));
       }
 
       if (sub?.telegram_chat_id && PLUS_TOKEN && !renewal) {

@@ -16,8 +16,6 @@ import { siteWideFailure, stillAhead, verdictForStatus } from '../lib/links.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const MAX_FAILURES = Number(process.env.MAX_FAILURES || 3);
 const CONCURRENCY = Number(process.env.CONCURRENCY || 10);
@@ -252,7 +250,8 @@ async function run() {
     console.log('  Сайти часто блокують саме IP GitHub Actions — перевір руками зі звичайної адреси.');
   }
 
-  if (heldOpen.length && TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_CHAT_ID && !DRY_RUN) {
+  // Обидва списки — лише в лозі прогону: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  if (heldOpen.length) {
     const text = [
       `🔗 Лінк не відповідає, але подача ще попереду — ${heldOpen.length} записів лишено активними:`,
       '',
@@ -260,14 +259,10 @@ async function run() {
       '',
       'Перевір адресу руками: сайти часто блокують саме IP GitHub Actions.',
     ].filter(Boolean).join('\n');
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_ADMIN_CHAT_ID, text, disable_web_page_preview: true }),
-    }).catch((e) => console.error('Telegram notify failed:', e.message));
+    console.log(`\n${text}`);
   }
 
-  if (newlyClosed.length && TELEGRAM_BOT_TOKEN && TELEGRAM_ADMIN_CHAT_ID && !DRY_RUN) {
+  if (newlyClosed.length) {
     const lines = newlyClosed.slice(0, 20).map(
       (r) => `• ${r.title.slice(0, 60)}\n  ${r.source_url}`,
     );
@@ -279,11 +274,7 @@ async function run() {
       '',
       'Сторінки лишились в індексі з плашкою «завершено». Якщо лінк живий — відкрий запис в адмінці й поверни active.',
     ].filter(Boolean).join('\n');
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: TELEGRAM_ADMIN_CHAT_ID, text, disable_web_page_preview: true }),
-    }).catch((e) => console.error('Telegram notify failed:', e.message));
+    console.log(`\n${text}`);
   }
 }
 

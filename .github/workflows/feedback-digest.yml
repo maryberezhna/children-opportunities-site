@@ -1,9 +1,8 @@
 name: Feedback digest — weekly summary to admin
 
 on:
-  schedule:
-    # Mondays at 09:00 Kyiv summer time (06:00 UTC)
-    - cron: '0 6 * * 1'
+  # Розклад знято: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  # Звіт лишається — за кнопкою Run workflow.
   workflow_dispatch:
     inputs:
       dry_run:

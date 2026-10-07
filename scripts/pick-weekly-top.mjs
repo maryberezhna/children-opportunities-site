@@ -16,7 +16,7 @@
  *   • три різні типи, якщо виходить: три олімпіади поспіль — не добірка.
  *
  * Env: NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
- *      TELEGRAM_BOT_TOKEN + TELEGRAM_ADMIN_CHAT_ID (звіт), DRY_RUN=true.
+ *      DRY_RUN=true (звіт — лише в лозі прогону, не в адмін-чат).
  */
 import { createClient } from '@supabase/supabase-js';
 import { isoWeek } from '../lib/week.js';
@@ -27,8 +27,6 @@ import { OLIMP_TOP } from '../lib/olimpiada.js';
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const DRY = String(process.env.DRY_RUN || '').toLowerCase() === 'true';
-const BOT = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT = process.env.TELEGRAM_ADMIN_CHAT_ID;
 
 if (!URL_ || !KEY) {
   console.error('Потрібні NEXT_PUBLIC_SUPABASE_URL і SUPABASE_SERVICE_ROLE_KEY');
@@ -36,19 +34,6 @@ if (!URL_ || !KEY) {
 }
 const sb = createClient(URL_, KEY, { auth: { persistSession: false } });
 
-const tg = async (text) => {
-  if (!BOT || !CHAT) return;
-  try {
-    await fetch(`https://api.telegram.org/bot${BOT}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT, text, parse_mode: 'HTML',
-                             disable_web_page_preview: true }),
-    });
-  } catch (e) {
-    console.error('telegram:', e.message);
-  }
-};
 
 async function main() {
   const week = isoWeek();
@@ -91,7 +76,7 @@ async function main() {
 
   if (!picked.length) {
     console.log('Кандидатів немає — позначку цього тижня не ставимо.');
-    await tg(`⭐ <b>Топ тижня ${week}</b>\n\nКандидатів немає: жодної безкоштовної можливості з дедлайном через ${MIN_DAYS}–${MAX_DAYS} днів.`);
+    console.log(`Кандидатів немає: жодної безкоштовної можливості з дедлайном через ${MIN_DAYS}–${MAX_DAYS} днів.`);
     return;
   }
 
@@ -129,7 +114,8 @@ async function main() {
     `${i + 1}. <a href="https://dityam.com.ua/o/${o.slug}">${cutTitle(o.title, 80)}</a>`
     + (o.featured_week === week ? ' — <i>твій вибір</i>' : ` — ${o.days} дн. до дедлайну`));
   const olimp = OLIMP_TOP.length ? '\n🧩 + Онлайн-олімпіада — перше місце в блоці на сайті.' : '';
-  await tg(`⭐ <b>Топ-3 тижня ${week}</b>\n\n${lines.join('\n')}${olimp}\n\nПеребити можна в адмінці: поле «Топ тижня».`);
+  // У чат не шлемо: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  console.log(`Топ-3 тижня ${week}:\n${lines.join('\n')}${olimp}`);
   console.log('\nЗаписано.');
 }
 

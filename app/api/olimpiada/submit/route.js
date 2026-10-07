@@ -3,8 +3,8 @@
 // час вийшов, браузер ще 2 хвилини показує табло «Відправити відповідь», а
 // потім здає роботу сам; після цього (плюс запас на мережу) не приймаємо.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
-import { OLIMP, scoreAnswers, levelFor, acceptUntil, monthKey, monthName, cleanOpenAnswer } from '@/lib/olimpiada';
-import { getStore, validToken, notifyAdmin, esc, json, loadKeys } from '@/lib/olimpiada-server';
+import { OLIMP, scoreAnswers, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
+import { getStore, validToken, json, loadKeys } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,10 +45,7 @@ export async function POST(request) {
     finished_at: now.toISOString(), answers, score, max_score: max, level: level.key, month_key: month,
     ...(open ? { open_answer: open, open_answer_at: now.toISOString() } : {}),
   });
-  await notifyAdmin(
-    `🧩 <b>Олімпіада: результат</b>\n${esc(entry.child_name)}${entry.child_age ? `, ${esc(entry.child_age)} р.` : ''}\n`
-    + `${score} з ${max} · ${esc(level.label)}${late ? ' · здано після часу' : ''}`
-    + (open ? `\n\n✍️ <b>Відкрите завдання (${esc(monthName(month))})</b>\n${esc(open)}` : '\n✍️ відкрите завдання не надіслано'),
-  );
+  // Результат кожного тесту в чат більше не шлемо: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+  // Бали й відкриті відповіді для журі — у /admin/metrics (lib/olimpiada-stats.js).
   return json({ ok: true });
 }

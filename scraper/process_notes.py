@@ -697,14 +697,10 @@ def _main() -> int:
             applied.append(note["body"])
             logger.info("Коментар до «%s»: %s", o.get("title"), closing["resolution"])
 
-        if applied and ADMIN_CHAT_ID:
-            tg("sendMessage", {
-                "chat_id": ADMIN_CHAT_ID,
-                "text": candidate_card(record, "\n".join(f"— {b}" for b in applied)),
-                "parse_mode": "HTML",
-                "disable_web_page_preview": True,
-                "reply_markup": keyboard(record),
-            })
+        # Картку «коментар застосовано» в чат більше не шлемо: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
+        # Якщо коментар застосувати не вдалось — про це повідомлення лишається.
+        if applied:
+            logger.info("Застосовано до «%s»: %s", record.get("title"), "; ".join(applied))
 
     logger.info("Готово: застосовано коментарів %d, записів у роботі %d, помилок %d",
                 done, len(ids), errors)
