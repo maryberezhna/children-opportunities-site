@@ -1,9 +1,11 @@
 """Листи батькам від онлайн-олімпіади: запрошення після оплати й диплом після тесту.
 
 Марія, 05.10.2026: «на вказаний імейл прийде запрошення до тесту» і «є 72
-години до проходження». Сайт листів не шле (на Vercel немає поштових ключів),
-тому запрошення надсилає цей скрипт із GitHub Actions — з пошти проєкту, а не
-з особистої. Запис позначається `invite_sent_at`, тож двічі лист не піде.
+години до проходження». З 07.10.2026 запрошення шле сам сайт у мить оплати
+(lib/olimpiada-mail.js) — розклад GitHub запізнюється на 3–7 годин. Цей
+скрипт лишається запасним шляхом для запрошень (сайт не зміг надіслати) і
+єдиним — для дипломів. Запис «бронюється» через `invite_sent_at` лише там, де
+його ще немає, тож сайт і скрипт не пошлють двох листів.
 
 Env:
   SUPABASE_URL, SUPABASE_SERVICE_KEY
@@ -13,6 +15,7 @@ Env:
   python olimpiada_invites.py            # надіслати всім, хто чекає (запрошення й дипломи)
   python olimpiada_invites.py --dry-run  # лише показати, кому пішло б
   python olimpiada_invites.py --check    # лише перевірити вхід у пошту
+  python olimpiada_invites.py --test-email адреса  # пробне запрошення (демо-запис, база не потрібна)
 """
 import argparse
 import html
@@ -92,8 +95,12 @@ def build_message(entry: dict):
         "останнє завдання — відкрите: без варіантів, дитина пише свою відповідь; воно вирішує, "
         "хто отримає приз місяця;",
         "коли час вийде, буде ще 2 хвилини, щоб дописати й відправити відповіді, — потім вони відправляться самі;",
-        "диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням його можна отримати Новою поштою "
-        f"— додатково {PRINT_PRICE} грн;",
+        # Оплатили разом із друкованим дипломом (249 грн) — вдруге не пропонуємо.
+        ("диплом зʼявиться на тій самій сторінці одразу після тесту; друкований диплом ви вже оплатили — "
+         "адресу доставки Новою поштою вкажете там само;")
+        if entry.get("print_paid_at") else
+        ("диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням його можна отримати Новою поштою "
+         f"— додатково {PRINT_PRICE} грн;"),
         f"переможців місяця оголосимо до 7-го числа наступного місяця; якщо {name} виграє, повідомимо вас "
         "окремим листом на цю адресу.",
     ]
@@ -240,7 +247,22 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--check", action="store_true", help="лише перевірити вхід у пошту")
+    ap.add_argument("--test-email", default="", help="надіслати пробне запрошення на цю адресу")
     args = ap.parse_args()
+
+    if args.test_email:
+        # Перевірка доставки на ukr.net, i.ua, Outlook тощо: той самий лист,
+        # що отримають батьки, але з демо-записом і без бази.
+        if not PASSWORD:
+            logger.error("DITYAM_GMAIL_APP_PASSWORD не задано")
+            return 1
+        demo = {"token": "0" * 32, "child_name": "Марк Петренко", "parent_email": args.test_email,
+                "paid_at": datetime.now(timezone.utc).isoformat()}
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
+            smtp.login(FROM, PASSWORD)
+            smtp.sendmail(FROM, [args.test_email], make_email(demo).as_string())
+        logger.info("Пробне запрошення надіслано")
+        return 0
 
     if args.check:
         if not PASSWORD:
@@ -285,15 +307,21 @@ def main() -> int:
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as smtp:
         smtp.login(FROM, PASSWORD)
         for r in todo:
+            # «Бронюємо» запис: якщо сайт уже надіслав запрошення (або шле
+            # його саме зараз), оновлення нічого не змінить — і ми не шлемо.
+            claimed = (client.table("olimpiada_entries").update(
+                {"invite_sent_at": datetime.now(timezone.utc).isoformat()}
+            ).eq("id", r["id"]).is_("invite_sent_at", "null").execute().data or [])
+            if not claimed:
+                logger.info("Запрошення вже надіслав сайт: %s", r.get("parent_email"))
+                continue
             try:
                 smtp.sendmail(FROM, [r["parent_email"]], make_email(r).as_string())
-                client.table("olimpiada_entries").update(
-                    {"invite_sent_at": datetime.now(timezone.utc).isoformat()}
-                ).eq("id", r["id"]).execute()
                 logger.info("Надіслано: %s", r.get("parent_email"))
             except Exception:
                 failed += 1
                 logger.exception("Не вдалося надіслати: %s", r.get("parent_email"))
+                client.table("olimpiada_entries").update({"invite_sent_at": None}).eq("id", r["id"]).execute()
         for r in diplomas:
             try:
                 png = fetch_diploma(r)

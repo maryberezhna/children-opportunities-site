@@ -1,7 +1,7 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
-import { getStore, validToken } from '@/lib/olimpiada-server';
+import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, isBundle, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
+import { getStore, validToken, syncPayment, syncPrint } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
 import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
@@ -47,7 +47,14 @@ function Message({ title, children }) {
 export default async function TestPage({ searchParams }) {
   const t = searchParams?.t;
   const store = validToken(t) ? getStore() : null;
-  const entry = store ? await store.get(t).catch(() => null) : null;
+  let entry = store ? await store.get(t).catch(() => null) : null;
+  // Оплату ще не підтверджено — питаємо WayForPay самі, не чекаючи колбека.
+  let payState = 'paid';
+  if (entry && !entry.paid_at) {
+    const sync = await syncPayment(store, entry).catch(() => ({ entry, state: 'pending' }));
+    entry = sync.entry;
+    payState = sync.state;
+  }
 
   if (!entry) {
     return (
@@ -60,8 +67,13 @@ export default async function TestPage({ searchParams }) {
 
   if (!entry.paid_at) {
     return (
-      <Message title="Чекаємо підтвердження оплати">
-        <WaitPayment failed={Boolean(entry.wfp_last_status)} email={EMAIL} />
+      <Message title={payState === 'pending' ? 'Чекаємо підтвердження оплати' : 'Оплату не завершено'}>
+        <WaitPayment
+          token={entry.token}
+          state={payState}
+          email={EMAIL}
+          price={isBundle(entry) ? OLIMP.bundlePrice : OLIMP.price}
+        />
       </Message>
     );
   }
@@ -91,11 +103,16 @@ export default async function TestPage({ searchParams }) {
           openTask={OPEN_TASK}
           openArt={OPEN_TASK_ART}
           until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
+          email={entry.parent_email}
+          invited={Boolean(entry.invite_sent_at)}
         />
       </Shell>
     );
   }
 
+  // Доставку диплома оплачували окремим рахунком — звіряємо так само.
+  const print = await syncPrint(store, entry).catch(() => ({ entry, pending: false }));
+  entry = print.entry;
   const level = levelByKey(entry.level);
   const diploma = `/api/olimpiada/diploma?t=${entry.token}&v=${DIPLOMA_VERSION}`;
   const month = monthName(entry.month_key || monthKey());
@@ -139,7 +156,7 @@ export default async function TestPage({ searchParams }) {
             <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
           </>
         )}
-        <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
+        <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} pending={print.pending} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
       </div>
 
       <div className="ol-result ol-result-share">
