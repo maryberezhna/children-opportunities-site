@@ -30,3 +30,30 @@ test('три колонки: блок стає перед двома картк�
 test('два блоки поспіль обидва стають перед неповним рядком', () => {
   assert.deepEqual(packFullRows(['a', 'G1', 'G2', 'b'], full), ['G1', 'G2', 'a', 'b']);
 });
+
+// «Чому тут пусто» (Марія, 07.10.2026): перед «Показати ще» лишалась самотня
+// картка, бо ліміт рахував і групу олімпіад на весь рядок.
+const { fillLastRow } = await import('../lib/grid-rows.js');
+const isGroup = (e) => e.startsWith('G');
+
+test('ліміт добирає картку, коли група забрала місце', () => {
+  const entries = ['a', 'G', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+  // 6 записів = група + 5 карток → додаємо шосту картку.
+  assert.equal(fillLastRow(entries, 6, isGroup, 2), 7);
+});
+
+test('рядок і так повний — ліміт не змінюється', () => {
+  assert.equal(fillLastRow(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 6, isGroup, 2), 6);
+});
+
+test('три колонки: добирає до кратного трьом', () => {
+  assert.equal(fillLastRow(['a', 'G', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], 6, isGroup, 3), 7);
+  assert.equal(fillLastRow(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'], 4, isGroup, 3), 6);
+});
+
+test('кінець списку й одна колонка — без змін', () => {
+  assert.equal(fillLastRow(['a', 'G', 'b'], 6, isGroup, 2), 3);
+  assert.equal(fillLastRow(['a', 'G', 'b', 'c', 'd', 'e', 'f'], 6, isGroup, 1), 6);
+  // Записів бракує, щоб заповнити рядок, — показуємо все, що є.
+  assert.equal(fillLastRow(['a', 'G', 'b', 'c', 'd', 'e', 'G2'], 6, isGroup, 2), 7);
+});
