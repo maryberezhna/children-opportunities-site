@@ -7,6 +7,7 @@ import TestRunner from './TestRunner';
 import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
+import OpenTaskLate from './OpenTaskLate';
 import ShareDiploma from './ShareDiploma';
 import DiplomaImage from './DiplomaImage';
 
@@ -99,7 +100,6 @@ export default async function TestPage({ searchParams }) {
           started={Boolean(entry.started_at)}
           count={OLIMP.questionCount}
           minutes={OLIMP.minutes}
-          overtime={OLIMP.overtimeSeconds}
           openTask={OPEN_TASK}
           openArt={OPEN_TASK_ART}
           until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
@@ -163,8 +163,9 @@ export default async function TestPage({ searchParams }) {
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
 
-      {/* Відкрите завдання — частина самого тесту (у тих самих хвилинах), тож
-          тут лише показуємо, що журі отримало. */}
+      {/* Відкрите завдання — останній крок тесту, без таймера (07.10.2026). Тут
+          показуємо, що журі отримало, а якщо дитина його пропустила чи закрила
+          вкладку на цьому кроці — даємо дописати. */}
       <div className="ol-panel ol-open">
         <p className="ol-kicker">Відкрите завдання · приз місяця: {month}</p>
         <h2 className="ol-h2">{OPEN_TASK.title}</h2>
@@ -177,7 +178,14 @@ export default async function TestPage({ searchParams }) {
             <blockquote className="ol-quote">{entry.open_answer}</blockquote>
           </>
         ) : (
-          <p className="ol-text">Відкрите завдання не надіслано, тож цього разу без участі в конкурсі на приз місяця. Диплом від цього не залежить.</p>
+          <>
+            <p className="ol-text">
+              Відповідь ще не надіслано — її можна дописати тут, таймера немає. Саме за відкритим завданням журі обирає призерів місяця. Диплом від цього не залежить.
+            </p>
+            {OPEN_TASK_ART && <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: OPEN_TASK_ART }} />}
+            <p className="ol-text">{OPEN_TASK.text}</p>
+            <OpenTaskLate token={entry.token} maxLength={OPEN_TASK.maxLength} />
+          </>
         )}
       </div>
 
