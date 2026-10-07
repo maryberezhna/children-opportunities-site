@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { parseContact } from '@/lib/contactAddress';
+import { readExtras, extrasProblem, extrasLines } from '@/lib/suggestExtras';
 
 // Рядок-позначка в коментарі пропозиції: людина попросила умови реклами.
 const ADS_MARK = '💼 Хоче ознайомитися з рекламними розміщеннями';
@@ -39,11 +40,18 @@ export async function POST(request) {
     return Response.json({ ok: false, error: 'contact' }, { status: 400 });
   }
   const contact = parsed.value;
+  // Вік і дати (07.10.2026) — і на сервері: боти шлють POST напряму.
+  const extras = readExtras(b);
+  const extrasErr = extrasProblem(extras);
+  if (extrasErr) {
+    return Response.json({ ok: false, error: extrasErr }, { status: 400 });
+  }
   // Галочка «Хочу ознайомитися з рекламними розміщеннями» (07.10.2026).
   // Окремої колонки немає: позначка лягає рядком у коментар — його бачать і
   // «Звернення», і сповіщення адміну.
   const wantsAds = b.ads === true;
-  const storedComment = [comment, wantsAds ? ADS_MARK : null].filter(Boolean).join('\n\n');
+  const storedComment = [comment, extrasLines(extras).join('\n'), wantsAds ? ADS_MARK : null]
+    .filter(Boolean).join('\n\n');
 
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -70,6 +78,7 @@ export async function POST(request) {
       `<b>${esc(title || url)}</b>`,
       url ? esc(url) : null,
       comment ? `\n${esc(comment)}` : null,
+      `\n${esc(extrasLines(extras).join('\n'))}`,
       contact ? `\nКонтакт: ${esc(contact)}` : null,
       wantsAds ? `\n${ADS_MARK}` : null,
     ].filter(Boolean);

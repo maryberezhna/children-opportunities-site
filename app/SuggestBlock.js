@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { parseContact } from '@/lib/contactAddress';
+import { readExtras, extrasProblem } from '@/lib/suggestExtras';
 
 /**
  * «Маєте можливість? Напишіть нам — і ми її опублікуємо».
@@ -34,6 +35,16 @@ const L = {
     contactPlaceholder: '@telegram або email',
     contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
     ads: 'Хочу ознайомитися з рекламними розміщеннями на Dityam.com.ua',
+    ageLabel: 'Вік учасників',
+    ageFrom: 'від',
+    ageTo: 'до',
+    whenLabel: 'Коли',
+    start: 'Початок',
+    end: 'Кінець',
+    always: 'Можливість доступна завжди',
+    required: 'обовʼязково',
+    ageErr: 'Вкажіть вік учасників: від, до або обидва.',
+    datesErr: 'Вкажіть дату початку або кінця — або відмітьте «Можливість доступна завжди».',
     error: 'Додайте назву або посилання — інакше нам нема що перевіряти.',
     sending: 'Надсилаємо…',
     submit: 'Надіслати',
@@ -60,17 +71,32 @@ const L = {
     contactPlaceholder: '@telegram or email',
     contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
     ads: 'I’d like to learn about advertising placements on Dityam.com.ua',
+    ageLabel: 'Participants’ age',
+    ageFrom: 'from',
+    ageTo: 'to',
+    whenLabel: 'When',
+    start: 'Start',
+    end: 'End',
+    always: 'Always available',
+    required: 'required',
+    ageErr: 'Enter the participants’ age: from, to or both.',
+    datesErr: 'Enter a start or end date — or tick “Always available”.',
     error: 'Add a name or a link — otherwise there’s nothing for us to check.',
     sending: 'Sending…',
     submit: 'Send',
   },
 };
 
+const EMPTY = {
+  title: '', url: '', comment: '', contact: '', website: '', ads: false,
+  ageFrom: '', ageTo: '', start: '', end: '', always: false,
+};
+
 export default function SuggestBlock({ lang = 'uk' } = {}) {
   const t = L[lang] || L.uk;
   const [open, setOpen] = useState(false);
   const [state, setState] = useState('idle'); // idle | sending | done | error
-  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
+  const [form, setForm] = useState(EMPTY);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -96,6 +122,13 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
     e.preventDefault();
     if (form.title.trim().length < 5 && !form.url.trim()) {
       setState('error');
+      return;
+    }
+    // Вік і дати (07.10.2026): вік — хоч одна межа, дати — початок або
+    // кінець, або «доступна завжди» (lib/suggestExtras.js).
+    const problem = extrasProblem(readExtras(form));
+    if (problem) {
+      setState(problem);
       return;
     }
     // Контакт обовʼязковий (Марія, 07.10.2026): треба знати, хто пише. І лише
@@ -126,7 +159,7 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
     setOpen(false);
     // Після успішної відправки наступне відкриття — з чистою формою.
     if (state === 'done') {
-      setForm({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
+      setForm(EMPTY);
       setState('idle');
     }
   };
@@ -183,6 +216,43 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
                   />
                 </label>
 
+                <div className="suggest-label">
+                  {t.ageLabel} <span className="suggest-opt">{t.required}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <label className="suggest-label" style={{ margin: 0 }}>
+                      <input type="number" inputMode="numeric" min={0} max={99} placeholder={t.ageFrom}
+                        aria-label={`${t.ageLabel}: ${t.ageFrom}`} value={form.ageFrom} onChange={set('ageFrom')} />
+                    </label>
+                    <label className="suggest-label" style={{ margin: 0 }}>
+                      <input type="number" inputMode="numeric" min={0} max={99} placeholder={t.ageTo}
+                        aria-label={`${t.ageLabel}: ${t.ageTo}`} value={form.ageTo} onChange={set('ageTo')} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="suggest-label">
+                  {t.whenLabel} <span className="suggest-opt">{t.required}</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                    <label className="suggest-label" style={{ margin: 0, fontWeight: 400 }}>
+                      <span className="suggest-opt">{t.start}</span>
+                      <input type="date" value={form.start} onChange={set('start')} disabled={form.always} />
+                    </label>
+                    <label className="suggest-label" style={{ margin: 0, fontWeight: 400 }}>
+                      <span className="suggest-opt">{t.end}</span>
+                      <input type="date" value={form.end} onChange={set('end')} disabled={form.always} />
+                    </label>
+                  </div>
+                </div>
+
+                <label className="v2-check" style={{ marginBottom: 14, fontSize: '0.875rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.always}
+                    onChange={(e) => setForm((f) => ({ ...f, always: e.target.checked }))}
+                  />
+                  <span>{t.always}</span>
+                </label>
+
                 <label className="suggest-label">
                   {t.aboutLabel} <span className="suggest-opt">{t.optional}</span>
                   <textarea
@@ -228,9 +298,9 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
                   aria-hidden="true"
                 />
 
-                {(state === 'error' || state === 'contact') && (
+                {['error', 'contact', 'age', 'dates'].includes(state) && (
                   <p className="suggest-error">
-                    {state === 'contact' ? t.contactErr : t.error}
+                    {{ contact: t.contactErr, age: t.ageErr, dates: t.datesErr }[state] || t.error}
                   </p>
                 )}
 
