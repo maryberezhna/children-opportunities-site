@@ -23,9 +23,9 @@ on:
         required: false
         default: 'false'
       limit:
-        description: 'скільки планових перевірок за прогін'
+        description: 'скільки перевірок за прогін (вільні місця беруть ще не перечитані)'
         required: false
-        default: '30'
+        default: '60'
       ids:
         description: 'id записів через кому — перечитати саме їх зараз (порожньо = за розкладом)'
         required: false
@@ -57,6 +57,6 @@ jobs:
           # За розкладом — пишемо; вручну — лише якщо попросили dry_run=false.
           DRY_RUN: ${{ github.event_name == 'schedule' && 'false' || github.event.inputs.dry_run }}
           BOOTSTRAP: ${{ github.event.inputs.bootstrap || 'false' }}
-          LIFECYCLE_LIMIT: ${{ github.event.inputs.limit || '30' }}
+          LIFECYCLE_LIMIT: ${{ github.event.inputs.limit || '60' }}
           LIFECYCLE_IDS: ${{ github.event.inputs.ids || '' }}
         run: python lifecycle.py

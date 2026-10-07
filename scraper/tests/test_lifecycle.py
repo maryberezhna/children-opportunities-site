@@ -11,7 +11,8 @@ from datetime import date
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from lifecycle import (  # noqa: E402
-    MANUAL_MARK, PAGE_CHARS, decide_check, focus_text, plan_bootstrap, plan_close, plan_unreadable,
+    MANUAL_MARK, PAGE_CHARS, UNREADABLE_MARK, decide_check, focus_text, pick_spare, plan_bootstrap,
+    plan_close, plan_unreadable,
 )
 
 TODAY = date(2026, 9, 17)
@@ -73,6 +74,17 @@ class FocusText(unittest.TestCase):
         self.assertEqual(focus_text(page), page[:PAGE_CHARS])
 
 
+class SpareSlots(unittest.TestCase):
+    def test_fills_free_slots_skipping_due_and_unreadable(self):
+        rows = [{"id": "a"}, {"id": "b", "admin_comment": f"… {UNREADABLE_MARK} …"},
+                {"id": "c", "admin_comment": MANUAL_MARK}, {"id": "d"}, {"id": "e"}]
+        picked = pick_spare(rows, {"a"}, 2)
+        self.assertEqual([r["id"] for r in picked], ["d", "e"])
+
+    def test_no_free_slots_no_extra(self):
+        self.assertEqual(pick_spare([{"id": "x"}], set(), 0), [])
+
+
 class ConfirmAfterClose(unittest.TestCase):
     """Друга половина plan_close: що вирішує перечитування за 2 дні."""
 
@@ -92,6 +104,20 @@ class ConfirmAfterClose(unittest.TestCase):
         self.assertNotIn("status", one)
         per = decide_check(self.just_closed_row("periodic"), out, "текст", TODAY)
         self.assertEqual(per["recheck_at"], "2027-08-01")
+
+    def test_open_without_a_new_date_goes_to_the_queue(self):
+        # Вистави, заняття з вільним записом: закрились через одну дату, а
+        # сторінка каже, що набір триває. Не мовчати й не вигадувати дату.
+        r = row(status="closed", timing_kind="one_time", deadline="2026-08-20")
+        patch = decide_check(r, {"state": "open", "evidence": "Запис триває"}, "Запис триває", TODAY)
+        self.assertEqual(patch["status"], "draft")
+        self.assertIsNone(patch["recheck_at"])
+        self.assertIn("набір триває", patch["admin_comment"])
+
+    def test_open_without_date_long_closed_is_not_queued(self):
+        r = row(status="closed", timing_kind="periodic", deadline="2025-10-30")
+        patch = decide_check(r, {"state": "open", "evidence": "x"}, "x", TODAY)
+        self.assertNotIn("status", patch)
 
     def test_old_closed_record_still_retries_in_two_weeks(self):
         # Сезонна перевірка давно закритого запису — як і раніше, RETRY_DAYS.

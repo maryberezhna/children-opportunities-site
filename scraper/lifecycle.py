@@ -219,15 +219,42 @@ def plan_close(row: dict, today: date) -> dict | None:
             "admin_comment": _with_trace(row, note)}
 
 
-def just_closed(row: dict, today: date) -> bool:
-    """Остання дата запису минула щойно — це перевірка після закриття за датою,
-    а не сезонна. Чиста функція — під тести."""
+# Сторінка нещодавно закритого запису каже «набір триває», а нової дати не
+# дає — людині в чергу, якщо закрито не раніше ніж 60 днів тому.
+REVIEW_AFTER_CLOSE_DAYS = 60
+
+
+def just_closed(row: dict, today: date, days: int = JUST_CLOSED_DAYS) -> bool:
+    """Остання дата запису минула щойно (за days днів) — це перевірка після
+    закриття за датою, а не сезонна. Чиста функція — під тести."""
     dates = [str(d)[:10] for d in (row.get("deadline"), row.get("event_start_date"),
                                    row.get("event_end_date")) if d]
     if not dates:
         return False
     last = max(dates)
-    return (today - timedelta(days=JUST_CLOSED_DAYS)).isoformat() <= last < today.isoformat()
+    return (today - timedelta(days=days)).isoformat() <= last < today.isoformat()
+
+
+def pick_spare(rows: list[dict], due_ids: set, n: int) -> list[dict]:
+    """Ким заповнити вільні місця щоденного ліміту. Чиста функція — під тести.
+
+    582 з 761 активних записів (07.10.2026) не мають дат — гуртки, виплати,
+    допомога. Самі вони не минають, а зникнути можуть тихо, і 371 з них ще
+    жодного разу не перечитували: перші перевірки розкладено до грудня. Коли
+    на сьогодні запланованих менше за ліміт, решту місць беремо з таких
+    записів — найближчих за розкладом. Сайти, що не пускають робота, не
+    беремо: їхній ритм веде plan_unreadable, щоденні спроби його зламали б."""
+    out: list[dict] = []
+    if n <= 0:
+        return out
+    for r in rows:
+        comment = r.get("admin_comment") or ""
+        if r["id"] in due_ids or UNREADABLE_MARK in comment or MANUAL_MARK in comment:
+            continue
+        out.append(r)
+        if len(out) >= n:
+            break
+    return out
 
 
 # ── B. Планова перевірка ────────────────────────────────────────────────────
@@ -353,7 +380,18 @@ def decide_check(row: dict, out: dict, page: str, today: date,
         # unclear, або «open» без жодної майбутньої дати в цитаті.
         days = UNKNOWN_RECHECK_DAYS if row.get("status") == "active" else RETRY_DAYS
         recheck = today + timedelta(days=days)
-        if row.get("status") == "closed" and just_closed(row, today):
+        review = (row.get("status") == "closed" and state == "open"
+                  and just_closed(row, today, REVIEW_AFTER_CLOSE_DAYS))
+        if review:
+            # Сторінка каже «набір триває», а нової дати не дає. Так буває з
+            # постійними програмами, що закрились через одну дату (вистави,
+            # заняття з вільним записом): мовчки лишити закритим — загубити
+            # живе, відкрити без дати — вигадати. Тому — людині в чергу
+            # (Марія, 07.10.2026: «так»; разова перевірка 37 закритих знайшла
+            # 15 таких).
+            recheck = None
+            patch["status"] = "draft"
+        elif row.get("status") == "closed" and just_closed(row, today):
             # Перевірка-підтвердження після закриття за датою (plan_close) не
             # знайшла подовження — далі як до неї: одноразова більше не
             # перевіряється, періодична — перед наступним сезоном. Інакше
@@ -362,8 +400,12 @@ def decide_check(row: dict, out: dict, page: str, today: date,
             dates = [row.get("deadline"), row.get("event_start_date"), row.get("event_end_date")]
             recheck = recheck_after_close(kind, months, dates, today)
         patch["recheck_at"] = recheck.isoformat() if recheck else None
-        note = (f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}" if recheck
-                else f"стан не зрозумілий, подовження не видно — більше не перевіряємо: {quote}")
+        if review:
+            note = f"після закриття сторінка каже, що набір триває, а нової дати немає — перевір: {quote}"
+        elif recheck:
+            note = f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}"
+        else:
+            note = f"стан не зрозумілий, подовження не видно — більше не перевіряємо: {quote}"
 
     # Дата змістової перевірки — окремо від пінга лінка (last_verified_at):
     # на сторінці можливості «Перевірено» має означати, що хтось справді читав
@@ -645,6 +687,16 @@ def _main() -> int:
                .execute().data or [])
         logger.info("\nB. Планова перевірка: %d записів на сьогодні (ліміт %d)%s",
                     len(due), args.limit, dry)
+        spare = args.limit - len(due)
+        if spare > 0:
+            never = (db.table("opportunities").select(SELECT)
+                     .eq("status", "active").is_("canonical_slug", "null")
+                     .is_("content_checked_at", "null").gt("recheck_at", iso)
+                     .order("recheck_at").limit(spare * 3).execute().data or [])
+            extra = pick_spare(never, {r["id"] for r in due}, spare)
+            if extra:
+                logger.info("   + %d ще жодного разу не перечитаних (вільні місця ліміту)", len(extra))
+                due += extra
     if due:
         if not os.environ.get("ANTHROPIC_API_KEY"):
             logger.error("Немає ANTHROPIC_API_KEY")
