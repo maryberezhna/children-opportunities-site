@@ -28,7 +28,6 @@ const L = {
     namePlaceholder: 'Напр., Безкоштовний табір робототехніки',
     linkLabel: 'Посилання',
     aboutLabel: 'Кілька слів про неї',
-    optional: 'необовʼязково',
     aboutPlaceholder: 'Для кого, коли, що треба для участі',
     contactLabel: 'Ваш контакт',
     contactHint: 'обовʼязково',
@@ -64,7 +63,6 @@ const L = {
     namePlaceholder: 'e.g. Free robotics camp',
     linkLabel: 'Link',
     aboutLabel: 'A few words about it',
-    optional: 'optional',
     aboutPlaceholder: 'Who it’s for, when, what’s needed to take part',
     contactLabel: 'Your contact',
     contactHint: 'required',
@@ -254,7 +252,7 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
                 </label>
 
                 <label className="suggest-label">
-                  {t.aboutLabel} <span className="suggest-opt">{t.optional}</span>
+                  {t.aboutLabel}
                   <textarea
                     value={form.comment}
                     onChange={set('comment')}

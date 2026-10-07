@@ -33,7 +33,6 @@ const T = {
     namePh: 'Напр., Безкоштовний табір робототехніки',
     link: 'Посилання',
     note: 'Кілька слів про неї',
-    noteOpt: "необов'язково",
     notePh: 'Для кого, коли, що треба для участі',
     contact: 'Ваш контакт',
     contactOpt: 'обовʼязково',
@@ -64,7 +63,6 @@ const T = {
     namePh: 'E.g., Free robotics camp',
     link: 'Link',
     note: 'A few words about it',
-    noteOpt: 'optional',
     notePh: 'Who it is for, when, what is needed',
     contact: 'Your contact',
     contactOpt: 'required',
@@ -238,7 +236,7 @@ export default function SuggestModal({ lang = 'uk' }) {
               <span>{t.always}</span>
             </label>
             <div className="v2-field">
-              <label htmlFor="sg-note">{t.note} <span>{t.noteOpt}</span></label>
+              <label htmlFor="sg-note">{t.note}</label>
               <textarea id="sg-note" rows={4} placeholder={t.notePh} value={form.comment} onChange={set('comment')} />
             </div>
             <div className="v2-field">
