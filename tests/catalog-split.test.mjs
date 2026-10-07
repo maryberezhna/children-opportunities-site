@@ -85,3 +85,16 @@ test('список не рахує пошук без текстів і не ка
   assert.match(list, /searchPending \? \(\s*<div className="v2-empty" aria-live="polite">/);
   assert.match(list, /className="card card-skel"/, 'картка без текстів має малюватись заглушкою');
 });
+
+// Марія, 07.10.2026: лекція без дедлайну, але з датою події, сиділа в «Без
+// дедлайну». Фільтр бере дедлайн, а без нього — дату події.
+test('фільтр «Дедлайн» без дедлайну дивиться на дату події', async () => {
+  const { filterDays } = await import('../lib/timing.js');
+  assert.equal(filterDays({ deadline: '2026-10-10' }, TODAY), 3);
+  assert.equal(filterDays({ event_start_date: '2026-10-07', event_end_date: '2026-10-07' }, TODAY), 0);
+  assert.equal(filterDays({ event_start_date: '2026-10-20' }, TODAY), 13);
+  assert.equal(filterDays({ event_start_date: '2026-10-01', event_end_date: '2026-10-30' }, TODAY), null, 'подія, що вже йде, — не «цього тижня»');
+  assert.equal(filterDays({ event_start_date: '2026-09-01', event_end_date: '2026-09-02' }, TODAY), null);
+  assert.equal(filterDays({}, TODAY), null);
+  assert.match(read('app/OpportunitiesList.js'), /const days = filterDays\(item, todayIso\);\n      if \(s\.deadline === 'none'\)/);
+});

@@ -2,7 +2,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
-import { whenRank, whenState } from '@/lib/timing';
+import { whenRank, whenState, filterDays } from '@/lib/timing';
 import { cityLabel, itemFormatLabel } from '@/lib/labels';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { trackSearch, trackFilterApply, filterSignature, trackConversion, trackSubscribeClick } from '@/lib/track';
@@ -338,7 +338,8 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
     age: (item) => anyOf(s.age, (v) => ageMatches(item, v)),
     deadline: (item) => {
       if (s.deadline === 'all') return true;
-      const days = daysUntil(item.deadline, todayIso);
+      // Дедлайн, а без нього — дата події (lib/timing.js filterDays).
+      const days = filterDays(item, todayIso);
       if (s.deadline === 'none') return days === null;
       if (s.deadline === 'week') return days !== null && days >= 0 && days <= 7;
       if (s.deadline === 'month') return days !== null && days >= 0 && days <= 31;
@@ -773,7 +774,7 @@ export default function OpportunitiesList({
     {
       const items = candidates('deadline');
       for (const item of items) {
-        const days = daysUntil(item.deadline, todayIso);
+        const days = filterDays(item, todayIso);
         if (days === null) deadlines.add('none');
         else {
           if (days >= 0 && days <= 7) deadlines.add('week');
