@@ -461,3 +461,14 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-pay-choice { display: flex; flex-direction: column; gap: 10px; }
 .ol-btn-print { flex-direction: column; gap: 2px; height: auto; min-height: 56px; padding-top: 10px; padding-bottom: 10px; }
 .ol-btn-print small { font-size: 13px; font-weight: 500; opacity: .85; }
+
+/* Цифри платформи під першим екраном (Марія, 07.10.2026: «додамо більше статистики»). */
+.ol-proof { list-style: none; margin: 44px 0 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.ol-proof li { display: flex; flex-direction: column; gap: 6px; padding: 18px 20px; border-radius: 22px; background: #eef4ff; border: 2px solid #c9d8ff; }
+.ol-proof b { font-size: 40px; font-weight: 700; line-height: 1; color: var(--ol-blue-deep); }
+.ol-proof span { font-size: 15px; font-weight: 500; line-height: 1.45; color: #2c4a9a; }
+@media (max-width: 860px) {
+  .ol-proof { grid-template-columns: 1fr; gap: 10px; margin-top: 32px; }
+  .ol-proof li { flex-direction: row; align-items: center; gap: 14px; padding: 14px 16px; }
+  .ol-proof b { flex: 0 0 auto; min-width: 104px; font-size: 30px; }
+}

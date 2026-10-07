@@ -145,3 +145,18 @@ test('2 варіанти оплати: 150 грн або 249 з друкован
   assert.equal(s.bundles, 1);
   assert.equal(s.prints, 2);
 });
+
+test('сторінка олімпіади: цінність і справжні цифри замість формальностей', async () => {
+  const page = read('app/olimpiada/page.js');
+  assert.ok(!page.includes('Диплом з іменем дитини — одразу після тесту й на email'));
+  assert.ok(!page.includes('1 лист, щойно стартуємо'));
+  // Одне число можливостей на весь сайт — з liveStats, як на головній.
+  assert.match(page, /countActiveOpportunities\(\)/);
+  assert.match(page, /className="ol-proof"/);
+  const { AUDIENCE_MONTHLY } = await import('../lib/olimpiada.js');
+  assert.equal(AUDIENCE_MONTHLY, '2 000+');
+  assert.match(read('lib/olimpiada.js'), /вересень 2026 — 2 245/, 'джерело цифри записане поруч');
+  const { PLUS_PRICE_MONTH } = await import('../lib/plus.js');
+  assert.equal(PLUS_PRICE_MONTH, 119);
+  assert.doesNotMatch(page, /Dityam\+ —/, '«Dityam+ —» читається як «плюс мінус»');
+});

@@ -1,6 +1,8 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
+import { PLUS_PRICE_MONTH } from '@/lib/plus';
+import { countActiveOpportunities, FALLBACK } from '@/lib/supabase';
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
@@ -53,7 +55,7 @@ const FACTS = [
 
 const GETS = [
   { title: 'Диплом одразу', text: 'З іменем дитини, балами й рівнем. Готовий, щойно дитина завершила тест: можна зберегти, надрукувати чи отримати в Telegram.' },
-  { title: `Dityam+ на ${OLIMP.giftDays} днів`, text: 'Особиста добірка можливостей у Telegram під вік та інтереси дитини й нагадування про дедлайни.' },
+  { title: `Dityam+ на ${OLIMP.giftDays} днів`, text: `Особиста добірка можливостей у Telegram під вік та інтереси дитини й нагадування про дедлайни. Звичайна ціна — ${PLUS_PRICE_MONTH} грн на місяць, учасникам — у подарунок.` },
   { title: 'Шанс на приз місяця', text: 'Останнє завдання олімпіади — відкрите. Саме воно вирішує, хто отримає приз місяця: журі обирає 3 найкращі відповіді.' },
 ];
 
@@ -165,7 +167,16 @@ function Cta({ note, light = false, at }) {
   );
 }
 
-export default function OlimpiadaPage() {
+// Підписи під кнопками-закликами — про те, за що батьки платять, а не про
+// формальності (Марія, 07.10.2026: «Диплом з іменем дитини — одразу після
+// тесту й на email — ти думаєш, це та цінність, за яку батьки хочуть платити?»).
+const NOTE_GIFT = `Місяць Dityam+ за ${PLUS_PRICE_MONTH} грн — у подарунок кожному учаснику`;
+const NOTE_NEXT = 'Після тесту — місяць особистої добірки можливостей під вік та інтереси дитини';
+const NOTE_AUDIENCE = `${AUDIENCE_MONTHLY} батьків і підлітків щомісяця шукають можливості на Dityam.com.ua`;
+
+export default async function OlimpiadaPage() {
+  // Одне число можливостей на весь сайт — те саме, що на головній (liveStats).
+  const total = await countActiveOpportunities().catch(() => null);
   const key = monthKey();
   const month = monthName(key);
   const FAQ = faq(month);
@@ -199,6 +210,13 @@ export default function OlimpiadaPage() {
                 <span>завдань<br />за {OLIMP.minutes} хвилин</span>
               </div>
             </div>
+            {/* Цифри платформи — справжні: аудиторія з GA4 (AUDIENCE_MONTHLY),
+                можливості — той самий лічильник, що на головній. */}
+            <ul className="ol-proof" aria-label="Dityam.com.ua у цифрах">
+              <li><b>{AUDIENCE_MONTHLY}</b><span>батьків і підлітків щомісяця шукають можливості на Dityam.com.ua</span></li>
+              <li><b>{total ? total.toLocaleString('uk-UA') : FALLBACK.opportunities}</b><span>можливостей для дітей на платформі: олімпіади, конкурси, табори, гуртки</span></li>
+              <li><b>{PLUS_PRICE_MONTH} грн</b><span>коштує місяць підписки Dityam+, а учасникам олімпіади він у подарунок</span></li>
+            </ul>
           </div>
           <Star className="ol-doodle ol-star-1" />
           <Star className="ol-doodle ol-star-2" />
@@ -218,7 +236,7 @@ export default function OlimpiadaPage() {
                 </article>
               ))}
             </div>
-            <Cta at="after-gets" light note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
+            <Cta at="after-gets" light note={NOTE_AUDIENCE} />
 
             <h2 id="yak" className="ol-hand ol-hand-gap">Як це працює</h2>
             {/* Короткі цифри — тут, а не в першому екрані: там їх було забагато (Марія, 05.10.2026) */}
@@ -279,7 +297,7 @@ export default function OlimpiadaPage() {
               </li>
             ))}
           </ul>
-          <Cta at="after-diplomas" note="Диплом з іменем дитини — одразу після тесту й на email" />
+          <Cta at="after-diplomas" note={NOTE_NEXT} />
         </section>
 
         <section className="ol-space ol-space-2">
@@ -340,7 +358,7 @@ export default function OlimpiadaPage() {
             <div className="ol-frame ol-frame-faq">
               <FaqTabs items={FAQ} />
             </div>
-            <Cta at="after-faq" light note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
+            <Cta at="after-faq" light note={NOTE_GIFT} />
           </div>
           <Wave className="ol-wave ol-wave-bottom" flip />
         </section>
@@ -363,7 +381,7 @@ export default function OlimpiadaPage() {
             <li>Дані: імʼя дитини потрібне для диплома, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
-          <Cta at="after-rules" note={OLIMP_OPEN ? `Диплом одразу після тесту` : 'Лише email — 1 лист, щойно стартуємо'} />
+          <Cta at="after-rules" note={NOTE_AUDIENCE} />
         </section>
 
         <section className="ol-wrap ol-sec ol-contact">
