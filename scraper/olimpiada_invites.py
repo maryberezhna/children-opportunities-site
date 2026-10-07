@@ -30,6 +30,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 from zoneinfo import ZoneInfo
+from log_privacy import mask_email, short_id
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("olimpiada_invites")
@@ -295,9 +296,9 @@ def main() -> int:
         return 0
     if args.dry_run:
         for r in todo:
-            logger.info("dry-run запрошення: %s → %s", r.get("child_name"), r.get("parent_email"))
+            logger.info("dry-run запрошення: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
         for r in diplomas:
-            logger.info("dry-run диплом: %s → %s", r.get("child_name"), r.get("parent_email"))
+            logger.info("dry-run диплом: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
         return 0
     if not PASSWORD:
         logger.error("DITYAM_GMAIL_APP_PASSWORD не задано — листи не надіслано")
@@ -313,14 +314,14 @@ def main() -> int:
                 {"invite_sent_at": datetime.now(timezone.utc).isoformat()}
             ).eq("id", r["id"]).is_("invite_sent_at", "null").execute().data or [])
             if not claimed:
-                logger.info("Запрошення вже надіслав сайт: %s", r.get("parent_email"))
+                logger.info("Запрошення вже надіслав сайт: %s", short_id(r.get("id")))
                 continue
             try:
                 smtp.sendmail(FROM, [r["parent_email"]], make_email(r).as_string())
-                logger.info("Надіслано: %s", r.get("parent_email"))
+                logger.info("Надіслано: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
             except Exception:
                 failed += 1
-                logger.exception("Не вдалося надіслати: %s", r.get("parent_email"))
+                logger.exception("Не вдалося надіслати: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
                 client.table("olimpiada_entries").update({"invite_sent_at": None}).eq("id", r["id"]).execute()
         for r in diplomas:
             try:
@@ -329,10 +330,10 @@ def main() -> int:
                 client.table("olimpiada_entries").update(
                     {"diploma_sent_at": datetime.now(timezone.utc).isoformat()}
                 ).eq("id", r["id"]).execute()
-                logger.info("Диплом надіслано: %s", r.get("parent_email"))
+                logger.info("Диплом надіслано: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
             except Exception:
                 failed += 1
-                logger.exception("Не вдалося надіслати диплом: %s", r.get("parent_email"))
+                logger.exception("Не вдалося надіслати диплом: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
     return 1 if failed else 0
 
 
