@@ -112,35 +112,10 @@
   text-decoration: none;
 }
 
-/* Нагорода біля лого (lib/awards.js, 07.10.2026). Пігулка — на широкому
-   екрані; на вузькому (де навігацію сховано) — смужка над шапкою. */
-.v2-sia {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  border: 1px solid var(--v2-line);
-  border-radius: 999px;
-  background: var(--surface-2);
-  color: var(--v2-ink);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-.v2-sia:hover { border-color: var(--v2-accent-strong); }
-
-@media (max-width: 1100px) {
-  .v2-sia { display: none; }
-}
-
 /* Наліпка нагороди на кінці головної фрази (07.10.2026): помаранчеве коло,
    білий текст по колу обертається, центр порожній. Якір нульової ширини
    стоїть одразу після останнього слова заголовка, тож коло лягає на кінець
-   фрази за будь-якої ширини екрана. На головній ширше 1100px пігулку в
-   шапці ховаємо — наліпка вже є. */
+   фрази за будь-якої ширини екрана. */
 @keyframes v2-sia-spin { to { transform: rotate(360deg); } }
 .v2-sia-glue { white-space: nowrap; }
 .v2-sia-anchor {
@@ -169,7 +144,11 @@
   color: var(--v2-accent-strong);
   text-decoration: none;
   transform: rotate(-10deg);
-  z-index: 1;
+  /* Кільце — на другому плані, текст заголовка над ним (Марія, 07.10.2026:
+     «Усі можливості має бути на 1 плані, а крутяшка на 2-му»). Заголовок
+     нижче отримує власний шар (isolation), тож −1 ховає кільце за літери, а
+     не за фон сторінки. */
+  z-index: -1;
 }
 .v2-sia-ring {
   position: absolute;
@@ -226,7 +205,6 @@
 }
 @media (min-width: 1101px) {
   .v2-sia-seal { --seal: 116px; --lift: 0.6em; }
-  .v2-header--home .v2-sia { display: none; }
 }
 /* Ширше телефона — на кінці першого рядка, «Усі можливості» (Марія,
    07.10.2026: на кінці «в одному місці» коло закривало «і» → «прозорий фон
@@ -813,6 +791,8 @@ html[data-mode="teens"] .v2-hero-search-btn { background: var(--v2-accent-strong
 }
 
 .v2-hero h1 {
+  /* Власний шар: наліпка SIA (z-index −1) лягає за літери, а не під фон. */
+  isolation: isolate;
   margin: 0;
   font-family: var(--font-sans), sans-serif;
   font-weight: 700;
