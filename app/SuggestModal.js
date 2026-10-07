@@ -32,9 +32,10 @@ const T = {
     noteOpt: "необов'язково",
     notePh: 'Для кого, коли, що треба для участі',
     contact: 'Ваш контакт',
-    contactOpt: 'якщо можна щось уточнити',
+    contactOpt: 'обовʼязково',
     contactPh: '@telegram або email',
     contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
+    ads: 'Хочу ознайомитися з рекламними розміщеннями на Dityam.com.ua',
     send: 'Надіслати',
     sending: 'Надсилаємо…',
     error: 'Не вдалося надіслати. Спробуйте ще раз або напишіть у Telegram.',
@@ -52,9 +53,10 @@ const T = {
     noteOpt: 'optional',
     notePh: 'Who it is for, when, what is needed',
     contact: 'Your contact',
-    contactOpt: 'if we may clarify details',
+    contactOpt: 'required',
     contactPh: '@telegram or email',
     contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
+    ads: 'I’d like to learn about advertising placements on Dityam.com.ua',
     send: 'Send',
     sending: 'Sending…',
     error: 'Could not send. Try again or write on Telegram.',
@@ -70,7 +72,7 @@ export default function SuggestModal({ lang = 'uk' }) {
   const [state, setState] = useState('idle'); // idle | sending | done | error
   // website — honeypot: людина його не бачить, бот заповнює (той самий
   // трюк, що у старому SuggestBlock, і той самий API).
-  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '' });
+  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
 
   useEffect(() => {
     const onOpen = () => { setOpen(true); setState('idle'); };
@@ -97,9 +99,9 @@ export default function SuggestModal({ lang = 'uk' }) {
       setState('error');
       return;
     }
-    // Контакт необовʼязковий, але якщо вписали — лише email або нік у Telegram
-    // (07.10.2026): на номер телефону ми відповісти не можемо.
-    if (form.contact.trim() && !parseContact(form.contact)) {
+    // Контакт обовʼязковий (Марія, 07.10.2026): треба знати, хто пише. І лише
+    // email або нік у Telegram — на номер телефону ми відповісти не можемо.
+    if (!parseContact(form.contact)) {
       setState('contact');
       return;
     }
@@ -113,7 +115,7 @@ export default function SuggestModal({ lang = 'uk' }) {
       const data = await res.json();
       if (!data.ok) throw new Error('server');
       setState('done');
-      setForm({ title: '', url: '', comment: '', contact: '', website: '' });
+      setForm({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
       if (window.gtag) {
         window.gtag('event', 'suggest_submit', { event_category: 'conversion' });
       }
@@ -162,8 +164,19 @@ export default function SuggestModal({ lang = 'uk' }) {
             </div>
             <div className="v2-field">
               <label htmlFor="sg-contact">{t.contact} <span>{t.contactOpt}</span></label>
-              <input id="sg-contact" type="text" placeholder={t.contactPh} value={form.contact} onChange={set('contact')} />
+              <input id="sg-contact" type="text" placeholder={t.contactPh} value={form.contact} onChange={set('contact')} required />
             </div>
+            {/* Організатори, які приносять можливість, — найтепліші рекламодавці
+                (Марія, 07.10.2026). Галочка знята за замовчуванням: це явне
+                бажання людини, а не підписка «за мовчанням». */}
+            <label className="v2-check">
+              <input
+                type="checkbox"
+                checked={form.ads}
+                onChange={(e) => setForm((f) => ({ ...f, ads: e.target.checked }))}
+              />
+              <span>{t.ads}</span>
+            </label>
             <input
               type="text"
               value={form.website}
@@ -174,7 +187,9 @@ export default function SuggestModal({ lang = 'uk' }) {
               style={{ position: 'absolute', left: -9999, width: 1, height: 1, opacity: 0 }}
             />
             {state === 'error' || state === 'contact' ? (
-              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>{state === 'contact' ? t.contactErr : t.error}</p>
+              <p className="v2-dialog-sub" style={{ color: '#991b1b' }}>
+                {state === 'contact' ? t.contactErr : t.error}
+              </p>
             ) : null}
             <button type="submit" className="v2-dialog-submit" disabled={state === 'sending'}>
               {state === 'sending' ? t.sending : t.send}

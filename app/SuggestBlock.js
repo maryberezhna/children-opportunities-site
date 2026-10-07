@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { parseContact } from '@/lib/contactAddress';
 
 /**
  * «Маєте можливість? Напишіть нам — і ми її опублікуємо».
@@ -18,7 +19,7 @@ const L = {
     cta: 'Запропонувати',
     close: 'Закрити',
     doneTitle: 'Дякуємо!',
-    doneText: 'Ми перевіримо можливість і опублікуємо її. Якщо лишили контакт — напишемо, коли вона зʼявиться.',
+    doneText: 'Ми перевіримо можливість і опублікуємо її, а коли вона зʼявиться — напишемо вам.',
     doneBtn: 'Готово',
     formTitle: 'Запропонувати можливість',
     formSub: 'Табір, курс, конкурс, стипендія — будь-що корисне для дітей 0–18. Публікація безкоштовна.',
@@ -29,8 +30,10 @@ const L = {
     optional: 'необовʼязково',
     aboutPlaceholder: 'Для кого, коли, що треба для участі',
     contactLabel: 'Ваш контакт',
-    contactHint: 'якщо можна щось уточнити',
+    contactHint: 'обовʼязково',
     contactPlaceholder: '@telegram або email',
+    contactErr: 'Вкажіть email або нік у Telegram, наприклад @olena. На телефон відповісти не вийде.',
+    ads: 'Хочу ознайомитися з рекламними розміщеннями на Dityam.com.ua',
     error: 'Додайте назву або посилання — інакше нам нема що перевіряти.',
     sending: 'Надсилаємо…',
     submit: 'Надіслати',
@@ -42,7 +45,7 @@ const L = {
     cta: 'Suggest it',
     close: 'Close',
     doneTitle: 'Thank you!',
-    doneText: 'We’ll check the opportunity and publish it. If you left a contact, we’ll write when it appears.',
+    doneText: 'We’ll check the opportunity and publish it, and write to you when it appears.',
     doneBtn: 'Done',
     formTitle: 'Suggest an opportunity',
     formSub: 'A camp, a course, a contest, a scholarship — anything useful for children 0–18. Publishing is free.',
@@ -53,8 +56,10 @@ const L = {
     optional: 'optional',
     aboutPlaceholder: 'Who it’s for, when, what’s needed to take part',
     contactLabel: 'Your contact',
-    contactHint: 'in case we need to check something',
+    contactHint: 'required',
     contactPlaceholder: '@telegram or email',
+    contactErr: 'Enter an email or a Telegram username, e.g. @olena. We can’t reply to a phone number.',
+    ads: 'I’d like to learn about advertising placements on Dityam.com.ua',
     error: 'Add a name or a link — otherwise there’s nothing for us to check.',
     sending: 'Sending…',
     submit: 'Send',
@@ -65,7 +70,7 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
   const t = L[lang] || L.uk;
   const [open, setOpen] = useState(false);
   const [state, setState] = useState('idle'); // idle | sending | done | error
-  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '' });
+  const [form, setForm] = useState({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
 
   useEffect(() => {
     if (!open) return undefined;
@@ -93,6 +98,12 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
       setState('error');
       return;
     }
+    // Контакт обовʼязковий (Марія, 07.10.2026): треба знати, хто пише. І лише
+    // email або нік у Telegram — на номер телефону ми відповісти не можемо.
+    if (!parseContact(form.contact)) {
+      setState('contact');
+      return;
+    }
     setState('sending');
     try {
       const res = await fetch('/api/suggest', {
@@ -115,7 +126,7 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
     setOpen(false);
     // Після успішної відправки наступне відкриття — з чистою формою.
     if (state === 'done') {
-      setForm({ title: '', url: '', comment: '', contact: '', website: '' });
+      setForm({ title: '', url: '', comment: '', contact: '', website: '', ads: false });
       setState('idle');
     }
   };
@@ -191,7 +202,19 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
                     onChange={set('contact')}
                     placeholder={t.contactPlaceholder}
                     maxLength={200}
+                    required
                   />
+                </label>
+
+                {/* Організатори, які приносять можливість, — найтепліші
+                    рекламодавці (Марія, 07.10.2026). Знята за замовчуванням. */}
+                <label className="v2-check" style={{ marginBottom: 14, fontSize: '0.875rem' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.ads}
+                    onChange={(e) => setForm((f) => ({ ...f, ads: e.target.checked }))}
+                  />
+                  <span>{t.ads}</span>
                 </label>
 
                 {/* Honeypot: людина його не бачить, бот заповнює */}
@@ -205,9 +228,9 @@ export default function SuggestBlock({ lang = 'uk' } = {}) {
                   aria-hidden="true"
                 />
 
-                {state === 'error' && (
+                {(state === 'error' || state === 'contact') && (
                   <p className="suggest-error">
-                    {t.error}
+                    {state === 'contact' ? t.contactErr : t.error}
                   </p>
                 )}
 
