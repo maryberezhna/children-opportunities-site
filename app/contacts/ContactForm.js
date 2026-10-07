@@ -2,6 +2,7 @@
 import '@/app/styles/contact-form.css';
 import { useEffect, useState } from 'react';
 import { CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
+import { parseContact } from '@/lib/contactAddress';
 
 /**
  * Контактна форма з вибором типу звернення. Тип визначає підказку і
@@ -19,10 +20,10 @@ const L = {
     link: 'Посилання',
     name: 'Як вас звати',
     namePlaceholder: "Ім'я",
-    contact: 'Email або телефон',
-    contactPlaceholder: 'щоб ми могли відповісти',
+    contact: 'Email або нік у Telegram',
+    contactPlaceholder: 'name@gmail.com або @нік',
     errShort: 'Напишіть, будь ласка, хоча б кілька слів — так ми зрозуміємо, чим допомогти.',
-    errContact: 'Лишіть email або телефон — без них ми не зможемо відповісти.',
+    errContact: 'Лишіть email або нік у Telegram, наприклад @olena — так ми зможемо відповісти. На телефон відповісти не вийде.',
     errSend: 'Не вдалося надіслати. Спробуйте ще раз або напишіть на hellodityam.com.ua@gmail.com.',
     sending: 'Надсилаємо…',
     submit: 'Надіслати',
@@ -40,10 +41,10 @@ const L = {
     link: 'Link',
     name: 'Your name',
     namePlaceholder: 'Name',
-    contact: 'Email or phone',
-    contactPlaceholder: 'so we can reply',
+    contact: 'Email or Telegram username',
+    contactPlaceholder: 'name@gmail.com or @username',
     errShort: 'Please write at least a few words, so we understand how to help.',
-    errContact: 'Leave an email or a phone number — without one we can’t reply.',
+    errContact: 'Leave an email or a Telegram username, e.g. @olena, so we can reply. We can’t reply to a phone number.',
     errSend: 'Could not send. Please try again, or write to hellodityam.com.ua@gmail.com.',
     sending: 'Sending…',
     submit: 'Send',
@@ -82,9 +83,9 @@ export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
   // Контакт обовʼязковий: анонімні звернення — це або спам, або лист, на який
-  // фізично не можна відповісти. Перевірка навмисно м'яка: пошта або будь-що
-  // з 7+ цифрами (телефон у будь-якому форматі, з пробілами й дужками).
-  const contactOk = (v) => /\S+@\S+\.\S+/.test(v) || (v.replace(/\D/g, '').length >= 7);
+  // фізично не можна відповісти. З 07.10.2026 — лише email або нік у Telegram:
+  // на номер телефону ми відповісти не можемо (lib/contactAddress.js).
+  const contactOk = (v) => parseContact(v) !== null;
 
   const submit = async (e) => {
     e.preventDefault();

@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { CONTACT_TYPE_MAP, isValidContactType } from '@/lib/contactTypes';
+import { parseContact, contactHref } from '@/lib/contactAddress';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export async function POST(request) {
   const type = isValidContactType(b.type) ? b.type : 'other';
   const message = str(b.message, 4000);
   const name = str(b.name, 200);
-  const contact = str(b.contact, 200);
+  const parsed = parseContact(str(b.contact, 200));
   const url = str(b.url, 500);
   const page = str(b.page, 300);
   // Дозвіл на публікацію має сенс лише для історії; без нього історію не публікуємо.
@@ -35,11 +36,12 @@ export async function POST(request) {
   }
 
   // Контакт обовʼязковий і на сервері: без нього не відповісти, а перевірка
-  // лише в браузері спам не спиняє — боти шлють POST напряму.
-  const contactOk = /\S+@\S+\.\S+/.test(contact) || contact.replace(/\D/g, '').length >= 7;
-  if (!contactOk) {
+  // лише в браузері спам не спиняє — боти шлють POST напряму. З 07.10.2026
+  // лише email або нік у Telegram: на телефон відповісти нема як.
+  if (!parsed) {
     return Response.json({ ok: false, error: 'contact' }, { status: 400 });
   }
+  const contact = parsed.value;
 
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -49,7 +51,7 @@ export async function POST(request) {
   const { error } = await supabase.from('contact_messages').insert({
     type,
     name: name || null,
-    contact: contact || null,
+    contact,
     message,
     url: url || null,
     page: page || null,
@@ -67,7 +69,7 @@ export async function POST(request) {
       esc(message).slice(0, 1200),
       url ? `\n🔗 ${esc(url)}` : null,
       type === 'story' ? (publishConsent ? '\n✅ Можна опублікувати з іменем' : '\n🔒 Публікувати не можна') : null,
-      `\n👤 ${esc([name, contact].filter(Boolean).join(' · '))}`,
+      `\n👤 ${[name ? esc(name) : null, `<a href="${esc(contactHref(parsed))}">${esc(contact)}</a>`].filter(Boolean).join(' · ')}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',
     ].filter(Boolean);
