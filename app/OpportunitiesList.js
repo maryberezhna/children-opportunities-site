@@ -10,6 +10,7 @@ import { TELEGRAM_URL } from '@/lib/social';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
 import { goesAbroad } from '@/lib/geo';
+import { isOnline } from '@/lib/online';
 import { abroadPlaceText, foreignOnly, abroadCodes } from '@/lib/place';
 import { countryName } from '@/lib/diaspora';
 import { buildHaystack, queryTokens, matchesQuery } from '@/lib/search';
@@ -55,6 +56,7 @@ const UI = {
     found: 'Знайдено',
     reset: 'Скинути',
     nothingTitle: 'Нічого не знайдено',
+    searching: 'Шукаємо…',
     nothingText: 'Спробуйте інший фільтр.',
     showMore: 'Показати ще',
     details: 'Детальніше →',
@@ -125,6 +127,7 @@ const UI = {
     found: 'Found',
     reset: 'Reset',
     nothingTitle: 'Nothing found',
+    searching: 'Searching…',
     nothingText: 'Try a different filter.',
     showMore: 'Show more',
     details: 'Details →',
@@ -288,11 +291,7 @@ const DL_COLORS_TEENS = {
   event: ['#1a1a1a', '#f7f1e6'],
 };
 
-const ONLINE_RE = /(онлайн|online|дистанц|гібрид|hybrid|zoom|вебінар)/i;
-const isOnline = (item) =>
-  ONLINE_RE.test(item.format || '')
-  || (item.cities || []).some((c) => ONLINE_RE.test(c))
-  || ONLINE_RE.test(`${item.title || ''} ${item.summary || ''}`);
+// isOnline — у lib/online.js: те саме рахує сервер для легких записів головної.
 
 function formatDeadline(dateStr, lang = 'uk') {
   if (!dateStr) return null;
@@ -461,6 +460,9 @@ export default function OpportunitiesList({
   // одна сторінка з можливостями, тож там більше (рішення Марії 14.09.2026).
   initialLimit = 6,
   mobileLayout = false, sidebarLayout = false, afterAges = null,
+  // Звідки довантажити тексти карток, яких сторінка не везе в HTML
+  // (lib/catalog-split.js; поки лише головні). null — записи вже повні.
+  detailsUrl = null,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
@@ -609,11 +611,61 @@ export default function OpportunitiesList({
   useEffect(() => onSuggestSourceWanted(() => setSearchWanted(true)), []);
   const wantSearch = searchWanted || Boolean(query.trim());
 
+  // Тексти карток поза першим екраном (опис, slug, джерело…) головна не везе
+  // в HTML — їх довантажує цей запит (lib/catalog-split.js, 07.10.2026: HTML
+  // головної важив 244 КБ стиснено й тримав показ на повільному інтернеті).
+  // Фільтрам, лічильникам і сортуванню тексти не потрібні — ті працюють на
+  // легких записах одразу. Чекають лише картки поза першим екраном і пошук.
+  const [details, setDetails] = useState(null);
+  const detailsState = useRef('idle');
+  const ensureDetails = useCallback(() => {
+    if (!detailsUrl || detailsState.current !== 'idle') return;
+    detailsState.current = 'loading';
+    const load = (attempt) => fetch(detailsUrl)
+      .then((r) => { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+      .then((data) => {
+        setDetails(new Map((data.rows || []).map((d) => [d.id, d])));
+        detailsState.current = 'done';
+      })
+      .catch(() => {
+        // Два повтори, далі — до наступної дії людини (ефекти нижче кличуть знову).
+        if (attempt < 2) setTimeout(() => load(attempt + 1), 1500 * (attempt + 1));
+        else detailsState.current = 'idle';
+      });
+    load(0);
+  }, [detailsUrl]);
+  // Без дії людини — щойно сторінка показана й браузер вільний: тоді фільтр,
+  // «Показати ще» чи пошук спрацюють одразу, без заглушок.
+  useEffect(() => {
+    if (!detailsUrl) return undefined;
+    if (typeof window.requestIdleCallback === 'function') {
+      const h = window.requestIdleCallback(ensureDetails, { timeout: 3000 });
+      return () => window.cancelIdleCallback(h);
+    }
+    const h = setTimeout(ensureDetails, 1500);
+    return () => clearTimeout(h);
+  }, [detailsUrl, ensureDetails]);
+  // Повний запис для картки: легкий + довантажені тексти. null — тексти ще
+  // в дорозі (картка малюється заглушкою). Запис, якого немає й у
+  // довантаженому файлі, за ці хвилини зняли з сайту — його не показуємо.
+  const rich = useCallback((item) => {
+    if (!detailsUrl || item.slug) return item;
+    const d = details?.get(item.id);
+    return d ? { ...item, ...d } : null;
+  }, [detailsUrl, details]);
+  // Пошук шукає й в описах — без текстів індекс не будуємо.
+  const searchRows = useMemo(() => {
+    if (!detailsUrl) return opportunities;
+    if (!details) return null;
+    return opportunities.map((o) => rich(o) || o);
+  }, [detailsUrl, details, opportunities, rich]);
+  useEffect(() => { if (wantSearch) ensureDetails(); }, [wantSearch, ensureDetails]);
+
   // Пошуковий індекс: рахується раз на набір записів (див. lib/search).
   const searchIndex = useMemo(() => {
-    if (!wantSearch) return null;
+    if (!wantSearch || !searchRows) return null;
     const m = new Map();
-    opportunities.forEach((o) => {
+    searchRows.forEach((o) => {
       m.set(o.id, buildHaystack([
         o.title, o.summary, o.source, o.title_en, o.summary_en, o.format,
         ...(o.cities || []),
@@ -624,12 +676,12 @@ export default function OpportunitiesList({
       ]));
     });
     return m;
-  }, [opportunities, wantSearch]);
+  }, [searchRows, wantSearch]);
   // Окремий індекс назв: збіг у назві піднімає запис угору видачі й дає
   // підказки-записи під полем пошуку.
   const titleIndex = useMemo(
-    () => (wantSearch ? new Map(opportunities.map((o) => [o.id, titleHaystack(o)])) : null),
-    [opportunities, wantSearch],
+    () => (wantSearch && searchRows ? new Map(searchRows.map((o) => [o.id, titleHaystack(o)])) : null),
+    [searchRows, wantSearch],
   );
 
   // Прострочені разові можливості не показуємо ніде, а в режимі «Підліткам» —
@@ -643,11 +695,16 @@ export default function OpportunitiesList({
   // Підказки пошуку (lib/search-suggest.js) беруть той самий набір, що й
   // список, — тож дописане слово завжди щось знаходить. Сховище спільне з
   // полем у хіро головної, у якого записів немає.
-  const vocab = useMemo(() => (wantSearch ? buildVocabulary(liveItems) : null), [liveItems, wantSearch]);
+  // Підказки показують і записи (назва, slug) — тож із повних записів.
+  const searchLive = useMemo(
+    () => (wantSearch && searchRows ? (searchRows === opportunities ? liveItems : visibleFor(searchRows, todayIso, teens)) : null),
+    [wantSearch, searchRows, opportunities, liveItems, todayIso, teens],
+  );
+  const vocab = useMemo(() => (searchLive ? buildVocabulary(searchLive) : null), [searchLive]);
   useEffect(() => {
-    if (!wantSearch) return;
-    setSuggestSource({ items: liveItems, index: searchIndex, titles: titleIndex, vocab });
-  }, [wantSearch, liveItems, searchIndex, titleIndex, vocab]);
+    if (!searchLive) return;
+    setSuggestSource({ items: searchLive, index: searchIndex, titles: titleIndex, vocab });
+  }, [searchLive, searchIndex, titleIndex, vocab]);
   const deskSuggest = useSearchSuggest({ id: 'v2-search', value: query, onPickWord: setQuery, lang });
   const mSuggest = useSearchSuggest({ id: 'm-search', value: query, onPickWord: setQuery, lang });
 
@@ -873,7 +930,21 @@ export default function OpportunitiesList({
     return shown.slice(0, 2).map((c) => cityLabel(c, lang)).join(', ');
   };
 
-  const renderCard = (item) => {
+  const renderCard = (light) => {
+    const item = rich(light);
+    if (!item) {
+      // Тексти ще в дорозі. Заглушка тієї ж висоти, що й картка, — щоб сітка
+      // не стрибала, коли вони приїдуть.
+      if (details) return null;
+      return (
+        <div key={light.id} className="card card-skel" aria-hidden="true">
+          <span className="card-skel-line card-skel-chip" />
+          <span className="card-skel-line card-skel-title" />
+          <span className="card-skel-line" />
+          <span className="card-skel-line card-skel-short" />
+        </div>
+      );
+    }
     const [tagBg, tagFg] = TAG_COLORS[item.opportunity_type] || TAG_FALLBACK;
     const dl = dlChip(item);
     const [dlBg, dlFg] = (teens ? DL_COLORS_TEENS : DL_COLORS)[dl.kind];
@@ -961,11 +1032,14 @@ export default function OpportunitiesList({
             {allFree ? ` · ${t.olymp.free}` : ''}
           </p>
           <div className="v2-olymp-subjects">
-            {subjects.map((o) => (
-              <Link key={o.id} href={`${isEn ? '/en' : ''}/o/${o.slug}`} className="v2-olymp-chip">
-                {subjectLabel(o)}
-              </Link>
-            ))}
+            {subjects.map((o) => {
+              const r = rich(o);
+              return r ? (
+                <Link key={o.id} href={`${isEn ? '/en' : ''}/o/${r.slug}`} className="v2-olymp-chip">
+                  {subjectLabel(r)}
+                </Link>
+              ) : null;
+            })}
             {rest > 0 ? <Link href={t.olymp.href} className="v2-olymp-chip v2-olymp-rest">{t.olymp.more(rest)}</Link> : null}
           </div>
         </div>
@@ -992,6 +1066,9 @@ export default function OpportunitiesList({
   //
   // Кількість результатів шлемо разом із запитом: порожній пошук важливіший
   // за успішний, бо показує, чого в базі бракує.
+  // Запит є, а текстів для пошуку ще немає: показуємо «Шукаємо…», а не
+  // «Нічого не знайдено» з нулем.
+  const searchPending = queryTokens(query).length > 0 && !searchIndex;
   const count = stream.length + (topCards.length === 3 ? topCards.length : 0);
   // Скільки з видимих — безкоштовні. Рахуємо по тому, що людина зараз бачить,
   // а не по всій базі: після фільтра «платно» рядок «540 безкоштовних» був би
@@ -1006,8 +1083,12 @@ export default function OpportunitiesList({
   // 07.10.2026): ліміт добирає картки до кратного колонкам.
   const shownEnd = fillLastRow(entries, limit, (e) => Boolean(e.group), gridCols);
   const shown = entries.slice(0, shownEnd);
+  // На екрані картка без текстів (фільтр, «Показати ще», посилання з ?type=)
+  // — довантажуємо одразу, не чекаючи вільної хвилини браузера.
+  const needDetails = Boolean(detailsUrl) && !details && shown.some((e) => !e.group && !e.slug);
+  useEffect(() => { if (needDetails) ensureDetails(); }, [needDetails, ensureDetails]);
   useEffect(() => {
-    if (!hydrated) return undefined;
+    if (!hydrated || searchPending) return undefined;
     const q = query.trim();
     if (q.length < 2 || q === searched.current) return undefined;
     const timer = setTimeout(() => {
@@ -1015,7 +1096,7 @@ export default function OpportunitiesList({
       trackSearch(q, count);
     }, 600);
     return () => clearTimeout(timer);
-  }, [hydrated, query, count]);
+  }, [hydrated, query, count, searchPending]);
   // Фільтр застосовано — подія filter_apply на кожну зміну стану (з паузою,
   // щоб серія кліків по чипах не йшла десятком подій). Стан, з яким людина
   // прийшла за посиланням (?type=…), фільтром людини не вважаємо: його
@@ -1659,7 +1740,7 @@ export default function OpportunitiesList({
         </div>
 
         <div className="v2-found">
-          <span>{t.found} <strong>{count}</strong> {t.countWord(count)}</span>
+          <span>{t.found} <strong>{searchPending ? '…' : count}</strong> {searchPending ? '' : t.countWord(count)}</span>
         </div>
       </section>
 
@@ -1688,7 +1769,7 @@ export default function OpportunitiesList({
             <TopWeekStrip
               lang={lang}
               title={t.mTop}
-              cards={sliderCards(topCards, {
+              cards={sliderCards(topCards.map((c) => rich(c) || c), {
                 lang,
                 pinned: isEn ? 'Top' : 'Топ',
                 free: isEn ? 'free' : 'безкоштовно',
@@ -1750,8 +1831,8 @@ export default function OpportunitiesList({
           {mobileLayout ? (
             <div className="m-count" aria-live="polite" ref={countRef}>
               <span>
-                <strong>{count}</strong> {t.countWord(count)}
-                {freeCount ? (
+                <strong>{searchPending ? '…' : count}</strong> {searchPending ? '' : t.countWord(count)}
+                {freeCount && !searchPending ? (
                   <span className="m-count-free">
                     {' · '}<strong>{freeCount}</strong> {t.freeWord(freeCount)}
                   </span>
@@ -1764,7 +1845,7 @@ export default function OpportunitiesList({
           {sidebarLayout ? (
             <div className="v2-side-head">
               <div className="v2-side-count" aria-live="polite">
-                <span><strong>{count}</strong> {t.countWord(count)}</span>
+                <span><strong>{searchPending ? '…' : count}</strong> {searchPending ? '' : t.countWord(count)}</span>
                 <label className="v2-sort">
                   <span>{t.sortLabel}</span>
                   <select value={sort} onChange={(e) => setSort(e.target.value)} aria-label={t.sortLabel}>
@@ -1811,6 +1892,11 @@ export default function OpportunitiesList({
                 gridCols,
               ).map((c) => c.node)}
             </section>
+          ) : searchPending ? (
+            <div className="v2-empty" aria-live="polite">
+              <span style={{ fontSize: 32 }} aria-hidden="true">🔍</span>
+              <h3>{t.searching}</h3>
+            </div>
           ) : (
             <div className="v2-empty">
               <span style={{ fontSize: 32 }} aria-hidden="true">🔍</span>

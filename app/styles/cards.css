@@ -442,3 +442,25 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
   position: relative;
   z-index: 2;
 }
+
+/* Заглушка картки, поки довантажуються її тексти (головна, 07.10.2026 —
+   lib/catalog-split.js). Тієї ж висоти, що й картка, щоб сітка не стрибала. */
+.card-skel {
+  gap: 12px;
+  min-height: 220px;
+  pointer-events: none;
+}
+.card-skel-line {
+  display: block;
+  height: 14px;
+  width: 100%;
+  border-radius: 8px;
+  background: linear-gradient(90deg, var(--border) 0%, var(--surface-2, #f4f1ea) 50%, var(--border) 100%);
+  background-size: 200% 100%;
+  animation: card-skel 1.2s ease-in-out infinite;
+}
+.card-skel-chip { width: 38%; height: 22px; border-radius: 999px; }
+.card-skel-title { height: 22px; width: 85%; }
+.card-skel-short { width: 55%; }
+@keyframes card-skel { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) { .card-skel-line { animation: none; } }
