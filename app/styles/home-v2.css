@@ -137,35 +137,43 @@
   .v2-sia { display: none; }
 }
 
-/* Печатка нагороди праворуч від заголовка головної на телефоні. */
+/* Печатка нагороди праворуч від заголовка головної на телефоні: текст по
+   колу, що повільно обертається; центр порожній (07.10.2026). */
+@keyframes v2-sia-spin { to { transform: rotate(360deg); } }
 @media (max-width: 900px) {
   .v2-home .v2-hero-copy { position: relative; }
-  .v2-home .v2-hero h1 { padding-right: 86px; }
+  .v2-home .v2-hero h1 { padding-right: 88px; }
   .v2-sia-seal {
     display: flex;
     position: absolute;
-    top: -10px;
-    right: 0;
-    width: 76px;
-    height: 76px;
-    border-radius: 50%;
-    flex-direction: column;
+    top: -14px;
+    right: -4px;
+    width: 86px;
+    height: 86px;
     align-items: center;
     justify-content: center;
-    background: var(--surface-2);
-    border: 2px solid var(--v2-accent-strong);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
     color: var(--v2-ink);
-    font-size: 10px;
-    font-weight: 800;
-    line-height: 1.15;
-    letter-spacing: 0.02em;
-    text-align: center;
-    text-transform: uppercase;
     text-decoration: none;
-    transform: rotate(8deg);
   }
-  .v2-sia-seal-cup { font-size: 16px; line-height: 1; margin-bottom: 2px; }
+  html[data-mode="teens"] .v2-sia-seal { color: #f7f1e6; }
+  .v2-sia-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    /* 0.12em — текст «ПЕРЕМОЖЕЦЬ • SIA UKRAINE 2026 •» на 11px дає ≈ 236 з
+       239 довжини кола: один оберт без дірки на стику. */
+    letter-spacing: 0.12em;
+    fill: currentColor;
+    animation: v2-sia-spin 16s linear infinite;
+  }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  .v2-sia-ring { animation: none; }
 }
 
 .v2-logo-script {

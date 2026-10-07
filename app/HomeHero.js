@@ -162,8 +162,21 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
               if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero' });
             }}
           >
-            <span className="v2-sia-seal-cup" aria-hidden="true">🏆</span>
-            {SIA_AWARD.seal[isEn ? 'en' : 'uk'].map((line) => <span key={line}>{line}</span>)}
+            {/* Текст по колу, що повільно обертається (Марія, 07.10.2026: «ось
+                типу так … і крутиться»; центр порожній — «не треба кубок»). Коло
+                r=38 у viewBox 100 — довжина ≈ 239; letter-spacing у CSS підібраний
+                так, щоб текст ліг рівно на один оберт (textLength на textPath
+                Chrome не тримає). */}
+            <svg className="v2-sia-ring" viewBox="0 0 100 100" aria-hidden="true">
+              <defs>
+                <path id="v2-sia-ring-path" d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0" />
+              </defs>
+              <text>
+                <textPath href="#v2-sia-ring-path">
+                  {SIA_AWARD.ring[isEn ? 'en' : 'uk']}
+                </textPath>
+              </text>
+            </svg>
           </a>
           <div className="v2-hero-status">
             <span className="v2-dot" aria-hidden="true" />
