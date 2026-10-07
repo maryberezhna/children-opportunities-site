@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN } from '@/lib/supabase';
+import { clientRows } from '@/lib/client-rows';
 import { CITY_META } from '@/lib/cities';
 import { fitTitle } from '@/lib/seo-title';
 import OpportunitiesList from '../../OpportunitiesList';
@@ -129,7 +130,7 @@ export default async function CityPage({ params }) {
           ))}
         </nav>
 
-        <OpportunitiesList opportunities={opportunities} presetCity={cityName} lang="en" />
+        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} lang="en" />
       </div>
       <Footer lang="en" />
 

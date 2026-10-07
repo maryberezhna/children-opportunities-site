@@ -1,6 +1,7 @@
 import localFont from 'next/font/local';
 import Header from './Header';
 import LangSuggest from './LangSuggest';
+import { LANG_SUGGEST_BOOT_SCRIPT } from '@/lib/lang';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
 import ScrollNav from './ScrollNav';
@@ -172,6 +173,9 @@ export default function RootLayout({ children }) {
             першим у <body> (tests/ab-card.test.mjs), а на блимання порядок не
             впливає — обидва виконуються до того, як браузер щось намалює. */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/* Банер іншої мови — теж до першої промальовки, інакше він
+            з'являється над шапкою вже після показу й зсуває сторінку. */}
+        <script dangerouslySetInnerHTML={{ __html: LANG_SUGGEST_BOOT_SCRIPT }} />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
