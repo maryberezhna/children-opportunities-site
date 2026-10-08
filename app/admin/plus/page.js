@@ -1,12 +1,13 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
-import { PRICE, PRICE_HALF, describeFailure } from '@/lib/wayforpay';
+import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
 
 // Річну не продаємо з 27.09.2026; старі річні рядки (їх 0) рахуємо за старою ціною.
 const PRICE_YEAR_OLD = 999;
 import { reasonLabel } from '@/lib/plusOutcomes';
 import { countBySource } from '@/lib/plusSources';
+import { peopleRows, who, STATUS } from '@/lib/plusPeople';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -42,63 +43,12 @@ const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(17
 const cell = { padding: '8px 10px', borderBottom: `1px solid ${C.border}`, fontSize: 14, textAlign: 'left', verticalAlign: 'top' };
 const head = { ...cell, fontSize: 12, fontWeight: 700, color: C.ink3, textTransform: 'uppercase', letterSpacing: '.04em' };
 
-const STATUS = {
-  active: { label: '✅ Активна', color: C.green },
-  pending: { label: '⏳ Оформлює', color: C.amber },
-  paused: { label: '⚠️ Пауза', color: C.accent },
-  unsubscribed: { label: 'Відписався', color: C.ink3 },
-};
-
-// Кроки анкети в @DityamPlusBot (lib/digestFlow.js і /api/telegram/plus).
-const STEP = {
-  age: 'анкета: вік',
-  like: 'анкета: інтереси',
-  fmt: 'анкета: формат',
-  need: 'анкета: особливі потреби',
-  more: 'анкета: ще дитина?',
-  place: 'анкета: місто',
-  cost: 'анкета: вартість',
-  phone: 'телефон для оплати',
-};
+const TONE = { green: C.green, amber: C.amber, accent: C.accent, muted: C.ink3 };
 
 const DAY = 86400000;
-const lastSeen = (s) => new Date(s.updated_at || s.created_at).getTime();
 const fmtDate = (iso) => (iso
   ? new Date(iso).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' })
   : '—');
-
-function whereStuck(s) {
-  if (s.status !== 'pending') return null;
-  // Подарунковий місяць за олімпіаду (lib/olimpiada-server.js, createGift):
-  // рядок чекає, доки людина відкриє бота за посиланням з листа. Ні оферти, ні
-  // анкети вона ще не бачила — «не погодився з офертою» тут було б неправдою.
-  if (s.billing_period === 'gift') return '🎁 подарунок за олімпіаду — бота ще не відкрили';
-  if (s.flow_step) return STEP[s.flow_step] || s.flow_step;
-  if (!s.consent_at) return 'не погодився з офертою';
-  return 'дійшов до оплати';
-}
-
-// Чому зірвалась оплата. Рядки, що стали paused до 24.09.2026, причини не
-// мають — там describeFailure поверне загальне «оплата не пройшла».
-function failure(s) {
-  return describeFailure({
-    status: s.wfp_last_status,
-    reasonCode: s.wfp_last_reason_code,
-    reason: s.wfp_last_reason,
-  });
-}
-
-// І digest_subscribers.telegram_handle, і plus_waitlist.telegram_username
-// лежать у базі вже з «собакою» — друга робила з них «@@name».
-const at = (handle) => `@${String(handle).replace(/^@+/, '')}`;
-
-// Без Telegram (подарунок за олімпіаду, ще не привʼязаний до чату) є лише
-// пошта з форми оплати — показуємо її, а не «—».
-function who(s) {
-  if (s.telegram_handle) return at(s.telegram_handle);
-  if (s.telegram_chat_id) return `Telegram · …${String(s.telegram_chat_id).slice(-4)}`;
-  return s.email ? `📧 ${s.email}` : '—';
-}
 
 function Card({ value, label, tone }) {
   return (
@@ -164,12 +114,9 @@ export default async function PlusAdminPage() {
   const activeChats = new Set(active.map((s) => String(s.telegram_chat_id || '')).filter(Boolean));
   const converted = waitlist.filter((w) => w.telegram_chat_id && activeChats.has(String(w.telegram_chat_id))).length;
 
-  // «Потребує уваги»: пауза (оплата не пройшла) і ті, хто застряг в оформленні
-  // понад добу — їм, можливо, варто написати.
-  const stuck = pending.filter((s) => new Date(s.updated_at || s.created_at).getTime() < Date.now() - DAY);
-  // Завжди спершу найсвіжіші (Марія, 08.10.2026): паузи й застряглі — одним
-  // списком за датою, а не двома блоками підряд.
-  const attention = [...paused, ...stuck].sort((a, b) => lastSeen(b) - lastSeen(a));
+  // Одна таблиця замість трьох (Марія, 08.10.2026) — lib/plusPeople.js.
+  const people = peopleRows({ subs, waitlist, kidsBySub });
+  const attention = people.filter((r) => r.attention).length;
 
   // «Чим закінчилось»: відповіді на питання «Ви скористалися цією можливістю?»
   // (scraper/ask_outcomes.py + /api/telegram/plus). Тут видно те, чого не
@@ -205,21 +152,36 @@ export default async function PlusAdminPage() {
         Нагадувань про дедлайни за 7 днів: {remindRes.count ?? 0}.
       </p>
 
-      <h2 style={h2S}>Потребує уваги · {attention.length}</h2>
-      {attention.length === 0 ? (
-        <p style={noteS}>Нікого: немає пауз і тих, хто застряг в оформленні понад добу.</p>
+      <h2 style={h2S}>Люди · {people.length}{attention ? ` · потребує уваги ${attention}` : ''}</h2>
+      <p style={noteS}>
+        Кожна людина — один рядок, найсвіжіші зверху. Підсвічені — пауза або застрягли в оформленні
+        понад добу: їм, можливо, варто написати. «Чекали запуску» — список очікування; він закритий,
+        бо продаж відкрито.
+      </p>
+      {people.length === 0 ? (
+        <p style={noteS}>Ще нікого.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr><th style={head}>Хто</th><th style={head}>Що сталося</th><th style={head}>З</th></tr></thead>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+            <thead>
+              <tr>
+                <th style={head}>Статус</th><th style={head}>Хто</th><th style={head}>Що сталося</th>
+                <th style={head}>Звідки прийшов</th><th style={head}>Коли</th>
+              </tr>
+            </thead>
             <tbody>
-              {attention.map((s) => (
-                <tr key={s.id}>
-                  <td style={cell}>{who(s)}</td>
-                  <td style={cell}>{s.status === 'paused' ? `⚠️ ${failure(s)}` : s.billing_period === 'gift' ? whereStuck(s) : `⏳ зупинився: ${whereStuck(s)}`}</td>
-                  <td style={cell}>{fmtDate(s.updated_at || s.created_at)}</td>
-                </tr>
-              ))}
+              {people.map((r) => {
+                const st = STATUS[r.status] || { label: r.status, tone: 'muted' };
+                return (
+                  <tr key={r.key} style={r.attention ? { background: '#fff7ed' } : undefined}>
+                    <td style={{ ...cell, color: TONE[st.tone], fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</td>
+                    <td style={cell}>{r.who}</td>
+                    <td style={cell}>{r.what}</td>
+                    <td style={{ ...cell, color: C.ink2 }}>{r.from}</td>
+                    <td style={{ ...cell, whiteSpace: 'nowrap' }}>{fmtDate(r.date)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -260,41 +222,6 @@ export default async function PlusAdminPage() {
         «Без мітки» — прийшли раніше, простим /start або за промокодом; звідки промокод — у повідомленні
         «Промокод … ввів» в адмін-чаті.
       </p>
-
-      <h2 style={h2S}>Підписники · {subs.length}</h2>
-      {subs.length === 0 ? (
-        <p style={noteS}>Ще ніхто не почав оформлення.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-            <thead>
-              <tr>
-                <th style={head}>Статус</th><th style={head}>Хто</th>
-                <th style={head}>Дітей</th><th style={head}>Тариф</th><th style={head}>Почав</th>
-                <th style={head}>Остання добірка</th><th style={head}>Де зараз</th>
-              </tr>
-            </thead>
-            <tbody>
-              {subs.map((s) => {
-                const st = STATUS[s.status] || { label: s.status, color: C.ink3 };
-                return (
-                  <tr key={s.id}>
-                    <td style={{ ...cell, color: st.color, fontWeight: 600, whiteSpace: 'nowrap' }}>{st.label}</td>
-                    <td style={cell}>{who(s)}</td>
-                    <td style={cell}>{kidsBySub[s.id] || 0}</td>
-                    <td style={cell}>{s.status === 'active' ? (s.billing_period === 'gift' ? 'подарунок' : s.billing_period === 'halfyear' ? 'пів року' : s.billing_period === 'yearly' ? 'рік' : 'місяць') : '—'}</td>
-                    <td style={cell}>{fmtDate(s.created_at)}</td>
-                    <td style={cell}>{fmtDate(s.last_sent_at)}</td>
-                    <td style={{ ...cell, color: C.ink2 }}>
-                      {whereStuck(s) || (s.status === 'paused' ? failure(s) : s.wfp_order_reference ? 'оплата підключена' : '—')}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       <h2 style={h2S}>Чим закінчилось · {outcomes.length}</h2>
       {outcomes.length === 0 ? (
@@ -338,26 +265,6 @@ export default async function PlusAdminPage() {
         </div>
       )}
 
-      <h2 style={h2S}>Список очікування · {waitlist.length}</h2>
-      {waitlist.length === 0 ? (
-        <p style={noteS}>Порожньо.</p>
-      ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead><tr><th style={head}>Контакт</th><th style={head}>Звідки</th><th style={head}>Коли</th><th style={head}>Оформив</th></tr></thead>
-            <tbody>
-              {waitlist.map((w) => (
-                <tr key={w.id}>
-                  <td style={cell}>{w.telegram_username ? at(w.telegram_username) : w.telegram_chat_id ? 'Telegram' : `📧 ${w.email || '—'} · без Telegram`}</td>
-                  <td style={{ ...cell, color: C.ink2 }}>{w.source || '—'}</td>
-                  <td style={cell}>{fmtDate(w.created_at)}</td>
-                  <td style={cell}>{w.telegram_chat_id && activeChats.has(String(w.telegram_chat_id)) ? '✅' : '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
     </main>
   );
 }
