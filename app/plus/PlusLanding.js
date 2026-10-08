@@ -5,7 +5,7 @@ import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
 import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 import BotLink from './BotLink';
-import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
+import { PRICE, PRICE_HALF, PRICE_FIRST } from '@/lib/wayforpay';
 
 // Ціни й вигода рахуються з того самого джерела, що й рахунок у боті
 // (WAYFORPAY_AMOUNT / WAYFORPAY_AMOUNT_HALF), а не вписані в текст руками.
@@ -72,7 +72,7 @@ const L = {
       ['Для кого', 'Батьки дітей від 0 до 18 років — окремий профіль на кожну дитину'],
       ['Де', 'У Telegram, через бот @DityamPlusBot'],
       ['Що приходить', 'Нові можливості під профіль дитини й нагадування про дедлайни'],
-      ['Скільки коштує', `${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року`],
+      ['Скільки коштує', `Перший місяць — ${PRICE_FIRST} грн, далі ${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року`],
     ],
 
     contrastTitle: 'Шукати щоразу з нуля — чи отримувати готове',
@@ -194,6 +194,8 @@ const L = {
     priceTitle: 'Скільки коштує',
     month: `${PRICE} грн`,
     monthPer: ' / місяць',
+    // Перший місяць за 1 грн — усім, хто ще не платив (Марія, 08.10.2026).
+    monthNote: `перший місяць — ${PRICE_FIRST} грн`,
     half: `${PRICE_HALF} грн`,
     halfPer: ' / пів року',
     halfNote: `≈ ${PER_MONTH} грн на місяць`,
@@ -249,7 +251,7 @@ const L = {
       ['Who it is for', 'Parents of children aged 0–18 — a separate profile for each child'],
       ['Where', 'On Telegram, via the @DityamPlusBot bot'],
       ['What arrives', 'New opportunities that fit your child’s profile, and deadline reminders'],
-      ['Price', `UAH ${PRICE} a month or UAH ${PRICE_HALF} for six months`],
+      ['Price', `First month UAH ${PRICE_FIRST}, then UAH ${PRICE} a month, or UAH ${PRICE_HALF} for six months`],
     ],
 
     contrastTitle: 'Search from zero every time — or get it delivered',
@@ -358,6 +360,7 @@ const L = {
     priceTitle: 'Pricing',
     month: `UAH ${PRICE}`,
     monthPer: ' / month',
+    monthNote: `first month UAH ${PRICE_FIRST}`,
     half: `UAH ${PRICE_HALF}`,
     halfPer: ' / 6 months',
     halfNote: `≈ UAH ${PER_MONTH} a month`,

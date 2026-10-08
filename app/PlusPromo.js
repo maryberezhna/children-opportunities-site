@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
+import { PRICE, PRICE_HALF, PRICE_FIRST } from '@/lib/wayforpay';
 
 /**
  * Блок Dityam+ унизу сторінки можливості — між «Схожими можливостями» і
@@ -54,10 +54,11 @@ const T = {
     // нічого не прочитає (Марія, 05.10.2026). З 06.10.2026 тут головна
     // відмінність від каналу — профіль під конкретну дитину.
     diff: 'Окремий профіль на кожну дитину.',
-    price: `За пів року — ${PRICE_HALF} грн, це ${PRICE_HALF_MONTHLY} грн на місяць.`,
+    // Перший місяць за 1 грн — усім, хто ще не платив (Марія, 08.10.2026).
+    price: `Перший місяць — ${PRICE_FIRST} грн, далі ${PRICE} грн/міс. За пів року — ${PRICE_HALF} грн, це ${PRICE_HALF_MONTHLY} грн на місяць.`,
     // Нерозривний пробіл: на телефоні кнопка переноситься, і число не має
     // лишатись в кінці рядка окремо від «грн/міс».
-    cta: `Увімкнути нагадування — ${PRICE}\u00a0грн/міс`,
+    cta: `Перший місяць за ${PRICE_FIRST}\u00a0грн`,
     href: '/plus',
   },
   en: {
@@ -66,8 +67,8 @@ const T = {
     title: 'So your child hears about a contest before the deadline, not after',
     text: 'A private bot keeps track of dates for you: it reminds you of deadlines in good time, has an “Add to calendar” button and sends new opportunities for your child’s age and interests every day.',
     diff: 'A separate profile for each child.',
-    price: `Six months — UAH ${PRICE_HALF}, that is UAH ${PRICE_HALF_MONTHLY} a month.`,
-    cta: `Turn on reminders — UAH\u00a0${PRICE}/month`,
+    price: `First month UAH ${PRICE_FIRST}, then UAH ${PRICE}/month. Six months — UAH ${PRICE_HALF}, that is UAH ${PRICE_HALF_MONTHLY} a month.`,
+    cta: `First month for UAH\u00a0${PRICE_FIRST}`,
     href: '/en/plus',
   },
 };
