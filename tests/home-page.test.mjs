@@ -129,3 +129,9 @@ test('телефон: без кільця SIA й без підкладки пі�
   assert.match(css, /@media \(max-width: 900px\) \{\s*\.v2-hero \.v2-sia-anchor,\s*html\[data-mode="teens"\] \.v2-hero \.v2-sia-anchor--lead \{ display: none; \}\s*\.v2-sia-glue \{ text-shadow: none; \}/);
   assert.match(readFileSync('app/styles/topic-v2.css', 'utf8'), /\.ol-own-hub \{ margin: 0; \}/);
 });
+
+test('активні фільтри не дублюються на телефоні й мають оформлення в підбірках (08.10.2026)', () => {
+  const css = readFileSync('app/styles/home-sidebar.css', 'utf8');
+  assert.match(css, /@media \(max-width: 900px\) \{\s*\.v2-active \{ display: none; \}\s*\}/);
+  assert.match(css, /^\.v2-active-chip \{/m);
+});

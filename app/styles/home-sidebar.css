@@ -457,3 +457,24 @@
   .v2-home .v2-side-count strong { font-weight: inherit; }
   .v2-home .v2-side-count-hint { font-size: 14px; color: var(--v2-ink-3); }
 }
+
+/* Знімні чипи активних фільтрів у шапці списку (.v2-active) — на будь-якій
+   сторінці зі списком, а не лише на головній ≥1100px. До 08.10.2026 у
+   підбірках вони стояли без жодного оформлення («Онкохворі× Очистити все»
+   дрібним текстом), а на телефоні ще й дублювали гарні чипи .m-active
+   (Марія: «оце норм фільтри ти думаєш?»). */
+.v2-active { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.v2-active-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 8px 0 14px;
+  border: 1px solid var(--v2-ink); border-radius: 9999px; background: var(--surface-2);
+  font-family: inherit; font-size: 14px; font-weight: 500; color: var(--v2-ink); cursor: pointer;
+}
+.v2-active-x { font-size: 12px; }
+.v2-active-reset {
+  margin-left: 6px; padding: 0; border: 0; background: none;
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--v2-accent-strong); cursor: pointer;
+}
+/* На телефоні ті самі фільтри вже показує .m-active над списком. */
+@media (max-width: 900px) {
+  .v2-active { display: none; }
+}
