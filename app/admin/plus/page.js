@@ -62,12 +62,17 @@ const STEP = {
 };
 
 const DAY = 86400000;
+const lastSeen = (s) => new Date(s.updated_at || s.created_at).getTime();
 const fmtDate = (iso) => (iso
   ? new Date(iso).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit' })
   : '—');
 
 function whereStuck(s) {
   if (s.status !== 'pending') return null;
+  // Подарунковий місяць за олімпіаду (lib/olimpiada-server.js, createGift):
+  // рядок чекає, доки людина відкриє бота за посиланням з листа. Ні оферти, ні
+  // анкети вона ще не бачила — «не погодився з офертою» тут було б неправдою.
+  if (s.billing_period === 'gift') return '🎁 подарунок за олімпіаду — бота ще не відкрили';
   if (s.flow_step) return STEP[s.flow_step] || s.flow_step;
   if (!s.consent_at) return 'не погодився з офертою';
   return 'дійшов до оплати';
@@ -87,9 +92,12 @@ function failure(s) {
 // лежать у базі вже з «собакою» — друга робила з них «@@name».
 const at = (handle) => `@${String(handle).replace(/^@+/, '')}`;
 
+// Без Telegram (подарунок за олімпіаду, ще не привʼязаний до чату) є лише
+// пошта з форми оплати — показуємо її, а не «—».
 function who(s) {
   if (s.telegram_handle) return at(s.telegram_handle);
-  return s.telegram_chat_id ? `Telegram · …${String(s.telegram_chat_id).slice(-4)}` : '—';
+  if (s.telegram_chat_id) return `Telegram · …${String(s.telegram_chat_id).slice(-4)}`;
+  return s.email ? `📧 ${s.email}` : '—';
 }
 
 function Card({ value, label, tone }) {
@@ -121,7 +129,7 @@ export default async function PlusAdminPage() {
 
   const [subsRes, kidsRes, waitRes, remindRes, appsRes] = await Promise.all([
     supabase.from('digest_subscribers')
-      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, wfp_order_reference, last_sent_at, wfp_last_status, wfp_last_reason, wfp_last_reason_code, source')
+      .select('id, created_at, updated_at, status, telegram_handle, telegram_chat_id, billing_period, consent_at, flow_step, email, wfp_order_reference, last_sent_at, wfp_last_status, wfp_last_reason, wfp_last_reason_code, source')
       .order('created_at', { ascending: false }).limit(500),
     supabase.from('plus_children').select('subscriber_id'),
     supabase.from('plus_waitlist').select('id, email, telegram_username, telegram_chat_id, source, created_at')
@@ -159,7 +167,9 @@ export default async function PlusAdminPage() {
   // «Потребує уваги»: пауза (оплата не пройшла) і ті, хто застряг в оформленні
   // понад добу — їм, можливо, варто написати.
   const stuck = pending.filter((s) => new Date(s.updated_at || s.created_at).getTime() < Date.now() - DAY);
-  const attention = [...paused, ...stuck];
+  // Завжди спершу найсвіжіші (Марія, 08.10.2026): паузи й застряглі — одним
+  // списком за датою, а не двома блоками підряд.
+  const attention = [...paused, ...stuck].sort((a, b) => lastSeen(b) - lastSeen(a));
 
   // «Чим закінчилось»: відповіді на питання «Ви скористалися цією можливістю?»
   // (scraper/ask_outcomes.py + /api/telegram/plus). Тут видно те, чого не
@@ -206,7 +216,7 @@ export default async function PlusAdminPage() {
               {attention.map((s) => (
                 <tr key={s.id}>
                   <td style={cell}>{who(s)}</td>
-                  <td style={cell}>{s.status === 'paused' ? `⚠️ ${failure(s)}` : `⏳ зупинився: ${whereStuck(s)}`}</td>
+                  <td style={cell}>{s.status === 'paused' ? `⚠️ ${failure(s)}` : s.billing_period === 'gift' ? whereStuck(s) : `⏳ зупинився: ${whereStuck(s)}`}</td>
                   <td style={cell}>{fmtDate(s.updated_at || s.created_at)}</td>
                 </tr>
               ))}

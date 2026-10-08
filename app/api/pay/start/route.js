@@ -10,7 +10,7 @@
 // кожен свій виклик, а промокод і ціна беруться на момент кліку, а не на
 // момент показу.
 import { createClient } from '@supabase/supabase-js';
-import { createInvoice, wayforpayConfigured } from '@/lib/wayforpay';
+import { createInvoice, firstPaymentAmount, wayforpayConfigured } from '@/lib/wayforpay';
 import { findPromo, promoUsable } from '@/lib/promo';
 
 export const runtime = 'nodejs';
@@ -49,9 +49,11 @@ export async function GET(request) {
   // Знижка рахується тут, а не при показі кнопки: між показом і натисканням
   // код могли ввести, вичерпати або він міг протермінуватись.
   const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
-  const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !sub.wfp_order_reference;
-  const firstRaw = plan === 'halfyear' ? promo?.halfyear_amount : promo?.first_amount;
-  const firstAmount = promoOk && firstRaw != null ? Number(firstRaw) : null;
+  const promoOk = promo && promoUsable(promo, { used: promo.used }).ok;
+  // Перший місяць за 1 грн — усім, хто ще не платив; промокод — поверх.
+  const firstAmount = firstPaymentAmount({
+    plan, paidBefore: Boolean(sub.wfp_order_reference), promo: promoOk ? promo : null,
+  });
 
   const inv = await createInvoice(sub, plan, { firstAmount });
   if (!inv.url) return backToBot(`createInvoice failed: ${inv.error || 'no url'}`);
