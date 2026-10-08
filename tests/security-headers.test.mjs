@@ -3,6 +3,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 process.env.VERCEL = '1';
@@ -21,4 +22,9 @@ test('усі сторінки віддають захисні заголовки
   assert.match(h['Content-Security-Policy'], /frame-ancestors 'self'/);
   // Скрипти CSP не обмежує: GA4, Hotjar і Amplitude вбудовані інлайном.
   assert.doesNotMatch(h['Content-Security-Policy'], /script-src/);
+});
+
+test('мітка Google AdSense у <head> (08.10.2026)', () => {
+  const layout = readFileSync('app/layout.js', 'utf8');
+  assert.match(layout, /'google-adsense-account': 'ca-pub-9994894072460383'/);
 });
