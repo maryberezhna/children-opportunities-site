@@ -197,3 +197,9 @@ test('замість подарункового місяця — Dityam+ за 1 
     assert.doesNotMatch(read(f), /giftDays\} днів Dityam\+|у подарунок кожному|місяць Dityam\+ і призи/, f);
   }
 });
+
+test('Dityam+ після олімпіади: «першими дізнаються» — і на сторінці, і в листі', () => {
+  const phrase = /підписники першими дізнаються про наші нові\s+олімпіади й конкурси/;
+  assert.match(read('app/olimpiada/test/page.js'), phrase);
+  assert.match(read('scraper/olimpiada_invites.py'), phrase);
+});

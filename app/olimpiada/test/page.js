@@ -174,8 +174,8 @@ export default async function TestPage({ searchParams }) {
         <h2 className="ol-h2">Що далі після олімпіади?</h2>
         <p className="ol-text">
           Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини
-          і завчасно нагадує про дедлайни — у Telegram. Перший місяць — {PRICE_FIRST} грн, далі {PRICE} грн/міс,
-          скасувати можна будь-коли.
+          і завчасно нагадує про дедлайни — у Telegram. А ще підписники першими дізнаються про наші нові
+          олімпіади й конкурси. Перший місяць — {PRICE_FIRST} грн, далі {PRICE} грн/міс, скасувати можна будь-коли.
         </p>
         <a href={`https://t.me/${PLUS_BOT}?start=from_olimpiada`} className="ol-btn ol-btn-main" target="_blank" rel="noopener">
           Спробувати за {PRICE_FIRST} грн
