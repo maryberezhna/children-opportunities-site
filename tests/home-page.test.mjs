@@ -123,3 +123,9 @@ test('наліпка SIA — без фону, на компʼютері післ
   // «Наче перекриває слово» (07.10.2026): у слова з кільцем — підкладка кольору фону.
   assert.match(css, /\.v2-sia-glue \{[^}]*text-shadow:[^}]*var\(--v2-halo\)/);
 });
+
+test('телефон: без кільця SIA й без підкладки під «можливості» (08.10.2026)', () => {
+  const css = readFileSync('app/styles/home-v2.css', 'utf8');
+  assert.match(css, /@media \(max-width: 900px\) \{\s*\.v2-hero \.v2-sia-anchor,\s*html\[data-mode="teens"\] \.v2-hero \.v2-sia-anchor--lead \{ display: none; \}\s*\.v2-sia-glue \{ text-shadow: none; \}/);
+  assert.match(readFileSync('app/styles/topic-v2.css', 'utf8'), /\.ol-own-hub \{ margin: 0; \}/);
+});
