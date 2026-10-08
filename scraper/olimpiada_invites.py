@@ -48,7 +48,7 @@ PRINT_PRICE = 199
 # Dityam+ після олімпіади — перший місяць за 1 грн (Марія, 08.10.2026: «показуй
 # і тут, і в імейлі»; замість подарункового місяця). Ціни — як у lib/wayforpay.js.
 PLUS_FIRST = 1
-PLUS_PRICE = 119
+PLUS_PRICE = 99
 PLUS_LINK = "https://t.me/DityamPlusBot?start=from_olimpiada"
 PLUS_TEXT = ("Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини "
              "і завчасно нагадує про дедлайни — у Telegram. "

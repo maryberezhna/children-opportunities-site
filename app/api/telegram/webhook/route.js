@@ -144,7 +144,7 @@ const ADMIN_MENU = {
   ],
 };
 
-const PRICE_MONTH = 119;
+const PRICE_MONTH = 99; // з 08.10.2026; до того 119
 // Пів року замість року з 27.09.2026. Річні — лише старі рядки (їх 0).
 const PRICE_HALF = 549;
 const PRICE_YEAR_OLD = 999;

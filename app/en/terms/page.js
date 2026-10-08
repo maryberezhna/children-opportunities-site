@@ -74,17 +74,17 @@ export default function TermsPageEn() {
 
           <h2>3. Price and payment</h2>
           <ul>
-            <li><strong>Monthly subscription — UAH 119</strong> (charged every month).</li>
+            <li><strong>Monthly subscription — UAH 99</strong> (charged every month).</li>
             <li><strong>Six-month subscription — UAH 549</strong> (charged every six months, ≈ UAH 92/month).</li>
             <li><strong>First month of the monthly subscription — UAH 1</strong> for anyone who has
               not paid for the subscription before. One month after the first payment, and every
-              month after that, the full price of UAH 119 is charged. You can cancel any time
+              month after that, the full price of UAH 99 is charged. You can cancel any time
               before the charge with the /stop command in the bot.</li>
             <li><strong>With a promo code</strong> — the discount applies to the FIRST payment
               only; every payment after that is the full price. The code is entered in the
               Telegram bot before paying, and the price on the button updates before you reach
               the payment page. The current code, “FIRST”: the first month is UAH 1 instead of
-              119 (the payment service cannot process a UAH 0 payment), the first six months UAH 439
+              99 (the payment service cannot process a UAH 0 payment), the first six months UAH 439
               instead of 549. It applies to a person who has not paid for the subscription before.</li>
           </ul>
           <p>

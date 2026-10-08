@@ -23,7 +23,7 @@ def test_pick_recipients():
 
 def test_texts_name_price_and_stop():
     for t in (started_text(), waitlist_text()):
-        assert "1 грн" in t and "119 грн/міс" in t and "/stop" in t
+        assert "1 грн" in t and "99 грн/міс" in t and "/stop" in t
     assert "Підписка вже працює: щодня добирає" in waitlist_text()
 
 

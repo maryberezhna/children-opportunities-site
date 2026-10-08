@@ -32,7 +32,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
 PLUS_BOT = "DityamPlusBot"
 PRICE_FIRST = 1
-PRICE = 119
+PRICE = 99  # з 08.10.2026; до того 119
 # Мітка `from_uah1`: хто прийде з кнопки вперше, у /admin/plus матиме джерело
 # «Розсилка · перший місяць 1 грн» (lib/plusSources.js).
 BUTTON_URL = f"https://t.me/{PLUS_BOT}?start=from_uah1"

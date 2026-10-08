@@ -20,7 +20,7 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-const PRICE_MONTH = 119;
+const PRICE_MONTH = 99; // з 08.10.2026; до того 119
 // Пів року замість року з 27.09.2026. Річні рахуємо лише для старих рядків (їх 0).
 const PRICE_HALF = 549;
 const PRICE_YEAR_OLD = 999;
