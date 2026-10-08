@@ -41,7 +41,7 @@ export default async function Image() {
         <div style={{ display: 'flex', gap: 14 }}>
           {pill(`${OLIMP.questionCount} завдань`, '#ffffff')}
           {pill(`${OLIMP.minutes} хвилин`, '#ffc93c')}
-          {pill(`${OLIMP.price} грн`, '#f5a023')}
+          {pill('безкоштовно', '#f5a023')}
         </div>
       </div>
     ),

@@ -122,28 +122,30 @@ test('диплом: заглушка, екранна версія 75%, дост�
   assert.match(read('app/api/olimpiada/diploma/route.js'), /searchParams\.get\('s'\) === 'screen' && !searchParams\.get\('dl'\) \? 0\.75 : 1/);
 });
 
-test('2 варіанти оплати: 150 грн або 249 з друкованим дипломом', async () => {
+test('участь безкоштовна: 1 кнопка, без рахунку; друкований диплом — 199 грн після тесту', async () => {
   const { OLIMP, isBundle } = await import('../lib/olimpiada.js');
   const { olimpStats } = await import('../lib/olimpiada-stats.js');
-  assert.equal(OLIMP.bundlePrice, 249);
+  assert.equal(OLIMP.price, 0);
+  assert.equal(OLIMP.printPrice, 199);
+  // Старі заявки «з дипломом» за 249 грн лишаються впізнаваними.
   assert.equal(isBundle({ amount: 249 }), true);
-  assert.equal(isBundle({ amount: 150 }), false);
+  assert.equal(isBundle({ amount: 0 }), false);
   const form = read('app/olimpiada/EntryForm.js');
-  assert.match(form, /value="print"/);
-  assert.match(form, /withPrint: e\.nativeEvent\?\.submitter\?\.value === 'print'/);
-  assert.match(read('app/api/olimpiada/start/route.js'), /amount: b\.withPrint === true \? OLIMP\.bundlePrice : OLIMP\.price/);
-  // Оплата «з дипломом» одразу позначає доставку оплаченою; адреса — після тесту без рахунку.
-  assert.match(read('lib/olimpiada-server.js'), /bundle && !entry\.print_paid_at \? \{ print_paid_at: now \}/);
-  assert.match(read('app/api/olimpiada/print/route.js'), /if \(entry\.print_paid_at && !entry\.print_order\) \{\n\s+await savePrintAddress/);
-  // Виручка без подвійного рахунку доставки.
+  assert.doesNotMatch(form, /value="print"|withPrint|bundlePrice/);
+  assert.match(form, /Взяти участь безкоштовно/);
+  const start = read('app/api/olimpiada/start/route.js');
+  assert.match(start, /amount: 0/);
+  assert.match(start, /markPaid\(store, entry, \{ free: true/);
+  assert.doesNotMatch(start, /createEntryInvoice|from '@\/lib\/wayforpay'/);
+  // Виручка: старі внески + дипломи після тесту, без подвійного рахунку доставки.
   const s = olimpStats({ entries: [
     { paid_at: '2026-10-06', amount: 249, print_paid_at: '2026-10-06' },
-    { paid_at: '2026-10-06', amount: 150, print_paid_at: '2026-10-07' },
-    { paid_at: '2026-10-06', amount: 150 },
+    { paid_at: '2026-10-09', amount: 0, print_paid_at: '2026-10-09' },
+    { paid_at: '2026-10-09', amount: 0, wfp_last_status: 'Free' },
   ] });
-  assert.equal(s.revenue, 249 + 150 + 120 + 150);
-  assert.equal(s.bundles, 1);
+  assert.equal(s.revenue, 249 + 199);
   assert.equal(s.prints, 2);
+  assert.equal(s.paid, 3);
 });
 
 test('сторінка олімпіади: цінність і справжні цифри замість формальностей', async () => {

@@ -23,9 +23,7 @@ class LaunchTest(unittest.TestCase):
             return int(re.search(rf"{key}:\s*(\d+)", js).group(1))
         self.assertEqual(launch.QUESTIONS, num("questionCount"))
         self.assertEqual(launch.MINUTES, num("minutes"))
-        self.assertEqual(launch.ACCESS_HOURS, num("accessHours"))
-        self.assertEqual(launch.PRICE, num("price"))
-        self.assertEqual(launch.BUNDLE_PRICE, num("bundlePrice"))
+        self.assertEqual(launch.PRINT_PRICE, num("printPrice"))
         self.assertEqual(launch.GIFT_DAYS, num("giftDays"))
 
     def test_message(self):
@@ -34,17 +32,19 @@ class LaunchTest(unittest.TestCase):
         for part in (text, body):
             self.assertIn("utm_source=email", part)
             self.assertIn("#uchast", part)
-            self.assertIn("150 грн", part)
-            self.assertIn("249 грн", part)
+            # З 08.10.2026 участь безкоштовна; платний лише друкований диплом.
+            self.assertIn("безкоштовна", part)
+            self.assertIn("199 грн", part)
+            self.assertNotIn("внесок", part)
             self.assertIn("Марія Шутяк", part)
             self.assertNotIn("Dityam+ —", part)
         self.assertIn('<a href="https://dityam.com.ua/olimpiada?utm_source=email', body)
 
     def test_only_when_registration_is_open(self):
-        # Ознака — кнопка з ціною, яку сторінка малює лише з OLIMP_OPEN = true.
+        # Ознака — кнопка, яку сторінка малює лише з OLIMP_OPEN = true.
         page = (ROOT.parent / "app" / "olimpiada" / "page.js").read_text(encoding="utf-8")
-        self.assertIn("`Взяти участь · ${OLIMP.price} грн`", page)
-        self.assertTrue(launch.registration_open('<a class="ol-btn">Взяти участь · 150 грн</a>'))
+        self.assertIn("OLIMP_OPEN ? 'Взяти участь безкоштовно'", page)
+        self.assertTrue(launch.registration_open('<a class="ol-btn">Взяти участь безкоштовно</a>'))
         self.assertFalse(launch.registration_open('<a class="ol-btn">Повідомити про старт</a>'))
 
     def test_workflow_is_manual_with_confirmation(self):

@@ -332,22 +332,22 @@ export default async function MetricsPage() {
         <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>.
       </p>
 
-      <h2 style={h2S}>🧩 Онлайн-олімпіада {OLIMP_OPEN ? '' : '· продаж ще закритий'}</h2>
+      <h2 style={h2S}>🧩 Онлайн-олімпіада {OLIMP_OPEN ? '' : '· реєстрація ще закрита'}</h2>
       <div style={grid}>
         <Card value={olimp.waitlist} delta={olimp.waitlist7 || null} label="email у списку очікування (Δ за 7 днів)" />
         <Card value={olimp.waitlist1} label="нових email за 24 години" />
-        <Card value={olimp.paid} label={`оплатили участь (${OLIMP.price} грн)`} />
-        <Card value={olimp.unpaid} label="почали заявку, але не оплатили" />
+        {/* З 08.10.2026 участь безкоштовна: «зареєструвались» = доступ до тесту відкрито. */}
+        <Card value={olimp.paid} label="зареєструвались (участь безкоштовна)" />
         <Card value={olimp.finished} label={`пройшли тест (почали: ${olimp.started})`} />
         <Card value={olimp.open} label="відповіли на останнє, відкрите завдання тесту" />
-        <Card value={olimp.prints} label={`друкований диплом: ${olimp.bundles} у заявці за ${OLIMP.bundlePrice} грн, решта після тесту за ${OLIMP.printPrice}`} />
-        <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: внески + доставка" />
+        <Card value={olimp.prints} label={`замовили друкований диплом (${OLIMP.printPrice} грн з доставкою)`} />
+        <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: друковані дипломи" />
       </div>
       <p style={noteS}>
         {olimp.levels.length ? `Рівні: ${olimp.levels.map(([k, n]) => `${k} — ${n}`).join(', ')}. ` : ''}
         {olimp.avgScore != null ? `Середній бал: ${olimp.avgScore}. ` : ''}
         {olimp.sources.length ? `Звідки email: ${olimp.sources.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
-        Тестові записи адміна (без оплати) сюди не входять: {olimp.tests}.
+        Тестові записи адміна сюди не входять: {olimp.tests}.
       </p>
 
       <h3 style={{ ...h2S, fontSize: 17, marginTop: 18 }}>Сторінка /olimpiada і попап на фільтрі</h3>

@@ -18,7 +18,7 @@ export default function OlimpPromo({ abroad = false, className = '' }) {
         у подарунок, а 3 найкращі відповіді щомісяця — призи.
       </p>
       <Link href="/olimpiada" className="ol-own-btn" prefetch={false}>
-        {OLIMP_OPEN ? `Взяти участь · ${OLIMP.price} грн →` : 'Дізнатися й залишити email →'}
+        {OLIMP_OPEN ? 'Взяти участь безкоштовно →' : 'Дізнатися й залишити email →'}
       </Link>
     </section>
   );

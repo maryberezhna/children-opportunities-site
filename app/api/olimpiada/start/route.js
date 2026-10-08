@@ -1,14 +1,18 @@
-// Заявка на онлайн-олімпіаду: створює запис і рахунок WayForPay на 150 грн.
-// Відповідь — адреса, куди вести людину: сторінка оплати або одразу тест
-// (для адміна й у локальній розробці, де платіжних ключів немає).
+// Заявка на онлайн-олімпіаду. З 08.10.2026 участь безкоштовна (Марія:
+// «робимо її безкоштовною, але диплом можна надрукувати за 199 грн»): запис
+// одразу отримує доступ, запрошення йде на пошту, а людину ведемо прямо на
+// тест. Оплата лишилась лише за друкований диплом — /api/olimpiada/print.
+// До того тут виставлявся рахунок WayForPay на 150 або 249 грн.
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
-import { wayforpayConfigured } from '@/lib/wayforpay';
 import { OLIMP, OLIMP_OPEN, cleanName, isEmail } from '@/lib/olimpiada';
-import { getStore, markPaid, createEntryInvoice, json } from '@/lib/olimpiada-server';
+import { getStore, markPaid, json } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const sameName = (a, b) => String(a || '').toLocaleLowerCase('uk') === String(b || '').toLocaleLowerCase('uk');
 
 export async function POST(request) {
   let b;
@@ -22,42 +26,34 @@ export async function POST(request) {
   if (!isEmail(email)) return json({ error: 'email' }, 400);
   if (b.consent !== true) return json({ error: 'consent' }, 400);
 
-  // Марія перевіряє олімпіаду, не платячи: вхід в адмінку = безкоштовний запис.
+  // Марія перевіряє олімпіаду до запуску: вхід в адмінку = тестовий запис
+  // (у статистику не йде). Локально, без бази, — так само.
   const admin = isAdmin(cookies().get('dityam_admin')?.value);
-  const devFree = !wayforpayConfigured && process.env.NODE_ENV !== 'production';
-  // До запуску записів від сторонніх не створюємо й рахунків не виставляємо.
+  const devFree = process.env.NODE_ENV !== 'production' && !process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!OLIMP_OPEN && !admin && !devFree) return json({ error: 'closed' }, 403);
 
   const store = getStore();
   if (!store) return json({ error: 'unavailable' }, 503);
 
-  let entry;
   try {
-    entry = await store.create({
+    // Безкоштовна форма не має ставати способом засипати чужу скриньку:
+    // повторна заявка на ту саму дитину, поки тест не пройдено, веде до вже
+    // виданого посилання без нового листа; понад OLIMP.maxEntriesPerEmailDay
+    // заявок за добу на одну пошту — відмова.
+    const recent = await store.recentByEmail(email, new Date(Date.now() - DAY_MS).toISOString());
+    const again = recent.find((r) => sameName(r.child_name, name) && !r.finished_at);
+    if (again) return json({ url: `/olimpiada/test?t=${again.token}`, t: again.token, again: true });
+    if (!admin && recent.length >= OLIMP.maxEntriesPerEmailDay) return json({ error: 'too_many' }, 429);
+
+    const entry = await store.create({
       olimp: OLIMP.slug, child_name: name, parent_email: email,
-      // Друга кнопка форми — участь разом із друкованим дипломом (OLIMP.bundlePrice).
-      consent_at: new Date().toISOString(), amount: b.withPrint === true ? OLIMP.bundlePrice : OLIMP.price,
+      consent_at: new Date().toISOString(), amount: 0,
       source: String(b.source || '').slice(0, 60) || null,
     });
+    await markPaid(store, entry, { free: true, test: admin || devFree });
+    return json({ url: `/olimpiada/test?t=${entry.token}`, t: entry.token });
   } catch (e) {
     console.error('[olimpiada/start]', e);
     return json({ error: 'unavailable' }, 503);
   }
-  const testPath = `/olimpiada/test?t=${entry.token}`;
-
-  // ?pay=1 у режимі перевірки: адмін іде через справжню оплату, щоб побачити
-  // сторінку WayForPay і весь шлях до тесту ще до запуску.
-  if ((admin && b.realPay !== true) || devFree) {
-    await markPaid(store, entry, { test: true });
-    return json({ url: testPath, t: entry.token });
-  }
-  if (!wayforpayConfigured) return json({ error: 'unavailable' }, 503);
-
-  const inv = await createEntryInvoice(entry);
-  if (!inv.url) {
-    console.error(`[olimpiada/start] invoice failed: ${inv.error || 'no url'}`);
-    return json({ error: 'pay' }, 502);
-  }
-  await store.update(entry.token, { wfp_order_reference: inv.orderReference });
-  return json({ url: inv.url, t: entry.token });
 }

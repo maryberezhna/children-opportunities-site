@@ -141,31 +141,31 @@ test('доставка диплома: поки оплата йде, форму 
   assert.equal((await syncPrint(store, await store.get())).pending, false);
 });
 
-test('запрошення: посилання, термін, і 249 грн не пропонують доставку вдруге', () => {
-  const entry = { token: TOKEN, child_name: 'Марк Петренко', paid_at: '2026-10-07T10:00:00Z' };
+test('запрошення: посилання, участь безкоштовна, друкований диплом 199 грн', () => {
+  const entry = { token: TOKEN, child_name: 'Марк Петренко', paid_at: '2026-10-07T10:00:00Z', amount: 0 };
   const { subject, text, html } = buildInvite(entry);
   assert.equal(subject, 'Запрошення до онлайн-олімпіади з логіки — Марк Петренко');
   assert.match(text, new RegExp(`/olimpiada/test\\?t=${TOKEN}`));
-  assert.match(text, /почати тест треба до 10 жовтня, 13:00 за київським часом/);
-  assert.match(text, /додатково 120 грн/);
+  assert.match(text, /Участь безкоштовна/);
+  assert.match(text, /друкований — 199 грн, доставка у відділення або поштомат Нової пошти включена/);
+  // З 08.10.2026 ні строку «після оплати», ні неповернення внеску.
+  assert.doesNotMatch(text, /після оплати|внесок/);
+  assert.doesNotMatch(html, /внесок/);
   assert.match(html, /Перейти до тесту/);
-  const bundle = buildInvite({ ...entry, print_paid_at: '2026-10-07T10:00:00Z' });
-  assert.doesNotMatch(bundle.text, /додатково 120 грн/);
-  assert.match(bundle.text, /друкований диплом ви вже оплатили/);
 });
 
 test('запрошення сайту й запасного скрипта — ті самі слова', () => {
   const py = readFileSync('scraper/olimpiada_invites.py', 'utf8').replace(/"\s*\n\s*f?"/g, '');
   for (const phrase of [
-    'Оплату отримали — ',
-    'бере участь в онлайн-олімпіаді з логіки Dityam.com.ua.',
+    'Заявку отримали — ',
+    'бере участь в онлайн-олімпіаді з логіки Dityam.com.ua. Участь безкоштовна.',
+    'тест можна пройти в зручний час: ',
     'останнє завдання — відкрите: без варіантів і без таймера, дитина пише свою відповідь; воно вирішує, хто отримає приз місяця;',
     'а відкрите завдання можна дописати без поспіху;',
-    'друкований диплом ви вже оплатили — адресу доставки Новою поштою вкажете там само;',
+    'грн, доставка у відділення або поштомат Нової пошти включена;',
     'переможців місяця оголосимо до 7-го числа наступного місяця; якщо',
-    'Після початку тесту або коли час на проходження минув, внесок не повертається.',
   ]) {
-    assert.ok(buildInvite({ token: TOKEN, child_name: 'М', paid_at: '2026-10-07T10:00:00Z', print_paid_at: phrase.includes('вже оплатили') ? 'x' : null }).text.includes(phrase), `сайт: ${phrase}`);
+    assert.ok(buildInvite({ token: TOKEN, child_name: 'М', paid_at: '2026-10-07T10:00:00Z', amount: 0 }).text.includes(phrase), `сайт: ${phrase}`);
     assert.ok(py.includes(phrase), `скрипт: ${phrase}`);
   }
 });

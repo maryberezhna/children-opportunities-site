@@ -44,7 +44,7 @@ KYIV = ZoneInfo("Europe/Kyiv")
 QUESTIONS = 25
 MINUTES = 35
 ACCESS_HOURS = 72
-PRINT_PRICE = 120
+PRINT_PRICE = 199
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня",
               "серпня", "вересня", "жовтня", "листопада", "грудня"]
@@ -80,6 +80,10 @@ def needs_invite(entry: dict, now=None) -> bool:
         return False
     if "@" not in str(entry.get("parent_email") or ""):
         return False
+    # З 08.10.2026 участь безкоштовна, і посилання не згорає; 72 години діють
+    # лише для старих платних заявок.
+    if not float(entry.get("amount") or 0):
+        return True
     return now < access_until(paid)
 
 
@@ -87,36 +91,30 @@ def build_message(entry: dict):
     """(тема, текст, html) листа-запрошення."""
     name = str(entry.get("child_name") or "").strip() or "ваша дитина"
     link = f"{SITE}/olimpiada/test?t={entry['token']}"
-    until = kyiv_text(access_until(parse_ts(entry["paid_at"])))
     subject = f"Запрошення до онлайн-олімпіади з логіки — {name}"
+    # Ті самі слова, що в lib/olimpiada-mail.js. З 08.10.2026 участь безкоштовна:
+    # ні строку «72 години після оплати», ні рядка про неповернення внеску.
     points = [
-        f"почати тест треба до {until} за київським часом — це {ACCESS_HOURS} години після оплати;",
-        f"{QUESTIONS} завдань із варіантами за {MINUTES} хвилин, 1 спроба; час піде після натискання «Почати»;",
+        f"тест можна пройти в зручний час: {QUESTIONS} завдань із варіантами за {MINUTES} хвилин, 1 спроба; "
+        "час піде після натискання «Почати»;",
         # Яке саме відкрите завдання — секрет до тесту (Марія, 06.10.2026).
-        # Без таймера з 07.10.2026 — ті самі слова, що в lib/olimpiada-mail.js.
         "останнє завдання — відкрите: без варіантів і без таймера, дитина пише свою відповідь; воно вирішує, "
         "хто отримає приз місяця;",
         "коли час на завдання з варіантами вийде, відповіді на них відправляться самі, "
         "а відкрите завдання можна дописати без поспіху;",
-        # Оплатили разом із друкованим дипломом (249 грн) — вдруге не пропонуємо.
-        ("диплом зʼявиться на тій самій сторінці одразу після тесту; друкований диплом ви вже оплатили — "
-         "адресу доставки Новою поштою вкажете там само;")
-        if entry.get("print_paid_at") else
-        ("диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням його можна отримати Новою поштою "
-         f"— додатково {PRINT_PRICE} грн;"),
+        "диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням можна замовити друкований — "
+        f"{PRINT_PRICE} грн, доставка у відділення або поштомат Нової пошти включена;",
         f"переможців місяця оголосимо до 7-го числа наступного місяця; якщо {name} виграє, повідомимо вас "
         "окремим листом на цю адресу.",
     ]
     text = "\n".join([
         "Добрий день!",
         "",
-        f"Оплату отримали — {name} бере участь в онлайн-олімпіаді з логіки Dityam.com.ua.",
+        f"Заявку отримали — {name} бере участь в онлайн-олімпіаді з логіки Dityam.com.ua. Участь безкоштовна.",
         f"Посилання на тест: {link}",
         "",
         "Що важливо:",
         *[f"• {p}" for p in points],
-        "",
-        "Після початку тесту або коли час на проходження минув, внесок не повертається.",
         "",
         "Марія Шутяк, Dityam.com.ua",
         FROM,
@@ -124,12 +122,11 @@ def build_message(entry: dict):
     esc = html.escape
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
-<p>Оплату отримали — <b>{esc(name)}</b> бере участь в онлайн-олімпіаді з логіки Dityam.com.ua.</p>
+<p>Заявку отримали — <b>{esc(name)}</b> бере участь в онлайн-олімпіаді з логіки Dityam.com.ua. Участь безкоштовна.</p>
 <p><a href="{esc(link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">Перейти до тесту</a></p>
 <p>Що важливо:</p>
 <ul>{''.join(f'<li>{esc(p)}</li>' for p in points)}</ul>
 <p>Якщо кнопка не відкривається, скопіюйте посилання:<br><a href="{esc(link)}">{esc(link)}</a></p>
-<p style="color:#6b6b6b;font-size:14px">Після початку тесту або коли час на проходження минув, внесок не повертається.</p>
 <p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
@@ -156,8 +153,8 @@ def build_diploma_message(entry: dict):
     # Оплачено разом з участю (249 грн), а адреси ще немає — просимо вказати.
     need_address = bool(entry.get("print_paid_at")) and not entry.get("print_order")
     post_link = f"{link}#dostavka"
-    post_offer = (f"Надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — "
-                  f"додатково {PRINT_PRICE} грн, друк і доставка включені у вартість.")
+    post_offer = (f"Надрукуємо диплом і надішлемо у відділення або поштомат Нової пошти по Україні — "
+                  f"{PRINT_PRICE} грн, доставка включена.")
     address_ask = ("Друкований диплом ви оплатили разом з участю. Вкажіть, куди його надіслати: "
                    "отримувач, телефон, місто й відділення чи поштомат Нової пошти.")
     subject = f"Диплом онлайн-олімпіади з логіки — {name}"
@@ -174,8 +171,8 @@ def build_diploma_message(entry: dict):
         ] if competes else []),
         *([
             "",
-            "Бажаєте отримати диплом Новою поштою?",
-            f"{post_offer} Замовити доставку: {post_link}",
+            "Бажаєте друкований диплом?",
+            f"{post_offer} Замовити: {post_link}",
         ] if offer_post else []),
         *([
             "",
@@ -189,10 +186,10 @@ def build_diploma_message(entry: dict):
     prize_html = (f"<p>Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {esc(winner)}</p>\n"
                   if competes else "")
     post_html = (
-        f"<p><b>Бажаєте отримати диплом Новою поштою?</b><br>{esc(post_offer)}</p>\n"
+        f"<p><b>Бажаєте друкований диплом?</b><br>{esc(post_offer)}</p>\n"
         f'<p><a href="{esc(post_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
         f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
-        f"Замовити доставку · {PRINT_PRICE} грн</a></p>\n"
+        f"Замовити друкований диплом · {PRINT_PRICE} грн</a></p>\n"
     ) if offer_post else ""
     if need_address:
         post_html = (

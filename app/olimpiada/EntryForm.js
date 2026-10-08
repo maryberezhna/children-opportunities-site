@@ -1,6 +1,8 @@
 'use client';
 
-// Заявка на олімпіаду: імʼя дитини для диплома й email батьків → оплата.
+// Заявка на олімпіаду: імʼя дитини для диплома й email батьків → одразу тест.
+// З 08.10.2026 участь безкоштовна — оплати в заявці немає; друкований диплом
+// замовляють після тесту, на сторінці результату.
 // Віку не питаємо (Марія, 06.10.2026: «навіщо нам вік»): він ні на що не
 // впливав — ні на диплом, ні на подарунок Dityam+; група 9–11 названа на сторінці.
 // Токен запису лишаємо в браузері: якщо людина закрила вкладку після оплати,
@@ -13,19 +15,18 @@ const ERRORS = {
   name: 'Вкажіть імʼя та прізвище дитини — так, як має бути на дипломі.',
   email: 'Перевірте email — на нього ми напишемо, якщо щось піде не так.',
   consent: 'Потрібна ваша згода з правилами.',
-  pay: 'Не вдалося відкрити оплату. Спробуйте ще раз за хвилину.',
+  too_many: 'На цю пошту сьогодні вже забагато заявок. Спробуйте завтра або напишіть нам.',
   unavailable: 'Олімпіада тимчасово недоступна. Спробуйте трохи пізніше.',
   closed: 'Реєстрація ще не відкрита. Старт оголосимо в Telegram-каналі.',
 };
 
-export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
+export default function EntryForm({ open, channelUrl }) {
   const [state, setState] = useState('idle'); // idle | sending | error
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(null);
   // До запуску форму бачить лише той, хто прийшов перевіряти: ?preview=1.
   // Справжній замок — на сервері (вхід в адмінку), це лише щоб не плутати людей.
   const [preview, setPreview] = useState(false);
-  const [realPay, setRealPay] = useState(false);
 
   useEffect(() => {
     try {
@@ -34,7 +35,6 @@ export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
     } catch { /* приватний режим — просто без «Продовжити» */ }
     const query = new URLSearchParams(window.location.search);
     setPreview(query.has('preview'));
-    setRealPay(query.has('pay'));
   }, []);
 
   async function submit(e) {
@@ -46,10 +46,6 @@ export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
       consent: f.get('consent') === 'on',
       website: String(f.get('website') || ''),
       source: new URLSearchParams(window.location.search).get('utm_source') || '',
-      realPay,
-      // Друга кнопка — участь разом із друкованим дипломом Новою поштою
-      // (Марія, 06.10.2026: «2 кнопки… з надсиланням диплома — 249 грн»).
-      withPrint: e.nativeEvent?.submitter?.value === 'print',
     };
     setState('sending');
     setError('');
@@ -64,7 +60,7 @@ export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
         return;
       }
       if (typeof window.gtag === 'function') {
-        window.gtag('event', 'olimpiada_start', { event_label: body.withPrint ? 'lohika_9_11_print' : 'lohika_9_11', value: body.withPrint ? bundlePrice : price });
+        window.gtag('event', 'olimpiada_start', { event_label: 'lohika_9_11' });
       }
       try {
         if (j.t) window.localStorage.setItem(KEY, JSON.stringify({ t: j.t, name: body.name.trim() }));
@@ -105,18 +101,9 @@ export default function EntryForm({ price, bundlePrice, open, channelUrl }) {
         </span>
       </label>
       {error && <p className="ol-error" role="alert">{error}</p>}
-      {/* 2 варіанти: як було — лише участь; або одразу з друкованим дипломом. */}
-      <div className="ol-pay-choice">
-        <button type="submit" name="variant" value="base" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
-          {state === 'sending' ? 'Відкриваємо…' : (!open && preview && !realPay) ? 'Перевірка без оплати' : `Взяти участь · ${price} грн`}
-        </button>
-        {bundlePrice ? (
-          <button type="submit" name="variant" value="print" className="ol-btn ol-btn-ghost ol-btn-wide ol-btn-print" disabled={state === 'sending'}>
-            <span>Участь + друкований диплом · {bundlePrice} грн</span>
-            <small>доставка Новою поштою включена, адресу вкажете після тесту</small>
-          </button>
-        ) : null}
-      </div>
+      <button type="submit" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
+        {state === 'sending' ? 'Відкриваємо…' : 'Взяти участь безкоштовно'}
+      </button>
     </form>
   );
 }

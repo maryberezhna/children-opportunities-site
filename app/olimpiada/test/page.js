@@ -1,6 +1,6 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, isBundle, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime } from '@/lib/olimpiada';
+import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime, isPaidEntry } from '@/lib/olimpiada';
 import { getStore, validToken, syncPayment, syncPrint } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
 import TestRunner from './TestRunner';
@@ -12,7 +12,8 @@ import ShareDiploma from './ShareDiploma';
 import DiplomaImage from './DiplomaImage';
 
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
-// після оплати. Стани: оплата ще не підтверджена → тест → диплом.
+// з форми й у листі. Стани: тест → диплом. З 08.10.2026 участь безкоштовна й
+// доступ відкривається одразу; «чекаємо оплату» лишилось для старих платних заявок.
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 
@@ -73,7 +74,7 @@ export default async function TestPage({ searchParams }) {
           token={entry.token}
           state={payState}
           email={EMAIL}
-          price={isBundle(entry) ? OLIMP.bundlePrice : OLIMP.price}
+          price={Number(entry.amount) || 0}
         />
       </Message>
     );
@@ -102,7 +103,8 @@ export default async function TestPage({ searchParams }) {
           minutes={OLIMP.minutes}
           openTask={OPEN_TASK}
           openArt={OPEN_TASK_ART}
-          until={entry.started_at ? null : kyivDateTime(accessUntil(entry.paid_at))}
+          // Строк на початок — лише для старих платних заявок; безкоштовна не згорає.
+          until={entry.started_at || !isPaidEntry(entry) ? null : kyivDateTime(accessUntil(entry.paid_at))}
           email={entry.parent_email}
           invited={Boolean(entry.invite_sent_at)}
         />
@@ -152,8 +154,8 @@ export default async function TestPage({ searchParams }) {
         ) : (
           <>
             <p className="ol-kicker">За бажанням</p>
-            <h2 className="ol-h2">Бажаєте замовити доставку диплома Новою поштою?</h2>
-            <p className="ol-text">За бажанням: надрукуємо диплом і надішлемо на відділення чи поштомат Нової пошти по Україні — додатково {OLIMP.printPrice} грн, друк і доставка включені у вартість.</p>
+            <h2 className="ol-h2">Бажаєте друкований диплом?</h2>
+            <p className="ol-text">Надрукуємо диплом і надішлемо у відділення або поштомат Нової пошти по Україні — {OLIMP.printPrice} грн, доставка включена.</p>
           </>
         )}
         <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} pending={print.pending} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
