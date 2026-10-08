@@ -109,7 +109,12 @@ export async function generateMetadata() {
     // заради ChatGPT: він шукає через його індекс, і звідти приходить 96%
     // нашого AI-трафіку. Кабінет — єдине місце, де видно, що саме Bing має й
     // за якими запитами показує, тобто що взагалі може процитувати ChatGPT.
-    other: { 'msvalidate.01': 'E401C3BF365320085ACFA472D5B943CF' },
+    // Google AdSense (08.10.2026): підтвердження права на сайт для кабінету
+    // AdSense. Сам рекламний скрипт не підключено — лише мітка.
+    other: {
+      'msvalidate.01': 'E401C3BF365320085ACFA472D5B943CF',
+      'google-adsense-account': 'ca-pub-9994894072460383',
+    },
   },
   openGraph: {
     type: 'website',
