@@ -37,7 +37,8 @@ test('банк: 25 ілюстрованих завдань, кожне коре�
     assert.equal(new Set(q.options.map(optKey)).size, 4, `${q.id}: варіанти повторюються`);
     assert.ok([1, 2, 3].includes(q.tier), `${q.id}: tier`);
     assert.ok(q.q.length > 5, q.id);
-    // репозиторій публічний — відповідь у банку означала б, що її видно всім
+    // відповідь у банку означала б, що її бачить кожен, хто бачить код (до
+    // 08.10.2026 репозиторій був публічним) — ключі живуть лише в базі
     assert.equal('answer' in q, false, `${q.id}: відповідь у коді`);
     const arts = [q.art, ...q.options.map((o) => o && o.art)].filter(Boolean);
     for (const a of arts) assert.ok(a.startsWith('<svg') && a.endsWith('</svg>'), `${q.id}: SVG`);
