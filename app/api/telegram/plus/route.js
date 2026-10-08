@@ -692,7 +692,11 @@ export async function POST(request) {
       // стоїть перед підтримкою: інакше місто від підписника, який заповнює
       // анкету заново, пішло б адміну як питання. І перед промокодом: людина
       // посеред анкети вводить місто, а не код.
-      if (sub?.flow_step === 'place') {
+      // Назва міста — коротка. Довгий текст на кроці «місто» — це вже питання
+      // чи розповідь (розсилка «1 грн» 08.10.2026 просить написати, у чому
+      // складнощі): його — в підтримку, а не в поле міста.
+      const looksLikeCity = text.length <= 40 && text.split(/\s+/).length <= 4;
+      if (sub?.flow_step === 'place' && looksLikeCity) {
         await saveCustomCity(bot, supabase, chatId, sub, text);
         return new Response('ok');
       }
