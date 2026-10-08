@@ -145,9 +145,9 @@ test('подарунковий місяць Dityam+: активний, мину�
   assert.equal(giftActive({ billing_period: 'gift', gift_until: null }, now), false);
 });
 
-test('рахунок олімпіади: разовий, 150 грн, свій колбек', () => {
+test('рахунок олімпіади (друкований диплом): разовий, свій колбек', () => {
   const b = oneTimeInvoiceBody({
-    orderReference: 'olimp-9cabd081887339b3edeadead8ffb15e2-1791200000000', amount: OLIMP.price,
+    orderReference: 'olimp-d-9cabd081887339b3edeadead8ffb15e2-1791200000000', amount: 150,
     product: 'Участь в онлайн-олімпіаді', email: 'mama@example.com',
     returnUrl: 'https://dityam.com.ua/api/olimpiada/return?t=x', serviceUrl: 'https://dityam.com.ua/api/olimpiada/pay',
     now: new Date(2026, 9, 5, 12, 0, 0),
@@ -198,13 +198,14 @@ test('колбек WayForPay: Approved відкриває тест і дає м�
   await handleOlimpCallback({ orderReference: 'olimp-00000000000000000000000000000000-1', transactionStatus: 'Approved' });
 });
 
-test('72 години на початок тесту: потім доступ закрито, розпочатий тест не «згорає»', () => {
+test('72 години на початок тесту — лише для старих платних заявок; безкоштовна не згорає', () => {
   const paid = '2026-10-05T10:00:00Z';
   assert.equal(OLIMP.accessHours, 72);
   assert.equal(accessUntil(paid).toISOString(), '2026-10-08T10:00:00.000Z');
-  assert.equal(accessExpired({ paid_at: paid }, new Date('2026-10-08T09:59:00Z')), false);
-  assert.equal(accessExpired({ paid_at: paid }, new Date('2026-10-08T10:01:00Z')), true);
-  assert.equal(accessExpired({ paid_at: paid, started_at: '2026-10-08T09:50:00Z' }, new Date('2026-10-09T00:00:00Z')), false);
+  assert.equal(accessExpired({ paid_at: paid, amount: 150 }, new Date('2026-10-08T09:59:00Z')), false);
+  assert.equal(accessExpired({ paid_at: paid, amount: 150 }, new Date('2026-10-08T10:01:00Z')), true);
+  assert.equal(accessExpired({ paid_at: paid, amount: 0 }, new Date('2026-11-08T10:01:00Z')), false);
+  assert.equal(accessExpired({ paid_at: paid, amount: 150, started_at: '2026-10-08T09:50:00Z' }, new Date('2026-10-09T00:00:00Z')), false);
   assert.equal(accessExpired({}, new Date()), false);
   assert.equal(kyivDateTime('2026-10-08T10:00:00Z'), '8 жовтня, 13:00');
 });
@@ -220,7 +221,7 @@ test('призи місяця: 3 місця, усі з точною назвою
 });
 
 test('друкований диплом: дані доставки з форми', () => {
-  assert.equal(OLIMP.printPrice, 120);
+  assert.equal(OLIMP.printPrice, 199);
   assert.deepEqual(cleanPrintOrder({ name: ' Олена  Коваленко ', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' }),
     { order: { name: 'Олена Коваленко', phone: '+380 67 123 45 67', city: 'Львів', branch: 'відділення 12' } });
   assert.deepEqual(cleanPrintOrder({ name: 'Ол' }), { error: 'name' });

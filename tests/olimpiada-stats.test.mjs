@@ -29,7 +29,7 @@ test('статистика олімпіади: тестові записи ад�
   assert.equal(s.finished, 2);
   assert.equal(s.open, 1);
   assert.equal(s.prints, 1);
-  assert.equal(s.revenue, 150 * 2 + 120);
+  assert.equal(s.revenue, 150 * 2 + 199);
   assert.equal(s.avgScore, 16);
   assert.equal(s.tests, 1);
 });

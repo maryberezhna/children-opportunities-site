@@ -1,5 +1,5 @@
-// Замовлення друкованого диплома з доставкою Новою поштою — OLIMP.printPrice понад
-// внесок. Зберігає, кому й куди надіслати, і виставляє разовий рахунок;
+// Замовлення друкованого диплома з доставкою у відділення або поштомат Нової
+// пошти — OLIMP.printPrice (з 08.10.2026 199 грн; участь безкоштовна). Зберігає, кому й куди надіслати, і виставляє разовий рахунок;
 // після оплати адмінка отримує повідомлення з адресою й посиланням на диплом.
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
@@ -24,7 +24,7 @@ export async function POST(request) {
   // Друкуємо лише готовий диплом — після тесту.
   if (!entry.finished_at) return json({ error: 'not_finished' }, 409);
   const testPath = `/olimpiada/test?t=${entry.token}`;
-  // Оплачено разом з участю (OLIMP.bundlePrice), адреси ще немає — лише зберігаємо.
+  // Оплачено разом з участю (249 грн, до 08.10.2026), адреси ще немає — лише зберігаємо.
   if (entry.print_paid_at && !entry.print_order) {
     await savePrintAddress(store, entry, order);
     return json({ url: testPath });

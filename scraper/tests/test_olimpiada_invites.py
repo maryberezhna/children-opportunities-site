@@ -39,8 +39,10 @@ class InvitesTest(unittest.TestCase):
         self.assertFalse(inv.needs_invite({**ENTRY, "finished_at": "2026-10-05T11:00:00+00:00"}, NOW))
         self.assertFalse(inv.needs_invite({**ENTRY, "paid_at": None}, NOW))
         self.assertFalse(inv.needs_invite({**ENTRY, "parent_email": ""}, NOW))
-        # 72 години минули — запрошувати вже нікуди
-        self.assertFalse(inv.needs_invite(ENTRY, datetime(2026, 10, 8, 10, 1, tzinfo=timezone.utc)))
+        # Безкоштовна заявка (з 08.10.2026) не згорає; стара платна — через 72 години.
+        late = datetime(2026, 10, 8, 10, 1, tzinfo=timezone.utc)
+        self.assertTrue(inv.needs_invite(ENTRY, late))
+        self.assertFalse(inv.needs_invite({**ENTRY, "amount": 150}, late))
 
     def test_message(self):
         subject, text, body = inv.build_message(ENTRY)
@@ -48,12 +50,13 @@ class InvitesTest(unittest.TestCase):
         self.assertIn("Соломія Коваленко", subject)
         for part in (text, body):
             self.assertIn(link, part)
-            self.assertIn("8 жовтня, 13:00", part)       # 72 години після оплати, за Києвом
-            self.assertIn("внесок не повертається", part)
+            self.assertIn("Участь безкоштовна", part)
+            self.assertNotIn("внесок", part)
+            self.assertNotIn("після оплати", part)
             self.assertIn("Dityam.com.ua", part)
         self.assertIn(f'href="{link}"', body)
         for part in (text, body):
-            self.assertIn("Новою поштою", part)
+            self.assertIn("поштомат Нової пошти", part)
             self.assertIn(f"{inv.PRINT_PRICE} грн", part)
             self.assertIn("якщо Соломія Коваленко виграє, повідомимо вас окремим листом", part)
         # після «Dityam+» тире не ставимо, а слова «розіграш» у листі бути не може
@@ -73,7 +76,7 @@ class InvitesTest(unittest.TestCase):
         # Друк не оплачено — питаємо про Нову пошту з кнопкою на форму доставки.
         for part in (text, body):
             self.assertNotIn("виграє", part)
-            self.assertIn("Бажаєте отримати диплом Новою поштою?", part)
+            self.assertIn("Бажаєте друкований диплом?", part)
             self.assertIn("https://dityam.com.ua/olimpiada/test?t=9cabd081887339b3edeadead8ffb15e2#dostavka", part)
             self.assertIn(f"{inv.PRINT_PRICE} грн", part)
         competing = {**entry, "open_answer": "Задача про трьох котів"}
@@ -82,12 +85,12 @@ class InvitesTest(unittest.TestCase):
         printed = {**competing, "print_paid_at": "2026-10-05T11:10:00+00:00",
                    "print_order": {"city": "Київ", "branch": "відділення 12"}}
         for part in inv.build_diploma_message(printed)[1:]:
-            self.assertNotIn("Новою поштою", part)
+            self.assertNotIn("Бажаєте друкований диплом?", part)
             self.assertNotIn("Вкажіть, куди його надіслати", part)
         # Участь разом із дипломом (249 грн): оплачено, адреси ще немає — просимо її.
         bundle = {**competing, "amount": 249, "print_paid_at": "2026-10-05T11:10:00+00:00"}
         for part in inv.build_diploma_message(bundle)[1:]:
-            self.assertNotIn("Бажаєте отримати диплом Новою поштою?", part)
+            self.assertNotIn("Бажаєте друкований диплом?", part)
             self.assertIn("Вкажіть, куди його надіслати", part)
             self.assertIn("#dostavka", part)
         msg = inv.make_diploma_email(entry, b"\x89PNG fake")

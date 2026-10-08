@@ -93,7 +93,7 @@ export default function PrintOrder({ token, price, paid, order, pending = false 
       </label>
       <label className="ol-field">
         <span>Відділення або поштомат Нової пошти</span>
-        <input name="branch" type="text" maxLength={80} required placeholder="Наприклад: відділення 12" />
+        <input name="branch" type="text" maxLength={80} required placeholder="Наприклад: відділення 12 або поштомат 3456" />
       </label>
       {error && <p className="ol-error" role="alert">{error}</p>}
       <button type="submit" className="ol-btn ol-btn-main" disabled={state === 'sending'}>

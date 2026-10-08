@@ -42,9 +42,7 @@ OLIMP = "lohika-9-11"
 # Ті самі числа, що в lib/olimpiada.js (OLIMP) — звіряє tests/test_olimpiada_launch.py.
 QUESTIONS = 25
 MINUTES = 35
-ACCESS_HOURS = 72
-PRICE = 150
-BUNDLE_PRICE = 249
+PRINT_PRICE = 199
 GIFT_DAYS = 30
 
 # Gmail обмежує ~500 листів на добу з особистого акаунта; лишаємо запас на
@@ -54,19 +52,21 @@ LIMIT = 400
 # Наші посилання з UTM (#674): у статистиці видно, що людина прийшла з листа.
 LINK = f"{SITE}/olimpiada?utm_source=email&utm_medium=waitlist&utm_campaign=olimpiada_start#uchast"
 
-# Ознака відкритої реєстрації на сторінці: кнопка з ціною замість
-# «Повідомити про старт» (app/olimpiada/page.js, OLIMP_OPEN).
-OPEN_MARK = f"Взяти участь · {PRICE} грн"
+# Ознака відкритої реєстрації на сторінці: кнопка «Взяти участь безкоштовно»
+# замість «Повідомити про старт» (app/olimpiada/page.js, OLIMP_OPEN). З
+# 08.10.2026 участь безкоштовна; до того в кнопці стояла ціна.
+OPEN_MARK = "Взяти участь безкоштовно"
 
 
 def build_message():
     """(тема, текст, html) — лист однаковий для всіх, email у ньому не потрібен."""
     subject = "Онлайн-олімпіада з логіки Dityam.com.ua стартувала"
     points = [
-        f"{QUESTIONS} завдань на кмітливість за {MINUTES} хвилин — у зручний час протягом {ACCESS_HOURS} годин після оплати;",
+        "участь безкоштовна;",
+        f"{QUESTIONS} завдань на кмітливість за {MINUTES} хвилин — у зручний час;",
         f"диплом з результатом одразу після тесту і {GIFT_DAYS} днів Dityam+;",
         "призи місяця за найкращі відповіді на останнє, відкрите завдання;",
-        f"внесок {PRICE} грн або {BUNDLE_PRICE} грн разом із друкованим дипломом і доставкою Новою поштою.",
+        f"друкований диплом — за бажанням: {PRINT_PRICE} грн, доставка у відділення або поштомат Нової пошти включена.",
     ]
     lead = ("Ви просили повідомити, коли стартуємо: реєстрацію на онлайн-олімпіаду з логіки "
             "для дітей 9–11 років відкрито.")
@@ -87,7 +87,7 @@ def build_message():
 <p>Добрий день!</p>
 <p>{esc(lead)}</p>
 <ul>{''.join(f'<li>{esc(p)}</li>' for p in points)}</ul>
-<p><a href="{esc(LINK)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">Взяти участь</a></p>
+<p><a href="{esc(LINK)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">Взяти участь безкоштовно</a></p>
 <p>Якщо кнопка не відкривається, скопіюйте посилання:<br><a href="{esc(LINK)}">{esc(LINK)}</a></p>
 <p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""

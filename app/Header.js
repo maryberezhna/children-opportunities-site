@@ -174,7 +174,7 @@ export default function Header() {
     ...(OLIMP_OPEN || OLIMP_PUBLIC ? [{
       href: '/olimpiada',
       label: 'Онлайн-олімпіада з логіки',
-      note: `для дітей ${OLIMP.groupLabel} · ${OLIMP_OPEN ? `внесок ${OLIMP.price} грн` : 'скоро старт'}`,
+      note: `для дітей ${OLIMP.groupLabel} · ${OLIMP_OPEN ? 'безкоштовно' : 'скоро старт'}`,
     }] : []),
     { href: '/plus', label: 'Dityam+', note: 'особиста добірка можливостей у Telegram' },
   ];
