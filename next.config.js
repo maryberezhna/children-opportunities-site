@@ -1,8 +1,31 @@
 const { PHASE_PRODUCTION_BUILD } = require('next/constants');
 
 /** @type {import('next').NextConfig} */
+// Захисні заголовки на всіх сторінках (план безпеки, Марія, 08.10.2026). До
+// того сайт віддавав лише HSTS від Vercel.
+//   • X-Frame-Options + frame-ancestors — сайт не можна вбудувати в чужий фрейм
+//     (клікджекінг: прозора наша сторінка поверх чужої кнопки);
+//   • nosniff — браузер не вгадує тип файлу (завантажене не стане скриптом);
+//   • Referrer-Policy — чужим сайтам іде лише домен, а не повна адреса з ?q=;
+//   • Permissions-Policy — камера, мікрофон, геолокація сайту не потрібні;
+//   • CSP — базовий: без обмеження скриптів, бо GA4, Hotjar і Amplitude
+//     вбудовуються інлайном; обмежує фрейми, <base>, плагіни й http-ресурси.
+const SECURITY_HEADERS = [
+  { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), usb=(), browsing-topics=()' },
+  {
+    key: 'Content-Security-Policy',
+    value: "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; upgrade-insecure-requests",
+  },
+];
+
 const nextConfig = {
   reactStrictMode: true,
+  async headers() {
+    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+  },
   async redirects() {
     return [
       // /stem-talant — адреса конкурсу для дітей; до грудня 2026 (поки реєстрація
