@@ -48,6 +48,10 @@ export default function PrintOrder({ token, price, paid, order, pending = false 
       phone: String(f.get('phone') || ''),
       city: String(f.get('city') || ''),
       branch: String(f.get('branch') || ''),
+      // ?pay=1 у посиланні: адмін проходить справжню оплату друку через
+      // WayForPay, а не позначку «оплачено» без грошей (Марія, 08.10.2026:
+      // «як мені пройти весь флоу»).
+      realPay: new URLSearchParams(window.location.search).has('pay'),
     };
     setState('sending');
     setError('');

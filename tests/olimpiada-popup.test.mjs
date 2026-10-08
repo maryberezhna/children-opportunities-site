@@ -180,3 +180,8 @@ test('блок олімпіади — у потрібних підбірках �
   assert.match(promo, /href="\/olimpiada"/);
   assert.doesNotMatch(promo, /Dityam\+ —/);
 });
+
+test('адмін може пройти справжню оплату друку: ?pay=1', () => {
+  assert.match(read('app/olimpiada/test/PrintOrder.js'), /realPay: new URLSearchParams\(window\.location\.search\)\.has\('pay'\)/);
+  assert.match(read('app/api/olimpiada/print/route.js'), /if \(\(admin && b\.realPay !== true\) \|\| devFree\)/);
+});

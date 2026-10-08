@@ -33,7 +33,7 @@ export async function POST(request) {
 
   const admin = isAdmin(cookies().get('dityam_admin')?.value);
   const devFree = !wayforpayConfigured && process.env.NODE_ENV !== 'production';
-  if (admin || devFree) {
+  if ((admin && b.realPay !== true) || devFree) {
     const saved = await store.update(entry.token, { print_order: order });
     await markPrintPaid(store, saved || { ...entry, print_order: order }, { test: true });
     return json({ url: testPath });
