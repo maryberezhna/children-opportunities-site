@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { notOwn } from '@/lib/own';
 import { pushModeration } from '@/lib/notion';
 import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { removeRecurring } from '@/lib/wayforpay';
@@ -167,12 +168,13 @@ async function adminStats(supabase) {
       head('contact_messages', (q) => q.eq('status', 'new')),
       head('opportunity_suggestions', (q) => q.neq('status', 'done')),
       head('plus_waitlist'),
-      supabase.from('digest_subscribers').select('billing_period').eq('status', 'active'),
+      supabase.from('digest_subscribers').select('billing_period, telegram_chat_id, telegram_handle').eq('status', 'active'),
       supabase.from('metrics_daily').select('day, telegram_members')
         .order('day', { ascending: false }).limit(14),
     ]);
 
-  const subs = subsRes.data || [];
+  // Власну підписку Марії не рахуємо (lib/own.js, 08.10.2026).
+  const subs = notOwn(subsRes.data);
   const half = subs.filter((x) => x.billing_period === 'halfyear').length;
   const yearly = subs.filter((x) => x.billing_period === 'yearly').length;
   const mrr = Math.round((subs.length - half - yearly) * PRICE_MONTH

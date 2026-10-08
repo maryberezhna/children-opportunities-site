@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { notOwn } from '@/lib/own';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
@@ -190,11 +191,11 @@ export default async function MetricsPage() {
     profiles: count(supabase, 'digest_subscribers'),
     feedback7: count(supabase, 'opportunity_feedback', (q) => q.gte('created_at', iso(7)), 'opportunity_id'),
     outcomes: count(supabase, 'opportunity_outcomes'),
-    subsRes: supabase.from('digest_subscribers').select('status, billing_period').eq('status', 'active'),
+    subsRes: supabase.from('digest_subscribers').select('status, billing_period, telegram_chat_id, telegram_handle').eq('status', 'active'),
     // Уся воронка, а не лише ті, хто дійшов: саме ті, хто НЕ дійшов,
     // і показують, де ми їх втрачаємо.
     allSubsRes: supabase.from('digest_subscribers')
-      .select('id, status, consent_at, flow_step, wfp_order_reference, wfp_last_status, source'),
+      .select('id, status, consent_at, flow_step, wfp_order_reference, wfp_last_status, source, telegram_chat_id, telegram_handle, email'),
     kidsRes: supabase.from('plus_children').select('subscriber_id, age_bands'),
     // Верхні кроки воронки — власні лічильники сайту (lib/site-events.js).
     // Лічимо count-запитами, а не вибіркою рядків: PostgREST віддає щонайбільше
@@ -210,18 +211,21 @@ export default async function MetricsPage() {
     actionsRes: supabase.from('moderation_actions').select('actor, action, created_at')
       .gte('created_at', iso(30)).limit(5000),
     // Онлайн-олімпіада: список очікування й заявки (06.10.2026).
-    olimpWaitRes: supabase.from('olimpiada_waitlist').select('created_at, source').limit(10000),
+    olimpWaitRes: supabase.from('olimpiada_waitlist').select('created_at, source, email').limit(10000),
     // Події сторінки олімпіади й попапу (olimp_*) — сторінками, без межі в 1000.
     olimpEventsRes: fetchAllRows(() => supabase.from('site_events').select('name, source, created_at').like('name', 'olimp_%').order('id')),
     olimpEntriesRes: supabase.from('olimpiada_entries')
-      .select('created_at, paid_at, started_at, finished_at, score, level, open_answer_at, print_paid_at, wfp_last_status, amount, source')
+      .select('created_at, paid_at, started_at, finished_at, score, level, open_answer_at, print_paid_at, wfp_last_status, amount, source, parent_email')
       .limit(10000),
   });
-  const olimp = olimpStats({ waitlist: olimpWaitRes?.data || [], entries: olimpEntriesRes?.data || [], now: new Date() });
-  const olimpT = olimpTraffic({ events: olimpEventsRes?.data || [], waitlist: olimpWaitRes?.data || [], now: new Date() });
+  // Власні записи Марії (lib/own.js) у метрики не йдуть (08.10.2026).
+  const olimpWait = notOwn(olimpWaitRes?.data);
+  const olimp = olimpStats({ waitlist: olimpWait, entries: notOwn(olimpEntriesRes?.data), now: new Date() });
+  const olimpT = olimpTraffic({ events: olimpEventsRes?.data || [], waitlist: olimpWait, now: new Date() });
 
-  const subs = subsRes.data || [];
-  const allSubs = allSubsRes.data || [];
+  const subs = notOwn(subsRes.data);
+  const allSubs = notOwn(allSubsRes.data);
+  const ownSubs = (allSubsRes.data || []).length - allSubs.length;
   const childIds = new Set((kidsRes.data || []).map((k) => k.subscriber_id));
   // Медіакіт: GA4 із сервера (lib/ga4.js). Помилка GA4 не валить сторінку —
   // решта метрик з бази має показуватись і тоді.
@@ -244,7 +248,7 @@ export default async function MetricsPage() {
 
   // Промокоди: рахуємо і введення, і оплати. Різниця між ними — головне,
   // що тут видно: код привів людей, але ціна їх не вмовила (або навпаки).
-  const promoUses = promoRes.data || [];
+  const promoUses = notOwn(promoRes.data);
   const byCode = new Map();
   for (const u of promoUses) {
     const row = byCode.get(u.code) || { code: u.code, entered: 0, paid: 0, sum: 0, sources: new Map() };
@@ -323,7 +327,7 @@ export default async function MetricsPage() {
       <h2 style={h2S}>📣 Маркетинг</h2>
       <div style={grid}>
         <Card value={waitlist} delta={waitlist7 || null} label="у списку очікування Dityam+ (Δ за 7 днів)" />
-        <Card value={profiles} label="профілів дитини заповнено (digest)" />
+        <Card value={Math.max(0, (profiles || 0) - ownSubs)} label="профілів дитини заповнено (digest)" />
         <Card value={feedback7} label="голосів 👍/👎 у каналі за 7 днів" />
         <Card value={outcomes} label="історій «я подався» від батьків" />
       </div>

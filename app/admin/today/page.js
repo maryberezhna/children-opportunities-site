@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { notOwn } from '@/lib/own';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { missingRequired } from '@/lib/required';
@@ -115,7 +116,7 @@ export default async function TodayPage() {
       .eq('status', 'draft').limit(500),
     count('contact_messages', (q) => q.eq('status', 'new')),
     count('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
-    supabase.from('digest_subscribers').select('status, created_at, updated_at').limit(1000),
+    supabase.from('digest_subscribers').select('status, created_at, updated_at, telegram_chat_id, telegram_handle, email').limit(1000),
     count('opportunities', (q) => q.eq('status', 'active')),
     count('opportunities', (q) => q.gte('created_at', since7)),
     supabase.from('metrics_daily').select('day, telegram_members').order('day', { ascending: false }).limit(8),
@@ -129,7 +130,8 @@ export default async function TodayPage() {
   const newMessages = msgs.count ?? 0;
   const waitingSuggestions = sugs.count ?? 0;
 
-  const subs = subsRes.data || [];
+  // Власні записи Марії не рахуємо (lib/own.js, 08.10.2026).
+  const subs = notOwn(subsRes.data);
   const activeSubs = subs.filter((s) => s.status === 'active').length;
   const paused = subs.filter((s) => s.status === 'paused').length;
   const stuck = subs.filter((s) => s.status === 'pending'

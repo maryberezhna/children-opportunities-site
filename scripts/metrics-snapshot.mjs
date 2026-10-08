@@ -5,6 +5,7 @@
 //      без них знімок пишеться просто без числа підписників.
 
 import { createClient } from '@supabase/supabase-js';
+import { notOwn } from '../lib/own.js';
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -91,10 +92,12 @@ const [active, closed, drafts, added, waitlist, profiles, feedback] = await Prom
 // Без фільтра дублів: canonical_slug є лише в opportunities. До 22.09.2026
 // він стояв і тут, запит падав, а в знімок мовчки йшли 0 платних і 0 MRR —
 // тож помилку не ковтаємо: краще «—» на сторінці, ніж правдоподібний нуль.
-const { data: subs, error: subsError } = await supabase
+const { data: subsAll, error: subsError } = await supabase
   .from('digest_subscribers')
-  .select('status, billing_period')
+  .select('status, billing_period, telegram_chat_id, telegram_handle')
   .eq('status', 'active');
+// Власну підписку Марії не рахуємо (lib/own.js, 08.10.2026).
+const subs = notOwn(subsAll);
 if (subsError) console.error(`digest_subscribers (paid) failed: ${subsError.message}`);
 const half = subsError ? null : subs.filter((s) => s.billing_period === 'halfyear').length;
 const yearly = subsError ? null : subs.filter((s) => s.billing_period === 'yearly').length;

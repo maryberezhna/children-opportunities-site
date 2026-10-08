@@ -3,6 +3,8 @@
 //      TELEGRAM_BOT_TOKEN, TELEGRAM_ADMIN_CHAT_ID, WAYFORPAY_AMOUNT.
 // Прапорець: --dry-run — надрукувати, нічого не слати.
 
+import { notOwn } from '../lib/own.js';
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
@@ -23,7 +25,8 @@ async function fetchRows(path) {
   return r.json();
 }
 
-const rows = await fetchRows('digest_subscribers?select=id,status,channel,age_bands,billing_period,created_at');
+// Власні записи Марії не рахуємо (lib/own.js, 08.10.2026).
+const rows = notOwn(await fetchRows('digest_subscribers?select=id,status,channel,age_bands,billing_period,created_at,telegram_chat_id,telegram_handle,email'));
 // З 14.09.2026 профіль — окремо на кожну дитину.
 const kids = await fetchRows('plus_children?select=subscriber_id');
 const withKids = new Set(kids.map((k) => k.subscriber_id));
