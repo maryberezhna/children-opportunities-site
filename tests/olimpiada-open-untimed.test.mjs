@@ -34,9 +34,10 @@ test('у тесті немає таймера на відкритому завд
   assert.match(src, /відкрите: без варіантів і без таймера/);
 });
 
-test('пропущене відкрите завдання можна дописати на сторінці результату', () => {
+test('пропущене відкрите завдання на сторінці результату не дописують (08.10.2026)', () => {
   const page = read('app/olimpiada/test/page.js');
-  assert.match(page, /<OpenTaskLate token=\{entry\.token\}/);
+  assert.doesNotMatch(page, /OpenTaskLate|можна дописати тут/);
+  assert.match(page, /\{entry\.open_answer \? \(/);
   assert.doesNotMatch(page, /overtime=/);
 });
 
