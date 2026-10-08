@@ -130,8 +130,7 @@ export default function OlimpPopup({ open, onClose, place = 'home' }) {
           ) : (
             <>
               <p className="olp-text">
-                {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин, диплом одразу після тесту
-                і {OLIMP.giftDays} днів Dityam+.{' '}
+                {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин, диплом одразу після тесту.{' '}
                 {OLIMP_OPEN ? 'Участь безкоштовна.' : 'Реєстрація відкриється незабаром — залиште email, і ми напишемо, щойно стартуємо.'}
               </p>
               {OLIMP_OPEN ? (

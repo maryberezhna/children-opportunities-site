@@ -90,7 +90,7 @@ test('звірка на сторінці: оплачено — тест відк
   assert.equal(r.state, 'paid');
   assert.ok(store.state.paid_at);
   assert.equal(store.state.wfp_last_status, 'Approved');
-  assert.equal(store.calls.gift, 1);
+  assert.equal(store.calls.gift, 0); // подарунка з 08.10.2026 немає
 });
 
 test('звірка: в процесі — чекаємо; не пройшла — можна ще раз; не починали — можна оплатити', async () => {
@@ -117,12 +117,12 @@ test('WayForPay не відповів — нічого не обіцяємо, а
   assert.equal((await syncPayment(store, await store.get())).state, 'pending');
 });
 
-test('колбек і звірка одночасно: подарунок і позначка — 1 раз', async () => {
+test('колбек і звірка одночасно: позначка — 1 раз, подарунка немає', async () => {
   const store = fakeStore(unpaid());
   const entry = await store.get();
   await Promise.all([markPaid(store, entry), markPaid(store, entry), markPaid(store, entry)]);
-  assert.equal(store.calls.gift, 1);
-  assert.equal(store.state.plus_token, 'g'.repeat(32));
+  assert.equal(store.calls.gift, 0);
+  assert.ok(store.state.paid_at);
 });
 
 test('доставка диплома: поки оплата йде, форму вдруге не показуємо', async () => {

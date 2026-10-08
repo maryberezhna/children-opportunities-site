@@ -24,7 +24,6 @@ class LaunchTest(unittest.TestCase):
         self.assertEqual(launch.QUESTIONS, num("questionCount"))
         self.assertEqual(launch.MINUTES, num("minutes"))
         self.assertEqual(launch.PRINT_PRICE, num("printPrice"))
-        self.assertEqual(launch.GIFT_DAYS, num("giftDays"))
 
     def test_message(self):
         subject, text, body = launch.build_message()
@@ -36,6 +35,8 @@ class LaunchTest(unittest.TestCase):
             self.assertIn("безкоштовна", part)
             self.assertIn("199 грн", part)
             self.assertNotIn("внесок", part)
+            # Подарункового місяця Dityam+ більше немає (08.10.2026).
+            self.assertNotIn("днів Dityam+", part)
             self.assertIn("Марія Шутяк", part)
             self.assertNotIn("Dityam+ —", part)
         self.assertIn('<a href="https://dityam.com.ua/olimpiada?utm_source=email', body)

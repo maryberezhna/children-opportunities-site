@@ -291,6 +291,9 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-result .ol-note { color: #cfdcff; }
 .ol-diploma { display: block; width: 100%; max-width: 560px; height: auto; margin: 26px auto 4px; border-radius: 22px; box-shadow: 0 30px 60px -30px rgba(4, 12, 50, .9); }
 .ol-open { margin-top: 56px; }
+/* Dityam+ після тесту — перший місяць за 1 грн (08.10.2026). */
+.ol-plus-offer { margin-top: 56px; }
+.ol-plus-offer .ol-btn { margin-top: 6px; }
 .ol-open-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
 .ol-open-form .ol-btn { align-self: flex-start; }
 

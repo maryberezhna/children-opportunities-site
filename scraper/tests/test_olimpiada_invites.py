@@ -93,6 +93,11 @@ class InvitesTest(unittest.TestCase):
             self.assertNotIn("Бажаєте друкований диплом?", part)
             self.assertIn("Вкажіть, куди його надіслати", part)
             self.assertIn("#dostavka", part)
+        # Dityam+ після олімпіади — перший місяць за 1 грн (08.10.2026), у кожному листі.
+        for part in (text, body):
+            self.assertIn("Перший місяць — 1 грн, далі 119 грн/міс", part)
+            self.assertIn("https://t.me/DityamPlusBot?start=from_olimpiada", part)
+            self.assertNotIn("Dityam+ —", part)
         msg = inv.make_diploma_email(entry, b"\x89PNG fake")
         parts = [p.get_content_type() for p in msg.walk()]
         self.assertIn("image/png", parts)

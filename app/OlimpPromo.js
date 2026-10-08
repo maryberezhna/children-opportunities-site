@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { OLIMP, OLIMP_OPEN } from '@/lib/olimpiada';
-import { PLUS_PRICE_MONTH } from '@/lib/plus';
 
 // Блок власної онлайн-олімпіади Dityam.com.ua у підбірках (Марія, 07.10.2026:
 // «помісти на необхідні підбірки»). Списки підбірок наповнюються з бази самі,
@@ -14,8 +13,8 @@ export default function OlimpPromo({ abroad = false, className = '' }) {
       <h2 id="ol-own-title" className="ol-own-title">Онлайн-олімпіада з логіки</h2>
       <p className="ol-own-text">
         {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин і 1 відкрите без таймера — з телефона чи компʼютера
-        {abroad ? ', з будь-якої країни' : ''}. Кожен учасник отримує диплом і місяць Dityam+ ({PLUS_PRICE_MONTH} грн)
-        у подарунок, а 3 найкращі відповіді щомісяця — призи.
+        {abroad ? ', з будь-якої країни' : ''}. Участь безкоштовна: кожен учасник одразу отримує диплом,
+        а 3 найкращі відповіді щомісяця — призи.
       </p>
       <Link href="/olimpiada" className="ol-own-btn" prefetch={false}>
         {OLIMP_OPEN ? 'Взяти участь безкоштовно →' : 'Дізнатися й залишити email →'}

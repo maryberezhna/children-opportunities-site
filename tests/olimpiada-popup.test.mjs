@@ -185,3 +185,15 @@ test('адмін може пройти справжню оплату друку:
   assert.match(read('app/olimpiada/test/PrintOrder.js'), /realPay: new URLSearchParams\(window\.location\.search\)\.has\('pay'\)/);
   assert.match(read('app/api/olimpiada/print/route.js'), /if \(\(admin && b\.realPay !== true\) \|\| devFree\)/);
 });
+
+test('замість подарункового місяця — Dityam+ за 1 грн після тесту (08.10.2026)', () => {
+  const server = read('lib/olimpiada-server.js');
+  assert.match(server, /const OLIMP_GIFT = false;/);
+  assert.match(server, /if \(OLIMP_GIFT && !paid\.plus_token\)/);
+  const result = read('app/olimpiada/test/page.js');
+  assert.match(result, /start=from_olimpiada/);
+  assert.match(result, /Спробувати за \{PRICE_FIRST\} грн/);
+  for (const f of ['app/olimpiada/page.js', 'app/OlimpPromo.js', 'app/OlimpPopup.js', 'app/llms.txt/route.js', 'lib/olimpiada.js']) {
+    assert.doesNotMatch(read(f), /giftDays\} днів Dityam\+|у подарунок кожному|місяць Dityam\+ і призи/, f);
+  }
+});

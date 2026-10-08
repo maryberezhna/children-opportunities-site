@@ -164,7 +164,7 @@ test('рахунок олімпіади (друкований диплом): р�
 
 // Колбек оплати — на запасному сховищі в памʼяті (локально й у тестах
 // сервісного ключа немає; у продакшні це Supabase з тими самими методами).
-test('колбек WayForPay: Approved відкриває тест і дає місяць Dityam+, повтор нічого не дублює', async () => {
+test('колбек WayForPay: Approved відкриває тест, повтор нічого не дублює', async () => {
   delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   const { getStore, handleOlimpCallback, isOlimpOrder, validToken } = await import('../lib/olimpiada-server.js');
   const store = getStore();
@@ -185,10 +185,11 @@ test('колбек WayForPay: Approved відкриває тест і дає м�
   await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Approved' });
   row = await store.get(entry.token);
   assert.ok(row.paid_at);
-  assert.ok(validToken(row.plus_token));
+  // Подарункового місяця з 08.10.2026 немає.
+  assert.equal(row.plus_token, undefined);
   const { paid_at: paidAt, plus_token: plusToken } = row;
 
-  // WayForPay повторює колбек — дата оплати й подарунок лишаються тими самими
+  // WayForPay повторює колбек — дата оплати лишається тією самою
   await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Approved' });
   row = await store.get(entry.token);
   assert.equal(row.paid_at, paidAt);
