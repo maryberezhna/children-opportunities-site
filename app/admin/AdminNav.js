@@ -45,6 +45,8 @@ const ITEMS = [
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
   // Підписники, оформлення, оплати й список очікування (15.09.2026).
   { key: 'plus', href: '/admin/plus', icon: '💎', label: 'Dityam+' },
+  // Хто що купував і на що підписаний (Марія, 08.10.2026: «своя сторінка»).
+  { key: 'people', href: '/admin/lyudy', icon: '👥', label: 'Люди' },
   { key: 'metrics', href: '/admin/metrics', icon: '📈', label: 'Метрики' },
 ];
 
