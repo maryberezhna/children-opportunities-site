@@ -44,7 +44,7 @@ PLUS_BOT = "DityamPlusBot"
 PROMO = "FIRST"
 PROMO_PRICE = 1
 PROMO_PRICE_HALF = 439
-PRICE = 119
+PRICE = 99
 PRICE_HALF = 549
 
 # «за містом» звідси прибрано (правило Марії 22.09.2026): ми не гарантуємо й

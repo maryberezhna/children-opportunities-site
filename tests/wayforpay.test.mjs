@@ -17,16 +17,16 @@ const { readFileSync } = await import('node:fs');
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
 const now = new Date(2026, 8, 14, 12, 0, 0);   // 14.09.2026
 
-test('ціни за замовчуванням — 119 / 549 за пів року', () => {
-  assert.equal(PRICE, 119);
+test('ціни за замовчуванням — 99 / 549 за пів року', () => {
+  assert.equal(PRICE, 99);
   assert.equal(PRICE_HALF, 549);
 });
 
-test('звичайна місячна: перший платіж і регулярні — 119', () => {
+test('звичайна місячна: перший платіж і регулярні — 99', () => {
   const b = invoiceBody(sub, 'monthly', { now });
-  assert.equal(b.amount, 119);
-  assert.deepEqual(b.productPrice, [119]);
-  assert.equal(b.regularAmount, 119);
+  assert.equal(b.amount, 99);
+  assert.deepEqual(b.productPrice, [99]);
+  assert.equal(b.regularAmount, 99);
   assert.equal(b.regularMode, 'monthly');
   assert.equal(b.regularOn, 1);
   assert.equal(b.dateNext, '14.10.2026');
@@ -36,7 +36,7 @@ test('знижений перший платіж: 1 грн зараз, регу�
   const b = invoiceBody(sub, 'monthly', { firstAmount: 1, now });
   assert.equal(b.amount, 1);
   assert.deepEqual(b.productPrice, [1]);
-  assert.equal(b.regularAmount, 119);
+  assert.equal(b.regularAmount, 99);
   assert.equal(b.dateNext, '14.10.2026');
 });
 
@@ -54,7 +54,7 @@ test('пів року без промокоду — повна ціна, спи�
 test('річну більше не створюємо: «yearly» — це місяць', () => {
   const b = invoiceBody(sub, 'yearly', { now });
   assert.equal(b.regularMode, 'monthly');
-  assert.equal(b.regularAmount, 119);
+  assert.equal(b.regularAmount, 99);
 });
 
 test('підпис рахується від суми першого платежу', () => {
