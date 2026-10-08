@@ -25,3 +25,12 @@ def test_texts_name_price_and_stop():
     for t in (started_text(), waitlist_text()):
         assert "1 грн" in t and "119 грн/міс" in t and "/stop" in t
     assert "Підписка вже працює: щодня добирає" in waitlist_text()
+
+
+def test_started_text_not_for_everyone_and_asks_why():
+    t = started_text()
+    assert "для всіх" not in t
+    assert "чомусь зупинилися" in t
+    assert "даруємо перший місяць за 1 грн" in t
+    assert "у чому виникли складнощі" in t
+    assert "Dityam+ —" not in t
