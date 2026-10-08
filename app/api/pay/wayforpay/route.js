@@ -8,6 +8,7 @@ import {
   failureAdviceForPerson, accessLine, payStartUrl,
 } from '@/lib/wayforpay';
 import { markPromoPaid } from '@/lib/promo';
+import { recordPayment, productOf, paidAtOf } from '@/lib/payments';
 import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
@@ -86,6 +87,20 @@ export async function POST(request) {
 
       const { data: sub } = await supabase.from('digest_subscribers')
         .update(patch).eq('unsub_token', token).select('*').maybeSingle();
+
+      // Журнал оплат (08.10.2026): кожне списання — і перше, і поновлення —
+      // окремим рядком, щоб в /admin/lyudy було видно, хто скільки разів платив.
+      await recordPayment(supabase, {
+        order_reference: b.orderReference,
+        amount: Number(b.amount),
+        product: productOf(b.orderReference, b.amount),
+        paid_at: paidAtOf(b),
+        processed_at: b.processingDate || b.createdDate || null,
+        telegram_chat_id: sub?.telegram_chat_id ? String(sub.telegram_chat_id) : null,
+        telegram_handle: sub?.telegram_handle || null,
+        email: b.email || sub?.email || null,
+        subscriber_id: sub?.id || null,
+      });
 
       // Промокод: оплату зараховуємо лише на ПЕРШОМУ платежі — знижка діє
       // один раз, а колбек приходить і на кожне поновлення.
