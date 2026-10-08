@@ -11,6 +11,10 @@ on:
         description: 'SEND — надіслати по-справжньому; порожньо — лише показати, кому й що'
         required: false
         default: ''
+      preview_chat:
+        description: 'chat_id — надіслати обидва тексти лише сюди (показати); тоді confirm ігнорується'
+        required: false
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -36,7 +40,9 @@ jobs:
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
         run: |
-          if [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
+          if [ -n "${{ github.event.inputs.preview_chat }}" ]; then
+            python plus_uah1.py --preview "${{ github.event.inputs.preview_chat }}"
+          elif [ "${{ github.event.inputs.confirm }}" = "SEND" ]; then
             python plus_uah1.py --send
           else
             python plus_uah1.py
