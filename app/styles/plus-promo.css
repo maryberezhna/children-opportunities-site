@@ -85,7 +85,6 @@
 
 /* Ціна в самому банері (Марія, 30.09.2026): людина має бачити, скільки це
    коштує, ще до того, як кудись натисне. */
-.plus-promo-price { margin: 10px 0 0; font-size: 15px; font-weight: 700; color: var(--v2-ink); }
 
 .plus-promo .plus-promo-btn {
   flex-shrink: 0;

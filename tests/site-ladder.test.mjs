@@ -63,7 +63,9 @@ test('сторінка можливості: один блок Dityam+ чере�
   // дочитати. Вести з банера одразу в оплату зарано.
   assert.ok(!/<BotLink\b/.test(promo), 'банер знову веде одразу в бот');
   assert.ok(!/Оформити|Subscribe on Telegram/.test(code(promo)), 'у банері знову кнопка оплати');
-  assert.ok(/PRICE_HALF/.test(promo) && /PRICE\b/.test(promo), 'ціни в банері немає');
+  // Рядок цін у банері прибрано 08.10.2026 («видали нафіг»); ціна — лише на кнопці.
+  assert.ok(/PRICE_FIRST/.test(promo), 'ціни першого місяця на кнопці немає');
+  assert.doesNotMatch(promo, /plus-promo-price/);
   assert.ok(promo.includes("'/plus'") && promo.includes("'/en/plus'"), 'кнопка не веде на /plus');
   const text = code(promo);
   for (const bad of [/Дізнатися першим/, /Tell me first/, /місто/i, /city/i, /без реклами/i]) {
@@ -184,7 +186,6 @@ test('банер Dityam+ має рядок-відмінність і не обі
   for (const [lang, re] of [['uk', /diff: 'Окремий профіль/], ['en', /diff: 'A separate profile/]]) {
     assert.match(promo, re, `${lang}: рядок із рискою не про профіль на кожну дитину`);
   }
-  assert.match(promo, /PRICE_HALF_MONTHLY = Math\.round\(PRICE_HALF \/ 6\)/, 'місячний еквівалент піврічної ціни рахується не з коду, а вручну');
   assert.doesNotMatch(code(promo), /для всіх дітей підряд|скасувати будь-коли/, 'повернувся текст, який Марія назвала «що попало» (06.10.2026)');
   assert.match(read('app/styles/plus-promo.css'), /\.plus-promo-diff/, 'рядок різниці без стилю');
 });
