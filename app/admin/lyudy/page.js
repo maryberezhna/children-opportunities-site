@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { buildPeople, peopleSummary } from '@/lib/people';
+import { notOwn } from '@/lib/own';
 import { PRODUCT_LABELS } from '@/lib/payments';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -82,8 +83,10 @@ export default async function PeoplePage() {
     all(() => sb.from('payments').select('*').order('paid_at', { ascending: false })),
   ]);
 
-  const rows = buildPeople({ subs, plusWait, entries, olimpWait, payments });
-  const sum = peopleSummary(rows, payments);
+  // Власні записи Марії (lib/own.js) — не люди: не показуємо й не рахуємо (08.10.2026).
+  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), payments: notOwn(payments) });
+  const shownPayments = notOwn(payments);
+  const sum = peopleSummary(rows, shownPayments);
   const whoByPayment = (p) => (p.telegram_handle ? `@${String(p.telegram_handle).replace(/^@+/, '')}`
     : p.email ? `📧 ${p.email}` : p.telegram_chat_id ? `Telegram · …${String(p.telegram_chat_id).slice(-4)}` : '—');
 
@@ -104,7 +107,7 @@ export default async function PeoplePage() {
         <Card value={uah(sum.total)} label="оплат усього" />
         <Card value={uah(sum.total30)} label="оплат за 30 днів" />
       </div>
-      <p style={noteS}>Журнал оплат веде сайт з 08.10.2026; ранні оплати Dityam+ додано з кабінету WayForPay. Твої власні записи (позначка «це ти») у числа не входять.</p>
+      <p style={noteS}>Журнал оплат веде сайт з 08.10.2026; ранні оплати Dityam+ додано з кабінету WayForPay. Твої власні записи (@maryberezhna і твої пошти) тут не показуються й не рахуються.</p>
 
       <h2 style={h2S}>Хто · {rows.length}</h2>
       <div style={{ overflowX: 'auto' }}>
@@ -136,8 +139,8 @@ export default async function PeoplePage() {
         </table>
       </div>
 
-      <h2 style={h2S}>Усі оплати · {payments.length}</h2>
-      {payments.length === 0 ? (
+      <h2 style={h2S}>Усі оплати · {shownPayments.length}</h2>
+      {shownPayments.length === 0 ? (
         <p style={noteS}>Ще жодної оплати в журналі.</p>
       ) : (
         <div style={{ overflowX: 'auto' }}>
@@ -146,7 +149,7 @@ export default async function PeoplePage() {
               <tr><th style={head}>Коли</th><th style={head}>Хто</th><th style={head}>Що</th><th style={{ ...head, textAlign: 'right' }}>Сума</th></tr>
             </thead>
             <tbody>
-              {payments.map((p) => (
+              {shownPayments.map((p) => (
                 <tr key={p.id}>
                   <td style={{ ...cell, whiteSpace: 'nowrap' }}>{fmtDate(p.paid_at)}</td>
                   <td style={cell}>{whoByPayment(p)}</td>

@@ -7,7 +7,8 @@ import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
 const PRICE_YEAR_OLD = 999;
 import { reasonLabel } from '@/lib/plusOutcomes';
 import { countBySource } from '@/lib/plusSources';
-import { peopleRows, who, STATUS } from '@/lib/plusPeople';
+import { peopleRows, who, STATUS, isStalled } from '@/lib/plusPeople';
+import { notOwn } from '@/lib/own';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -94,8 +95,9 @@ export default async function PlusAdminPage() {
       .order('updated_at', { ascending: false }).limit(300),
   ]);
 
-  const subs = subsRes.data || [];
-  const waitlist = waitRes.data || [];
+  // Власні записи Марії (@maryberezhna, її пошти) — не люди в статистиці (08.10.2026).
+  const subs = notOwn(subsRes.data);
+  const waitlist = notOwn(waitRes.data);
   const kidsBySub = {};
   for (const k of kidsRes.data || []) kidsBySub[k.subscriber_id] = (kidsBySub[k.subscriber_id] || 0) + 1;
 
@@ -107,6 +109,10 @@ export default async function PlusAdminPage() {
   const monthly = active.length - half - yearly - gift;
   const mrr = Math.round(monthly * PRICE + half * (PRICE_HALF / 6) + yearly * (PRICE_YEAR_OLD / 12));
   const pending = subs.filter((s) => s.status === 'pending');
+  // «Оформлює» — лише хто діяв за останню добу; решта вже зупинились
+  // (Марія, 08.10.2026: «⏳ Оформлює, якщо людина по факту вже забила болт»).
+  const stalled = pending.filter((s) => isStalled(s));
+  const filling = pending.length - stalled.length;
   const paused = subs.filter((s) => s.status === 'paused');
   const unsub30 = subs.filter((s) => s.status === 'unsubscribed'
     && new Date(s.updated_at || s.created_at).getTime() >= Date.now() - 30 * DAY);
@@ -143,7 +149,8 @@ export default async function PlusAdminPage() {
       <div style={{ ...grid, marginTop: 16 }}>
         <Card value={active.length} label={`активних підписок (${monthly} міс · ${half} пів року${yearly ? ` · ${yearly} річн` : ''})`} tone={active.length ? C.green : undefined} />
         <Card value={`${mrr} грн`} label="на місяць (пів року — поділено на 6)" />
-        <Card value={pending.length} label="почали оформлення, ще не оплатили" tone={pending.length ? C.amber : undefined} />
+        <Card value={filling} label="оформлюють зараз (діяли за останню добу)" tone={filling ? C.amber : undefined} />
+        <Card value={stalled.length} label="зупинились в оформленні й не повернулись" />
         <Card value={paused.length} label="на паузі — платіж не завершився" tone={paused.length ? C.accent : undefined} />
         <Card value={unsub30.length} label="відписались за 30 днів" />
         <Card value={waitlist.length} label={`у списку очікування · оформили ${converted}`} />
