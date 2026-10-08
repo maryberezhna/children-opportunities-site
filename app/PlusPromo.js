@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { PRICE, PRICE_HALF, PRICE_FIRST } from '@/lib/wayforpay';
+import { PRICE_FIRST } from '@/lib/wayforpay';
 
 /**
  * Блок Dityam+ унизу сторінки можливості — між «Схожими можливостями» і
@@ -38,9 +38,6 @@ import { PRICE, PRICE_HALF, PRICE_FIRST } from '@/lib/wayforpay';
  * Ціна береться з lib/wayforpay (ті самі змінні, що й у боті та на /plus) —
  * щоб на сайті не лишилось місця, де вона застаріла.
  */
-// 549 ÷ 6 = 91,5 → 92: місячний еквівалент піврічної ціни, щоб порівняння
-// з ціною на місяць не розійшлось, коли ціну змінять через env.
-const PRICE_HALF_MONTHLY = Math.round(PRICE_HALF / 6);
 
 const T = {
   uk: {
@@ -54,8 +51,9 @@ const T = {
     // нічого не прочитає (Марія, 05.10.2026). З 06.10.2026 тут головна
     // відмінність від каналу — профіль під конкретну дитину.
     diff: 'Окремий профіль на кожну дитину.',
-    // Перший місяць за 1 грн — усім, хто ще не платив (Марія, 08.10.2026).
-    price: `Перший місяць — ${PRICE_FIRST} грн, далі ${PRICE} грн/міс. За пів року — ${PRICE_HALF} грн, це ${PRICE_HALF_MONTHLY} грн на місяць.`,
+    // Рядка з цінами («Перший місяць — 1 грн, далі 99 грн/міс. За пів року…»)
+    // більше немає (Марія, 08.10.2026: «це якась жесть, видали нафіг»): ціна
+    // першого місяця — на кнопці, решта — на /plus.
     // Нерозривний пробіл: на телефоні кнопка переноситься, і число не має
     // лишатись в кінці рядка окремо від «грн/міс».
     cta: `Перший місяць за ${PRICE_FIRST}\u00a0грн`,
@@ -67,7 +65,6 @@ const T = {
     title: 'So your child hears about a contest before the deadline, not after',
     text: 'A private bot keeps track of dates for you: it reminds you of deadlines in good time, has an “Add to calendar” button and sends new opportunities for your child’s age and interests every day.',
     diff: 'A separate profile for each child.',
-    price: `First month UAH ${PRICE_FIRST}, then UAH ${PRICE}/month. Six months — UAH ${PRICE_HALF}, that is UAH ${PRICE_HALF_MONTHLY} a month.`,
     cta: `First month for UAH\u00a0${PRICE_FIRST}`,
     href: '/en/plus',
   },
@@ -84,7 +81,6 @@ export default function PlusPromo({ lang = 'uk' }) {
         <h2 className="plus-promo-title">{t.title}</h2>
         <p className="plus-promo-text">{t.text}</p>
         <p className="plus-promo-diff">{t.diff}</p>
-        <p className="plus-promo-price">{t.price}</p>
       </div>
       <Link href={t.href} className="plus-promo-btn">{t.cta}</Link>
     </aside>
