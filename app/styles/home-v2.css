@@ -203,18 +203,13 @@ html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
    вкладку для підлітків»). Тож коло стає в кінець першого рядка, на висоті
    другого — праворуч від «для тебе», нічого не закриваючи. */
 .v2-sia-anchor--lead { display: none; }
+/* На телефоні кільця SIA немає зовсім і немає «підкладки» під словом
+   (Марія, 08.10.2026: «на мобільній не подобається ні коло про перемогу в
+   SIA, ні те, що „можливості“ виділені білим»). На компʼютері — як було. */
 @media (max-width: 900px) {
-  /* Без фону кільце не кладемо на літери: на телефоні воно заходило на
-     кінець «дитини», і два тексти перетинались. Тепер — одразу після слова. */
-  .v2-sia-anchor--end .v2-sia-seal { left: 0.1em; }
-  html[data-mode="teens"] .v2-sia-anchor--lead { display: inline-block; }
-  html[data-mode="teens"] .v2-sia-anchor--end { display: none; }
-  html[data-mode="teens"] .v2-sia-anchor--lead .v2-sia-seal {
-    --seal: 80px;
-    left: calc(var(--seal) * -0.1);
-    bottom: calc(var(--seal) * -0.72);
-  }
-  html[data-mode="teens"] .v2-home .v2-hero-sub { margin-top: 8px; }
+  .v2-hero .v2-sia-anchor,
+  html[data-mode="teens"] .v2-hero .v2-sia-anchor--lead { display: none; }
+  .v2-sia-glue { text-shadow: none; }
 }
 @media (min-width: 1101px) {
   .v2-sia-seal { --seal: 116px; --lift: 0.6em; }

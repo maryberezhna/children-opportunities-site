@@ -684,4 +684,6 @@
 .ol-own-btn:hover { transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .ol-own-btn { transition: none; } .ol-own-btn:hover { transform: none; } }
 /* Той самий блок у підбірках (app/OlimpPromo.js) — між «Топ 3» і списком. */
-.ol-own-hub { margin: 28px 0; }
+/* Без власних відступів: між секціями підбірки вже є gap 40px (.tp-main), і
+   28px зверху й знизу давали 68px порожнечі на телефоні (Марія, 08.10.2026). */
+.ol-own-hub { margin: 0; }
