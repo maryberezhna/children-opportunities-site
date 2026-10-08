@@ -101,7 +101,18 @@ def send(chat_id: str, text: str) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--send", action="store_true", help="надіслати по-справжньому")
+    ap.add_argument("--preview", default="", help="chat_id: надіслати обидва тексти лише сюди (Марії) — показати")
     args = ap.parse_args()
+
+    # Показати Марії, як повідомлення виглядатиме в Telegram: обидва варіанти
+    # лише в її чат, нікому більше (08.10.2026: «так, покажи»).
+    if args.preview:
+        if not PLUS_BOT_TOKEN:
+            logger.error("TELEGRAM_PLUS_BOT_TOKEN не задано")
+            return 1
+        ok = send(args.preview, started_text()) + send(args.preview, waitlist_text())
+        logger.info("Превʼю надіслано: %d/2", ok)
+        return 0 if ok == 2 else 1
 
     from db import get_client
     client = get_client()
