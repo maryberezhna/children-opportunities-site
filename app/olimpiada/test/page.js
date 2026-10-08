@@ -7,7 +7,6 @@ import TestRunner from './TestRunner';
 import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
-import OpenTaskLate from './OpenTaskLate';
 import ShareDiploma from './ShareDiploma';
 import DiplomaImage from './DiplomaImage';
 
@@ -166,30 +165,20 @@ export default async function TestPage({ searchParams }) {
       </div>
 
       {/* Відкрите завдання — останній крок тесту, без таймера (07.10.2026). Тут
-          показуємо, що журі отримало, а якщо дитина його пропустила чи закрила
-          вкладку на цьому кроці — даємо дописати. */}
-      <div className="ol-panel ol-open">
-        <p className="ol-kicker">Відкрите завдання · приз місяця: {month}</p>
-        <h2 className="ol-h2">{OPEN_TASK.title}</h2>
-        {entry.open_answer ? (
-          <>
-            <p className="ol-ok" role="status">
-              Відповідь отримали. Журі оцінює: {criteriaText()}. Переможців за {month} оголосимо
-              до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
-            </p>
-            <blockquote className="ol-quote">{entry.open_answer}</blockquote>
-          </>
-        ) : (
-          <>
-            <p className="ol-text">
-              Відповідь ще не надіслано — її можна дописати тут, таймера немає. Саме за відкритим завданням журі обирає призерів місяця. Диплом від цього не залежить.
-            </p>
-            {OPEN_TASK_ART && <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: OPEN_TASK_ART }} />}
-            <p className="ol-text">{OPEN_TASK.text}</p>
-            <OpenTaskLate token={entry.token} maxLength={OPEN_TASK.maxLength} />
-          </>
-        )}
-      </div>
+          лише підтвердження, що журі отримало відповідь. Дописати пропущене на
+          цій сторінці більше не можна (Марія, 08.10.2026: «нащо оце, видалити»):
+          «Пропустити» в тесті — остаточно. */}
+      {entry.open_answer ? (
+        <div className="ol-panel ol-open">
+          <p className="ol-kicker">Відкрите завдання · приз місяця: {month}</p>
+          <h2 className="ol-h2">{OPEN_TASK.title}</h2>
+          <p className="ol-ok" role="status">
+            Відповідь отримали. Журі оцінює: {criteriaText()}. Переможців за {month} оголосимо
+            до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
+          </p>
+          <blockquote className="ol-quote">{entry.open_answer}</blockquote>
+        </div>
+      ) : null}
 
     </Shell>
   );
