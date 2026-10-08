@@ -51,8 +51,9 @@ test('Перше повідомлення бота називає ціну пе�
   assert.match(ask, /перший місяць — \$\{fmtPrice\(PRICE_FIRST\)\} грн/);
 });
 
-test('Адмінка Dityam+: «Потребує уваги» — спершу найсвіжіші', () => {
+test('Адмінка Dityam+: одна таблиця людей замість трьох', () => {
   const src = readFileSync('app/admin/plus/page.js', 'utf8');
-  assert.match(src, /const attention = \[\.\.\.paused, \.\.\.stuck\]\.sort\(\(a, b\) => lastSeen\(b\) - lastSeen\(a\)\)/);
-  assert.match(src, /s\.email \? `📧 \$\{s\.email\}`/);
+  assert.match(src, /peopleRows\(/);
+  assert.doesNotMatch(src, /Список очікування ·/);
+  assert.doesNotMatch(src, /Підписники ·/);
 });
