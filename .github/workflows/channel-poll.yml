@@ -1,0 +1,36 @@
+name: Telegram — голосування в каналі (разово)
+
+# Анонімне опитування «як часто публікувати можливості» (scripts/channel-poll.mjs).
+# preview_chat — лише в цей чат (показати Марії); confirm = POST — у канал;
+# порожньо — лише надрукувати текст.
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'POST — опублікувати в канал'
+        required: false
+        default: ''
+      preview_chat:
+        description: 'chat_id — надіслати лише сюди (показати)'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Post poll
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          CONFIRM: ${{ github.event.inputs.confirm }}
+          PREVIEW_CHAT: ${{ github.event.inputs.preview_chat }}
+        run: node scripts/channel-poll.mjs
