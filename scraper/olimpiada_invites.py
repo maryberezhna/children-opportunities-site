@@ -45,6 +45,14 @@ QUESTIONS = 25
 MINUTES = 35
 ACCESS_HOURS = 72
 PRINT_PRICE = 199
+# Dityam+ після олімпіади — перший місяць за 1 грн (Марія, 08.10.2026: «показуй
+# і тут, і в імейлі»; замість подарункового місяця). Ціни — як у lib/wayforpay.js.
+PLUS_FIRST = 1
+PLUS_PRICE = 119
+PLUS_LINK = "https://t.me/DityamPlusBot?start=from_olimpiada"
+PLUS_TEXT = ("Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини "
+             "і завчасно нагадує про дедлайни — у Telegram. "
+             f"Перший місяць — {PLUS_FIRST} грн, далі {PLUS_PRICE} грн/міс, скасувати можна будь-коли.")
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня",
               "серпня", "вересня", "жовтня", "листопада", "грудня"]
@@ -179,6 +187,9 @@ def build_diploma_message(entry: dict):
             f"{address_ask} {post_link}",
         ] if need_address else []),
         "",
+        "Що далі після олімпіади?",
+        f"{PLUS_TEXT} Спробувати за {PLUS_FIRST} грн: {PLUS_LINK}",
+        "",
         "Марія Шутяк, Dityam.com.ua",
         FROM,
     ])
@@ -198,12 +209,18 @@ def build_diploma_message(entry: dict):
             f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
             f"Вказати адресу доставки</a></p>\n"
         )
+    plus_html = (
+        f"<p><b>Що далі після олімпіади?</b><br>{esc(PLUS_TEXT)}</p>\n"
+        f'<p><a href="{esc(PLUS_LINK)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
+        f'background:#16307a;color:#ffffff;font-weight:bold;text-decoration:none">'
+        f"Спробувати Dityam+ за {PLUS_FIRST} грн</a></p>\n"
+    )
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
 <p>Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.</p>
 <p><a href="{esc(link)}">Сторінка з результатом і дипломом</a></p>
-{prize_html}{post_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
+{prize_html}{post_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
 

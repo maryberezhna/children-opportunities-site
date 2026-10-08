@@ -3,6 +3,7 @@ import Footer from '../../Footer';
 import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime, isPaidEntry } from '@/lib/olimpiada';
 import { getStore, validToken, syncPayment, syncPrint } from '@/lib/olimpiada-server';
 import { PLUS_BOT } from '@/lib/plus';
+import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import TestRunner from './TestRunner';
 import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
@@ -162,6 +163,23 @@ export default async function TestPage({ searchParams }) {
 
       <div className="ol-result ol-result-share">
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
+      </div>
+
+      {/* Dityam+ після тесту — перший місяць за 1 грн (Марія, 08.10.2026: «усім,
+          хто проходить онлайн-олімпіаду, Dityam+ перший місяць за 1 грн, показуй
+          і тут, і в імейлі»; замість подарункового місяця). Мітка from_olimpiada —
+          щоб в /admin/plus було видно, що людина прийшла з олімпіади. */}
+      <div className="ol-panel ol-plus-offer">
+        <p className="ol-kicker">Dityam+ · перший місяць за {PRICE_FIRST} грн</p>
+        <h2 className="ol-h2">Що далі після олімпіади?</h2>
+        <p className="ol-text">
+          Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини
+          і завчасно нагадує про дедлайни — у Telegram. Перший місяць — {PRICE_FIRST} грн, далі {PRICE} грн/міс,
+          скасувати можна будь-коли.
+        </p>
+        <a href={`https://t.me/${PLUS_BOT}?start=from_olimpiada`} className="ol-btn ol-btn-main" target="_blank" rel="noopener">
+          Спробувати за {PRICE_FIRST} грн
+        </a>
       </div>
 
       {/* Відкрите завдання — останній крок тесту, без таймера (07.10.2026). Тут

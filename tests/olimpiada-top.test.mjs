@@ -51,7 +51,7 @@ test('картка веде на /olimpiada, а не на /o/<slug>, і має �
   assert.equal(c.day, null);
   assert.equal(c.dateLabel, OLIMP_OPEN ? 'Топ' : 'Скоро старт');
   // «На самій картці написати, що дитина отримає» (Марія, 07.10.2026).
-  assert.equal(c.meta, 'Олімпіада · 9–11 років · диплом одразу, місяць Dityam+ і призи щомісяця');
+  assert.equal(c.meta, 'Олімпіада · 9–11 років · диплом одразу й призи щомісяця');
   for (const f of ['app/TopWeekSlider.js', 'app/TopWeekStrip.js']) {
     assert.match(read(f), /href=\{o\.href \|\| /, `${f}: власне посилання картки ігнорується`);
   }
