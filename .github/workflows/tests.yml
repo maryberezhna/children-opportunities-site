@@ -1,12 +1,20 @@
 # Тести інваріантів на кожен PR — страхувальна сітка №3 (01.09.2026).
 # Народилась з інциденту: мерж #158 затер fetchAllRows, прод пів дня не
 # збирався, і жодна перевірка цього не ловила. Джоби tests-js і tests-py —
-# обовʼязкові перевірки в branch protection гілки main.
+# обовʼязкові перевірки в branch protection гілки main — назви джобів не міняти.
+#
+# 09.10.2026 репо стало приватним, і хвилини Actions понад ліміт платні. Тому
+# лише на PR (той самий код щойно пройшов тести в PR, повтор на main після
+# мержу — подвійна оплата) і ручний запуск; новий пуш у PR скасовує попередній
+# незавершений прогін. Що зламала комбінація двох зелених PR, ловить збірка
+# Vercel на main (deploy-alert) або тести наступного PR.
 name: tests
 on:
   pull_request:
-  push:
-    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   tests-js:
     name: tests-js
