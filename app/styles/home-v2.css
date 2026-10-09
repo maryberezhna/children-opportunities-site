@@ -211,6 +211,32 @@ html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
   html[data-mode="teens"] .v2-hero .v2-sia-anchor--lead { display: none; }
   .v2-sia-glue { text-shadow: none; }
 }
+/* Печатка SIA під описом — лише телефон (Марія, 09.10.2026, варіант «В» без
+   сірого підпису). Той самий прийом, що медаль на сторінці олімпіади. */
+.v2-sia-medal { display: none; }
+@media (max-width: 900px) {
+  .v2-sia-medal {
+    display: flex; align-items: center; gap: 12px; align-self: flex-start; width: fit-content;
+    margin: 14px 0 0; text-decoration: none; color: var(--v2-accent-strong);
+  }
+  .v2-sia-medal-disc {
+    flex: none; width: 56px; height: 56px; border-radius: 50%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    position: relative; box-sizing: border-box;
+    border: 2px solid currentColor; color: var(--v2-accent-strong);
+    transform: rotate(-6deg);
+    font-family: var(--font-sans), system-ui, sans-serif; font-size: 11px; font-weight: 800; line-height: 1;
+  }
+  /* Друге, тонке кільце всередині — як у печатки. */
+  .v2-sia-medal-disc::after {
+    content: ""; position: absolute; inset: 3px; border: 1px solid currentColor; border-radius: 50%;
+  }
+  .v2-sia-medal-disc b { font-size: 16px; font-weight: 800; }
+  .v2-sia-medal-text {
+    font-family: var(--font-caveat), cursive; font-size: 26px; font-weight: 700; line-height: 1;
+    color: var(--v2-accent-strong);
+  }
+}
 @media (min-width: 1101px) {
   .v2-sia-seal { --seal: 116px; --lift: 0.6em; }
 }

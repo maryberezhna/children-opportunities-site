@@ -135,3 +135,12 @@ test('активні фільтри не дублюються на телефо�
   assert.match(css, /@media \(max-width: 900px\) \{\s*\.v2-active \{ display: none; \}\s*\}/);
   assert.match(css, /^\.v2-active-chip \{/m);
 });
+
+test('SIA на телефоні — печатка й підпис без сірого рядка (09.10.2026)', () => {
+  const hero = readFileSync('app/HomeHero.js', 'utf8');
+  assert.match(hero, /className="v2-sia-medal"/);
+  assert.match(hero, /'Переможець SIA Ukraine'/);
+  assert.doesNotMatch(hero, /вибір журі<\/small>|Social Impact Award · вибір журі/);
+  const css = readFileSync('app/styles/home-v2.css', 'utf8');
+  assert.match(css, /\.v2-sia-medal \{ display: none; \}/);
+});
