@@ -120,3 +120,13 @@ test('GATE_SELECT містить і джерело, і цитати', () => {
     assert.ok(GATE_SELECT.includes(f), `GATE_SELECT без ${f}`);
   }
 });
+
+// Марія, 09.10.2026: «так» — кнопка не публікує запис, чия дата вже минула.
+// Раніше він виходив на сайт і того ж вечора закривався lifecycle.
+test('минула дата не пускає на сайт', async () => {
+  const { publishBlockers } = await import('../lib/publish-gate.js');
+  const base = { opportunity_type: 'competition', timing_kind: 'one_time', source_url: 'https://org.ua/' };
+  const past = publishBlockers({ ...base, deadline: '2020-01-01' });
+  assert.equal(past?.error, 'expired');
+  assert.equal(publishBlockers({ ...base, deadline: '2099-01-01' }), null);
+});

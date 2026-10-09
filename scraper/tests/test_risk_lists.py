@@ -25,7 +25,8 @@ class RiskListsComeFromSpec(unittest.TestCase):
                           "заява через Пенсійний фонд або Дію.",
                "opportunity_type": "allowance", "child_needs": ["disability"],
                "age_from": 0, "age_to": 18, "link_status": "ok",
-               "source_url": "https://organizer.org.ua/"}
+               "source_url": "https://organizer.org.ua/",
+               "evidence": {"age": "на дитину з інвалідністю до 18 років"}}
         self.assertIsNone(auto_review.mechanical(row, trust_tier=1))
 
     def test_every_risk_has_a_label(self):

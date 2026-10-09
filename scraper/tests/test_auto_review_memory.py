@@ -76,6 +76,12 @@ class Query:
     def limit(self, n):
         return self
 
+    def in_(self, col, vals):
+        return self
+
+    def ilike(self, col, pattern):
+        return self
+
     def execute(self):
         self.db.log.append((self.table, self.op, self.payload, list(self.filters)))
         if self.op == "update" and self.table in self.db.fail_updates:
@@ -87,7 +93,8 @@ class Query:
 
 class FakeDB:
     def __init__(self, drafts, fail_updates=()):
-        self.rows = {"opportunities": drafts, "sources": [], "llm_usage": []}
+        self.rows = {"opportunities": drafts, "sources": [], "llm_usage": [],
+                     "moderation_notes": []}
         self.log = []
         self.fail_updates = set(fail_updates)
 

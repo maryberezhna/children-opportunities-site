@@ -48,7 +48,7 @@ import usage
 from db import get_client
 # Перелік обовʼязкових полів один на весь конвеєр: нормалізатор ставить
 # чернетку, коридори не пускають далі, адмінка показує те саме формулювання.
-from normalizer import latin_fields, missing_required, summary_says_over
+from normalizer import VALID_OPP_TYPES, latin_fields, missing_required, summary_says_over
 from proof import PUBLISH_CRITERIA
 from timing import is_expired
 from first_source import source_problem
@@ -138,6 +138,56 @@ def _hold(reason: str, trust_tier: int) -> tuple[str, str]:
     return YELLOW, f"{reason} · {tier_label(trust_tier)}"
 
 
+# ── Чернетки, які свідомо відклали для людини (Марія, 09.10.2026: «так») ──
+# auto_review бере ВСІ чернетки, тож публікував і те, що людина чи інший
+# крок поклали в чергу навмисно: зняте з сайту, пропозиції («завжди
+# чернеткою»), додане через add-draft («публікує людина»), «не для дітей?».
+# Позначки — дослівно ті, що пишуть ці кроки в admin_comment.
+PARKED_MARKS = (
+    ("тип і вік ще не визначено", "заглушка з пропозиції — тип і вік ще не визначено"),
+    ("додано вручну через add-draft", "додано вручну — публікує людина"),
+    ("💡 пропозиція з форми на сайті", "пропозиція з сайту — завжди через людину"),
+    ("💡 принесла Марія", "принесла Марія — публікує людина"),
+    ("🔎 з нашого дослідження", "з дослідження — публікує людина"),
+    ("учасник — дорослий", "схоже, не для дітей — перевір"),
+    ("лише для зарахованих студентів ЗВО", "схоже, лише для студентів — перевір"),
+    ("набір триває, а нової дати немає", "lifecycle поклав у чергу людині"),
+    ("знято з сайту", "знято з сайту — повертає людина"),
+)
+
+
+def parked_reason(row: dict) -> str:
+    """Чому чернетку відклали для людини, або порожній рядок."""
+    if row.get("_unpublished"):
+        return "знято з сайту — повертає людина"
+    comment = (row.get("admin_comment") or "").lower()
+    for mark, reason in PARKED_MARKS:
+        if mark.lower() in comment:
+            return reason
+    return ""
+
+
+def placeholder_reason(row: dict) -> str:
+    """Вік чи тип — технічна заглушка, а не слова джерела.
+
+    Вік і тип — фільтри сайту (Марія, 09.10.2026). Без цитати нормалізатор
+    ставить 0–18 і «курс», бо база не приймає порожнє: такий запис
+    показувався б усім вікам і не в тому розділі.
+    """
+    evidence = row.get("evidence") if isinstance(row.get("evidence"), dict) else {}
+    age_from, age_to = row.get("age_from"), row.get("age_to")
+    if age_from is None or age_to is None:
+        return "бракує віку"
+    if (age_from, age_to) == (0, 18) and not evidence.get("age"):
+        return "вік — заглушка 0–18, на сторінці не знайдено"
+    kind = row.get("opportunity_type")
+    if kind not in VALID_OPP_TYPES:
+        return "бракує типу"
+    if kind == "course" and not evidence.get("type"):
+        return "тип — заглушка «курс», на сторінці не знайдено"
+    return ""
+
+
 def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | None:
     """Детермінована частина. Повертає (коридор, причина) або None, якщо
     запис пройшов механіку і йде далі, до судді.
@@ -173,6 +223,10 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
     if problem:
         return YELLOW, problem
 
+    parked = parked_reason(row)
+    if parked:
+        return YELLOW, parked
+
     # Чутливі теми (виплати, психологічна й медична допомога, статусні діти)
     # до 03.10.2026 завжди йшли людині, навіть бездоганні. Марія того дня:
     # «публікувати самим» — тепер вони проходять ті самі ворота, що й решта.
@@ -184,6 +238,9 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
     missing = missing_required(row)
     if missing:
         return _hold("бракує: " + ", ".join(missing), trust_tier)
+    placeholder = placeholder_reason(row)
+    if placeholder:
+        return _hold(placeholder, trust_tier)
 
     # Брак цитати запис більше не тримає (03.10.2026). Цитати лишаються
     # доказом того, що заповнено, і їх далі дозбирує proof_recheck, але
@@ -506,6 +563,23 @@ def run(apply: bool = False, limit: int = 500) -> dict:
 
     rows = (sb.table("opportunities").select("*")
             .eq("status", "draft").limit(limit).execute().data or [])
+    # Зняте з сайту лишає слід не в admin_comment, а в moderation_notes
+    # (scripts/unpublish.mjs).
+    ids = [r["id"] for r in rows]
+    gone = set()
+    try:
+        for i in range(0, len(ids), 100):
+            notes = (sb.table("moderation_notes").select("opportunity_id")
+                     .in_("opportunity_id", ids[i:i + 100])
+                     .ilike("body", "Знято з сайту%").execute().data or [])
+            gone.update(n["opportunity_id"] for n in notes)
+    except Exception as e:                                   # noqa: BLE001
+        # Без цього сліду прогін небезпечний: зняте з сайту повернулось би.
+        logger.warning("moderation_notes не прочитались (%s) — нічого не публікую", e)
+        apply = False
+    for r in rows:
+        if r["id"] in gone:
+            r["_unpublished"] = True
     print(f"Чернеток у черзі: {len(rows)}\n")
 
     trust = {r["name"]: r.get("trust_tier") or DEFAULT_TIER
