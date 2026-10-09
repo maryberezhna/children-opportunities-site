@@ -48,7 +48,11 @@ test('Бот і перехід на оплату рахують перший п�
 test('Перше повідомлення бота називає ціну першого місяця', () => {
   const src = readFileSync('app/api/telegram/plus/route.js', 'utf8');
   const ask = src.slice(src.indexOf('async function askConsent'), src.indexOf('async function continueStart'));
-  assert.match(ask, /перший місяць — \$\{fmtPrice\(PRICE_FIRST\)\} грн/);
+  assert.match(ask, /Перший місяць у Dityam\+ за \$\{fmtPrice\(PRICE_FIRST\)\} грн/);
+  // Коротке перше повідомлення: одна кнопка «Почати», згода — рядком (09.10.2026).
+  assert.match(ask, /text: 'Почати →', callback_data: 'consent:yes'/);
+  assert.match(ask, /Натискаючи «Почати», ви приймаєте/);
+  assert.doesNotMatch(ask, /Dityam\+ —/);
 });
 
 test('Адмінка Dityam+: одна таблиця людей замість трьох', () => {

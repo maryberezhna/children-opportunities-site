@@ -29,7 +29,7 @@ test('Статус, що сталося, звідки', () => {
   assert.match(rows['@happy'].from, /був у списку очікування/);
   assert.equal(rows['📧 mama@example.com'].status, 'gift');
   assert.equal(rows['📧 mama@example.com'].from, 'Олімпіада');
-  assert.equal(rows['@old'].what, 'зупинився: не погодився з офертою');
+  assert.equal(rows['@old'].what, 'зупинився на першому повідомленні');
   assert.equal(rows['@waiting'].status, 'waitlist');
   assert.equal(rows['📧 x@example.com'].what, 'лише пошта — без Telegram, написати нема як');
 });
