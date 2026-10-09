@@ -191,6 +191,23 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
             <span className="v2-sia-anchor v2-sia-anchor--end">{siaSeal}</span>
           </h1>
           <p className="v2-hero-sub">{c.sub}</p>
+          {/* SIA на телефоні — печатка «SIA 2026» і рукописний підпис (Марія,
+              09.10.2026, обрала з 3 варіантів: «оце можна, тільки без сірого
+              маленького тексту внизу»). Кільця в заголовку на телефоні немає
+              (08.10.2026), на компʼютері ця печатка схована — там кільце. */}
+          <a
+            href={SIA_AWARD.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="v2-sia-medal"
+            aria-label={SIA_AWARD.full[isEn ? 'en' : 'uk']}
+            onClick={() => {
+              if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero_mobile' });
+            }}
+          >
+            <span className="v2-sia-medal-disc" aria-hidden="true">SIA<b>2026</b></span>
+            <span className="v2-sia-medal-text">{isEn ? 'SIA Ukraine winner' : 'Переможець SIA Ukraine'}</span>
+          </a>
 
           <form className="v2-hero-search" role="search" onSubmit={submit}>
             <label className="v2-hero-search-field">
