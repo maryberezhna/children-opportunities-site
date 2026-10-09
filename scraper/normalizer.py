@@ -13,6 +13,7 @@ import hubs
 from canonical import canonical_url
 from timing import PERIODIC_BY_DEFINITION, clean_kind, clean_months, has_repeat_signal
 import text_fill
+from first_source import source_problem
 
 logger = logging.getLogger(__name__)
 
@@ -1268,6 +1269,22 @@ def _snap_year_to_now(date_iso: str, today_iso: str) -> str | None:
 # shkolyariv Italiyi». Промпт вимагає українську, але не гарантує її, тож
 # перевіряємо самі: таке не відхиляємо (текст по суті правильний), а віддаємо
 # людині — переписати кирилицею.
+def hold_without_source(data: dict) -> dict:
+    """Допис чужого Telegram-каналу чи каталог Eurodesk — не першоджерело:
+    такий запис іде в чернетку, а не на сайт.
+
+    Колонка status у базі за замовчуванням 'active', тож новий запис без
+    явного статусу публікувався одразу, повз auto_review і ворота адмінки.
+    09.10.2026 HERside з @tviyspace висів на сайті без жодного посилання:
+    допис сайт не показує (lib/source-link.js), а форми в записі не було —
+    людина написала, що «нема лінку для форми»."""
+    why = source_problem(data)
+    if why:
+        data["status"] = "draft"
+        data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + why).strip(" ·")
+    return data
+
+
 def latin_fields(data: dict) -> list:
     """Поля, де українського тексту немає: серед літер менше половини кирилиці.
 
@@ -1392,6 +1409,8 @@ URL: {source_url}
                 data["status"] = "draft"
                 note = f"переписати українською: {', '.join(latin)} латиницею"
                 data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + note).strip(" ·")
+
+            hold_without_source(data)
 
             enrollment = data.pop("enrollment_status", "unknown")
             if enrollment in ("closed", "expired") and data.get("status") != "draft":
