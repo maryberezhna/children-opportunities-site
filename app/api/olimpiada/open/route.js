@@ -2,7 +2,7 @@
 // (Марія, 07.10.2026). Приймаємо один раз: журі читає саме те, що дитина
 // надіслала. Місяць конкурсу — той, коли завершено тест (month_key).
 import { cleanOpenAnswer } from '@/lib/olimpiada';
-import { getStore, validToken, json } from '@/lib/olimpiada-server';
+import { getStore, validToken, json, notifyAdmin, esc } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,5 +22,8 @@ export async function POST(request) {
   const open = cleanOpenAnswer(b.open);
   if (!open) return json({ error: 'empty' }, 400);
   await store.update(entry.token, { open_answer: open, open_answer_at: new Date().toISOString() });
+  // Відповідь для журі — одразу в адмін-чат (Марія, 09.10.2026).
+  await notifyAdmin(`✍️ <b>Олімпіада: відкрите завдання${entry.wfp_last_status === 'Test' ? ' (тест адміна)' : ''}</b>\n`
+    + `${esc(entry.child_name)} · ${entry.score} з ${entry.max_score}\n\n${esc(open.slice(0, 1500))}`);
   return json({ ok: true });
 }

@@ -4,7 +4,7 @@
 // (07.10.2026) і йде окремо, після цього кроку: /api/olimpiada/open.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { OLIMP, scoreAnswers, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
-import { getStore, validToken, json, loadKeys } from '@/lib/olimpiada-server';
+import { getStore, validToken, json, loadKeys, notifyAdmin, esc } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -46,7 +46,12 @@ export async function POST(request) {
     finished_at: now.toISOString(), answers, score, max_score: max, level: level.key, month_key: month,
     ...(open ? { open_answer: open, open_answer_at: now.toISOString() } : {}),
   });
-  // Результат кожного тесту в чат більше не шлемо: 07.10.2026 Марія: «в адмінці лише найнеобхідніше — найбільші проблеми, звернення й покупки з сайту».
-  // Бали й відкриті відповіді для журі — у /admin/metrics (lib/olimpiada-stats.js).
+  // Кожен пройдений тест — в адмін-чат (Марія, 09.10.2026: «чому мені в
+  // телеграм-адмінку не приходить» — з 07.10 туди йшли лише покупки, і
+  // перших учасників вона не побачила). Тестові записи адміна — з позначкою.
+  const test = entry.wfp_last_status === 'Test';
+  await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>\n`
+    + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || '—')}`
+    + (open ? `\n\n✍️ Відкрите завдання:\n${esc(open.slice(0, 1500))}` : ''));
   return json({ ok: true });
 }

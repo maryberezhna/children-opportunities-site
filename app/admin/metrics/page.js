@@ -9,7 +9,7 @@ import { mediaKit } from '@/lib/mediakit';
 import LoginForm from '../LoginForm';
 import { olimpStats, olimpTraffic } from '@/lib/olimpiada-stats';
 import { fetchAllRows } from '@/lib/supabase';
-import { OLIMP, OLIMP_OPEN } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, levelByKey } from '@/lib/olimpiada';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -33,6 +33,8 @@ const numS = { fontSize: 26, fontWeight: 800, letterSpacing: '-0.01em', fontVari
 const labS = { fontSize: 12.5, color: '#54617a', marginTop: 2, lineHeight: 1.35 };
 const h2S = { fontSize: 17, margin: '28px 0 2px' };
 const noteS = { fontSize: 13, color: '#8a94a6', margin: '4px 0 0' };
+const olTd = { padding: '8px 10px', borderBottom: '1px solid #e2e8f2', textAlign: 'left', verticalAlign: 'top' };
+const olTh = { ...olTd, fontSize: 12, fontWeight: 700, color: '#6b6b6b', textTransform: 'uppercase', letterSpacing: '.04em' };
 
 // Рядок воронки: смужка завширшки як частка від першого кроку, поруч —
 // скільки людей і скільки з них ми втратили на цьому переході.
@@ -215,12 +217,14 @@ export default async function MetricsPage() {
     // Події сторінки олімпіади й попапу (olimp_*) — сторінками, без межі в 1000.
     olimpEventsRes: fetchAllRows(() => supabase.from('site_events').select('name, source, created_at').like('name', 'olimp_%').order('id')),
     olimpEntriesRes: supabase.from('olimpiada_entries')
-      .select('created_at, paid_at, started_at, finished_at, score, level, open_answer_at, print_paid_at, wfp_last_status, amount, source, parent_email')
+      .select('token, child_name, created_at, paid_at, started_at, finished_at, score, max_score, level, open_answer, open_answer_at, print_paid_at, print_order, wfp_last_status, amount, source, parent_email')
       .limit(10000),
   });
   // Власні записи Марії (lib/own.js) у метрики не йдуть (08.10.2026).
   const olimpWait = notOwn(olimpWaitRes?.data);
   const olimp = olimpStats({ waitlist: olimpWait, entries: notOwn(olimpEntriesRes?.data), now: new Date() });
+  const olimpPeople = notOwn(olimpEntriesRes?.data).filter((e) => e.wfp_last_status !== 'Test' && e.paid_at)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const olimpT = olimpTraffic({ events: olimpEventsRes?.data || [], waitlist: olimpWait, now: new Date() });
 
   const subs = notOwn(subsRes.data);
@@ -258,7 +262,7 @@ export default async function MetricsPage() {
     byCode.set(u.code, row);
   }
   const promoCodes = [...byCode.values()].sort((a, b) => b.entered - a.entered);
-  const dt = (iso) => (iso ? new Date(iso).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—');
+  const dt = (iso) => (iso ? new Date(iso).toLocaleString('uk-UA', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Kyiv' }) : '—');
 
   // Робота модераторів: хто скільки схвалив, пропустив і поставив питань.
   // До 24.09.2026 імені в базі не було зовсім, тож рядки почнуть зʼявлятись
@@ -353,6 +357,44 @@ export default async function MetricsPage() {
         {olimp.sources.length ? `Звідки email: ${olimp.sources.map(([s, n]) => `${s} — ${n}`).join(', ')}. ` : ''}
         Тестові записи адміна сюди не входять: {olimp.tests}.
       </p>
+
+      {/* Хто саме проходив — з результатом і відповіддю на відкрите завдання
+          (Марія, 09.10.2026: «я не зрозуміла, де ці люди… як мені побачити їх
+          результати і відповіді»). Найсвіжіші зверху; тести адміна й власні
+          записи Марії — ні. Текст відкритого завдання — повністю, для журі. */}
+      <h3 style={{ ...h2S, fontSize: 17, marginTop: 18 }}>Учасники · {olimpPeople.length}</h3>
+      {olimpPeople.length === 0 ? <p style={noteS}>Ще ніхто не подав заявку.</p> : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760, fontSize: 14 }}>
+            <thead>
+              <tr>
+                {['Коли', 'Дитина', 'Email', 'Результат', 'Відкрите завдання', 'Друк'].map((h) => (
+                  <th key={h} style={olTh}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {olimpPeople.map((e) => (
+                <tr key={e.token}>
+                  <td style={{ ...olTd, whiteSpace: 'nowrap' }}>{dt(e.created_at)}</td>
+                  <td style={olTd}>
+                    {e.finished_at
+                      ? <a href={`/olimpiada/test?t=${e.token}`} target="_blank" rel="noopener noreferrer">{e.child_name}</a>
+                      : e.child_name}
+                  </td>
+                  <td style={olTd}>{e.parent_email || '—'}</td>
+                  <td style={{ ...olTd, whiteSpace: 'nowrap' }}>
+                    {e.finished_at ? `${e.score} з ${e.max_score} · ${levelByKey(e.level).label.toLowerCase()}`
+                      : e.started_at ? 'почали тест' : 'ще не починали'}
+                  </td>
+                  <td style={{ ...olTd, maxWidth: 380, whiteSpace: 'pre-wrap' }}>{e.open_answer || '—'}</td>
+                  <td style={olTd}>{e.print_paid_at ? `✅ ${e.print_order?.city || ''}` : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h3 style={{ ...h2S, fontSize: 17, marginTop: 18 }}>Сторінка /olimpiada і попап на фільтрі</h3>
       <div style={grid}>

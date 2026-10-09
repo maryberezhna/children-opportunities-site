@@ -9,6 +9,7 @@ import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
 import ShareDiploma from './ShareDiploma';
+import DiplomaMailer from './DiplomaMailer';
 import DiplomaImage from './DiplomaImage';
 
 // Сторінка тесту й результату. Доступ — за токеном із заявки: він у посиланні
@@ -161,6 +162,8 @@ export default async function TestPage({ searchParams }) {
         <PrintOrder token={entry.token} price={OLIMP.printPrice} paid={Boolean(entry.print_paid_at)} pending={print.pending} order={entry.print_order ? { city: entry.print_order.city, branch: entry.print_order.branch } : null} />
       </div>
 
+      {/* Лист із дипломом — одразу, а не за розкладом GitHub (09.10.2026). */}
+      {!entry.diploma_sent_at ? <DiplomaMailer token={entry.token} /> : null}
       <div className="ol-result ol-result-share">
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
