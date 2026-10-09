@@ -493,3 +493,14 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 @media (max-width: 860px) {
   .ol-trust { justify-content: center; max-width: 360px; margin-left: auto; margin-right: auto; }
 }
+
+/* Розбір після тесту (09.10.2026): завдання, де відповідь не зарахована, з
+   підказкою без готової відповіді. Варіанти — як у тесті, але не клікаються. */
+.ol-review-item { padding: 20px 0 6px; border-top: 2px dashed #c9d8ff; margin-top: 18px; }
+.ol-review-num { margin: 0 0 10px; font-weight: 700; color: #c8501a; }
+.ol-review-q { margin: 0 0 14px; font-size: 18px; font-weight: 700; line-height: 1.4; color: var(--ol-blue-deep); }
+.ol-option.is-static { cursor: default; }
+.ol-option.is-static:hover { transform: none; border-color: #c9d8ff; }
+.ol-option.is-static.is-given, .ol-option.is-static.is-given:hover { border-color: #e8890b; background: #ffe9c2; }
+.ol-review-mine { display: block; margin-top: 4px; font-size: 14px; font-weight: 700; color: #8a4b00; }
+.ol-review-hint { margin: 14px 0 0; padding: 12px 16px; border-radius: 16px; background: #eef4ff; color: #2c4a9a; font-size: 16px; line-height: 1.55; }

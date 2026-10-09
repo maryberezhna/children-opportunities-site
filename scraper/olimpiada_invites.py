@@ -169,6 +169,21 @@ def build_diploma_message(entry: dict):
                   f"{PRINT_PRICE} грн, доставка включена.")
     address_ask = ("Друкований диплом ви оплатили разом з участю. Вкажіть, куди його надіслати: "
                    "отримувач, телефон, місто й відділення чи поштомат Нової пошти.")
+    # Розбір (09.10.2026): лише завдання, де відповідь не зарахована, і підказка
+    # без готової відповіді. Список склав сайт у мить здачі (missed_questions).
+    missed = [m for m in (entry.get("missed_questions") or []) if isinstance(m, dict) and m.get("q")]
+    review_link = f"{link}#rozbir"
+    review_intro = ("Нижче — завдання, де відповідь не зарахована, і підказка до кожного. "
+                    "Готових відповідей немає навмисно: так дитина зможе дійти до розвʼязку сама.")
+    review_more = "Ці завдання з малюнками й варіантами відповідей — на сторінці результату:"
+    review_lines = []
+    if missed:
+        review_lines = ["", "Розбір: над чим варто ще подумати", review_intro]
+        for m in missed:
+            review_lines += ["", f"Завдання {m.get('num')}. {m.get('q')}"]
+            if m.get("hint"):
+                review_lines.append(f"Підказка: {m.get('hint')}")
+        review_lines += ["", f"{review_more} {review_link}"]
     subject = f"Диплом онлайн-олімпіади з логіки — {name}"
     text = "\n".join([
         "Добрий день!",
@@ -177,6 +192,7 @@ def build_diploma_message(entry: dict):
         "Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.",
         "",
         f"Сторінка з результатом і дипломом: {link}",
+        *review_lines,
         *([
             "",
             f"Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {winner}",
@@ -198,6 +214,19 @@ def build_diploma_message(entry: dict):
         FROM,
     ])
     esc = html.escape
+    review_html = ""
+    if missed:
+        review_html = f"<p><b>Розбір: над чим варто ще подумати</b><br>{esc(review_intro)}</p>\n"
+        for m in missed:
+            hint = (f'<br><span style="color:#2c4a9a">Підказка: {esc(m.get("hint"))}</span>'
+                    if m.get("hint") else "")
+            review_html += f"<p><b>Завдання {esc(str(m.get('num')))}.</b> {esc(m.get('q'))}{hint}</p>\n"
+        review_html += (
+            f"<p>{esc(review_more)}</p>\n"
+            f'<p><a href="{esc(review_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
+            f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
+            f"Подивитися розбір на сторінці</a></p>\n"
+        )
     prize_html = (f"<p>Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {esc(winner)}</p>\n"
                   if competes else "")
     post_html = (
@@ -224,7 +253,7 @@ def build_diploma_message(entry: dict):
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
 <p>Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.</p>
 <p><a href="{esc(link)}">Сторінка з результатом і дипломом</a></p>
-{prize_html}{post_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
+{review_html}{prize_html}{post_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
 
