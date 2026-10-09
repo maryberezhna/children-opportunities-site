@@ -97,6 +97,14 @@ class ConfirmAfterClose(unittest.TestCase):
         self.assertEqual(patch["status"], "active")
         self.assertEqual(patch["deadline"], "2026-10-20")
 
+    def test_foreign_post_does_not_reopen(self):
+        # 09.10.2026: повернення на сайт — ті самі ворота, що в кнопок адмінки.
+        out = {"state": "open", "deadline": "2026-10-20", "evidence": QUOTE_EXTENDED}
+        r = dict(self.just_closed_row("one_time"), source_url="https://t.me/tviyspace/1")
+        patch = decide_check(r, out, QUOTE_EXTENDED, TODAY)
+        self.assertEqual(patch["status"], "draft")
+        self.assertIn("Telegram", patch["admin_comment"])
+
     def test_unclear_falls_back_to_the_old_schedule(self):
         out = {"state": "unclear"}
         one = decide_check(self.just_closed_row("one_time"), out, "текст", TODAY)

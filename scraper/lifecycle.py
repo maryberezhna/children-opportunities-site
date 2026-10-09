@@ -52,6 +52,7 @@ import anthropic
 import api_guard
 import usage
 from db import get_client
+from first_source import source_problem
 from normalizer import missing_required_keys
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
 from remark import telegram_text, _TG_POST
@@ -76,7 +77,7 @@ PAGE_CHARS = 9000
 FETCH_CHARS = 60000
 DELAY = 0.6
 
-SELECT = ("id, title, source, source_url, status, opportunity_type, timing_kind, "
+SELECT = ("id, title, source, source_url, apply_url, status, opportunity_type, timing_kind, "
           "timing_assumed, season_months, deadline, event_start_date, event_end_date, "
           "results_date, recheck_at, verified_at, admin_comment, page_hash, "
           "check_interval_days")
@@ -348,6 +349,11 @@ def decide_check(row: dict, out: dict, page: str, today: date,
         reopening = row.get("status") != "active"
         missing = (missing_required_keys({**row, **fresh, "evidence": ev})
                    if reopening else [])
+        # Ті самі ворота, що в кнопок адмінки: без посилання чи з дописом
+        # чужого каналу запис на сайт не повертається (09.10.2026).
+        bad_source = source_problem(row) if reopening else ""
+        if bad_source:
+            missing = [*missing, bad_source]
         patch.update({"status": "draft" if missing else "active", **fresh})
         # Нові дати сезону замінюють старі цілком — старі належать минулому циклу.
         for key in ("deadline", "event_start_date", "event_end_date"):
