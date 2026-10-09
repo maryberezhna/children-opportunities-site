@@ -17,7 +17,7 @@ SCHOOL = {
                 "мова, історія й література щосуботи."),
     "opportunity_type": "club", "countries": ["de"], "cities": ["Лейпциг"],
     "age_from": 5, "age_to": 12, "recurrence": "ongoing", "cost_type": None,
-    "link_status": "ok",
+    "link_status": "ok", "source_url": "https://sonyah-leipzig.de/",
     "evidence": {"age": "для дітей 5–12 років", "date": "щосуботи",
                  "type": "суботня школа", "place": "у Лейпцигу"},
 }

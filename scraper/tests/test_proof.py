@@ -132,7 +132,8 @@ class SanitizeProofGate(unittest.TestCase):
 
 class CorridorNoLongerNeedsProof(unittest.TestCase):
     def _row(self, **over):
-        row = full(link_status="ok", source="Тест", child_needs=[])
+        row = full(link_status="ok", source="Тест", child_needs=[],
+                   source_url="https://organizer.org.ua/")
         row.update(over)
         return row
 

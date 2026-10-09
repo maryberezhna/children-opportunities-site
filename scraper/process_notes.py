@@ -270,6 +270,13 @@ def decision_patch(record: dict, decision: str, reason: str = "", now: str | Non
         missing = missing_required(record)
         if missing:
             return {}, "", "не опубліковано — бракує: " + ", ".join(missing)
+        # До 09.10.2026 тут не було перевірки джерела, хоч docstring обіцяв
+        # «ті самі ворота»: допис чужого каналу чи запис без посилання
+        # публікувався за коментарем.
+        import first_source
+        bad = first_source.source_problem(record)
+        if bad:
+            return {}, "", "не опубліковано — " + bad
         return {"status": "active", "verified_at": now or now_iso()}, "опубліковано на сайт", ""
     if decision == "reject":
         reasons = rejections.load_reasons()

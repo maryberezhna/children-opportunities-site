@@ -38,7 +38,8 @@ def row(**over):
         "age_from": 7, "age_to": 12, "deadline": "2027-06-15", "cost_type": "free",
         "opportunity_type": "camp", "format": "offline", "cities": ["Славське"],
         "child_needs": [], "link_status": "ok",
-        "source": "Telegram (веб)", "evidence": dict(PAGE_QUOTES),
+        "source": "Telegram (веб)", "source_url": "https://veselka.org.ua/tabir",
+        "evidence": dict(PAGE_QUOTES),
     }
     data.update(over)
     return data
@@ -159,3 +160,16 @@ class ForeignTelegramOnlyStaysWithHuman(unittest.TestCase):
         verdict = auto_review.mechanical(
             row(source_url="https://t.me/dityam_com_ua/512", apply_url=None), 3)
         self.assertTrue(verdict is None or "чужого Telegram" not in verdict[1])
+
+
+class NoLinkNoPublish(unittest.TestCase):
+    """Марія, 09.10.2026: посилання обовʼязкове «як божий день»."""
+
+    def test_empty_source_is_yellow(self):
+        corridor, reason = auto_review.mechanical(row(source_url=None, apply_url=None), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("немає посилання", reason)
+
+    def test_form_alone_is_a_link(self):
+        self.assertIsNone(auto_review.mechanical(
+            row(source_url=None, apply_url="https://forms.gle/x"), 3))

@@ -38,6 +38,11 @@ class HoldWithoutSource(unittest.TestCase):
         data = hold_without_source({"source_url": "https://t.me/dityam_com_ua/512"})
         self.assertNotIn("status", data)
 
+    def test_no_link_at_all_is_draft(self):
+        data = hold_without_source({"source_url": "", "apply_url": None})
+        self.assertEqual(data["status"], "draft")
+        self.assertIn("немає посилання", data["admin_comment"])
+
     def test_keeps_earlier_note(self):
         data = hold_without_source({"source_url": "https://t.me/tviyspace/1",
                                     "admin_comment": "переписати українською"})

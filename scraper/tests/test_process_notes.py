@@ -188,7 +188,8 @@ class PartialNote(unittest.TestCase):
 
 
 FULL = {"status": "draft", "age_from": 12, "age_to": 17, "deadline": "2026-10-15",
-        "cost_type": "free", "opportunity_type": "course", "format": "online"}
+        "cost_type": "free", "opportunity_type": "course", "format": "online",
+        "source_url": "https://organizer.org.ua/kurs"}
 
 
 class DecisionFromNote(unittest.TestCase):
@@ -207,6 +208,18 @@ class DecisionFromNote(unittest.TestCase):
                                                  now="2026-09-28T10:00:00+00:00")
         self.assertEqual(patch["status"], "active")
         self.assertEqual(problem, "")
+
+    def test_publish_of_foreign_post_is_refused(self):
+        # До 09.10.2026 рішення «опублікуй» за коментарем джерела не питало.
+        patch, decided, problem = decision_patch(
+            {**FULL, "source_url": "https://t.me/tviyspace/1"}, "publish")
+        self.assertEqual(patch, {})
+        self.assertIn("Telegram", problem)
+
+    def test_publish_without_any_link_is_refused(self):
+        patch, decided, problem = decision_patch({**FULL, "source_url": None}, "publish")
+        self.assertEqual(patch, {})
+        self.assertIn("немає посилання", problem)
 
     def test_publish_without_date_is_refused_and_says_why(self):
         patch, decided, problem = decision_patch(

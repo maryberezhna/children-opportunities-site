@@ -31,7 +31,7 @@ def row(**over):
         "age_from": 7, "age_to": 12, "deadline": "2099-06-15", "cost_type": "free",
         "opportunity_type": "camp", "format": "offline", "cities": ["Славське"],
         "child_needs": [], "link_status": "ok", "status": "draft",
-        "source": "Telegram (веб)",
+        "source": "Telegram (веб)", "source_url": "https://veselka.org.ua/tabir",
         "evidence": {"age": "Для дітей 7–12 років", "cost": "Участь безкоштовна"},
     }
     data.update(over)

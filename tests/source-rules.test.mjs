@@ -57,3 +57,26 @@ test('шляхи публікації перевіряють джерело че
     assert.ok(/GATE_SELECT/.test(src), `${f}: поля воріт не читаються з бази — перевірка була б сліпа`);
   }
 });
+
+// Посилання обовʼязкове (Марія, 09.10.2026: «як божий день»). Порожнє
+// джерело проходило всі ворота, і HERside висів на сайті без жодного
+// посилання — людина написала, що «нема лінку для форми».
+test('без жодного посилання запис не публікується', () => {
+  assert.match(sourceProblem({ source_url: '', apply_url: null }), /немає посилання/);
+  assert.match(sourceProblem({}), /немає посилання/);
+  assert.equal(sourceProblem({ source_url: null, apply_url: 'https://forms.gle/x' }), '');
+});
+
+// Ворота бачать усе, що ховає сторінка (lib/source-link.js), інакше запис
+// проходить ворота й висить без кнопки.
+test('ворота ловлять усі адреси Telegram, які ховає сторінка', () => {
+  for (const u of ['https://telegram.dog/x/1', 'https://telesco.pe/x/1', 'tg://resolve?domain=x',
+                   'https://www.t.me/x/1', 'https://t.me/DityamComUABot']) {
+    assert.match(sourceProblem({ source_url: u, apply_url: null }), /Telegram/, u);
+  }
+});
+
+test('шляхи публікації читають apply_url — інакше перевірка посилання сліпа', async () => {
+  const { GATE_SELECT } = await import('../lib/publish-gate.js');
+  assert.ok(GATE_SELECT.split(', ').includes('apply_url'));
+});

@@ -120,6 +120,20 @@ def source_problem(row: dict) -> str:
         return "джерело — допис чужого Telegram-каналу; потрібна сторінка організатора"
     if is_catalog(url):
         return "джерело — каталог Eurodesk; потрібна сторінка організатора"
+    # Посилання обовʼязкове (Марія, 09.10.2026). Порожнє джерело проходило
+    # всі ворота, а сторінка без посилання — це «хочу подати, а лінку нема».
+    if not public_link(row):
+        return "немає посилання: ні сторінки організатора, ні форми подачі"
+    return ""
+
+
+def public_link(row: dict) -> str:
+    """Куди сайт поведе людину: форма подачі, інакше джерело. Чужий Telegram
+    сайт не показує — дзеркало publicSource().primaryUrl у lib/source-link.js."""
+    for key in ("apply_url", "source_url"):
+        url = (row.get(key) or "").strip()
+        if url and not is_foreign_telegram(url):
+            return url
     return ""
 
 
