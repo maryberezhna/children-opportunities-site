@@ -3,7 +3,8 @@
 // (плюс запас на мережу), не зараховуємо. Відкрите завдання — без таймера
 // (07.10.2026) і йде окремо, після цього кроку: /api/olimpiada/open.
 import { BANK } from '@/content/olimpiada/lohika-9-11';
-import { OLIMP, scoreAnswers, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
+import { HINTS } from '@/content/olimpiada/hints';
+import { OLIMP, scoreAnswers, missedQuestions, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
 import { getStore, validToken, json, loadKeys, notifyAdmin, esc } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
@@ -39,11 +40,15 @@ export async function POST(request) {
   const keys = await loadKeys(OLIMP.slug);
   if (!keys) return json({ error: 'unavailable' }, 503);
   const { score, max } = scoreAnswers(BANK, entry.question_order, answers, keys);
+  // Розбір: де дитина помилилась чи не відповіла — з підказками, без відповідей.
+  // Зберігаємо зараз, поки є ключі: сторінка диплома й обидва листи лише показують.
+  const missed = missedQuestions(BANK, entry.question_order, answers, keys, HINTS);
   const level = levelFor(score);
   const now = new Date();
   const month = monthKey(now);
   await store.update(entry.token, {
     finished_at: now.toISOString(), answers, score, max_score: max, level: level.key, month_key: month,
+    missed_questions: missed,
     ...(open ? { open_answer: open, open_answer_at: now.toISOString() } : {}),
   });
   // Кожен пройдений тест — в адмін-чат (Марія, 09.10.2026: «чому мені в

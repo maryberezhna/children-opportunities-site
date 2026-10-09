@@ -1,7 +1,9 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime, isPaidEntry } from '@/lib/olimpiada';
-import { getStore, validToken, syncPayment, syncPrint } from '@/lib/olimpiada-server';
+import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo, monthKey, monthName, accessExpired, accessUntil, kyivDateTime, isPaidEntry, missedQuestions, publicQuestions } from '@/lib/olimpiada';
+import { getStore, validToken, syncPayment, syncPrint, loadKeys } from '@/lib/olimpiada-server';
+import { BANK } from '@/content/olimpiada/lohika-9-11';
+import { HINTS } from '@/content/olimpiada/hints';
 import { PLUS_BOT } from '@/lib/plus';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import TestRunner from './TestRunner';
@@ -119,6 +121,19 @@ export default async function TestPage({ searchParams }) {
   const level = levelByKey(entry.level);
   const diploma = `/api/olimpiada/diploma?t=${entry.token}&v=${DIPLOMA_VERSION}`;
   const month = monthName(entry.month_key || monthKey());
+  // Розбір: завдання, де дитина помилилась чи не відповіла, з підказками без
+  // відповідей. Список зберігає сервер у мить здачі; для тих, хто пройшов тест
+  // до 09.10.2026, складаємо його тут, поки є ключі. Сторінка серверна — ні
+  // ключі, ні підказки до інших завдань у браузер не йдуть.
+  let missed = Array.isArray(entry.missed_questions) ? entry.missed_questions : null;
+  if (!missed && entry.answers) {
+    const keys = await loadKeys(OLIMP.slug).catch(() => null);
+    missed = keys ? missedQuestions(BANK, entry.question_order, entry.answers, keys, HINTS) : [];
+  }
+  const review = (missed || []).map((m) => {
+    const o = (entry.question_order || []).find((x) => x.id === m.id);
+    return { ...m, view: o ? publicQuestions(BANK, [o])[0] : null };
+  });
   return (
     <Shell>
       <div className="ol-result">
@@ -167,6 +182,41 @@ export default async function TestPage({ searchParams }) {
       <div className="ol-result ol-result-share">
         <ShareDiploma name={entry.child_name} score={entry.score} max={entry.max_score} diplomaUrl={diploma} />
       </div>
+
+      {/* Розбір (Марія, 09.10.2026: «публікуємо вже на сторінці диплому і в
+          імейлі там, де дитина помилилася»). Лише після тесту, лише ці завдання,
+          і без правильних відповідей — «підказка без відповіді». Сюди веде
+          кнопка з листа (#rozbir). */}
+      {review.length ? (
+        <div className="ol-panel ol-review" id="rozbir">
+          <p className="ol-kicker">Розбір</p>
+          <h2 className="ol-h2">Над чим варто ще подумати</h2>
+          <p className="ol-text">
+            Тут завдання, де відповідь не зарахована. Готових відповідей немає — так задумано:
+            до кожного є підказка, з чого почати. Спробуй розвʼязати ще раз, на папері й без поспіху.
+          </p>
+          {review.map((m) => (
+            <article key={m.id} className="ol-review-item">
+              <p className="ol-review-num">Завдання {m.num}</p>
+              {m.view?.art ? <div className="ol-q-art" dangerouslySetInnerHTML={{ __html: m.view.art }} /> : null}
+              <p className="ol-review-q">{m.q}</p>
+              {m.view ? (
+                <div className={`ol-options${m.view.options.some((op) => op.art) ? ' is-pics' : ''}`}>
+                  {m.view.options.map((op) => (
+                    <div key={op.id} className={`ol-option is-static${op.art ? ' is-pic' : ''}${op.id === m.given ? ' is-given' : ''}`}>
+                      {op.art ? <span className="ol-option-art" dangerouslySetInnerHTML={{ __html: op.art }} /> : null}
+                      {op.text ? <span>{op.text}</span> : null}
+                      {op.id === m.given ? <span className="ol-review-mine">твоя відповідь</span> : null}
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {m.given === null ? <p className="ol-note">На це завдання відповіді не було.</p> : null}
+              {m.hint ? <p className="ol-review-hint"><b>Як міркувати.</b> {m.hint}</p> : null}
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       {/* Dityam+ після тесту — перший місяць за 1 грн (Марія, 08.10.2026: «усім,
           хто проходить онлайн-олімпіаду, Dityam+ перший місяць за 1 грн, показуй
