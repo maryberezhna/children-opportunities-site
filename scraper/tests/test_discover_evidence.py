@@ -143,10 +143,12 @@ class ThroughAutoReview(unittest.TestCase):
         rec = record(page_evidence({"evidence": QUOTES}, PAGE), PAGE)
         self.assertIsNone(auto_review.mechanical(self.row(rec), trust_tier=3))
 
-    def test_record_without_quotes_goes_to_judge(self):
-        # З 03.10.2026 брак цитат не тримає: гурток без дат (постійний за
-        # типом) механіка пускає до судді — він і вирішує, чи це для дітей.
-        self.assertIsNone(auto_review.mechanical(self.row(record()), trust_tier=3))
+    def test_record_without_quotes_goes_to_human(self):
+        # З 03.10.2026 брак цитат сам не тримає, але вік без цитати — це
+        # заглушка 0–18, а вік — фільтр сайту (09.10.2026): запис до людини.
+        corridor, reason = auto_review.mechanical(self.row(record()), trust_tier=3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("заглушка 0–18", reason)
 
 
 if __name__ == "__main__":

@@ -63,9 +63,15 @@ class TrustTierIsNoLongerAGate(unittest.TestCase):
             row(evidence={k: v for k, v in PAGE_QUOTES.items() if k != "cost"}), trust_tier=3))
         self.assertIsNone(auto_review.mechanical(row(evidence={}), trust_tier=3))
 
-    def test_empty_cost_age_place_no_longer_hold(self):
+    def test_empty_cost_place_no_longer_hold(self):
         self.assertIsNone(auto_review.mechanical(
-            row(cost_type=None, age_from=None, age_to=None, format=None, cities=[]), trust_tier=3))
+            row(cost_type=None, format=None, cities=[]), trust_tier=3))
+
+    def test_empty_age_holds_again(self):
+        # Вік — фільтр сайту (Марія, 09.10.2026): без нього запис — до людини.
+        corridor, reason = auto_review.mechanical(row(age_from=None, age_to=None), trust_tier=3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("віку", reason)
 
     def test_missing_date_carries_the_tier(self):
         corridor, reason = auto_review.mechanical(row(deadline=None), trust_tier=1)
@@ -173,3 +179,38 @@ class NoLinkNoPublish(unittest.TestCase):
     def test_form_alone_is_a_link(self):
         self.assertIsNone(auto_review.mechanical(
             row(source_url=None, apply_url="https://forms.gle/x"), 3))
+
+
+class PlaceholdersAndParkedStayWithHuman(unittest.TestCase):
+    """Марія, 09.10.2026: «так» — заглушки й відкладене суддя не публікує."""
+
+    def test_age_placeholder_without_quote_holds(self):
+        ev = {k: v for k, v in PAGE_QUOTES.items() if k != "age"}
+        corridor, reason = auto_review.mechanical(row(age_from=0, age_to=18, evidence=ev), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("заглушка 0–18", reason)
+
+    def test_real_0_18_with_quote_passes(self):
+        ev = dict(PAGE_QUOTES, age="для дітей до 18 років")
+        self.assertIsNone(auto_review.mechanical(row(age_from=0, age_to=18, evidence=ev), 3))
+
+    def test_type_placeholder_holds(self):
+        ev = {k: v for k, v in PAGE_QUOTES.items() if k != "type"}
+        corridor, reason = auto_review.mechanical(
+            row(opportunity_type="course", deadline=None, evidence=ev), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("заглушка «курс»", reason)
+
+    def test_parked_drafts_hold(self):
+        for comment in ("💡 пропозиція з форми на сайті · тип і вік ще не визначено",
+                        "додано вручну через add-draft",
+                        "auto: схоже, учасник — дорослий (батьки, жінки, підприємці)",
+                        "lifecycle 2026-10-08: після закриття сторінка каже, що набір триває, "
+                        "а нової дати немає — перевір: «…»"):
+            corridor, _ = auto_review.mechanical(row(admin_comment=comment), 3)
+            self.assertEqual(corridor, auto_review.YELLOW, comment)
+
+    def test_unpublished_holds(self):
+        corridor, reason = auto_review.mechanical(row(_unpublished=True), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("знято з сайту", reason)
