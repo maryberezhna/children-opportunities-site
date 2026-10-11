@@ -9,6 +9,8 @@ import { mergeDraftDups } from '@/lib/adminDups';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
 import Queue from './Queue';
+import ObrazQueue from './ObrazQueue';
+import { AWARDS, imageUrl } from '@/lib/obraz';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,6 +68,8 @@ export default async function QueuePage({ searchParams }) {
   let overdue = 0;
   const notes = {};
   let failed = false;
+  // Оплачені малюнки челенджу «Твій образ на обкладинці» (11.10.2026).
+  let obraz = [];
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
     const { data, error } = await supabase.from('opportunities').select(FIELDS)
@@ -89,6 +93,12 @@ export default async function QueuePage({ searchParams }) {
     // Збій цього запиту чергу не валить: без плашок вона працює як раніше.
     const { data: pairs } = await supabase.rpc('find_draft_dups', { sim_threshold: DRAFT_DUP_SIM });
     drafts = mergeDraftDups(drafts, pairs);
+
+    // Збій цього запиту чергу не валить: блок малюнків просто не покажеться.
+    const { data: ob } = await supabase.from('obraz_entries')
+      .select('id, child_name, age, title, story, parent_email, consent_instagram, image_path, created_at')
+      .eq('status', 'pending').order('created_at', { ascending: true }).limit(100);
+    obraz = (ob || []).map((w) => ({ ...w, img: imageUrl(w.image_path), awards: AWARDS }));
 
     // Коментарі машині: відкриті (ще в роботі) і виконані за останній
     // тиждень — картка каже, що машина зробила з проханням.
@@ -120,6 +130,7 @@ export default async function QueuePage({ searchParams }) {
           База не відповіла — список неповний. Онови сторінку за хвилину.
         </p>
       ) : null}
+      <ObrazQueue works={obraz} />
       <Queue drafts={drafts} notes={notes} today={today} />
       <p style={{ marginTop: 36, fontSize: 14, color: '#8a94a6', lineHeight: 1.6 }}>
         {overdue ? <>Ще {overdue} із минулими датами — машина закриє їх сама вночі.<br /></> : null}

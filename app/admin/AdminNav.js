@@ -134,7 +134,7 @@ async function counts() {
     supabase.from(table).select('id', { count: 'exact', head: true }),
   );
   try {
-    const [drafts, msgs, sugs, quar] = await Promise.all([
+    const [drafts, msgs, sugs, quar, obraz] = await Promise.all([
       head('opportunities', (q) => q.eq('status', 'draft')),
       head('contact_messages', (q) => q.eq('status', 'new')),
       // Лише ті пропозиції, що чекають на людину. Було «все, крім done», а
@@ -142,11 +142,13 @@ async function counts() {
       // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
       head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
       head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
+      // Оплачені малюнки челенджу «Твій образ на обкладинці» — теж у «Черзі».
+      head('obraz_entries', (q) => q.eq('status', 'pending')),
     ]);
     return {
       // З 28.09.2026 черга — лише чернетки: сирі знахідки розбирає машина
       // (triage_quarantine.py), а решта розділів переїхала на /admin/all.
-      queue: drafts.count ?? 0,
+      queue: (drafts.count ?? 0) + (obraz.count ?? 0),
       raw: quar.count ?? 0,
       drafts: drafts.count ?? 0,
       // Звернення з форми і пропозиції з поп-апа лежать у двох таблицях, але

@@ -10,6 +10,8 @@ import {
 import { markPromoPaid } from '@/lib/promo';
 import { recordPayment, productOf, paidAtOf } from '@/lib/payments';
 import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
+import { isObrazOrder } from '@/lib/obraz';
+import { handleObrazCallback } from '@/lib/obraz-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,6 +47,19 @@ export async function POST(request) {
       await handleOlimpCallback(b);
     } catch (e) {
       console.error('[pay/wayforpay] olimpiada', e);
+      return new Response('retry', { status: 500 });
+    }
+    return Response.json(acceptResponse(b.orderReference));
+  }
+
+  // Оргвнесок челенджу «Твій образ на обкладинці» (номер `obraz-…`) — теж
+  // разова оплата, не підписка. Свій serviceUrl у нього /api/obraz/pay, але
+  // якщо колбек прийде сюди, статуси Dityam+ нижче його не мають торкнутись.
+  if (isObrazOrder(b.orderReference)) {
+    try {
+      await handleObrazCallback(b);
+    } catch (e) {
+      console.error('[pay/wayforpay] obraz', e);
       return new Response('retry', { status: 500 });
     }
     return Response.json(acceptResponse(b.orderReference));

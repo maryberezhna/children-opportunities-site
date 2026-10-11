@@ -99,6 +99,10 @@ export default async function sitemap() {
     { url: `${SITE_URL}/stem-partnery`, changeFrequency: 'weekly', priority: 0.6 },
     // Онлайн-олімпіада — у карті сайту лише після запуску продажу.
     ...(OLIMP_OPEN || OLIMP_PUBLIC ? [{ url: `${SITE_URL}/olimpiada`, changeFrequency: 'weekly', priority: 0.7 }] : []),
+    // Челендж «Твій образ на обкладинці» і архів обкладинок (11.10.2026).
+    // Сторінки окремих обкладинок — noindex: імена дітей пошуковикам не віддаємо.
+    { url: `${SITE_URL}/obraz`, changeFrequency: 'weekly', priority: 0.6 },
+    { url: `${SITE_URL}/obraz/halereya`, changeFrequency: 'daily', priority: 0.5 },
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]
