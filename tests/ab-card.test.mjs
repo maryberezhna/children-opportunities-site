@@ -50,7 +50,9 @@ test('скрипт стоїть першим у <body>, а CSS і картка �
 test('підбірки й «схожі» віддають картці вартість і джерело', () => {
   const topic = read('app/TopicPage.js');
   assert.ok(/cost_type: o\.cost_type/.test(topic), 'slim() у TopicPage не передає cost_type — рядок «Вартість» порожній');
-  assert.ok(/source_url: o\.source_url/.test(topic), 'slim() не передає source_url — чужий канал не відсіється');
+  // З 11.10.2026 адреса в браузер не їде: чужий канал відсіює publicSource на сервері.
+  assert.ok(/source: publicSource\(o\)\.sourceName/.test(topic), 'slim() не фільтрує назву джерела — чужий канал не відсіється');
+  assert.ok(!/source_url: o\.source_url/.test(topic), 'slim() знову везе в браузер адресу джерела');
   const shared = read('app/o/shared.js');
   const related = (shared.match(/const RELATED_FIELDS =[\s\S]*?;/) || [''])[0];
   for (const f of ['source', 'source_url', 'format', 'cities', 'timing_kind']) {

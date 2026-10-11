@@ -58,3 +58,23 @@ test('індекси пошуку рахуються не на кожному в
   assert.match(read('app/useSearchSuggest.js'), /onFocus: \(\) => \{ focused\.current = true; wantSuggestSource\(\);/,
     'поле пошуку має будити індекси на першому фокусі');
 });
+
+// Захист від копіювання (11.10.2026): /api/catalog віддавав одним запитом
+// усі описи разом з адресами першоджерел. Картці адреса не потрібна.
+test('адреси джерела й подачі не їдуть у браузер, назва організатора лишається', () => {
+  const [row] = clientRows([{
+    id: 'a', slug: 's', source: 'Мала академія наук', source_url: 'https://man.gov.ua/x',
+    apply_url: 'https://forms.gle/x',
+  }]);
+  assert.deepEqual(row, { id: 'a', slug: 's', source: 'Мала академія наук' });
+});
+
+test('назву чужого Telegram-каналу картка не отримує', () => {
+  const [row] = clientRows([{ id: 'a', source: 'Можливості', source_url: 'https://t.me/Mozhlyvosti/1' }]);
+  assert.equal(row.source, undefined);
+  assert.equal(row.source_url, undefined);
+});
+
+test('картки підбірок не везуть адресу джерела', () => {
+  assert.doesNotMatch(read('app/TopicPage.js'), /source_url:\s*o\.source_url/);
+});
