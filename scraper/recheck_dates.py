@@ -37,6 +37,7 @@ from datetime import date, timedelta
 import anthropic
 
 import api_guard  # відмова через ліміт/оплату робить запуск червоним
+from requests_guard import protected_ids
 import httpx
 from bs4 import BeautifulSoup
 
@@ -512,6 +513,10 @@ def run(apply: bool = False, limit: int = BATCH) -> dict:
     stats = {"closed": 0, "dated": 0, "recurring": 0, "unreachable": 0,
              "unread": 0, "unclear": 0, "not_an_opportunity": 0}
     closed_list, dated_list, left_list, hub_list = [], [], [], []
+
+    # Записи зі «Звернень» не чіпаємо (Марія, 11.10.2026; requests_guard.py).
+    protected = protected_ids(sb)
+    rows = [r for r in rows if r["id"] not in protected]
 
     for row in rows:
         url = row.get("source_url")

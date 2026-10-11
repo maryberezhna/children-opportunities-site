@@ -34,6 +34,7 @@ from datetime import datetime, timezone
 
 import raw_store
 from proof import missing_proof
+from requests_guard import protected_ids
 
 logger = logging.getLogger(__name__)
 
@@ -106,8 +107,10 @@ def run(client, fetch_text) -> dict:
     stats = {"checked": 0, "requeued": 0, "unchanged": 0}
     try:
         now = datetime.now(timezone.utc)
+        # Записи зі «Звернень» не чіпаємо (Марія, 11.10.2026; requests_guard.py).
+        protected = protected_ids(client)
         for status in QUEUES:
-            waiting = pick(_load(client, status))
+            waiting = pick([r for r in _load(client, status) if r["id"] not in protected])
             if not waiting:
                 continue
             label = "чернеток" if status == "draft" else "записів на сайті"
