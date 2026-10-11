@@ -192,6 +192,14 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-check input { flex: none; width: 22px; height: 22px; margin: 0; accent-color: var(--ol-blue-deep); }
 .ol-check a { color: var(--ol-blue-deep); font-weight: 700; }
 .ol-rules a { color: var(--v2-accent-strong); }
+/* Підказка «Можливо, ви мали на увазі …@gmail.com?» під полем email (11.10.2026).
+   Біла плашка: на блакитному блоці педагогів #c8501a інакше не тягне 4,5:1. */
+.ol-email { display: flex; flex-direction: column; }
+.ol-typo { margin: 8px 0 0; padding: 8px 12px; border-radius: 12px; background: #fff; border: 1.5px solid #f2c7ad; font-size: 14px; line-height: 1.5; color: #6b6b6b; overflow-wrap: anywhere; }
+.ol-typo b { color: #c8501a; font-weight: 700; }
+.ol-typo-fix { min-height: 24px; margin: 0; padding: 0 2px; border: 0; background: none; color: #c8501a; font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.ol-typo-fix:hover { text-decoration-thickness: 2px; }
+.ol-typo-fix:focus-visible { outline: 3px solid #ff5fa2; outline-offset: 2px; border-radius: 4px; }
 .ol-error { margin: 0; padding: 10px 14px; border-radius: 14px; background: #ffe3e3; color: #b3261e; font-size: 14px; font-weight: 700; }
 .ol-ok { margin: 0; padding: 14px 16px; border-radius: 16px; background: #dcf5e7; color: #14532d; font-size: 16px; font-weight: 700; }
 .ol-resume { display: block; padding: 12px 16px; border-radius: 16px; background: #fff4d6; border: 2px dashed var(--ol-orange); color: var(--ol-navy); font-size: 16px; font-weight: 700; text-decoration: none; }
