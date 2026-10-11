@@ -7,7 +7,7 @@ import { plusFunnel, plusSources } from '@/lib/funnel';
 import { allNamed } from '@/lib/allNamed';
 import { mediaKit } from '@/lib/mediakit';
 import LoginForm from '../LoginForm';
-import { olimpStats, olimpTraffic } from '@/lib/olimpiada-stats';
+import { olimpStats, olimpTraffic, olimpTeachers } from '@/lib/olimpiada-stats';
 import { fetchAllRows } from '@/lib/supabase';
 import { OLIMP, OLIMP_OPEN, levelByKey } from '@/lib/olimpiada';
 
@@ -181,7 +181,7 @@ export default async function MetricsPage() {
     waitlist, waitlist7, profiles, feedback7, outcomes,
     subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
     siteVisit, sitePlusView, sitePlusClick,
-    olimpWaitRes, olimpEntriesRes, olimpEventsRes,
+    olimpWaitRes, olimpEntriesRes, olimpEventsRes, olimpTeachersRes, olimpTeacherEntriesRes,
   } = await allNamed({
     active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
     drafts: count(supabase, 'opportunities', (q) => q.eq('status', 'draft')),
@@ -219,6 +219,12 @@ export default async function MetricsPage() {
     olimpEntriesRes: supabase.from('olimpiada_entries')
       .select('token, child_name, created_at, paid_at, started_at, finished_at, score, max_score, level, open_answer, open_answer_at, print_paid_at, print_order, wfp_last_status, amount, source, parent_email')
       .limit(10000),
+    // Педагоги (11.10.2026) — окремими запитами: поки міграцію
+    // 20261011_olimpiada_teachers не застосовано, падають лише вони, а не
+    // весь блок олімпіади (у запиті вище teacher_code ще немає).
+    olimpTeachersRes: supabase.from('olimpiada_teachers').select('code, email, created_at').limit(10000),
+    olimpTeacherEntriesRes: supabase.from('olimpiada_entries')
+      .select('teacher_code, finished_at, wfp_last_status, parent_email').not('teacher_code', 'is', null).limit(10000),
   });
   // Власні записи Марії (lib/own.js) у метрики не йдуть (08.10.2026).
   const olimpWait = notOwn(olimpWaitRes?.data);
@@ -226,6 +232,7 @@ export default async function MetricsPage() {
   const olimpPeople = notOwn(olimpEntriesRes?.data).filter((e) => e.wfp_last_status !== 'Test' && e.paid_at)
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   const olimpT = olimpTraffic({ events: olimpEventsRes?.data || [], waitlist: olimpWait, now: new Date() });
+  const olimpTeach = olimpTeachers({ teachers: notOwn(olimpTeachersRes?.data), entries: notOwn(olimpTeacherEntriesRes?.data) });
 
   const subs = notOwn(subsRes.data);
   const allSubs = notOwn(allSubsRes.data);
@@ -352,6 +359,8 @@ export default async function MetricsPage() {
         {/* Де губляться замовлення друку (11.10.2026: «чому ніхто не замовляє друк диплому»). */}
         <Card value={`${olimpT.printOpen} / ${olimpT.printSubmit} / ${olimp.prints}`} label={`друк: натиснули «Так, замовити» / відправили форму / оплатили${olimpT.printOpenSources.length ? ` · звідки: ${olimpT.printOpenSources.map(([s, n]) => `${s} — ${n}`).join(', ')}` : ''}`} />
         <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: друковані дипломи" />
+        {/* Педагоги (11.10.2026): блок «Для педагогів» на /olimpiada. */}
+        <Card value={`${olimpTeach.teachers} / ${olimpTeach.finished}`} label={`педагогів зареєструвалось / учнів пройшли олімпіаду за їхніми посиланнями (заявок: ${olimpTeach.entries}; педагогів з подякою: ${olimpTeach.thanked})`} />
       </div>
       <p style={noteS}>
         {olimp.levels.length ? `Рівні: ${olimp.levels.map(([k, n]) => `${k} — ${n}`).join(', ')}. ` : ''}

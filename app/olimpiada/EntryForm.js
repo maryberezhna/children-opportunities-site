@@ -8,8 +8,25 @@
 // Токен запису лишаємо в браузері: якщо людина закрила вкладку після оплати,
 // на цій сторінці зʼявиться «Продовжити» — листів із посиланням ми не шлемо.
 import { useEffect, useState } from 'react';
+import { validTeacherCode } from '@/lib/olimpiada';
 
 const KEY = 'olimp_entry';
+// Посилання педагога /olimpiada?vid=<код> (11.10.2026). Код запамʼятовуємо:
+// батьки часто відкривають посилання з чату класу, а заявку подають пізніше
+// або після переходів сайтом, коли ?vid в адресі вже немає. 60 днів — щоб
+// давнє посилання не приписало педагогові зовсім іншу заявку.
+const TEACHER_KEY = 'olimp_teacher_ref';
+const TEACHER_TTL = 60 * 24 * 60 * 60 * 1000;
+
+function teacherRef() {
+  const fromUrl = new URLSearchParams(window.location.search).get('vid');
+  if (validTeacherCode(fromUrl)) return fromUrl;
+  try {
+    const v = JSON.parse(window.localStorage.getItem(TEACHER_KEY) || 'null');
+    if (v && validTeacherCode(v.c) && Date.now() - Number(v.at) < TEACHER_TTL) return v.c;
+  } catch { /* приватний режим — лише з адреси */ }
+  return '';
+}
 const WAIT_KEY = 'olimp_wait';
 const ERRORS = {
   name: 'Вкажіть імʼя та прізвище дитини — так, як має бути на дипломі.',
@@ -35,6 +52,10 @@ export default function EntryForm({ open, channelUrl }) {
     } catch { /* приватний режим — просто без «Продовжити» */ }
     const query = new URLSearchParams(window.location.search);
     setPreview(query.has('preview'));
+    const vid = query.get('vid');
+    if (validTeacherCode(vid)) {
+      try { window.localStorage.setItem(TEACHER_KEY, JSON.stringify({ c: vid, at: Date.now() })); } catch { /* ок */ }
+    }
   }, []);
 
   async function submit(e) {
@@ -46,6 +67,8 @@ export default function EntryForm({ open, channelUrl }) {
       consent: f.get('consent') === 'on',
       website: String(f.get('website') || ''),
       source: new URLSearchParams(window.location.search).get('utm_source') || '',
+      // Код педагога: сервер перевірить, що такий педагог є, інакше пропустить.
+      teacher: teacherRef(),
     };
     setState('sending');
     setError('');

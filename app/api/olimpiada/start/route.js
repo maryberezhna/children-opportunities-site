@@ -6,7 +6,7 @@
 import { cookies } from 'next/headers';
 import { isAdmin } from '@/lib/adminAuth';
 import { OLIMP, OLIMP_OPEN, cleanName, isEmail } from '@/lib/olimpiada';
-import { getStore, markPaid, json } from '@/lib/olimpiada-server';
+import { getStore, markPaid, json, teacherForEntry } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -45,10 +45,15 @@ export async function POST(request) {
     if (again) return json({ url: `/olimpiada/test?t=${again.token}`, t: again.token, again: true });
     if (!admin && recent.length >= OLIMP.maxEntriesPerEmailDay) return json({ error: 'too_many' }, 429);
 
+    // Прийшли за посиланням педагога (/olimpiada?vid=<код>, 11.10.2026) — код
+    // пишемо, лише якщо такий педагог справді є. Немає таблиці чи педагога —
+    // заявка йде як завжди, без позначки.
+    const teacher = await teacherForEntry(store, b.teacher);
     const entry = await store.create({
       olimp: OLIMP.slug, child_name: name, parent_email: email,
       consent_at: new Date().toISOString(), amount: 0,
       source: String(b.source || '').slice(0, 60) || null,
+      ...(teacher ? { teacher_code: teacher.code } : {}),
     });
     await markPaid(store, entry, { free: true, test: admin || devFree });
     return json({ url: `/olimpiada/test?t=${entry.token}`, t: entry.token });

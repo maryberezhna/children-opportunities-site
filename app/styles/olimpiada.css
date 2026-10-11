@@ -506,3 +506,53 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-option.is-static.is-given, .ol-option.is-static.is-given:hover { border-color: #e8890b; background: #ffe9c2; }
 .ol-review-mine { display: block; margin-top: 4px; font-size: 14px; font-weight: 700; color: #8a4b00; }
 .ol-review-hint { margin: 14px 0 0; padding: 12px 16px; border-radius: 16px; background: #eef4ff; color: #2c4a9a; font-size: 16px; line-height: 1.55; }
+
+/* ---------- Педагоги (Марія, 11.10.2026) ----------
+   Блок «Для педагогів» на сторінці — світло-блакитна картка з пунктирним
+   краєм: вона лежить на світлому проміжку, і біла картка на ньому б зникла.
+   Кольори картки сталі й уночі, як у білих карток форми. Помаранчевий
+   надпис — темніший #c8501a: світлий #f5a023 на світлому тлі не читається. */
+.ol-sec.ol-teach { padding-bottom: 0; scroll-margin-top: 90px; }
+.ol-teach-box {
+  color-scheme: light; display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr); gap: 40px; align-items: center;
+  padding: 34px; border-radius: 30px; background: #eef4ff; border: 2.5px dashed #b7c9f5;
+}
+.ol-teach-box .ol-kicker { color: #c8501a; }
+.ol-teach-box .ol-hand { margin-bottom: 12px; color: var(--ol-blue-deep); }
+.ol-teach-box .ol-text { color: #2c4a9a; }
+.ol-teach-form { max-width: 520px; }
+.ol-teach-form .ol-btn { align-self: flex-start; }
+.ol-teach-form .ol-field input { background: #fff; }
+.ol-teach-hint { margin: 0; font-size: 15px; line-height: 1.55; color: #2c4a9a; }
+.ol-teach-sample { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.ol-teach-sample img { display: block; width: 100%; max-width: 300px; height: auto; border-radius: 14px; transform: rotate(2deg); box-shadow: 0 18px 34px -18px rgba(22, 48, 122, .55); }
+.ol-teach-sample figcaption { max-width: 280px; font-size: 14px; line-height: 1.45; color: #5a72b5; }
+
+/* Посилання педагога: поле + «Скопіювати», готовий текст і кнопки чатів. */
+.ol-teach-share { display: flex; flex-direction: column; gap: 12px; }
+.ol-linkrow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.ol-linkbox {
+  flex: 1 1 100%; margin: 0; padding: 12px 14px; border-radius: 14px; border: 2.5px solid #c9d8ff;
+  background: #fff; color: #16307a; font-size: 16px; font-weight: 700; line-height: 1.4; overflow-wrap: anywhere; user-select: all;
+}
+.ol-linkrow .ol-btn, .ol-teach-buttons .ol-btn { flex: none; min-height: 48px; padding: 10px 20px; font-size: 15px; }
+.ol-teach-label { margin: 6px 0 0; font-size: 14px; font-weight: 700; color: var(--ol-blue-deep); }
+.ol-teach-msg { margin: 0; padding: 14px 16px; border-radius: 16px; background: #f6f9ff; border: 2px solid #c9d8ff; color: #2c4a9a; font-size: 15px; line-height: 1.55; overflow-wrap: anywhere; }
+.ol-teach-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+.ol-teach-note { margin: 0; font-size: 14px; font-weight: 700; color: #1f7a4d; }
+
+/* Сторінка педагога /olimpiada/pedagog. */
+.ol-teach-panel { margin-top: 56px; }
+.ol-teach-panel .ol-kicker { color: #c8501a; }
+.ol-teach-wait { max-width: 520px; margin: 22px auto 0; padding: 18px 22px; border-radius: 22px; background: rgba(255, 255, 255, .12); border: 1.5px dashed rgba(255, 255, 255, .5); color: #fff; font-size: 17px; line-height: 1.55; }
+
+@media (max-width: 860px) {
+  .ol-teach-box { grid-template-columns: 1fr; gap: 28px; padding: 24px 18px; }
+  .ol-teach-sample img { max-width: 220px; }
+  .ol-teach-form { max-width: none; }
+  .ol-teach-form .ol-btn { align-self: stretch; }
+}
+@media (max-width: 560px) {
+  .ol-linkrow .ol-btn { flex: 1 1 100%; }
+  .ol-teach-buttons .ol-btn { flex: 1 1 auto; }
+}

@@ -5,7 +5,7 @@
 import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { HINTS } from '@/content/olimpiada/hints';
 import { OLIMP, scoreAnswers, missedQuestions, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
-import { getStore, validToken, json, loadKeys, notifyAdmin, esc } from '@/lib/olimpiada-server';
+import { getStore, validToken, json, loadKeys, notifyAdmin, esc, thankTeacher } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,5 +58,8 @@ export async function POST(request) {
   await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>\n`
     + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || '—')}`
     + (open ? `\n\n✍️ Відкрите завдання:\n${esc(open.slice(0, 1500))}` : ''));
+  // Заявка за посиланням педагога (11.10.2026): перший учень, що пройшов
+  // тест, — лист педагогові з подякою. thankTeacher не кидає ніколи.
+  if (entry.teacher_code) await thankTeacher(store, entry.teacher_code);
   return json({ ok: true });
 }
