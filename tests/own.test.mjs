@@ -19,7 +19,7 @@ test('свої записи впізнаються за чатом, ніком �
 });
 
 test('метрики й адмінка фільтрують свої записи', () => {
-  for (const f of ['app/admin/metrics/page.js', 'app/admin/plus/page.js', 'app/admin/lyudy/page.js', 'app/admin/today/page.js',
+  for (const f of ['app/admin/metrics/page.js', 'app/admin/plus/page.js', 'app/admin/korystuvachi/page.js', 'app/admin/today/page.js',
     'app/api/telegram/webhook/route.js', 'scripts/plus-stats.mjs', 'scripts/metrics-snapshot.mjs']) {
     assert.match(read(f), /notOwn\(/, f);
   }
