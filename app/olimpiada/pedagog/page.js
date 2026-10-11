@@ -1,14 +1,21 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../../Footer';
-import { OLIMP, DIPLOMA_VERSION, teacherName, validTeacherCode } from '@/lib/olimpiada';
-import { getStore } from '@/lib/olimpiada-server';
+import { OLIMP, DIPLOMA_VERSION, TEACHER_THANKS_AT, teacherName, teacherThanksDate, validTeacherCode } from '@/lib/olimpiada';
+import { getStore, thankTeacher } from '@/lib/olimpiada-server';
+import { notifySig, checkNotifySig, NOTIFY_ACTION } from '@/lib/olimpiada-sign';
 import DiplomaImage from '../test/DiplomaImage';
 import TeacherShare from '../TeacherShare';
 
 // Сторінка педагога (Марія, 11.10.2026): особисте посилання для учнів, готовий
 // текст для чату класу, скільки учнів за посиланням уже пройшли олімпіаду, і
-// подяка — з першого учня. Доступ — за кодом із посилання (?c=<код>), як і
+// подяка. Подяку видаємо один раз, після TEACHER_THANKS_AT учнів: до того —
+// «Олімпіаду пройшли N з 5 учнів» і смужка поступу, після — сама подяка й
+// «Завантажити подяку». Доступ — за кодом із посилання (?c=<код>), як і
 // сторінка диплома за токеном. Email педагога тут не показуємо.
+// ?notify=1&s=<підпис> — сюди веде «Так, повідомляйте мене» з листа: показуємо
+// питання й кнопку. Сам перехід згоди не записує (сканери посилань у пошті
+// відкривають його без людини) — лише POST кнопки на /api/olimpiada/teacher/notify.
+// ?ok=1 — педагог щойно погодився на листи.
 // Читаємо свіжим: Data Cache Next.js віддавав би старе число (див. коментар
 // про freshFetch у lib/olimpiada-server.js, #723).
 export const dynamic = 'force-dynamic';
@@ -18,6 +25,17 @@ export const metadata = {
   title: { absolute: 'Сторінка педагога — онлайн-олімпіада з логіки Dityam.com.ua' },
   robots: { index: false, follow: false },
 };
+
+// Кнопка згоди: звичайна HTML-форма, працює й без JavaScript.
+function NotifyButton({ code, sig, className, children }) {
+  return (
+    <form method="post" action={NOTIFY_ACTION} className={className}>
+      <input type="hidden" name="c" value={code} />
+      <input type="hidden" name="s" value={sig} />
+      {children}
+    </form>
+  );
+}
 
 function Shell({ children }) {
   return (
@@ -40,9 +58,14 @@ export default async function TeacherPage({ searchParams }) {
     try {
       teacher = await store.teacherByCode(code);
       if (teacher) count = await store.teacherFinished(code);
+      // Учнів уже досить, а подяки немає — лист у мить 5-го учня не пішов
+      // (Gmail не відповів). Видаємо зараз; thanks_sent_at не дасть двох листів.
+      if (teacher && !teacher.thanks_sent_at && count >= TEACHER_THANKS_AT && await thankTeacher(store, code, teacher)) {
+        teacher = (await store.teacherByCode(code)) || teacher;
+      }
     } catch (e) {
       console.error('[olimpiada/pedagog]', e?.message || e);
-      failed = true;
+      failed = !teacher;
     }
   }
 
@@ -63,30 +86,58 @@ export default async function TeacherPage({ searchParams }) {
   }
 
   const name = teacherName(teacher.name) || '';
-  // &n=<число> — нове число дає нову адресу, і браузер не покаже подяку з кешу.
-  const img = `/api/olimpiada/diploma?kind=teacher&c=${code}&n=${count}&v=${DIPLOMA_VERSION}`;
+  const issued = Boolean(teacher.thanks_sent_at);
+  const done = Math.min(count, TEACHER_THANKS_AT);
+  // Подяка не змінюється, тож адреса стала: CDN малює її один раз.
+  const img = `/api/olimpiada/diploma?kind=teacher&c=${code}&v=${DIPLOMA_VERSION}`;
+  const notifyOk = Boolean(teacher.notify_ok_at);
+  const sig = notifyOk ? null : notifySig(code);
+  // Прийшли з листа за «Так, повідомляйте мене» — питання з кнопкою нагорі.
+  const asking = Boolean(sig) && searchParams?.notify === '1' && checkNotifySig(code, searchParams?.s);
+  const notifyAsk = 'Чи можна повідомляти вас і про інші олімпіади та конкурси для ваших учнів?';
   return (
     <Shell>
       <div className="ol-result">
         <p className="ol-kicker">Онлайн-олімпіада з логіки · для педагогів</p>
         <h1 className="ol-hand">{name}</h1>
-        <p className="ol-lead">
-          За вашим посиланням олімпіаду пройшли: <b>{count}</b>
-        </p>
-        {count > 0 ? (
+        {(searchParams?.ok === '1' || searchParams?.notify === '1') && notifyOk && (
+          <p className="ol-teach-ok" role="status">Дякуємо! Повідомлятимемо вас про олімпіади й конкурси для ваших учнів</p>
+        )}
+        {asking && (
+          <NotifyButton code={code} sig={sig} className="ol-teach-ask">
+            <p>{notifyAsk}</p>
+            <button type="submit" className="ol-btn ol-btn-main">Так, повідомляйте мене</button>
+          </NotifyButton>
+        )}
+        {searchParams?.notify === 'error' && (
+          <p className="ol-teach-ok ol-teach-ok-err" role="status">Не вдалося зберегти. Спробуйте ще раз за хвилину.</p>
+        )}
+        {issued ? (
           <>
-            <DiplomaImage src={`${img}&s=screen`} waitTitle="Малюємо подяку…" failTitle="Подяка не завантажилась" alt={`Подяка педагогу: ${name}. Олімпіаду пройшли учні: ${count}`} />
+            <p className="ol-lead">
+              За вашим посиланням олімпіаду пройшли: <b>{count}</b>
+            </p>
+            <DiplomaImage src={`${img}&s=screen`} waitTitle="Малюємо подяку…" failTitle="Подяка не завантажилась" alt={`Подяка педагогу: ${name}`} />
             <div className="ol-actions ol-actions-center">
               <a href={`${img}&dl=1`} className="ol-btn ol-btn-main">Завантажити подяку</a>
             </div>
-            <p className="ol-note">
-              Число учнів на подяці оновлюється, коли за вашим посиланням проходять нові. Завантажте подяку ще раз, щоб отримати свіже.
+            <p className="ol-note ol-note-light">
+              Подяку видано: {teacherThanksDate(teacher.thanks_sent_at).toLowerCase()}. Діти можуть і далі проходити олімпіаду за вашим посиланням.
             </p>
           </>
         ) : (
-          <p className="ol-teach-wait">
-            Подяка зʼявиться тут, щойно перший учень за вашим посиланням пройде олімпіаду.
-          </p>
+          <div className="ol-teach-progress">
+            <p className="ol-teach-progress-text">
+              Олімпіаду пройшли <b>{done} з {TEACHER_THANKS_AT}</b> учнів
+            </p>
+            <div className="ol-teach-bar" role="progressbar" aria-valuemin={0} aria-valuemax={TEACHER_THANKS_AT} aria-valuenow={done}
+              aria-label={`Олімпіаду пройшли ${done} з ${TEACHER_THANKS_AT} учнів`}>
+              <span style={{ width: `${(done / TEACHER_THANKS_AT) * 100}%` }} />
+            </div>
+            <p className="ol-teach-progress-hint">
+              Коли за вашим посиланням олімпіаду пройдуть {TEACHER_THANKS_AT} учнів, подяка від Dityam.com.ua зʼявиться тут, і ми надішлемо її вам листом.
+            </p>
+          </div>
         )}
       </div>
 
@@ -98,7 +149,13 @@ export default async function TeacherPage({ searchParams }) {
           варто надіслати в чат батьків класу. Учні, які пройдуть олімпіаду за ним, зараховуються вам.
         </p>
         <TeacherShare code={code} withMessage />
-        <p className="ol-note">Збережіть цю сторінку: тут завжди свіже число учнів і ваша подяка.</p>
+        <p className="ol-note">Збережіть цю сторінку: тут завжди свіже число учнів{issued ? ' і ваша подяка' : ''}.</p>
+        {sig && !asking && (
+          <NotifyButton code={code} sig={sig} className="ol-teach-optin">
+            Хочете дізнаватися про інші олімпіади й конкурси для ваших учнів?{' '}
+            <button type="submit">Так, повідомляйте мене</button>
+          </NotifyButton>
+        )}
       </div>
     </Shell>
   );

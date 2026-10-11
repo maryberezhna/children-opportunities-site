@@ -48,7 +48,9 @@ test('сторінка результату просить лист одразу
 });
 
 test('лист без вкладення — лише посилання; друк диплома відстежується (11.10.2026)', async () => {
-  const mail = read('lib/olimpiada-mail.js');
+  // Лист дитині — без вкладення. Вкладення є лише в подяці педагогу (нижче
+  // «Листи педагогам»): її картинка надсилається листом один раз (11.10.2026).
+  const mail = read('lib/olimpiada-mail.js').split('// ── Листи педагогам')[0];
   assert.doesNotMatch(mail, /attachments:/);
   assert.doesNotMatch(mail, /у вкладенні/);
   const { text, html } = buildDiploma({ token: TOKEN, child_name: 'Оля', score: 25, max_score: 25 });

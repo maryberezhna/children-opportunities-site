@@ -1,6 +1,6 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { SIA_AWARD } from '@/lib/awards';
 import { TELEGRAM_URL } from '@/lib/social';
@@ -380,8 +380,8 @@ export default async function OlimpiadaPage() {
         </section>
 
         {/* Для педагогів (Марія, 11.10.2026): педагог лишає імʼя та email і
-            отримує особисте посилання для класу; подяка — з першого учня, що
-            пройшов олімпіаду за ним. Стоїть після призів, заявки й питань:
+            отримує особисте посилання для класу; подяку видаємо один раз, коли за
+            ним олімпіаду пройдуть 5 учнів (TEACHER_THANKS_AT). Стоїть після призів, заявки й питань:
             батьків, які прийшли подати заявку, цей блок не перебиває, а
             педагог бачить уже всю олімпіаду — завдання, диплом і призи. */}
         <section id="pedagogam" className="ol-wrap ol-sec ol-teach" data-cta="teacher">
@@ -399,8 +399,8 @@ export default async function OlimpiadaPage() {
               {/* Зразок малює той самий маршрут, що й справжню подяку. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`/api/olimpiada/diploma?kind=teacher&sample=1&v=${DIPLOMA_VERSION}`} width={620} height={877} loading="lazy"
-                alt={`Зразок подяки педагогу: ${TEACHER_SAMPLE.name}, олімпіаду пройшли ${TEACHER_SAMPLE.count} учнів`} />
-              <figcaption>Зразок подяки: число учнів оновлюється, коли проходять нові</figcaption>
+                alt={`Зразок подяки педагогу: ${TEACHER_SAMPLE.name}`} />
+              <figcaption>Подяку надсилаємо, коли за вашим посиланням олімпіаду пройдуть {TEACHER_THANKS_AT} учнів</figcaption>
             </figure>
           </div>
         </section>

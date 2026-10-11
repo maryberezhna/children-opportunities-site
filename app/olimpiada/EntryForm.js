@@ -9,6 +9,7 @@
 // на цій сторінці зʼявиться «Продовжити» — листів із посиланням ми не шлемо.
 import { useEffect, useState } from 'react';
 import { validTeacherCode } from '@/lib/olimpiada';
+import { useEmailTypo } from './EmailTypoHint';
 
 const KEY = 'olimp_entry';
 // Посилання педагога /olimpiada?vid=<код> (11.10.2026). Код запамʼятовуємо:
@@ -44,6 +45,7 @@ export default function EntryForm({ open, channelUrl }) {
   // До запуску форму бачить лише той, хто прийшов перевіряти: ?preview=1.
   // Справжній замок — на сервері (вхід в адмінку), це лише щоб не плутати людей.
   const [preview, setPreview] = useState(false);
+  const typo = useEmailTypo('entry');
 
   useEffect(() => {
     try {
@@ -60,6 +62,8 @@ export default function EntryForm({ open, channelUrl }) {
 
   async function submit(e) {
     e.preventDefault();
+    // Схоже на помилку в домені (gmai.com) — спершу підказка, удруге пропускаємо.
+    if (typo.blockSubmit()) return;
     const f = new FormData(e.currentTarget);
     const body = {
       name: String(f.get('name') || ''),
@@ -108,10 +112,13 @@ export default function EntryForm({ open, channelUrl }) {
         <span>Імʼя та прізвище дитини</span>
         <input name="name" type="text" autoComplete="off" maxLength={60} required placeholder="Як на дипломі" />
       </label>
-      <label className="ol-field">
-        <span>Ваш email</span>
-        <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="mama@example.com" />
-      </label>
+      <div className="ol-email">
+        <label className="ol-field">
+          <span>Ваш email</span>
+          <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="mama@example.com" {...typo.inputProps} />
+        </label>
+        {typo.hintNode}
+      </div>
       <label className="ol-hp" aria-hidden="true">
         Сайт
         <input name="website" type="text" tabIndex={-1} autoComplete="off" />
@@ -143,6 +150,7 @@ function Waitlist({ channelUrl }) {
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
+  const typo = useEmailTypo('waitlist');
 
   useEffect(() => {
     try {
@@ -153,6 +161,7 @@ function Waitlist({ channelUrl }) {
 
   async function submit(e) {
     e.preventDefault();
+    if (typo.blockSubmit()) return;
     const f = new FormData(e.currentTarget);
     const body = {
       email: String(f.get('email') || ''),
@@ -199,10 +208,13 @@ function Waitlist({ channelUrl }) {
     <form className="ol-form ol-soon" onSubmit={submit} noValidate>
       <p className="ol-soon-title">Реєстрація відкриється незабаром</p>
       <p className="ol-soon-text">Залиште email — напишемо 1 лист, щойно олімпіада стартує.</p>
-      <label className="ol-field">
-        <span>Ваш email</span>
-        <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="mama@example.com" />
-      </label>
+      <div className="ol-email">
+        <label className="ol-field">
+          <span>Ваш email</span>
+          <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="mama@example.com" {...typo.inputProps} />
+        </label>
+        {typo.hintNode}
+      </div>
       <label className="ol-hp" aria-hidden="true">
         Сайт
         <input name="website" type="text" tabIndex={-1} autoComplete="off" />

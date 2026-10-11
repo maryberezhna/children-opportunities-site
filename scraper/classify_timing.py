@@ -37,6 +37,7 @@ import anthropic
 
 import api_guard
 from db import get_client
+from requests_guard import protected_ids
 from timing import (
     LABELS, accept_model_kind, clean_kind, clean_months, clean_text,
     from_injecting_source, months_from_dates, recurrence_from_text, rule_kind,
@@ -244,6 +245,9 @@ def main() -> int:
 
     db = get_client()
     rows = _load_rows(db)
+    # Записи зі «Звернень» не чіпаємо (Марія, 11.10.2026; requests_guard.py).
+    protected = protected_ids(db)
+    rows = [r for r in rows if r["id"] not in protected]
     if args.limit:
         rows = rows[:args.limit]
     logger.info("Без виду: %d записів%s", len(rows), " (СУХИЙ ПРОГІН)" if args.dry_run else "")

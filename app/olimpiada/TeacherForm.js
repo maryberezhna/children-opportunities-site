@@ -4,10 +4,11 @@
 // особисте посилання для учнів одразу тут, у блоці, і листом. Той самий email
 // удруге — те саме посилання (сервер нового не заводить і листа не шле).
 import { useState } from 'react';
-import { teacherPagePath } from '@/lib/olimpiada';
+import { teacherPagePath, TEACHER_THANKS_AT } from '@/lib/olimpiada';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { trackConversion } from '@/lib/track';
 import TeacherShare from './TeacherShare';
+import { useEmailTypo } from './EmailTypoHint';
 
 const ERRORS = {
   name: 'Вкажіть імʼя та прізвище — так, як має бути на подяці.',
@@ -20,9 +21,12 @@ export default function TeacherForm() {
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState('');
   const [res, setRes] = useState(null);
+  const typo = useEmailTypo('teacher');
 
   async function submit(e) {
     e.preventDefault();
+    // Схоже на помилку в домені — спершу підказка, удруге пропускаємо.
+    if (typo.blockSubmit()) return;
     const f = new FormData(e.currentTarget);
     const body = {
       name: String(f.get('name') || ''),
@@ -66,7 +70,8 @@ export default function TeacherForm() {
         </p>
         <TeacherShare code={res.code} />
         <p className="ol-teach-hint">
-          На сторінці педагога — готовий текст для чату класу, кількість учнів, які пройшли олімпіаду за вашим посиланням, і подяка.
+          На сторінці педагога — готовий текст для чату класу і скільки учнів уже пройшли олімпіаду за вашим посиланням.
+          Коли їх буде {TEACHER_THANKS_AT}, там зʼявиться подяка, і ми надішлемо її вам листом.
         </p>
         <a className="ol-btn ol-btn-ghost" href={teacherPagePath(res.code)}>Відкрити сторінку педагога</a>
       </div>
@@ -79,10 +84,13 @@ export default function TeacherForm() {
         <span>Імʼя та прізвище</span>
         <input name="name" type="text" autoComplete="name" maxLength={60} required placeholder="Олена Петрівна Коваль" />
       </label>
-      <label className="ol-field">
-        <span>Email</span>
-        <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="olena@example.com" />
-      </label>
+      <div className="ol-email">
+        <label className="ol-field">
+          <span>Email</span>
+          <input name="email" type="email" inputMode="email" autoComplete="email" required placeholder="olena@example.com" {...typo.inputProps} />
+        </label>
+        {typo.hintNode}
+      </div>
       <label className="ol-hp" aria-hidden="true">
         Сайт
         <input name="website" type="text" tabIndex={-1} autoComplete="off" />
