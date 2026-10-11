@@ -153,7 +153,7 @@ export default async function TestPage({ searchParams }) {
           )}
         </div>
         <p className="ol-note">
-          Номер диплома: {diplomaNo(entry.token)}. Диплом також надішлемо на email із заявки. Збережіть це посилання — диплом лишається доступним за ним.
+          Номер диплома: {diplomaNo(entry.token)}. Посилання на цю сторінку з дипломом надішлемо й на email із заявки. Збережіть це посилання — диплом лишається доступним за ним.
         </p>
       </div>
 
