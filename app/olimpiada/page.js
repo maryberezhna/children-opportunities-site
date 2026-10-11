@@ -1,12 +1,13 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { SIA_AWARD } from '@/lib/awards';
 import { TELEGRAM_URL } from '@/lib/social';
 import EntryForm from './EntryForm';
 import FaqTabs from './FaqTabs';
 import OlimpTrack from './OlimpTrack';
+import TeacherForm from './TeacherForm';
 import ContactForm from '../contacts/ContactForm';
 import { svg, shape, SHAPE_COLOR, balance, star, circle, line, text, INK } from '@/content/olimpiada/art';
 import { MonsterPink, MonsterYellow, MonsterBlue, Rocket, Planet, Star, Wave } from './Doodles';
@@ -376,6 +377,32 @@ export default async function OlimpiadaPage() {
             <Cta at="after-faq" light note={NOTE_GIFT} />
           </div>
           <Wave className="ol-wave ol-wave-bottom" flip />
+        </section>
+
+        {/* Для педагогів (Марія, 11.10.2026): педагог лишає імʼя та email і
+            отримує особисте посилання для класу; подяка — з першого учня, що
+            пройшов олімпіаду за ним. Стоїть після призів, заявки й питань:
+            батьків, які прийшли подати заявку, цей блок не перебиває, а
+            педагог бачить уже всю олімпіаду — завдання, диплом і призи. */}
+        <section id="pedagogam" className="ol-wrap ol-sec ol-teach" data-cta="teacher">
+          <div className="ol-teach-box">
+            <div className="ol-teach-copy">
+              <p className="ol-kicker">Для педагогів</p>
+              <h2 className="ol-hand">Ви педагог? Залучіть учнів до цікавої олімпіади</h2>
+              <p className="ol-text">
+                Отримайте від нас окрему подяку за учнів, які пройдуть олімпіаду за вашим посиланням. Залиште імʼя та
+                email — надішлемо особисте посилання для класу.
+              </p>
+              <TeacherForm />
+            </div>
+            <figure className="ol-teach-sample">
+              {/* Зразок малює той самий маршрут, що й справжню подяку. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/api/olimpiada/diploma?kind=teacher&sample=1&v=${DIPLOMA_VERSION}`} width={620} height={877} loading="lazy"
+                alt={`Зразок подяки педагогу: ${TEACHER_SAMPLE.name}, олімпіаду пройшли ${TEACHER_SAMPLE.count} учнів`} />
+              <figcaption>Зразок подяки: число учнів оновлюється, коли проходять нові</figcaption>
+            </figure>
+          </div>
         </section>
 
         <section className="ol-wrap ol-sec ol-sec-rules">

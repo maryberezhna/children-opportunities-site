@@ -3,6 +3,8 @@
 // базі за токеном, тож «золотий рівень» не підробити зміною адреси.
 // ?sample=gold|silver|bronze|participant — зразок без даних для сторінки
 // олімпіади: щоб диплом хотілося мати, його треба побачити.
+// ?kind=teacher&c=<код> — подяка педагогові за учнів (11.10.2026), число
+// учнів рахується з бази щоразу; ?kind=teacher&sample=1 — її зразок.
 //
 // Стиль — як у сторінки олімпіади (Марія, 06.10.2026: «диплом дуже нудний,
 // зроби у такому стилі, як сайт»): синє зоряне небо, монстрики, рукописний
@@ -17,7 +19,7 @@
 import { ImageResponse } from 'next/og';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { OLIMP, LEVELS, levelByKey, diplomaNo, diplomaDate } from '@/lib/olimpiada';
+import { OLIMP, LEVELS, levelByKey, diplomaNo, diplomaDate, teacherName, validTeacherCode, TEACHER_SAMPLE } from '@/lib/olimpiada';
 import { getStore, validToken } from '@/lib/olimpiada-server';
 
 export const runtime = 'nodejs';
@@ -318,13 +320,76 @@ function diploma({ name, levelKey, score, max, date, no, k }) {
   );
 }
 
+// Подяка педагогові (Марія, 11.10.2026): «отримайте від нас окрему подяку за
+// учнів, які пройдуть олімпіаду за вашим посиланням». Той самий малюнок, що й
+// диплом учасника (синє небо, хмара, персонажі), замість медалі — пігулка
+// «педагогу», замість балів — скільки учнів пройшли олімпіаду. Імʼя — як
+// вписав сам педагог, у називному відмінку. Дата — день, коли подяку
+// завантажили: число учнів на ній теж того дня. Внизу — посилання на
+// олімпіаду: подяку пересилають колегам, так про неї дізнаються інші педагоги.
+function thanks({ teacher, count, date, k }) {
+  const tone = TONES.participant;
+  const px = (n) => Math.round(n * k);
+  const teacherSize = teacher.length > 34 ? 72 : teacher.length > 24 ? 92 : 112;
+  return (
+    <div style={{ width: '100%', height: '100%', display: 'flex', position: 'relative', backgroundColor: BLUE, fontFamily: 'Manrope',
+      backgroundImage: tone.sky }}>
+      <Sky k={k} />
+      <Cloud k={k} />
+      <Characters k={k} />
+
+      <div style={{ position: 'absolute', left: px(250), top: px(300), width: px(740), height: px(1180), display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between', textAlign: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline' }}>
+            <div style={{ display: 'flex', fontSize: px(22), fontWeight: 700, letterSpacing: '0.22em', color: '#5a72b5' }}>ОНЛАЙН-ОЛІМПІАДА З ЛОГІКИ ·</div>
+            <div style={{ display: 'flex', marginLeft: px(12), fontFamily: 'Caveat', fontSize: px(42), fontWeight: 700, color: '#e85d24', lineHeight: 1 }}>dityam.com.ua</div>
+          </div>
+          <div style={{ display: 'flex', marginTop: px(14), fontSize: px(168), fontWeight: 700, letterSpacing: '0.04em', color: '#e85d24', lineHeight: 1 }}>ПОДЯКА</div>
+          <div style={{ display: 'flex', marginTop: px(22), fontSize: px(40), fontWeight: 700, color: tone.pillInk, backgroundColor: tone.pill, borderRadius: 999, padding: `${px(12)}px ${px(44)}px` }}>
+            педагогу
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', maxWidth: px(700), fontFamily: 'Caveat', fontSize: px(teacherSize), fontWeight: 700, color: '#1d3f94', lineHeight: 1.05, textAlign: 'center' }}>{teacher}</div>
+          {/* Рядки розбиті вручну: сам satori переносив «онлайн-» і «олімпіади» на різні рядки. */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: px(22), fontSize: px(30), fontWeight: 500, color: '#2c4a9a', lineHeight: 1.4 }}>
+            <div style={{ display: 'flex' }}>за те, що залучили учнів</div>
+            <div style={{ display: 'flex' }}>до онлайн-олімпіади з логіки</div>
+          </div>
+          <div style={{ display: 'flex', marginTop: px(48), fontSize: px(24), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>ОЛІМПІАДУ ПРОЙШЛИ УЧНІ</div>
+          <div style={{ display: 'flex', marginTop: px(4), fontFamily: 'Caveat', fontSize: px(170), fontWeight: 700, color: '#f5a023', lineHeight: 1 }}>{String(count)}</div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', alignItems: 'center' }}>
+          <div style={{ display: 'flex', width: '100%', alignItems: 'flex-end', justifyContent: 'space-between', padding: `0 ${px(40)}px` }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+              <div style={{ display: 'flex', fontSize: px(20), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>ДАТА</div>
+              <div style={{ display: 'flex', marginTop: px(6), fontSize: px(24), fontWeight: 700, color: NAVY }}>{date}</div>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', fontSize: px(20), fontWeight: 700, letterSpacing: '0.18em', color: '#5a72b5' }}>ПІДПИС</div>
+              <div style={{ display: 'flex', marginTop: px(2), fontFamily: 'Caveat', fontSize: px(44), fontWeight: 700, color: NAVY }}>Марія Шутяк</div>
+              <div style={{ display: 'flex', fontSize: px(20), fontWeight: 500, color: '#5a72b5' }}>засновниця Dityam.com.ua</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: px(28), fontSize: px(21), fontWeight: 500, color: '#5a72b5', lineHeight: 1.35 }}>
+            <div style={{ display: 'flex' }}>{`Безкоштовна онлайн-олімпіада для дітей ${OLIMP.groupLabel}:`}</div>
+            <div style={{ display: 'flex', fontWeight: 700, color: NAVY }}>dityam.com.ua/olimpiada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 async function render(data, { k = 1, headers = {} } = {}) {
   const [medium, bold, hand] = await Promise.all([
     readFile(path.join(fontDir, 'Manrope-Medium.ttf')),
     readFile(path.join(fontDir, 'Manrope-Bold.ttf')),
     readFile(path.join(fontDir, 'Caveat-Bold.ttf')),
   ]);
-  const image = new ImageResponse(diploma({ ...data, k }), {
+  const image = new ImageResponse((data.kind === 'teacher' ? thanks : diploma)({ ...data, k }), {
     width: Math.round(W * k),
     height: Math.round(H * k),
     fonts: [
@@ -340,6 +405,8 @@ async function render(data, { k = 1, headers = {} } = {}) {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
+
+  if (searchParams.get('kind') === 'teacher') return teacherThanks(searchParams);
 
   const sample = searchParams.get('sample');
   if (sample) {
@@ -367,4 +434,35 @@ export async function GET(request) {
     name: String(entry.child_name || ''), levelKey: entry.level, score: entry.score, max: entry.max_score,
     date: diplomaDate(entry.finished_at), no: `№ ${diplomaNo(entry.token)}`,
   }, { k, headers });
+}
+
+// Подяка педагогові: педагог за кодом і скільки учнів за його посиланням уже
+// пройшли тест. Немає педагога або ще жодного учня — 404: подяка зʼявляється
+// з першого учня. Сторінка педагога додає до адреси &n=<число>, тож кеш
+// браузера не покаже старе число.
+async function teacherThanks(searchParams) {
+  if (searchParams.get('sample')) {
+    return render({ kind: 'teacher', teacher: TEACHER_SAMPLE.name, count: TEACHER_SAMPLE.count, date: 'дата подяки' },
+      { k: 0.5, headers: { 'Cache-Control': 'public, max-age=86400, s-maxage=604800' } });
+  }
+  const code = searchParams.get('c');
+  if (!validTeacherCode(code)) return new Response('not found', { status: 404 });
+  const store = getStore();
+  if (!store) return new Response('not found', { status: 404 });
+  let teacher = null;
+  let count = 0;
+  try {
+    teacher = await store.teacherByCode(code);
+    if (teacher) count = await store.teacherFinished(code);
+  } catch (e) {
+    console.error('[olimpiada/diploma] teacher:', e?.message || e);
+    return new Response('unavailable', { status: 503 });
+  }
+  const name = teacherName(teacher?.name);
+  if (!name || count < 1) return new Response('not found', { status: 404 });
+
+  const headers = { 'Cache-Control': 'private, max-age=600' };
+  if (searchParams.get('dl')) headers['Content-Disposition'] = 'attachment; filename="podyaka-pedagogu-dityam.png"';
+  const k = searchParams.get('s') === 'screen' && !searchParams.get('dl') ? 0.75 : 1;
+  return render({ kind: 'teacher', teacher: name, count, date: diplomaDate(new Date()) }, { k, headers });
 }

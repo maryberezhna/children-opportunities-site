@@ -8,7 +8,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { MonsterYellow } from '../Doodles';
 
-export default function DiplomaImage({ src, alt, name }) {
+// waitTitle / failTitle — для подяки педагогові (11.10.2026), там та сама заглушка.
+export default function DiplomaImage({ src, alt, name, waitTitle = 'Малюємо диплом…', failTitle = 'Диплом не завантажився' }) {
   const [state, setState] = useState('loading'); // loading | done | error
   const [attempt, setAttempt] = useState(0);
   const ref = useRef(null);
@@ -28,7 +29,7 @@ export default function DiplomaImage({ src, alt, name }) {
           <MonsterYellow className="ol-dipwait-monster" />
           {state === 'error' ? (
             <>
-              <b>Диплом не завантажився</b>
+              <b>{failTitle}</b>
               <span>Так буває, коли зникає інтернет.</span>
               <button type="button" className="ol-btn ol-btn-main" onClick={() => { setState('loading'); setAttempt((n) => n + 1); }}>
                 Спробувати ще раз
@@ -36,7 +37,7 @@ export default function DiplomaImage({ src, alt, name }) {
             </>
           ) : (
             <>
-              <b>Малюємо диплом…</b>
+              <b>{waitTitle}</b>
               <span>{name ? `${name}, ще кілька секунд` : 'Ще кілька секунд'}</span>
               <i className="ol-dipwait-bar" aria-hidden="true" />
             </>
