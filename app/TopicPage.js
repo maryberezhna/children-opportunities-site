@@ -1,4 +1,5 @@
 import './styles/routes/topic.css';
+import { publicSource } from '@/lib/source-link';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
@@ -299,13 +300,15 @@ function buildRelated(topic, liveRows) {
 // Картці в браузері треба небагато — не тягнемо зайвих полів у HTML.
 const slim = (o) => ({
   id: o.id, slug: o.slug, title: o.title, title_en: o.title_en || null,
-  summary: o.summary, summary_en: o.summary_en || null, source: o.source,
+  summary: o.summary, summary_en: o.summary_en || null,
+  // Лише назва організатора, яку можна показати, — без адреси джерела
+  // (захист від копіювання бази, 11.10.2026; див. lib/client-rows.js).
+  source: publicSource(o).sourceName || null,
   opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to,
   deadline: o.deadline, cities: o.cities, countries: o.countries || null,
-  // Вартість і адреса джерела — для рядків «Вартість» і «Організатор» на
-  // картці (варіант B, 29.09.2026): без source_url картка не відрізнить
-  // організатора від чужого Telegram-каналу, якого показувати не можна.
-  cost_type: o.cost_type || null, source_url: o.source_url || null,
+  // Вартість — для рядка «Вартість» на картці (варіант B, 29.09.2026).
+  // Чужий Telegram-канал відсіює publicSource вище, тож адреса картці не потрібна.
+  cost_type: o.cost_type || null,
   // Без дат події й виду картка знову вгадувала б час лише з дедлайну й типу.
   event_start_date: o.event_start_date || null, event_end_date: o.event_end_date || null,
   results_date: o.results_date || null,
