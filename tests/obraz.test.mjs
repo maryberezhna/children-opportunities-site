@@ -6,7 +6,8 @@ import { readFileSync } from 'node:fs';
 
 const {
   OBRAZ, cleanEntry, firstNameOnly, yearsWord, checkJpeg, stripJpegMetadata, themeOpen,
-  caption, buildPublishedMail, buildRejectedMail, validToken, validPublicId,
+  caption, buildPublishedMail, buildReuploadMail, buildPaidMail, validToken, validPublicId,
+  isObrazOrder, tokenFromObrazRef,
 } = await import('../lib/obraz.js');
 const read = (f) => readFileSync(f, 'utf8');
 
@@ -81,8 +82,12 @@ test('листи батькам: посилання є, email і прізвищ�
   assert.match(pub.html, /\/obraz\/sertyfikat\?t=a{32}/);
   assert.match(pub.html, /\/obraz\/prybraty\?t=a{32}/);
   assert.match(pub.text, /Найкраща історія/);
-  const rej = buildRejectedMail(w, env);
-  for (const m of [pub, rej]) {
+  const rej = buildReuploadMail(w, env);
+  assert.match(rej.text, /оплачувати вдруге не потрібно/);
+  const paid = buildPaidMail(w, env);
+  assert.match(paid.text, /99 грн/);
+  assert.match(pub.html, /\/obraz\/obkladynka\?t=a{32}/);
+  for (const m of [pub, rej, paid]) {
     assert.ok(!m.html.includes('mama@example.com'));
     assert.doesNotMatch(m.text + m.html, /Dityam\+ —/);
   }
@@ -99,6 +104,9 @@ test('нічого не публікується само; приватне не
   const submit = read('app/api/obraz/submit/route.js');
   assert.match(submit, /stripJpegMetadata/);
   assert.doesNotMatch(submit, /status:\s*'approved'/);
+  // Нова заявка — неоплачена; у «Черзі» лише оплачені (pending).
+  assert.match(read('lib/obraz-server.js'), /status: 'unpaid'/);
+  assert.match(read('app/admin/page.js'), /\.eq\('status', 'pending'\)/);
   const server = read('lib/obraz-server.js');
   const pub = server.match(/PUBLIC_FIELDS = '([^']+)'/)[1];
   for (const f of ['parent_email', 'token', 'consent']) assert.ok(!pub.includes(f), f);
@@ -111,4 +119,46 @@ test('нічого не публікується само; приватне не
   assert.match(read('app/admin/AdminNav.js'), /obraz_entries/);
   // Таблиця закрита RLS.
   assert.match(read('supabase/migrations/20261011_obraz_gallery.sql'), /enable row level security/);
+});
+
+test('оргвнесок: номер замовлення obraz-…, журнал оплат, колбек не чіпає Dityam+', async () => {
+  const t = 'b'.repeat(32);
+  assert.equal(isObrazOrder(`obraz-${t}-1791200000000`), true);
+  assert.equal(isObrazOrder(`olimp-${t}-1`), false);
+  assert.equal(tokenFromObrazRef(`obraz-${t}-1791200000000`), t);
+  assert.equal(tokenFromObrazRef('obraz-zzz-1'), null);
+  assert.equal(OBRAZ.price, 99);
+  const { productOf, PRODUCT_LABELS } = await import('../lib/payments.js');
+  assert.equal(productOf(`obraz-${t}-1`, 99), 'obraz_entry');
+  assert.ok(PRODUCT_LABELS.obraz_entry);
+  // Загальний колбек WayForPay віддає obraz-… своїй логіці ДО статусів Dityam+.
+  const cb = read('app/api/pay/wayforpay/route.js');
+  assert.ok(cb.indexOf('isObrazOrder(b.orderReference)') > 0);
+  assert.ok(cb.indexOf('isObrazOrder(b.orderReference)') < cb.indexOf("from('digest_subscribers')"));
+  // Фото не підійшло → reupload (нове фото без доплати), а не відмова.
+  assert.match(read('lib/obraz-server.js'), /action === 'reject' \? 'reupload'/);
+});
+
+test('обкладинка: тканина стабільна для малюнка, підпис дизайнер/дизайнерка', async () => {
+  const { FABRICS, fabricFor, fabricSvg, designerLabel } = await import('../lib/obraz-cover.js');
+  assert.equal(fabricFor('abcdef0123'), fabricFor('abcdef0123'));
+  assert.ok(FABRICS[fabricFor('0000000000')]);
+  assert.equal(fabricFor('abcdef0123', 'polka'), 'polka');
+  assert.match(fabricSvg('tartan'), /^<svg[^>]+xmlns/);
+  assert.equal(designerLabel({ designer_word: 'дизайнерка' }), 'Дизайнерка');
+  assert.equal(designerLabel({ designer_word: null }), '');
+  assert.equal(cleanEntry({ ...ok, designer: 'дизайнер' }).entry.designer_word, 'дизайнер');
+  assert.equal(cleanEntry({ ...ok, designer: 'хакер' }).entry.designer_word, null);
+});
+
+// CLAUDE.md: назва лише «Dityam.com.ua» (на обкладинці — логотип «dityam.com.ua»).
+test('бренд: ніде немає голого «Dityam» чи «DITYAM»', () => {
+  const files = ['app/obraz/page.js', 'app/obraz/Cover.js', 'app/obraz/Looks.js', 'app/obraz/halereya/page.js', 'app/obraz/r/[id]/page.js',
+    'app/obraz/r/[id]/opengraph-image.js', 'app/obraz/zayavka/page.js', 'app/obraz/ObrazForm.js', 'app/obraz/sertyfikat/page.js', 'lib/obraz.js', 'lib/obraz-cover.js'];
+  for (const f of files) {
+    const text = read(f);
+    assert.doesNotMatch(text, /DITYAM/, f);
+    assert.doesNotMatch(text, /Dityam(?!\.com\.ua|\+)/, f);
+    assert.doesNotMatch(text, /Dityam\+ —/, f);
+  }
 });

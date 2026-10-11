@@ -1,15 +1,15 @@
-// Заявка на челендж «Намалюй свій образ»: батьки надсилають фото малюнка й
-// кілька полів. Малюнок одразу НЕ публікується — він чекає в «Черзі», доки
-// Марія не натисне «Опублікувати» (app/admin/ObrazQueue.js).
+// Заявка на челендж «Твій образ на обкладинці»: батьки надсилають фото
+// малюнка й кілька полів. Запис створюється неоплаченим (unpaid): людина бачить
+// превʼю обкладинки на /obraz/zayavka і платить оргвнесок. У «Черзі» Марії
+// малюнок зʼявляється лише після оплати й нічого не публікується саме.
 import { kyivToday } from '@/lib/dates';
 import { OBRAZ, cleanEntry, checkJpeg, stripJpegMetadata, themeOpen } from '@/lib/obraz';
-import { obrazDb, recentCount, createEntry, notifyAdmin } from '@/lib/obraz-server';
+import { obrazDb, recentCount, createEntry } from '@/lib/obraz-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const json = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
-const escHtml = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
 export async function POST(request) {
   let form;
@@ -21,6 +21,7 @@ export async function POST(request) {
   const { entry, error } = cleanEntry({
     name: form.get('name'), age: form.get('age'), title: form.get('title'), story: form.get('story'),
     email: form.get('email'), consent: form.get('consent') === 'on', instagram: form.get('instagram') === 'on',
+    designer: form.get('designer'),
   });
   if (error) return json({ error }, 400);
 
@@ -38,9 +39,7 @@ export async function POST(request) {
   try {
     if (await recentCount(db, entry.parent_email) >= OBRAZ.maxPerEmailDay) return json({ error: 'too_many' }, 429);
     const row = await createEntry(db, entry, jpeg, { source: form.get('source') });
-    // Малюнок чекає на рішення — це дія для Марії, тож в адмін-чат.
-    await notifyAdmin(`🎨 <b>Новий малюнок на перевірку</b>\n${escHtml(row.child_name)}, ${row.age} · «${escHtml(row.title)}»\nhttps://dityam.com.ua/admin`);
-    return json({ ok: true });
+    return json({ ok: true, t: row.token });
   } catch (e) {
     console.error('[obraz/submit]', e?.message || e);
     return json({ error: 'unavailable' }, 503);

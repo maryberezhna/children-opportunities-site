@@ -68,7 +68,7 @@ export default async function QueuePage({ searchParams }) {
   let overdue = 0;
   const notes = {};
   let failed = false;
-  // Малюнки челенджу «Намалюй свій образ», що чекають на рішення (11.10.2026).
+  // Оплачені малюнки челенджу «Твій образ на обкладинці» (11.10.2026).
   let obraz = [];
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });

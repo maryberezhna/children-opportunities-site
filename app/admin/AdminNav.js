@@ -142,7 +142,7 @@ async function counts() {
       // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
       head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
       head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
-      // Малюнки челенджу «Намалюй свій образ» на перевірці — теж у «Черзі».
+      // Оплачені малюнки челенджу «Твій образ на обкладинці» — теж у «Черзі».
       head('obraz_entries', (q) => q.eq('status', 'pending')),
     ]);
     return {

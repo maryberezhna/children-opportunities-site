@@ -1,11 +1,11 @@
 'use client';
 
-// Форма челенджу «Намалюй свій образ» для батьків. Фото малюнка браузер
-// перемальовує на полотні (довша сторона — до 1600 px) і віддає JPEG: файл
-// стає легким (телефонне фото — 3–8 МБ, а Vercel приймає до 4,5 МБ), а
-// метадані з GPS зникають ще до відправки. Сервер вирізає їх удруге.
+// Форма челенджу «Твій образ на обкладинці» для батьків. Фото малюнка
+// стискається в браузері (./jpeg.js); після відправки людина одразу
+// переходить на сторінку заявки — там превʼю обкладинки й оплата оргвнеску.
 import { useState } from 'react';
-import { OBRAZ } from '@/lib/obraz';
+import { OBRAZ, entryPath } from '@/lib/obraz';
+import { toJpeg } from './jpeg';
 
 const ERRORS = {
   name: 'Вкажіть імʼя дитини — лише імʼя, без прізвища.',
@@ -15,39 +15,14 @@ const ERRORS = {
   consent: 'Потрібна ваша згода як батьків чи опікуна.',
   file: 'Додайте фото малюнка (JPG, PNG чи HEIC з телефона).',
   file_big: 'Фото завелике. Спробуйте інше або зробіть знімок ще раз.',
+  designer: 'Оберіть, як підписати обкладинку: дизайнер чи дизайнерка.',
   too_many: 'З цієї пошти сьогодні вже 3 малюнки. Наступний можна надіслати завтра.',
   closed: 'Прийом малюнків на цю тему завершено. Нову тему оголосимо в Telegram-каналі.',
   unavailable: 'Не вдалося надіслати. Спробуйте за кілька хвилин.',
 };
 
-async function toJpeg(file) {
-  const url = URL.createObjectURL(file);
-  try {
-    const img = await new Promise((resolve, reject) => {
-      const i = new Image();
-      i.onload = () => resolve(i);
-      i.onerror = reject;
-      i.src = url;
-    });
-    const scale = Math.min(1, OBRAZ.maxSide / Math.max(img.naturalWidth, img.naturalHeight));
-    const w = Math.round(img.naturalWidth * scale);
-    const h = Math.round(img.naturalHeight * scale);
-    const canvas = document.createElement('canvas');
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext('2d');
-    // Прозорий PNG на білому, а не на чорному.
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, w, h);
-    ctx.drawImage(img, 0, 0, w, h);
-    return await new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.86));
-  } finally {
-    URL.revokeObjectURL(url);
-  }
-}
-
 export default function ObrazForm({ open, channelUrl }) {
-  const [state, setState] = useState('idle'); // idle | sending | done
+  const [state, setState] = useState('idle'); // idle | sending
   const [error, setError] = useState('');
   const [preview, setPreview] = useState(null);
   const [jpeg, setJpeg] = useState(null);
@@ -72,6 +47,7 @@ export default function ObrazForm({ open, channelUrl }) {
     e.preventDefault();
     if (!jpeg) { setError(ERRORS.file); return; }
     const f = new FormData(e.currentTarget);
+    if (!f.get('designer')) { setError(ERRORS.designer); return; }
     f.delete('image_pick');
     f.set('image', jpeg, 'malyunok.jpg');
     f.set('source', new URLSearchParams(window.location.search).get('utm_source') || '');
@@ -80,13 +56,14 @@ export default function ObrazForm({ open, channelUrl }) {
     try {
       const r = await fetch('/api/obraz/submit', { method: 'POST', body: f });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok || !j.ok) {
+      if (!r.ok || !j.ok || !j.t) {
         setError(ERRORS[j.error] || ERRORS.unavailable);
         setState('idle');
         return;
       }
-      setState('done');
       if (typeof window !== 'undefined' && window.gtag) window.gtag('event', 'obraz_submit');
+      // Далі — превʼю обкладинки й оплата.
+      window.location.href = entryPath(j.t);
     } catch {
       setError(ERRORS.unavailable);
       setState('idle');
@@ -96,20 +73,8 @@ export default function ObrazForm({ open, channelUrl }) {
   if (!open) {
     return (
       <div className="ob-form ob-form-done">
-        <p className="ob-form-title">Прийом малюнків на цю тему завершено</p>
+        <p className="ob-form-title">Прийом робіт на цей сезон завершено</p>
         <p>Нову тему оголосимо в <a href={channelUrl}>Telegram-каналі Dityam.com.ua</a>.</p>
-      </div>
-    );
-  }
-
-  if (state === 'done') {
-    return (
-      <div className="ob-form ob-form-done" role="status">
-        <p className="ob-form-title">Дякуємо! Малюнок отримали 🎨</p>
-        <p>Ми переглянемо його протягом 1–2 днів. Щойно він зʼявиться в галереї, на вашу пошту прийде лист із посиланням і сертифікатом участі.</p>
-        <button type="button" className="ob-btn ob-btn-ghost" onClick={() => { setState('idle'); setPreview(null); setJpeg(null); }}>
-          Надіслати ще один малюнок
-        </button>
       </div>
     );
   }
@@ -141,6 +106,12 @@ export default function ObrazForm({ open, channelUrl }) {
         </label>
       </div>
 
+      <fieldset className="ob-radio">
+        <legend className="ob-label">Як підписати обкладинку</legend>
+        <label><input type="radio" name="designer" value="дизайнерка" /> <span>Дизайнерка</span></label>
+        <label><input type="radio" name="designer" value="дизайнер" /> <span>Дизайнер</span></label>
+      </fieldset>
+
       <label>
         <span className="ob-label">Назва образу</span>
         <input name="title" maxLength={OBRAZ.titleMax} placeholder="Сукня для прогулянки під дощем" required />
@@ -154,14 +125,14 @@ export default function ObrazForm({ open, channelUrl }) {
       <label>
         <span className="ob-label">Email батьків</span>
         <input name="email" type="email" autoComplete="email" required />
-        <span className="ob-help">На сайті його не видно. Туди прийде посилання на малюнок і сертифікат.</span>
+        <span className="ob-help">На сайті його не видно. Туди прийде обкладинка для друку й сертифікат.</span>
       </label>
 
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="ob-hp" aria-hidden="true" />
 
       <label className="ob-check">
         <input type="checkbox" name="consent" required />
-        <span>Я один з батьків чи опікун дитини. Дозволяю показати малюнок з іменем і віком дитини в онлайн-галереї Dityam.com.ua. Прибрати його можна будь-коли за посиланням з листа.</span>
+        <span>Я один з батьків чи опікун дитини. Дозволяю показати малюнок з іменем і віком дитини на обкладинці в онлайн-галереї Dityam.com.ua. Прибрати його можна будь-коли за посиланням з листа. Оргвнесок — {OBRAZ.price} грн; якщо фото не підійде, ми попросимо інше без доплати.</span>
       </label>
       <label className="ob-check">
         <input type="checkbox" name="instagram" />
@@ -171,7 +142,7 @@ export default function ObrazForm({ open, channelUrl }) {
       {error ? <p className="ob-error" role="alert">{error}</p> : null}
 
       <button type="submit" className="ob-btn ob-btn-main" disabled={state === 'sending'}>
-        {state === 'sending' ? 'Надсилаємо…' : 'Надіслати малюнок'}
+        {state === 'sending' ? 'Готуємо обкладинку…' : 'Далі: побачити свою обкладинку'}
       </button>
     </form>
   );

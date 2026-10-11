@@ -29,10 +29,10 @@ export default async function CertificatePage({ searchParams }) {
   return (
     <main className="ob ob-cert-page">
       <div className="ob-cert">
-        <p className="ob-cert-brand">Dityam.com.ua</p>
-        <p className="ob-cert-kind">Сертифікат участі</p>
+        <p className="ob-cert-brand">dityam.com.ua</p>
+        <p className="ob-cert-kind">Сертифікат юного дизайнера</p>
         <p className="ob-cert-name">{w.child_name}</p>
-        <p className="ob-cert-text">за участь в онлайн-челенджі «{OBRAZ.title}»<br />з малюнком «{w.title}»</p>
+        <p className="ob-cert-text">за участь в онлайн-челенджі «{OBRAZ.title}»<br />з образом «{w.title}» · {OBRAZ.season}</p>
         {w.award ? <p className="ob-cert-award">⭐ Відзнака «{w.award}»</p> : null}
         <img className="ob-cert-img" src={imageUrl(w.image_path)} alt="" />
         <div className="ob-cert-foot">

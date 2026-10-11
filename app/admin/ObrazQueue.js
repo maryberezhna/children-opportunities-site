@@ -1,10 +1,10 @@
 'use client';
 
-// Малюнки челенджу «Намалюй свій образ», що чекають на рішення (11.10.2026).
+// Оплачені малюнки челенджу «Твій образ на обкладинці», що чекають на рішення (11.10.2026).
 // Живуть у тій самій «Черзі», а не в новій вкладці (memory: одна черга):
 // картка — малюнок, імʼя, вік, назва, слова дитини; дві дії —
-// «Опублікувати» (з відзнакою чи без) і «Не підходить». Обидві шлють батькам
-// лист (lib/obraz-server.js → decide).
+// «Опублікувати» (з відзнакою чи без) і «Попросити інше фото» (без доплати).
+// Обидві шлють батькам лист (lib/obraz-server.js → decide).
 import { useState } from 'react';
 
 const S = {
@@ -18,7 +18,7 @@ function Card({ w }) {
   const [award, setAward] = useState('');
   const [state, setState] = useState('idle'); // idle | sending | approved | rejected | error
   async function act(action) {
-    if (action === 'reject' && !window.confirm('Не публікувати? Батькам піде лист «надішліть, будь ласка, ще раз».')) return;
+    if (action === 'reject' && !window.confirm('Попросити інше фото? Батькам піде лист «надішліть інше фото — без доплати».')) return;
     setState('sending');
     const r = await fetch('/api/admin/obraz', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -29,7 +29,7 @@ function Card({ w }) {
     else setState(j.error === 'already' ? (action === 'approve' ? 'approved' : 'rejected') : 'error');
   }
   if (state === 'approved') return <p style={{ ...S.card, display: 'block', color: '#0e5449' }}>✅ «{w.title}» у галереї. Батькам пішов лист.</p>;
-  if (state === 'rejected') return <p style={{ ...S.card, display: 'block', color: '#54617a' }}>Не опубліковано. Батькам пішов лист «надішліть ще раз».</p>;
+  if (state === 'rejected') return <p style={{ ...S.card, display: 'block', color: '#54617a' }}>Попросили інше фото. Батькам пішов лист (без доплати).</p>;
   return (
     <div style={S.card}>
       <a href={w.img} target="_blank" rel="noopener noreferrer"><img src={w.img} alt="" style={S.img} /></a>
@@ -47,7 +47,7 @@ function Card({ w }) {
             {w.awards.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
           <button type="button" disabled={state === 'sending'} onClick={() => act('approve')} style={{ ...S.btn, background: '#c8501a', color: '#fff' }}>Опублікувати</button>
-          <button type="button" disabled={state === 'sending'} onClick={() => act('reject')} style={{ ...S.btn, background: '#eef0f4', color: '#131b28' }}>Не підходить</button>
+          <button type="button" disabled={state === 'sending'} onClick={() => act('reject')} style={{ ...S.btn, background: '#eef0f4', color: '#131b28' }}>Попросити інше фото</button>
         </div>
         {state === 'error' ? <div style={{ color: '#a11b1b', marginTop: 6 }}>Не вийшло — онови сторінку й спробуй ще раз.</div> : null}
       </div>
@@ -59,8 +59,8 @@ export default function ObrazQueue({ works }) {
   if (!works?.length) return null;
   return (
     <section style={S.box}>
-      <h2 style={{ fontSize: 19, margin: '0 0 4px' }}>🎨 Малюнки на перевірку ({works.length})</h2>
-      <p style={{ margin: '0 0 6px', fontSize: 14, color: '#54617a' }}>Челендж «Намалюй свій образ». Нічого не публікується, доки не натиснеш «Опублікувати».</p>
+      <h2 style={{ fontSize: 19, margin: '0 0 4px' }}>🎨 Обкладинки на перевірку ({works.length})</h2>
+      <p style={{ margin: '0 0 6px', fontSize: 14, color: '#54617a' }}>Челендж «Твій образ на обкладинці», усі вже оплатили 99 грн. Нічого не публікується, доки не натиснеш «Опублікувати».</p>
       {works.map((w) => <Card key={w.id} w={w} />)}
     </section>
   );
