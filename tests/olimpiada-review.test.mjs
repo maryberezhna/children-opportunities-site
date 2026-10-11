@@ -56,28 +56,21 @@ test('підказки не йдуть у тест: їх читають лише
   assert.match(read('app/olimpiada/test/page.js'), /id="rozbir"/);
 });
 
-test('лист: розбір лише для хибних, із підказками; сайт і скрипт — ті самі слова', () => {
-  const py = read('scraper/olimpiada_invites.py').replace(/"\s*\n\s*(?:#[^\n]*\n\s*)*f?"/g, '');
+test('лист без розбору — він лише на сторінці результату (11.10.2026)', () => {
+  // Марія: «розбір має бути видно тільки на сторінці результатів»; у листі —
+  // «Відкрити диплом», друкований диплом і Dityam+ за 1 грн.
+  const py = read('scraper/olimpiada_invites.py');
   const entry = {
-    token: '9cabd081887339b3edeadead8ffb15e2', child_name: 'Оля', score: 23, max_score: 25,
-    missed_questions: [{ num: 4, id: 'v19', q: HINTS && BANK.find((q) => q.id === 'v19').q, hint: HINTS.v19, given: 2 }],
+    token: '9cabd081887339b3edeadead8ffb15e2', child_name: 'Оля', score: 22, max_score: 25,
+    missed_questions: [{ num: 4, id: 'v19', q: BANK.find((q) => q.id === 'v19').q, hint: HINTS.v19, given: 2 }],
   };
   const { text, html } = buildDiploma(entry);
-  assert.match(text, /Завдання 4\. Машина спочатку множить/);
-  assert.ok(text.includes(`Підказка: ${HINTS.v19}`));
-  assert.ok(text.includes('#rozbir'));
-  assert.match(html, /Подивитися розбір на сторінці/);
-  for (const phrase of [
-    'Розбір: над чим варто ще подумати',
-    'Нижче — завдання, де відповідь не зарахована, і підказка до кожного. ',
-    'Готових відповідей немає навмисно: так дитина зможе дійти до розвʼязку сама.',
-    'Ці завдання з малюнками й варіантами відповідей — на сторінці результату:',
-    'Подивитися розбір на сторінці',
-  ]) {
-    assert.ok(text.includes(phrase) || html.includes(phrase), `сайт: ${phrase}`);
-    assert.ok(py.includes(phrase), `скрипт: ${phrase}`);
+  for (const part of [text, html]) {
+    assert.doesNotMatch(part, /Розбір|Підказка|#rozbir/);
+    assert.ok(!part.includes(HINTS.v19));
   }
-  // Без помилок — розділу немає.
-  const clean = buildDiploma({ ...entry, score: 25, missed_questions: [] });
-  assert.doesNotMatch(clean.text, /Розбір/);
+  assert.match(html, /Відкрити диплом/);
+  assert.match(text, /Бажаєте друкований диплом\?/);
+  assert.match(html, /Спробувати Dityam\+ за 1 грн/);
+  assert.doesNotMatch(py, /missed_questions|Розбір: над чим/);
 });
