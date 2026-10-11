@@ -346,6 +346,13 @@ export default async function OlympiadsGuide() {
           </div>
         </section>
 
+        {/* Власна онлайн-олімпіада Dityam.com.ua — сюди приходять саме ті, кому
+            цікаві олімпіади (Марія, 06.10.2026: «опублікуй її у нас»). Одразу під
+            першим екраном (11.10.2026: «чого немає анонсу… постав вище»): блок
+            стояв після 4 розділів, і з ~1 400 людей на тиждень до /olimpiada
+            доходили близько 60. */}
+        <OlimpPromo />
+
         <section className="tp-faq er-section" aria-labelledby="ol-stages">
           <h2 id="ol-stages" className="tp-h2">{titled(['Три', 'етапи'])}</h2>
           <div className="er-body">
@@ -452,10 +459,6 @@ export default async function OlympiadsGuide() {
             </ul>
           </div>
         </section>
-
-        {/* Власна онлайн-олімпіада Dityam.com.ua — сюди приходять саме ті, кому
-            цікаві олімпіади (Марія, 06.10.2026: «опублікуй її у нас»). */}
-        <OlimpPromo />
 
         <section id="ol-open" className="er-open" aria-labelledby="ol-open-title">
           <h2 id="ol-open-title" className="tp-h2">{titled(['Олімпіади', 'на платформі'])}</h2>
