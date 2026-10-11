@@ -465,32 +465,38 @@
 }
 
 .o-verified {
-  margin: 24px 0 0;
-  padding: 14px 16px;
-  border-radius: 12px;
-  background: var(--bg);
+  /* 11.10.2026, Марія: «виглядає тупо» — бежева коробка з двома помаранчевими
+     підкресленими посиланнями, а «Повідомити» висіло окремим рядком справа.
+     Тепер це тихий підпис під текстом: тонка лінія, сірий текст, без плашки. */
+  margin: 28px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--border);
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 16px;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 24px;
   font-size: 0.875rem;
   line-height: 1.5;
-  color: var(--ink-soft);
+  color: var(--ink-muted);
 }
-.o-verified a { color: var(--v2-accent-strong); }
-.o-report {
-  margin-left: auto;
+.o-verified a {
+  color: var(--ink-soft);
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-underline-offset: 3px;
+}
+.o-verified a:hover { color: var(--v2-accent-strong); text-decoration-color: currentColor; }
+.o-verified .o-report {
   padding: 0;
   border: 0;
   background: none;
   font: inherit;
-  font-size: 0.875rem;
   color: var(--ink-muted);
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  white-space: nowrap;
   cursor: pointer;
 }
-.o-report:hover { color: var(--ink); }
+.o-verified .o-report:hover { color: var(--v2-accent-strong); }
 /* Посилання в тексті на телефоні — ховаємо на десктопі: там кнопка в картці дії. */
 .o-m-links { display: none; }
 
