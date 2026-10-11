@@ -4,7 +4,7 @@
 // особисте посилання для учнів одразу тут, у блоці, і листом. Той самий email
 // удруге — те саме посилання (сервер нового не заводить і листа не шле).
 import { useState } from 'react';
-import { teacherPagePath } from '@/lib/olimpiada';
+import { teacherPagePath, TEACHER_THANKS_AT } from '@/lib/olimpiada';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { trackConversion } from '@/lib/track';
 import TeacherShare from './TeacherShare';
@@ -66,7 +66,8 @@ export default function TeacherForm() {
         </p>
         <TeacherShare code={res.code} />
         <p className="ol-teach-hint">
-          На сторінці педагога — готовий текст для чату класу, кількість учнів, які пройшли олімпіаду за вашим посиланням, і подяка.
+          На сторінці педагога — готовий текст для чату класу і скільки учнів уже пройшли олімпіаду за вашим посиланням.
+          Коли їх буде {TEACHER_THANKS_AT}, там зʼявиться подяка, і ми надішлемо її вам листом.
         </p>
         <a className="ol-btn ol-btn-ghost" href={teacherPagePath(res.code)}>Відкрити сторінку педагога</a>
       </div>
