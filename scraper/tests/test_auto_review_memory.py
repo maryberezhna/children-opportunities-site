@@ -17,6 +17,12 @@ from unittest import mock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import auto_review  # noqa: E402
 
+# Сторінку перед суддею читаємо з мережі (11.10.2026) — у тестах її немає:
+# чесна сторінка набору, щоб запис доходив до судді.
+PAGE = ("Літній табір «Веселка» у Карпатах для дітей 7–12 років. Участь безкоштовна. "
+        "Заявки приймаємо до 15 червня через форму на сайті. " * 3)
+auto_review.FETCH = lambda url: (PAGE, "HTTP 200")
+
 # Порожній GITHUB_WORKFLOW_REF: у воркфлоу тестів імʼя було б «tests».
 ENV = {"ANTHROPIC_API_KEY": "test", "GITHUB_WORKFLOW_REF": ""}
 

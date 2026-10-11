@@ -36,6 +36,7 @@ class NormalizeError(Exception):
 from proof import (PUBLISH_CRITERIA, PROOF_LABELS, verify_evidence, missing_proof,  # noqa: E402
                    ASK_SCHOOL_VALUE, ask_school_ok, is_diaspora_school, drop_proof, place_quote, quote_in_text, ONLINE_IN_TEXT, ONLINE_TITLE,
                    OFFLINE_IN_TEXT)
+from page_signals import broken_markup  # noqa: E402
 _REQUIRED = PUBLISH_CRITERIA["required"]
 
 # Values the DB will accept (mirrors the CHECK constraints on `opportunities`).
@@ -1385,6 +1386,14 @@ URL: {source_url}
             # Цитати приймаємо лише ті, що справді є в тексті: решта —
             # висновки моделі, а не докази (світлофор, 22.09.2026).
             data = dict(data)
+            # Шматок виклику інструмента в тексті («</summary><parameter
+            # name="age_from">7», «Школа юного дипломата», 11.10.2026): модель
+            # зламалась, і решті полів цього запису вірити не можна.
+            if broken_markup(data.get("title"), data.get("summary"), data.get("details")):
+                logger.info("Зламана розмітка моделі, відхилено: %s", source_url)
+                self.last_reject_reason = "зламана розмітка моделі в описі"
+                self.last_reject_code = "broken_output"
+                return None
             page_text = f"{raw_text or ''} {raw_title or ''}"
             data["evidence"] = verify_evidence(data.get("evidence"), page_text)
             data = _sanitize(data, page_text)
