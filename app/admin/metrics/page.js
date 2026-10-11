@@ -349,6 +349,8 @@ export default async function MetricsPage() {
         <Card value={olimp.finished} label={`пройшли тест (почали: ${olimp.started})`} />
         <Card value={olimp.open} label="відповіли на останнє, відкрите завдання тесту" />
         <Card value={olimp.prints} label={`замовили друкований диплом (${OLIMP.printPrice} грн з доставкою)`} />
+        {/* Де губляться замовлення друку (11.10.2026: «чому ніхто не замовляє друк диплому»). */}
+        <Card value={`${olimpT.printOpen} / ${olimpT.printSubmit} / ${olimp.prints}`} label={`друк: натиснули «Так, замовити» / відправили форму / оплатили${olimpT.printOpenSources.length ? ` · звідки: ${olimpT.printOpenSources.map(([s, n]) => `${s} — ${n}`).join(', ')}` : ''}`} />
         <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: друковані дипломи" />
       </div>
       <p style={noteS}>

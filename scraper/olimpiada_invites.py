@@ -25,7 +25,6 @@ import smtplib
 import sys
 import urllib.request
 from datetime import datetime, timedelta, timezone
-from email.mime.image import MIMEImage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
@@ -189,9 +188,9 @@ def build_diploma_message(entry: dict):
         "Добрий день!",
         "",
         f"{name} пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат {score} з {maximum} балів.",
-        "Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.",
-        "",
-        f"Сторінка з результатом і дипломом: {link}",
+        # Без вкладення (Марія, 11.10.2026): лише посилання — на сторінці диплома
+        # стоїть і пропозиція друкованого диплома.
+        f"Диплом чекає на сторінці з результатом — там його можна переглянути й завантажити: {link}",
         *review_lines,
         *([
             "",
@@ -251,33 +250,23 @@ def build_diploma_message(entry: dict):
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
-<p>Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.</p>
-<p><a href="{esc(link)}">Сторінка з результатом і дипломом</a></p>
+<p>Диплом чекає на сторінці з результатом — там його можна переглянути й завантажити.</p>
+<p><a href="{esc(link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">Відкрити диплом</a></p>
 {review_html}{prize_html}{post_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
 
 
-def fetch_diploma(entry: dict) -> bytes:
-    url = f"{SITE}/api/olimpiada/diploma?t={entry['token']}"
-    with urllib.request.urlopen(url, timeout=60) as r:
-        return r.read()
-
-
-def make_diploma_email(entry: dict, png: bytes) -> MIMEMultipart:
+def make_diploma_email(entry: dict) -> MIMEMultipart:
+    """Лист із посиланням на диплом — без вкладення (11.10.2026)."""
     subject, text, body = build_diploma_message(entry)
-    msg = MIMEMultipart("mixed")
+    msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
     msg["From"] = formataddr(("Dityam.com.ua", FROM))
     msg["To"] = entry["parent_email"]
     msg["Reply-To"] = FROM
-    alt = MIMEMultipart("alternative")
-    alt.attach(MIMEText(text, "plain", "utf-8"))
-    alt.attach(MIMEText(body, "html", "utf-8"))
-    msg.attach(alt)
-    image = MIMEImage(png, "png")
-    image.add_header("Content-Disposition", "attachment", filename="dyplom-olimpiada-dityam.png")
-    msg.attach(image)
+    msg.attach(MIMEText(text, "plain", "utf-8"))
+    msg.attach(MIMEText(body, "html", "utf-8"))
     return msg
 
 
@@ -374,8 +363,7 @@ def main() -> int:
                 client.table("olimpiada_entries").update({"invite_sent_at": None}).eq("id", r["id"]).execute()
         for r in diplomas:
             try:
-                png = fetch_diploma(r)
-                smtp.sendmail(FROM, [r["parent_email"]], make_diploma_email(r, png).as_string())
+                smtp.sendmail(FROM, [r["parent_email"]], make_diploma_email(r).as_string())
                 client.table("olimpiada_entries").update(
                     {"diploma_sent_at": datetime.now(timezone.utc).isoformat()}
                 ).eq("id", r["id"]).execute()

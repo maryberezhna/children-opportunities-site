@@ -18,8 +18,7 @@ test('лист із дипломом: сайт і запасний скрипт 
   assert.equal(subject, 'Диплом онлайн-олімпіади з логіки — Оля');
   for (const phrase of [
     'пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат ',
-    'Диплом — у вкладенні до цього листа. Його можна надрукувати або зберегти.',
-    'Сторінка з результатом і дипломом: ',
+    'Диплом чекає на сторінці з результатом — там його можна переглянути й завантажити:',
     'Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. ',
     'Бажаєте друкований диплом?',
     'Надрукуємо диплом і надішлемо у відділення або поштомат Нової пошти по Україні — ',
@@ -46,4 +45,25 @@ test('сторінка результату просить лист одразу
   assert.match(read('app/api/olimpiada/submit/route.js'), /await notifyAdmin\(/);
   assert.match(read('app/api/olimpiada/open/route.js'), /await notifyAdmin\(/);
   assert.match(read('app/admin/metrics/page.js'), /Учасники · \{olimpPeople\.length\}/);
+});
+
+test('лист без вкладення — лише посилання; друк диплома відстежується (11.10.2026)', async () => {
+  const mail = read('lib/olimpiada-mail.js');
+  assert.doesNotMatch(mail, /attachments:/);
+  assert.doesNotMatch(mail, /у вкладенні/);
+  const { text, html } = buildDiploma({ token: TOKEN, child_name: 'Оля', score: 25, max_score: 25 });
+  assert.ok(text.includes(`/olimpiada/test?t=${TOKEN}`));
+  assert.match(html, /Відкрити диплом/);
+  assert.doesNotMatch(read('scraper/olimpiada_invites.py'), /MIMEImage|fetch_diploma/);
+  const { SITE_EVENTS } = await import('../lib/site-events.js');
+  assert.equal(SITE_EVENTS.OLIMP_PRINT_OPEN, 'olimp_print_open');
+  assert.equal(SITE_EVENTS.OLIMP_PRINT_SUBMIT, 'olimp_print_submit');
+  const po = read('app/olimpiada/test/PrintOrder.js');
+  assert.match(po, /SITE_EVENTS\.OLIMP_PRINT_OPEN/);
+  assert.match(po, /SITE_EVENTS\.OLIMP_PRINT_SUBMIT/);
+  assert.match(read('app/admin/metrics/page.js'), /olimpT\.printOpen/);
+  // Обіцянки на сторінках — правдиві: на email приходить посилання, не диплом.
+  for (const f of ['app/olimpiada/page.js', 'app/olimpiada/test/page.js']) {
+    assert.doesNotMatch(read(f), /приходять на email|Диплом також надішлемо на email|на екрані й на email/, f);
+  }
 });

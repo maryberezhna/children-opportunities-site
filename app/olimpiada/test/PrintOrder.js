@@ -2,6 +2,7 @@
 
 // Друкований диплом із доставкою Новою поштою — за бажанням, після тесту.
 import { useState } from 'react';
+import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 
 const ERRORS = {
   name: 'Вкажіть імʼя та прізвище отримувача.',
@@ -65,6 +66,7 @@ export default function PrintOrder({ token, price, paid, order, pending = false 
         setError(ERRORS[j.error] || ERRORS.unavailable);
         return;
       }
+      sendSiteEvent(SITE_EVENTS.OLIMP_PRINT_SUBMIT, prepaid ? 'prepaid' : 'pay');
       if (typeof window.gtag === 'function' && !prepaid) window.gtag('event', 'olimpiada_print_order', { value: price });
       window.location.assign(j.url);
     } catch {
@@ -75,7 +77,14 @@ export default function PrintOrder({ token, price, paid, order, pending = false 
 
   if (!open) {
     return (
-      <button type="button" className="ol-btn ol-btn-main" onClick={() => setOpen(true)}>
+      <button
+        type="button" className="ol-btn ol-btn-main"
+        onClick={() => {
+          // Звідки: з листа батьки приходять на #dostavka, інакше — зі сторінки.
+          sendSiteEvent(SITE_EVENTS.OLIMP_PRINT_OPEN, typeof window !== 'undefined' && window.location.hash === '#dostavka' ? 'email' : 'page');
+          setOpen(true);
+        }}
+      >
         Так, замовити · {price} грн
       </button>
     );

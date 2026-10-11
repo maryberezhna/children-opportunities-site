@@ -98,11 +98,14 @@ class InvitesTest(unittest.TestCase):
             self.assertIn("Перший місяць — 1 грн, далі 99 грн/міс", part)
             self.assertIn("https://t.me/DityamPlusBot?start=from_olimpiada", part)
             self.assertNotIn("Dityam+ —", part)
-        msg = inv.make_diploma_email(entry, b"\x89PNG fake")
+        # Без вкладення (11.10.2026): лише посилання на сторінку диплома.
+        msg = inv.make_diploma_email(entry)
         parts = [p.get_content_type() for p in msg.walk()]
-        self.assertIn("image/png", parts)
+        self.assertNotIn("image/png", parts)
         self.assertIn("text/html", parts)
-        self.assertIn("dyplom-olimpiada-dityam.png", msg.as_string())
+        self.assertNotIn("dyplom-olimpiada-dityam.png", msg.as_string())
+        self.assertIn("Відкрити диплом", body)
+        self.assertIn(f"/olimpiada/test?t={entry['token']}", text)
 
     def test_email_headers(self):
         msg = inv.make_email(ENTRY)
