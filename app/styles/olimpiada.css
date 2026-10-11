@@ -293,6 +293,8 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-open { margin-top: 56px; }
 /* Dityam+ після тесту — перший місяць за 1 грн (08.10.2026). */
 .ol-plus-offer { margin-top: 56px; }
+/* Розбір після тесту — такий самий відступ, як в інших білих блоків (Марія, 11.10.2026: «тут нема відступу»). */
+.ol-review { margin-top: 56px; }
 .ol-plus-offer .ol-btn { margin-top: 6px; }
 .ol-open-form { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
 .ol-open-form .ol-btn { align-self: flex-start; }
