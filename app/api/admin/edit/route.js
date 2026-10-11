@@ -9,6 +9,7 @@ import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
 import { sourceUrlProblem } from '@/lib/source-link';
 import { canonicalUrl } from '@/lib/canonical.mjs';
+import { NEED_LABELS } from '@/lib/labels';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,6 +67,11 @@ export async function POST(request) {
   // Не прийшла чи «кілька країн» — лишаємо як було (lib/country-field.js).
   Object.assign(patch, countryPatch(b.country));
   if (TYPES.includes(b.opportunity_type)) patch.opportunity_type = b.opportunity_type;
+  // Особливі потреби — фільтр «Особлива потреба» на сайті. Приймаємо лише
+  // відомі значення (lib/labels.js): вигадане слово фільтр однаково не знайде.
+  if (Array.isArray(b.child_needs)) {
+    patch.child_needs = [...new Set(b.child_needs.filter((n) => Object.hasOwn(NEED_LABELS, n)))];
+  }
   if (typeof b.price_note === 'string') patch.price_note = b.price_note.trim().slice(0, 200) || null;
   if (typeof b.details === 'string') patch.details = b.details.trim().slice(0, 20000) || null;
   // Посилання на подачу приймаємо лише як http(s): «дивись у пості» чи назва

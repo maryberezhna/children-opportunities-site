@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
 import { sourceUrlProblem } from '@/lib/source-link';
-import { PAYMENT_TYPES } from '@/lib/labels';
+import { PAYMENT_TYPES, NEED_LABELS } from '@/lib/labels';
 import { countryFieldValue, countryOptions, countryPatch } from '@/lib/country-field';
 
 const FORMATS = [['', '— не визначено —'], ['online', 'Онлайн'], ['offline', 'Офлайн'], ['hybrid', 'Онлайн і офлайн']];
@@ -59,6 +59,10 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     format: opp.format || '', cities: (opp.cities || []).join(', '),
     country: countryFieldValue(opp),
     price_note: opp.price_note || '', details: opp.details || '',
+    // Особливі потреби — фільтр «Особлива потреба» на сайті (Марія, 11.10.2026:
+    // «де ми тут додаємо фільтри особлива потреба»). Доти їх ставив лише робот,
+    // і в адмінці їх не було видно взагалі.
+    child_needs: opp.child_needs || [],
     // Прапорець, а не рядок: модератор думає «так, це в топ цього тижня»,
     // а не «який зараз ISO-тиждень». Тиждень підставляє сервер.
     featured: opp.featured_week === opp.currentWeek,
@@ -193,6 +197,27 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
           <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>— кілька через кому; порожньо, якщо онлайн</span></label>
           <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
         </div>
+      </div>
+      <label style={L}>Особлива потреба <span style={{ fontWeight: 400, color: '#8a94a6' }}>— для кого саме ця можливість; порожньо, якщо для всіх</span></label>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {Object.entries(NEED_LABELS).map(([v, l]) => {
+          const on = f.child_needs.includes(v);
+          return (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={on}
+              onClick={() => setF((s) => ({ ...s, child_needs: on ? s.child_needs.filter((x) => x !== v) : [...s.child_needs, v] }))}
+              style={{
+                padding: '7px 12px', borderRadius: 999, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit',
+                border: on ? '1px solid #c8501a' : '1px solid #d3dbe9',
+                background: on ? '#fdf0e6' : '#fff', color: on ? '#c8501a' : '#54617a', fontWeight: on ? 600 : 400,
+              }}
+            >
+              {on ? '✓ ' : ''}{l}
+            </button>
+          );
+        })}
       </div>
       {/* Іде просто в сніпет Google — за запитами «… ціна» ми показувались і не
           отримували жодного кліку, бо категорії вартості на них не відповідають. */}
