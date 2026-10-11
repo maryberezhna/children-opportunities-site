@@ -412,7 +412,7 @@ export default async function OlympiadsGuide() {
           {next.length ? (
             <>
               <p className="ol-next-lead">Інші олімпіади й конкурси з найближчими дедлайнами.</p>
-              <div className="tp-grid">
+              <div className="tp-grid cards-2m">
                 {next.map((o) => (
                   <OpportunityCard key={o.id} item={o} lang="uk" today={todayIso} prefetch={false} />
                 ))}
