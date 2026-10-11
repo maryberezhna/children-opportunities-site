@@ -160,3 +160,32 @@ class Review(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class AgeAndPrimarySource(unittest.TestCase):
+    """Марія, 11.10.2026: «0–18 не буває, крім виплат»; «анонс у медіа — знахідка»."""
+
+    def test_zero_to_eighteen_is_held_even_with_a_quote(self):
+        row = {"age_from": 0, "age_to": 18, "opportunity_type": "club",
+               "evidence": {"age": "для дітей", "type": "гурток"}}
+        self.assertIn("0–18", auto_review.placeholder_reason(row))
+
+    def test_zero_to_eighteen_is_fine_for_payments(self):
+        for row in ({"age_from": 0, "age_to": 18, "opportunity_type": "allowance", "evidence": {"age": "до 18"}},
+                    {"age_from": 0, "age_to": 18, "opportunity_type": "club", "aid_type": "discount",
+                     "evidence": {"age": "до 18", "type": "знижка"}}):
+            self.assertEqual(auto_review.placeholder_reason(row), "")
+
+    def test_media_source_is_a_lead_not_an_opportunity(self):
+        from first_source import source_problem
+        for url in ("https://chmr.golos.net.ua/news/stypendiya", "https://www.mig.com.ua/artterapiia/",
+                    "https://programmes.eurodesk.eu/x", "https://gurtok.org/psyhologiya"):
+            with self.subTest(url=url):
+                self.assertTrue(source_problem({"source_url": url}))
+
+    def test_organizer_pages_pass(self):
+        from first_source import source_problem
+        for url in ("https://man.gov.ua/events/kurs", "https://osvita.diia.gov.ua/courses/ai",
+                    "https://aikom.iea.gov.ua/cell/cell/view?cellId=1"):
+            with self.subTest(url=url):
+                self.assertEqual(source_problem({"source_url": url}), "")

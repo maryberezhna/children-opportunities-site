@@ -107,6 +107,25 @@ def is_catalog(url) -> bool:
     return bool(url) and _is(str(url).strip(), _CATALOG_HOSTS)
 
 
+# ── Медіа й агрегатори — знахідка, а не можливість (Марія, 11.10.2026) ────
+# «Анонс чогось у медіа — це не можливість, але вже знахідка; треба йти на
+# першоджерело». Список один на JS і Python — lib/publish-criteria.json.
+def _not_primary_hosts() -> tuple:
+    try:
+        from proof import PUBLISH_CRITERIA
+        return tuple(PUBLISH_CRITERIA.get("not_primary_hosts", {}).get("hosts", ()))
+    except Exception:                                        # noqa: BLE001
+        return _CATALOG_HOSTS
+
+
+_NOT_PRIMARY_HOSTS = _not_primary_hosts()
+
+
+def is_retelling_site(url) -> bool:
+    """Адреса веде в медіа чи агрегатор, який переказує чужу можливість."""
+    return bool(url) and _is(str(url).strip(), _NOT_PRIMARY_HOSTS)
+
+
 def source_problem(row: dict) -> str:
     """Чому джерело запису не можна показувати — або порожній рядок.
 
@@ -120,6 +139,9 @@ def source_problem(row: dict) -> str:
         return "джерело — допис чужого Telegram-каналу; потрібна сторінка організатора"
     if is_catalog(url):
         return "джерело — каталог Eurodesk; потрібна сторінка організатора"
+    if is_retelling_site(url):
+        return (f"джерело — медіа чи агрегатор ({_host(url)}): це знахідка, "
+                "потрібна сторінка організатора, форма чи контакт")
     # Посилання обовʼязкове (Марія, 09.10.2026). Порожнє джерело проходило
     # всі ворота, а сторінка без посилання — це «хочу подати, а лінку нема».
     if not public_link(row):

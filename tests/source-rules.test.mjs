@@ -80,3 +80,16 @@ test('шляхи публікації читають apply_url — інакше 
   const { GATE_SELECT } = await import('../lib/publish-gate.js');
   assert.ok(GATE_SELECT.split(', ').includes('apply_url'));
 });
+
+// Марія, 11.10.2026: «анонс чогось у медіа — це не можливість, а знахідка».
+test('медіа й агрегатори — не першоджерело', async () => {
+  const { sourceProblem, isRetellingSite } = await import('../lib/source-rules.js');
+  for (const url of ['https://chmr.golos.net.ua/news/x', 'https://www.mig.com.ua/a/', 'https://gurtok.org/p']) {
+    assert.ok(isRetellingSite(url), url);
+    assert.match(sourceProblem({ source_url: url, apply_url: 'https://forms.gle/x' }), /медіа чи агрегатор/);
+  }
+  for (const url of ['https://man.gov.ua/events/kurs', 'https://osvita.diia.gov.ua/courses/ai']) {
+    assert.ok(!isRetellingSite(url), url);
+    assert.equal(sourceProblem({ source_url: url }), '');
+  }
+});

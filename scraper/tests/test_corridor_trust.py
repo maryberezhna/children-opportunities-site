@@ -188,11 +188,16 @@ class PlaceholdersAndParkedStayWithHuman(unittest.TestCase):
         ev = {k: v for k, v in PAGE_QUOTES.items() if k != "age"}
         corridor, reason = auto_review.mechanical(row(age_from=0, age_to=18, evidence=ev), 3)
         self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("заглушка 0–18", reason)
+        self.assertIn("0–18", reason)
 
-    def test_real_0_18_with_quote_passes(self):
+    def test_0_18_with_quote_still_holds_unless_payment(self):
+        # Марія, 11.10.2026: «можливостей 0–18 не буває, виняток — тільки виплати».
         ev = dict(PAGE_QUOTES, age="для дітей до 18 років")
-        self.assertIsNone(auto_review.mechanical(row(age_from=0, age_to=18, evidence=ev), 3))
+        corridor, reason = auto_review.mechanical(row(age_from=0, age_to=18, evidence=ev), 3)
+        self.assertEqual(corridor, auto_review.YELLOW)
+        self.assertIn("0–18", reason)
+        self.assertIsNone(auto_review.mechanical(
+            row(age_from=0, age_to=18, evidence=ev, opportunity_type="allowance"), 3))
 
     def test_type_placeholder_holds(self):
         ev = {k: v for k, v in PAGE_QUOTES.items() if k != "type"}
