@@ -1,4 +1,5 @@
 'use client';
+import { NEED_FILTER_OPTS } from '@/lib/labels';
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
@@ -241,15 +242,9 @@ const AGE_OPTS = {
   ],
 };
 
-const NEED_OPTS = [
-  ['idp', 'ВПО', 'Displaced'],
-  ['gifted', 'Обдаровані', 'Gifted'],
-  ['disability', 'Інвалідність', 'Disability'],
-  ['veteran_family', 'Діти ветеранів', "Veterans' children"],
-  ['low_income', 'Малозабезпечені', 'Low income'],
-  ['orphan', 'Сироти', 'Orphans'],
-  ['oncology', 'Онкохворі', 'Cancer patients'],
-];
+// Один список з адмінкою (lib/labels.js): що модератор може позначити, те й
+// фільтрується на сайті — і навпаки.
+const NEED_OPTS = NEED_FILTER_OPTS;
 
 const GIVES_OPTS = [
   ['без досвіду', 'Без досвіду', 'No experience needed'],

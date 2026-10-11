@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
 import { sourceUrlProblem } from '@/lib/source-link';
-import { PAYMENT_TYPES, NEED_LABELS } from '@/lib/labels';
+import { PAYMENT_TYPES, NEED_LABELS, NEED_FILTER_OPTS } from '@/lib/labels';
 import { countryFieldValue, countryOptions, countryPatch } from '@/lib/country-field';
 
 const FORMATS = [['', '— не визначено —'], ['online', 'Онлайн'], ['offline', 'Офлайн'], ['hybrid', 'Онлайн і офлайн']];
@@ -200,7 +200,11 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       </div>
       <label style={L}>Особлива потреба <span style={{ fontWeight: 400, color: '#8a94a6' }}>— для кого саме ця можливість; порожньо, якщо для всіх</span></label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {Object.entries(NEED_LABELS).map(([v, l]) => {
+        {/* Рівно ті, що у фільтрі сайту; плюс те, що вже стоїть на записі
+            поза фільтром (колись поставив робот), — щоб його можна було зняти. */}
+        {[...NEED_FILTER_OPTS.map(([v, l]) => [v, l]),
+          ...(opp.child_needs || []).filter((v) => !NEED_FILTER_OPTS.some(([k]) => k === v))
+            .map((v) => [v, NEED_LABELS[v] || v])].map(([v, l]) => {
           const on = f.child_needs.includes(v);
           return (
             <button
