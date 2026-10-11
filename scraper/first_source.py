@@ -126,6 +126,13 @@ def is_retelling_site(url) -> bool:
     return bool(url) and _is(str(url).strip(), _NOT_PRIMARY_HOSTS)
 
 
+def _organizer_apply(url) -> bool:
+    """Посилання на подачу веде до організатора: не медіа, не каталог, не чужий канал."""
+    u = (url or "").strip()
+    return (u.lower().startswith(("http://", "https://")) and not is_retelling_site(u)
+            and not is_catalog(u) and not is_foreign_telegram(u))
+
+
 def source_problem(row: dict) -> str:
     """Чому джерело запису не можна показувати — або порожній рядок.
 
@@ -139,7 +146,9 @@ def source_problem(row: dict) -> str:
         return "джерело — допис чужого Telegram-каналу; потрібна сторінка організатора"
     if is_catalog(url):
         return "джерело — каталог Eurodesk; потрібна сторінка організатора"
-    if is_retelling_site(url):
+    # Медіа — знахідка; але форма чи документ організатора в apply_url ведуть
+    # людину туди, де записуються, — тоді публікувати можна (Марія, 11.10.2026).
+    if is_retelling_site(url) and not _organizer_apply(row.get("apply_url")):
         return (f"джерело — медіа чи агрегатор ({_host(url)}): це знахідка, "
                 "потрібна сторінка організатора, форма чи контакт")
     # Посилання обовʼязкове (Марія, 09.10.2026). Порожнє джерело проходило

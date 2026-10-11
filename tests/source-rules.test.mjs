@@ -86,7 +86,12 @@ test('медіа й агрегатори — не першоджерело', asy
   const { sourceProblem, isRetellingSite } = await import('../lib/source-rules.js');
   for (const url of ['https://chmr.golos.net.ua/news/x', 'https://www.mig.com.ua/a/', 'https://gurtok.org/p']) {
     assert.ok(isRetellingSite(url), url);
-    assert.match(sourceProblem({ source_url: url, apply_url: 'https://forms.gle/x' }), /медіа чи агрегатор/);
+    assert.match(sourceProblem({ source_url: url }), /медіа чи агрегатор/);
+    // Марія, 11.10.2026: форма чи документ організатора в «Посиланні на подачу» — пропускаємо.
+    assert.equal(sourceProblem({ source_url: url, apply_url: 'https://docs.google.com/document/d/1/edit' }), '');
+    // А «подача» на інше медіа чи в чужий канал — ні.
+    assert.match(sourceProblem({ source_url: url, apply_url: 'https://www.ukr.net/news/1' }), /медіа чи агрегатор/);
+    assert.match(sourceProblem({ source_url: url, apply_url: 'https://t.me/Mozhlyvosti/1' }), /медіа чи агрегатор/);
   }
   for (const url of ['https://man.gov.ua/events/kurs', 'https://osvita.diia.gov.ua/courses/ai']) {
     assert.ok(!isRetellingSite(url), url);

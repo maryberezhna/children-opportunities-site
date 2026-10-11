@@ -183,6 +183,15 @@ class AgeAndPrimarySource(unittest.TestCase):
             with self.subTest(url=url):
                 self.assertTrue(source_problem({"source_url": url}))
 
+    def test_media_source_with_organizer_apply_passes(self):
+        # Марія, 11.10.2026: положення фестивалю в Google-документі організатора.
+        from first_source import source_problem
+        row = {"source_url": "https://www.dtv.dn.ua/2026/10/07/konkurs/",
+               "apply_url": "https://docs.google.com/document/d/1W8r/edit"}
+        self.assertEqual(source_problem(row), "")
+        self.assertTrue(source_problem({**row, "apply_url": "https://t.me/Mozhlyvosti/1"}))
+        self.assertTrue(source_problem({**row, "apply_url": "https://www.ukr.net/news/1"}))
+
     def test_organizer_pages_pass(self):
         from first_source import source_problem
         for url in ("https://man.gov.ua/events/kurs", "https://osvita.diia.gov.ua/courses/ai",
