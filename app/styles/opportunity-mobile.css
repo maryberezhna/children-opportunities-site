@@ -276,7 +276,6 @@
   }
 
   .o-verified { margin-top: 20px; font-size: 14px; }
-  .o-report { margin-left: 0; }
 
   .o-m-deadline.is-urgent { background: #fee2e2; }
   .o-m-deadline.is-urgent .o-m-eyebrow { color: #991b1b; }
@@ -304,6 +303,6 @@
   .o-who { margin-top: 28px; }
   .o-who-list { gap: 10px; }
 
-  .o-verified { margin-top: 24px; padding: 16px 18px; }
+  .o-verified { margin-top: 24px; }
   .opportunity-page { gap: 20px; margin-bottom: 36px; }
 }
