@@ -4,6 +4,7 @@ import {
   TYPE_LABELS, TYPE_LABELS_EN, NEED_LABELS, NEED_LABELS_EN, ageRangeLabel,
 } from '@/lib/labels';
 import { cardFacts, CARD_LABELS } from '@/lib/card-facts';
+import { cardTone } from '@/lib/card-tone';
 
 /**
  * Картка можливості — одна на весь сайт.
@@ -88,6 +89,7 @@ export default function OpportunityCard({
     <Link
       href={url}
       className="card"
+      data-tone={cardTone(item.opportunity_type)}
       style={{ textDecoration: 'none' }}
       {...(prefetch === false ? { prefetch: false } : {})}
     >
@@ -128,6 +130,9 @@ export default function OpportunityCard({
           {summary.length > 140 ? `${summary.slice(0, 140)}…` : summary}
         </p>
       ) : null}
+      {/* Дві колонки на телефоні (.cards-2m у cards.css): під назвою лише
+          вартість — на «формат · вартість» вузька картка не має місця. */}
+      {facts.cost ? <p className="card-m-cost">{facts.cost}</p> : null}
       {/* B, телефон: «Онлайн · Безкоштовно» одним рядком під назвою. */}
       {bLine ? <p className="card-b-line">{bLine}</p> : null}
       {/* B, десктоп: блок деталей. Підпис ліворуч, значення праворуч. */}
@@ -156,7 +161,7 @@ export default function OpportunityCard({
       {/* B: «Детальніше ↗» завжди; на телефоні поруч із ним дедлайн. */}
       <div className="card-b-foot">
         {facts.when ? (
-          <span className={`card-b-when${facts.when.kind === 'urgent' ? ' is-urgent' : ''}`}>
+          <span className={`card-b-when${facts.when.kind === 'urgent' ? ' is-urgent' : facts.when.kind === 'soon' ? ' is-soon' : ''}`}>
             {facts.when.foot}
           </span>
         ) : <span />}

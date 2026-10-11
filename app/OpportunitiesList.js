@@ -1876,7 +1876,9 @@ export default function OpportunitiesList({
           ) : null}
 
           {shown.length ? (
-            <section ref={gridRef} className={`v2-grid${mobileLayout ? ' v2-list' : ''}`}>
+            <section ref={gridRef} className={`v2-grid${mobileLayout ? ' v2-list' : ''}${teens ? '' : ' cards-2m'}`}>
+              {/* cards-2m — дві колонки на телефоні (cards.css); у «Підліткам»
+                  ні: там поля під назвою — головний зміст картки. */}
               {/* Telegram-картка кожні 20 можливостей (lib/inline-card.js):
                   без таймерів, замість 4-секундної спливної підказки. */}
               {/* Група олімпіад і Telegram-картка — на весь рядок; перед неповним

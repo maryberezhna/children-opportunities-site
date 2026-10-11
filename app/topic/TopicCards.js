@@ -199,7 +199,7 @@ export default function TopicCards({
 
       {filtered.length ? (
         <>
-          <div className="tp-grid">{cells}</div>
+          <div className="tp-grid cards-2m">{cells}</div>
           <div className="tp-more" aria-live="polite">
             <span className="tp-more-count">{t.shown(Math.min(shown, filtered.length), filtered.length)}</span>
             {hasMore ? (
@@ -279,7 +279,7 @@ function GroupedCards({ groups, links, card, labels, lang, hub }) {
               <h2 id={`${g.id}-title`} className="tp-group-title">
                 {g.title} <span className="tp-group-n">{g.items.length}</span>
               </h2>
-              <div className="tp-grid">{g.items.map((item) => card(item, g.title))}</div>
+              <div className="tp-grid cards-2m">{g.items.map((item) => card(item, g.title))}</div>
             </section>
             {tgHere ? <TelegramCard key={`tg-${g.id}`} lang={lang} place="topic" hub={hub} /> : null}
           </Fragment>
