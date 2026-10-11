@@ -24,3 +24,10 @@ test('обидві форми отримують child_needs із бази', () 
   assert.match(read('app/admin/edit/[id]/page.js'), /child_needs/);
   assert.match(read('app/admin/page.js'), /child_needs/);
 });
+
+test('адмінка й фільтр сайту — один список потреб', async () => {
+  const { NEED_FILTER_OPTS } = await import('../lib/labels.js');
+  assert.equal(NEED_FILTER_OPTS.length, 7);
+  assert.match(read('app/admin/edit/[id]/EditForm.js'), /NEED_FILTER_OPTS\.map/);
+  assert.match(read('app/OpportunitiesList.js'), /NEED_OPTS = NEED_FILTER_OPTS/);
+});
