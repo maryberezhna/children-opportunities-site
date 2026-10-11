@@ -61,6 +61,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from timing import evidence_in_text
+from requests_guard import protected_ids
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("audit_clubs")
@@ -536,6 +537,9 @@ def main() -> int:
     ai = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
     today = datetime.now(timezone.utc).date().isoformat()
     rows = load_rows(db, since=today)
+    # Записи зі «Звернень» не чіпаємо (Марія, 11.10.2026; requests_guard.py).
+    protected = protected_ids(db)
+    rows = [r for r in rows if r["id"] not in protected]
     if args.source:
         wanted = {s.strip() for s in args.source.split(",") if s.strip()}
         rows = [r for r in rows if bulk_domain(r.get("source")) in wanted]

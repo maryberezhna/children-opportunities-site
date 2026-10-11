@@ -22,6 +22,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 import raw_store
+from requests_guard import protected_ids
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +100,9 @@ def run(client) -> dict:
             .execute()
             .data or []
         )
+        # Записи зі «Звернень» не чіпаємо (Марія, 11.10.2026; requests_guard.py).
+        protected = protected_ids(client)
+        rows = [r for r in rows if r["id"] not in protected]
         due = []
         for r in rows:
             if r.get("source") in AGGREGATOR_SOURCES:

@@ -53,6 +53,7 @@ import api_guard
 import usage
 from db import get_client
 from first_source import source_problem
+from requests_guard import protected_ids
 from normalizer import missing_required_keys
 from recheck_dates import _date_supported_by, _valid_date, _with_trace, fetch_text
 from remark import telegram_text, _TG_POST
@@ -627,7 +628,14 @@ def _main() -> int:
     # «У базу нічого не записано» — і витрат теж: сухий прогін пише їх лише в лог.
     SPEND.dry = args.dry_run
 
+    # Записи зі «Звернень» не чіпаємо взагалі, навіть дедлайном (Марія,
+    # 11.10.2026) — див. requests_guard.py.
+    protected = protected_ids(db)
+
     def write(row_id, patch):
+        if row_id in protected:
+            logger.info("  🔒 %s — зі звернень, не чіпаю", row_id)
+            return
         if not args.dry_run:
             db.table("opportunities").update(patch).eq("id", row_id).execute()
 

@@ -43,6 +43,8 @@ class FakeTable:
             self._status = val
         return self
     def is_(self, *a): return self
+    # Пошук записів зі «Звернень» (requests_guard.protected_ids): тут їх немає.
+    def ilike(self, *a): return self
     def lte(self, *a): return self
     def order(self, *a, **k): return self
     def limit(self, *a): return self
