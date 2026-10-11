@@ -3,6 +3,7 @@ import Link from 'next/link';
 import Footer from '../../Footer';
 import { OBRAZ, AGE_GROUPS, ageGroup, imageUrl, caption, workPath } from '@/lib/obraz';
 import { obrazDb, approvedWorks } from '@/lib/obraz-server';
+import { EXAMPLES } from '../Sketches';
 
 // Онлайн-галерея челенджу «Намалюй свій образ». Без лайків, коментарів і
 // сортування «найкращі» — лише свіжі зверху й фільтр за віком.
@@ -45,12 +46,23 @@ export default async function GalleryPage({ searchParams }) {
         </section>
         <section className="ob-wrap">
           {failed ? <p className="ob-text">Галерея тимчасово не відкрилась. Онови сторінку за хвилину.</p> : null}
-          {!failed && !works.length ? (
-            <div className="ob-empty">
-              <p className="ob-form-title">Тут скоро зʼявляться перші малюнки</p>
-              <p><Link href={`/${OBRAZ.slug}#uchast`} className="ob-btn ob-btn-main">Надіслати свій</Link></p>
-            </div>
+          {!failed && !works.length && !group ? (
+            <>
+              <div className="ob-grid">
+                {EXAMPLES.map(({ key, title, C }) => (
+                  <div key={key} className="ob-tile ob-tile-example">
+                    <C id={`e-${key}`} />
+                    <span className="ob-tile-cap"><b>{title}</b>Імʼя, вік<span className="ob-tag">Приклад</span></span>
+                  </div>
+                ))}
+              </div>
+              <div className="ob-empty">
+                <p className="ob-text">Це приклади від команди Dityam.com.ua: так виглядатимуть малюнки в галереї. Перші справжні зʼявляться тут зовсім скоро.</p>
+                <Link href={`/${OBRAZ.slug}#uchast`} className="ob-btn ob-btn-main">Надіслати малюнок</Link>
+              </div>
+            </>
           ) : null}
+          {!failed && !works.length && group ? <p className="ob-text">Малюнків у цій віковій групі ще немає.</p> : null}
           <div className="ob-grid">
             {works.map((w) => (
               <Link key={w.public_id} href={workPath(w.public_id)} className="ob-tile">
