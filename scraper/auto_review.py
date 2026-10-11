@@ -52,6 +52,7 @@ from normalizer import VALID_OPP_TYPES, latin_fields, missing_required, summary_
 from proof import PUBLISH_CRITERIA
 from timing import is_expired
 from first_source import source_problem
+from page_signals import action_quote, broken_markup, fetch_page, report_reason
 
 logger = logging.getLogger(__name__)
 
@@ -67,6 +68,12 @@ SPEND = usage.Spend("auto-review")
 TRUST_TIER_LABELS = {int(k): v
                      for k, v in PUBLISH_CRITERIA["risk"]["trust_tier_labels"].items()}
 DEFAULT_TIER = int(PUBLISH_CRITERIA["risk"]["trust_tier_default"])
+
+# Чим читаємо сторінку перед суддею. Змінна модуля — щоб тести підміняли мережу.
+FETCH = fetch_page
+# Скільки тексту сторінки бачить суддя: досить, щоб відрізнити звіт від набору,
+# і не роздуває запит (Haiku, кожна чернетка, що пройшла механіку).
+PAGE_FOR_JUDGE = 6000
 
 MIN_SUMMARY_LEN = 60
 MIN_TITLE_LEN = 15
@@ -203,6 +210,11 @@ def mechanical(row: dict, trust_tier: int = DEFAULT_TIER) -> tuple[str, str] | N
     today = date.today().isoformat()
 
     # ── Червоний ────────────────────────────────────────────────────────
+    # Шматок виклику інструмента в описі («</summary><parameter name=…>») —
+    # модель зламалась на цьому записі, і решті полів теж не можна вірити:
+    # у «Школі юного дипломата» (11.10.2026) так вік став 0–18.
+    if broken_markup(row.get("title"), row.get("summary"), row.get("details")):
+        return RED, "зламана розмітка моделі в описі — у брак"
     if row.get("dup_of") or row.get("canonical_slug"):
         return RED, "дубль — на злиття, не в публікацію"
     if (row.get("link_status") or "ok") != "ok":
@@ -346,6 +358,13 @@ publish=false навіть тоді, коли вона відкрита для �
   даних; «Заявки до» — останній день подачі, «Початок/Кінець події» — коли
   вона відбувається. Це різні дати.
 
+СТАТТЯ — НЕ МОЖЛИВІСТЬ. Поле «Текст сторінки» — сама сторінка джерела, «Опис» —
+наш переказ, і переказ може помилятись. Звіряй із текстом сторінки. Якщо
+сторінка — звіт про подію, що вже була («ось як проходили зустрічі», «дякуємо
+учасникам»), новина про заняття для тих, хто вже ходить («для вихованців
+студії»), або стаття без жодного способу потрапити (ні заявки, ні реєстрації,
+ні контакту для запису) — publish=false, навіть якщо опис звучить як набір.
+
 Кажи publish=false, якщо:
 - це реклама платного сервісу під виглядом можливості (платна українська
   школа чи студія за кордоном — не реклама, див. вище);
@@ -362,10 +381,13 @@ publish=false навіть тоді, коли вона відкрита для �
 хороший зайвий день у черзі."""
 
 
-def judge_payload(row: dict) -> dict:
+def judge_payload(row: dict, page: str | None = None) -> dict:
     """Рівно те, що бачить суддя. Одне місце і для запиту, і для хешу памʼяті:
-    поле, яке колись допишуть сюди, саме потрапить і в хеш."""
-    return {
+    поле, яке колись допишуть сюди, саме потрапить і в хеш.
+
+    page — текст самої сторінки (з 11.10.2026). До того суддя бачив лише наш
+    переказ, і звіт, переказаний як «курс щосереди», виглядав набором."""
+    payload = {
         "Назва": row.get("title"),
         "Опис": row.get("summary"),
         "Тип": row.get("opportunity_type"),
@@ -382,13 +404,19 @@ def judge_payload(row: dict) -> dict:
         "Вид за часом": row.get("timing_kind"),
         "Цитати зі сторінки": row.get("evidence") or {},
     }
+    if page:
+        payload["Текст сторінки"] = page[:PAGE_FOR_JUDGE]
+    return payload
 
 
 # «Сьогодні» в хеш не йде: з ним хеш мінявся б щоночі й памʼять не працювала б.
 # Дату суддя бачить, щоб помітити минуле, але минуле й так щоночі ловить
 # механіка (is_expired) ще ДО судді, а з памʼяті береться лише «ні» (див.
 # remembered) — тож застаріле «ні» нічого не опублікує.
-_NOT_HASHED = ("Сьогодні",)
+# Текст сторінки теж: на ньому лічильники, банери й «новини поруч», і памʼять
+# судді губилась би від кожного перезавантаження. Памʼять береться лише для
+# «ні», тож застарілий текст нічого не опублікує.
+_NOT_HASHED = ("Сьогодні", "Текст сторінки")
 
 
 def judge_hash(row: dict) -> str:
@@ -401,12 +429,12 @@ def judge_hash(row: dict) -> str:
     return hashlib.sha256(blob.encode("utf-8")).hexdigest()
 
 
-def judge(client, row: dict) -> dict:
+def judge(client, row: dict, page: str | None = None) -> dict:
     """Слово судді. Будь-який збій — трактуємо як «не впевнений».
 
     Збій позначено `failed`: його не запамʼятовуємо, інакше вичерпаний
     баланс (як 03.10.2026) лишив би чернетки жовтими до першої правки."""
-    payload = judge_payload(row)
+    payload = judge_payload(row, page)
     try:
         resp = client.messages.create(
             model=MODEL,
@@ -479,7 +507,22 @@ def review(row: dict, client, trust: dict | None = None
         j = {"publish": False, "reason": "суддя не запускався (немає ключа)", "confidence": 0.0}
         return (*verdict_corridor(j), "none", None)
 
-    j = judge(row=row, client=client)
+    # ── Сторінка: чи є куди потрапити (11.10.2026) ──────────────────────
+    # Механіка дивиться лише на наші поля. Тут — на саму сторінку: стаття
+    # про подію, звіт для своїх вихованців чи новина без подачі не
+    # публікуються самі, навіть якщо переказ звучить як набір.
+    page, why = FETCH(row.get("source_url") or "")
+    if not page:
+        return (*_hold(f"сторінку не прочитали ({why}) — не видно, чи є набір",
+                       tier), "mechanical", None)
+    report = report_reason(row.get("source_url"), page)
+    if report:
+        return (*_hold(report, tier), "mechanical", None)
+    if not action_quote(page, row.get("apply_url")):
+        return (*_hold("на сторінці не видно, як потрапити: ні заявки, ні реєстрації, "
+                       "ні контакту для запису", tier), "mechanical", None)
+
+    j = judge(row=row, client=client, page=page)
     corridor, reason = verdict_corridor(j)
     if j.get("failed"):
         return corridor, reason, "judge", None
