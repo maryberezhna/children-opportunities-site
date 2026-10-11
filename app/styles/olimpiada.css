@@ -544,7 +544,17 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 /* Сторінка педагога /olimpiada/pedagog. */
 .ol-teach-panel { margin-top: 56px; }
 .ol-teach-panel .ol-kicker { color: #c8501a; }
-.ol-teach-wait { max-width: 520px; margin: 22px auto 0; padding: 18px 22px; border-radius: 22px; background: rgba(255, 255, 255, .12); border: 1.5px dashed rgba(255, 255, 255, .5); color: #fff; font-size: 17px; line-height: 1.55; }
+.ol-teach-progress { max-width: 520px; margin: 22px auto 0; padding: 20px 22px; border-radius: 22px; background: rgba(255, 255, 255, .12); border: 1.5px solid rgba(255, 255, 255, .35); color: #fff; text-align: center; }
+.ol-teach-progress-text { margin: 0; font-size: 20px; line-height: 1.4; }
+.ol-teach-bar { height: 14px; margin: 14px 0 0; border-radius: 999px; background: rgba(255, 255, 255, .22); overflow: hidden; display: flex; }
+.ol-teach-bar span { display: block; height: 100%; border-radius: 999px; background: #ffc93c; }
+.ol-teach-progress-hint { margin: 14px 0 0; font-size: 15px; line-height: 1.55; color: #dfe8ff; }
+.ol-teach-ok { max-width: 520px; margin: 14px auto 18px; padding: 12px 18px; border-radius: 16px; background: #e8f7ee; color: #1f7a4d; font-size: 15px; font-weight: 700; line-height: 1.45; }
+.ol-teach-ok-err { background: #fdecea; color: #a3261b; }
+.ol-teach-optin { margin: 14px 0 0; font-size: 14px; line-height: 1.5; color: var(--v2-ink-3); }
+.ol-teach-optin button { padding: 0; border: 0; background: none; font: inherit; color: #c8501a; font-weight: 700; text-decoration: underline; cursor: pointer; }
+.ol-teach-ask { max-width: 520px; margin: 14px auto 18px; padding: 18px 20px; border-radius: 20px; background: #fff; color: var(--ol-blue-deep); text-align: center; }
+.ol-teach-ask p { margin: 0 0 14px; font-size: 17px; font-weight: 700; line-height: 1.45; }
 
 @media (max-width: 860px) {
   .ol-teach-box { grid-template-columns: 1fr; gap: 28px; padding: 24px 18px; }

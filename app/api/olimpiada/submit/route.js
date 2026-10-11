@@ -58,8 +58,8 @@ export async function POST(request) {
   await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>\n`
     + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || '—')}`
     + (open ? `\n\n✍️ Відкрите завдання:\n${esc(open.slice(0, 1500))}` : ''));
-  // Заявка за посиланням педагога (11.10.2026): перший учень, що пройшов
-  // тест, — лист педагогові з подякою. thankTeacher не кидає ніколи.
+  // Заявка за посиланням педагога (11.10.2026): коли тест пройде 5-й учень
+  // (TEACHER_THANKS_AT), педагогу — подяка листом. thankTeacher не кидає ніколи.
   if (entry.teacher_code) await thankTeacher(store, entry.teacher_code);
   return json({ ok: true });
 }

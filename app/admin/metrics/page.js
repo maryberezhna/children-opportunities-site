@@ -222,7 +222,9 @@ export default async function MetricsPage() {
     // Педагоги (11.10.2026) — окремими запитами: поки міграцію
     // 20261011_olimpiada_teachers не застосовано, падають лише вони, а не
     // весь блок олімпіади (у запиті вище teacher_code ще немає).
-    olimpTeachersRes: supabase.from('olimpiada_teachers').select('code, email, created_at').limit(10000),
+    // '*': notify_ok_at зʼявиться лише після міграції 20261011b — з переліком
+    // полів запит до того падав би, і картка показувала б нулі.
+    olimpTeachersRes: supabase.from('olimpiada_teachers').select('*').limit(10000),
     olimpTeacherEntriesRes: supabase.from('olimpiada_entries')
       .select('teacher_code, finished_at, wfp_last_status, parent_email').not('teacher_code', 'is', null).limit(10000),
   });
@@ -360,7 +362,7 @@ export default async function MetricsPage() {
         <Card value={`${olimpT.printOpen} / ${olimpT.printSubmit} / ${olimp.prints}`} label={`друк: натиснули «Так, замовити» / відправили форму / оплатили${olimpT.printOpenSources.length ? ` · звідки: ${olimpT.printOpenSources.map(([s, n]) => `${s} — ${n}`).join(', ')}` : ''}`} />
         <Card value={`${olimp.revenue.toLocaleString('uk-UA')} грн`} label="виручка: друковані дипломи" />
         {/* Педагоги (11.10.2026): блок «Для педагогів» на /olimpiada. */}
-        <Card value={`${olimpTeach.teachers} / ${olimpTeach.finished}`} label={`педагогів зареєструвалось / учнів пройшли олімпіаду за їхніми посиланнями (заявок: ${olimpTeach.entries}; педагогів з подякою: ${olimpTeach.thanked})`} />
+        <Card value={`${olimpTeach.teachers} / ${olimpTeach.finished}`} label={`педагогів зареєструвалось / учнів пройшли олімпіаду за їхніми посиланнями (заявок: ${olimpTeach.entries}; педагогів хоч з 1 учнем: ${olimpTeach.active}; з подякою: ${olimpTeach.thanked}; погодились на листи: ${olimpTeach.notifyOk})`} />
       </div>
       <p style={noteS}>
         {olimp.levels.length ? `Рівні: ${olimp.levels.map(([k, n]) => `${k} — ${n}`).join(', ')}. ` : ''}
