@@ -148,7 +148,7 @@ class ThroughAutoReview(unittest.TestCase):
         # заглушка 0–18, а вік — фільтр сайту (09.10.2026): запис до людини.
         corridor, reason = auto_review.mechanical(self.row(record()), trust_tier=3)
         self.assertEqual(corridor, auto_review.YELLOW)
-        self.assertIn("заглушка 0–18", reason)
+        self.assertIn("0–18", reason)
 
 
 if __name__ == "__main__":

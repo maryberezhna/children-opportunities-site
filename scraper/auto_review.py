@@ -174,6 +174,15 @@ def parked_reason(row: dict) -> str:
     return ""
 
 
+# Види, де 0–18 — справжній вік: виплата на дитину до повноліття.
+PAYMENT_TYPES = {"allowance", "support_payment"}
+
+
+def is_payment(row: dict) -> bool:
+    """Виплата чи пільга: на неї 0–18 — чесний вік (Марія, 11.10.2026)."""
+    return row.get("opportunity_type") in PAYMENT_TYPES or bool(row.get("aid_type"))
+
+
 def placeholder_reason(row: dict) -> str:
     """Вік чи тип — технічна заглушка, а не слова джерела.
 
@@ -185,8 +194,11 @@ def placeholder_reason(row: dict) -> str:
     age_from, age_to = row.get("age_from"), row.get("age_to")
     if age_from is None or age_to is None:
         return "бракує віку"
-    if (age_from, age_to) == (0, 18) and not evidence.get("age"):
-        return "вік — заглушка 0–18, на сторінці не знайдено"
+    # Марія, 11.10.2026: «можливостей 0–18 не буває, виняток — тільки
+    # виплати». Навіть із «цитатою» 0–18 у гуртку чи конкурсі — це «для дітей»
+    # з тексту, а не вік учасників: такий запис показувався б усім вікам.
+    if (age_from, age_to) == (0, 18) and not is_payment(row):
+        return "вік 0–18 — так не буває, крім виплат: знайди вік на сторінці"
     kind = row.get("opportunity_type")
     if kind not in VALID_OPP_TYPES:
         return "бракує типу"
