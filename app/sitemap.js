@@ -99,6 +99,8 @@ export default async function sitemap() {
     { url: `${SITE_URL}/stem-partnery`, changeFrequency: 'weekly', priority: 0.6 },
     // Онлайн-олімпіада — у карті сайту лише після запуску продажу.
     ...(OLIMP_OPEN || OLIMP_PUBLIC ? [{ url: `${SITE_URL}/olimpiada`, changeFrequency: 'weekly', priority: 0.7 }] : []),
+    // «Модний код» — безкоштовна онлайн-студія образу й олімпіада з моди (12.10.2026).
+    { url: `${SITE_URL}/modnyi-kod`, changeFrequency: 'weekly', priority: 0.6 },
   ];
 
   const staticPages = [...bilingualPages, ...monolingual]

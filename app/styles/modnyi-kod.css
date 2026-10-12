@@ -1,0 +1,101 @@
+/* «Модний код» — студія образу (12.10.2026). Білий фон у клітинку — НЕ бежевий
+   (memory: dityam-no-beige-background). Телефон — як схвалений прототип:
+   фігурка на пів екрана, рядок мініатюр, вкладки внизу. */
+.mk { background: #fff; color: #161616; padding-bottom: 48px; }
+.mk-head, .mk-wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.mk-head { padding-top: 22px; }
+.mk-kick { margin: 0 0 6px; font-size: .75rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: #0e5449; }
+.mk-head h1 { margin: 0 0 12px; font-family: 'Lora Cover', Georgia, serif; font-size: clamp(2rem, 6vw, 3.25rem); line-height: 1.02; }
+.mk-head h1 i { color: #7a3fbf; }
+@font-face { font-family: 'Lora Cover'; src: url('/fonts/Lora-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+
+/* Студія */
+.mk-studio { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+.mk-top { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+.mk-title { flex: 1; min-width: 0; border: 0; border-bottom: 3px solid #161616; background: transparent; outline: none;
+  font-family: var(--font-caveat), cursive; font-weight: 700; font-size: 1.75rem; padding: 2px; color: #161616; }
+.mk-title.err { animation: mk-blink .35s ease 4; border-bottom-color: #e2412b; }
+@keyframes mk-blink { 0%, 100% { background: transparent; } 50% { background: #ffd6d6; } }
+.mk-done { border: 0; background: #ff3d8b; color: #fff; font: inherit; font-weight: 800; font-size: 1rem; border-radius: 999px; padding: 12px 18px; white-space: nowrap; cursor: pointer; box-shadow: 0 6px 14px rgba(255, 61, 139, .3); }
+.mk-body { border: 1px solid #ececec; border-radius: 20px; overflow: hidden; background: #fff; }
+.mk-stage { position: relative; height: min(58vh, 520px); display: flex; justify-content: center; align-items: center; touch-action: pan-y; user-select: none;
+  background: #fff; background-image: linear-gradient(#efefef 1px, transparent 1px), linear-gradient(90deg, #efefef 1px, transparent 1px); background-size: 22px 22px; }
+.mk-fig { height: 94%; width: auto; }
+.mk-part { cursor: pointer; }
+.mk-part.sel { animation: mk-flash 1.4s ease forwards; }
+@keyframes mk-flash { 0%, 45% { filter: drop-shadow(0 0 2.5px #ff3d8b) drop-shadow(0 0 2.5px #ff3d8b); } 100% { filter: none; } }
+.mk-now { position: absolute; top: 8px; left: 12px; font-family: var(--font-caveat), cursive; font-weight: 700; font-size: 1.4rem; color: #ff3d8b; }
+.mk-arrow { position: absolute; top: 50%; width: 42px; height: 42px; margin-top: -21px; border-radius: 50%; border: 0; background: rgba(255, 255, 255, .92); box-shadow: 0 2px 8px rgba(0, 0, 0, .2); font-size: 1.4rem; font-weight: 800; cursor: pointer; }
+.mk-arrow.l { left: 10px; } .mk-arrow.r { right: 10px; }
+.mk-hint { position: absolute; bottom: 6px; left: 0; right: 0; text-align: center; font-size: .75rem; color: #888; font-weight: 700; }
+.mk-panel { border-top: 1px solid #eee; }
+.mk-tray { display: flex; gap: 10px; overflow-x: auto; padding: 10px 12px; align-items: center; min-height: 104px; scrollbar-width: none; }
+.mk-tray::-webkit-scrollbar { display: none; }
+.mk-it { flex: none; width: 78px; height: 86px; border-radius: 14px; border: 2px solid #eee; background: #fafafa; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: inherit; font-size: .66rem; font-weight: 800; padding: 4px; cursor: pointer; color: #161616; }
+.mk-it svg { width: 58px; height: 58px; }
+.mk-it.on { border-color: #ff3d8b; background: #fff0f6; }
+.mk-sw { flex: none; width: 58px; height: 58px; border-radius: 12px; border: 3px solid transparent; padding: 0; overflow: hidden; box-shadow: 0 2px 6px rgba(0, 0, 0, .18); cursor: pointer; background: none; }
+.mk-sw.on { border-color: #ff3d8b; }
+.mk-sw svg { width: 100%; height: 100%; display: block; }
+.mk-for { flex: none; border: 0; border-radius: 999px; background: #7a3fbf; color: #fff; font: inherit; font-weight: 800; font-size: .8rem; padding: 10px 12px; cursor: pointer; }
+.mk-tabs { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid #eee; padding: 6px 4px 8px; }
+.mk-tab { border: 0; background: none; font: inherit; font-size: .64rem; font-weight: 800; color: #888; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; cursor: pointer; }
+.mk-tab b { font-size: 1.35rem; line-height: 1; }
+.mk-tab.on { color: #ff3d8b; }
+
+/* Комп'ютер: фігурка ліворуч, панель праворуч */
+@media (min-width: 900px) {
+  .mk-body { display: grid; grid-template-columns: 1.1fr 1fr; }
+  .mk-stage { height: 620px; }
+  .mk-panel { border-top: 0; border-left: 1px solid #eee; display: flex; flex-direction: column; }
+  .mk-tabs { order: -1; border-top: 0; border-bottom: 1px solid #eee; }
+  .mk-tray { flex-wrap: wrap; overflow: visible; align-content: flex-start; padding: 16px; }
+  .mk-it { width: 96px; height: 104px; font-size: .72rem; } .mk-it svg { width: 70px; height: 70px; }
+}
+
+/* Обкладинка — на весь екран */
+.mk-cover-wrap { position: fixed; inset: 0; z-index: 60; background: #fff; overflow: auto; padding: 18px 16px 40px; }
+.mk-cover-grid { max-width: 980px; margin: 0 auto; display: grid; grid-template-columns: 1fr; gap: 20px; align-items: start; }
+@media (min-width: 900px) { .mk-cover-grid { grid-template-columns: 420px 1fr; gap: 40px; padding-top: 30px; } }
+.mk-cv { position: relative; width: min(100%, 420px); margin: 0 auto; aspect-ratio: 3 / 4; overflow: hidden; container-type: inline-size; box-shadow: 0 20px 44px rgba(0, 0, 0, .25); animation: mk-pop .6s ease; }
+@keyframes mk-pop { from { transform: scale(.85) rotate(-6deg); opacity: 0; } to { transform: none; opacity: 1; } }
+.mk-cv-bg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.mk-cv-in { position: absolute; inset: 5%; background: #fff; }
+.mk-cv-logo { position: absolute; top: 6cqw; left: 0; right: 0; text-align: center; font-family: var(--font-caveat), cursive; font-style: italic; font-weight: 700; font-size: 16cqw; color: #c8102e; line-height: 1; z-index: 2; }
+.mk-cv-fig { position: absolute; left: 0; right: 0; top: 24cqw; bottom: 6%; display: flex; justify-content: center; z-index: 1; }
+.mk-cv-fig svg { height: 100%; width: auto; }
+.mk-cv-title { position: absolute; left: 8cqw; top: 44cqw; max-width: 38cqw; background: rgba(255, 255, 255, .92); padding: 1.4cqw 2cqw; font-family: 'Lora Cover', Georgia, serif; font-style: italic; font-weight: 600; font-size: 6.4cqw; line-height: 1.05; z-index: 3; }
+.mk-cv-badge { position: absolute; right: 8cqw; top: 44cqw; z-index: 3; background: #161616; color: #fff; border-radius: 3cqw; padding: 2cqw 2.6cqw; text-align: center; font-weight: 800; font-size: 2.6cqw; letter-spacing: .06em; }
+.mk-cv-badge b { display: block; font-size: 7cqw; color: #ff6b9d; }
+.mk-cv-wm { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-24deg); font-size: 15cqw; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: rgba(255, 255, 255, .75); text-shadow: 0 0 3px rgba(0, 0, 0, .4); z-index: 5; pointer-events: none; }
+.mk-cover-side h2 { font-family: 'Lora Cover', Georgia, serif; font-size: clamp(1.8rem, 5vw, 2.6rem); line-height: 1.05; margin: 0 0 10px; }
+.mk-cover-side h2 i { color: #ff3d8b; }
+.mk-code { border-radius: 12px; padding: 10px 12px; background: #dff5ef; color: #0e5449; font-size: .9rem; line-height: 1.45; }
+.mk-small { font-size: .85rem; color: #555; line-height: 1.5; margin: 6px 0; }
+.mk-bgrow { display: flex; gap: 8px; overflow-x: auto; padding: 4px 2px 8px; }
+.mk-paid { margin-top: 14px; border-radius: 16px; padding: 16px; background: #161616; color: #fff; }
+.mk-paid .mk-small { color: #ddd; }
+.mk-paid-title { margin: 0 0 4px; font-weight: 800; font-size: 1.05rem; }
+.mk-back { margin-top: 14px; border: 2px solid #161616; background: #fff; border-radius: 999px; padding: 12px 18px; font: inherit; font-weight: 800; cursor: pointer; }
+.mk-wait { margin-top: 8px; }
+.mk-wait-row { display: flex; gap: 8px; }
+.mk-wait-row input { flex: 1; min-width: 0; border: 0; border-radius: 999px; padding: 12px 14px; font: inherit; }
+.mk-wait-row button { border: 0; border-radius: 999px; background: #ff3d8b; color: #fff; font: inherit; font-weight: 800; padding: 12px 16px; cursor: pointer; }
+.mk-check { display: flex; gap: 8px; align-items: flex-start; font-size: .78rem; color: #ccc; margin-top: 8px; }
+.mk-hp { position: absolute; left: -9999px; width: 1px; height: 1px; }
+.mk-err { color: #ffb3b3; font-size: .85rem; margin: 6px 0 0; }
+.mk-ok { background: #dff5ef; color: #0e5449; border-radius: 12px; padding: 10px 12px; font-size: .9rem; margin-top: 8px; }
+
+/* Таблиця «безкоштовно / платно» і питання */
+.mk-wrap { margin-top: 40px; }
+.mk-wrap h2 { font-size: 1.5rem; margin: 0 0 14px; }
+.mk-table { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 760px) { .mk-table { grid-template-columns: 1fr 1.4fr; } }
+.mk-col { border-radius: 18px; padding: 18px 20px; }
+.mk-col.free { background: #dff5ef; } .mk-col.paid { background: #161616; color: #fff; }
+.mk-col-h { margin: 0 0 8px; font-weight: 800; font-size: 1.05rem; }
+.mk-col ul { margin: 0; padding-left: 20px; line-height: 1.7; }
+.mk-soon { margin: 10px 0 0; color: #ff9cc2; font-weight: 700; font-size: .9rem; }
+.mk-faq details { border-bottom: 1px solid #eee; padding: 12px 0; }
+.mk-faq summary { font-weight: 800; cursor: pointer; }
+.mk-faq p { margin: 8px 0 0; color: #444; line-height: 1.55; }
