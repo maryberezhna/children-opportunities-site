@@ -14,6 +14,8 @@
  * шлях — означає «збирати». Зайва збірка коштує центи, пропущена потрібна —
  * стару версію сайту на проді.
  *
+ * Превʼю PR не збираються зовсім (skipPreview нижче) — лише з «[build]».
+ *
  * Примусово зібрати: «[build]» у повідомленні коміту, або в Vercel →
  * Redeploy зняти галочку «Use project's Ignore Build Step».
  */
@@ -54,6 +56,16 @@ export function decide(changedFiles, commitMessage = '') {
   return { code: 0, why: `сайт не змінився (${changedFiles.length} файлів поза збіркою)` };
 }
 
+/**
+ * Превʼю-збірки PR — лише на вимогу (Марія, 12.10.2026: «звісно»). За цикл
+ * Vercel зібрав сайт 800+ разів, 435 з них — превʼю; кредит $20 і ще $23.81
+ * понад нього закінчились, і збірки зупинились. Перевірка PR — тести в GitHub;
+ * превʼю, щоб подивитись очима, — «[build]» у повідомленні коміту.
+ */
+export function skipPreview(env, commitMessage = '') {
+  return env === 'preview' && !/\[build\]/i.test(commitMessage);
+}
+
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
 
 const hasCommit = (sha) => {
@@ -89,6 +101,10 @@ function findBase() {
 
 function main() {
   const message = process.env.VERCEL_GIT_COMMIT_MESSAGE || '';
+  if (skipPreview(process.env.VERCEL_ENV, message)) {
+    console.log('⏭ Пропускаємо превʼю: збираємо лише продакшн (у коміті немає [build]).');
+    process.exit(0);
+  }
   const base = findBase();
   if (!base) {
     console.log('▶ Збираємо: не знайшли, з чим порівняти.');
