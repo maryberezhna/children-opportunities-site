@@ -1,7 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
-import { buildPeople, peopleSummary, sourceLabel } from '@/lib/people';
+import { buildPeople, peopleSummary, sourceLabel, sourceHref } from '@/lib/people';
 import { notOwn } from '@/lib/own';
 import { PRODUCT_LABELS } from '@/lib/payments';
 import AdminNav from '../AdminNav';
@@ -41,6 +41,8 @@ const num = { ...cell, textAlign: 'right', fontVariantNumeric: 'tabular-nums', w
 const fmtDate = (iso) => (iso
   ? new Date(iso).toLocaleDateString('uk-UA', { day: '2-digit', month: '2-digit', year: '2-digit', timeZone: 'Europe/Kyiv' })
   : '—');
+const linkS = { color: C.accent, textDecoration: 'underline' };
+const ext = { target: '_blank', rel: 'noopener noreferrer' };
 const uah = (n) => `${Math.round(Number(n) || 0).toLocaleString('uk-UA')} грн`;
 
 function Card({ value, label, tone }) {
@@ -82,7 +84,7 @@ export default async function UsersPage() {
   const [subs, plusWait, entries, olimpWait, payments] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
-    all(() => sb.from('olimpiada_entries').select('child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at')),
+    all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at')),
     all(() => sb.from('olimpiada_waitlist').select('email, created_at')),
     all(() => sb.from('payments').select('*').order('paid_at', { ascending: false })),
   ]);
@@ -130,13 +132,28 @@ export default async function UsersPage() {
             {rows.map((r) => (
               <tr key={r.key} style={r.count ? { background: '#f0fdf4' } : undefined}>
                 <td style={cell}>
-                  {r.who}
-                  {r.email && !r.who.includes(r.email) ? <div style={{ fontSize: 12, color: C.ink3 }}>{r.email}</div> : null}
-                  <div style={{ fontSize: 12, color: C.ink3 }}>звідки: {sourceLabel(r.source)}</div>
+                  {r.handle ? <a href={`https://t.me/${r.handle}`} style={linkS} {...ext}>{r.who}</a>
+                    : r.email && r.who.includes(r.email) ? <a href={`mailto:${r.email}`} style={linkS}>{r.who}</a>
+                      : r.who}
+                  {r.email && !r.who.includes(r.email)
+                    ? <div style={{ fontSize: 12 }}><a href={`mailto:${r.email}`} style={{ ...linkS, color: C.ink3 }}>{r.email}</a></div> : null}
+                  <div style={{ fontSize: 12, color: C.ink3 }}>
+                    звідки: {sourceHref(r.source)
+                      ? <a href={sourceHref(r.source)} style={{ ...linkS, color: C.ink3 }} {...ext}>{sourceLabel(r.source)}</a>
+                      : sourceLabel(r.source)}
+                  </div>
                 </td>
                 <td style={{ ...cell, whiteSpace: 'nowrap' }}>{fmtDate(r.first)}</td>
                 <td style={cell}>
-                  {r.used.length ? r.used.map((u) => <div key={u.what}>{u.what}</div>)
+                  {r.used.length ? r.used.map((u) => (
+                    <div key={u.what}>
+                      {u.what}
+                      {u.what === 'Олімпіада' && r.results.length
+                        ? <span style={{ fontSize: 12 }}> · {r.results.map((x, i) => (
+                          <span key={x.href}>{i ? ', ' : ''}<a href={x.href} style={linkS} {...ext}>{x.name}</a></span>
+                        ))}</span> : null}
+                    </div>
+                  ))
                     : <span style={{ color: C.ink2 }}>{r.notes.join(', ') || '—'}</span>}
                 </td>
                 <td style={cell}>
