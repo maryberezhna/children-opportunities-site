@@ -32,7 +32,7 @@ test('тканини, цілі й візерунки', () => {
   assert.ok(L.FABRICS.find(([k]) => k === 'metal'));
   assert.ok(L.DEFS.includes('id="metal"') && L.DEFS.includes('id="mk-wob"'));
   for (const [k] of L.FABRICS) assert.ok(L.DEFS.includes(`id="${k}"`), k);
-  assert.deepEqual(L.usedPatterns(L.DEFAULT_LOOK).sort(), ['стьобана', 'шотландка'].sort());
+  assert.deepEqual(L.usedPatterns(L.DEFAULT_LOOK).sort(), ['ромби', 'шотландка'].sort());
   const t = L.targets({ ...L.DEFAULT_LOOK, base: 'dress1', acc: 'glasses' }).map(([k]) => k);
   assert.deepEqual(t, ['base', 'shoes', 'legs']);
 });
@@ -88,6 +88,13 @@ test('обкладинка у стилі Vogue: анонси з образу д�
   assert.doesNotMatch(src, /стьобана/);
   assert.match(read('app/modnyi-kod/page.js'), /<VogueCover /);
   assert.match(read('app/modnyi-kod/Studio.js'), /<VogueCover /);
+});
+
+// Марія, 12.10.2026: «не пиши оце стьобана».
+test('ніде на сайті немає слова «стьобана»', () => {
+  for (const f of ['lib/modnyi-kod-looks.js', 'app/modnyi-kod/page.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/VogueCover.js', 'app/modnyi-kod/DeskCollage.js']) {
+    assert.doesNotMatch(read(f).replace(/<!--.*?-->/g, ''), /стьобан/, f);
+  }
 });
 
 test('«Модний код» — у меню «Наші можливості» й у футері', () => {
