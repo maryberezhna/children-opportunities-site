@@ -60,11 +60,19 @@ test('безкоштовно студія, оплати поки немає — 
 
 // CLAUDE.md: назва лише «Dityam.com.ua» (на обкладинці — логотип «dityam.com.ua»).
 test('бренд і фон', () => {
-  for (const f of ['app/modnyi-kod/page.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/Waitlist.js', 'lib/modnyi-kod.js', 'lib/modnyi-kod-looks.js']) {
+  for (const f of ['app/modnyi-kod/page.js', 'app/modnyi-kod/studiya/page.js', 'app/modnyi-kod/DeskCollage.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/Waitlist.js', 'lib/modnyi-kod.js', 'lib/modnyi-kod-looks.js']) {
     const t = read(f);
     assert.doesNotMatch(t, /DITYAM/, f);
     assert.doesNotMatch(t, /Dityam(?!\.com\.ua|\+)/, f);
   }
   // Ніколи не бежевий фон (memory: dityam-no-beige-background).
   assert.doesNotMatch(read('app/styles/modnyi-kod.css'), /#f6efe4|#fbf8f2|#fffdf7|#f4efe7|#fff4e8/i);
+});
+
+test('сторінка олімпіади як /olimpiada, студія — окремо', () => {
+  const page = read('app/modnyi-kod/page.js');
+  for (const h of ['Що отримує кожен', 'Як це працює', 'Які бувають завдання', 'Взяти участь', 'Питання й відповіді']) assert.ok(page.includes(h), h);
+  assert.match(page, /<DeskCollage \/>/);
+  assert.match(page, /studiya/);
+  assert.match(read('app/modnyi-kod/studiya/page.js'), /<Studio \/>/);
 });
