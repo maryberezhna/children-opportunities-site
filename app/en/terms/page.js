@@ -76,8 +76,9 @@ export default function TermsPageEn() {
           <ul>
             <li><strong>Monthly subscription — UAH 99</strong> (charged every month).</li>
             <li><strong>Six-month subscription — UAH 549</strong> (charged every six months, ≈ UAH 92/month).</li>
-            <li><strong>First month of the monthly subscription — UAH 1</strong> for anyone who has
-              not paid for the subscription before. One month after the first payment, and every
+            <li><strong>First month of the monthly subscription — UAH 1</strong> for participants of the
+              Dityam.com.ua online olympiad and for anyone who started signing up in the bot before
+              13 October 2026, if they have not paid for the subscription before. One month after the first payment, and every
               month after that, the full price of UAH 99 is charged. You can cancel any time
               before the charge with the /stop command in the bot.</li>
             <li><strong>With a promo code</strong> — the discount applies to the FIRST payment

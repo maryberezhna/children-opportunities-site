@@ -64,7 +64,9 @@ test('сторінка можливості: один блок Dityam+ чере�
   assert.ok(!/<BotLink\b/.test(promo), 'банер знову веде одразу в бот');
   assert.ok(!/Оформити|Subscribe on Telegram/.test(code(promo)), 'у банері знову кнопка оплати');
   // Рядок цін у банері прибрано 08.10.2026 («видали нафіг»); ціна — лише на кнопці.
-  assert.ok(/PRICE_FIRST/.test(promo), 'ціни першого місяця на кнопці немає');
+  // З 12.10.2026 на сайті без «першого місяця за 1 грн» — лише 99 грн/міс.
+  assert.ok(/\$\{PRICE\}/.test(promo), 'ціни на кнопці немає');
+  assert.ok(!/PRICE_FIRST/.test(promo), 'на кнопці знову перший місяць за 1 грн');
   assert.doesNotMatch(promo, /plus-promo-price/);
   assert.ok(promo.includes("'/plus'") && promo.includes("'/en/plus'"), 'кнопка не веде на /plus');
   const text = code(promo);

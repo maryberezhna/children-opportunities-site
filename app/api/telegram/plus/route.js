@@ -11,7 +11,7 @@ import {
   saveCustomCity, FLOW_FREQ, freqOf, toggleReminders, remindersLabel, remindersToast,
 } from '@/lib/digestFlow';
 import {
-  payStartUrl, wayforpayConfigured, removeRecurring, PRICE, PRICE_HALF, PRICE_FIRST, firstPaymentAmount,
+  payStartUrl, wayforpayConfigured, removeRecurring, PRICE, PRICE_HALF, PRICE_FIRST, firstPaymentAmount, introPriceFor,
 } from '@/lib/wayforpay';
 import { themesOf } from '@/lib/themes';
 import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from '@/lib/promo';
@@ -104,11 +104,12 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     const promo = sub.promo_code ? await findPromo(supabase, sub.promo_code) : null;
     const paidBefore = Boolean(sub.wfp_order_reference);
     const promoOk = promo && promoUsable(promo, { used: promo.used }).ok && !paidBefore;
-    // Перший місяць за PRICE_FIRST — усім, хто ще не платив (08.10.2026);
+    // Перший місяць за PRICE_FIRST — з 12.10.2026 лише з олімпіади й тим, кому
+    // його вже пообіцяли (introPriceFor);
     // промокод може дати ще меншу суму. Річної підписки більше немає — пів
     // року замість неї (24.09.2026); там знижка лише за промокодом.
-    const firstMonth = firstPaymentAmount({ plan: 'monthly', paidBefore, promo: promoOk ? promo : null });
-    const firstHalf = firstPaymentAmount({ plan: 'halfyear', paidBefore, promo: promoOk ? promo : null });
+    const firstMonth = firstPaymentAmount({ plan: 'monthly', paidBefore, promo: promoOk ? promo : null, intro: introPriceFor(sub) });
+    const firstHalf = firstPaymentAmount({ plan: 'halfyear', paidBefore, promo: promoOk ? promo : null, intro: introPriceFor(sub) });
     // Кнопка веде на наш перехід, а не на готовий рахунок WayForPay: рахунок
     // живе годину, а повідомлення лишається в чаті назавжди — 24.09.2026
     // кнопки в боті вже були мертві, бо створились годиною раніше.
@@ -287,16 +288,19 @@ const fmtPrice = (n) => Number(n).toLocaleString('uk-UA');
 // це платно»). Досі про гроші людина дізнавалась після всієї анкети, і
 // частина йшла саме там — а частина, схоже, взагалі не розуміла, що це
 // підписка. Числа — з тих самих PRICE / PRICE_HALF, що й на кнопці оплати.
-async function askConsent(bot, chatId) {
+async function askConsent(bot, chatId, sub) {
   // Коротко, з однією дією (Марія, 09.10.2026: «що там з тою офертою» — з
   // 01.10 7 із 9 нових людей пішли з цього повідомлення, не натиснувши
   // «Погоджуюсь»). Була стіна тексту, а першою дією — «прийняти Публічну
   // оферту». Тепер головна кнопка — «Почати», а згода — рядком перед нею:
   // юридично те саме (натискання = прийняття оферти й згода на обробку даних).
   await bot.sendMessage(chatId,
-    `🧡 <b>Перший місяць у Dityam+ за ${fmtPrice(PRICE_FIRST)} грн</b>\n\n`
+    (introPriceFor(sub)
+      ? `🧡 <b>Перший місяць у Dityam+ за ${fmtPrice(PRICE_FIRST)} грн</b>\n\n`
+      : `🧡 <b>Dityam+ за ${fmtPrice(PRICE)} грн/міс</b>\n\n`)
     + 'Щодня добираємо можливості окремо для вашої дитини й завчасно нагадуємо про дедлайни. '
-    + `Далі ${fmtPrice(PRICE)} грн/міс, скасувати можна будь-коли.\n\n`
+    + (introPriceFor(sub) ? `Далі ${fmtPrice(PRICE)} грн/міс, скасувати` : 'Скасувати')
+    + ' можна будь-коли.\n\n'
     + 'Спершу кілька коротких питань про дитину.\n\n'
     + `<i>Натискаючи «Почати», ви приймаєте <a href="${SITE_URL}/terms">оферту</a> `
     + `й <a href="${SITE_URL}/privacy">політику конфіденційності</a>.</i>`,
@@ -309,7 +313,7 @@ async function askConsent(bot, chatId) {
 // оплаті, а оферту й політику конфіденційності бот не показував узагалі.
 async function continueStart(bot, supabase, sub, chatId, handle) {
   if (!sub) return;
-  if (!sub.consent_at) { await askConsent(bot, chatId); return; }
+  if (!sub.consent_at) { await askConsent(bot, chatId, sub); return; }
   const profiled = await hasProfile(supabase, sub);
   if (!profiled) await beginFlow(bot, supabase, chatId, handle);        // спершу анкета
   else if (sub.status === 'active') await sendMainMenu(bot, chatId, sub);  // є профіль і підписка → меню
@@ -396,7 +400,7 @@ function subDetails(sub, kids) {
 // за ним plus_launch.py знає, яким ботом писати про запуск.
 const WAITLIST_WELCOME = () => `Ви в списку перших! 🧡
 
-Платна підписка Dityam+: перший місяць — ${fmtPrice(PRICE_FIRST)} грн, далі ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
+Платна підписка Dityam+: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
 
 Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`;
 
