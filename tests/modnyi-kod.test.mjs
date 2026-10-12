@@ -93,7 +93,7 @@ test('обкладинка у стилі Vogue: анонси з образу д�
 // Марія, 12.10.2026: «не пиши оце стьобана».
 test('ніде на сайті немає слова «стьобана»', () => {
   for (const f of ['lib/modnyi-kod-looks.js', 'app/modnyi-kod/page.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/VogueCover.js', 'app/modnyi-kod/DeskCollage.js']) {
-    assert.doesNotMatch(read(f).replace(/<!--.*?-->/g, ''), /стьобан/, f);
+    assert.doesNotMatch(read(f), /стьобан/, f);
   }
 });
 
