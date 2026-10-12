@@ -1,6 +1,6 @@
 'use client';
 
-// Онлайн-студія образу «Модного коду» — безкоштовна частина (12.10.2026).
+// Онлайн-студія образу «Модного коду» — частина платної участі (12.10.2026).
 // Перенесено з прототипу, який Марія схвалила: фігурка на пів екрана, свайп
 // або стрілки ‹ › перемикають варіант, під нею рядок мініатюр речей, унизу
 // вкладки; тап по речі на фігурці відкриває тканини саме для неї. Назва
@@ -9,7 +9,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { PIECES, PAL, FABRICS, DEFS, DEFAULT_LOOK, shape, fill, lookSvg, targets, usedPatterns, cleanLook } from '@/lib/modnyi-kod-looks';
 import { MK } from '@/lib/modnyi-kod';
-import Waitlist from './Waitlist';
 
 const KEY = 'modnyi_kod_look';
 const TABS = [
@@ -185,11 +184,7 @@ export default function Studio() {
                   <button key={v} type="button" title={l} aria-label={l} className={`mk-sw${look.f.cover === v ? ' on' : ''}`} onClick={() => update((n) => { n.f.cover = v; })}><Swatch v={v} /></button>
                 ))}
               </div>
-              <div className="mk-paid">
-                <p className="mk-paid-title">Хочеш справжню обкладинку — без «превʼю» і з твоїми балами?</p>
-                <p className="mk-small">Пройди олімпіаду «Модний код»: 25 завдань про кольори, тканини, стилі й тренди. Оргвнесок — {MK.price} грн. Обкладинка для друку А4, сертифікат — і публікуємо її на сайті й у соцмережах.</p>
-                {MK.open ? null : <Waitlist />}
-              </div>
+              <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4, і ми опублікуємо її на сайті й у соцмережах.</p>
               <button type="button" className="mk-back" onClick={() => setCover(false)}>← Змінити образ</button>
             </div>
           </div>

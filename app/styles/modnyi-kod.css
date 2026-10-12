@@ -252,3 +252,119 @@
 /* Назва луку — внизу обкладинки, щоб не налазила на фігурку */
 .mk-cv-title { top: auto; bottom: 8cqw; max-width: 60cqw; }
 .mk-cv-badge { top: 30cqw; }
+
+/* ═══════════ Тема «ательє» для всієї сторінки (Марія, 12.10.2026: «вся сторінка
+   в 1 темі, як у олімпіади з логіки») ═══════════ */
+.mkT { --plum: #3d1650; --plum2: #2a0f38; --pinkT: #ff6b9d; --yel: #f5c518; padding-bottom: 0; background: #fff; overflow: hidden; }
+.mkT-wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px; position: relative; }
+.mkT-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.mkT-hand { margin: 0 0 22px; font-family: var(--font-caveat), cursive; font-weight: 700; font-size: clamp(2.1rem, 4.8vw, 3.3rem); line-height: 1.05; color: var(--yel); }
+.mkT-hand.ink { color: var(--plum); }
+.mkT-gap { margin-top: 72px; }
+.mkT-text { margin: 0 0 22px; max-width: 680px; font-size: 1.0625rem; line-height: 1.6; color: #333; }
+.mkT-text.on-dark { color: #f1e6f7; } .mkT-text.on-dark a { color: var(--yel); }
+
+/* Кнопки — як у логіки: жовта з «тінню», обвідка */
+.mk-btn-y, .mk-btn-o { display: inline-flex; align-items: center; justify-content: center; min-height: 54px; padding: 12px 28px; border-radius: 999px; font-weight: 700; font-size: 1.0625rem; text-decoration: none; transition: transform .16s ease; }
+.mk-btn-y { background: var(--yel); color: var(--plum2) !important; box-shadow: 0 6px 0 #c99a00; }
+.mk-btn-y:hover, .mk-btn-o:hover { transform: translateY(-2px) rotate(-.6deg); }
+.mk-btn-o { background: #fff; color: var(--plum) !important; box-shadow: inset 0 0 0 2.5px var(--plum); }
+.mkT-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px; margin-top: 26px; }
+.mkT-cta span { font-size: .9rem; color: #555; } .mkT-cta span.on-dark { color: #e5d6ee; }
+
+/* Перший екран */
+.mkT-hero { padding: 36px 0 70px; background: #fff; background-image: linear-gradient(#f1eef4 1px, transparent 1px), linear-gradient(90deg, #f1eef4 1px, transparent 1px); background-size: 28px 28px; }
+.mkT-hero-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.15fr); gap: 20px; align-items: center; }
+.mkT-word { margin: 0; }
+.mkT-word svg { display: block; width: 100%; height: auto; overflow: visible; }
+.mkT-word text { font-family: var(--font-sans), system-ui, sans-serif; font-weight: 700; letter-spacing: -2px; stroke: #1a1a1a; stroke-width: 3.5; paint-order: stroke; }
+.mkT-word .w1 { font-size: 118px; fill: url(#tartan); }
+.mkT-word .w2 { font-size: 128px; fill: url(#leo); }
+.mkT-sub { margin: 10px 0 12px; font-family: var(--font-caveat), cursive; font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.2rem); line-height: 1.1; color: var(--plum); }
+.mkT-brand { color: #e85d24; }
+.mkT-lead { margin: 0; max-width: 560px; font-size: 1.125rem; line-height: 1.6; color: #2b2b2b; }
+.mkT-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.mkT-trust { display: inline-flex; align-items: center; gap: 12px; margin-top: 22px; text-decoration: none; }
+.mkT-medal { display: grid; place-items: center; width: 54px; height: 54px; border-radius: 50%; background: var(--yel); color: var(--plum2); font-weight: 800; font-size: .8rem; line-height: 1; text-align: center; box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--plum); }
+.mkT-medal i { font-style: normal; display: block; font-size: .65rem; }
+.mkT-trust b { font-family: var(--font-caveat), cursive; font-size: 1.6rem; color: var(--plum); }
+
+/* Сливові смуги зі «стібками» */
+.mkT-band { position: relative; background: var(--plum); color: #fff; padding: 70px 0 80px;
+  background-image: repeating-linear-gradient(45deg, transparent 0 28px, rgba(255, 255, 255, .06) 28px 30px), repeating-linear-gradient(-45deg, transparent 0 28px, rgba(255, 255, 255, .04) 28px 30px); }
+.mkT-band-2 { background-color: #5a1d6e; }
+.mkT-pink { position: absolute; left: 0; width: 100%; height: 18px; fill: #fff; }
+.mkT-pink:not(.flip) { top: -1px; transform: scaleY(-1); }
+.mkT-pink.flip { bottom: -1px; }
+.mkT-doodle { position: absolute; pointer-events: none; }
+.d-sc { width: 120px; top: 50px; right: 4%; transform: rotate(-16deg); }
+.d-sp { width: 46px; bottom: 60px; left: 3%; transform: rotate(12deg); }
+.d-bt { width: 44px; top: 40px; right: 2%; }
+
+/* Картки на скотчі */
+.mkT-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+.mkT-card { position: relative; background: #fff; color: #1a1a1a; border-radius: 6px; padding: 30px 22px 22px; box-shadow: 0 10px 0 rgba(0, 0, 0, .18); }
+.mkT-card:nth-child(1) { transform: rotate(-1.2deg); } .mkT-card:nth-child(2) { transform: rotate(.8deg); } .mkT-card:nth-child(3) { transform: rotate(-.6deg); }
+.mkT-tape { position: absolute; top: -12px; left: 50%; width: 90px; height: 24px; margin-left: -45px; background: rgba(245, 197, 24, .8); transform: rotate(-3deg); }
+.mkT-num { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--pinkT); color: #fff; font-weight: 800; flex: none; }
+.mkT-card h3 { margin: 12px 0 6px; font-size: 1.2rem; color: var(--plum); }
+.mkT-card p { margin: 0; color: #444; line-height: 1.5; }
+.mkT-facts { list-style: none; margin: 0 0 22px; padding: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.mkT-facts li { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; border-radius: 18px; background: rgba(255, 255, 255, .12); border: 2px dashed rgba(255, 255, 255, .45); }
+.mkT-facts b { font-size: 1.05rem; } .mkT-facts span { font-size: .82rem; color: #e5d6ee; }
+.mkT-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.mkT-steps li { display: flex; gap: 14px; background: #fff; color: #1a1a1a; border-radius: 18px; padding: 18px; }
+.mkT-steps b { display: block; font-size: 1.1rem; color: var(--plum); margin: 4px 0; } .mkT-steps p { margin: 0; color: #444; line-height: 1.5; }
+.mkT-steps a { display: inline-block; margin-top: 6px; color: var(--plum); font-weight: 800; }
+
+/* Біла частина */
+.mkT-sec { padding-top: 80px; padding-bottom: 80px; }
+.mkT-samples { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.mkT-q { border: 2.5px solid var(--plum); border-radius: 20px; padding: 16px; background: #fff; box-shadow: 0 8px 0 #eadcf0; }
+.mkT-q-pic { width: 100%; height: 190px; border-radius: 12px; background: #faf7fc; display: block; }
+.mkT-q > p { margin: 12px 0 10px; font-weight: 800; font-size: 1.05rem; }
+.mkT-q ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mkT-q li { border: 2px solid #e8e0ee; border-radius: 12px; padding: 10px 12px; font-weight: 700; }
+.mkT-q li.ok { border-color: #0e7c5b; background: #dff5ef; }
+.mkT-q em { display: block; font-style: normal; font-size: .75rem; color: #0e7c5b; font-weight: 800; }
+.mkT-covers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+.mkT-covers li:nth-child(1) { transform: rotate(-1.5deg); } .mkT-covers li:nth-child(3) { transform: rotate(1.5deg); }
+.mkT-covers .mk-cv { width: 100%; animation: none; }
+.mkT-join { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; }
+.mkT-joinbox { background: #fff; color: #1a1a1a; border-radius: 22px; padding: 22px; box-shadow: 0 10px 0 rgba(0, 0, 0, .2); }
+.mkT-joinbox .mk-small { color: #444; }
+.mkT-joinbox .mk-wait-row input { border: 2px solid #e8e0ee; }
+.mkT-joinbox .mk-check { color: #555; }
+.mkT-joinbox .mk-err { color: #c0392b; }
+.mkT-faq details { border-bottom: 2px dashed #e8e0ee; padding: 14px 0; }
+.mkT-faq summary { font-weight: 800; cursor: pointer; color: var(--plum); font-size: 1.05rem; }
+.mkT-faq p { margin: 8px 0 0; color: #444; line-height: 1.55; }
+.mkT-contact { max-width: 760px; }
+
+@media (max-width: 900px) {
+  .mkT-hero { padding: 24px 0 50px; }
+  .mkT-hero-grid, .mkT-join { grid-template-columns: 1fr; }
+  .mkT-samples { grid-template-columns: 1fr; } .mkT-cards { grid-template-columns: 1fr 1fr; }
+  .mkT-facts { grid-template-columns: 1fr 1fr; }
+  .mkT-steps { grid-template-columns: 1fr; }
+  .mkT-covers { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 14px; padding: 8px 2px 14px; scrollbar-width: none; }
+  .mkT-covers li { flex: none; width: 74%; scroll-snap-align: start; }
+  .mk-btn-y, .mk-btn-o { width: 100%; }
+  .d-sc { width: 80px; top: 24px; }
+}
+
+/* Відео процесу (усе платне з 12.10.2026) */
+.mkT-video { display: grid; grid-template-columns: 1fr 340px; gap: 40px; align-items: center; padding-top: 70px; padding-bottom: 80px; }
+.mkT-incl { list-style: none; margin: 0 0 16px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.mkT-incl li { padding: 8px 14px; border-radius: 999px; background: #f3e8f8; color: var(--plum); font-weight: 700; font-size: .9rem; }
+.mkT-incl li::before { content: '✓ '; color: #0e7c5b; }
+.mkT-price { font-family: var(--font-caveat), cursive; font-weight: 700; font-size: 2rem; color: var(--plum); margin: 0; }
+.mkT-price b { color: #e85d24; }
+.mkT-phone { justify-self: center; width: 300px; border-radius: 40px; border: 10px solid #161616; overflow: hidden; box-shadow: 0 24px 50px rgba(61, 22, 80, .3); background: #fff; transform: rotate(2deg); }
+.mkT-phone video { display: block; width: 100%; aspect-ratio: 390 / 760; object-fit: cover; }
+.mk-locked { padding-top: 60px; padding-bottom: 80px; display: grid; gap: 14px; justify-items: start; }
+.mk-locked h1 i { color: #7a3fbf; }
+@media (max-width: 900px) {
+  .mkT-video { grid-template-columns: 1fr; gap: 24px; padding-top: 50px; padding-bottom: 50px; }
+  .mkT-phone { width: 260px; }
+}

@@ -8,20 +8,23 @@ import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
 import ContactForm from '../contacts/ContactForm';
 
-// «Модний код» — сторінка олімпіади з моди, побудована як сторінка олімпіади з
-// логіки (Марія, 12.10.2026: «в нас має бути така сторінка нормальна, як у
-// олімпіади з логіки»): перший екран — «стіл дизайнера» (макет C), далі що
-// отримує кожен, як це працює, які бувають завдання, обкладинка, ціна, участь,
-// питання. Студія образу — окремо, /modnyi-kod/studiya (безкоштовно).
+// «Модний код» — сторінка олімпіади з моди. Порядок і ритм — як /olimpiada
+// (Марія, 12.10.2026: «у схожому форматі, але не дизайну»), і вся сторінка в
+// одній темі, як «космос» у логіки («дизайну як такого сторінка не має —
+// подивись, як красиво з олімпіадою з логіки, вся сторінка в 1 темі»).
+// Тема — «ательє»: заголовок літерами з тканин, сливові смуги зі «стібками»,
+// краї як після фігурних ножиць, рукописні заголовки, картки на скотчі,
+// ножиці й котушки по краях, кнопка після кожного блоку. Не бежевий фон.
 //
-// SEO: «олімпіада з моди» майже не шукають; шукають «юний дизайнер», «тест
-// який у мене стиль одягу», «мода для підлітків» — вони в title/description.
+// 12.10.2026 Марія: «просто все робимо платною; зроби відео й помісти на
+// сторінку, як відбувається процес; все включено в цю вартість». Студія,
+// тест, обкладинка, сертифікат і публікація — все за оргвнесок 99 грн. Замість
+// безкоштовної студії на сторінці — відео процесу (public/modnyi-kod-demo.mp4).
 
 const SITE_URL = 'https://dityam.com.ua';
 const URL = `${SITE_URL}/${MK.slug}`;
-const STUDIO = `/${MK.slug}/studiya`;
 const TITLE = `«${MK.title}» — онлайн-олімпіада з моди для дітей ${MK.ageFrom}–${MK.ageTo} років`;
-const DESCRIPTION = `Онлайн-олімпіада з моди Dityam.com.ua для юного дизайнера: кольори, тканини, стилі й тренди. Безкоштовна студія образу, а нагорода олімпіади — обкладинка модного журналу з твоїм луком. Мода для підлітків без нудних тестів.`;
+const DESCRIPTION = `Онлайн-олімпіада з моди Dityam.com.ua для юного дизайнера 10–14 років: студія образу, тест про кольори, тканини, стилі й тренди, обкладинка модного журналу з твоїм луком і публікація в соцмережах — усе за ${MK.price} грн. Мода для підлітків без нудних тестів.`;
 
 export const metadata = {
   title: TITLE,
@@ -31,12 +34,18 @@ export const metadata = {
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 };
 
-
 const GETS = [
-  ['Студія образу', 'Збирай луки з трендових речей і тканин — безкоштовно.'],
-  ['Обкладинка', 'Твій лук на обкладинці модного журналу з іменем і балами.'],
-  ['Розбір відповідей', 'Що ще варто знати про кольори, тканини й стилі.'],
-  ['Сертифікат', 'Сертифікат учасника — у творче портфоліо.'],
+  ['Студія образу', 'Збирай свій лук із трендових речей і тканин — онлайн, з телефона чи компʼютера.'],
+  ['Обкладинка', 'Твій лук на обкладинці модного журналу dityam.com.ua з іменем і балами, для друку А4.'],
+  ['Розбір і сертифікат', 'Що ще варто знати про кольори, тканини й стилі — і сертифікат у портфоліо.'],
+  ['Публікація', 'Обкладинку публікуємо на сайті й у соцмережах Dityam.com.ua.'],
+];
+const FACTS = [['10–14 років', 'вік учасників'], ['25 завдань', 'з картинками'], ['онлайн', 'з телефона чи компʼютера'], [`${MK.price} грн`, 'оргвнесок']];
+const STEPS = [
+  ['Заявка', `Батьки вказують імʼя дитини й email і сплачують оргвнесок ${MK.price} грн.`],
+  ['Тест', '25 завдань про кольори, тканини, стилі й тренди — у зручний день.'],
+  ['Студія', 'Дитина збирає свій лук: речі, тканини, назва образу — як на відео вище.'],
+  ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір, сертифікат і публікація.'],
 ];
 const COVERS = [
   { fabric: 'tartan', title: 'Осінь у місті', score: '21/25', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'boots', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
@@ -47,13 +56,64 @@ const OVERSIZE_LOOK = {
   base: 'set', top: 'oversize', bottom: 'skirt', outer: 'none', shoes: 'sneak', acc: 'none',
   f: { top: '#1fa5a0', bottom: '#161616', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' },
 };
-
 const FAQ = [
-  ['Студія справді безкоштовна?', 'Так. Збирати образи можна скільки завгодно разів, без реєстрації й без оплати. Образ зберігається в браузері.'],
-  ['За що оргвнесок 99 грн?', `За олімпіаду «${MK.title}»: тест на 25 завдань із розбором відповідей, справжню обкладинку з балами для друку А4, сертифікат — і публікуємо обкладинку на сайті й у соцмережах Dityam.com.ua.`],
-  ['Коли старт олімпіади?', 'Незабаром. Залиште email — повідомимо першими. А студія працює вже зараз.'],
+  ['Що входить у 99 грн?', `Усе: студія образу, тест на 25 завдань із розбором відповідей, обкладинка з балами для друку А4, сертифікат і публікація обкладинки на сайті й у соцмережах Dityam.com.ua. Доплат немає.`],
+  ['Коли старт олімпіади?', 'Незабаром. Залиште email — повідомимо першими.'],
   ['Що з даними дитини?', 'На обкладинці, на сайті й у соцмережах — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
 ];
+
+// Край смуги — як після фігурних ножиць (у логіки — хвиля).
+function Pinking({ flip = false }) {
+  const teeth = Array.from({ length: 80 }, (_, i) => `L${i * 25 + 12.5} 0 L${i * 25 + 25} 18`).join(' ');
+  return (
+    <svg className={`mkT-pink${flip ? ' flip' : ''}`} viewBox="0 0 2000 18" preserveAspectRatio="none" aria-hidden="true">
+      <path d={`M0 18 ${teeth} L2000 18 Z`} />
+    </svg>
+  );
+}
+// Декор по краях — як ракета й планета в логіки.
+const Scissors = ({ className }) => (
+  <svg className={className} viewBox="0 0 120 90" aria-hidden="true">
+    <path d="M40 46 L118 18 M40 46 L118 70" stroke="#d9dde3" strokeWidth="7" strokeLinecap="round" />
+    <circle cx="22" cy="28" r="14" fill="none" stroke="#f5c518" strokeWidth="7" /><circle cx="22" cy="64" r="14" fill="none" stroke="#f5c518" strokeWidth="7" />
+  </svg>
+);
+const Spool = ({ className, c = '#ff6b9d' }) => (
+  <svg className={className} viewBox="0 0 46 64" aria-hidden="true">
+    <rect x="2" y="2" width="42" height="9" rx="2" fill="#e9cf9f" /><rect x="2" y="53" width="42" height="9" rx="2" fill="#e9cf9f" />
+    <rect x="7" y="11" width="32" height="42" fill={c} />
+    <path d="M7 18 h32 M7 26 h32 M7 34 h32 M7 42 h32" stroke="rgba(255,255,255,.4)" strokeWidth="2" />
+  </svg>
+);
+const SewButton = ({ className }) => (
+  <svg className={className} viewBox="0 0 40 40" aria-hidden="true">
+    <circle cx="20" cy="20" r="17" fill="#ff6b9d" stroke="#1a1a1a" strokeWidth="2.5" />
+    <circle cx="15" cy="15" r="2.6" fill="#1a1a1a" /><circle cx="25" cy="15" r="2.6" fill="#1a1a1a" /><circle cx="15" cy="25" r="2.6" fill="#1a1a1a" /><circle cx="25" cy="25" r="2.6" fill="#1a1a1a" />
+  </svg>
+);
+
+function Cta({ light = false, note }) {
+  return (
+    <div className="mkT-cta">
+      <a href="#uchast" className="mk-btn-y">Взяти участь · {MK.price} грн</a>
+      {note ? <span className={light ? 'on-dark' : ''}>{note}</span> : null}
+    </div>
+  );
+}
+
+function Cover({ c }) {
+  return (
+    <div className="mk-cv">
+      <svg className="mk-cv-bg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" dangerouslySetInnerHTML={{ __html: `<rect width="300" height="400" fill="url(#${c.fabric})"/>` }} />
+      <div className="mk-cv-in" />
+      <div className="mk-cv-logo">dityam.com.ua</div>
+      <div className="mk-cv-fig"><svg viewBox="0 0 200 440" dangerouslySetInnerHTML={{ __html: lookSvg(c.look) }} /></div>
+      <div className="mk-cv-title">{c.title}</div>
+      <div className="mk-cv-badge">МОДНИЙ КОД<b>{c.score}</b></div>
+      <span className="mk-cv-tag">Приклад</span>
+    </div>
+  );
+}
 
 export default function ModnyiKodPage() {
   const jsonLd = {
@@ -76,108 +136,120 @@ export default function ModnyiKodPage() {
 
   return (
     <>
-      <main className="mk mk-land">
+      <main className="mk mkT">
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<defs>${DEFS}</defs>` }} />
 
-        <section className="mk-hero">
-          <div className="mk-hero-grid">
-            <div className="mk-hero-txt">
-              <p className="mk-kick">Онлайн-олімпіада з моди · Dityam.com.ua · {MK.ageFrom}–{MK.ageTo} років</p>
-              <h1 className="mk-h1">Створи свою першу <i>колекцію</i></h1>
-              <p className="mk-lead">
-                Збери свій образ в онлайн-студії — безкоштовно. Пройди олімпіаду «{MK.title}» про кольори, тканини, стилі й тренди —
-                і твій лук стане обкладинкою модного журналу dityam.com.ua.
-              </p>
-              <div className="mk-actions">
-                <Link href={STUDIO} className="mk-btn mk-btn-main">Відкрити студію — безкоштовно</Link>
-                <a href="#uchast" className="mk-btn mk-btn-ghost">Олімпіада · {MK.price} грн</a>
+        {/* Перший екран: назва літерами з тканин + стіл дизайнера */}
+        <section className="mkT-hero">
+          <div className="mkT-wrap mkT-hero-grid">
+            <div>
+              <h1 className="mkT-word">
+                <span className="mkT-sr">Модний код — онлайн-олімпіада з моди для дітей {MK.ageFrom}–{MK.ageTo} років від Dityam.com.ua</span>
+                <svg viewBox="0 0 620 250" aria-hidden="true">
+                  <text x="4" y="112" className="w1">МОДНИЙ</text>
+                  <text x="4" y="232" className="w2">КОД</text>
+                </svg>
+              </h1>
+              <p className="mkT-sub">від <span className="mkT-brand">dityam.com.ua</span><br />олімпіада з моди, для {MK.ageFrom}–{MK.ageTo} років</p>
+              <p className="mkT-lead">Пройди олімпіаду про кольори, тканини, стилі й тренди, збери свій лук в онлайн-студії — і він стане обкладинкою модного журналу. Усе включено в {MK.price} грн.</p>
+              <div className="mkT-actions">
+                <a href="#uchast" className="mk-btn-y">Взяти участь · {MK.price} грн</a>
+                <a href="#video" className="mk-btn-o">Подивитися, як це працює</a>
               </div>
-              <a className="mk-trust" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>🏆 {SIA_AWARD.short.uk}</a>
+              <a className="mkT-trust" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
+                <span className="mkT-medal">SIA<i>2026</i></span><b>{SIA_AWARD.short.uk}</b>
+              </a>
             </div>
             <DeskCollage />
           </div>
         </section>
 
-        <section className="mk-wrap">
-          <h2 className="mk-h2">Що отримує кожен учасник</h2>
-          <div className="mk-gets">
-            {GETS.map(([t, x], i) => <article key={t} className="mk-get"><span className="mk-num">{i + 1}</span><h3>{t}</h3><p>{x}</p></article>)}
+        {/* Відео: як дитина збирає лук у студії й отримує обкладинку */}
+        <section className="mkT-wrap mkT-video" id="video">
+          <div className="mkT-video-txt">
+            <h2 className="mkT-hand ink">Як це виглядає</h2>
+            <p className="mkT-text">Дитина обирає речі, фарбує їх тканинами з тесту, дає образу назву — і бачить свою обкладинку. Усе онлайн, з телефона чи компʼютера.</p>
+            <ul className="mkT-incl">
+              <li>студія образу</li><li>тест на 25 завдань і розбір</li><li>обкладинка для друку А4</li><li>сертифікат</li><li>публікація на сайті й у соцмережах</li>
+            </ul>
+            <p className="mkT-price">Усе — за <b>{MK.price} грн</b></p>
+          </div>
+          <div className="mkT-phone">
+            <video src="/modnyi-kod-demo.mp4" poster="/modnyi-kod-demo.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="Відео: дитина збирає образ у студії «Модний код» і отримує обкладинку" />
           </div>
         </section>
 
-        <section className="mk-wrap">
-          <h2 className="mk-h2" id="yak">Як це працює</h2>
-          <ul className="mk-facts">
-            <li><b>25</b><span>завдань із картинками</span></li>
-            <li><b>{MK.ageFrom}–{MK.ageTo}</b><span>років</span></li>
-            <li><b>{MK.price} грн</b><span>оргвнесок</span></li>
-            <li><b>онлайн</b><span>з телефона чи компʼютера</span></li>
-          </ul>
-          <ol className="mk-steps2">
-            <li><span className="mk-num">1</span><div><b>Збери образ у студії</b><p>Безкоштовно, скільки завгодно разів.</p><Link href={STUDIO}>Відкрити студію →</Link></div></li>
-            <li><span className="mk-num">2</span><div><b>Подай заявку</b><p>Батьки вказують імʼя дитини й email та сплачують оргвнесок.</p></div></li>
-            <li><span className="mk-num">3</span><div><b>Пройди тест</b><p>25 завдань про кольори, тканини, стилі й тренди — у зручний день.</p></div></li>
-            <li><span className="mk-num">4</span><div><b>Отримай обкладинку</b><p>Твій лук, імʼя й бали — на обкладинці, плюс розбір відповідей і сертифікат.</p></div></li>
-          </ol>
+        {/* Сливова смуга: що отримує кожен + як це працює */}
+        <section className="mkT-band">
+          <Pinking />
+          <Scissors className="mkT-doodle d-sc" />
+          <div className="mkT-wrap">
+            <h2 className="mkT-hand">Що отримує кожен учасник</h2>
+            <div className="mkT-cards">
+              {GETS.map(([t, x], i) => (
+                <article key={t} className="mkT-card"><i className="mkT-tape" /><span className="mkT-num">{i + 1}</span><h3>{t}</h3><p>{x}</p></article>
+              ))}
+            </div>
+            <Cta light note="Усе включено в оргвнесок · доплат немає" />
+
+            <h2 id="yak" className="mkT-hand mkT-gap">Як це працює</h2>
+            <ul className="mkT-facts">{FACTS.map(([b, s]) => <li key={b}><b>{b}</b><span>{s}</span></li>)}</ul>
+            <ol className="mkT-steps">
+              {STEPS.map(([t, x], i) => (
+                <li key={t}><span className="mkT-num">{i + 1}</span><div><b>{t}</b><p>{x}</p></div></li>
+              ))}
+            </ol>
+            <Cta light note="25 завдань з картинками · з телефона чи компʼютера" />
+          </div>
+          <Spool className="mkT-doodle d-sp" c="#f5c518" />
+          <Pinking flip />
         </section>
 
-        <section className="mk-wrap">
-          <h2 className="mk-h2">Які бувають завдання</h2>
-          <p className="mk-p">Про моду без нудної теорії — майже кожне з картинкою. Ось 2 зразки, у самому тесті завдання інші.</p>
-          <div className="mk-samples">
-            <article className="mk-q">
-              <svg viewBox="0 0 120 90" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: '<rect width="120" height="90" rx="8" fill="url(#hound)"/>' }} />
+        {/* Біла частина: завдання й обкладинки */}
+        <section className="mkT-wrap mkT-sec">
+          <h2 className="mkT-hand ink">Які бувають завдання</h2>
+          <p className="mkT-text">Про моду без нудної теорії — майже кожне з картинкою. Ось 2 зразки, у самому тесті завдання інші.</p>
+          <div className="mkT-samples">
+            <article className="mkT-q">
+              <svg viewBox="0 0 120 90" className="mkT-q-pic" dangerouslySetInnerHTML={{ __html: '<rect width="120" height="90" rx="8" fill="url(#hound)"/>' }} />
               <p>Як називається цей візерунок?</p>
-              <ul className="mk-ans"><li>шотландка</li><li className="ok">гусяча лапка <em>правильно</em></li><li>віші</li><li>горох</li></ul>
+              <ul><li>шотландка</li><li className="ok">гусяча лапка <em>правильно</em></li><li>віші</li><li>горох</li></ul>
             </article>
-            <article className="mk-q">
-              <svg viewBox="40 30 120 180" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: lookSvg(OVERSIZE_LOOK) }} />
+            <article className="mkT-q">
+              <svg viewBox="40 30 120 180" className="mkT-q-pic" dangerouslySetInnerHTML={{ __html: lookSvg(OVERSIZE_LOOK) }} />
               <p>Як називається светр навмисно більшого розміру?</p>
-              <ul className="mk-ans"><li>лонгслів</li><li>худі</li><li className="ok">оверсайз <em>правильно</em></li><li>кроп</li></ul>
+              <ul><li>лонгслів</li><li>худі</li><li className="ok">оверсайз <em>правильно</em></li><li>кроп</li></ul>
             </article>
           </div>
+          <Cta note="У тесті — 25 таких завдань, від легких до хитрих" />
+
+          <h2 className="mkT-hand ink mkT-gap">Обкладинка, яку хочеться повісити на стіну</h2>
+          <p className="mkT-text">Твій лук зі студії, назва, імʼя й бали — на обкладинці модного журналу dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
+          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.fabric}><Cover c={c} /></li>)}</ul>
+          <SewButton className="mkT-doodle d-bt" />
         </section>
 
-        <section className="mk-wrap">
-          <h2 className="mk-h2">Обкладинка, яку хочеться повісити на стіну</h2>
-          <p className="mk-p">Твій лук зі студії, назва, імʼя та бали — на обкладинці модного журналу dityam.com.ua. Для друку А4.</p>
-          <ul className="mk-covers3">
-            {COVERS.map((c) => (
-              <li key={c.fabric}>
-                <div className="mk-cv">
-                  <svg className="mk-cv-bg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" dangerouslySetInnerHTML={{ __html: `<rect width="300" height="400" fill="url(#${c.fabric})"/>` }} />
-                  <div className="mk-cv-in" />
-                  <div className="mk-cv-logo">dityam.com.ua</div>
-                  <div className="mk-cv-fig"><svg viewBox="0 0 200 440" dangerouslySetInnerHTML={{ __html: lookSvg(c.look) }} /></div>
-                  <div className="mk-cv-title">{c.title}</div>
-                  <div className="mk-cv-badge">МОДНИЙ КОД<b>{c.score}</b></div>
-                  <span className="mk-cv-tag">Приклад</span>
-                </div>
-              </li>
-            ))}
-          </ul>
+        {/* Сливова смуга: участь */}
+        <section className="mkT-band mkT-band-2" id="uchast">
+          <Pinking />
+          <div className="mkT-wrap mkT-join">
+            <div>
+              <h2 className="mkT-hand">Взяти участь</h2>
+              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: студія, тест, обкладинка, сертифікат і публікація. Олімпіада стартує незабаром — залиште email батьків, повідомимо першими.</p>
+            </div>
+            {MK.open ? null : <div className="mkT-joinbox"><Waitlist /></div>}
+          </div>
+          <Pinking flip />
         </section>
 
-        <section className="mk-wrap mk-pub">
-          <h2 className="mk-h2">Публікуємо на сайті й у соцмережах</h2>
-          <p className="mk-p">Обкладинки учасників зʼявляються на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком, без прізвища й фото дитини.</p>
-        </section>
+        <section className="mkT-wrap mkT-sec">
+          <h2 className="mkT-hand ink">Питання й відповіді</h2>
+          <div className="mkT-faq">{FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}</div>
 
-        <section className="mk-wrap mk-join" id="uchast">
-          <h2 className="mk-h2">Взяти участь</h2>
-          {MK.open ? null : <div className="mk-join-box"><Waitlist /></div>}
-        </section>
-
-        <section className="mk-wrap mk-faq">
-          <h2 className="mk-h2">Питання й відповіді</h2>
-          {FAQ.map(([q, a]) => <details key={q}><summary>{q}</summary><p>{a}</p></details>)}
-        </section>
-
-        <section className="mk-wrap mk-contact">
-          <h2 className="mk-h2">Залишилися питання? Напишіть нам</h2>
-          <ContactForm defaultType="olimpiada" fixedType />
+          <h2 className="mkT-hand ink mkT-gap">Залишилися питання? Напишіть нам</h2>
+          <div className="mkT-contact"><ContactForm defaultType="olimpiada" fixedType /></div>
         </section>
       </main>
       <Footer />
