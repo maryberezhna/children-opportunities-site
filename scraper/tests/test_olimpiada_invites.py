@@ -116,3 +116,45 @@ class InvitesTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FeedbackLetterTest(unittest.TestCase):
+    """Лист через тиждень «розкажіть про ваш досвід» (Марія, 12.10.2026)."""
+    NOW = datetime(2026, 10, 20, 12, tzinfo=timezone.utc)
+
+    def row(self, email, sent, **kw):
+        base = {"id": email + sent, "parent_email": email, "child_name": "Олена", "finished_at": sent,
+                "diploma_sent_at": sent, "feedback_sent_at": None, "wfp_last_status": "Free", "source": None}
+        base.update(kw)
+        return base
+
+    def test_one_letter_per_address_after_seven_days(self):
+        rows = [self.row("a@x.ua", "2026-10-09T10:00:00+00:00"),
+                self.row("A@x.ua", "2026-10-10T10:00:00+00:00", child_name="Марк"),  # та сама адреса, друга дитина
+                self.row("b@x.ua", "2026-10-18T10:00:00+00:00")]                     # ще не минуло 7 днів
+        got = inv.feedback_targets(rows, now=self.NOW)
+        self.assertEqual([r["parent_email"] for r in got], ["a@x.ua"])
+        self.assertEqual(got[0]["child_names"], ["Олена", "Марк"])
+
+    def test_skips_asked_tests_and_own(self):
+        rows = [self.row("a@x.ua", "2026-10-09T10:00:00+00:00"),
+                self.row("a@x.ua", "2026-10-09T11:00:00+00:00", feedback_sent_at="2026-10-16T10:00:00+00:00"),
+                self.row("t@x.ua", "2026-10-09T10:00:00+00:00", wfp_last_status="Test"),
+                self.row("c@x.ua", "2026-10-09T10:00:00+00:00", source="check"),
+                self.row("maryberezhna@gmail.com", "2026-10-09T10:00:00+00:00")]
+        self.assertEqual(inv.feedback_targets(rows, now=self.NOW), [])
+
+    def test_personal_greeting(self):
+        self.assertTrue(inv.feedback_greeting(["Олена Коваль"]).startswith("Олена Коваль тепер має диплом"))
+        self.assertTrue(inv.feedback_greeting(["Олена", "Марк", "Олена"]).startswith("Олена і Марк тепер мають дипломи"))
+        self.assertTrue(inv.feedback_greeting([]).startswith("Ваша дитина тепер має диплом"))
+
+    def test_letter_asks_and_promises(self):
+        subject, text, body = inv.build_feedback_message({"parent_email": "a@x.ua", "child_names": ["Олена"]})
+        self.assertIn("Олена тепер має диплом", text)
+        self.assertIn("Де ви зазвичай шукаєте", text)
+        self.assertIn("Що в цьому найскладніше і чого не вистачає?", text)
+        self.assertIn("Обіцяємо: ми дослухаємося.", text)
+        self.assertIn("Пишу вам особисто", body)
+        msg = inv.make_feedback_email({"parent_email": "a@x.ua", "child_names": ["Олена"]})
+        self.assertIn("a@x.ua", msg["To"])
