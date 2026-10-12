@@ -21,7 +21,8 @@ const L = {
     openFine: 'Спершу кілька питань про дитину, потім оплата — усе в боті, за кілька хвилин.',
     // Ціна біля кнопки (Марія, 12.10.2026: «додай тут ціну»).
     priceFirst: (p) => `Перший місяць — ${p.first} грн`,
-    priceThen: (p) => `далі ${p.month} грн/міс або ${p.half} грн за пів року · скасувати можна будь-коли`,
+    // «Там можна тільки за 1 грн» (Марія): у боті перший крок — лише місяць за 1 грн, пів року тут не пропонуємо.
+    priceThen: (p) => `далі ${p.month} грн/міс · скасувати можна будь-коли`,
   },
   en: {
     telegram: '✈️ Join the list through Telegram — one tap',
@@ -29,7 +30,7 @@ const L = {
     openCta: '✈️ Get Dityam+ on Telegram',
     openFine: 'A few questions about your child first, then payment — all in the bot, in a few minutes.',
     priceFirst: (p) => `First month — UAH ${p.first}`,
-    priceThen: (p) => `then UAH ${p.month}/month or UAH ${p.half} for 6 months · cancel anytime`,
+    priceThen: (p) => `then UAH ${p.month}/month · cancel anytime`,
   },
 };
 
