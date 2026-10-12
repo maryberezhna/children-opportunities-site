@@ -118,28 +118,39 @@
   margin: 0;
   padding: 0;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
+
+/* Шапочка кольором — ті самі тони, що в картках можливостей (cards.css). */
+.amb-benefit[data-tone="compete"] { --tone-bg: var(--purple-1); --tone-ink: var(--chip-ink-purple); }
+.amb-benefit[data-tone="money"] { --tone-bg: var(--warm-2); --tone-ink: var(--chip-ink-amber); }
+.amb-benefit[data-tone="learn"] { --tone-bg: var(--cool-2); --tone-ink: var(--chip-ink-teal); }
+.amb-benefit[data-tone="event"] { --tone-bg: var(--green-1); --tone-ink: var(--chip-ink-green); }
+.amb-benefit[data-tone="grow"] { --tone-bg: var(--pink-2); --tone-ink: var(--chip-ink-pink); }
 
 .amb-benefit {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 22px;
+  overflow: hidden;
   border-radius: 16px;
-  background: var(--v2-cream);
+  background: var(--v2-paper, #fff);
   border: 1px solid var(--v2-line);
 }
 
 .amb-benefit-n {
+  display: block;
+  padding: 12px 18px;
+  background: var(--tone-bg, var(--v2-cream));
+  color: var(--tone-ink, var(--v2-accent-strong));
   font-size: 0.875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: var(--v2-accent-strong);
   font-variant-numeric: tabular-nums;
 }
 
+.amb-benefit-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
+.amb-benefit h3 { margin: 0; }
 .amb-benefit p { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--v2-ink-3); }
 
 /* ── Що робить (у лівій колонці форми) ────────────────────────────────── */
@@ -244,5 +255,5 @@
 
 @media (max-width: 480px) {
   .amb-benefits { grid-template-columns: 1fr; }
-  .amb-benefit { padding: 18px 20px; gap: 6px; }
+  
 }
