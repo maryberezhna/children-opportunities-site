@@ -80,3 +80,12 @@ test('сторінка олімпіади як /olimpiada, студія — ок
   assert.match(page, /<DeskCollage \/>/);
     assert.match(read('app/modnyi-kod/studiya/page.js'), /<Studio \/>/);
 });
+
+test('обкладинка у стилі Vogue: анонси з образу дитини, гарні назви', async () => {
+  const src = read('app/modnyi-kod/VogueCover.js');
+  assert.match(src, /dityam\.com\.ua/);
+  assert.match(src, /Сміливість — головний тренд сезону/);
+  assert.doesNotMatch(src, /стьобана/);
+  assert.match(read('app/modnyi-kod/page.js'), /<VogueCover /);
+  assert.match(read('app/modnyi-kod/Studio.js'), /<VogueCover /);
+});

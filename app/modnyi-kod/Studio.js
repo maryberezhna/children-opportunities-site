@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { PIECES, PAL, FABRICS, DEFS, DEFAULT_LOOK, shape, fill, lookSvg, targets, usedPatterns, cleanLook } from '@/lib/modnyi-kod-looks';
 import { MK } from '@/lib/modnyi-kod';
+import VogueCover, { COVER_THEMES } from './VogueCover';
 
 const KEY = 'modnyi_kod_look';
 const TABS = [
@@ -45,6 +46,7 @@ export default function Studio() {
   const [target, setTarget] = useState('top');
   const [flash, setFlash] = useState(0);
   const [cover, setCover] = useState(false);
+  const [coverTheme, setCoverTheme] = useState('pink');
   const [err, setErr] = useState(0);
   const titleRef = useRef(null);
   const swipe = useRef(null);
@@ -166,22 +168,17 @@ export default function Studio() {
       {cover ? (
         <div className="mk-cover-wrap" role="dialog" aria-label="Твоя обкладинка">
           <div className="mk-cover-grid">
-            <div className="mk-cv">
-              <Svg viewBox="0 0 300 400" className="mk-cv-bg" html={`<rect width="300" height="400" fill="${fill(look.f.cover)}"/>`} />
-              <div className="mk-cv-in" />
-              <div className="mk-cv-logo">dityam.com.ua</div>
-              <div className="mk-cv-fig"><Svg viewBox="0 0 200 440" html={lookSvg(look)} /></div>
-              <div className="mk-cv-title">{title}</div>
-              <div className="mk-cv-badge">МОДНИЙ КОД<b>?/25</b></div>
+            <div className="mk-cv-wrap">
+              <VogueCover look={look} theme={coverTheme} title={title} />
               <span className="mk-cv-wm" aria-hidden="true">превʼю</span>
             </div>
             <div className="mk-cover-side">
               <h2>Твій образ — на <i>обкладинці!</i></h2>
               <p className="mk-code">{patterns.length ? <>✓ <b>Модний код:</b> у образі є {patterns.join(', ')}.</> : <>Додай хоча б 1 візерунок — шотландку, горох чи леопард.</>}</p>
               <p className="mk-small">Тло обкладинки</p>
-              <div className="mk-bgrow">
-                {FABRICS.map(([v, l]) => (
-                  <button key={v} type="button" title={l} aria-label={l} className={`mk-sw${look.f.cover === v ? ' on' : ''}`} onClick={() => update((n) => { n.f.cover = v; })}><Swatch v={v} /></button>
+              <div className="mk-cvthemes">
+                {Object.entries(COVER_THEMES).map(([k, t]) => (
+                  <button key={k} type="button" title={t.name} aria-label={t.name} className={coverTheme === k ? 'on' : ''} style={{ background: t.bg }} onClick={() => setCoverTheme(k)} />
                 ))}
               </div>
               <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4, і ми опублікуємо її на сайті й у соцмережах.</p>
