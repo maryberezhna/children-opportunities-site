@@ -6,6 +6,8 @@ import { lookSvg, DEFS } from '@/lib/modnyi-kod-looks';
 import { SIA_AWARD } from '@/lib/awards';
 import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
+import JoinForm from './JoinForm';
+import MkTrack from './MkTrack';
 import VogueCover from './VogueCover';
 import ContactForm from '../contacts/ContactForm';
 
@@ -60,7 +62,7 @@ const OVERSIZE_LOOK = {
 };
 const FAQ = [
   ['Що входить у 99 грн?', `Усе: студія образу, тест на 25 завдань із розбором відповідей, обкладинка з балами для друку А4, сертифікат і публікація обкладинки на сайті й у соцмережах Dityam.com.ua. Доплат немає.`],
-  ['Коли старт олімпіади?', 'Незабаром. Залиште email — повідомимо першими.'],
+  ['Коли можна пройти?', `Будь-коли після оплати: на пошту прийде посилання на кабінет учасника. Тест — ${MK.minutes} хвилин, почати можна в зручний день.`],
   ['Що з даними дитини?', 'На обкладинці, на сайті й у соцмережах — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
 ];
 
@@ -125,6 +127,7 @@ export default function ModnyiKodPage() {
   return (
     <>
       <main className="mk mkT">
+        <MkTrack />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<defs>${DEFS}</defs>` }} />
@@ -225,9 +228,9 @@ export default function ModnyiKodPage() {
           <div className="mkT-wrap mkT-join">
             <div>
               <h2 className="mkT-hand">Взяти участь</h2>
-              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: студія, тест, обкладинка, сертифікат і публікація. Олімпіада стартує незабаром — залиште email батьків, повідомимо першими.</p>
+              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: тест, студія образу, обкладинка, сертифікат і публікація. Після оплати на пошту прийде посилання на кабінет учасника.</p>
             </div>
-            {MK.open ? null : <div className="mkT-joinbox"><Waitlist /></div>}
+            <div className="mkT-joinbox">{MK.open ? <JoinForm /> : <Waitlist />}</div>
           </div>
           <Pinking flip />
         </section>

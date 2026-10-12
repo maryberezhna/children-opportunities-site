@@ -10,6 +10,8 @@ import {
 import { markPromoPaid } from '@/lib/promo';
 import { recordPayment, productOf, paidAtOf } from '@/lib/payments';
 import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
+import { isMkOrder } from '@/lib/modnyi-kod';
+import { handleMkCallback } from '@/lib/modnyi-kod-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -47,6 +49,13 @@ export async function POST(request) {
       console.error('[pay/wayforpay] olimpiada', e);
       return new Response('retry', { status: 500 });
     }
+    return Response.json(acceptResponse(b.orderReference));
+  }
+
+  // Оргвнесок «Модного коду» (mk-…) — разова оплата, не підписка; статуси
+  // Dityam+ нижче її не мають торкнутись.
+  if (isMkOrder(b.orderReference)) {
+    try { await handleMkCallback(b); } catch (e) { console.error('[pay/wayforpay] mk', e); return new Response('retry', { status: 500 }); }
     return Response.json(acceptResponse(b.orderReference));
   }
 
