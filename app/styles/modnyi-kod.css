@@ -202,3 +202,53 @@
   .mk-flow::-webkit-scrollbar, .mk-qs::-webkit-scrollbar { display: none; }
   .mk-fstep, .mk-qs .mk-q { flex: none; width: 78%; scroll-snap-align: start; }
 }
+
+/* ═══ Вирівнювання й без повторів (Марія, 12.10.2026) ═══ */
+/* Усі блоки — на одній лінії: перший екран у тому ж контейнері, що й решта. */
+.mk-hero-grid { max-width: 1120px; padding: 48px 16px 40px; }
+.mk-land .mk-wrap { max-width: 1120px; padding: 0 16px; }
+.mk-flow { align-items: stretch; }
+.mk-fstep > p { min-height: 34px; }
+/* Крок 2 — віяло з 3 карток-питань (приклади завдань без окремого блоку) */
+.mk-fan { overflow: visible; }
+.mk-fan .mk-q-mini { position: absolute; width: 62%; }
+.mk-fan .mk-q-mini .mk-q-pic { height: 84px; }
+.mk-fan .back { top: 10%; opacity: .95; }
+.mk-fan .back.l { left: 4%; transform: rotate(-9deg); }
+.mk-fan .back.r { right: 4%; transform: rotate(9deg); }
+.mk-fan .front { top: 8%; left: 19%; z-index: 2; }
+/* Участь — один блок на всю ширину */
+.mk-join-box { max-width: none; padding: 22px 24px; }
+.mk-join-box .mk-wait { max-width: 640px; }
+@media (max-width: 900px) { .mk-hero-grid { padding: 28px 16px 24px; } .mk-fstep { width: 84%; } }
+
+/* ═══ Порядок блоків як на /olimpiada (Марія: «у схожому форматі, але не дизайну») ═══ */
+.mk-num { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #ff3d8b; color: #fff; font-weight: 800; flex: none; }
+.mk-gets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.mk-get { border-radius: 18px; padding: 18px; background: #fff0f6; }
+.mk-get h3 { margin: 12px 0 6px; font-size: 1.1rem; } .mk-get p { margin: 0; color: #444; line-height: 1.5; }
+.mk-facts { list-style: none; padding: 0; margin: 0 0 18px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.mk-facts li { border: 2px solid #161616; border-radius: 16px; padding: 14px 16px; }
+.mk-facts b { display: block; font-size: 1.6rem; line-height: 1.1; color: #7a3fbf; } .mk-facts span { color: #444; font-size: .9rem; }
+.mk-steps2 { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px 24px; }
+.mk-steps2 li { display: flex; gap: 14px; align-items: flex-start; padding: 6px 0; }
+.mk-steps2 b { display: block; font-size: 1.1rem; margin: 4px 0; } .mk-steps2 p { margin: 0; color: #444; line-height: 1.5; }
+.mk-steps2 a { display: inline-block; margin-top: 6px; color: #0e5449; font-weight: 800; }
+.mk-samples { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.mk-samples .mk-q-pic { height: 180px; }
+.mk-ans { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.mk-ans li { border: 2px solid #e5e5e5; border-radius: 12px; padding: 10px 12px; font-weight: 700; }
+.mk-ans li.ok { border-color: #0e5449; background: #d9f3ec; }
+.mk-ans em { display: block; font-style: normal; font-size: .75rem; color: #0e5449; font-weight: 800; }
+.mk-covers3 { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.mk-covers3 .mk-cv { width: 100%; animation: none; }
+.mk-contact { max-width: 760px; }
+@media (max-width: 900px) {
+  .mk-gets, .mk-facts { grid-template-columns: 1fr 1fr; }
+  .mk-steps2, .mk-samples { grid-template-columns: 1fr; }
+  .mk-covers3 { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; scrollbar-width: none; }
+  .mk-covers3 li { flex: none; width: 72%; scroll-snap-align: start; }
+}
+/* Назва луку — внизу обкладинки, щоб не налазила на фігурку */
+.mk-cv-title { top: auto; bottom: 8cqw; max-width: 60cqw; }
+.mk-cv-badge { top: 30cqw; }
