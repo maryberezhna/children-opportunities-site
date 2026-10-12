@@ -321,3 +321,53 @@ test('іноземні мови: безкоштовний гурток із aid_
   const cash = { opportunity_type: 'support_payment', aid_type: 'cash', title: 'Виплата на курси англійської', cities: [] };
   assert.equal(TOPICS['inozemni-movy'].match(cash), false);
 });
+
+// Програмування та ІТ, 12.10.2026: платна школа, гурток у місті, безкоштовний
+// онлайн-курс — наші; олімпіада, хакатон і «цифрова» освіта без коду — ні.
+test('програмування: бере ІТ-школу, гурток робототехніки й курс Scratch', () => {
+  const t = TOPICS.prohramuvannia;
+  const yes = [
+    { opportunity_type: 'course', cost_type: 'paid_affordable', title: 'IT Talented Kids — курси програмування та ШІ для дітей' },
+    { opportunity_type: 'club', cost_type: 'free', title: 'Гурток «Робототехніки»', cities: ['Харків'] },
+    { opportunity_type: 'educational_material', cost_type: 'free', title: 'Scratch від MIT — програмування для дітей' },
+    { opportunity_type: 'course', cost_type: 'paid_affordable', title: 'Академія СТАРТ_ІТ (Львів) — ІТ-підготовка школярів' },
+    { opportunity_type: 'camp', cost_type: 'paid_affordable', title: 'Зимовий ІТ-табір для підлітків' },
+  ];
+  for (const o of yes) assert.equal(t.match(o), true, o.title);
+});
+
+test('програмування: олімпіаду, хакатон, вебінар і «цифрову» освіту не беремо', () => {
+  const t = TOPICS.prohramuvannia;
+  const no = [
+    { opportunity_type: 'olympiad', title: 'Всеукраїнська олімпіада з інформатики' },
+    { opportunity_type: 'hackathon', title: 'Хакатон для школярів з Python' },
+    { opportunity_type: 'course', title: 'Цифрова політична освіта для молоді' },
+    { opportunity_type: 'workshop', title: 'Webinar for parents' },
+    { opportunity_type: 'course', title: 'Make it count: курс публічних виступів' },
+    { opportunity_type: 'course', title: 'Курс англійської для підлітків' },
+  ];
+  for (const o of no) assert.equal(t.match(o), false, o.title);
+});
+
+test('програмування: тексти обома мовами, меню і сторінка міста', async () => {
+  const t = TOPICS.prohramuvannia;
+  for (const field of ['title', 'description', 'intro', 'note']) {
+    assert.ok(t[field].length > 40, field);
+    assert.ok(t.en[field].length > 40, `en.${field}`);
+  }
+  assert.equal(t.faq.length, 3);
+  assert.equal(t.en.faq.length, 3);
+  const { CITY_TOPIC_TEXTS } = await import('../lib/city-topics.js');
+  assert.ok(CITY_TOPIC_TEXTS.prohramuvannia, 'немає текстів для сторінки міста');
+  assert.doesNotMatch(t.title + t.description + t.intro, /усе безкоштовн|все безкоштовн/i);
+});
+
+test('безкоштовний онлайн-курс програмування лишає крихту «Онлайн-заняття»', async () => {
+  const { topicOf } = await import('../lib/topics.js');
+  const scratch = { opportunity_type: 'course', cost_type: 'free', aid_type: null, format: 'online',
+                    title: 'Scratch від MIT — програмування для дітей', cities: [], countries: [] };
+  assert.equal(topicOf(scratch).slug, 'bezkoshtovni-onlain-kursy');
+  const paid = { opportunity_type: 'course', cost_type: 'paid_affordable', format: 'offline',
+                 title: 'New IT School — курси програмування', cities: ['Київ'], countries: ['ua'] };
+  assert.equal(topicOf(paid).slug, 'prohramuvannia');
+});
