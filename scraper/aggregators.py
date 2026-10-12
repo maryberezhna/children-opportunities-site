@@ -25,6 +25,18 @@ AGGREGATORS: tuple[tuple[str, str], ...] = (
     ("uboost.study", "навчання й програми за кордоном"),
     ("opportunitiescorners.com", "міжнародні конференції, стипендії, конкурси"),
     ("opportunitydesk.org", "міжнародні можливості для молоді"),
+    # З файлу «ресурси_до18.xlsx» Марії (12.10.2026) — ті, що для до-18 і
+    # відкриті дитині з України; США-only стипендії й 18+ не беремо.
+    ("osvitoria.media/category/osvitni-mozhlyvosti", "україномовний дайджест конкурсів, стипендій, обмінів"),
+    ("biggggidea.com/opportunities", "найбільший український агрегатор можливостей"),
+    ("ja-ukraine.org", "конкурси Junior Achievement: «Компанія», EU Code Week, Girls Go Circular"),
+    ("goglobal.com.ua", "англомовні табори GoCamp, менторство, ESTEAM"),
+    ("competitionsciences.org/competitions", "міжнародний каталог шкільних конкурсів (STEM, творчість)"),
+    ("hackathons.hackclub.com", "підліткові хакатони, зокрема онлайн"),
+    ("reedsy.com/resources/writing-contests", "літературні конкурси (фільтр: для підлітків, безкоштовні)"),
+    ("standoutsearch.com", "літні програми й дослідницькі можливості для старшокласників"),
+    ("github.com/JustinChavez/Pre-College-Opportunities", "список pre-college програм"),
+    ("github.com/avinash201199/Competitions-and-Programs-List", "список міжнародних конкурсів"),
 )
 
 
