@@ -43,7 +43,18 @@ export async function POST(request) {
     const recent = await store.recentByEmail(email, new Date(Date.now() - DAY_MS).toISOString());
     const again = recent.find((r) => sameName(r.child_name, name) && !r.finished_at);
     if (again) return json({ url: `/olimpiada/test?t=${again.token}`, t: again.token, again: true });
-    if (!admin && recent.length >= OLIMP.maxEntriesPerEmailDay) return json({ error: 'too_many' }, 429);
+    if (!admin) {
+      // Педагог із блоку «Для педагогів» записує клас зі своєї пошти — йому
+      // лише добовий ліміт. Решті — не більше OLIMP.maxEntriesPerEmail заявок
+      // з однієї пошти взагалі (Марія, 12.10.2026).
+      const teacherAccount = await store.teacherByEmail?.(OLIMP.slug, email).catch(() => null);
+      if (teacherAccount) {
+        if (recent.length >= OLIMP.maxEntriesPerTeacherDay) return json({ error: 'too_many' }, 429);
+      } else {
+        if (recent.length >= OLIMP.maxEntriesPerEmailDay) return json({ error: 'too_many' }, 429);
+        if (await store.countByEmail(email) >= OLIMP.maxEntriesPerEmail) return json({ error: 'max_entries' }, 429);
+      }
+    }
 
     // Прийшли за посиланням педагога (/olimpiada?vid=<код>, 11.10.2026) — код
     // пишемо, лише якщо такий педагог справді є. Немає таблиці чи педагога —
