@@ -10,7 +10,7 @@ import { parseContact } from '@/lib/contactAddress';
 // Поля й класи — з контактної форми (contact-form.css), щоб форми сайту
 // виглядали однаково.
 
-const ROLES = ['Батько чи мати', 'Педагог'];
+const ROLES = ['Батько чи мати', 'Педагог', 'Інше'];
 
 export function ambassadorMessage({ role, city, about }) {
   return [
@@ -34,7 +34,7 @@ export default function AmbassadorForm() {
       return 'Лишіть email або нік у Telegram, наприклад @olena — так ми зможемо відповісти. На телефон відповісти не вийде.';
     }
     if (!form.city.trim()) return 'Вкажіть місто чи країну.';
-    if (!form.role) return 'Оберіть, хто ви: батько чи мати, або педагог.';
+    if (!form.role) return 'Оберіть, хто ви: батько чи мати, педагог або інше.';
     return '';
   };
 
@@ -92,8 +92,8 @@ export default function AmbassadorForm() {
           <input className="contact-input" value={form.name} onChange={set('name')} autoComplete="name" maxLength={120} placeholder="Імʼя та прізвище" />
         </label>
         <label className="contact-field">
-          <span className="contact-label">Email або нік у Telegram <span className="contact-req">обовʼязково</span></span>
-          <input className="contact-input" value={form.contact} onChange={set('contact')} autoComplete="email" maxLength={120} placeholder="name@gmail.com або @нік" />
+          <span className="contact-label">Як з вами звʼязатися <span className="contact-req">обовʼязково</span></span>
+          <input className="contact-input" value={form.contact} onChange={set('contact')} autoComplete="email" maxLength={120} placeholder="email або @нік у Telegram" />
         </label>
       </div>
 

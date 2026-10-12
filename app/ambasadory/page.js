@@ -52,11 +52,15 @@ const WHO = [
 ];
 
 // Чотири вигоди — рішення Марії 12.10.2026, дослівно за змістом.
+// Шапочка кольором, як у карток можливостей (Марія, 12.10.2026: «зроби це
+// шапочкою різними кольорами як наші можливості»), — ті самі тони, що в
+// lib/card-tone.js. «Подарунки від партнерів» — дослівно Марія.
 const BENEFITS = [
-  { title: 'Першими дізнаєтесь про наші олімпіади й конкурси' },
-  { title: 'Згадка на сайті', note: 'Імʼя та місто на сторінці амбасадорів — лише за вашою згодою.' },
-  { title: 'Сертифікат і подяка від Dityam.com.ua' },
-  { title: 'Dityam+ безкоштовно' },
+  { title: 'Першими дізнаєтесь про наші олімпіади й конкурси', tone: 'compete' },
+  { title: 'Згадка на сайті', note: 'Імʼя та місто на сторінці амбасадорів — лише за вашою згодою.', tone: 'learn' },
+  { title: 'Сертифікат і подяка від Dityam.com.ua', tone: 'money' },
+  { title: 'Dityam+ безкоштовно', tone: 'event' },
+  { title: 'Подарунки від партнерів', tone: 'grow' },
 ];
 
 const JSON_LD = {
@@ -143,10 +147,12 @@ export default function AmbassadorsPage() {
           <h2 id="amb-get">Що ви отримаєте</h2>
           <ol className="amb-benefits">
             {BENEFITS.map((b, i) => (
-              <li key={b.title} className="amb-benefit">
+              <li key={b.title} className="amb-benefit" data-tone={b.tone}>
                 <span className="amb-benefit-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-                <h3>{b.title}</h3>
-                {b.note && <p>{b.note}</p>}
+                <div className="amb-benefit-body">
+                  <h3>{b.title}</h3>
+                  {b.note && <p>{b.note}</p>}
+                </div>
               </li>
             ))}
           </ol>
