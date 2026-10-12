@@ -257,3 +257,16 @@
   .amb-benefits { grid-template-columns: 1fr; }
   
 }
+
+/* ── Наша ціль ────────────────────────────────────────────────────────── */
+.amb-goal { padding: 28px; border-radius: 20px; background: var(--v2-cream); border: 1px solid var(--v2-line); }
+.amb-goal-lead { margin: 0; font-size: 1.375rem; line-height: 1.4; font-weight: 700; color: var(--v2-ink); }
+.amb-goal-role p { margin: 0 0 8px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
+.amb-goal-role ul { margin: 0 0 12px; padding-left: 20px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
+
+/* ── Що роблять амбасадори ────────────────────────────────────────────── */
+.amb-cases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.amb-case { padding: 18px 20px; border-radius: 16px; border: 1px solid var(--v2-line); background: var(--v2-paper, #fff); display: flex; flex-direction: column; gap: 8px; }
+.amb-case-who { font-size: 0.875rem; font-weight: 700; color: var(--v2-accent-strong); }
+.amb-case p { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--v2-ink-2); }
+@media (max-width: 640px) { .amb-goal { padding: 20px; } .amb-goal-lead { font-size: 1.25rem; } }
