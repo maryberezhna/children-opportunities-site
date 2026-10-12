@@ -401,3 +401,8 @@
 .mk-cover-grid .vc { width: min(100%, 420px); margin: 0 auto; }
 .mk-cv-wrap { position: relative; width: min(100%, 420px); margin: 0 auto; container-type: inline-size; }
 .mk-cv-wrap .mk-cv-wm { z-index: 8; }
+/* Правила олімпіади */
+.mkT-rules { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 10px; max-width: 820px; font-size: 1rem; line-height: 1.6; color: #333; }
+.mkT-rules li::marker { color: var(--pinkT); font-weight: 800; }
+.mkT-rules a { color: var(--plum); font-weight: 700; }
+#pravyla { padding-bottom: 0; }

@@ -101,3 +101,14 @@ test('«Модний код» — у меню «Наші можливості» 
   assert.match(read('app/Header.js'), /href: `\/\$\{MK\.slug\}`/);
   assert.match(read('app/Footer.js'), /modnyiKod: '\/modnyi-kod'/);
 });
+
+test('положення: правила олімпіади на сторінці, без невирішених обіцянок', () => {
+  const page = read('app/modnyi-kod/page.js');
+  assert.match(page, /Правила олімпіади/);
+  assert.match(page, /ФОП Шутяк Марія Олександрівна/);
+  assert.match(page, /не є учнівською олімпіадою МОН/);
+  assert.match(page, /відмовитися від публікації/);
+  // Тривалість тесту й повернення коштів ще не вирішені — не обіцяємо.
+  assert.doesNotMatch(page, /хвилин/);
+  assert.doesNotMatch(page, /поверн/);
+});
