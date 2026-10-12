@@ -71,7 +71,7 @@ test('бренд і фон', () => {
 
 test('сторінка олімпіади як /olimpiada, студія — окремо', () => {
   const page = read('app/modnyi-kod/page.js');
-  for (const h of ['Що отримує кожен', 'Як це працює', 'Які бувають завдання', 'Взяти участь', 'Питання й відповіді']) assert.ok(page.includes(h), h);
+  for (const h of ['Як це працює', 'Приклади завдань', 'Питання й відповіді', 'у соцмережах']) assert.ok(page.includes(h), h);
   assert.match(page, /<DeskCollage \/>/);
   assert.match(page, /studiya/);
   assert.match(read('app/modnyi-kod/studiya/page.js'), /<Studio \/>/);

@@ -187,7 +187,7 @@ export default function Studio() {
               </div>
               <div className="mk-paid">
                 <p className="mk-paid-title">Хочеш справжню обкладинку — без «превʼю» і з твоїми балами?</p>
-                <p className="mk-small">Пройди олімпіаду «Модний код»: 25 завдань про кольори, тканини, стилі й тренди. Оргвнесок — {MK.price} грн. Обкладинка для друку А4, сертифікат і місце в архіві обкладинок.</p>
+                <p className="mk-small">Пройди олімпіаду «Модний код»: 25 завдань про кольори, тканини, стилі й тренди. Оргвнесок — {MK.price} грн. Обкладинка для друку А4, сертифікат — і публікуємо її на сайті й у соцмережах.</p>
                 {MK.open ? null : <Waitlist />}
               </div>
               <button type="button" className="mk-back" onClick={() => setCover(false)}>← Змінити образ</button>

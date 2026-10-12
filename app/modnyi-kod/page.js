@@ -35,24 +35,20 @@ const COVER_LOOK = {
   f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' },
 };
 
-const TOPICS = [
-  ['🎨', 'Кольори', 'Який колір протилежний червоному на колірному колі? Що таке монохромний образ?'],
-  ['🧵', 'Тканини', 'Хто «робить» шовк? З якої тканини шиють джинси?'],
-  ['🔍', 'Візерунки', 'Шотландка, гусяча лапка, горох — упізнай за картинкою.'],
-  ['👗', 'Стилі й слова моди', 'Що таке лук, капсульний гардероб, оверсайз, стрітвір?'],
-  ['🔥', 'Тренди', 'Аутфіт, вайб, Y2K, «дарк академія» — про що це?'],
-  ['🇺🇦', 'Українське вбрання', 'Коли День вишиванки? Що таке плахта?'],
-  ['♻️', 'Свідома мода', 'Що означає значок на ярлику? Що таке апсайклінг?'],
-  ['🧠', 'Модна логіка', 'З 3 футболок, 2 спідниць і 2 пар кедів — скільки образів?'],
-];
+const STUDIO_LOOK = {
+  base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'headphones',
+  f: { top: '#7a1f2b', bottom: 'denim', shoes: '#161616', acc: '#f5c518', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' },
+};
+const OVERSIZE_LOOK = {
+  base: 'set', top: 'oversize', bottom: 'skirt', outer: 'none', shoes: 'sneak', acc: 'none',
+  f: { top: '#1fa5a0', bottom: '#161616', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' },
+};
 
 const FAQ = [
   ['Студія справді безкоштовна?', 'Так. Збирати образи можна скільки завгодно разів, без реєстрації й без оплати. Образ зберігається в браузері.'],
-  ['За що оргвнесок 99 грн?', `За олімпіаду «${MK.title}»: тест на 25 завдань із розбором відповідей, справжню обкладинку з балами для друку А4, сертифікат і місце в архіві обкладинок.`],
+  ['За що оргвнесок 99 грн?', `За олімпіаду «${MK.title}»: тест на 25 завдань із розбором відповідей, справжню обкладинку з балами для друку А4, сертифікат — і публікуємо обкладинку на сайті й у соцмережах Dityam.com.ua.`],
   ['Коли старт олімпіади?', 'Незабаром. Залиште email — повідомимо першими. А студія працює вже зараз.'],
-  ['Для якого віку?', `Для дітей ${MK.ageFrom}–${MK.ageTo} років. Завдання з картинками, без нудної теорії.`],
-  ['Чи є переможці?', 'Ні: обкладинку отримує кожен, хто пройшов олімпіаду. Бали показують, скільки ти вже знаєш про моду.'],
-  ['Що з даними дитини?', 'На обкладинці й в архіві — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
+  ['Що з даними дитини?', 'На обкладинці, на сайті й у соцмережах — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
 ];
 
 export default function ModnyiKodPage() {
@@ -101,84 +97,69 @@ export default function ModnyiKodPage() {
         </section>
 
         <section className="mk-wrap">
-          <h2 className="mk-h2">Що отримує кожен</h2>
-          <div className="mk-cards">
-            <div className="mk-card"><b aria-hidden="true">✂️</b><h3>Студія образу</h3><p>Збирай луки з трендових речей і тканин скільки завгодно — безкоштовно.</p></div>
-            <div className="mk-card"><b aria-hidden="true">📰</b><h3>Обкладинка</h3><p>Твій лук на обкладинці модного журналу dityam.com.ua — з іменем і балами, для друку А4.</p></div>
-            <div className="mk-card"><b aria-hidden="true">💡</b><h3>Розбір відповідей</h3><p>Після тесту — пояснення: що ще варто знати про кольори, тканини й стилі.</p></div>
-            <div className="mk-card"><b aria-hidden="true">📜</b><h3>Сертифікат</h3><p>Сертифікат учасника олімпіади — перший рядок у творчому портфоліо.</p></div>
-          </div>
-        </section>
-
-        <section className="mk-wrap">
           <h2 className="mk-h2" id="yak">Як це працює</h2>
-          <ol className="mk-steps">
-            <li><b>Збери образ у студії</b><span>Онлайн, з телефона чи компʼютера. Безкоштовно.</span></li>
-            <li><b>Пройди олімпіаду</b><span>25 завдань із картинками про моду. Оргвнесок — {MK.price} грн.</span></li>
-            <li><b>Отримай обкладинку</b><span>Твій лук, імʼя й бали «{MK.title}: 21 з 25» — на обкладинці.</span></li>
-            <li><b>Потрап в архів</b><span>Обкладинка зʼявиться в архіві на сайті, найсміливіші — в Instagram.</span></li>
-          </ol>
-        </section>
-
-        <section className="mk-wrap">
-          <h2 className="mk-h2">Які бувають завдання</h2>
-          <p className="mk-p">Без нудної теорії: багато картинок, тканин і того, що ти бачиш у TikTok. Приклади:</p>
-          <div className="mk-topics">
-            {TOPICS.map(([i, t, q]) => <div key={t} className="mk-topic"><b aria-hidden="true">{i}</b><h3>{t}</h3><p>{q}</p></div>)}
-          </div>
-          <div className="mk-swrow" aria-hidden="true">
-            {['tartan', 'hound', 'polka', 'leo', 'sequin', 'metal'].map((f) => (
-              <svg key={f} viewBox="0 0 64 64" dangerouslySetInnerHTML={{ __html: `<rect width="64" height="64" fill="url(#${f})"/>` }} />
-            ))}
-          </div>
-        </section>
-
-        <section className="mk-wrap mk-coversec">
-          <div className="mk-cv mk-cv-ex">
-            <svg className="mk-cv-bg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" dangerouslySetInnerHTML={{ __html: '<rect width="300" height="400" fill="url(#tartan)"/>' }} />
-            <div className="mk-cv-in" />
-            <div className="mk-cv-logo">dityam.com.ua</div>
-            <div className="mk-cv-fig"><svg viewBox="0 0 200 440" dangerouslySetInnerHTML={{ __html: lookSvg(COVER_LOOK) }} /></div>
-            <div className="mk-cv-title">Осінь у місті</div>
-            <div className="mk-cv-badge">МОДНИЙ КОД<b>21/25</b></div>
-            <div className="mk-cv-who"><small>Дизайнерка</small>Імʼя, вік</div>
-            <span className="mk-cv-tag">Приклад</span>
-          </div>
-          <div>
-            <h2 className="mk-h2">Обкладинка, яку хочеться повісити на стіну</h2>
-            <p className="mk-p">Твій образ зі студії, назва луку, імʼя та бали — на обкладинці модного журналу dityam.com.ua. Її можна роздрукувати на А4, показати рідним і друзям.</p>
-            <p className="mk-p">Без переможців і тих, хто програв: обкладинку отримує кожен, хто пройшов олімпіаду.</p>
-          </div>
-        </section>
-
-        <section className="mk-wrap">
-          <h2 className="mk-h2">Що безкоштовно, а що за {MK.price} грн</h2>
-          <div className="mk-table">
-            <div className="mk-col free">
-              <p className="mk-col-h">Безкоштовно</p>
-              <ul><li>Студія образу — скільки завгодно разів</li><li>Превʼю обкладинки з твоїм образом</li></ul>
-              <Link href={STUDIO} className="mk-btn mk-btn-main mk-btn-sm">Відкрити студію</Link>
+          <div className="mk-flow">
+            <Link href={STUDIO} className="mk-fstep pink">
+              <div className="mk-fart mk-fart-grid">
+                <svg viewBox="0 0 200 440" className="mk-fart-fig" dangerouslySetInnerHTML={{ __html: lookSvg(STUDIO_LOOK) }} />
+                {['tartan', 'leo', 'polka'].map((f, i) => (
+                  <svg key={f} viewBox="0 0 60 60" className={`mk-fart-sw s${i}`} dangerouslySetInnerHTML={{ __html: `<rect width="60" height="60" fill="url(#${f})"/>` }} />
+                ))}
+              </div>
+              <p><b>1</b> Збери образ у студії <span>безкоштовно</span></p>
+            </Link>
+            <div className="mk-fstep yellow">
+              <div className="mk-fart">
+                <div className="mk-q mk-q-mini">
+                  <svg viewBox="0 0 60 60" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: '<rect width="60" height="60" fill="url(#hound)"/>' }} />
+                  <p>Як називається цей візерунок?</p>
+                  <div className="mk-opts"><span>шотландка</span><span>гусяча лапка</span><span>горох</span></div>
+                </div>
+              </div>
+              <p><b>2</b> Пройди олімпіаду <span>{MK.price} грн</span></p>
             </div>
-            <div className="mk-col paid">
-              <p className="mk-col-h">Олімпіада «{MK.title}» · {MK.price} грн</p>
-              <ul>
-                <li>Тест на 25 завдань із розбором</li>
-                <li>Справжня обкладинка з балами, для друку А4</li>
-                <li>Сертифікат учасника</li>
-                <li>Місце в архіві обкладинок на сайті</li>
-              </ul>
+            <div className="mk-fstep mint">
+              <div className="mk-fart">
+                <div className="mk-cv mk-cv-mini">
+                  <svg className="mk-cv-bg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" dangerouslySetInnerHTML={{ __html: '<rect width="300" height="400" fill="url(#tartan)"/>' }} />
+                  <div className="mk-cv-in" />
+                  <div className="mk-cv-logo">dityam.com.ua</div>
+                  <div className="mk-cv-fig"><svg viewBox="0 0 200 440" dangerouslySetInnerHTML={{ __html: lookSvg(COVER_LOOK) }} /></div>
+                  <div className="mk-cv-badge">МОДНИЙ КОД<b>21/25</b></div>
+                </div>
+              </div>
+              <p><b>3</b> Отримай обкладинку <span>з балами</span></p>
+            </div>
+          </div>
+        </section>
+
+        <section className="mk-wrap">
+          <h2 className="mk-h2">Приклади завдань</h2>
+          <div className="mk-qs">
+            <div className="mk-q">
+              <svg viewBox="0 0 120 90" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: '<rect width="120" height="90" rx="8" fill="url(#tartan)"/>' }} />
+              <p>Як називається ця тканина?</p>
+              <div className="mk-opts"><span>віші</span><span>шотландка</span><span>гусяча лапка</span><span>горох</span></div>
+            </div>
+            <div className="mk-q">
+              <svg viewBox="0 0 120 90" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: '<circle cx="60" cy="45" r="34" fill="#e2412b" stroke="#1a1a1a" stroke-width="2.5"/>' }} />
+              <p>Який колір протилежний червоному на колірному колі?</p>
+              <div className="mk-opts mk-dots">{['#2f9e44', '#2b4a8f', '#f5c518', '#7a3fbf'].map((c) => <i key={c} style={{ background: c }} />)}</div>
+            </div>
+            <div className="mk-q">
+              <svg viewBox="40 30 120 180" className="mk-q-pic" dangerouslySetInnerHTML={{ __html: lookSvg(OVERSIZE_LOOK) }} />
+              <p>Як називається такий светр?</p>
+              <div className="mk-opts"><span>лонгслів</span><span>оверсайз</span><span>худі</span><span>кроп</span></div>
             </div>
           </div>
         </section>
 
         <section className="mk-wrap mk-join" id="uchast">
-          <h2 className="mk-h2">Взяти участь в олімпіаді</h2>
-          {MK.open ? null : (
-            <>
-              <p className="mk-p">А поки — збирайте образи в <Link href={STUDIO}>студії</Link>, це безкоштовно.</p>
-              <div className="mk-join-box"><Waitlist /></div>
-            </>
-          )}
+          <div className="mk-prices">
+            <Link href={STUDIO} className="mk-price free"><b>Студія</b><span>безкоштовно</span></Link>
+            <div className="mk-price paid"><b>Олімпіада</b><span>{MK.price} грн</span></div>
+          </div>
+          {MK.open ? null : <div className="mk-join-box"><Waitlist /></div>}
         </section>
 
         <section className="mk-wrap mk-faq">

@@ -167,3 +167,38 @@
   .mk-btn { width: 100%; }
 }
 .mk-kick a { color: inherit; }
+
+/* ═══ Менше блоків, більше картинок (Марія, 12.10.2026: «болять очі, багато тексту») ═══ */
+.mk-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.mk-fstep { border-radius: 24px; padding: 16px 16px 18px; display: flex; flex-direction: column; gap: 12px; color: #161616; text-decoration: none; }
+.mk-fstep.pink { background: #ffe3ee; } .mk-fstep.yellow { background: #fff2b8; } .mk-fstep.mint { background: #d9f3ec; }
+.mk-fstep > p { margin: 0; font-weight: 800; font-size: 1.15rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.mk-fstep > p b { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #161616; color: #fff; font-size: 1rem; }
+.mk-fstep > p span { font-weight: 700; font-size: .85rem; padding: 4px 10px; border-radius: 999px; background: #fff; }
+.mk-fart { height: 260px; border-radius: 16px; background: #fff; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.mk-fart-grid { background-image: linear-gradient(#efefef 1px, transparent 1px), linear-gradient(90deg, #efefef 1px, transparent 1px); background-size: 18px 18px; }
+.mk-fart-fig { height: 94%; width: auto; }
+.mk-fart-sw { position: absolute; width: 46px; height: 46px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0, 0, 0, .18); }
+.mk-fart-sw.s0 { left: 10%; top: 14%; transform: rotate(-8deg); } .mk-fart-sw.s1 { left: 6%; top: 52%; transform: rotate(6deg); } .mk-fart-sw.s2 { right: 9%; top: 30%; transform: rotate(9deg); }
+.mk-q { border-radius: 18px; border: 2px solid #161616; background: #fff; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.mk-q > p { margin: 0; font-weight: 800; font-size: 1rem; line-height: 1.3; }
+.mk-q-pic { width: 100%; height: 150px; border-radius: 12px; background: #fafafa; }
+.mk-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.mk-opts span { border: 2px solid #e5e5e5; border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: .85rem; }
+.mk-dots i { display: block; width: 34px; height: 34px; border-radius: 50%; border: 2px solid #161616; }
+.mk-q-mini { width: 82%; padding: 12px; gap: 8px; box-shadow: 0 8px 18px rgba(0, 0, 0, .12); }
+.mk-q-mini .mk-q-pic { height: 92px; }
+.mk-q-mini > p { font-size: .9rem; }
+.mk-q-mini .mk-opts span { font-size: .75rem; padding: 4px 9px; }
+.mk-qs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.mk-cv-mini { width: 62%; box-shadow: 0 10px 22px rgba(0, 0, 0, .2); animation: none; }
+.mk-prices { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; max-width: 560px; margin-bottom: 14px; }
+.mk-price { border-radius: 20px; padding: 18px; text-decoration: none; display: flex; flex-direction: column; gap: 2px; }
+.mk-price b { font-size: 1.3rem; } .mk-price span { font-size: 1.05rem; font-weight: 700; }
+.mk-price.free { background: #d9f3ec; color: #0e5449; } .mk-price.paid { background: #161616; color: #fff; }
+.mk-price.paid span { color: #ff9cc2; }
+@media (max-width: 900px) {
+  .mk-flow, .mk-qs { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 12px; padding: 0 0 6px; scrollbar-width: none; }
+  .mk-flow::-webkit-scrollbar, .mk-qs::-webkit-scrollbar { display: none; }
+  .mk-fstep, .mk-qs .mk-q { flex: none; width: 78%; scroll-snap-align: start; }
+}
