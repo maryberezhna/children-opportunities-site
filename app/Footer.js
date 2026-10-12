@@ -28,6 +28,7 @@ const T = {
     verify: 'Як ми перевіряємо',
     press: 'Преса про нас',
     write: 'Написати нам',
+    ambassadors: 'Стати амбасадором',
     support: 'Підтримати',
     donate: 'Донат на monobank',
     otherWays: 'Як ще допомогти',
@@ -41,7 +42,7 @@ const T = {
     hrefs: {
       all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus', olimp: '/olimpiada',
       about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
-      contacts: '/contacts', support: '/support',
+      contacts: '/contacts', ambassadors: '/ambasadory', support: '/support',
       privacy: '/privacy', terms: '/terms',
     },
   },
@@ -113,6 +114,8 @@ export default function Footer({ lang = 'uk' }) {
             <Link href={h.verify}>{t.verify}</Link>
             <Link href={h.press}>{t.press}</Link>
             <Link href={h.contacts}>{t.write}</Link>
+            {/* Сторінка амбасадорів лише українською: в /en пункту немає. */}
+            {h.ambassadors && <Link href={h.ambassadors}>{t.ambassadors}</Link>}
           </div>
 
           <div className="v2-footer-col">
