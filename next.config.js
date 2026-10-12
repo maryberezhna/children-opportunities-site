@@ -24,7 +24,14 @@ const SECURITY_HEADERS = [
 const nextConfig = {
   reactStrictMode: true,
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      // Службові відповіді не мають бути у видачі (Search Console, 12.10.2026:
+      // «Indexed, though blocked by robots.txt»). Заборона в robots.txt цього
+      // не робить — Google бачить посилання й індексує адресу наосліп; прибирає
+      // з індексу лише noindex, який він мусить мати змогу прочитати.
+      { source: '/api/:path*', headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }] },
+    ];
   },
   async redirects() {
     return [
