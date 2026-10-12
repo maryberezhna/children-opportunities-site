@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { TOPIC_LIST, DIASPORA_COUNTRY_TOPICS, topicMenu } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
+import { MK } from '@/lib/modnyi-kod';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
@@ -176,6 +177,8 @@ export default function Header() {
       label: 'Онлайн-олімпіада з логіки',
       note: `для дітей ${OLIMP.groupLabel} · ${OLIMP_OPEN ? 'безкоштовно' : 'скоро старт'}`,
     }] : []),
+    // «Модний код» — олімпіада з моди (Марія, 12.10.2026: «публікуй і додавай у наші можливості»).
+    { href: `/${MK.slug}`, label: `«${MK.title}» — олімпіада з моди`, note: `для дітей ${MK.ageFrom}–${MK.ageTo} років · ${MK.open ? `${MK.price} грн` : 'скоро старт'}` },
     { href: '/plus', label: 'Dityam+', note: 'особиста добірка можливостей у Telegram' },
   ];
   const ownActive = OWN.some((l) => pathname.startsWith(l.href));

@@ -89,3 +89,8 @@ test('обкладинка у стилі Vogue: анонси з образу д�
   assert.match(read('app/modnyi-kod/page.js'), /<VogueCover /);
   assert.match(read('app/modnyi-kod/Studio.js'), /<VogueCover /);
 });
+
+test('«Модний код» — у меню «Наші можливості» й у футері', () => {
+  assert.match(read('app/Header.js'), /href: `\/\$\{MK\.slug\}`/);
+  assert.match(read('app/Footer.js'), /modnyiKod: '\/modnyi-kod'/);
+});
