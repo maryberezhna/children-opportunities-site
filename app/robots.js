@@ -12,6 +12,14 @@ import { RU_SEARCH_AGENTS } from '@/lib/ru-search';
 
 const DISALLOW = ['/admin', '/api/'];
 
+// Ці /api/-адреси сторінки показують людям і Google: файл події для календаря
+// (/events/…/add), зразки дипломів олімпіади, тексти карток головної
+// (lib/catalog-split.js). Закриті robots.txt, вони потрапляли в Search Console
+// як «Indexed, though blocked» / «Blocked by robots.txt» (12.10.2026), а
+// головна для Google рендерилась без описів карток. Читати їх можна; у видачу
+// вони не підуть — next.config.js ставить на /api/ X-Robots-Tag: noindex.
+const ALLOW = ['/', '/api/catalog/', '/api/events/', '/api/olimpiada/diploma'];
+
 // Пошук рф і білорусі — повна заборона (Марія, 02.10.2026). Саме цей запис
 // змушує Яндекс ПРИБРАТИ сторінки з індексу: заборона в robots.txt — їхній
 // документований спосіб деіндексації. Перелік — у lib/ru-search.js, звідти ж
@@ -39,11 +47,11 @@ const AI_CRAWLERS = [
 export default function robots() {
   return {
     rules: [
-      { userAgent: '*', allow: '/', disallow: DISALLOW },
+      { userAgent: '*', allow: ALLOW, disallow: DISALLOW },
       ...RU_SEARCH_AGENTS.map((userAgent) => ({ userAgent, disallow: '/' })),
       ...AI_CRAWLERS.map((userAgent) => ({
         userAgent,
-        allow: '/',
+        allow: ALLOW,
         disallow: DISALLOW,
       })),
     ],
