@@ -12,7 +12,7 @@ Env:
   DITYAM_GMAIL_APP_PASSWORD — пароль застосунку пошти проєкту
   DITYAM_GMAIL_FROM         — адреса (типово hellodityam.com.ua@gmail.com)
 
-  python olimpiada_invites.py            # надіслати всім, хто чекає (запрошення й дипломи)
+  python olimpiada_invites.py            # надіслати всім, хто чекає (запрошення, дипломи, лист-питання через 7 днів)
   python olimpiada_invites.py --dry-run  # лише показати, кому пішло б
   python olimpiada_invites.py --check    # лише перевірити вхід у пошту
   python olimpiada_invites.py --test-email адреса  # пробне запрошення (демо-запис, база не потрібна)
@@ -254,6 +254,98 @@ def make_email(entry: dict) -> MIMEMultipart:
     return msg
 
 
+# ── Лист через тиждень: «розкажіть про ваш досвід» (Марія, 12.10.2026) ─────────
+# «Додаємо лист через тиждень, де питаємо: розкажіть про ваш досвід пошуку
+# можливостей для дитини, у чому складність, чого не вистачає; обіцяємо, що
+# ми дослухаємося» — і «трошки коротше». Один лист на адресу (не на кожну
+# дитину), лише справжнім учасникам: без тестів адміна й власних адрес Марії.
+# Питання — за «The Mom Test»: про минулий досвід, а не «чи сподобалось би».
+FEEDBACK_DAYS = 7
+OWN_EMAILS = {"mashaberezhna0209@gmail.com", "maryberezhna@gmail.com", "hellodityam.com.ua@gmail.com"}
+SKIP_SOURCES = {"check", "prelaunch-check"}
+FEEDBACK_SUBJECT = "Розкажіть, як ви шукаєте можливості для дитини"
+# «Оце треба переписати персонально» (Марія, 12.10.2026): імʼя дитини — лише в
+# називному відмінку й без дієслова минулого часу, щоб не помилитися з родом.
+FEEDBACK_WHO = ("Пишу вам особисто: я Марія Шутяк, засновниця Dityam.com.ua, "
+                "і мені важливо почути саме вас. Розкажіть, будь ласка:")
+FEEDBACK_QUESTIONS = [
+    "Де ви зазвичай шукаєте для дитини конкурси, олімпіади, табори?",
+    "Що в цьому найскладніше і чого не вистачає?",
+    "Чи бувало, що дізналися про щось цікаве запізно?",
+]
+# Марія, 12.10.2026: «обіцяємо, ми дослухаємось» + обрала «буду дуже вдячна за відповідь».
+FEEDBACK_PROMISE = "Буду дуже вдячна за відповідь. Обіцяємо: ми дослухаємося."
+
+
+def feedback_greeting(names: list[str]) -> str:
+    """«Олена тепер має диплом…» / «Олена і Марк тепер мають дипломи…»."""
+    clean = [n for n in dict.fromkeys(str(x or "").strip() for x in names) if n][:3]
+    if not clean:
+        return "Ваша дитина тепер має диплом нашої онлайн-олімпіади з логіки — ще раз вітаю!"
+    if len(clean) == 1:
+        return f"{clean[0]} тепер має диплом нашої онлайн-олімпіади з логіки — ще раз вітаю!"
+    joined = ", ".join(clean[:-1]) + f" і {clean[-1]}"
+    return f"{joined} тепер мають дипломи нашої онлайн-олімпіади з логіки — ще раз вітаю!"
+
+
+def feedback_targets(rows: list[dict], now: datetime | None = None) -> list[dict]:
+    """По одному запису на адресу: тест пройдено, диплом пішов ≥ 7 днів тому,
+    лист-питання на цю адресу ще не йшов. Чиста функція — під тести."""
+    now = now or datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=FEEDBACK_DAYS)
+    asked = {str(r.get("parent_email") or "").strip().lower() for r in rows if r.get("feedback_sent_at")}
+    names: dict[str, list[str]] = {}
+    for r in rows:
+        if r.get("finished_at") and r.get("wfp_last_status") != "Test":
+            names.setdefault(str(r.get("parent_email") or "").strip().lower(), []).append(r.get("child_name"))
+    out, seen = [], set()
+    for r in sorted(rows, key=lambda x: str(x.get("diploma_sent_at") or "")):
+        email = str(r.get("parent_email") or "").strip().lower()
+        if "@" not in email or email in OWN_EMAILS or email in asked or email in seen:
+            continue
+        if r.get("wfp_last_status") == "Test" or (r.get("source") or "") in SKIP_SOURCES:
+            continue
+        sent = parse_ts(r.get("diploma_sent_at"))
+        if not r.get("finished_at") or not sent or sent > cutoff:
+            continue
+        seen.add(email)
+        out.append({**r, "child_names": names.get(email, [])})
+    return out
+
+
+def build_feedback_message(entry: dict):
+    """(тема, текст, html) листа-питання від Марії."""
+    esc = html.escape
+    greeting = feedback_greeting(entry.get("child_names") or [entry.get("child_name")])
+    text = "\n".join(["Добрий день!", "", greeting, "", FEEDBACK_WHO]
+                     + [f"— {q}" for q in FEEDBACK_QUESTIONS]
+                     + ["", FEEDBACK_PROMISE, "", "Марія Шутяк", "засновниця Dityam.com.ua",
+                        f"{FROM} · dityam.com.ua"])
+    items = "".join(f'<li style="margin:0 0 6px">{esc(q)}</li>' for q in FEEDBACK_QUESTIONS)
+    body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#1a1a1a;max-width:560px">
+<p>Добрий день!</p>
+<p>{esc(greeting)}</p>
+<p>{esc(FEEDBACK_WHO)}</p>
+<ul style="padding-left:20px">{items}</ul>
+<p>{esc(FEEDBACK_PROMISE)}</p>
+<p>Марія Шутяк<br>засновниця Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a> · <a href="{SITE}">dityam.com.ua</a></p>
+</div>"""
+    return FEEDBACK_SUBJECT, text, body
+
+
+def make_feedback_email(entry: dict) -> MIMEMultipart:
+    subject, text, body = build_feedback_message(entry)
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = subject
+    # Особистий лист — від імені Марії (як лист педагогам), відповіді — на пошту проєкту.
+    msg["From"] = formataddr(("Марія Шутяк, Dityam.com.ua", FROM))
+    msg["To"] = entry["parent_email"]
+    msg["Reply-To"] = FROM
+    msg.attach(MIMEText(text, "plain", "utf-8"))
+    msg.attach(MIMEText(body, "html", "utf-8"))
+    return msg
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
@@ -301,14 +393,26 @@ def main() -> int:
         logger.exception("Дипломи листом: не вдалося прочитати записи")
         done_rows = []
     diplomas = [r for r in done_rows if needs_diploma(r)]
-    logger.info("Чекають на запрошення: %d, на диплом: %d", len(todo), len(diplomas))
-    if not todo and not diplomas:
+    try:
+        fb_rows = (client.table("olimpiada_entries")
+                   .select("id, parent_email, child_name, finished_at, diploma_sent_at, feedback_sent_at, wfp_last_status, source")
+                   .not_.is_("diploma_sent_at", "null").execute().data or [])
+        feedback = feedback_targets(fb_rows)
+    except Exception:
+        # Колонки feedback_sent_at ще немає — решта листів від цього не страждає.
+        logger.exception("Лист-питання: не вдалося прочитати записи")
+        feedback = []
+    logger.info("Чекають на запрошення: %d, на диплом: %d, на лист-питання: %d",
+                len(todo), len(diplomas), len(feedback))
+    if not todo and not diplomas and not feedback:
         return 0
     if args.dry_run:
         for r in todo:
             logger.info("dry-run запрошення: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
         for r in diplomas:
             logger.info("dry-run диплом: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
+        for r in feedback:
+            logger.info("dry-run лист-питання: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
         return 0
     if not PASSWORD:
         logger.error("DITYAM_GMAIL_APP_PASSWORD не задано — листи не надіслано")
@@ -343,6 +447,23 @@ def main() -> int:
             except Exception:
                 failed += 1
                 logger.exception("Не вдалося надіслати диплом: %s → %s", short_id(r.get("id")), mask_email(r.get("parent_email")))
+        for r in feedback:
+            email = str(r.get("parent_email") or "").strip()
+            # «Бронюємо» адресу: усі заявки на неї, де листа ще не було. Якщо
+            # паралельний прогін уже забронював — нічого не оновиться.
+            claimed = (client.table("olimpiada_entries").update(
+                {"feedback_sent_at": datetime.now(timezone.utc).isoformat()}
+            ).eq("parent_email", r["parent_email"]).is_("feedback_sent_at", "null").execute().data or [])
+            if not claimed:
+                continue
+            try:
+                smtp.sendmail(FROM, [email], make_feedback_email(r).as_string())
+                logger.info("Лист-питання надіслано: %s → %s", short_id(r.get("id")), mask_email(email))
+            except Exception:
+                failed += 1
+                logger.exception("Не вдалося надіслати лист-питання: %s", mask_email(email))
+                client.table("olimpiada_entries").update({"feedback_sent_at": None}).eq(
+                    "parent_email", r["parent_email"]).execute()
     return 1 if failed else 0
 
 
