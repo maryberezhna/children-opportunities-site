@@ -52,9 +52,9 @@ const STEPS = [
   ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір, сертифікат і публікація.'],
 ];
 const COVERS = [
-  { theme: 'pink', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
-  { theme: 'lavender', title: 'Блиск', score: '18/25', name: 'Вероніка', age: 12, word: 'Дизайнерка', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'bomber', shoes: 'block', acc: 'headphones', f: { base: 'sequin', outer: 'metal', shoes: '#161616', acc: '#ffffff', legs: '#161616', top: 'tee', bottom: 'tartan', cover: 'polka' } } },
-  { theme: 'blue', title: 'Стрітвір', score: '24/25', name: 'Марко', age: 13, word: 'Дизайнер', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: 'knit', legs: '#161616', base: 'polka', cover: 'breton' } } },
+  { theme: 'pink', motto: 'Сміливість\u00A0— головний тренд сезону', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
+  { theme: 'lavender', motto: 'Колір\u00A0— це настрій, який видно', title: 'Блиск', score: '18/25', name: 'Вероніка', age: 12, word: 'Дизайнерка', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'bomber', shoes: 'block', acc: 'headphones', f: { base: 'sequin', outer: 'metal', shoes: '#161616', acc: '#ffffff', legs: '#161616', top: 'tee', bottom: 'tartan', cover: 'polka' } } },
+  { theme: 'blue', motto: 'Мій стиль\u00A0— мої правила', title: 'Стрітвір', score: '24/25', name: 'Марко', age: 13, word: 'Дизайнер', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: 'knit', legs: '#161616', base: 'polka', cover: 'breton' } } },
 ];
 const OVERSIZE_LOOK = {
   base: 'set', top: 'oversize', bottom: 'skirt', outer: 'none', shoes: 'sneak', acc: 'none',
@@ -218,7 +218,7 @@ export default function ModnyiKodPage() {
 
           <h2 className="mkT-hand ink mkT-gap">Обкладинка, яку хочеться повісити на стіну</h2>
           <p className="mkT-text">Як у справжньому модному журналі: твій лук, назва, речі з образу, імʼя й бали — на обкладинці dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
-          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} example /></li>)}</ul>
+          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} motto={c.motto} example /></li>)}</ul>
           <SewButton className="mkT-doodle d-bt" />
         </section>
 
