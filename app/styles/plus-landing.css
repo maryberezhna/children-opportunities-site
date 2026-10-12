@@ -272,14 +272,17 @@
 }
 
 /* Флоу підписки (PlusFlowDemo): кроки ліворуч, «екран» праворуч; на
-   вузьких — перемикач, екран, а кроки під ним. */
+   вузьких — перемикач, екран, а кроки під ним.
+   Кнопка паузи — окремим рядком над ОБОМА колонками, а кроки й екран
+   тягнуться на однакову висоту: верх і низ на одній лінії (12.10.2026,
+   Марія: «не вирівняно», «що тут по висоті»). */
 .pl-fd {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
-  grid-template-areas: 'bar screen' 'steps screen';
+  grid-template-areas: 'bar bar' 'steps screen';
   grid-template-rows: auto 1fr;
-  gap: 16px 28px;
-  align-items: start;
+  gap: 12px 28px;
+  align-items: stretch;
 }
 
 /* Лише кнопка паузи: вкладки «Telegram / Імейл» прибрано 15.09.2026. */
@@ -358,9 +361,11 @@
   border-radius: 18px;
   border: 1px solid var(--v2-line);
   background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
 }
 
-.pl-fd-chat { min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; }
+.pl-fd-chat { flex: 1; min-height: 400px; display: flex; flex-direction: column; justify-content: flex-end; }
 
 .pl-fd-msg { animation: pl-fd-in 0.45s ease both; }
 
