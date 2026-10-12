@@ -9,9 +9,11 @@ import { useEffect, useRef, useState } from 'react';
  * Кроки названі, а не пронумеровані в коді: 20.09.2026 попереду додався крок
  * «Заповнюєте анкету», і всі порівняння з числами довелось би зсувати.
  *
- * Кроки перемикаються самі, лише коли блок видно, курсор чи фокус не всередині
- * і людина не просила менше руху. Клік по кроку зупиняє автоплей — людина
- * хоче роздивитись. Прогрес рахуємо самі, а не CSS-анімацією: так смужка
+ * Кроки перемикаються самі, щойно блок видно, якщо людина не просила менше
+ * руху. Клік по кроку чи кнопка паузи зупиняє автоплей — людина хоче
+ * роздивитись. Курсор над блоком показ НЕ зупиняє (12.10.2026, Марія: «чому
+ * воно не автопрограється одразу»): миша просто лежала над екраном, і демо
+ * стояло; а після «▶» фокус лишався на кнопці й теж тримав паузу. Прогрес рахуємо самі, а не CSS-анімацією: так смужка
  * стоїть разом із таймером, коли автоплей на паузі.
  */
 
@@ -27,17 +29,16 @@ export default function PlusFlowDemo({ f }) {
   const [elapsed, setElapsed] = useState(0);
   const [auto, setAuto] = useState(true);
   const [visible, setVisible] = useState(false);
-  const [hold, setHold] = useState(false);
   const [reduce, setReduce] = useState(false);
   const ref = useRef(null);
 
   const last = f.steps.length - 1;
   const dur = step === last ? LAST_STEP_MS : STEP_MS;
-  const running = auto && visible && !hold && !reduce;
+  const running = auto && visible && !reduce;
 
   useEffect(() => {
     setReduce(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.35 });
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting), { threshold: 0.2 });
     io.observe(ref.current);
     return () => io.disconnect();
   }, []);
@@ -60,10 +61,6 @@ export default function PlusFlowDemo({ f }) {
     <div
       ref={ref}
       className="pl-fd"
-      onMouseEnter={() => setHold(true)}
-      onMouseLeave={() => setHold(false)}
-      onFocus={() => setHold(true)}
-      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget)) setHold(false); }}
     >
       {!reduce && (
         <div className="pl-fd-bar">
