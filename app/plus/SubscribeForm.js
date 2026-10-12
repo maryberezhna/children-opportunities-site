@@ -19,12 +19,17 @@ const L = {
     fine: 'Жодного спаму: одне повідомлення в Telegram про запуск і знижку для перших.',
     openCta: '✈️ Оформити Dityam+ у Telegram',
     openFine: 'Спершу кілька питань про дитину, потім оплата — усе в боті, за кілька хвилин.',
+    // Ціна біля кнопки (Марія, 12.10.2026: «додай тут ціну»).
+    priceFirst: (p) => `Перший місяць — ${p.first} грн`,
+    priceThen: (p) => `далі ${p.month} грн/міс або ${p.half} грн за пів року · скасувати можна будь-коли`,
   },
   en: {
     telegram: '✈️ Join the list through Telegram — one tap',
     fine: 'No spam: one Telegram message about the launch and the early-bird discount.',
     openCta: '✈️ Get Dityam+ on Telegram',
     openFine: 'A few questions about your child first, then payment — all in the bot, in a few minutes.',
+    priceFirst: (p) => `First month — UAH ${p.first}`,
+    priceThen: (p) => `then UAH ${p.month}/month or UAH ${p.half} for 6 months · cancel anytime`,
   },
 };
 
@@ -34,13 +39,19 @@ const button = {
   fontSize: 16, fontWeight: 700, textDecoration: 'none',
 };
 
-export default function SubscribeForm({ lang = 'uk' }) {
+export default function SubscribeForm({ lang = 'uk', prices = null }) {
   const t = L[lang] || L.uk;
 
   // Продаж відкрито (lib/plus.js) — замість списку очікування одна кнопка в бот.
   if (PLUS_SALES_OPEN) {
     return (
       <div style={{ marginTop: 26 }}>
+        {prices ? (
+          <div style={{ textAlign: 'center', margin: '0 0 18px' }}>
+            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>{t.priceFirst(prices)}</div>
+            <div style={{ marginTop: 6, fontSize: 14, color: C.muted, lineHeight: 1.5 }}>{t.priceThen(prices)}</div>
+          </div>
+        ) : null}
         <a
           href={plusFromUrl(`plus_form_${lang}`)}
           style={button}
