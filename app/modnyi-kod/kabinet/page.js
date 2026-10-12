@@ -11,6 +11,7 @@ import Studio from '../Studio';
 import Runner from './Runner';
 import RepayButton from './RepayButton';
 import PrintBtn from './PrintBtn';
+import Practice from './Practice';
 
 // Кабінет учасника «Модного коду» (посилання з листа, секретний токен):
 // оплата → тест 25 хв → студія образу → обкладинка з балами, розбір, сертифікат.
@@ -77,6 +78,7 @@ export default async function Cabinet({ searchParams }) {
         </div>
       </div>
     </div>
+    {row.source === 'dityam_plus' ? <section className="mkK-review"><h2 className="mkT-hand ink">Тренування</h2><Practice token={row.token} /></section> : null}
     {missed.length ? (
       <section className="mkK-review">
         <h2 className="mkT-hand ink">Що ще варто дізнатися</h2>

@@ -25,6 +25,7 @@ import {
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
+import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
 import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
@@ -152,7 +153,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
 
 // Команди підписника в меню «/» (їхній перелік реєструє
 // scripts/set-bot-commands.mjs — тримати списки однаковими).
-const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile', 'freq']);
+const SUB_COMMANDS = new Set(['new', 'child', 'form', 'profile', 'freq', 'olymp']);
 // Анкету заповнюють до оплати, тож ці три працюють і без підписки — після
 // згоди на обробку даних (анкета збирає й чутливі відповіді).
 const PRE_PAY_COMMANDS = new Set(['child', 'form', 'profile']);
@@ -160,6 +161,7 @@ const PRE_PAY_COMMANDS = new Set(['child', 'form', 'profile']);
 const COMMANDS_TEXT = '🧡 <b>Команди Dityam+</b>\n\n'
   + '/start — головне меню\n'
   + '/new — свіжі можливості під профіль дитини\n'
+  + '/olymp — наші олімпіади («Модний код» у підписці)\n'
   + '/child — додати ще одну дитину\n'
   + '/form — заповнити анкету заново\n'
   + '/freq — як часто надсилати добірку\n'
@@ -172,6 +174,8 @@ async function sendMainMenu(bot, chatId, sub) {
   await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
     inline_keyboard: [
       [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
+      // Наші олімпіади — у підписці (12.10.2026).
+      [{ text: '🏆 Наші олімпіади', callback_data: 'menu:olymp' }],
       [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
       [{ text: '⏰ Як часто писати', callback_data: 'menu:freq' }],
@@ -574,6 +578,9 @@ export async function POST(request) {
     const handle = msg.from?.username ? `@${msg.from.username}` : null;
     const text = msg.text.trim();
 
+    // Імʼя дитини для «Модного коду» — відповідь на підказку бота.
+    if (msg.reply_to_message && await handleMkReply(bot, msg)) return new Response('ok');
+
     if (/^\/stop\b/i.test(text)) {
       const { data: sub } = await supabase.from('digest_subscribers')
         .select('id, wfp_order_reference').eq('telegram_chat_id', chatId).maybeSingle();
@@ -678,6 +685,7 @@ export async function POST(request) {
         return new Response('ok');
       }
       if (cmd === 'new') await sendLatest(bot, supabase, sub, chatId);
+      else if (cmd === 'olymp') await sendOlympiads(bot, chatId);
       else if (cmd === 'freq') await beginFreq(bot, supabase, chatId);
       else if (cmd === 'child') await beginAddChild(bot, supabase, chatId);
       else if (cmd === 'form') await beginFlow(bot, supabase, chatId, handle);
@@ -808,6 +816,9 @@ export async function POST(request) {
       { force_reply: true, input_field_placeholder: 'Ваш промокод' });
     return new Response('ok');
   }
+
+  // «Наші олімпіади» → «Модний код» (12.10.2026).
+  if (await handleMkCallback(bot, cbq)) return new Response('ok');
 
   // «Почати →» (до 09.10.2026 — «✅ Погоджуюсь») — фіксуємо згоду й ведемо далі тим самим шляхом, що /start.
   if (cbq.data === 'consent:yes') {
@@ -984,6 +995,7 @@ export async function POST(request) {
     if (action === 'form') await beginFlow(bot, supabase, chatId, null);
     else if (action === 'addchild') await beginAddChild(bot, supabase, chatId);
     else if (action === 'latest') await sendLatest(bot, supabase, sub, chatId);
+    else if (action === 'olymp') await sendOlympiads(bot, chatId);
     else if (action === 'freq') await beginFreq(bot, supabase, chatId);
     else if (action === 'remind') {
       const on = await toggleReminders(supabase, chatId);

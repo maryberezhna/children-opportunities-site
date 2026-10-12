@@ -69,7 +69,7 @@ test('бренд і фон', () => {
   for (const f of ['app/modnyi-kod/page.js', 'app/modnyi-kod/studiya/page.js', 'app/modnyi-kod/DeskCollage.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/Waitlist.js', 'lib/modnyi-kod.js', 'lib/modnyi-kod-looks.js']) {
     const t = read(f);
     assert.doesNotMatch(t, /DITYAM/, f);
-    assert.doesNotMatch(t, /Dityam(?!\.com\.ua|\+)/, f);
+    assert.doesNotMatch(t, /Dityam(?!\.com\.ua|\+|PlusBot)/, f);
   }
   // Ніколи не бежевий фон (memory: dityam-no-beige-background).
   assert.doesNotMatch(read('app/styles/modnyi-kod.css'), /#f6efe4|#fbf8f2|#fffdf7|#f4efe7|#fff4e8/i);
@@ -142,4 +142,22 @@ test('олімпіада: відповідей немає в коді, варі�
   const server = read('lib/modnyi-kod-server.js');
   for (const e of ["'mk_paid'", 'notifyAdmin(']) assert.ok(server.includes(e), e);
   for (const f of ['app/api/modnyi-kod/start/route.js', 'app/api/modnyi-kod/submit/route.js', 'app/api/modnyi-kod/look/route.js']) assert.match(read(f), /serverEvent\(/, f);
+});
+
+test('Dityam+: олімпіади в меню бота, реєстрація без оплати, тренування без ліміту', async () => {
+  const bot = read('app/api/telegram/plus/route.js');
+  assert.match(bot, /callback_data: 'menu:olymp'/);
+  assert.match(bot, /handleMkCallback\(bot, cbq\)/);
+  assert.match(bot, /handleMkReply\(bot, msg\)/);
+  const M = await import('../lib/modnyi-kod.js');
+  assert.equal(M.ageFromPrompt(`${M.MK_NAME_PROMPT} (12 років)`), 12);
+  assert.equal(M.ageFromPrompt('інше'), null);
+  assert.equal(M.cleanChildName('  Соломія Коваль '), 'Соломія');
+  const srv = read('lib/modnyi-kod-server.js');
+  assert.match(srv, /source: 'dityam_plus'/);
+  const pr = read('app/api/modnyi-kod/practice/route.js');
+  assert.match(pr, /plusActive\(/);
+  // Тренування не чіпає офіційних балів: оновлюємо лише лічильник.
+  assert.match(pr, /updateEntry\(db, b\.t, \{ practice_count:/);
+  assert.doesNotMatch(pr, /updateEntry\([^)]*\bscore\b/);
 });

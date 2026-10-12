@@ -449,3 +449,5 @@
   .mkK header, .mkK footer, .mkK .mk-kick, .mkK h1, .mkK .mkT-text, .mkK .mk-btn-y, .mkK-review, .mkK-cert { display: none !important; }
   .mkK-grid { display: block; } .mkK-cover .vc { width: 190mm; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+.mkP { display: grid; gap: 10px; justify-items: start; }
+.mkT-plusnote { grid-column: 1 / -1; font-size: .9rem; margin: 0; }
