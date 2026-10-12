@@ -192,7 +192,9 @@ test('замість подарункового місяця — Dityam+ за 1 
   assert.match(server, /if \(OLIMP_GIFT && !paid\.plus_token\)/);
   const result = read('app/olimpiada/test/page.js');
   assert.match(result, /start=from_olimpiada/);
-  assert.match(result, /Спробувати за \{PRICE_FIRST\} грн/);
+  assert.match(result, /Спробувати Dityam\+ за \{PRICE_FIRST\} грн/);
+  // Марія, 12.10.2026: ціна прямо — «на місяць за 1 грн замість 99 грн».
+  assert.match(result, /на місяць за \{PRICE_FIRST\} грн замість \{PRICE\} грн/);
   for (const f of ['app/olimpiada/page.js', 'app/OlimpPromo.js', 'app/OlimpPopup.js', 'app/llms.txt/route.js', 'lib/olimpiada.js']) {
     assert.doesNotMatch(read(f), /giftDays\} днів Dityam\+|у подарунок кожному|місяць Dityam\+ і призи/, f);
   }
