@@ -200,6 +200,8 @@ p.ol-hand { margin-bottom: 10px; }
 .ol-typo-fix { min-height: 24px; margin: 0; padding: 0 2px; border: 0; background: none; color: #c8501a; font: inherit; font-size: 14px; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .ol-typo-fix:hover { text-decoration-thickness: 2px; }
 .ol-typo-fix:focus-visible { outline: 3px solid #ff5fa2; outline-offset: 2px; border-radius: 4px; }
+.ol-form-note { margin: 0; font-size: 14px; line-height: 1.5; color: #2c4a9a; text-align: center; }
+.ol-form-note a { color: var(--ol-blue-deep); font-weight: 700; }
 .ol-error { margin: 0; padding: 10px 14px; border-radius: 14px; background: #ffe3e3; color: #b3261e; font-size: 14px; font-weight: 700; }
 .ol-ok { margin: 0; padding: 14px 16px; border-radius: 16px; background: #dcf5e7; color: #14532d; font-size: 16px; font-weight: 700; }
 .ol-resume { display: block; padding: 12px 16px; border-radius: 16px; background: #fff4d6; border: 2px dashed var(--ol-orange); color: var(--ol-navy); font-size: 16px; font-weight: 700; text-decoration: none; }
