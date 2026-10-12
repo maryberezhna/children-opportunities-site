@@ -28,8 +28,10 @@ export async function POST(request) {
   const parsed = parseContact(str(b.contact, 200));
   const url = str(b.url, 500);
   const page = str(b.page, 300);
-  // Дозвіл на публікацію має сенс лише для історії; без нього історію не публікуємо.
-  const publishConsent = type === 'story' && b.publish_consent === true;
+  // Дозвіл на публікацію має сенс лише для історії (імʼя під історією) і для
+  // амбасадора (імʼя та місто на /ambasadory); без нього нічого не публікуємо.
+  const consentType = type === 'story' || type === 'ambassador';
+  const publishConsent = consentType && b.publish_consent === true;
 
   if (message.length < 10) {
     return Response.json({ ok: false, error: 'short' }, { status: 400 });
@@ -69,6 +71,7 @@ export async function POST(request) {
       esc(message).slice(0, 1200),
       url ? `\n🔗 ${esc(url)}` : null,
       type === 'story' ? (publishConsent ? '\n✅ Можна опублікувати з іменем' : '\n🔒 Публікувати не можна') : null,
+      type === 'ambassador' ? (publishConsent ? '\n✅ Можна вказати імʼя та місто на сторінці амбасадорів' : '\n🔒 Імʼя на сайті не показувати') : null,
       `\n👤 ${[name ? esc(name) : null, `<a href="${esc(contactHref(parsed))}">${esc(contact)}</a>`].filter(Boolean).join(' · ')}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',

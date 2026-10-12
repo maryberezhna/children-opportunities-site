@@ -97,6 +97,8 @@ export default async function sitemap() {
     { url: `${SITE_URL}/erasmus`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/olimpiady`, changeFrequency: 'weekly', priority: 0.8 },
     { url: `${SITE_URL}/stem-partnery`, changeFrequency: 'weekly', priority: 0.6 },
+    // Амбасадори — для батьків і педагогів (12.10.2026), лише українською.
+    { url: `${SITE_URL}/ambasadory`, changeFrequency: 'monthly', priority: 0.5 },
     // Онлайн-олімпіада — у карті сайту лише після запуску продажу.
     ...(OLIMP_OPEN || OLIMP_PUBLIC ? [{ url: `${SITE_URL}/olimpiada`, changeFrequency: 'weekly', priority: 0.7 }] : []),
     // «Модний код» — безкоштовна онлайн-студія образу й олімпіада з моди (12.10.2026).
