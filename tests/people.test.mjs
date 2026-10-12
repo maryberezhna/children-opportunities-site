@@ -102,3 +102,22 @@ test('адмінка: у меню рівно 3 вкладки, старі адр
   for (const h of ['Хто', 'Коли', 'Чим скористався', 'Чи купила']) assert.ok(page.includes(`>${h}</th>`), h);
   assert.doesNotMatch(page, /Dityam\+ —/);
 });
+
+// 12.10.2026, Марія: «чому тут нема посилань на сторінки» — у «Користувачах»
+// людина веде в Telegram, олімпіада — на сторінку результату, джерело — на сторінку сайту.
+test('люди: посилання на Telegram, результат олімпіади й сторінку-джерело', async () => {
+  const { buildPeople, sourceHref } = await import('../lib/people.js');
+  const rows = buildPeople({
+    subs: [{ id: 1, status: 'active', telegram_handle: '@mama', telegram_chat_id: 7, created_at: '2026-10-10T10:00:00Z', source: 'plus_uk' }],
+    entries: [{ token: 'abc', child_name: 'Оля', parent_email: 'M@x.ua', created_at: '2026-10-09T10:00:00Z', finished_at: '2026-10-09T10:20:00Z' },
+              { token: 'nope', child_name: 'Петро', parent_email: 'm@x.ua', created_at: '2026-10-09T11:00:00Z' }],
+  });
+  const tg = rows.find((r) => r.key === 'tg:7');
+  assert.equal(tg.handle, 'mama');
+  const em = rows.find((r) => r.key === 'em:m@x.ua');
+  assert.deepEqual(em.results, [{ name: 'Оля', href: '/olimpiada/test?t=abc' }]);
+  assert.equal(sourceHref('plus_uk'), '/plus');
+  assert.equal(sourceHref('/konkursy'), '/konkursy');
+  assert.equal(sourceHref('instagram'), null);
+  assert.equal(sourceHref(null), null);
+});
