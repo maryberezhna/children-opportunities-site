@@ -47,15 +47,20 @@ test('збережений образ чиститься: лише відомі 
   assert.deepEqual(L.cleanLook(null), L.DEFAULT_LOOK);
 });
 
-test('безкоштовно студія, оплати поки немає — список очікування', () => {
+test('усе платне: 99 грн за все, студія — лише після оплати (поки — адмін)', () => {
   assert.equal(MK.price, 99);
   assert.equal(MK.open, false);
+  const page = read('app/modnyi-kod/page.js');
+  assert.doesNotMatch(page.replace(/^\/\/.*$/gm, ''), /безкоштовн/);
+  assert.match(page, /modnyi-kod-demo\.mp4/);
+  assert.match(page, /Waitlist/);
+  const studioPage = read('app/modnyi-kod/studiya/page.js');
+  assert.match(studioPage, /isAdmin\(/);
+  assert.match(studioPage, /index: false/);
   const studio = read('app/modnyi-kod/Studio.js');
-  assert.match(studio, /MK\.open \? null : <Waitlist \/>/);
   assert.doesNotMatch(studio, /wayforpay|\/api\/.*pay/i);
-  assert.match(read('app/api/modnyi-kod/waitlist/route.js'), /olimp: MK\.slug/);
-  // Назва образу обовʼязкова перед «Готово».
   assert.match(studio, /if \(!title\.trim\(\)\)/);
+  assert.match(read('app/api/modnyi-kod/waitlist/route.js'), /olimp: MK\.slug/);
 });
 
 // CLAUDE.md: назва лише «Dityam.com.ua» (на обкладинці — логотип «dityam.com.ua»).
@@ -71,8 +76,7 @@ test('бренд і фон', () => {
 
 test('сторінка олімпіади як /olimpiada, студія — окремо', () => {
   const page = read('app/modnyi-kod/page.js');
-  for (const h of ['Що отримує кожен учасник', 'Як це працює', 'Які бувають завдання', 'Обкладинка, яку хочеться', 'Взяти участь', 'Питання й відповіді', 'Напишіть нам', 'у соцмережах']) assert.ok(page.includes(h), h);
+  for (const h of ['Як це виглядає', 'Що отримує кожен учасник', 'Як це працює', 'Які бувають завдання', 'Обкладинка, яку хочеться', 'Взяти участь', 'Питання й відповіді', 'Напишіть нам', 'у соцмережах']) assert.ok(page.includes(h), h);
   assert.match(page, /<DeskCollage \/>/);
-  assert.match(page, /studiya/);
-  assert.match(read('app/modnyi-kod/studiya/page.js'), /<Studio \/>/);
+    assert.match(read('app/modnyi-kod/studiya/page.js'), /<Studio \/>/);
 });
