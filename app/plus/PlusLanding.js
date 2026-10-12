@@ -680,7 +680,7 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
           <h2 className="pl-h2">{t.joinTitle}</h2>
           <p className="pl-join-text">{t.joinText}</p>
           <div className="pl-form-card">
-            <SubscribeForm lang={lang} />
+            <SubscribeForm lang={lang} prices={{ first: PRICE_FIRST, month: PRICE, half: PRICE_HALF }} />
           </div>
         </div>
       </section>
