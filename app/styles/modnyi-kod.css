@@ -99,3 +99,71 @@
 .mk-faq details { border-bottom: 1px solid #eee; padding: 12px 0; }
 .mk-faq summary { font-weight: 800; cursor: pointer; }
 .mk-faq p { margin: 8px 0 0; color: #444; line-height: 1.55; }
+
+/* ═══ Сторінка олімпіади (як /olimpiada): перший екран «стіл дизайнера» ═══ */
+.mk-land { padding-bottom: 64px; }
+.mk-hero { background: #fff; background-image: linear-gradient(#efefef 1px, transparent 1px), linear-gradient(90deg, #efefef 1px, transparent 1px); background-size: 28px 28px; border-bottom: 1px solid #eee; overflow: hidden; }
+.mk-hero-grid { max-width: 1240px; margin: 0 auto; padding: 48px 20px 40px; display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); gap: 24px; align-items: center; }
+.mk-h1 { margin: 6px 0 16px; font-family: 'Lora Cover', Georgia, serif; font-weight: 600; font-size: clamp(2.6rem, 6vw, 4.6rem); line-height: 1.02; }
+.mk-h1 i { color: #7a3fbf; }
+.mk-lead { font-size: 1.125rem; line-height: 1.6; color: #333; margin: 0 0 22px; max-width: 560px; }
+.mk-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.mk-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 24px; border-radius: 999px; font-weight: 800; font-size: 1rem; text-decoration: none; }
+.mk-btn-main { background: #0e5449; color: #fff; }
+.mk-btn-main:hover { background: #0a3f37; }
+.mk-btn-ghost { border: 2px solid #0e5449; color: #0e5449; background: #fff; }
+.mk-btn-sm { min-height: 44px; padding: 0 18px; margin-top: 12px; font-size: .9rem; }
+.mk-trust { display: inline-block; margin-top: 18px; font-size: .9rem; font-weight: 700; color: #0e5449; text-decoration: none; }
+.mk-trust:hover { text-decoration: underline; }
+
+/* Колаж */
+.dk { position: relative; width: 100%; aspect-ratio: 1.12; }
+.dk > * { position: absolute; }
+.dk-chip { width: 13%; background: #fff; padding: .6% .6% 1%; box-shadow: 0 6px 14px rgba(0, 0, 0, .14); font-size: clamp(7px, .8vw, 10px); font-weight: 800; line-height: 1.15; }
+.dk-chip i { display: block; aspect-ratio: 1.1; margin-bottom: 6%; }
+.dk-sw { width: 16%; }
+.dk-sw svg { width: 100%; aspect-ratio: 1; display: block; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, .18)); }
+.dk-sw span { display: block; text-align: center; font-family: var(--font-caveat), cursive; font-weight: 700; font-size: clamp(13px, 1.4vw, 20px); color: #333; margin-top: 2px; }
+.dk-sheet { left: 33%; top: 5%; width: 30%; height: 84%; background: #fff; box-shadow: 0 14px 34px rgba(0, 0, 0, .14); padding: 2% 2% 1%; transform: rotate(-2deg); }
+.dk-cap { display: flex; justify-content: space-between; font-size: clamp(7px, .75vw, 10px); font-weight: 800; letter-spacing: .14em; color: #9a9a9a; text-transform: uppercase; }
+.dk-fig { display: block; height: 92%; width: auto; margin: 2% auto 0; }
+.dk-note { position: absolute; font-family: var(--font-caveat), cursive; font-weight: 700; font-size: clamp(14px, 1.7vw, 24px); color: #c8501a; white-space: nowrap; }
+.dk-tape { width: 12%; height: 4%; background: rgba(255, 226, 120, .78); z-index: 2; }
+.dk-form { left: 68%; top: 6%; width: 22%; height: 66%; }
+.dk-pins { left: 26%; top: 6%; width: 8%; }
+.dk-scissors { left: 66%; top: 74%; width: 13%; transform: rotate(-18deg); }
+.dk-spool { width: 5%; } .dk-spool.s1 { left: 88%; top: 66%; } .dk-spool.s2 { left: 94%; top: 64%; } .dk-spool.s3 { left: 91%; top: 76%; }
+.dk-tapemeasure { left: -2%; top: 86%; width: 104%; height: 12%; }
+
+/* Блоки сторінки */
+.mk-h2 { font-size: clamp(1.5rem, 3.6vw, 2rem); margin: 0 0 16px; }
+.mk-land .mk-wrap { margin-top: 56px; max-width: 1120px; }
+.mk-p { font-size: 1.0625rem; line-height: 1.6; color: #333; margin: 0 0 12px; max-width: 720px; }
+.mk-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.mk-card { border: 2px solid #161616; border-radius: 18px; padding: 18px; background: #fff; }
+.mk-card b { font-size: 1.8rem; } .mk-card h3 { margin: 8px 0 6px; font-size: 1.15rem; } .mk-card p { margin: 0; color: #444; line-height: 1.5; }
+.mk-steps { list-style: none; counter-reset: s; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.mk-steps li { counter-increment: s; border-radius: 18px; padding: 18px; background: #f3f0ff; }
+.mk-steps li::before { content: counter(s); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #7a3fbf; color: #fff; font-weight: 800; margin-bottom: 10px; }
+.mk-steps b { display: block; font-size: 1.1rem; margin-bottom: 4px; } .mk-steps span { color: #444; line-height: 1.5; }
+.mk-topics { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.mk-topic { border: 1px solid #eaeaea; border-radius: 16px; padding: 16px; }
+.mk-topic b { font-size: 1.5rem; } .mk-topic h3 { margin: 6px 0 4px; font-size: 1.05rem; } .mk-topic p { margin: 0; color: #555; line-height: 1.5; font-size: .95rem; }
+.mk-swrow { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.mk-swrow svg { width: 64px; height: 64px; border-radius: 10px; box-shadow: 0 3px 8px rgba(0, 0, 0, .15); }
+.mk-coversec { display: grid; grid-template-columns: 360px 1fr; gap: 40px; align-items: center; }
+.mk-cv-ex { width: 100%; }
+.mk-cv-who { position: absolute; left: 8cqw; bottom: 8cqw; background: rgba(255, 255, 255, .94); padding: 1.4cqw 2.4cqw; font-family: 'Lora Cover', Georgia, serif; font-style: italic; font-weight: 600; font-size: 6cqw; z-index: 3; }
+.mk-cv-who small { display: block; font-family: var(--font-sans), sans-serif; font-style: normal; font-weight: 800; font-size: 2.4cqw; letter-spacing: .2em; text-transform: uppercase; color: #c8102e; }
+.mk-cv-tag { position: absolute; top: 2.5cqw; right: 2.5cqw; z-index: 6; background: #161616; color: #fff; font-size: 2.8cqw; font-weight: 800; padding: .8cqw 2.4cqw; border-radius: 999px; }
+.mk-join-box { max-width: 560px; border-radius: 18px; padding: 18px; background: #161616; color: #fff; }
+.mk-join-box .mk-small { color: #ddd; }
+
+@media (max-width: 900px) {
+  .mk-hero-grid { grid-template-columns: 1fr; padding: 28px 16px 24px; }
+  .dk { margin-top: 8px; }
+  .mk-coversec { grid-template-columns: 1fr; }
+  .mk-cv-ex { max-width: 340px; margin: 0 auto; }
+  .mk-btn { width: 100%; }
+}
+.mk-kick a { color: inherit; }

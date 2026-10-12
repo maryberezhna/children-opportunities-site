@@ -37,7 +37,7 @@ function Thumb({ k, v, look }) {
   return <Svg viewBox={VIEW[k]} html={`<g filter="url(#mk-wob)">${shape[v](f)}</g>`} />;
 }
 
-const Swatch = ({ v }) => <Svg viewBox="0 0 10 10" html={`<rect width="10" height="10" fill="${fill(v)}"/>`} />;
+const Swatch = ({ v }) => <Svg viewBox="0 0 60 60" html={`<rect width="60" height="60" fill="${fill(v)}"/>`} />;
 
 export default function Studio() {
   const [look, setLook] = useState(DEFAULT_LOOK);
@@ -168,7 +168,7 @@ export default function Studio() {
         <div className="mk-cover-wrap" role="dialog" aria-label="Твоя обкладинка">
           <div className="mk-cover-grid">
             <div className="mk-cv">
-              <Svg viewBox="0 0 30 40" className="mk-cv-bg" html={`<rect width="30" height="40" fill="${fill(look.f.cover)}"/>`} />
+              <Svg viewBox="0 0 300 400" className="mk-cv-bg" html={`<rect width="300" height="400" fill="${fill(look.f.cover)}"/>`} />
               <div className="mk-cv-in" />
               <div className="mk-cv-logo">dityam.com.ua</div>
               <div className="mk-cv-fig"><Svg viewBox="0 0 200 440" html={lookSvg(look)} /></div>
