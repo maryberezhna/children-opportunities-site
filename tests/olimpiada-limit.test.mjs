@@ -33,3 +33,11 @@ test('сховище вміє рахувати заявки на пошту', ()
   const src = read('lib/olimpiada-server.js');
   assert.equal((src.match(/countByEmail\(email\)/g) || []).length, 2);
 });
+
+test('про ліміт попереджаємо заздалегідь — під кнопкою й у правилах', () => {
+  const form = read('app/olimpiada/EntryForm.js');
+  assert.match(form, /className="ol-form-note"/);
+  assert.match(form, /не більше \{OLIMP\.maxEntriesPerEmail\} разів/);
+  assert.ok(form.indexOf('ol-form-note') > form.indexOf("'Взяти участь безкоштовно'"));
+  assert.match(read('app/olimpiada/page.js'), /не більше \{OLIMP\.maxEntriesPerEmail\} разів/);
+});

@@ -8,7 +8,7 @@
 // Токен запису лишаємо в браузері: якщо людина закрила вкладку після оплати,
 // на цій сторінці зʼявиться «Продовжити» — листів із посиланням ми не шлемо.
 import { useEffect, useState } from 'react';
-import { validTeacherCode } from '@/lib/olimpiada';
+import { OLIMP, validTeacherCode } from '@/lib/olimpiada';
 import { useEmailTypo } from './EmailTypoHint';
 
 const KEY = 'olimp_entry';
@@ -135,6 +135,12 @@ export default function EntryForm({ open, channelUrl }) {
       <button type="submit" className="ol-btn ol-btn-main ol-btn-wide" disabled={state === 'sending'}>
         {state === 'sending' ? 'Відкриваємо…' : 'Взяти участь безкоштовно'}
       </button>
+      {/* Попередити заздалегідь, а не лише відмовою на 3-й заявці (Марія,
+          12.10.2026: «щоб не було несподіванкою»). */}
+      <p className="ol-form-note">
+        З однієї пошти олімпіаду можна пройти не більше {OLIMP.maxEntriesPerEmail} разів. Педагогам, які записують
+        клас, — <a href="#pedagogam">блок «Для педагогів»</a>.
+      </p>
     </form>
   );
 }
