@@ -6,6 +6,7 @@ import { lookSvg, DEFS } from '@/lib/modnyi-kod-looks';
 import { SIA_AWARD } from '@/lib/awards';
 import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
+import VogueCover from './VogueCover';
 import ContactForm from '../contacts/ContactForm';
 
 // «Модний код» — сторінка олімпіади з моди. Порядок і ритм — як /olimpiada
@@ -48,9 +49,9 @@ const STEPS = [
   ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір, сертифікат і публікація.'],
 ];
 const COVERS = [
-  { fabric: 'tartan', title: 'Осінь у місті', score: '21/25', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'boots', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
-  { fabric: 'polka', title: 'Блиск', score: '18/25', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'none', shoes: 'block', acc: 'headphones', f: { base: 'sequin', top: 'tee', bottom: 'tartan', shoes: '#ffffff', acc: '#d6336c', legs: '#f3d3b8', outer: 'hound', cover: 'polka' } } },
-  { fabric: 'breton', title: 'Стрітвір', score: '24/25', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'bomber', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: '#f5c518', legs: '#161616', base: 'polka', cover: 'breton' } } },
+  { theme: 'pink', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
+  { theme: 'lavender', title: 'Блиск', score: '18/25', name: 'Вероніка', age: 12, word: 'Дизайнерка', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'bomber', shoes: 'block', acc: 'headphones', f: { base: 'sequin', outer: 'metal', shoes: '#161616', acc: '#ffffff', legs: '#161616', top: 'tee', bottom: 'tartan', cover: 'polka' } } },
+  { theme: 'blue', title: 'Стрітвір', score: '24/25', name: 'Марко', age: 13, word: 'Дизайнер', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: 'knit', legs: '#161616', base: 'polka', cover: 'breton' } } },
 ];
 const OVERSIZE_LOOK = {
   base: 'set', top: 'oversize', bottom: 'skirt', outer: 'none', shoes: 'sneak', acc: 'none',
@@ -97,20 +98,6 @@ function Cta({ light = false, note }) {
     <div className="mkT-cta">
       <a href="#uchast" className="mk-btn-y">Взяти участь · {MK.price} грн</a>
       {note ? <span className={light ? 'on-dark' : ''}>{note}</span> : null}
-    </div>
-  );
-}
-
-function Cover({ c }) {
-  return (
-    <div className="mk-cv">
-      <svg className="mk-cv-bg" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" dangerouslySetInnerHTML={{ __html: `<rect width="300" height="400" fill="url(#${c.fabric})"/>` }} />
-      <div className="mk-cv-in" />
-      <div className="mk-cv-logo">dityam.com.ua</div>
-      <div className="mk-cv-fig"><svg viewBox="0 0 200 440" dangerouslySetInnerHTML={{ __html: lookSvg(c.look) }} /></div>
-      <div className="mk-cv-title">{c.title}</div>
-      <div className="mk-cv-badge">МОДНИЙ КОД<b>{c.score}</b></div>
-      <span className="mk-cv-tag">Приклад</span>
     </div>
   );
 }
@@ -226,8 +213,8 @@ export default function ModnyiKodPage() {
           <Cta note="У тесті — 25 таких завдань, від легких до хитрих" />
 
           <h2 className="mkT-hand ink mkT-gap">Обкладинка, яку хочеться повісити на стіну</h2>
-          <p className="mkT-text">Твій лук зі студії, назва, імʼя й бали — на обкладинці модного журналу dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
-          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.fabric}><Cover c={c} /></li>)}</ul>
+          <p className="mkT-text">Як у справжньому модному журналі: твій лук, назва, речі з образу, імʼя й бали — на обкладинці dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
+          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} example /></li>)}</ul>
           <SewButton className="mkT-doodle d-bt" />
         </section>
 

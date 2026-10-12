@@ -368,3 +368,36 @@
   .mkT-video { grid-template-columns: 1fr; gap: 24px; padding-top: 50px; padding-bottom: 50px; }
   .mkT-phone { width: 260px; }
 }
+
+/* ═══ Обкладинка у стилі Vogue (Марія, 12.10.2026: «супер») ═══ */
+@font-face { font-family: 'Lora Cover'; src: url('/fonts/Lora-SemiBold.ttf') format('truetype'); font-weight: 600; font-display: swap; }
+.vc { position: relative; aspect-ratio: 3 / 4; overflow: hidden; container-type: inline-size; box-shadow: 0 30px 60px rgba(0, 0, 0, .26);
+  background: radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255, 255, 255, .55), transparent 70%), var(--bg); color: #161616; }
+.vc::after { content: ''; position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, .18), transparent 35%, transparent 70%, rgba(255, 255, 255, .12)); pointer-events: none; z-index: 6; }
+.vc-small { display: block; font-family: var(--font-sans), sans-serif; font-weight: 700; font-size: 2.1cqw; letter-spacing: .22em; text-transform: uppercase; }
+.vc-top { position: absolute; top: 3.4cqw; left: 5cqw; right: 5cqw; display: flex; justify-content: space-between; z-index: 1; border-bottom: .25cqw solid #161616; padding-bottom: 1.2cqw; }
+.vc-mast { position: absolute; top: 7.5cqw; left: 0; right: 0; text-align: center; font-family: var(--font-caveat), cursive; font-style: italic; font-weight: 700; font-size: 18.5cqw; line-height: .82; z-index: 1; letter-spacing: -.02em; }
+.vc-floor { position: absolute; left: 30%; right: 30%; bottom: 13%; height: 3.2%; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .22), transparent 70%); z-index: 1; }
+.vc-fig { position: absolute; left: 0; right: 0; bottom: 14%; height: 75%; margin: 0 auto; display: block; z-index: 2; filter: drop-shadow(0 1.2cqw 1.6cqw rgba(0, 0, 0, .18)); }
+.vc-col { position: absolute; top: 44cqw; width: 24cqw; z-index: 3; font-family: 'Lora Cover', Georgia, serif; }
+.vc-col p { margin: 0 0 4.4cqw; font-size: 4.2cqw; line-height: 1.05; }
+.vc-col .vc-small { color: var(--acc); margin-bottom: 1cqw; font-size: 1.9cqw; }
+.vc-col i { font-size: 5.6cqw; }
+.vc-col b { font-weight: 600; font-size: 10.5cqw; letter-spacing: -.02em; color: var(--acc); display: block; line-height: .95; }
+.vc-col.l { left: 5cqw; } .vc-col.r { right: 5cqw; text-align: right; }
+.vc-inlook { font-style: italic; font-size: 3.6cqw !important; line-height: 1.2 !important; }
+.vc-motto { font-style: italic; font-size: 3.8cqw !important; line-height: 1.15 !important; border-top: .25cqw solid #161616; padding-top: 2cqw; }
+.vc-who { position: absolute; left: 5cqw; bottom: 5cqw; z-index: 5; font-family: 'Lora Cover', Georgia, serif; font-weight: 600; font-size: 9cqw; line-height: .95; letter-spacing: -.02em; }
+.vc-who em { font-weight: 400; font-style: italic; }
+.vc-who .vc-small { font-size: 2cqw; color: var(--acc); margin-bottom: 1.2cqw; letter-spacing: .22em; }
+.vc-bar { position: absolute; right: 5cqw; bottom: 5cqw; z-index: 4; background: #fff; padding: 1.1cqw 1.4cqw; text-align: center; }
+.vc-bar i { display: block; width: 14cqw; height: 6cqw; background: repeating-linear-gradient(90deg, #111 0 1.5px, #fff 1.5px 3px, #111 3px 4px, #fff 4px 6.5px); }
+.vc-bar span { display: block; font-size: 1.6cqw; font-weight: 700; margin-top: .5cqw; letter-spacing: .06em; }
+.vc-tag { position: absolute; top: 3cqw; right: 3cqw; z-index: 7; display: none; }
+.mkT-covers .vc { width: 100%; }
+.mk-cvthemes { display: flex; gap: 10px; margin: 6px 0 12px; }
+.mk-cvthemes button { width: 46px; height: 46px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; box-shadow: 0 2px 6px rgba(0, 0, 0, .15); }
+.mk-cvthemes button.on { border-color: #161616; }
+.mk-cover-grid .vc { width: min(100%, 420px); margin: 0 auto; }
+.mk-cv-wrap { position: relative; width: min(100%, 420px); margin: 0 auto; container-type: inline-size; }
+.mk-cv-wrap .mk-cv-wm { z-index: 8; }
