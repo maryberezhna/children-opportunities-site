@@ -7,6 +7,7 @@
 import { useEffect, useState } from 'react';
 import { validTeacherCode } from '@/lib/olimpiada';
 import { PLUS_BOT } from '@/lib/plus';
+import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 
 const TEACHER_KEY = 'olimp_teacher_ref';
 const TEACHER_TTL = 60 * 24 * 60 * 60 * 1000;
@@ -31,7 +32,10 @@ export default function TelegramJoin() {
   return (
     <div className="ol-tg-join">
       <a className="ol-btn ol-btn-main" href={href} target="_blank" rel="noopener"
-        onClick={() => { if (typeof window.gtag === 'function') window.gtag('event', 'olimpiada_tg_join', { teacher: code ? 1 : 0 }); }}>
+        onClick={() => {
+          sendSiteEvent(SITE_EVENTS.OLIMP_TG_CLICK, code ? 'teacher' : 'page');
+          if (typeof window.gtag === 'function') window.gtag('event', 'olimpiada_tg_join', { teacher: code ? 1 : 0 });
+        }}>
         Зареєструватися в Telegram
       </a>
       <ol className="ol-tg-steps">

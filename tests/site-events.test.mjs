@@ -74,6 +74,8 @@ test('поза браузером нічого не робимо', () => {
   assert.deepEqual(SITE_EVENT_NAMES, ['visit', 'plus_view', 'plus_click',
     'olimp_view', 'olimp_cta', 'olimp_top_click', 'olimp_popup_show', 'olimp_popup_more', 'olimp_popup_close', 'olimp_print_open', 'olimp_print_submit',
     'olimp_teacher_signup', 'olimp_email_typo_fixed',
+    // + реєстрація через Telegram (13.10.2026).
+    'olimp_tg_click',
     // + «Модний код» (12.10.2026): сторінка й форма.
     'mk_view', 'mk_cta']);
 });

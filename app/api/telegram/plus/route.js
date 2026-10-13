@@ -26,7 +26,7 @@ import {
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
-import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply } from '@/lib/olimpiada-bot';
+import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent } from '@/lib/olimpiada-bot';
 
 // Олімпіада з логіки через бот (13.10.2026): людина без підписки отримує рядок
 // digest_subscribers із джерелом «olimpiada» — перший дотик, і після тесту
@@ -637,6 +637,9 @@ export async function POST(request) {
       // Поки продаж закритий, людина лише стає в список — без анкети, оплати й
       // рядка в digest_subscribers. Коли продаж відкрито, та сама кнопка веде
       // далі звичайним шляхом /start.
+      // З диплома олімпіади в Dityam+ (кнопка «Спробувати Dityam+») — крок воронки.
+      if (startArg === 'from_olimpiada') await olEvent('olimp_plus_start');
+
       // Олімпіада з логіки з сайту: ?start=olimp[_<код педагога>] — без підписки (13.10.2026).
       const olArg = olStartArg(startArg);
       if (olArg) {

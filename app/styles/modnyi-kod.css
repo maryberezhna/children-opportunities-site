@@ -478,3 +478,50 @@ main.mkT + footer { margin-top: 0; }
 }
 .mkP { display: grid; gap: 10px; justify-items: start; }
 .mkT-plusnote { font-size: .95rem; padding: 14px 18px; border: 2px solid rgba(255, 255, 255, .35); border-radius: 16px; }
+
+/* ═══ Трішки руху на картинках (Марія, 13.10.2026: «додай тут трішки анімації
+   на картинках»). Лише translate/rotate/scale як окремі властивості — вони
+   складаються з наявними transform (поворотами в style), а не затирають їх.
+   Хто просив систему менше руху — усе статичне. ═══ */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes mk-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -7px; } }
+  @keyframes mk-sway { 0%, 100% { rotate: -1.4deg; } 50% { rotate: 1.4deg; } }
+  @keyframes mk-wiggle { 0%, 100% { rotate: 0deg; } 50% { rotate: 5deg; } }
+  @keyframes mk-pulse { 0%, 100% { scale: 1; } 50% { scale: 1.07; } }
+
+  /* Стіл дизайнера в першому екрані */
+  .dk-sw, .dk-chip { animation: mk-float 4.6s ease-in-out infinite; }
+  .dk-sw:nth-of-type(2n), .dk-chip:nth-of-type(2n) { animation-duration: 5.4s; animation-delay: -1.2s; }
+  .dk-sw:nth-of-type(3n), .dk-chip:nth-of-type(3n) { animation-duration: 6.2s; animation-delay: -2.6s; }
+  .dk-fig { transform-origin: 50% 100%; animation: mk-sway 5s ease-in-out infinite; }
+  .dk-scissors { animation: mk-wiggle 3.2s ease-in-out infinite; }
+  .dk-spool { animation: mk-wiggle 4s ease-in-out infinite; }
+  .dk-spool.s2 { animation-delay: -1.3s; } .dk-spool.s3 { animation-delay: -2.4s; }
+  .dk-note { animation: mk-pulse 3.6s ease-in-out infinite; }
+  .dk-form { transform-origin: 50% 100%; animation: mk-sway 7s ease-in-out infinite reverse; }
+
+  /* Обкладинки-приклади: «дихають» по черзі, під мишкою — піднімаються */
+  .mkT-covers .vc { animation: mk-float 5.5s ease-in-out infinite; transition: scale .3s ease, box-shadow .3s ease; }
+  .mkT-covers li:nth-child(2) .vc { animation-delay: -1.8s; }
+  .mkT-covers li:nth-child(3) .vc { animation-delay: -3.6s; }
+  .mkT-covers .vc:hover { scale: 1.03; box-shadow: 0 40px 70px rgba(0, 0, 0, .3); }
+  .mkT-covers .vc-fig { transform-origin: 50% 100%; animation: mk-sway 6s ease-in-out infinite; }
+
+  /* Зразки завдань і картки */
+  .mkT-q-pic { transition: scale .3s ease; }
+  .mkT-q:hover .mkT-q-pic { scale: 1.05; }
+  .mkT-samples .mkT-q:nth-child(2) .mkT-q-pic { transform-origin: 50% 100%; animation: mk-sway 5s ease-in-out infinite; }
+  /* scale, а не translate: translate тримає поява під час прокрутки (mk-rise). */
+  .mkT-card { transition: scale .25s ease; }
+  .mkT-card:hover { scale: 1.03; }
+  .mkT-doodle { animation: mk-wiggle 6s ease-in-out infinite; }
+
+  /* Поява під час прокрутки — там, де браузер уміє (Chrome, Edge); в інших
+     картинки просто на місці. */
+  @supports (animation-timeline: view()) {
+    @keyframes mk-rise { from { opacity: 0; translate: 0 40px; } to { opacity: 1; translate: 0 0; } }
+    .mkT-covers li, .mkT-q, .mkT-card {
+      animation: mk-rise linear both; animation-timeline: view(); animation-range: entry 0% cover 28%;
+    }
+  }
+}
