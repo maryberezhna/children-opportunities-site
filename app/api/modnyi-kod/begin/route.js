@@ -17,6 +17,8 @@ export async function POST(request) {
   if (!row) return json({ error: 'not_found' }, 404);
   if (!row.paid_at || row.refunded_at) return json({ error: 'unpaid' }, 402);
   if (row.finished_at) return json({ error: 'finished' }, 409);
-  if (!row.started_at) row = await updateEntry(db, t, { started_at: new Date().toISOString(), question_order: mkOrder(BANK, t) });
+  // Кожна нова спроба — новий порядок завдань і варіантів (13.10.2026).
+  const seed = Number(row.attempts) > 1 ? `${t}#${row.attempts}` : t;
+  if (!row.started_at) row = await updateEntry(db, t, { started_at: new Date().toISOString(), question_order: mkOrder(BANK, seed) });
   return json({ questions: mkPublicQuestions(BANK, row.question_order), deadline: mkDeadline(row.started_at).toISOString(), now: new Date().toISOString(), minutes: MK.minutes });
 }

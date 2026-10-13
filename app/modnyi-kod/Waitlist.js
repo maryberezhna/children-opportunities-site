@@ -30,7 +30,7 @@ export default function Waitlist() {
         <button type="submit" disabled={state === 'sending'}>{state === 'sending' ? '…' : 'Повідомити'}</button>
       </div>
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="mk-hp" aria-hidden="true" />
-      <label className="mk-check"><input type="checkbox" name="consent" /> <span>Я з батьків і згоден/згодна отримати 1 лист про старт олімпіади.</span></label>
+      <label className="mk-check"><input type="checkbox" name="consent" /> <span>Я мама, тато чи опікун дитини й погоджуюсь отримати 1 лист про старт олімпіади.</span></label>
       {error ? <p className="mk-err" role="alert">{error}</p> : null}
     </form>
   );

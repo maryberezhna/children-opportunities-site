@@ -60,6 +60,7 @@ const ADMIN_COMMANDS = [
 const PLUS_COMMANDS = [
   { command: 'start', description: '🧡 Головне меню' },
   { command: 'new', description: '🔎 Свіжі можливості під профіль дитини' },
+  { command: 'olymp', description: '🏆 Наші олімпіади: «Модний код» у підписці' },
   { command: 'child', description: '➕ Додати ще одну дитину' },
   { command: 'form', description: '✏️ Заповнити анкету заново' },
   { command: 'freq', description: '⏰ Як часто надсилати добірку' },

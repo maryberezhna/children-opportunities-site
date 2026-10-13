@@ -330,7 +330,9 @@
 .mkT-covers { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
 .mkT-covers li:nth-child(1) { transform: rotate(-1.5deg); } .mkT-covers li:nth-child(3) { transform: rotate(1.5deg); }
 .mkT-covers .mk-cv { width: 100%; animation: none; }
-.mkT-join { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; }
+.mkT-join { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+.mkT-join-txt { display: flex; flex-direction: column; gap: 18px; padding-top: 22px; }
+.mkT-join-txt > * { margin: 0; }
 .mkT-joinbox { background: #fff; color: #1a1a1a; border-radius: 22px; padding: 22px; box-shadow: 0 10px 0 rgba(0, 0, 0, .2); }
 .mkT-joinbox .mk-small { color: #444; }
 .mkT-joinbox .mk-wait-row input { border: 2px solid #e8e0ee; }
@@ -340,6 +342,10 @@
 .mkT-faq summary { font-weight: 800; cursor: pointer; color: var(--plum); font-size: 1.05rem; }
 .mkT-faq p { margin: 8px 0 0; color: #444; line-height: 1.55; }
 .mkT-contact { max-width: 760px; }
+/* Без порожнечі між формою звʼязку й футером (Марія, 13.10.2026: «це дивний відступ»). */
+.mkT > section:last-of-type { padding-bottom: 40px; }
+main.mkT + footer { margin-top: 0; }
+.mkT-contact > :last-child, .mkT-contact > :last-child > :last-child { margin-bottom: 0; }
 
 @media (max-width: 900px) {
   .mkT-hero { padding: 24px 0 50px; }
@@ -440,6 +446,8 @@
 .mkK-grid { display: grid; grid-template-columns: 420px 1fr; gap: 36px; align-items: start; margin-top: 10px; }
 .mkK-cover .vc { width: 100%; }
 .mkS { margin-top: 26px; }
+.mkK-retake { margin-top: 18px; }
+.mkK-last { margin: 14px 0 0; font-size: .95rem; }
 .mkS-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
 .mkS-btn { display: inline-flex; align-items: center; padding: 10px 18px; border: 2px solid var(--plum); border-radius: 999px; background: #fff; color: var(--plum); font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
 .mkS-btn:hover { background: #f3e8f8; }
@@ -469,4 +477,4 @@
   html.mk-printing #mk-print .vc { width: 200mm; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .mkP { display: grid; gap: 10px; justify-items: start; }
-.mkT-plusnote { grid-column: 1 / -1; font-size: .9rem; margin: 0; }
+.mkT-plusnote { font-size: .95rem; padding: 14px 18px; border: 2px solid rgba(255, 255, 255, .35); border-radius: 16px; }
