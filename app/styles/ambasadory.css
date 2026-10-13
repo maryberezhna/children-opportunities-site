@@ -241,6 +241,8 @@
   gap: 12px;
 }
 
+.amb-benefits-note { margin: 20px 0 0; max-width: 680px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink); }
+
 /* Шапочка кольором — ті самі тони, що в картках можливостей (cards.css). */
 .amb-benefit[data-tone="compete"] { --tone-bg: var(--purple-1); --tone-ink: var(--chip-ink-purple); }
 .amb-benefit[data-tone="money"] { --tone-bg: var(--warm-2); --tone-ink: var(--chip-ink-amber); }
