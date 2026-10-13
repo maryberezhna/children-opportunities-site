@@ -198,7 +198,7 @@ export default function Studio({ token = null, score = null, name = null, age = 
                   <button type="button" className="mk-btn-y" disabled={saving} onClick={save}>{saving ? 'Зберігаємо…' : 'Готово — це моя обкладинка'}</button>
                   {saveErr ? <p className="mk-small" style={{ color: '#a11b1b' }}>{saveErr}</p> : null}
                 </>
-              ) : <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4, і ми опублікуємо її на сайті й у соцмережах.</p>}
+              ) : <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4. А найкраща обкладинка місяця стане «Обкладинкою місяця».</p>}
               <button type="button" className="mk-back" onClick={() => setCover(false)}>← Змінити образ</button>
             </div>
           </div>

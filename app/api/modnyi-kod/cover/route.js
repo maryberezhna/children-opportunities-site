@@ -11,6 +11,7 @@ import { validMkToken, MK } from '@/lib/modnyi-kod';
 import { DEFS, lookSvg, cleanLook } from '@/lib/modnyi-kod-looks';
 import { mkDb, entryByToken } from '@/lib/modnyi-kod-server';
 import { COVER_THEMES, inLook, mottoFor } from '@/app/modnyi-kod/VogueCover';
+import { monthName } from '@/lib/olimpiada';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,6 +57,11 @@ export async function GET(req) {
         <div style={{ position: 'absolute', left: '30%', right: '30%', bottom: '11.4%', height: '3.2%', borderRadius: '50%', backgroundImage: 'radial-gradient(rgba(0,0,0,.22), rgba(0,0,0,0) 70%)' }} />
         <img src={`data:image/svg+xml;base64,${Buffer.from(fig).toString('base64')}`} width={figW} height={figH}
           style={{ position: 'absolute', left: Math.round((W - figW) / 2), bottom: Math.round(H * 0.124) }} />
+        {row.winner_month ? (
+          <div style={{ position: 'absolute', left: cq(5), top: cq(31), display: 'flex', backgroundColor: theme.acc, color: '#fff', fontFamily: 'Manrope', fontSize: cq(2.3), letterSpacing: '0.08em', textTransform: 'uppercase', padding: `${cq(1)}px ${cq(2.2)}px`, borderRadius: 99 }}>
+            {`Обкладинка місяця · ${monthName(row.winner_month)} ${row.winner_month.slice(0, 4)}`}
+          </div>
+        ) : null}
         <div style={{ position: 'absolute', top: cq(44), left: cq(5), width: cq(24), display: 'flex', flexDirection: 'column' }}>
           <span style={kick}>Лук сезону</span>
           <span style={{ fontSize: cq(5.6), lineHeight: 1.05, marginBottom: cq(4.4) }}>{`«${title}»`}</span>

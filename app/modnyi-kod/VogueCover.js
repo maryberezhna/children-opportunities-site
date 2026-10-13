@@ -39,7 +39,9 @@ export function inLook(look) {
   return keys.map(([k, v]) => COVER_NAMES[v] || String(PIECES[k].opts[v] || '').toLowerCase()).filter(Boolean).join(' · ');
 }
 
-export default function VogueCover({ look, theme = 'pink', title, score = '?/25', name, age, word = '', example = false, className = '', motto = null }) {
+// winner — підпис «Обкладинка місяця · жовтень 2026» для переможця місяця
+// (13.10.2026, «щомісяця визначаємо переможця»; титул — приз).
+export default function VogueCover({ look, theme = 'pink', title, score = '?/25', name, age, word = '', example = false, className = '', motto = null, winner = null }) {
   const t = COVER_THEMES[theme] || COVER_THEMES.pink;
   return (
     <div className={`vc ${className}`} style={{ '--bg': t.bg, '--acc': t.acc }}>
@@ -61,6 +63,7 @@ export default function VogueCover({ look, theme = 'pink', title, score = '?/25'
       </div>
       <div className="vc-bar"><i /><span>№1 · осінь 2026</span></div>
       {example ? <span className="vc-tag">Приклад</span> : null}
+      {winner ? <span className="vc-win">Обкладинка місяця · {winner}</span> : null}
     </div>
   );
 }

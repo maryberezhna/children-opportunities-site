@@ -5,6 +5,7 @@ import { BANK } from '@/content/modnyi-kod/bank';
 import { HINTS } from '@/content/modnyi-kod/hints';
 import { MK, validMkToken } from '@/lib/modnyi-kod';
 import { DEFS, cleanLook } from '@/lib/modnyi-kod-looks';
+import { monthName } from '@/lib/olimpiada';
 import { mkDb, entryByToken, syncPayment } from '@/lib/modnyi-kod-server';
 import VogueCover from '../VogueCover';
 import Studio from '../Studio';
@@ -72,9 +73,9 @@ export default async function Cabinet({ searchParams }) {
   return shell(<>
     <h1 className="mkT-hand ink">{row.child_name}, твоя обкладинка готова!</h1>
     <div className="mkK-grid">
-      <div className="mkK-cover"><VogueCover look={cleanLook(row.look)} theme={row.cover_theme || 'pink'} title={row.look_title} score={score} name={row.child_name} age={row.child_age} word={wordCap(row.designer_word)} /></div>
+      <div className="mkK-cover"><VogueCover look={cleanLook(row.look)} theme={row.cover_theme || 'pink'} title={row.look_title} score={score} name={row.child_name} age={row.child_age} word={wordCap(row.designer_word)} winner={row.winner_month ? `${monthName(row.winner_month)} ${row.winner_month.slice(0, 4)}` : null} /></div>
       <div>
-        <p className="mkT-text">Модний код: <b>{score}</b>. Обкладинку можна роздрукувати на А4 чи зберегти PDF. Після перевірки назви ми опублікуємо її на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком.</p>
+        <p className="mkT-text">Модний код: <b>{score}</b>. Обкладинку можна роздрукувати на А4 чи зберегти PDF. Щомісяця журі обирає «Обкладинку місяця» серед найвищих балів — її публікуємо на сайті й у соцмережах Dityam.com.ua, лише з імʼям і віком.</p>
         <PrintBtn />
         {/* Окремого сертифіката немає: обкладинка і є він (Марія, 13.10.2026:
             «нашо тут сертифікат якщо обкладинка і є він»). */}

@@ -51,7 +51,8 @@ test('усе платне: 99 грн за все, студія — лише пі
   assert.equal(MK.price, 99);
   assert.equal(MK.open, true);
   const page = read('app/modnyi-kod/page.js');
-  assert.doesNotMatch(page.replace(/^\/\/.*$/gm, ''), /безкоштовн/);
+  // Єдиний виняток — «безкоштовно для власників Dityam+» (Марія, 13.10.2026).
+  assert.doesNotMatch(page.replace(/^\/\/.*$/gm, '').replace(/безкоштовно<\/b> для власників/g, ''), /безкоштовн/);
   assert.match(page, /modnyi-kod-demo\.mp4/);
   assert.match(page, /JoinForm/);
   assert.match(page, /MkTrack/);
@@ -226,4 +227,16 @@ test('анімація «Модного коду»: фігури й манеке
     const line = motion.split('\n').find((l) => l.includes(sel) && l.includes('animation'));
     assert.equal(line, undefined, `${sel} знову рухається: ${line}`);
   }
+});
+
+test('«Обкладинка місяця» замість публікації для всіх; Dityam+ за 1 грн; безкоштовно для власників Dityam+ (13.10.2026)', () => {
+  const page = readFileSync('app/modnyi-kod/page.js', 'utf8');
+  assert.doesNotMatch(page, /і публікація|Обкладинку публікуємо на сайті й у соцмережах Dityam\.com\.ua\.'|<li>публікація на сайті/);
+  assert.match(page, /Як обирають «Обкладинку місяця»\?/);
+  assert.match(page, /найвищими балами/);
+  assert.match(page, /оформити Dityam\+ на місяць за \$\{PRICE_FIRST\} грн/);
+  assert.equal((page.match(/безкоштовно<\/b> для власників/g) || []).length, 2);
+  assert.ok(page.indexOf('mkT-covers-sec') < page.indexOf('id="video"'), 'обкладинки — одразу після першого екрана');
+  assert.match(readFileSync('app/modnyi-kod/VogueCover.js', 'utf8'), /Обкладинка місяця · \{winner\}/);
+  assert.doesNotMatch(readFileSync('app/llms.txt/route.js', 'utf8'), /і публікація обкладинки на сайті/);
 });
