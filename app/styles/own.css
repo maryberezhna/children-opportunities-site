@@ -55,6 +55,11 @@
   border-bottom: 1px solid var(--v2-line);
 }
 
+.own-card-imglink { display: block; }
+
+.own-card-title { color: inherit; text-decoration: none; }
+.own-card-title:hover { color: var(--v2-accent-strong); }
+
 .own-card-meta { font-size: 0.875rem; font-weight: 700; color: var(--v2-accent-strong); }
 
 .own-card-body {
@@ -92,9 +97,33 @@
 
 .own-card-btn:hover { background: var(--v2-accent-hover); }
 
+/* ── Питання й відповіді (SEO/GEO: той самий текст, що в FAQPage) ── */
+.own-faq { padding-top: 72px; max-width: 760px; }
+
+.own-faq h2 {
+  margin: 0 0 8px;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--v2-ink);
+}
+
+.own-faq dl { margin: 0; }
+
+.own-faq-item { padding: 20px 0; border-bottom: 1px solid var(--v2-line); }
+
+.own-faq dt { font-size: 1.25rem; font-weight: 700; line-height: 1.35; color: var(--v2-ink); }
+
+.own-faq dd { margin: 8px 0 0; font-size: 1.0625rem; line-height: 1.6; color: var(--v2-ink); }
+
 @media (max-width: 900px) {
   .own-hero { padding: 36px 0 4px; }
   .own-hero h1 { font-size: 2.5rem; }
   .own-sub { font-size: 1.0625rem; }
   .own-list { grid-template-columns: 1fr; margin-top: 24px; gap: 12px; }
+  .own-faq { padding-top: 48px; }
+  .own-faq h2 { font-size: 1.75rem; }
+  .own-faq dt { font-size: 1.125rem; }
+  .own-faq dd { font-size: 1rem; }
 }

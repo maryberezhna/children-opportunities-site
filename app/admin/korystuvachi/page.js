@@ -97,6 +97,17 @@ export default async function UsersPage() {
   // digest_subscribers (джерело «olimpiada», зараз активні).
   const OL_STEPS = [['olimp_view', 'зайшли на /olimpiada'], ['olimp_tg_click', 'натиснули «Зареєструватися в Telegram»'], ['olimp_bot_start', 'відкрили бот'], ['olimp_bot_reg', 'записали дитину'], ['olimp_bot_done', 'пройшли тест, диплом у Telegram'], ['olimp_plus_start', 'перейшли з диплома в Dityam+']];
   const olFunnel = await Promise.all(OL_STEPS.map(async ([n, l]) => ({ n, l, all: await mkCount(n), week: await mkCount(n, since7) }))).catch(() => []);
+  // «Наші можливості» (13.10.2026, «і аналітику там»): скільки відкрили
+  // /nashi-mozhlyvosti і на яку картку натиснули (own_click, source = картка).
+  const ownCount = async (name, source, from) => {
+    let q = sb.from('site_events').select('id', { count: 'exact', head: true }).eq('name', name);
+    if (source) q = q.eq('source', source);
+    if (from) q = q.gte('created_at', from);
+    const { count } = await q;
+    return count || 0;
+  };
+  const OWN_STEPS = [['own_view', null, 'зайшли на сторінку'], ['own_click', 'olimpiada', 'натиснули «Олімпіада з логіки»'], ['own_click', 'modnyi-kod', 'натиснули «Модний код»'], ['own_click', 'plus', 'натиснули «Dityam+»']];
+  const ownFunnel = await Promise.all(OWN_STEPS.map(async ([n, src, l]) => ({ n: `${n}:${src || ''}`, l, all: await ownCount(n, src), week: await ownCount(n, src, since7) }))).catch(() => []);
   const { count: olPlusActive } = await sb.from('digest_subscribers').select('id', { count: 'exact', head: true }).eq('source', 'olimpiada').eq('status', 'active');
   const { data: mkPaidRows } = await sb.from('mk_entries').select('amount, paid_at, parent_email, refunded_at').not('paid_at', 'is', null);
   const mkPaid = notOwn((mkPaidRows || []).map((r) => ({ ...r, email: r.parent_email }))).filter((r) => !r.refunded_at);
@@ -153,6 +164,19 @@ export default async function UsersPage() {
         </table>
       </div>
       <p style={noteS}>«Зайшли» — раз на сесію; браузери з ?noga=1 не рахуються. Сума й кількість оплат — без твоїх власних (lib/own.js), кроки воронки — усі.</p>
+
+      <h2 style={h2S}>⭐ Наші можливості · <a href="/nashi-mozhlyvosti" style={linkS} {...ext}>/nashi-mozhlyvosti</a></h2>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: 620 }}>
+          <thead><tr><th style={head}>Крок</th><th style={head}>За 7 днів</th><th style={head}>Усього</th></tr></thead>
+          <tbody>
+            {ownFunnel.map((s) => (
+              <tr key={s.n}><td style={cell}>{s.l}</td><td style={cell}><b>{s.week}</b></td><td style={cell}>{s.all}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p style={noteS}>Рахується з 13.10.2026. «Зайшли» — раз на сесію; кліки — по картинці, назві чи кнопці картки. Браузери з ?noga=1 не рахуються.</p>
 
       <h2 style={h2S}>🧩 Олімпіада з логіки через Telegram · {olPlusActive || 0} підписок Dityam+</h2>
       <div style={{ overflowX: 'auto' }}>
