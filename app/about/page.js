@@ -184,9 +184,15 @@ export default async function AboutPage() {
               Знаєте програму, якої тут немає? Помітили помилку? Напишіть —
               перевіримо й виправимо.
             </p>
+            {/* Амбасадори (Марія, 13.10.2026: «додай сюди стати амбасадором»). Текст — зі сторінки /ambasadory. */}
+            <p>
+              А якщо хочете розповідати про можливості для дітей батькам, колегам
+              і учням — станьте амбасадором Dityam.com.ua.
+            </p>
             <div className="v2-panel-actions">
               {/* Та сама форма, що у футері (Марія, 07.10.2026: «чому тут нема такої самої форми»). */}
               <SuggestOpenButton className="v2-btn-dark">Запропонувати можливість</SuggestOpenButton>
+              <Link href="/ambasadory" className="v2-btn-outline">Стати амбасадором</Link>
               <a href={`mailto:${EMAIL}`} className="v2-btn-outline">{EMAIL}</a>
               <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Instagram</a>
             </div>
