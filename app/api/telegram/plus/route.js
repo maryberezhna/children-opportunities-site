@@ -26,6 +26,16 @@ import {
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
+import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply } from '@/lib/olimpiada-bot';
+
+// Олімпіада з логіки через бот (13.10.2026): людина без підписки отримує рядок
+// digest_subscribers із джерелом «olimpiada» — перший дотик, і після тесту
+// Dityam+ для неї за 1 грн (introPriceFor). Наявний рядок не чіпаємо.
+async function ensureOlSub(supabase, chatId, handle) {
+  const { data: sub } = await supabase.from('digest_subscribers').select('id').eq('telegram_chat_id', chatId).maybeSingle();
+  if (sub) return;
+  await supabase.from('digest_subscribers').insert({ telegram_chat_id: chatId, channel: 'telegram', telegram_handle: handle, status: 'pending', source: 'olimpiada' });
+}
 import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
@@ -585,6 +595,8 @@ export async function POST(request) {
 
     // Імʼя дитини для «Модного коду» — відповідь на підказку бота.
     if (msg.reply_to_message && await handleMkReply(bot, msg)) return new Response('ok');
+    // Імʼя дитини для олімпіади з логіки (13.10.2026).
+    if (msg.reply_to_message && await handleOlReply(bot, msg, { ensureSub: () => ensureOlSub(supabase, chatId, handle) })) return new Response('ok');
 
     if (/^\/stop\b/i.test(text)) {
       const { data: sub } = await supabase.from('digest_subscribers')
@@ -625,6 +637,14 @@ export async function POST(request) {
       // Поки продаж закритий, людина лише стає в список — без анкети, оплати й
       // рядка в digest_subscribers. Коли продаж відкрито, та сама кнопка веде
       // далі звичайним шляхом /start.
+      // Олімпіада з логіки з сайту: ?start=olimp[_<код педагога>] — без підписки (13.10.2026).
+      const olArg = olStartArg(startArg);
+      if (olArg) {
+        await ensureOlSub(supabase, chatId, handle);
+        await sendOlIntro(bot, chatId, olArg.teacher);
+        return new Response('ok');
+      }
+
       if (!PLUS_SALES_OPEN && /^waitlist/i.test(startArg || '')) {
         await joinWaitlist(bot, supabase, chatId, handle, startArg);
         return new Response('ok');
@@ -677,6 +697,12 @@ export async function POST(request) {
     // Команди підписника — те саме, що кнопки головного меню, але з меню «/»
     // Telegram: людина бачить перелік і не мусить памʼятати, де яка кнопка.
     const cmd = text.match(/^\/([a-z]+)\b/i)?.[1]?.toLowerCase();
+    // /olymp — для всіх: олімпіада з логіки безкоштовна й без підписки (13.10.2026).
+    if (cmd === 'olymp') {
+      const { data: sub } = await supabase.from('digest_subscribers').select('status').eq('telegram_chat_id', chatId).maybeSingle();
+      await sendOlympiads(bot, chatId, { active: sub?.status === 'active' });
+      return new Response('ok');
+    }
     if (cmd && SUB_COMMANDS.has(cmd)) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
       const prePay = sub && sub.status !== 'active' && sub.consent_at && PRE_PAY_COMMANDS.has(cmd);
@@ -822,7 +848,8 @@ export async function POST(request) {
     return new Response('ok');
   }
 
-  // «Наші олімпіади» → «Модний код» (12.10.2026).
+  // «Олімпіади» → олімпіада з логіки (13.10.2026) і «Модний код» (12.10.2026).
+  if (await handleOlCallback(bot, cbq)) return new Response('ok');
   if (await handleMkCallback(bot, cbq)) return new Response('ok');
 
   // «Почати →» (до 09.10.2026 — «✅ Погоджуюсь») — фіксуємо згоду й ведемо далі тим самим шляхом, що /start.
