@@ -6,6 +6,7 @@ import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { HINTS } from '@/content/olimpiada/hints';
 import { OLIMP, scoreAnswers, missedQuestions, levelFor, acceptUntil, monthKey, cleanOpenAnswer } from '@/lib/olimpiada';
 import { getStore, validToken, json, loadKeys, notifyAdmin, esc, thankTeacher } from '@/lib/olimpiada-server';
+import { sendOlDiploma } from '@/lib/olimpiada-bot';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,10 +57,12 @@ export async function POST(request) {
   // перших учасників вона не побачила). Тестові записи адміна — з позначкою.
   const test = entry.wfp_last_status === 'Test';
   await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>\n`
-    + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || '—')}`
+    + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || (entry.telegram_chat_id ? 'через Telegram' : '—'))}`
     + (open ? `\n\n✍️ Відкрите завдання:\n${esc(open.slice(0, 1500))}` : ''));
   // Заявка за посиланням педагога (11.10.2026): коли тест пройде 5-й учень
   // (TEACHER_THANKS_AT), педагогу — подяка листом. thankTeacher не кидає ніколи.
   if (entry.teacher_code) await thankTeacher(store, entry.teacher_code);
+  // Записались через Telegram (13.10.2026) — диплом одразу в чат. Не кидає.
+  if (entry.telegram_chat_id) await sendOlDiploma(entry, { score, max });
   return json({ ok: true });
 }
