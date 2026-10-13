@@ -11,6 +11,7 @@ import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
 import WaitPayment from './WaitPayment';
 import PrintOrder from './PrintOrder';
 import ShareDiploma from './ShareDiploma';
+import InstagramShare from './InstagramShare';
 import DiplomaMailer from './DiplomaMailer';
 import DiplomaImage from './DiplomaImage';
 
@@ -153,7 +154,9 @@ export default async function TestPage({ searchParams }) {
           )}
         </div>
         <p className="ol-note">
-          Номер диплома: {diplomaNo(entry.token)}. Посилання на цю сторінку з дипломом надішлемо й на email із заявки. Збережіть це посилання — диплом лишається доступним за ним.
+          Номер диплома: {diplomaNo(entry.token)}. {entry.telegram_chat_id
+            ? 'Диплом ми надіслали й у Telegram — у чат, де записували дитину.'
+            : 'Посилання на цю сторінку з дипломом надішлемо й на email із заявки.'} Збережіть це посилання — диплом лишається доступним за ним.
         </p>
       </div>
 
@@ -218,6 +221,19 @@ export default async function TestPage({ searchParams }) {
         </div>
       ) : null}
 
+      {/* Наприкінці, після розбору (Марія, 13.10.2026: «також в кінці висвітлюй
+          після розбору замовити друковану версію, поділитися в інстаграм»). */}
+      <div className="ol-panel ol-end-cta">
+        <p className="ol-kicker">Що ще можна зробити</p>
+        <h2 className="ol-h2">Диплом — на стіну й у сторіс</h2>
+        <div className="ol-actions">
+          {entry.print_paid_at
+            ? <a href="#dostavka" className="ol-btn ol-btn-main">Друкований диплом: доставка</a>
+            : <a href="#dostavka" className="ol-btn ol-btn-main">Замовити друкований диплом — {OLIMP.printPrice} грн</a>}
+          <InstagramShare diplomaUrl={diploma} />
+        </div>
+      </div>
+
       {/* Dityam+ після тесту — перший місяць за 1 грн (Марія, 08.10.2026: «усім,
           хто проходить онлайн-олімпіаду, Dityam+ перший місяць за 1 грн, показуй
           і тут, і в імейлі»; замість подарункового місяця). Мітка from_olimpiada —
@@ -245,7 +261,7 @@ export default async function TestPage({ searchParams }) {
           <h2 className="ol-h2">{OPEN_TASK.title}</h2>
           <p className="ol-ok" role="status">
             Відповідь отримали. Журі оцінює: {criteriaText()}. Переможців за {month} оголосимо
-            до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм на email із заявки.
+            до 7-го числа наступного місяця в Telegram-каналі Dityam.com.ua й окремо напишемо їм {entry.telegram_chat_id ? 'у Telegram' : 'на email із заявки'}.
           </p>
           <blockquote className="ol-quote">{entry.open_answer}</blockquote>
         </div>
