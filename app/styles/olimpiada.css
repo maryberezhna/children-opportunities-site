@@ -580,3 +580,6 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
   .ol-linkrow .ol-btn { flex: 1 1 100%; }
   .ol-teach-buttons .ol-btn { flex: 1 1 auto; }
 }
+
+/* Після розбору: друкований диплом і Instagram (13.10.2026). */
+.ol-end-cta .ol-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }

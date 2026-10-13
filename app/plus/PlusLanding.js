@@ -6,6 +6,8 @@ import PlusPathsReveal from './PlusPathsReveal';
 import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 import BotLink from './BotLink';
 import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
+import { MK } from '@/lib/modnyi-kod';
+import { OLIMP } from '@/lib/olimpiada';
 
 // Ціни й вигода рахуються з того самого джерела, що й рахунок у боті
 // (WAYFORPAY_AMOUNT / WAYFORPAY_AMOUNT_HALF), а не вписані в текст руками.
@@ -204,6 +206,10 @@ const L = {
     included: [
       'добірка під профіль кожної дитини — вік, вподобання, тип, місто',
       'нагадування про дедлайни завчасно — від 4 тижнів для стипендій до тижня для гуртків',
+      // Олімпіади в підписці (Марія, 13.10.2026: «додай на лендінг отримання
+      // олімпіад в Dityam+»): «Модний код» для підписників — без оплати й без
+      // ліміту спроб, у меню бота «Олімпіади» (lib/modnyi-kod-bot.js).
+      `наші олімпіади: «${MK.title}» без оплати й скільки завгодно спроб — у меню бота «Олімпіади»`,
       'допомога із заявкою — скоро',
       'усе приходить у Telegram',
     ],
@@ -216,6 +222,7 @@ const L = {
 
     faqTitle: 'Питання',
     faq: [
+      ['Чи входять у підписку ваші олімпіади?', `Так. «${MK.title}», олімпіада з моди для дітей ${MK.ageFrom}–${MK.ageTo} років, для підписників без оплати: запишіть дитину в боті, меню «Олімпіади», і проходьте тест скільки завгодно разів — на обкладинці лишається кращий результат. Онлайн-олімпіада з логіки для ${OLIMP.groupLabel} безкоштовна для всіх і теж проходить у боті.`],
       ['Навіщо платити, якщо всі можливості й так безкоштовні?', 'Платформа безкоштовна й такою лишиться: підписка нічого не ховає. Ви платите за зекономлений час. Щодня ми перебираємо понад тисячу записів і надсилаємо лише те, що підходить віку, вподобанням і місту вашої дитини. А про дедлайн нагадуємо, поки ще встигаєте зібрати документи: за 4 тижні для стипендій і обмінів, за 2 — для конкурсів, за тиждень — для гуртків.'],
       ['Коли можна підписатися?', 'Dityam+ ще не продається — дороблюємо. Хто стане в список зараз, дізнається про старт першим і отримає знижку для перших. Список ні до чого не зобовʼязує й нічого не списує.'],
       ['А якщо під мою дитину нічого не знайдеться?', 'Скажемо прямо, а не мовчатимемо. Коли нового немає два тижні, надішлемо добірку з того, що вже відкрито. А якщо під профіль немає зовсім нічого, запропонуємо його розширити: додати вподобання, сусідній вік чи онлайн-формат.'],
@@ -369,6 +376,7 @@ const L = {
     included: [
       'a selection for each child’s profile — age, likes, format, city',
       'deadline reminders in good time — from 4 weeks for scholarships to a week for clubs',
+      `our olympiads: the «${MK.title}» fashion olympiad at no extra cost, with unlimited attempts — in the bot menu`,
       'help with applications — coming soon',
       'everything arrives on Telegram',
     ],
@@ -381,6 +389,7 @@ const L = {
 
     faqTitle: 'Questions',
     faq: [
+      ['Are your olympiads included?', `Yes. «${MK.title}», our fashion olympiad for children aged ${MK.ageFrom}–${MK.ageTo}, is included for subscribers: sign your child up in the bot (menu «Олімпіади») and take the test as many times as you like — the cover keeps the best result. The logic olympiad for ages ${OLIMP.groupLabel} is free for everyone and also runs in the bot.`],
       ['Why pay if every opportunity is free anyway?', 'The platform is free and will stay that way: the subscription hides nothing. You pay for the time you save. Every day we go through more than a thousand listings and send only what fits your child’s age, interests and city. And we remind you about a deadline while there is still time to gather documents: 4 weeks ahead for scholarships and exchanges, 2 for competitions, a week for clubs.'],
       ['When can I subscribe?', 'Dityam+ is not on sale yet — we are finishing it. Join the list now and you hear about the launch first, with an early-bird discount. The list commits you to nothing and charges nothing.'],
       ['What if nothing fits my child?', 'We will tell you plainly instead of going quiet. If nothing new appears for two weeks, we send a selection from what is already open. If nothing fits the profile at all, we suggest widening it: another interest, a neighbouring age or the online format.'],
