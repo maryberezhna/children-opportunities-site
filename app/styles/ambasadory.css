@@ -226,22 +226,21 @@
   list-style: none;
   margin: 32px 0 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
   border-top: 1px solid var(--v2-ink);
 }
 
+/* Рядками, а не 5 колонками: у вузьких колонках дрібний сірий текст
+   Марія назвала «не читабельно» (13.10.2026, обрала варіант «список»). */
 .amb-case {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px 0 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 24px;
+  padding: 22px 0;
+  border-bottom: 1px solid var(--v2-line);
 }
 
-.amb-case + .amb-case { padding-left: 20px; border-left: 1px solid var(--v2-line); }
-
-.amb-case-who { font-size: 0.875rem; font-weight: 700; line-height: 1.6; color: var(--v2-accent-strong); }
-.amb-case p { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--v2-ink-2); }
+.amb-case-who { font-size: 1.25rem; font-weight: 700; line-height: 1.4; color: var(--v2-accent-strong); }
+.amb-case p { margin: 0; max-width: 680px; font-size: 1.125rem; line-height: 1.6; color: var(--v2-ink); }
 
 /* ── Що ви отримаєте (макет C) ──────────────────────────────────────────── */
 .amb-benefits {
@@ -422,10 +421,10 @@
   .amb-who-text { justify-content: flex-start; padding: 12px 14px 16px; }
 
   /* Що роблять — список із тонкими розділювачами. */
-  .amb-cases { grid-template-columns: 1fr; margin-top: 14px; border-top: 0; }
-  .amb-case { gap: 4px; padding: 16px 0; border-bottom: 1px solid var(--v2-line); }
-  .amb-case + .amb-case { padding-left: 0; border-left: 0; }
-  .amb-case:last-child { border-bottom: 0; }
+  .amb-cases { margin-top: 14px; }
+  .amb-case { grid-template-columns: 1fr; gap: 6px; padding: 18px 0; }
+  .amb-case-who { font-size: 1.125rem; }
+  .amb-case p { font-size: 1rem; }
 
   /* Вигоди — рядки з кольоровим номером ліворуч. */
   .amb-benefits { grid-template-columns: 1fr; margin-top: 20px; }
