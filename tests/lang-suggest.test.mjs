@@ -93,3 +93,12 @@ test('банер схований CSS-ом, доки скрипт не пост�
   assert.ok(layout.indexOf('LANG_SUGGEST_BOOT_SCRIPT }}') < layout.indexOf('<LangSuggest />'),
     'скрипт має стояти до банера, інакше банер зʼявиться після показу сторінки');
 });
+
+// 12.10.2026: на /en ведемо лише тих, хто читає англійською.
+test('readsEnglish: англійська будь-де в списку — так; лише польська чи німецька — ні', async () => {
+  const { readsEnglish, acceptLanguageTags } = await import('../lib/lang.js');
+  assert.equal(readsEnglish(acceptLanguageTags('en-US,en;q=0.9')), true);
+  assert.equal(readsEnglish(acceptLanguageTags('pl-PL,pl;q=0.9,en;q=0.5')), true);
+  assert.equal(readsEnglish(acceptLanguageTags('pl-PL,pl;q=0.9')), false);
+  assert.equal(readsEnglish(acceptLanguageTags('de-DE,de;q=0.9,en;q=0')), false);
+});
