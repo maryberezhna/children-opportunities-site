@@ -208,3 +208,13 @@ test('бот: у тексті повідомлень олімпіад немає
   }
   assert.doesNotMatch(readFileSync('lib/modnyi-kod-bot.js', 'utf8'), /безкоштовно\)/);
 });
+
+test('SEO «Модного коду»: картинка для соцмереж, дата старту, «хлібні крихти», назва сайту (13.10.2026)', () => {
+  const page = readFileSync('app/modnyi-kod/page.js', 'utf8');
+  assert.match(page, /title: \{ absolute: `\$\{TITLE\} — Dityam\.com\.ua` \}/);
+  assert.match(page, /startDate: START_DATE/);
+  assert.match(page, /'@type': 'BreadcrumbList'/);
+  assert.doesNotMatch(page, /без нудних тестів/);
+  assert.match(readFileSync('app/modnyi-kod/opengraph-image.js', 'utf8'), /ImageResponse/);
+  assert.match(readFileSync('app/modnyi-kod/twitter-image.js', 'utf8'), /opengraph-image/);
+});

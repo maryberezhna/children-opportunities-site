@@ -28,13 +28,17 @@ const SITE_URL = 'https://dityam.com.ua';
 const EMAIL = 'hellodityam.com.ua@gmail.com';
 const URL = `${SITE_URL}/${MK.slug}`;
 const TITLE = `«${MK.title}» — онлайн-олімпіада з моди для дітей ${MK.ageFrom}–${MK.ageTo} років`;
-const DESCRIPTION = `Онлайн-олімпіада з моди Dityam.com.ua для юного дизайнера 10–14 років: студія образу, тест про кольори, тканини, стилі й тренди, обкладинка модного журналу з твоїм луком і публікація в соцмережах — усе за ${MK.price} грн. Мода для підлітків без нудних тестів.`;
+// SEO (13.10.2026, «чи оптимізовані ці олімпіади під пошук і агентів»): назва
+// сайту в заголовку, як у /olimpiada; опис до ~160 знаків і без «без нудних
+// тестів» — тест на сторінці є.
+const DESCRIPTION = `Онлайн-олімпіада з моди для дітей ${MK.ageFrom}–${MK.ageTo} років: тест про кольори, тканини й стилі, студія образу й обкладинка модного журналу з балами. Оргвнесок ${MK.price} грн.`;
+const START_DATE = '2026-10-12';
 
 export const metadata = {
-  title: TITLE,
+  title: { absolute: `${TITLE} — Dityam.com.ua` },
   description: DESCRIPTION,
   alternates: { canonical: URL },
-  openGraph: { title: TITLE, description: DESCRIPTION, url: URL, type: 'website', locale: 'uk_UA', siteName: 'Dityam.com.ua' },
+  openGraph: { title: `${TITLE} — Dityam.com.ua`, description: DESCRIPTION, url: URL, type: 'website', locale: 'uk_UA', siteName: 'Dityam.com.ua' },
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION },
 };
 
@@ -114,11 +118,15 @@ export default function ModnyiKodPage() {
     name: `${MK.title} — онлайн-олімпіада з моди`,
     description: DESCRIPTION,
     url: URL,
+    startDate: START_DATE,
+    image: `${URL}/opengraph-image`,
+    inLanguage: 'uk',
+    isAccessibleForFree: false,
     eventAttendanceMode: 'https://schema.org/OnlineEventAttendanceMode',
     eventStatus: 'https://schema.org/EventScheduled',
     location: { '@type': 'VirtualLocation', url: URL },
     typicalAgeRange: `${MK.ageFrom}-${MK.ageTo}`,
-    offers: { '@type': 'Offer', price: MK.price, priceCurrency: 'UAH', url: URL, availability: MK.open ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder' },
+    offers: { '@type': 'Offer', price: MK.price, priceCurrency: 'UAH', url: URL, validFrom: START_DATE, availability: MK.open ? 'https://schema.org/InStock' : 'https://schema.org/PreOrder' },
     organizer: { '@type': 'Organization', name: 'Dityam.com.ua', url: SITE_URL },
   };
   const faqLd = {
@@ -132,6 +140,13 @@ export default function ModnyiKodPage() {
         <MkTrack />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'Головна', item: SITE_URL },
+            { '@type': 'ListItem', position: 2, name: `«${MK.title}» — олімпіада з моди`, item: URL },
+          ],
+        }) }} />
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<defs>${DEFS}</defs>` }} />
 
         {/* Перший екран: назва літерами з тканин + стіл дизайнера */}
