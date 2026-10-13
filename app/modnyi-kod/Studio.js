@@ -39,7 +39,7 @@ function Thumb({ k, v, look }) {
 
 const Swatch = ({ v }) => <Svg viewBox="0 0 60 60" html={`<rect width="60" height="60" fill="${fill(v)}"/>`} />;
 
-export default function Studio() {
+export default function Studio({ token = null, score = null, name = null, age = null, word = '' }) {
   const [look, setLook] = useState(DEFAULT_LOOK);
   const [title, setTitle] = useState('');
   const [tab, setTab] = useState('top');
@@ -47,6 +47,18 @@ export default function Studio() {
   const [flash, setFlash] = useState(0);
   const [cover, setCover] = useState(false);
   const [coverTheme, setCoverTheme] = useState('pink');
+  const [saving, setSaving] = useState(false);
+  const [saveErr, setSaveErr] = useState('');
+  // Кабінет учасника: зберегти образ → сторінка покаже готову обкладинку.
+  async function save() {
+    setSaving(true); setSaveErr('');
+    try {
+      const r = await fetch('/api/modnyi-kod/look', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ t: token, look, title, theme: coverTheme }) });
+      if (!r.ok) throw new Error('bad');
+      if (typeof window.gtag === 'function') window.gtag('event', 'modnyi_kod_cover_done');
+      window.location.reload();
+    } catch { setSaveErr('Не вийшло зберегти. Спробуй ще раз за хвилину.'); setSaving(false); }
+  }
   const [err, setErr] = useState(0);
   const titleRef = useRef(null);
   const swipe = useRef(null);
@@ -169,8 +181,8 @@ export default function Studio() {
         <div className="mk-cover-wrap" role="dialog" aria-label="Твоя обкладинка">
           <div className="mk-cover-grid">
             <div className="mk-cv-wrap">
-              <VogueCover look={look} theme={coverTheme} title={title} />
-              <span className="mk-cv-wm" aria-hidden="true">превʼю</span>
+              <VogueCover look={look} theme={coverTheme} title={title} score={score ?? '?/25'} name={name} age={age} word={word} />
+              {token ? null : <span className="mk-cv-wm" aria-hidden="true">превʼю</span>}
             </div>
             <div className="mk-cover-side">
               <h2>Твій образ — на <i>обкладинці!</i></h2>
@@ -181,7 +193,12 @@ export default function Studio() {
                   <button key={k} type="button" title={t.name} aria-label={t.name} className={coverTheme === k ? 'on' : ''} style={{ background: t.bg }} onClick={() => setCoverTheme(k)} />
                 ))}
               </div>
-              <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4, і ми опублікуємо її на сайті й у соцмережах.</p>
+              {token ? (
+                <>
+                  <button type="button" className="mk-btn-y" disabled={saving} onClick={save}>{saving ? 'Зберігаємо…' : 'Готово — це моя обкладинка'}</button>
+                  {saveErr ? <p className="mk-small" style={{ color: '#a11b1b' }}>{saveErr}</p> : null}
+                </>
+              ) : <p className="mk-small">Після перевірки обкладинка прийде з твоїми балами — для друку А4, і ми опублікуємо її на сайті й у соцмережах.</p>}
               <button type="button" className="mk-back" onClick={() => setCover(false)}>← Змінити образ</button>
             </div>
           </div>

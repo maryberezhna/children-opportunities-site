@@ -6,6 +6,8 @@ import { lookSvg, DEFS } from '@/lib/modnyi-kod-looks';
 import { SIA_AWARD } from '@/lib/awards';
 import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
+import JoinForm from './JoinForm';
+import MkTrack from './MkTrack';
 import VogueCover from './VogueCover';
 import ContactForm from '../contacts/ContactForm';
 
@@ -50,9 +52,9 @@ const STEPS = [
   ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір, сертифікат і публікація.'],
 ];
 const COVERS = [
-  { theme: 'pink', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
-  { theme: 'lavender', title: 'Блиск', score: '18/25', name: 'Вероніка', age: 12, word: 'Дизайнерка', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'bomber', shoes: 'block', acc: 'headphones', f: { base: 'sequin', outer: 'metal', shoes: '#161616', acc: '#ffffff', legs: '#161616', top: 'tee', bottom: 'tartan', cover: 'polka' } } },
-  { theme: 'blue', title: 'Стрітвір', score: '24/25', name: 'Марко', age: 13, word: 'Дизайнер', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: 'knit', legs: '#161616', base: 'polka', cover: 'breton' } } },
+  { theme: 'pink', motto: 'Сміливість\u00A0— головний тренд сезону', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
+  { theme: 'lavender', motto: 'Колір\u00A0— це настрій, який видно', title: 'Блиск', score: '18/25', name: 'Вероніка', age: 12, word: 'Дизайнерка', look: { base: 'dress1', top: 'tee', bottom: 'skirt', outer: 'bomber', shoes: 'block', acc: 'headphones', f: { base: 'sequin', outer: 'metal', shoes: '#161616', acc: '#ffffff', legs: '#161616', top: 'tee', bottom: 'tartan', cover: 'polka' } } },
+  { theme: 'blue', motto: 'Мій стиль\u00A0— мої правила', title: 'Стрітвір', score: '24/25', name: 'Марко', age: 13, word: 'Дизайнер', look: { base: 'set', top: 'jersey', bottom: 'balloon', outer: 'none', shoes: 'sneak', acc: 'beanie', f: { top: '#7a1f2b', bottom: 'denim', outer: '#6b2d5c', shoes: '#161616', acc: 'knit', legs: '#161616', base: 'polka', cover: 'breton' } } },
 ];
 const OVERSIZE_LOOK = {
   base: 'set', top: 'oversize', bottom: 'skirt', outer: 'none', shoes: 'sneak', acc: 'none',
@@ -60,7 +62,7 @@ const OVERSIZE_LOOK = {
 };
 const FAQ = [
   ['Що входить у 99 грн?', `Усе: студія образу, тест на 25 завдань із розбором відповідей, обкладинка з балами для друку А4, сертифікат і публікація обкладинки на сайті й у соцмережах Dityam.com.ua. Доплат немає.`],
-  ['Коли старт олімпіади?', 'Незабаром. Залиште email — повідомимо першими.'],
+  ['Коли можна пройти?', `Будь-коли після оплати: на пошту прийде посилання на кабінет учасника. Тест — ${MK.minutes} хвилин, почати можна в зручний день.`],
   ['Що з даними дитини?', 'На обкладинці, на сайті й у соцмережах — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
 ];
 
@@ -125,6 +127,7 @@ export default function ModnyiKodPage() {
   return (
     <>
       <main className="mk mkT">
+        <MkTrack />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }} />
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<defs>${DEFS}</defs>` }} />
@@ -215,7 +218,7 @@ export default function ModnyiKodPage() {
 
           <h2 className="mkT-hand ink mkT-gap">Обкладинка, яку хочеться повісити на стіну</h2>
           <p className="mkT-text">Як у справжньому модному журналі: твій лук, назва, речі з образу, імʼя й бали — на обкладинці dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
-          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} example /></li>)}</ul>
+          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} motto={c.motto} example /></li>)}</ul>
           <SewButton className="mkT-doodle d-bt" />
         </section>
 
@@ -225,9 +228,10 @@ export default function ModnyiKodPage() {
           <div className="mkT-wrap mkT-join">
             <div>
               <h2 className="mkT-hand">Взяти участь</h2>
-              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: студія, тест, обкладинка, сертифікат і публікація. Олімпіада стартує незабаром — залиште email батьків, повідомимо першими.</p>
+              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: тест, студія образу, обкладинка, сертифікат і публікація. Після оплати на пошту прийде посилання на кабінет учасника.</p>
             </div>
-            {MK.open ? null : <div className="mkT-joinbox"><Waitlist /></div>}
+            <div className="mkT-joinbox">{MK.open ? <JoinForm /> : <Waitlist />}</div>
+            <p className="mkT-text on-dark mkT-plusnote">Ви підписник Dityam+? «Модний код» уже входить у підписку — відкрийте бот і натисніть «🏆 Наші олімпіади».</p>
           </div>
           <Pinking flip />
         </section>
@@ -247,6 +251,7 @@ export default function ModnyiKodPage() {
             <li>Обкладинка — з образом зі студії, назвою образу, імʼям і віком дитини та її балами. Переможців і місць немає: обкладинку й сертифікат отримує кожен учасник.</li>
             <li>Перед публікацією ми переглядаємо назву образу. Обкладинки публікуємо на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком дитини, без прізвища, міста й фото. Батьки можуть відмовитися від публікації або попросити прибрати обкладинку, написавши на {EMAIL}.</li>
             <li>Дані: імʼя й вік дитини потрібні для обкладинки й сертифіката, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
+            <li>Для підписників Dityam+ участь входить у підписку: реєстрація — у боті @DityamPlusBot (меню «Наші олімпіади»). Офіційна спроба, бали якої йдуть на обкладинку, — 1; тренуватися після неї можна без обмежень.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.</li>
           </ol>
         </section>

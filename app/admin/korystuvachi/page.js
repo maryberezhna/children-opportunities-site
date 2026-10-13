@@ -81,6 +81,21 @@ export default async function UsersPage() {
   if (!url || !key) return <main style={wrap}><p>Supabase не налаштований.</p></main>;
   const sb = createClient(url, key, { auth: { persistSession: false }, global: { fetch: (i, init) => fetch(i, { ...init, cache: 'no-store' }) } });
 
+  // «Модний код» (12.10.2026, Марія: «трекай, скільки зайшло на сторінку і
+  // скільки купило»): кроки воронки з site_events + оплати з mk_entries.
+  const MK_STEPS = [['mk_view', 'зайшли на сторінку'], ['mk_cta', 'почали заповнювати заявку'], ['mk_pay_start', 'перейшли до оплати'], ['mk_paid', 'оплатили 99 грн'], ['mk_test_done', 'пройшли тест'], ['mk_cover_done', 'зробили обкладинку']];
+  const since7 = new Date(Date.now() - 7 * 864e5).toISOString();
+  const mkCount = async (name, from) => {
+    let q = sb.from('site_events').select('id', { count: 'exact', head: true }).eq('name', name);
+    if (from) q = q.gte('created_at', from);
+    const { count } = await q;
+    return count || 0;
+  };
+  const mkFunnel = await Promise.all(MK_STEPS.map(async ([n, l]) => ({ n, l, all: await mkCount(n), week: await mkCount(n, since7) }))).catch(() => []);
+  const { data: mkPaidRows } = await sb.from('mk_entries').select('amount, paid_at, parent_email, refunded_at').not('paid_at', 'is', null);
+  const mkPaid = notOwn((mkPaidRows || []).map((r) => ({ ...r, email: r.parent_email }))).filter((r) => !r.refunded_at);
+  const mkRevenue = mkPaid.reduce((a, r) => a + (Number(r.amount) || 0), 0);
+
   const [subs, plusWait, entries, olimpWait, payments] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
@@ -119,6 +134,19 @@ export default async function UsersPage() {
             : <div style={{ color: C.ink3 }}>—</div>}
         </div>
       </div>
+
+      <h2 style={h2S}>👗 Модний код · {mkPaid.length} оплат · {uah(mkRevenue)}</h2>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: 620 }}>
+          <thead><tr><th style={head}>Крок</th><th style={head}>За 7 днів</th><th style={head}>Усього</th></tr></thead>
+          <tbody>
+            {mkFunnel.map((s) => (
+              <tr key={s.n}><td style={cell}>{s.l}</td><td style={cell}><b>{s.week}</b></td><td style={cell}>{s.all}</td></tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p style={noteS}>«Зайшли» — раз на сесію; браузери з ?noga=1 не рахуються. Сума й кількість оплат — без твоїх власних (lib/own.js), кроки воронки — усі.</p>
 
       <h2 style={h2S}>Хто · {rows.length}</h2>
       <div style={{ overflowX: 'auto' }}>

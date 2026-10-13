@@ -223,15 +223,15 @@ export default async function TestPage({ searchParams }) {
           і тут, і в імейлі»; замість подарункового місяця). Мітка from_olimpiada —
           щоб в /admin/plus було видно, що людина прийшла з олімпіади. */}
       <div className="ol-panel ol-plus-offer">
-        <p className="ol-kicker">Dityam+ · перший місяць за {PRICE_FIRST} грн</p>
+        <p className="ol-kicker">Dityam+ на місяць за {PRICE_FIRST} грн замість {PRICE} грн</p>
         <h2 className="ol-h2">Що далі після олімпіади?</h2>
         <p className="ol-text">
           Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини
           і завчасно нагадує про дедлайни — у Telegram. А ще підписники першими дізнаються про наші нові
-          олімпіади й конкурси. Перший місяць — {PRICE_FIRST} грн, далі {PRICE} грн/міс, скасувати можна будь-коли.
+          олімпіади й конкурси. Перший місяць — {PRICE_FIRST} грн замість {PRICE} грн, далі {PRICE} грн/міс, скасувати можна будь-коли.
         </p>
         <a href={`https://t.me/${PLUS_BOT}?start=from_olimpiada`} className="ol-btn ol-btn-main" target="_blank" rel="noopener">
-          Спробувати за {PRICE_FIRST} грн
+          Спробувати Dityam+ за {PRICE_FIRST} грн
         </a>
       </div>
 

@@ -114,3 +114,11 @@ test('vercel.json справді вмикає цей скрипт', () => {
   const config = JSON.parse(readFileSync(join(ROOT, 'vercel.json'), 'utf8'));
   assert.equal(config.ignoreCommand, 'node scripts/vercel-ignore-build.mjs');
 });
+
+test('превʼю PR не збираємо, хіба що з [build]; продакшн — як раніше', async () => {
+  const { skipPreview } = await import('../scripts/vercel-ignore-build.mjs');
+  assert.equal(skipPreview('preview', 'feat: щось'), true);
+  assert.equal(skipPreview('preview', 'feat: подивитись [build]'), false);
+  assert.equal(skipPreview('production', 'feat: щось'), false);
+  assert.equal(skipPreview(undefined, ''), false);
+});

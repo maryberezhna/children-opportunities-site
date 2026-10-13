@@ -406,3 +406,48 @@
 .mkT-rules li::marker { color: var(--pinkT); font-weight: 800; }
 .mkT-rules a { color: var(--plum); font-weight: 700; }
 #pravyla { padding-bottom: 0; }
+
+/* ═══ Запуск (12.10.2026): форма, тест, кабінет ═══ */
+.mkJ { display: grid; gap: 12px; }
+.mkJ label { display: grid; gap: 5px; font-weight: 700; font-size: .9rem; }
+.mkJ input:not([type=checkbox]):not([type=radio]), .mkJ select { min-height: 48px; border: 2px solid #e8e0ee; border-radius: 12px; padding: 10px 14px; font: inherit; font-weight: 500; }
+.mkJ-row { display: grid; grid-template-columns: 1fr 110px; gap: 10px; }
+.mkJ-radio { border: 0; padding: 0; margin: 0; display: flex; gap: 14px; flex-wrap: wrap; font-weight: 700; font-size: .9rem; }
+.mkJ-radio legend { margin-bottom: 6px; }
+.mkJ-radio label { display: flex; gap: 6px; align-items: center; }
+.mkJ-check { display: flex !important; gap: 8px; align-items: flex-start; font-weight: 500 !important; font-size: .82rem !important; color: #555; }
+.mkJ-check a { color: var(--plum); }
+.mkJ-err { margin: 0; padding: 10px 12px; border-radius: 10px; background: #fdecec; color: #a11b1b; font-size: .9rem; }
+.mkJ-note { margin: 0; font-size: .8rem; color: #666; }
+.mkJ .mk-btn-y { width: 100%; }
+.mkR { display: grid; gap: 14px; max-width: 720px; }
+.mkR-bar { display: flex; justify-content: space-between; align-items: center; font-weight: 800; }
+.mkR-clock { padding: 6px 14px; border-radius: 999px; background: #f3e8f8; color: var(--plum); }
+.mkR-clock.hot { background: #fdecec; color: #a11b1b; }
+.mkR-dots { display: flex; flex-wrap: wrap; gap: 6px; }
+.mkR-dots button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #d9cce3; background: #fff; cursor: pointer; padding: 0; }
+.mkR-dots button.ok { background: #d9f3ec; border-color: #0e7c5b; }
+.mkR-dots button.cur { box-shadow: 0 0 0 3px var(--pinkT); }
+.mkR-topic { font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: #7a3fbf; }
+.mkR-art svg { display: block; width: 100%; max-height: 200px; background: #faf7fc; border-radius: 12px; }
+.mkR-q ul { grid-template-columns: 1fr !important; }
+.mkR-q li { padding: 0 !important; border: 0 !important; }
+.mkR-q li button { width: 100%; text-align: left; border: 2px solid #e8e0ee; border-radius: 12px; padding: 12px 14px; background: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.mkR-q li button.on { border-color: var(--plum); background: #f3e8f8; }
+.mkR-q li button b { color: #7a3fbf; margin-right: 6px; }
+.mkR-nav { display: flex; justify-content: space-between; gap: 10px; }
+.mkK-grid { display: grid; grid-template-columns: 420px 1fr; gap: 36px; align-items: start; margin-top: 10px; }
+.mkK-cover .vc { width: 100%; }
+.mkK-cert { margin-top: 22px; border: 3px double var(--plum); border-radius: 16px; padding: 18px; }
+.mkK-cert-name { font-family: 'Lora Cover', Georgia, serif; font-size: 2rem; margin: 4px 0; }
+.mkK-review { margin-top: 50px; }
+.mkK-miss { border-left: 4px solid var(--pinkT); padding: 10px 14px; margin: 10px 0; background: #fff9fc; border-radius: 0 12px 12px 0; }
+.mkK-miss p { margin: 6px 0 0; color: #7a5b00; }
+.mkK .mk-studio { margin-top: 10px; }
+@media (max-width: 900px) { .mkK-grid { grid-template-columns: 1fr; } }
+@media print {
+  .mkK header, .mkK footer, .mkK .mk-kick, .mkK h1, .mkK .mkT-text, .mkK .mk-btn-y, .mkK-review, .mkK-cert { display: none !important; }
+  .mkK-grid { display: block; } .mkK-cover .vc { width: 190mm; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+.mkP { display: grid; gap: 10px; justify-items: start; }
+.mkT-plusnote { grid-column: 1 / -1; font-size: .9rem; margin: 0; }

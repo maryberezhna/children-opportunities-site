@@ -5,6 +5,23 @@
 // бали й гасло; імʼя великим, штрихкод. Анонси — з образу самої дитини.
 import { lookSvg, PIECES } from '@/lib/modnyi-kod-looks';
 
+// 5 гасел (Марія, 12.10.2026: «тут потрібні різні цитати, 5 наприклад
+// основних»). Власні — не чужі цитати, щоб нікому нічого не приписати.
+// Кожна дитина отримує своє: вибір за імʼям і назвою образу (стабільно).
+export const MOTTOS = [
+  'Сміливість — головний тренд сезону',
+  'Мій стиль — мої правила',
+  'Колір — це настрій, який видно',
+  'Кожен образ — маленька історія',
+  'Найкращий тренд — бути собою',
+];
+export function mottoFor(seed) {
+  let h = 2166136261;
+  for (const ch of String(seed || '')) { h ^= ch.codePointAt(0); h = Math.imul(h, 16777619); }
+  // Тире не має починати рядок: нерозривний пробіл перед ним.
+  return MOTTOS[(h >>> 0) % MOTTOS.length].replace(' — ', '\u00A0— ');
+}
+
 export const COVER_THEMES = {
   pink: { name: 'пудрове', bg: '#f3d6da', acc: '#b0003a' },
   lavender: { name: 'лавандове', bg: '#dcd6f0', acc: '#5a2a8a' },
@@ -22,7 +39,7 @@ export function inLook(look) {
   return keys.map(([k, v]) => COVER_NAMES[v] || String(PIECES[k].opts[v] || '').toLowerCase()).filter(Boolean).join(' · ');
 }
 
-export default function VogueCover({ look, theme = 'pink', title, score = '?/25', name, age, word = '', example = false, className = '' }) {
+export default function VogueCover({ look, theme = 'pink', title, score = '?/25', name, age, word = '', example = false, className = '', motto = null }) {
   const t = COVER_THEMES[theme] || COVER_THEMES.pink;
   return (
     <div className={`vc ${className}`} style={{ '--bg': t.bg, '--acc': t.acc }}>
@@ -36,7 +53,7 @@ export default function VogueCover({ look, theme = 'pink', title, score = '?/25'
       </div>
       <div className="vc-col r">
         <p><span className="vc-small">Модний код</span><b>{score}</b></p>
-        <p className="vc-motto">Сміливість — головний тренд сезону</p>
+        <p className="vc-motto">{motto || mottoFor(`${name || ""}|${title || ""}`)}</p>
       </div>
       <div className="vc-who">
         {word ? <span className="vc-small">{word}</span> : null}

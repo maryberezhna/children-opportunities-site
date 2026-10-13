@@ -49,11 +49,12 @@ test('збережений образ чиститься: лише відомі 
 
 test('усе платне: 99 грн за все, студія — лише після оплати (поки — адмін)', () => {
   assert.equal(MK.price, 99);
-  assert.equal(MK.open, false);
+  assert.equal(MK.open, true);
   const page = read('app/modnyi-kod/page.js');
   assert.doesNotMatch(page.replace(/^\/\/.*$/gm, ''), /безкоштовн/);
   assert.match(page, /modnyi-kod-demo\.mp4/);
-  assert.match(page, /Waitlist/);
+  assert.match(page, /JoinForm/);
+  assert.match(page, /MkTrack/);
   const studioPage = read('app/modnyi-kod/studiya/page.js');
   assert.match(studioPage, /isAdmin\(/);
   assert.match(studioPage, /index: false/);
@@ -68,7 +69,7 @@ test('бренд і фон', () => {
   for (const f of ['app/modnyi-kod/page.js', 'app/modnyi-kod/studiya/page.js', 'app/modnyi-kod/DeskCollage.js', 'app/modnyi-kod/Studio.js', 'app/modnyi-kod/Waitlist.js', 'lib/modnyi-kod.js', 'lib/modnyi-kod-looks.js']) {
     const t = read(f);
     assert.doesNotMatch(t, /DITYAM/, f);
-    assert.doesNotMatch(t, /Dityam(?!\.com\.ua|\+)/, f);
+    assert.doesNotMatch(t, /Dityam(?!\.com\.ua|\+|PlusBot)/, f);
   }
   // Ніколи не бежевий фон (memory: dityam-no-beige-background).
   assert.doesNotMatch(read('app/styles/modnyi-kod.css'), /#f6efe4|#fbf8f2|#fffdf7|#f4efe7|#fff4e8/i);
@@ -84,7 +85,8 @@ test('сторінка олімпіади як /olimpiada, студія — ок
 test('обкладинка у стилі Vogue: анонси з образу дитини, гарні назви', async () => {
   const src = read('app/modnyi-kod/VogueCover.js');
   assert.match(src, /dityam\.com\.ua/);
-  assert.match(src, /Сміливість — головний тренд сезону/);
+  assert.match(src, /MOTTOS = \[/);
+  assert.equal((src.match(/^  '[^']+',$/gm) || []).length >= 5, true);
   assert.doesNotMatch(src, /стьобана/);
   assert.match(read('app/modnyi-kod/page.js'), /<VogueCover /);
   assert.match(read('app/modnyi-kod/Studio.js'), /<VogueCover /);
@@ -113,4 +115,49 @@ test('положення: правила олімпіади на сторінц�
   assert.match(page, /До початку тесту від участі можна відмовитися/);
   assert.equal(MK.minutes, 25);
   assert.match(page, /\{MK\.minutes\} хвилин/);
+});
+
+test('олімпіада: відповідей немає в коді, варіанти перемішані, бали рахує сервер', async () => {
+  const { BANK } = await import('../content/modnyi-kod/bank.js');
+  const M = await import('../lib/modnyi-kod.js');
+  assert.equal(BANK.length, 25);
+  for (const q of BANK) { assert.equal(q.ok, undefined, q.id); assert.equal(q.options.length, 4, q.id); }
+  const o1 = M.mkOrder(BANK, 'a'.repeat(32)); const o2 = M.mkOrder(BANK, 'b'.repeat(32));
+  assert.deepEqual(o1.map((o) => o.id), BANK.map((q) => q.id)); // порядок тем — як у банку
+  assert.notDeepEqual(o1.map((o) => o.options.join('')), o2.map((o) => o.options.join('')));
+  const keys = Object.fromEntries(BANK.map((q) => [q.id, 0]));
+  const answers = Object.fromEntries(BANK.slice(0, 10).map((q) => [q.id, 0]));
+  const r = M.mkScore(BANK, o1, answers, keys);
+  assert.equal(r.score, 10); assert.equal(r.max, 25); assert.equal(r.missed.length, 15);
+  assert.equal(M.isMkOrder(`mk-${'a'.repeat(32)}-1`), true);
+  assert.equal(M.tokenFromMkRef(`mk-${'a'.repeat(32)}-1791`), 'a'.repeat(32));
+  assert.equal(M.cleanMkEntry({ name: 'Соломія Коваль', age: 9, email: 'a@b.cc', consent: true }).error, 'age');
+  assert.equal(M.cleanMkEntry({ name: 'Соломія Коваль', age: 11, email: 'A@B.cc', consent: true }).entry.child_name, 'Соломія');
+  // Колбек: mk-… обробляється ДО статусів Dityam+; журнал оплат знає mk_entry.
+  const cb = read('app/api/pay/wayforpay/route.js');
+  assert.ok(cb.indexOf('isMkOrder(b.orderReference)') < cb.indexOf("from('digest_subscribers')"));
+  const { productOf } = await import('../lib/payments.js');
+  assert.equal(productOf(`mk-${'a'.repeat(32)}-1`, 99), 'mk_entry');
+  // Облік: сторінка, форма, оплата, тест, обкладинка.
+  const server = read('lib/modnyi-kod-server.js');
+  for (const e of ["'mk_paid'", 'notifyAdmin(']) assert.ok(server.includes(e), e);
+  for (const f of ['app/api/modnyi-kod/start/route.js', 'app/api/modnyi-kod/submit/route.js', 'app/api/modnyi-kod/look/route.js']) assert.match(read(f), /serverEvent\(/, f);
+});
+
+test('Dityam+: олімпіади в меню бота, реєстрація без оплати, тренування без ліміту', async () => {
+  const bot = read('app/api/telegram/plus/route.js');
+  assert.match(bot, /callback_data: 'menu:olymp'/);
+  assert.match(bot, /handleMkCallback\(bot, cbq\)/);
+  assert.match(bot, /handleMkReply\(bot, msg\)/);
+  const M = await import('../lib/modnyi-kod.js');
+  assert.equal(M.ageFromPrompt(`${M.MK_NAME_PROMPT} (12 років)`), 12);
+  assert.equal(M.ageFromPrompt('інше'), null);
+  assert.equal(M.cleanChildName('  Соломія Коваль '), 'Соломія');
+  const srv = read('lib/modnyi-kod-server.js');
+  assert.match(srv, /source: 'dityam_plus'/);
+  const pr = read('app/api/modnyi-kod/practice/route.js');
+  assert.match(pr, /plusActive\(/);
+  // Тренування не чіпає офіційних балів: оновлюємо лише лічильник.
+  assert.match(pr, /updateEntry\(db, b\.t, \{ practice_count:/);
+  assert.doesNotMatch(pr, /updateEntry\([^)]*\bscore\b/);
 });
