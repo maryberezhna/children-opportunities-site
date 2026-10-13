@@ -124,25 +124,14 @@
   text-wrap: balance;
 }
 
-/* Підкреслені «кращий світ» і «дітей» — вибір Марії 13.10.2026. Лінія —
-   декор, тож брендовий помаранчевий, а не текстовий. */
+/* Одна лінія під «кращий світ для наших дітей» — Марія 13.10.2026: більше
+   підкреслень не треба («забагато»). Лінія — декор, брендовий помаранчевий. */
 .amb-u {
   text-decoration: underline;
   text-decoration-color: var(--v2-accent);
   text-decoration-thickness: 5px;
   text-underline-offset: 8px;
   text-decoration-skip-ink: none;
-}
-
-/* Коротка помаранчева риска під реченням — декор. */
-.amb-goal-lead::after {
-  content: '';
-  display: block;
-  width: 56px;
-  height: 5px;
-  margin-top: 16px;
-  border-radius: 5px;
-  background: var(--v2-accent);
 }
 
 .amb-goal-role > p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
@@ -411,8 +400,8 @@
   /* Ціль — одна колонка, риска під реченням. */
   .amb-goal { grid-template-columns: 1fr; gap: 0; }
   .amb-goal h2 { margin-bottom: 0; }
-  .amb-goal-lead { margin: 14px 0 20px; font-size: 1.625rem; }
-  .amb-u { text-decoration-thickness: 4px; text-underline-offset: 5px; }
+  .amb-goal-lead { margin: 14px 0 20px; font-size: 1.625rem; line-height: 1.45; }
+  .amb-u { text-decoration-thickness: 3px; text-underline-offset: 5px; }
 
   /* Хто може — дві картки поруч, фото згори. */
   .amb-who { margin-top: 20px; gap: 10px; }
