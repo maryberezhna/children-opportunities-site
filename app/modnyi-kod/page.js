@@ -2,7 +2,11 @@ import '@/app/styles/modnyi-kod.css';
 import Link from 'next/link';
 import Footer from '../Footer';
 import { MK } from '@/lib/modnyi-kod';
-import { lookSvg, DEFS } from '@/lib/modnyi-kod-looks';
+import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
+import { PLUS_BOT } from '@/lib/plus';
+import { lookSvg, DEFS, cleanLook } from '@/lib/modnyi-kod-looks';
+import { mkDb } from '@/lib/modnyi-kod-server';
+import { monthName } from '@/lib/olimpiada';
 import { SIA_AWARD } from '@/lib/awards';
 import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
@@ -21,7 +25,7 @@ import ContactForm from '../contacts/ContactForm';
 //
 // 12.10.2026 Марія: «просто все робимо платною; зроби відео й помісти на
 // сторінку, як відбувається процес; все включено в цю вартість». Студія,
-// тест, обкладинка і публікація — все за оргвнесок 99 грн. Замість
+// тест і обкладинка — все за оргвнесок 99 грн (публікація — лише «Обкладинці місяця», 13.10.2026). Замість
 // безкоштовної студії на сторінці — відео процесу (public/modnyi-kod-demo.mp4).
 
 const SITE_URL = 'https://dityam.com.ua';
@@ -46,14 +50,16 @@ const GETS = [
   ['Студія образу', 'Збирай свій лук із трендових речей і тканин — онлайн, з телефона чи компʼютера.'],
   ['Обкладинка', 'Твій лук на обкладинці модного журналу dityam.com.ua з іменем і балами, для друку А4.'],
   ['Розбір відповідей', 'Що ще варто знати про кольори, тканини й стилі — з підказками, як міркувати.'],
-  ['Публікація', 'Обкладинку публікуємо на сайті й у соцмережах Dityam.com.ua.'],
+  // Публікації для всіх немає (Марія, 13.10.2026: «це не входить»); публікують
+  // лише «Обкладинку місяця» — переможця (там само: «щомісяця визначаємо переможця»).
+  ['Шанс на «Обкладинку місяця»', 'Щомісяця журі обирає найкращий образ серед найвищих балів — його обкладинку публікуємо на сайті й у соцмережах Dityam.com.ua.'],
 ];
 const FACTS = [['10–14 років', 'вік учасників'], ['25 завдань', `${MK.minutes} хвилин на спробу`], ['онлайн', 'з телефона чи компʼютера'], [`${MK.price} грн`, 'оргвнесок']];
 const STEPS = [
   ['Заявка', `Батьки вказують імʼя дитини й email і сплачують оргвнесок ${MK.price} грн.`],
   ['Тест', `25 завдань за ${MK.minutes} хвилин про кольори, тканини, стилі й тренди — у зручний день.`],
   ['Студія', 'Дитина збирає свій лук: речі, тканини, назва образу — як на відео вище.'],
-  ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір і публікація.'],
+  ['Обкладинка', 'Лук, імʼя й бали — на обкладинці. Плюс розбір відповідей.'],
 ];
 const COVERS = [
   { theme: 'pink', motto: 'Сміливість\u00A0— головний тренд сезону', title: 'Осінь у місті', score: '21/25', name: 'Соломія', age: 11, word: 'Дизайнерка', look: { base: 'set', top: 'oversize', bottom: 'pleat', outer: 'none', shoes: 'loafer', acc: 'beret', f: { top: 'quilt', bottom: 'tartan', shoes: '#161616', acc: '#b0003a', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' } } },
@@ -65,10 +71,11 @@ const OVERSIZE_LOOK = {
   f: { top: '#1fa5a0', bottom: '#161616', shoes: '#161616', acc: '#e2412b', legs: '#161616', base: 'polka', outer: 'hound', cover: 'tartan' },
 };
 const FAQ = [
-  ['Що входить у 99 грн?', `Усе: студія образу, тест на 25 завдань із розбором відповідей, обкладинка з балами для друку А4 і публікація обкладинки на сайті й у соцмережах Dityam.com.ua. Доплат немає.`],
+  ['Що входить у 99 грн?', `Усе: студія образу, тест на 25 завдань із розбором відповідей, обкладинка з балами для друку А4 і шанс стати «Обкладинкою місяця». Доплат немає. А ще — можливість оформити Dityam+ на місяць за ${PRICE_FIRST} грн замість ${PRICE} грн.`],
   ['Коли можна пройти?', `Будь-коли після оплати: на пошту прийде посилання на кабінет учасника. Тест — ${MK.minutes} хвилин, почати можна в зручний день.`],
   // Марія, 13.10.2026: «чи можна перепроходити олімпіаду — напиши так»; ліміту немає.
   ['Чи можна пройти тест ще раз?', 'Так, скільки завгодно разів — кнопка «Пройти тест ще раз» є в кабінеті. Образ і обкладинка лишаються, а на обкладинці — кращий результат.'],
+  ['Як обирають «Обкладинку місяця»?', 'Щомісяця журі Dityam.com.ua дивиться на учасників із найвищими балами за місяць і серед них обирає найкращий образ. Переможець отримує титул «Обкладинка місяця», а його обкладинку публікуємо на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком. Оголошуємо до 7-го числа наступного місяця.'],
   ['Що з даними дитини?', 'На обкладинці, на сайті й у соцмережах — лише імʼя та вік. Ні прізвища, ні міста, ні фото дитини.'],
 ];
 
@@ -111,7 +118,25 @@ function Cta({ light = false, note }) {
   );
 }
 
-export default function ModnyiKodPage() {
+const wordCap = (w) => (w === 'дизайнерка' ? 'Дизайнерка' : w === 'дизайнер' ? 'Дизайнер' : '');
+
+// «Обкладинки місяця» — переможці (winner_month ставить адмін). Збій бази —
+// просто без блоку: сторінка олімпіади не має падати через нього.
+export const revalidate = 3600;
+async function loadWinners() {
+  try {
+    const db = mkDb();
+    if (!db) return [];
+    const { data } = await db.from('mk_entries')
+      .select('child_name, child_age, designer_word, look, look_title, cover_theme, score, max_score, winner_month')
+      .not('winner_month', 'is', null).is('refunded_at', null)
+      .order('winner_month', { ascending: false }).limit(6);
+    return data || [];
+  } catch { return []; }
+}
+
+export default async function ModnyiKodPage() {
+  const winners = await loadWinners();
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -166,12 +191,30 @@ export default function ModnyiKodPage() {
                 <a href="#uchast" className="mk-btn-y">Взяти участь · {MK.price} грн</a>
                 <a href="#video" className="mk-btn-o">Подивитися, як це працює</a>
               </div>
+              {/* Марія, 13.10.2026: рядок для власників Dityam+ під ціною. */}
+              <p className="mkT-free">або <b>безкоштовно</b> для власників <a href={`https://t.me/${PLUS_BOT}`} target="_blank" rel="noopener">Dityam+</a></p>
               <a className="mkT-trust" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
                 <span className="mkT-medal">SIA<i>2026</i></span><b>{SIA_AWARD.short.uk}</b>
               </a>
             </div>
             <DeskCollage />
           </div>
+        </section>
+
+        {/* Обкладинки — одразу після першого екрана (Марія, 13.10.2026: «оце дуже
+            продає, може вище поставити»). Нижче — «Обкладинки місяця», щойно
+            журі обере першого переможця. */}
+        <section className="mkT-wrap mkT-sec mkT-covers-sec">
+            <h2 className="mkT-hand ink">Обкладинка, яку хочеться повісити на стіну</h2>
+            <p className="mkT-text">Як у справжньому модному журналі: твій лук, назва, речі з образу, імʼя й бали — на обкладинці dityam.com.ua. Для друку А4. А найкращу обкладинку місяця публікуємо на сайті й у соцмережах.</p>
+            <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} motto={c.motto} example /></li>)}</ul>
+          {winners.length ? (
+            <>
+              <h2 className="mkT-hand ink mkT-gap">Обкладинки місяця</h2>
+              <p className="mkT-text">Переможці «Модного коду»: журі обирає найкращий образ серед найвищих балів місяця.</p>
+              <ul className="mkT-covers">{winners.map((w) => <li key={`${w.winner_month}-${w.child_name}`}><VogueCover look={cleanLook(w.look)} theme={w.cover_theme || 'pink'} title={w.look_title} score={`${w.score}/${w.max_score}`} name={w.child_name} age={w.child_age} word={wordCap(w.designer_word)} winner={`${monthName(w.winner_month)} ${w.winner_month.slice(0, 4)}`} /></li>)}</ul>
+            </>
+          ) : null}
         </section>
 
         {/* Відео: як дитина збирає лук у студії й отримує обкладинку */}
@@ -182,9 +225,10 @@ export default function ModnyiKodPage() {
                 13.10.2026: «тут нема інформації про тест»). */}
             <p className="mkT-text"><b>Спершу тест:</b> 25 завдань про кольори, тканини, візерунки, стилі й тренди — {MK.minutes} хвилин, можна перепроходити. <b>Потім студія:</b> дитина обирає речі, фарбує їх тканинами з тесту, дає образу назву — і бачить свою обкладинку з балами. Усе онлайн, з телефона чи компʼютера.</p>
             <ul className="mkT-incl">
-              <li>тест: 25 завдань, {MK.minutes} хвилин</li><li>розбір відповідей</li><li>студія образу</li><li>обкладинка для друку А4</li><li>публікація на сайті й у соцмережах</li>
+              <li>тест: 25 завдань, {MK.minutes} хвилин</li><li>розбір відповідей</li><li>студія образу</li><li>обкладинка для друку А4</li><li>шанс на «Обкладинку місяця»</li>
             </ul>
             <p className="mkT-price">Усе — за <b>{MK.price} грн</b></p>
+            <p className="mkT-free">або <b>безкоштовно</b> для власників <a href={`https://t.me/${PLUS_BOT}`} target="_blank" rel="noopener">Dityam+</a></p>
           </div>
           <div className="mkT-phone">
             <video src="/modnyi-kod-demo.mp4" poster="/modnyi-kod-demo.jpg" autoPlay muted loop playsInline preload="metadata" aria-label="Відео: дитина збирає образ у студії «Модний код» і отримує обкладинку" />
@@ -235,9 +279,6 @@ export default function ModnyiKodPage() {
           </div>
           <Cta note="У тесті — 25 таких завдань, від легких до хитрих" />
 
-          <h2 className="mkT-hand ink mkT-gap">Обкладинка, яку хочеться повісити на стіну</h2>
-          <p className="mkT-text">Як у справжньому модному журналі: твій лук, назва, речі з образу, імʼя й бали — на обкладинці dityam.com.ua. Для друку А4 — і публікуємо на сайті й у соцмережах.</p>
-          <ul className="mkT-covers">{COVERS.map((c) => <li key={c.theme}><VogueCover look={c.look} theme={c.theme} title={c.title} score={c.score} name={c.name} age={c.age} word={c.word} motto={c.motto} example /></li>)}</ul>
           <SewButton className="mkT-doodle d-bt" />
         </section>
 
@@ -250,7 +291,7 @@ export default function ModnyiKodPage() {
           <div className="mkT-wrap mkT-join">
             <div className="mkT-join-txt">
               <h2 className="mkT-hand">Взяти участь</h2>
-              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: тест, студія образу, обкладинка і публікація. Після оплати на пошту прийде посилання на кабінет учасника.</p>
+              <p className="mkT-text on-dark">Оргвнесок — {MK.price} грн, у нього входить усе: тест, студія образу й обкладинка. Після оплати на пошту прийде посилання на кабінет учасника.</p>
               <p className="mkT-text on-dark mkT-plusnote">Ви підписник Dityam+? «Модний код» уже входить у підписку — відкрийте бот і натисніть «🏆 Олімпіади».</p>
             </div>
             <div className="mkT-joinbox">{MK.open ? <JoinForm /> : <Waitlist />}</div>
@@ -266,12 +307,12 @@ export default function ModnyiKodPage() {
           <ol className="mkT-rules">
             <li>Організатор — платформа Dityam.com.ua, ФОП Шутяк Марія Олександрівна. Звʼязок: {EMAIL}.</li>
             <li>Учасники — діти {MK.ageFrom}–{MK.ageTo} років. Заявку подає мама, тато чи опікун.</li>
-            <li>Оргвнесок — {MK.price} грн, оплата карткою через WayForPay. У нього входить усе: онлайн-студія образу, тест, розбір відповідей, обкладинка для друку А4 і публікація обкладинки. Доплат немає.</li>
+            <li>Оргвнесок — {MK.price} грн, оплата карткою через WayForPay. У нього входить усе: онлайн-студія образу, тест, розбір відповідей, обкладинка для друку А4. Доплат немає.</li>
             <li>Тест — 25 завдань із 4 варіантами відповіді про кольори, тканини, візерунки, стилі, тренди, українське вбрання й свідому моду, {MK.minutes} хвилин на спробу. Проходити можна скільки завгодно разів — на обкладинці лишається кращий результат. Дитина відповідає самостійно. Бали — кількість правильних відповідей із 25.</li>
             <li>До початку тесту від участі можна відмовитися й повернути {MK.price} грн — напишіть на {EMAIL}. Після того як дитина почала тест, оргвнесок не повертається.</li>
             <li>Студія образу — онлайн: дитина обирає речі й тканини та дає образу назву. Фото дитини й малюнки не потрібні.</li>
-            <li>Обкладинка — з образом зі студії, назвою образу, імʼям і віком дитини та її балами. Переможців і місць немає: обкладинку отримує кожен учасник.</li>
-            <li>Перед публікацією ми переглядаємо назву образу. Обкладинки публікуємо на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком дитини, без прізвища, міста й фото. Батьки можуть відмовитися від публікації або попросити прибрати обкладинку, написавши на {EMAIL}.</li>
+            <li>Обкладинка — з образом зі студії, назвою образу, імʼям і віком дитини та її балами. Обкладинку отримує кожен учасник.</li>
+            <li>«Обкладинка місяця»: щомісяця журі Dityam.com.ua серед учасників із найвищими балами за місяць обирає найкращий образ. Переможця оголошуємо до 7-го числа наступного місяця в Telegram-каналі й на цій сторінці. Переможець отримує титул «Обкладинка місяця», а його обкладинку публікуємо на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком дитини, без прізвища, міста й фото; перед публікацією переглядаємо назву образу. Батьки можуть відмовитися від публікації або попросити прибрати обкладинку, написавши на {EMAIL}.</li>
             <li>Дані: імʼя й вік дитини потрібні для обкладинки, email — для звʼязку з вами. Деталі — в <a href="/privacy">Політиці конфіденційності</a> та <a href="/terms">Умовах</a>.</li>
             <li>Для підписників Dityam+ участь входить у підписку: реєстрація — у боті @DityamPlusBot (меню «Олімпіади»). Проходити тест можна скільки завгодно разів.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.</li>

@@ -1,5 +1,5 @@
 // Образ зі студії: зберігаємо (лише відомі речі й тканини) і кажемо адміну —
-// Марія переглядає назву перед публікацією в соцмережах.
+// Марія переглядає назву: публікують лише «Обкладинку місяця» (13.10.2026).
 import { cleanLook } from '@/lib/modnyi-kod-looks';
 import { MK, validMkToken } from '@/lib/modnyi-kod';
 import { mkDb, entryByToken, updateEntry, notifyAdmin, serverEvent } from '@/lib/modnyi-kod-server';
@@ -24,7 +24,7 @@ export async function POST(request) {
   await updateEntry(db, b.t, { look: cleanLook(b.look), look_title: title, cover_theme: THEMES.includes(b.theme) ? b.theme : 'pink', look_at: new Date().toISOString() });
   if (first) {
     await serverEvent(db, 'mk_cover_done');
-    await notifyAdmin(`👗 <b>«${MK.title}»: нова обкладинка</b>\n${esc(row.child_name)}, ${row.child_age} · «${esc(title)}» · ${row.score}/${row.max_score}\nПереглянь назву перед публікацією в соцмережах.`);
+    await notifyAdmin(`👗 <b>«${MK.title}»: нова обкладинка</b>\n${esc(row.child_name)}, ${row.child_age} · «${esc(title)}» · ${row.score}/${row.max_score}\nКандидат на «Обкладинку місяця» — переглянь назву образу.`);
   }
   return json({ ok: true });
 }

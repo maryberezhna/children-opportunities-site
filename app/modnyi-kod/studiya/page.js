@@ -34,7 +34,7 @@ export default function StudioPage() {
           <section className="mk-head mk-locked">
             <p className="mk-kick">{MK.title} · студія юного дизайнера</p>
             <h1>Студія відкривається після <i>оплати участі</i></h1>
-            <p className="mk-small">У {MK.price} грн входить усе: студія образу, тест, обкладинка і публікація.</p>
+            <p className="mk-small">У {MK.price} грн входить усе: студія образу, тест і обкладинка.</p>
             <Link href={`/${MK.slug}#video`} className="mk-btn-y">Подивитися, як це працює</Link>
           </section>
         </main>

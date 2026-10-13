@@ -400,6 +400,7 @@ main.mkT + footer { margin-top: 0; }
 .vc-bar { position: absolute; right: 5cqw; bottom: 5cqw; z-index: 4; background: #fff; padding: 1.1cqw 1.4cqw; text-align: center; }
 .vc-bar i { display: block; width: 14cqw; height: 6cqw; background: repeating-linear-gradient(90deg, #111 0 1.5px, #fff 1.5px 3px, #111 3px 4px, #fff 4px 6.5px); }
 .vc-bar span { display: block; font-size: 1.6cqw; font-weight: 700; margin-top: .5cqw; letter-spacing: .06em; }
+.vc-win { position: absolute; left: 5cqw; top: 31cqw; z-index: 5; background: var(--acc); color: #fff; font-family: var(--font-sans), sans-serif; font-weight: 800; font-size: 2.3cqw; letter-spacing: .08em; text-transform: uppercase; padding: 1cqw 2.2cqw; border-radius: 99px; }
 .vc-tag { position: absolute; top: 3cqw; right: 3cqw; z-index: 7; display: none; }
 .mkT-covers .vc { width: 100%; }
 .mk-cvthemes { display: flex; gap: 10px; margin: 6px 0 12px; }
@@ -522,3 +523,7 @@ main.mkT + footer { margin-top: 0; }
     }
   }
 }
+
+/* «або безкоштовно для власників Dityam+» під кнопкою першого екрана (13.10.2026). */
+.mkT-free { margin: 12px 0 0; font-size: .95rem; color: #444; }
+.mkT-free a { color: var(--plum); font-weight: 800; }
