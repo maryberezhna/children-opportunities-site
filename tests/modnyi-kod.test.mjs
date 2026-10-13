@@ -101,7 +101,7 @@ test('ніде на сайті немає слова «стьобана»', () =
 });
 
 test('«Модний код» — у меню «Наші можливості» й у футері', () => {
-  assert.match(read('app/Header.js'), /href: `\/\$\{MK\.slug\}`/);
+  assert.match(read('lib/own-opportunities.js'), /href: `\/\$\{MK\.slug\}`/);
   assert.match(read('app/Footer.js'), /modnyiKod: '\/modnyi-kod'/);
 });
 
