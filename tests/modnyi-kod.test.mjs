@@ -218,3 +218,12 @@ test('SEO «Модного коду»: картинка для соцмереж,
   assert.match(readFileSync('app/modnyi-kod/opengraph-image.js', 'utf8'), /ImageResponse/);
   assert.match(readFileSync('app/modnyi-kod/twitter-image.js', 'utf8'), /opengraph-image/);
 });
+
+test('анімація «Модного коду»: фігури й манекен не рухаються (13.10.2026)', () => {
+  const css = readFileSync('app/styles/modnyi-kod.css', 'utf8');
+  const motion = css.slice(css.indexOf('Трішки руху на картинках'));
+  for (const sel of ['.dk-fig', '.dk-form', '.vc-fig', '.mkT-q-pic {']) {
+    const line = motion.split('\n').find((l) => l.includes(sel) && l.includes('animation'));
+    assert.equal(line, undefined, `${sel} знову рухається: ${line}`);
+  }
+});
