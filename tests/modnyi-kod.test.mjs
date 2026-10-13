@@ -176,3 +176,14 @@ test('кабінет: обкладинка замість сертифіката
   assert.match(cover, /validMkToken\(t\)/);
   assert.doesNotMatch(cover, /DEVDEMO|NODE_ENV/);
 });
+
+test('адмін проходить «Модний код» без оплати, і це не рахується продажем (13.10.2026)', () => {
+  const start = readFileSync('app/api/modnyi-kod/start/route.js', 'utf8');
+  assert.match(start, /isAdmin\(cookies\(\)\.get\('dityam_admin'\)/);
+  assert.ok(start.indexOf('adminTestPaid') < start.indexOf('startPayment(db, row)'), 'адмін не має йти в WayForPay');
+  const srv = readFileSync('lib/modnyi-kod-server.js', 'utf8');
+  const fn = srv.slice(srv.indexOf('export async function adminTestPaid'), srv.indexOf('export async function handleMkCallback'));
+  assert.match(fn, /amount: 0/);
+  assert.match(fn, /source: 'admin_test'/);
+  assert.doesNotMatch(fn, /recordPayment|serverEvent|notifyAdmin/);
+});

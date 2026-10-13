@@ -37,7 +37,8 @@ export default function JoinForm() {
       const j = await r.json().catch(() => ({}));
       if (j.url) {
         try { window.localStorage.setItem('mk_entry', j.t); } catch { /* ок */ }
-        if (typeof window.gtag === 'function') window.gtag('event', 'begin_checkout', { value: MK.price, currency: 'UAH', item_name: 'modnyi_kod' });
+        // Адмінський тест веде одразу в кабінет — це не покупка.
+        if (!j.url.includes('/kabinet') && typeof window.gtag === 'function') window.gtag('event', 'begin_checkout', { value: MK.price, currency: 'UAH', item_name: 'modnyi_kod' });
         window.location.assign(j.url);
         return;
       }
