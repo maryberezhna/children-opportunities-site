@@ -152,7 +152,7 @@ export default function AmbassadorsPage() {
         {/* Ціль і роль — слова Марії дослівно (12.10.2026), правлено лише правопис. */}
         <section className="amb-section amb-goal" aria-labelledby="amb-goal">
           <h2 id="amb-goal">Наша ціль</h2>
-          <p className="amb-goal-lead">Створювати кращий світ для наших дітей у такий складний час.</p>
+          <p className="amb-goal-lead">Створювати <span className="amb-u">кращий світ</span> для наших <span className="amb-u">дітей</span> у такий складний час.</p>
           <div className="amb-goal-role">
             <p>Амбасадори можуть прямо впливати на наш проєкт:</p>
             <ul>
