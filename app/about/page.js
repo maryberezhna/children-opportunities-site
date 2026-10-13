@@ -116,7 +116,9 @@ export default async function AboutPage() {
               потрібніше, а та, чиї батьки встигли знайти.
             </p>
             <p className="ab-signature">
-              <span className="v2-script">Марія</span>Шутяк, засновниця Dityam.com.ua
+              {/* Caveat — на назві, як у лого (Марія, 13.10.2026: «тут краще
+                  каветом дітям ком юа»), а не на імені. */}
+              Марія Шутяк, засновниця <span className="v2-script">dityam.com.ua</span>
             </p>
           </div>
         </section>

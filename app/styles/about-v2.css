@@ -79,7 +79,7 @@
   color: var(--v2-ink-2);
 }
 
-.ab-signature .v2-script { font-size: 1.6em; margin-right: 0.3em; transform: rotate(-3deg); }
+.ab-signature .v2-script { font-size: 1.6em; margin-left: 0.15em; transform: rotate(-3deg); }
 
 /* ── Що робимо ─────────────────────────────────────────────────────────── */
 .ab-cards {
