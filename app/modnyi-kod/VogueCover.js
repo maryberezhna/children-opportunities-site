@@ -46,7 +46,7 @@ export default function VogueCover({ look, theme = 'pink', title, score = '?/25'
       <div className="vc-top vc-small"><span>Випуск №1</span><span>Осінь 2026</span><span>Модний код</span></div>
       <div className="vc-mast">dityam.com.ua</div>
       <div className="vc-floor" />
-      <svg className="vc-fig" viewBox="20 -6 160 452" preserveAspectRatio="xMidYMax meet" dangerouslySetInnerHTML={{ __html: lookSvg(look) }} />
+      <svg className="vc-fig" viewBox="20 -6 160 438" preserveAspectRatio="xMidYMax meet" dangerouslySetInnerHTML={{ __html: lookSvg(look) }} />
       <div className="vc-col l">
         <p><span className="vc-small">Лук сезону</span><i>«{title || 'Твій образ'}»</i></p>
         <p className="vc-inlook"><span className="vc-small">У луку</span>{inLook(look)}</p>
