@@ -200,3 +200,11 @@ test('тест можна перепроходити скільки завгод
   assert.match(readFileSync('app/modnyi-kod/kabinet/page.js', 'utf8'), /<RetakeButton /);
   assert.match(readFileSync('app/modnyi-kod/page.js', 'utf8'), /Чи можна пройти тест ще раз\?/);
 });
+
+test('бот: у тексті повідомлень олімпіад немає емодзі, які Telegram показує кодом (13.10.2026)', () => {
+  for (const f of ['lib/modnyi-kod-bot.js']) {
+    const lines = readFileSync(f, 'utf8').split('\n').filter((l) => !l.includes('text:') && !l.trim().startsWith('//'));
+    for (const l of lines) assert.doesNotMatch(l, /[\u{1F300}-\u{1F3FF}]/u, `${f}: ${l.trim()}`);
+  }
+  assert.doesNotMatch(readFileSync('lib/modnyi-kod-bot.js', 'utf8'), /безкоштовно\)/);
+});
