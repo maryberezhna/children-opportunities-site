@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation';
 import { TOPIC_LIST, DIASPORA_COUNTRY_TOPICS, topicMenu } from '@/lib/topics';
 import { CITY_META } from '@/lib/cities';
 import { readMode, writeMode, onModeChange } from '@/lib/mode';
-import { MK } from '@/lib/modnyi-kod';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
+import { OWN_PATH, OWN_LABEL } from '@/lib/own-opportunities';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
 // навігації, перемикач «Батькам / Підліткам» на сторінках каталогу і одна
@@ -115,11 +114,6 @@ export default function Header() {
   // наведенням і кліком; закривається Escape, кліком поза ним і переходом.
   const [topicsOpen, setTopicsOpen] = useState(false);
   const topicsRef = useRef(null);
-  // «Наші можливості» (Марія, 06.10.2026: «додай у хедері наші можливості —
-  // там буде олімпіада і Dityam+»): власні продукти Dityam.com.ua окремо від
-  // чужих можливостей у «Підбірках». Такий самий випадний список.
-  const [ownOpen, setOwnOpen] = useState(false);
-  const ownRef = useRef(null);
   // Панель із пʼятьма стовпцями ширша за місце праворуч від кнопки на
   // вузькому ноутбуці. Обмежуємо її шириною до краю вікна — стовпці тоді
   // переносяться в другий ряд, а не вилазять за екран.
@@ -129,13 +123,12 @@ export default function Header() {
     const left = topicsRef.current.getBoundingClientRect().left;
     setMegaMax(Math.max(260, window.innerWidth - left - 4));
   }, [topicsOpen]);
-  useEffect(() => { setMenuOpen(false); setTopicsOpen(false); setOwnOpen(false); }, [pathname]);
+  useEffect(() => { setMenuOpen(false); setTopicsOpen(false); }, [pathname]);
   useEffect(() => {
-    if (!menuOpen && !topicsOpen && !ownOpen) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') { setMenuOpen(false); setTopicsOpen(false); setOwnOpen(false); } };
+    if (!menuOpen && !topicsOpen) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') { setMenuOpen(false); setTopicsOpen(false); } };
     const onDown = (e) => {
       if (topicsOpen && topicsRef.current && !topicsRef.current.contains(e.target)) setTopicsOpen(false);
-      if (ownOpen && ownRef.current && !ownRef.current.contains(e.target)) setOwnOpen(false);
     };
     window.addEventListener('keydown', onKey);
     document.addEventListener('mousedown', onDown);
@@ -143,7 +136,7 @@ export default function Header() {
       window.removeEventListener('keydown', onKey);
       document.removeEventListener('mousedown', onDown);
     };
-  }, [menuOpen, topicsOpen, ownOpen]);
+  }, [menuOpen, topicsOpen]);
 
   if (pathname.startsWith('/admin')) return null;
 
@@ -170,18 +163,14 @@ export default function Header() {
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
   const topicGroups = topicMenu(isEnglish ? 'en' : 'uk');
   const topicActive = topicGroups.some((g) => g.links.some((l) => l.href === pathname));
-  // Олімпіада — лише українською й лише поки сторінка відкрита.
-  const OWN = isEnglish ? [] : [
-    ...(OLIMP_OPEN || OLIMP_PUBLIC ? [{
-      href: '/olimpiada',
-      label: 'Онлайн-олімпіада з логіки',
-      note: `для дітей ${OLIMP.groupLabel} · ${OLIMP_OPEN ? 'безкоштовно' : 'скоро старт'}`,
-    }] : []),
-    // «Модний код» — олімпіада з моди (Марія, 12.10.2026: «публікуй і додавай у наші можливості»).
-    { href: `/${MK.slug}`, label: `«${MK.title}» — олімпіада з моди`, note: `для дітей ${MK.ageFrom}–${MK.ageTo} років · ${MK.open ? `${MK.price} грн` : 'скоро старт'}` },
-    { href: '/plus', label: 'Dityam+', note: 'особиста добірка можливостей у Telegram' },
-  ];
-  const ownActive = OWN.some((l) => pathname.startsWith(l.href));
+  // Помаранчева кнопка праворуч (Марія, 13.10.2026: «заміни Dityam+ на наші
+  // можливості … створи сторінку, де будуть саме наші можливості»): веде на
+  // /nashi-mozhlyvosti — олімпіади й Dityam+ разом. Випадний список «Наші
+  // можливості» біля «Підбірок» прибрано: та сама назва двічі поруч. Англійська
+  // версія лишається з Dityam+ — сторінки «Наші можливості» англійською немає.
+  const CTA = isEnglish
+    ? { href: PLUS_HREF, label: 'Dityam+', track: 'Dityam+' }
+    : { href: OWN_PATH, label: OWN_LABEL, track: 'own_page' };
 
   // Пігулки «🏆 Переможець SIA Ukraine 2026» біля лого більше немає (Марія,
   // 07.10.2026: «прибери то з хедера»). Нагороду показують кільце на
@@ -240,40 +229,6 @@ export default function Header() {
               ))}
             </div>
           </div>
-          {OWN.length ? (
-            <div
-              ref={ownRef}
-              className={`v2-nav-drop${ownOpen ? ' is-open' : ''}`}
-              onMouseEnter={() => setOwnOpen(true)}
-              onMouseLeave={() => setOwnOpen(false)}
-            >
-              <button
-                type="button"
-                className={`v2-nav-drop-btn${ownActive ? ' is-active' : ''}`}
-                aria-expanded={ownOpen}
-                aria-controls="v2-own-menu"
-                onClick={() => setOwnOpen((v) => !v)}
-              >
-                Наші можливості
-                <span className="v2-nav-caret" aria-hidden="true" />
-              </button>
-              <ul id="v2-own-menu" className="v2-nav-drop-panel v2-nav-own" hidden={!ownOpen}>
-                {OWN.map((l) => (
-                  <li key={l.href}>
-                    <Link
-                      href={l.href}
-                      prefetch={false}
-                      aria-current={pathname.startsWith(l.href) ? 'page' : undefined}
-                      onClick={() => { track(`own:${l.label}`)(); setOwnOpen(false); }}
-                    >
-                      <b>{l.label}</b>
-                      <span>{l.note}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -309,12 +264,12 @@ export default function Header() {
             </div>
           ) : null}
           <Link
-            href={PLUS_HREF}
+            href={CTA.href}
             className="v2-support-btn"
-            aria-current={pathname.startsWith(PLUS_HREF) ? 'page' : undefined}
-            onClick={track('Dityam+')}
+            aria-current={pathname.startsWith(CTA.href) ? 'page' : undefined}
+            onClick={track(CTA.track)}
           >
-            Dityam+
+            {CTA.label}
           </Link>
         </div>
 
@@ -381,35 +336,6 @@ export default function Header() {
               </div>
             );
           })}
-          {OWN.length ? (
-            <div className="v2-mmenu-group" role="group" aria-labelledby="v2-mmenu-g-own">
-              <button
-                type="button"
-                id="v2-mmenu-g-own"
-                className={`v2-mmenu-toggle${mGroupOpen === 'own' ? ' is-open' : ''}`}
-                aria-expanded={mGroupOpen === 'own'}
-                aria-controls="v2-mmenu-list-own"
-                onClick={() => setMGroupOpen(mGroupOpen === 'own' ? null : 'own')}
-              >
-                Наші можливості
-                <span className="v2-nav-caret" aria-hidden="true" />
-              </button>
-              <div id="v2-mmenu-list-own" className="v2-mmenu-list" hidden={mGroupOpen !== 'own'}>
-                {OWN.map((l) => (
-                  <Link
-                    key={l.href}
-                    href={l.href}
-                    prefetch={false}
-                    className={`v2-mmenu-sub${pathname.startsWith(l.href) ? ' is-active' : ''}`}
-                    aria-current={pathname.startsWith(l.href) ? 'page' : undefined}
-                    onClick={() => { track(`own:${l.label}`)(); setMenuOpen(false); }}
-                  >
-                    {l.label}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
           {NAV.map((item) => (
             <Link
               key={item.href}
@@ -437,11 +363,11 @@ export default function Header() {
             🧡 {isEnglish ? 'Support' : 'Підтримати'}
           </a>
           <Link
-            href={PLUS_HREF}
+            href={CTA.href}
             className="v2-mmenu-support"
-            onClick={() => { track('Dityam+')(); setMenuOpen(false); }}
+            onClick={() => { track(CTA.track)(); setMenuOpen(false); }}
           >
-            Dityam+
+            {CTA.label}
           </Link>
         </nav>
       ) : null}

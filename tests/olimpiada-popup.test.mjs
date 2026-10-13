@@ -96,11 +96,15 @@ test('у списку очікування без «1 лист, без розс�
   assert.ok(!read('app/OlimpPopup.js').includes('без розсилок'));
 });
 
+// З 13.10.2026 помаранчева кнопка шапки веде на /nashi-mozhlyvosti, де
+// олімпіада й Dityam+ разом (lib/own-opportunities.js).
 test('шапка: «Наші можливості» з олімпіадою й Dityam+', () => {
   const h = read('app/Header.js');
-  assert.match(h, /Наші можливості/);
-  assert.match(h, /href: '\/olimpiada'/);
-  assert.match(h, /href: '\/plus', label: 'Dityam\+'/);
+  assert.match(h, /OWN_PATH, OWN_LABEL/);
+  const own = read('lib/own-opportunities.js');
+  assert.match(own, /OWN_LABEL = 'Наші можливості'/);
+  assert.match(own, /href: '\/olimpiada'/);
+  assert.match(own, /href: '\/plus',\s*label: 'Dityam\+'/);
 });
 
 test('критерії журі описані, а в тесті немає примітки про приз', () => {

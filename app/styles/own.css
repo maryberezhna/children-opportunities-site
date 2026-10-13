@@ -1,0 +1,100 @@
+/* «Наші можливості» (/nashi-mozhlyvosti). Префікс own-.
+   Тло біле (--surface-2), без кремового градієнта .v2-page. Картки з
+   картинкою зверху — прев'ю кожної сторінки (варіант 1, Марія 13.10.2026).
+   Текст акценту — --v2-accent-strong; --v2-accent лише декор. */
+
+.own-root { background: var(--surface-2); }
+
+.v2-container.own-page { gap: 0; padding-bottom: 80px; }
+
+.own-hero { padding: 64px 0 8px; }
+
+.own-hero h1 {
+  margin: 0 0 16px;
+  font-size: 4rem;
+  line-height: 1.05;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--v2-ink);
+}
+
+.own-hero h1 .v2-script { font-size: 1.15em; color: var(--v2-accent-strong); }
+
+.own-sub {
+  margin: 0;
+  max-width: 620px;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+}
+
+.own-list {
+  list-style: none;
+  margin: 40px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.own-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 16px;
+  background: var(--surface-2);
+  border: 1px solid var(--v2-line);
+}
+
+.own-card-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-bottom: 1px solid var(--v2-line);
+}
+
+.own-card-meta { font-size: 0.875rem; font-weight: 700; color: var(--v2-accent-strong); }
+
+.own-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px 20px 22px;
+}
+
+.own-card h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--v2-ink);
+}
+
+.own-card p { margin: 0 0 6px; font-size: 1rem; line-height: 1.55; color: var(--v2-ink); }
+
+.own-card-btn {
+  margin-top: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--v2-accent-strong);
+  color: var(--surface-2);
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.own-card-btn:hover { background: var(--v2-accent-hover); }
+
+@media (max-width: 900px) {
+  .own-hero { padding: 36px 0 4px; }
+  .own-hero h1 { font-size: 2.5rem; }
+  .own-sub { font-size: 1.0625rem; }
+  .own-list { grid-template-columns: 1fr; margin-top: 24px; gap: 12px; }
+}
