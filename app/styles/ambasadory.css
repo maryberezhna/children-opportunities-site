@@ -1,46 +1,78 @@
-/* «Амбасадори Dityam.com.ua» (/ambasadory, 12.10.2026). Префікс amb-.
-   Хіро, кнопки й шрифти — спільні з головною (home-v2.css); картки — як на
-   /about (about-v2.css). Кольори лише токенами, щоб працював нічний режим.
-   Шкала: назва картки 20/700, текст 16, підписи 14. Текст акценту —
-   --v2-accent-strong (#c8501a); --v2-accent (#e85d24) лише декор. */
+/* «Амбасадори Dityam.com.ua» (/ambasadory). Префікс amb-.
+   Редизайн 13.10.2026 — поєднання трьох макетів, частини обрала Марія:
+   хіро й «Що роблять амбасадори» — з макета A (чистий білий), «Наша ціль»,
+   «Хто може», «Що ви отримаєте» і форма — з макета C (помаранчевий).
+   Жодних кремових чи бежевих тл — лише білий (--surface-2).
+   Кольори лише токенами, щоб працював нічний режим. Шкала: назва картки
+   20/700, текст 16, підписи 14. Текст акценту — --v2-accent-strong
+   (#c8501a); --v2-accent (#e85d24) лише декор. Власні класи замість
+   .v2-hero*: режим «Підліткам» перефарбовує їх під чорне тло. */
 
-.amb-page { padding-bottom: 24px; }
+/* Спільний .v2-page дає кремовий градієнт угорі — тут тло чисто біле. */
+.amb-root { background: var(--surface-2); }
 
-/* ── Хіро ───────────────────────────────────────────────────────────────── */
-.amb-page > .amb-hero {
-  max-width: none;
-  margin: 0;
-  padding: 44px 0 8px;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
+.v2-container.amb-page { gap: 0; padding-bottom: 80px; }
+
+/* ── Хіро (макет A) ─────────────────────────────────────────────────────── */
+.amb-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
   align-items: center;
-  gap: 32px 56px;
+  gap: 64px;
+  padding: 64px 0 24px;
 }
 
-.amb-hero-copy { gap: 22px; }
-.amb-sub { font-size: 1.125rem; }
+.amb-hero-copy { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; }
+
+.amb-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--v2-ink-2);
+}
+
+.amb-hero h1 {
+  margin: 16px 0 18px;
+  font-size: 4.75rem;
+  line-height: 1.02;
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  color: var(--v2-ink);
+  text-wrap: balance;
+}
+
+.amb-hero h1 .v2-script {
+  display: block;
+  width: max-content;
+  margin: 2px 0 4px -2px;
+  font-size: 1.18em;
+  color: var(--v2-accent-strong);
+}
+
+.amb-sub {
+  margin: 0 0 24px;
+  max-width: 560px;
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  color: var(--v2-ink-2);
+  text-wrap: pretty;
+}
 
 .amb-actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.amb-btn { font-size: 1rem; padding: 14px 26px; }
 
-.amb-hero-photo {
-  position: relative;
-  display: block;
+.amb-btn {
+  justify-content: center;
+  min-height: 52px;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
-/* Тепла пляма за фото — як на головній, лише декор. */
-.amb-hero-photo::before {
-  content: '';
-  position: absolute;
-  inset: 18px -14px -14px 18px;
-  border-radius: 32px;
-  background: var(--v2-cream);
-  border: 1px solid var(--v2-line);
-  z-index: 0;
-}
+.amb-hero-photo { display: block; min-width: 0; }
 
 .amb-hero-photo img {
-  position: relative;
-  z-index: 1;
   display: block;
   width: 100%;
   height: auto;
@@ -50,15 +82,16 @@
 }
 
 /* ── Секції ─────────────────────────────────────────────────────────────── */
-.amb-section { display: flex; flex-direction: column; gap: 20px; }
+.amb-section { display: flex; flex-direction: column; padding: 72px 0 0; }
 
 .amb-section h2 {
   margin: 0;
   font-family: var(--font-sans), sans-serif;
-  font-size: clamp(1.625rem, calc(3vw * var(--a11y-font-scale, 1)), 2.125rem);
+  font-size: 2.25rem;
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -0.02em;
+  color: var(--v2-ink);
   text-wrap: balance;
 }
 
@@ -67,58 +100,146 @@
   font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.3;
+  color: var(--v2-ink);
   text-wrap: balance;
 }
 
-.amb-intro {
-  margin: 0;
-  max-width: 64ch;
-  font-size: 1.125rem;
-  line-height: 1.6;
-  color: var(--v2-ink-2);
-  text-wrap: pretty;
+/* ── Наша ціль (макет C) ────────────────────────────────────────────────── */
+.amb-goal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 56px;
 }
 
-/* ── Хто може ───────────────────────────────────────────────────────────── */
+.amb-goal h2 { grid-column: 1 / -1; margin-bottom: -24px; }
+
+.amb-goal-lead {
+  margin: 0;
+  font-size: 2.5rem;
+  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--v2-ink);
+  text-wrap: balance;
+}
+
+/* Коротка помаранчева риска під реченням — декор. */
+.amb-goal-lead::after {
+  content: '';
+  display: block;
+  width: 56px;
+  height: 5px;
+  margin-top: 16px;
+  border-radius: 5px;
+  background: var(--v2-accent);
+}
+
+.amb-goal-role > p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
+
+.amb-goal-role ul {
+  list-style: none;
+  margin: 14px 0 18px;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.amb-goal-role li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--v2-ink);
+}
+
+.amb-check { flex: none; width: 22px; height: 22px; margin-top: 2px; }
+.amb-check circle { fill: var(--v2-accent-strong); }
+.amb-check path {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.amb-goal-role > p.amb-goal-end {
+  font-size: 1.0625rem;
+  line-height: 1.45;
+  font-weight: 700;
+  color: var(--v2-ink);
+}
+
+/* ── Хто може (макет C) ─────────────────────────────────────────────────── */
 .amb-who {
   list-style: none;
-  margin: 0;
+  margin: 32px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  gap: 20px;
 }
 
 .amb-who-card {
   display: grid;
-  grid-template-columns: 180px minmax(0, 1fr);
-  align-items: center;
-  gap: 20px;
-  padding: 14px 22px 14px 14px;
-  border-radius: 20px;
+  grid-template-columns: 240px minmax(0, 1fr);
+  align-items: stretch;
+  overflow: hidden;
+  border-radius: 18px;
   background: var(--surface-2);
   border: 1px solid var(--v2-line);
 }
 
+.amb-who-photo { display: block; }
+
 .amb-who-photo img {
   display: block;
   width: 100%;
-  height: auto;
-  aspect-ratio: 4 / 3;
+  height: 100%;
+  min-height: 160px;
   object-fit: cover;
-  border-radius: 14px;
 }
 
-.amb-who-text { display: flex; flex-direction: column; gap: 6px; }
-.amb-who-text p { margin: 0; font-size: 1rem; line-height: 1.5; color: var(--v2-ink-2); }
+.amb-who-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 24px 28px;
+}
 
-/* ── Що отримаєте ───────────────────────────────────────────────────────── */
-.amb-benefits {
+.amb-who-text p { margin: 0; font-size: 1rem; line-height: 1.45; color: var(--v2-ink-2); }
+
+/* ── Що роблять амбасадори (макет A) ────────────────────────────────────── */
+.amb-cases {
   list-style: none;
-  margin: 0;
+  margin: 32px 0 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
+  border-top: 1px solid var(--v2-ink);
+}
+
+.amb-case {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 20px 0 0;
+}
+
+.amb-case + .amb-case { padding-left: 20px; border-left: 1px solid var(--v2-line); }
+
+.amb-case-who { font-size: 0.875rem; font-weight: 700; line-height: 1.6; color: var(--v2-accent-strong); }
+.amb-case p { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--v2-ink-2); }
+
+/* ── Що ви отримаєте (макет C) ──────────────────────────────────────────── */
+.amb-benefits {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -128,74 +249,95 @@
 .amb-benefit[data-tone="learn"] { --tone-bg: var(--cool-2); --tone-ink: var(--chip-ink-teal); }
 .amb-benefit[data-tone="event"] { --tone-bg: var(--green-1); --tone-ink: var(--chip-ink-green); }
 .amb-benefit[data-tone="grow"] { --tone-bg: var(--pink-2); --tone-ink: var(--chip-ink-pink); }
+.amb-benefit[data-tone="brand"] { --tone-bg: color-mix(in srgb, var(--v2-accent) 22%, transparent); --tone-ink: var(--v2-accent-strong); }
 
 .amb-benefit {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: auto 1fr;
   overflow: hidden;
   border-radius: 16px;
-  background: var(--v2-paper, #fff);
+  background: var(--surface-2);
   border: 1px solid var(--v2-line);
 }
 
 .amb-benefit-n {
-  display: block;
-  padding: 12px 18px;
-  background: var(--tone-bg, var(--v2-cream));
-  color: var(--tone-ink, var(--v2-accent-strong));
-  font-size: 0.875rem;
+  display: flex;
+  align-items: center;
+  padding: 14px 18px;
+  background: var(--tone-bg);
+  color: var(--tone-ink);
+  font-size: 1.25rem;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
 
-.amb-benefit-body { display: flex; flex-direction: column; gap: 8px; padding: 16px 18px 20px; }
-.amb-benefit h3 { margin: 0; }
+.amb-benefit-body { display: flex; flex-direction: column; gap: 6px; padding: 16px 18px; }
 .amb-benefit p { margin: 0; font-size: 0.875rem; line-height: 1.5; color: var(--v2-ink-3); }
 
-/* ── Що робить (у лівій колонці форми) ────────────────────────────────── */
-.amb-does {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-  padding-top: 20px;
-  border-top: 1px solid var(--v2-line-strong);
-}
-.amb-does p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--v2-ink); text-wrap: pretty; }
-
-/* ── Форма ──────────────────────────────────────────────────────────────── */
+/* ── Як стати амбасадором: ліва колонка й форма (макет C) ───────────────── */
 .amb-apply {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   align-items: start;
   gap: 24px 56px;
-  padding: 40px;
-  border-radius: 24px;
-  background: var(--v2-cream);
-  border: 1px solid var(--v2-line);
-  scroll-margin-top: 90px;
+  padding-top: 96px;
+  scroll-margin-top: 60px;
 }
 
-.amb-apply-head { display: flex; flex-direction: column; gap: 12px; max-width: 52ch; }
+.amb-apply-head { display: flex; flex-direction: column; }
 
-.amb-form { margin: 0; max-width: none; }
+.amb-section.amb-apply h2 { font-size: 2.75rem; line-height: 1.12; letter-spacing: -0.025em; }
 
-/* Поля контактної форми мають кремову заливку — на кремовій панелі вони
-   б зникли, тож тут вони білі. */
+.amb-intro {
+  margin: 10px 0 0;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  color: var(--v2-ink-2);
+}
+
+/* Помаранчева картка. Текст — колір поверхні: білий удень, темний уночі,
+   коли помаранчевий світлішає (як у кнопки «Надіслати»). */
+.amb-does {
+  margin-top: 20px;
+  padding: 18px 18px 18px 20px;
+  border-radius: 16px;
+  background: var(--v2-accent-strong);
+  color: var(--surface-2);
+}
+.amb-section .amb-does h3 { margin-bottom: 6px; color: var(--surface-2); }
+.amb-does p { margin: 0; font-size: 1rem; line-height: 1.6; color: var(--surface-2); text-wrap: pretty; }
+
+/* ── Форма ──────────────────────────────────────────────────────────────── */
+.amb-form {
+  margin: 0;
+  max-width: none;
+  padding: 36px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  border: 1px solid var(--v2-line-strong);
+}
+
+/* У контактної форми поля з кремовою заливкою — тут білі з тонкою рамкою. */
 .amb-form .contact-input,
 .amb-form .contact-textarea {
+  min-height: 48px;
   background: var(--surface-2);
   color: var(--v2-ink);
-  border-color: var(--v2-line);
+  border: 1px solid var(--v2-line-strong);
 }
 .amb-form .contact-input:hover,
-.amb-form .contact-textarea:hover { border-color: var(--v2-line-strong); }
+.amb-form .contact-textarea:hover { background: var(--surface-2); border-color: var(--v2-ink-3); }
+.amb-form .contact-input::placeholder,
+.amb-form .contact-textarea::placeholder { color: var(--v2-ink-3); }
 .amb-form .contact-label { color: var(--v2-ink); }
-.amb-form .contact-req { color: var(--v2-ink-3); font-size: 0.8125rem; }
+.amb-form .contact-req { margin-left: 4px; color: var(--v2-ink-3); font-size: 0.8125rem; }
+.amb-form .contact-consent { gap: 12px; color: var(--v2-ink-2); }
+.amb-form .contact-consent input { width: 20px; height: 20px; margin-top: 2px; }
+.amb-form .contact-submit { min-height: 52px; padding: 14px 36px; }
 .amb-form .contact-privacy { margin: -6px 0 0; font-size: 0.875rem; line-height: 1.5; color: var(--v2-ink-3); }
-.amb-form .contact-privacy a { color: var(--v2-accent-strong); }
-.amb-about { min-height: 96px; }
+.amb-form .contact-privacy a { color: var(--v2-accent-strong); text-decoration: underline; text-underline-offset: 3px; }
+.amb-about { min-height: 96px; resize: vertical; line-height: 1.5; }
 
 .amb-roles { margin: 0; padding: 0; border: 0; min-width: 0; }
 .amb-roles legend { padding: 0; margin-bottom: 7px; }
@@ -211,11 +353,11 @@
   border-radius: 999px;
   border: 1px solid var(--v2-line-strong);
   background: var(--surface-2);
-  font-size: 1rem;
-  font-weight: 600;
+  font-size: 0.9375rem;
+  font-weight: 700;
   color: var(--v2-ink);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color 0.15s ease;
 }
 
 .amb-role input { position: absolute; opacity: 0; pointer-events: none; }
@@ -225,48 +367,62 @@
 .amb-role.is-on {
   border-color: var(--v2-accent-strong);
   color: var(--v2-accent-strong);
-  background: var(--surface-2);
   box-shadow: inset 0 0 0 1px var(--v2-accent-strong);
 }
 
-.amb-done { margin: 0; max-width: none; background: var(--surface-2); }
+/* Подяка після заявки — у тій самій картці, без кремової заливки. */
+.amb-done {
+  margin: 0;
+  max-width: none;
+  background: var(--surface-2);
+  border: 1px solid var(--v2-line-strong);
+  border-radius: 20px;
+}
 
 /* ── Адаптив ────────────────────────────────────────────────────────────── */
-@media (max-width: 1000px) {
-  .amb-benefits { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .amb-who { grid-template-columns: 1fr; }
+@media (max-width: 1100px) {
+  .amb-who-card { grid-template-columns: 180px minmax(0, 1fr); }
+  .amb-who-text { padding: 20px 22px; }
 }
 
 @media (max-width: 900px) {
-  .amb-page > .amb-hero { grid-template-columns: 1fr; padding: 28px 0 0; gap: 28px; }
-  .amb-hero-photo { margin-right: 14px; }
-  /* На телефоні квадратне фото забирало б цілий екран — нижча смуга. */
-  .amb-hero-photo img { aspect-ratio: 4 / 3; object-position: 50% 30%; border-radius: 24px; }
-  .amb-hero-photo::before { border-radius: 28px; }
-  .amb-apply { grid-template-columns: 1fr; padding: 28px 18px; }
-}
+  .v2-container.amb-page { padding-bottom: 56px; }
 
-@media (max-width: 640px) {
-  .amb-who-card { grid-template-columns: 112px minmax(0, 1fr); gap: 14px; padding: 12px 16px 12px 12px; }
-  .amb-who-photo img { aspect-ratio: 1 / 1; }
-  .amb-btn { width: 100%; justify-content: center; }
+  /* Хіро: фото під текстом, нижчою смугою. */
+  .amb-hero { grid-template-columns: 1fr; gap: 28px; padding: 32px 0 0; }
+  .amb-hero h1 { font-size: 2.875rem; }
   .amb-sub { font-size: 1.0625rem; }
+  .amb-actions { align-self: stretch; }
+  .amb-btn { width: 100%; }
+  .amb-hero-photo img { aspect-ratio: 4 / 3; object-position: 50% 40%; border-radius: 24px; }
+
+  .amb-section { padding-top: 44px; }
+  .amb-section h2 { font-size: 1.75rem; }
+
+  /* Ціль — одна колонка, риска під реченням. */
+  .amb-goal { grid-template-columns: 1fr; gap: 0; }
+  .amb-goal h2 { margin-bottom: 0; }
+  .amb-goal-lead { margin: 14px 0 20px; font-size: 1.625rem; }
+
+  /* Хто може — дві картки поруч, фото згори. */
+  .amb-who { margin-top: 20px; gap: 10px; }
+  .amb-who-card { grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-items: start; }
+  .amb-who-photo img { height: auto; min-height: 0; aspect-ratio: 1 / 1; }
+  .amb-who-text { justify-content: flex-start; padding: 12px 14px 16px; }
+
+  /* Що роблять — список із тонкими розділювачами. */
+  .amb-cases { grid-template-columns: 1fr; margin-top: 14px; border-top: 0; }
+  .amb-case { gap: 4px; padding: 16px 0; border-bottom: 1px solid var(--v2-line); }
+  .amb-case + .amb-case { padding-left: 0; border-left: 0; }
+  .amb-case:last-child { border-bottom: 0; }
+
+  /* Вигоди — рядки з кольоровим номером ліворуч. */
+  .amb-benefits { grid-template-columns: 1fr; margin-top: 20px; }
+  .amb-benefit { grid-template-columns: 64px minmax(0, 1fr); grid-template-rows: auto; }
+  .amb-benefit-n { justify-content: center; padding: 0; }
+  .amb-benefit-body { justify-content: center; }
+
+  .amb-apply { grid-template-columns: 1fr; padding-top: 56px; }
+  .amb-section.amb-apply h2 { font-size: 1.875rem; }
+  .amb-form { padding: 22px 18px; }
 }
-
-@media (max-width: 480px) {
-  .amb-benefits { grid-template-columns: 1fr; }
-  
-}
-
-/* ── Наша ціль ────────────────────────────────────────────────────────── */
-.amb-goal { padding: 28px; border-radius: 20px; background: var(--v2-cream); border: 1px solid var(--v2-line); }
-.amb-goal-lead { margin: 0; font-size: 1.375rem; line-height: 1.4; font-weight: 700; color: var(--v2-ink); }
-.amb-goal-role p { margin: 0 0 8px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
-.amb-goal-role ul { margin: 0 0 12px; padding-left: 20px; font-size: 1rem; line-height: 1.6; color: var(--v2-ink-2); }
-
-/* ── Що роблять амбасадори ────────────────────────────────────────────── */
-.amb-cases { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-.amb-case { padding: 18px 20px; border-radius: 16px; border: 1px solid var(--v2-line); background: var(--v2-paper, #fff); display: flex; flex-direction: column; gap: 8px; }
-.amb-case-who { font-size: 0.875rem; font-weight: 700; color: var(--v2-accent-strong); }
-.amb-case p { margin: 0; font-size: 1rem; line-height: 1.55; color: var(--v2-ink-2); }
-@media (max-width: 640px) { .amb-goal { padding: 20px; } .amb-goal-lead { font-size: 1.25rem; } }
