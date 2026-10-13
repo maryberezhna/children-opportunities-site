@@ -1,6 +1,8 @@
 // Заявка на «Модний код»: створюємо запис і рахунок WayForPay на 99 грн.
-import { cleanMkEntry, MK } from '@/lib/modnyi-kod';
-import { mkDb, recentCount, createEntry, startPayment, serverEvent } from '@/lib/modnyi-kod-server';
+import { cookies } from 'next/headers';
+import { cleanMkEntry, MK, mkCabinet } from '@/lib/modnyi-kod';
+import { mkDb, recentCount, createEntry, startPayment, serverEvent, adminTestPaid } from '@/lib/modnyi-kod-server';
+import { isAdmin } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -15,7 +17,13 @@ export async function POST(request) {
   if (error) return json({ error }, 400);
   const db = mkDb();
   if (!db) return json({ error: 'unavailable' }, 503);
+  // Адмін (кука з /admin) проходить без оплати — тест усього шляху.
+  const admin = isAdmin(cookies().get('dityam_admin')?.value);
   try {
+    if (admin) {
+      const row = await adminTestPaid(db, await createEntry(db, entry, 'admin_test'));
+      return json({ url: mkCabinet(row.token), t: row.token });
+    }
     if (await recentCount(db, entry.parent_email) >= 5) return json({ error: 'too_many' }, 429);
     const row = await createEntry(db, entry, b.source);
     await serverEvent(db, 'mk_pay_start', row.source || 'page');
