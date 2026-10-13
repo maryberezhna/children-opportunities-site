@@ -79,7 +79,6 @@ export default function AmbassadorForm() {
       <div className="contact-form-done amb-done" role="status">
         <div className="contact-form-done-icon" aria-hidden="true">🧡</div>
         <h3>Дякуємо, заявка надійшла!</h3>
-        <p>Ми напишемо вам на вказаний email чи в Telegram.</p>
       </div>
     );
   }
