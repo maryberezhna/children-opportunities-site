@@ -65,13 +65,15 @@ const CASES = [
 
 // Шапочка кольором, як у карток можливостей (Марія, 12.10.2026: «зроби це
 // шапочкою різними кольорами як наші можливості»), — ті самі тони, що в
-// lib/card-tone.js. «Подарунки від партнерів» — дослівно Марія.
+// lib/card-tone.js. «Подарунки від партнерів» і «Можливість впливати
+// на створення можливостей» — дослівно Марія.
 const BENEFITS = [
   { title: 'Першими дізнаєтесь про наші олімпіади й конкурси', tone: 'compete' },
   { title: 'Згадка на сайті', note: 'Імʼя та місто на сторінці амбасадорів — лише за вашою згодою.', tone: 'learn' },
   { title: 'Сертифікат і подяка від Dityam.com.ua', tone: 'money' },
   { title: 'Dityam+ безкоштовно', tone: 'event' },
   { title: 'Подарунки від партнерів', tone: 'grow' },
+  { title: 'Можливість впливати на створення можливостей', tone: 'brand' },
 ];
 
 const JSON_LD = {
@@ -98,24 +100,35 @@ const JSON_LD = {
   ],
 };
 
+// Помаранчева галочка в колі (пункти «Наша ціль»). Кольори — класами з
+// токенами, щоб у нічному режимі галочка лишалась видною на колі.
+function Check() {
+  return (
+    <svg className="amb-check" viewBox="0 0 22 22" width="22" height="22" aria-hidden="true" focusable="false">
+      <circle cx="11" cy="11" r="11" />
+      <path d="M6.5 11.2l3 3 6-6.4" />
+    </svg>
+  );
+}
+
 export default function AmbassadorsPage() {
   return (
-    <div className="v2-page">
+    <div className="v2-page amb-root">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       <main className="v2-container amb-page">
-        <section className="v2-hero amb-hero">
-          <div className="v2-hero-copy amb-hero-copy">
-            <div className="v2-hero-status">
+        <section className="amb-hero">
+          <div className="amb-hero-copy">
+            <div className="amb-status">
               <span className="v2-dot" aria-hidden="true" />
               Для батьків і педагогів
             </div>
             <h1>
               Станьте <span className="v2-script">амбасадором</span> Dityam.com.ua
             </h1>
-            <p className="v2-hero-sub amb-sub">
+            <p className="amb-sub">
               Допоможіть більшій кількості дітей знайти свої можливості:
               розповідайте про Dityam.com.ua батькам, колегам і учням і допомагайте додавати нові можливості на сайт.
             </p>
@@ -143,13 +156,13 @@ export default function AmbassadorsPage() {
           <div className="amb-goal-role">
             <p>Амбасадори можуть прямо впливати на наш проєкт:</p>
             <ul>
-              <li>брати участь у розробці нових ідей;</li>
-              <li>ділитися зворотним звʼязком;</li>
-              <li>тримати руку на пульсі нових можливостей;</li>
-              <li>впливати на розвиток самої платформи — які можливості є на Dityam.com.ua;</li>
-              <li>допомагати додавати нові можливості на сайт.</li>
+              <li><Check />брати участь у розробці нових ідей;</li>
+              <li><Check />ділитися зворотним звʼязком;</li>
+              <li><Check />тримати руку на пульсі нових можливостей;</li>
+              <li><Check />впливати на розвиток самої платформи — які можливості є на Dityam.com.ua;</li>
+              <li><Check />допомагати додавати нові можливості на сайт.</li>
             </ul>
-            <p>Це дуже крута й освітньо орієнтована роль на забезпечення сталого розвитку дитини.</p>
+            <p className="amb-goal-end">Це дуже крута й освітньо орієнтована роль на забезпечення сталого розвитку дитини.</p>
           </div>
         </section>
 
@@ -171,7 +184,7 @@ export default function AmbassadorsPage() {
           </ul>
         </section>
 
-        <section className="amb-section" aria-labelledby="amb-cases">
+        <section className="amb-section amb-cases-sec" aria-labelledby="amb-cases">
           <h2 id="amb-cases">Що роблять амбасадори</h2>
           <ul className="amb-cases">
             {CASES.map((c) => (
