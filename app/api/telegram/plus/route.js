@@ -162,7 +162,7 @@ const PRE_PAY_COMMANDS = new Set(['child', 'form', 'profile']);
 const COMMANDS_TEXT = '🧡 <b>Команди Dityam+</b>\n\n'
   + '/start — головне меню\n'
   + '/new — свіжі можливості під профіль дитини\n'
-  + '/olymp — наші олімпіади («Модний код» у підписці)\n'
+  + '/olymp — олімпіади («Модний код» у підписці)\n'
   + '/child — додати ще одну дитину\n'
   + '/form — заповнити анкету заново\n'
   + '/freq — як часто надсилати добірку\n'
@@ -175,8 +175,9 @@ async function sendMainMenu(bot, chatId, sub) {
   await bot.sendMessage(chatId, 'Вітаю! 🧡 Ви підписник <b>Dityam+</b>.\nЩо зробимо?', {
     inline_keyboard: [
       [{ text: '🔎 Останні можливості для дітей', callback_data: 'menu:latest' }],
-      // Наші олімпіади — у підписці (12.10.2026).
-      [{ text: '🏆 Наші олімпіади', callback_data: 'menu:olymp' }],
+      // Олімпіади — у підписці (12.10.2026); назва кнопки — просто «Олімпіади»
+      // (Марія, 13.10.2026: «залиш у меню просто Олімпіади»).
+      [{ text: '🏆 Олімпіади', callback_data: 'menu:olymp' }],
       [{ text: '➕ Додати дитину', callback_data: 'menu:addchild' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'menu:form' }],
       [{ text: '⏰ Як часто писати', callback_data: 'menu:freq' }],
