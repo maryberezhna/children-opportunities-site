@@ -377,8 +377,9 @@
 .vc-small { display: block; font-family: var(--font-sans), sans-serif; font-weight: 700; font-size: 2.1cqw; letter-spacing: .22em; text-transform: uppercase; }
 .vc-top { position: absolute; top: 3.4cqw; left: 5cqw; right: 5cqw; display: flex; justify-content: space-between; z-index: 1; border-bottom: .25cqw solid #161616; padding-bottom: 1.2cqw; }
 .vc-mast { position: absolute; top: 7.5cqw; left: 0; right: 0; text-align: center; font-family: var(--font-caveat), cursive; font-style: italic; font-weight: 700; font-size: 18.5cqw; line-height: .82; z-index: 1; letter-spacing: -.02em; }
-.vc-floor { position: absolute; left: 30%; right: 30%; bottom: 13%; height: 3.2%; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .22), transparent 70%); z-index: 1; }
-.vc-fig { position: absolute; left: 0; right: 0; bottom: 14%; height: 75%; margin: 0 auto; display: block; z-index: 2; filter: drop-shadow(0 1.2cqw 1.6cqw rgba(0, 0, 0, .18)); }
+.vc-floor { position: absolute; left: 30%; right: 30%; bottom: 11.4%; height: 3.2%; border-radius: 50%; background: radial-gradient(rgba(0, 0, 0, .22), transparent 70%); z-index: 1; }
+/* Ноги стоять на тіні, фігура нижче (Марія, 13.10.2026: «тут можна трошки нижче поставити»). */
+.vc-fig { position: absolute; left: 0; right: 0; bottom: 12.4%; height: 75%; margin: 0 auto; display: block; z-index: 2; filter: drop-shadow(0 1.2cqw 1.6cqw rgba(0, 0, 0, .18)); }
 .vc-col { position: absolute; top: 44cqw; width: 24cqw; z-index: 3; font-family: 'Lora Cover', Georgia, serif; }
 .vc-col p { margin: 0 0 4.4cqw; font-size: 4.2cqw; line-height: 1.05; }
 .vc-col .vc-small { color: var(--acc); margin-bottom: 1cqw; font-size: 1.9cqw; }
@@ -438,6 +439,12 @@
 .mkR-nav { display: flex; justify-content: space-between; gap: 10px; }
 .mkK-grid { display: grid; grid-template-columns: 420px 1fr; gap: 36px; align-items: start; margin-top: 10px; }
 .mkK-cover .vc { width: 100%; }
+.mkS { margin-top: 26px; }
+.mkS-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+.mkS-btn { display: inline-flex; align-items: center; padding: 10px 18px; border: 2px solid var(--plum); border-radius: 999px; background: #fff; color: var(--plum); font: inherit; font-weight: 800; text-decoration: none; cursor: pointer; }
+.mkS-btn:hover { background: #f3e8f8; }
+.mkS-note { margin: 8px 0 0; font-size: .9rem; color: #0e7c5b; }
+.mkK-plus { border: 3px solid var(--plum); border-radius: 20px; padding: 24px 26px; }
 .mkK-cert { margin-top: 22px; border: 3px double var(--plum); border-radius: 16px; padding: 18px; }
 .mkK-cert-name { font-family: 'Lora Cover', Georgia, serif; font-size: 2rem; margin: 4px 0; }
 .mkK-review { margin-top: 50px; }
@@ -445,9 +452,21 @@
 .mkK-miss p { margin: 6px 0 0; color: #7a5b00; }
 .mkK .mk-studio { margin-top: 10px; }
 @media (max-width: 900px) { .mkK-grid { grid-template-columns: 1fr; } }
+.mkK-narrow { max-width: 760px; padding-top: 36px; padding-bottom: 56px; }
+.mkK-narrow .mkR { max-width: none; }
 @media print {
   .mkK header, .mkK footer, .mkK .mk-kick, .mkK h1, .mkK .mkT-text, .mkK .mk-btn-y, .mkK-review, .mkK-cert { display: none !important; }
   .mkK-grid { display: block; } .mkK-cover .vc { width: 190mm; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+/* Кнопка «Роздрукувати»: на аркуші лише обкладинка, 1 сторінка A4 (PrintBtn.js). */
+#mk-print { display: none; }
+@media print {
+  @page { size: A4 portrait; margin: 0; }
+  html.mk-printing, html.mk-printing body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+  html.mk-printing body > *:not(#mk-print) { display: none !important; }
+  html.mk-printing #mk-print { display: flex; align-items: center; justify-content: center; width: 210mm; height: 296mm; overflow: hidden; break-inside: avoid; }
+  html.mk-printing #mk-print > svg:first-child { position: absolute; width: 0; height: 0; }
+  html.mk-printing #mk-print .vc { width: 200mm; box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 .mkP { display: grid; gap: 10px; justify-items: start; }
 .mkT-plusnote { grid-column: 1 / -1; font-size: .9rem; margin: 0; }

@@ -11,10 +11,13 @@ import Studio from '../Studio';
 import Runner from './Runner';
 import RepayButton from './RepayButton';
 import PrintBtn from './PrintBtn';
+import ShareCover from './ShareCover';
+import { PLUS_BOT } from '@/lib/plus';
+import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import Practice from './Practice';
 
 // Кабінет учасника «Модного коду» (посилання з листа, секретний токен):
-// оплата → тест 25 хв → студія образу → обкладинка з балами, розбір, сертифікат.
+// оплата → тест 30 хв → студія образу → обкладинка з балами (вона ж сертифікат), розбір.
 export const dynamic = 'force-dynamic';
 export const metadata = { title: `Кабінет учасника «${MK.title}»`, robots: { index: false, follow: false } };
 
@@ -26,11 +29,13 @@ export default async function Cabinet({ searchParams }) {
   let row = db ? await entryByToken(db, t).catch(() => null) : null;
   if (db && row && !row.paid_at) row = await syncPayment(db, row).catch(() => row);
 
-  const shell = (body) => (
+  // narrow — тест: вузька колонка по центру й ближче до верху (Марія, 13.10.2026:
+  // «чому сам тест наче зміщений вліво і по висоті»).
+  const shell = (body, narrow = false) => (
     <>
       <main className="mk mkT mkK">
         <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden="true" dangerouslySetInnerHTML={{ __html: `<defs>${DEFS}</defs>` }} />
-        <section className="mkT-wrap mkT-sec">
+        <section className={`mkT-wrap mkT-sec${narrow ? ' mkK-narrow' : ''}`}>
           <p className="mk-kick"><Link href={`/${MK.slug}`}>{MK.title}</Link> · кабінет учасника</p>
           {body}
         </section>
@@ -52,7 +57,7 @@ export default async function Cabinet({ searchParams }) {
     return shell(<>
       <h1 className="mkT-hand ink">{row.child_name}, вітаємо в «Модному коді»!</h1>
       <Runner token={row.token} started={Boolean(row.started_at)} minutes={MK.minutes} />
-    </>);
+    </>, true);
   }
   const score = `${row.score}/${row.max_score}`;
   if (!row.look_at) {
@@ -71,11 +76,9 @@ export default async function Cabinet({ searchParams }) {
       <div>
         <p className="mkT-text">Модний код: <b>{score}</b>. Обкладинку можна роздрукувати на А4 чи зберегти PDF. Після перевірки назви ми опублікуємо її на сайті й у соцмережах Dityam.com.ua — лише з імʼям і віком.</p>
         <PrintBtn />
-        <div className="mkK-cert">
-          <p className="mk-kick">Сертифікат</p>
-          <p className="mkK-cert-name">{row.child_name}</p>
-          <p className="mkT-text">учасник(ця) онлайн-олімпіади з моди «{MK.title}» Dityam.com.ua · {MK.season} · результат {score}</p>
-        </div>
+        {/* Окремого сертифіката немає: обкладинка і є він (Марія, 13.10.2026:
+            «нашо тут сертифікат якщо обкладинка і є він»). */}
+        <ShareCover token={row.token} name={row.child_name} score={score} />
       </div>
     </div>
     {row.source === 'dityam_plus' ? <section className="mkK-review"><h2 className="mkT-hand ink">Тренування</h2><Practice token={row.token} /></section> : null}
@@ -89,5 +92,17 @@ export default async function Cabinet({ searchParams }) {
         })}
       </section>
     ) : <p className="mkT-text">Усі 25 — правильно! Справжній модний код 🎉</p>}
+    {/* Dityam+ за 1 грн — учасникам олімпіади (Марія, 13.10.2026: «тут можна
+        рекламу Dityam+ для учасників олімпіади за 1 грн»). Мітка from_modnyi_kod
+        дає ціну першого місяця в боті (introPriceFor) і рядок в /admin/plus.
+        Підписникам, що прийшли з бота, не показуємо. */}
+    {row.source !== 'dityam_plus' ? (
+      <section className="mkK-review mkK-plus">
+        <p className="mk-kick">Dityam+ на місяць за {PRICE_FIRST} грн замість {PRICE} грн</p>
+        <h2 className="mkT-hand ink">Що далі після «Модного коду»?</h2>
+        <p className="mkT-text">Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини і завчасно нагадує про дедлайни — у Telegram. А ще підписники першими дізнаються про наші нові олімпіади й конкурси. Перший місяць — {PRICE_FIRST} грн замість {PRICE} грн, далі {PRICE} грн/міс, скасувати можна будь-коли.</p>
+        <a className="mk-btn-y" href={`https://t.me/${PLUS_BOT}?start=from_modnyi_kod`} target="_blank" rel="noopener">Спробувати Dityam+ за {PRICE_FIRST} грн</a>
+      </section>
+    ) : null}
   </>);
 }

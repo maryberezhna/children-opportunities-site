@@ -110,10 +110,10 @@ test('положення: правила олімпіади на сторінц�
   assert.match(page, /ФОП Шутяк Марія Олександрівна/);
   assert.match(page, /не є учнівською олімпіадою МОН/);
   assert.match(page, /відмовитися від публікації/);
-  // 25 хвилин, 1 спроба, повернення до початку тесту — рішення Марії 12.10.2026.
+  // 30 хвилин (13.10.2026; було 25), 1 спроба, повернення до початку тесту — рішення Марії.
   assert.match(page, /1 спроба/);
   assert.match(page, /До початку тесту від участі можна відмовитися/);
-  assert.equal(MK.minutes, 25);
+  assert.equal(MK.minutes, 30);
   assert.match(page, /\{MK\.minutes\} хвилин/);
 });
 
@@ -160,4 +160,19 @@ test('Dityam+: олімпіади в меню бота, реєстрація б�
   // Тренування не чіпає офіційних балів: оновлюємо лише лічильник.
   assert.match(pr, /updateEntry\(db, b\.t, \{ practice_count:/);
   assert.doesNotMatch(pr, /updateEntry\([^)]*\bscore\b/);
+});
+
+test('кабінет: обкладинка замість сертифіката, «Поділитися» й Dityam+ за 1 грн (13.10.2026)', () => {
+  const cab = readFileSync('app/modnyi-kod/kabinet/page.js', 'utf8');
+  assert.doesNotMatch(cab, /mkK-cert/);
+  assert.match(cab, /<ShareCover /);
+  assert.match(cab, /start=from_modnyi_kod/);
+  const share = readFileSync('app/modnyi-kod/kabinet/ShareCover.js', 'utf8');
+  // Ділимося сторінкою олімпіади, а не приватним кабінетом.
+  assert.doesNotMatch(share, /kabinet/);
+  for (const k of ['t.me/share', 'viber://', 'wa.me', 'facebook.com/sharer']) assert.ok(share.includes(k), k);
+  assert.match(readFileSync('lib/wayforpay.js', 'utf8'), /'modnyi_kod'/);
+  const cover = readFileSync('app/api/modnyi-kod/cover/route.js', 'utf8');
+  assert.match(cover, /validMkToken\(t\)/);
+  assert.doesNotMatch(cover, /DEVDEMO|NODE_ENV/);
 });
