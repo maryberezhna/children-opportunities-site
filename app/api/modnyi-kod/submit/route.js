@@ -28,7 +28,12 @@ export async function POST(request) {
   const keys = await mkKeys();
   if (!keys) return json({ error: 'unavailable' }, 503);
   const { score, max, missed } = mkScore(BANK, row.question_order, answers, keys);
-  await updateEntry(db, b.t, { finished_at: new Date().toISOString(), answers, score, max_score: max, missed_questions: missed });
-  await serverEvent(db, 'mk_test_done');
-  return json({ ok: true, score, max });
+  // Спроб скільки завгодно, на обкладинці — кращий результат (13.10.2026).
+  const keepBest = row.best_score != null && row.best_score > score;
+  await updateEntry(db, b.t, {
+    finished_at: new Date().toISOString(), answers, max_score: max, last_score: score,
+    score: keepBest ? row.best_score : score, missed_questions: keepBest ? row.best_missed : missed,
+  });
+  await serverEvent(db, Number(row.attempts) > 1 ? 'mk_retake_done' : 'mk_test_done');
+  return json({ ok: true, score: keepBest ? row.best_score : score, last: score, max });
 }

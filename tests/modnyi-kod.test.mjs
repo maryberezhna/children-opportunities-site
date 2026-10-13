@@ -110,8 +110,9 @@ test('положення: правила олімпіади на сторінц�
   assert.match(page, /ФОП Шутяк Марія Олександрівна/);
   assert.match(page, /не є учнівською олімпіадою МОН/);
   assert.match(page, /відмовитися від публікації/);
-  // 30 хвилин (13.10.2026; було 25), 1 спроба, повернення до початку тесту — рішення Марії.
-  assert.match(page, /1 спроба/);
+  // 30 хвилин (13.10.2026; було 25), спроб скільки завгодно (13.10.2026; було 1).
+  assert.doesNotMatch(page, /1 спроба/);
+  assert.match(page, /скільки завгодно разів/);
   assert.match(page, /До початку тесту від участі можна відмовитися/);
   assert.equal(MK.minutes, 30);
   assert.match(page, /\{MK\.minutes\} хвилин/);
@@ -186,4 +187,16 @@ test('адмін проходить «Модний код» без оплати,
   assert.match(fn, /amount: 0/);
   assert.match(fn, /source: 'admin_test'/);
   assert.doesNotMatch(fn, /recordPayment|serverEvent|notifyAdmin/);
+});
+
+test('тест можна перепроходити скільки завгодно, на обкладинці — кращий результат (13.10.2026)', () => {
+  const retake = readFileSync('app/api/modnyi-kod/retake/route.js', 'utf8');
+  assert.doesNotMatch(retake, /attempts\s*>=|MAX_ATTEMPTS/, 'ліміту спроб немає');
+  assert.match(retake, /best_score/);
+  const submit = readFileSync('app/api/modnyi-kod/submit/route.js', 'utf8');
+  assert.match(submit, /keepBest/);
+  const begin = readFileSync('app/api/modnyi-kod/begin/route.js', 'utf8');
+  assert.match(begin, /\$\{t\}#\$\{row\.attempts\}/, 'нова спроба — новий порядок');
+  assert.match(readFileSync('app/modnyi-kod/kabinet/page.js', 'utf8'), /<RetakeButton /);
+  assert.match(readFileSync('app/modnyi-kod/page.js', 'utf8'), /Чи можна пройти тест ще раз\?/);
 });

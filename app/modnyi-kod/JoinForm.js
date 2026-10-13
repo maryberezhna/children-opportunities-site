@@ -63,7 +63,7 @@ export default function JoinForm() {
       </fieldset>
       <label><span>Email батьків</span><input name="email" type="email" autoComplete="email" required /></label>
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="mk-hp" aria-hidden="true" />
-      <label className="mkJ-check"><input type="checkbox" name="consent" required /> <span>Я з батьків чи опікун дитини, погоджуюсь із <a href="#pravyla">правилами олімпіади</a>.</span></label>
+      <label className="mkJ-check"><input type="checkbox" name="consent" required /> <span>Я мама, тато чи опікун дитини й погоджуюсь із <a href="#pravyla">правилами олімпіади</a>.</span></label>
       {error ? <p className="mkJ-err" role="alert">{error}</p> : null}
       <button type="submit" className="mk-btn-y" disabled={state === 'sending'}>{state === 'sending' ? 'Відкриваємо оплату…' : `Оплатити ${MK.price} грн і взяти участь`}</button>
       <p className="mkJ-note">Оплата карткою через WayForPay. Після оплати на пошту прийде посилання на кабінет: тест, студія, обкладинка.</p>

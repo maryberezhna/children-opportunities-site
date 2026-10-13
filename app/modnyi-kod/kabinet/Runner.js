@@ -8,7 +8,7 @@ const pad = (n) => String(n).padStart(2, '0');
 const clock = (s) => `${pad(Math.floor(s / 60))}:${pad(s % 60)}`;
 const L = ['А', 'Б', 'В', 'Г'];
 
-export default function Runner({ token, started, minutes }) {
+export default function Runner({ token, started, minutes, attempt = 1 }) {
   const [phase, setPhase] = useState(started ? 'loading' : 'intro');
   const [qs, setQs] = useState([]);
   const [answers, setAnswers] = useState({});
@@ -17,7 +17,8 @@ export default function Runner({ token, started, minutes }) {
   const [err, setErr] = useState('');
   const dl = useRef(null);
   const sent = useRef(false);
-  const KEY = `mk_a_${token}`;
+  // Номер спроби в ключі: відповіді минулої спроби не підставляються в нову.
+  const KEY = attempt > 1 ? `mk_a_${token}_${attempt}` : `mk_a_${token}`;
   const answersRef = useRef({});
   answersRef.current = answers;
 
@@ -68,7 +69,7 @@ export default function Runner({ token, started, minutes }) {
     return (
       <div className="mkR-intro">
         <h2 className="mkT-hand ink">Готова? Починаємо!</h2>
-        <ul className="mkT-incl"><li>25 завдань</li><li>{minutes} хвилин</li><li>1 спроба</li></ul>
+        <ul className="mkT-incl"><li>25 завдань</li><li>{minutes} хвилин</li><li>{attempt > 1 ? `спроба ${attempt}` : 'можна перепройти'}</li></ul>
         <p className="mkT-text">Час піде, щойно натиснеш «Почати». Між завданнями можна ходити вперед і назад. Коли час вийде, відповіді відправляться самі.</p>
         <button type="button" className="mk-btn-y" onClick={begin}>Почати тест</button>
       </div>

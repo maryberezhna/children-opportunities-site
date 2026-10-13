@@ -14,7 +14,7 @@ import PrintBtn from './PrintBtn';
 import ShareCover from './ShareCover';
 import { PLUS_BOT } from '@/lib/plus';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
-import Practice from './Practice';
+import RetakeButton from './RetakeButton';
 
 // Кабінет учасника «Модного коду» (посилання з листа, секретний токен):
 // оплата → тест 30 хв → студія образу → обкладинка з балами (вона ж сертифікат), розбір.
@@ -56,7 +56,7 @@ export default async function Cabinet({ searchParams }) {
   if (!row.finished_at) {
     return shell(<>
       <h1 className="mkT-hand ink">{row.child_name}, вітаємо в «Модному коді»!</h1>
-      <Runner token={row.token} started={Boolean(row.started_at)} minutes={MK.minutes} />
+      <Runner token={row.token} started={Boolean(row.started_at)} minutes={MK.minutes} attempt={Number(row.attempts) || 1} />
     </>, true);
   }
   const score = `${row.score}/${row.max_score}`;
@@ -79,9 +79,13 @@ export default async function Cabinet({ searchParams }) {
         {/* Окремого сертифіката немає: обкладинка і є він (Марія, 13.10.2026:
             «нашо тут сертифікат якщо обкладинка і є він»). */}
         <ShareCover token={row.token} name={row.child_name} score={score} />
+        {Number(row.attempts) > 1 && row.last_score != null && row.last_score !== row.score
+          ? <p className="mkT-text mkK-last">Остання спроба: {row.last_score}/{row.max_score}. На обкладинці — кращий результат.</p> : null}
+        <RetakeButton t={row.token} />
       </div>
     </div>
-    {row.source === 'dityam_plus' ? <section className="mkK-review"><h2 className="mkT-hand ink">Тренування</h2><Practice token={row.token} /></section> : null}
+    {/* Окремого «Тренування» для підписників більше немає: тест можна
+        перепроходити всім і скільки завгодно (13.10.2026), кнопка — біля обкладинки. */}
     {missed.length ? (
       <section className="mkK-review">
         <h2 className="mkT-hand ink">Що ще варто дізнатися</h2>
