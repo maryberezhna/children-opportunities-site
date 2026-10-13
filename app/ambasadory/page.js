@@ -209,6 +209,10 @@ export default function AmbassadorsPage() {
               </li>
             ))}
           </ol>
+          {/* Дослівно Марія, 13.10.2026. */}
+          <p className="amb-benefits-note">
+            Участь амбасадорам наразі не оплачується, але можливі премії, подяки та подарунки.
+          </p>
         </section>
 
         <section className="amb-section amb-apply" id="zayavka" aria-labelledby="amb-how">
