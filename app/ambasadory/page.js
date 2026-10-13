@@ -76,6 +76,15 @@ const BENEFITS = [
   { title: 'Можливість впливати на створення можливостей', tone: 'brand' },
 ];
 
+// «Як це працює» — дослівно Марія, 13.10.2026 (виправлено лише «зязатися»,
+// і посилання замінено назвою Dityam.com.ua).
+const STEPS = [
+  'Заповнюєте форму',
+  'Ми можемо звʼязатися, уточнити деталі',
+  'Додаємо до приватного каналу',
+  'Розвивати Dityam.com.ua і діток',
+];
+
 const JSON_LD = {
   '@context': 'https://schema.org',
   '@graph': [
@@ -213,6 +222,18 @@ export default function AmbassadorsPage() {
           <p className="amb-benefits-note">
             Участь амбасадорам наразі не оплачується, але можливі премії, подяки та подарунки.
           </p>
+        </section>
+
+        <section className="amb-section" aria-labelledby="amb-steps">
+          <h2 id="amb-steps">Як це працює</h2>
+          <ol className="amb-steps">
+            {STEPS.map((t, i) => (
+              <li key={t} className="amb-step">
+                <span className="amb-step-n" aria-hidden="true">{i + 1}</span>
+                <p>{t}</p>
+              </li>
+            ))}
+          </ol>
         </section>
 
         <section className="amb-section amb-apply" id="zayavka" aria-labelledby="amb-how">
