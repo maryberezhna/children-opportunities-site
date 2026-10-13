@@ -1,0 +1,31 @@
+name: «Модний код» — нагадування про «Обкладинку місяця»
+
+# Марія, 13.10.2026: «щомісяця визначаємо переможця… ні, просто
+# нагадування». 1-го числа — кандидати за попередній місяць; 5-го — ще раз,
+# лише якщо переможця досі немає (оголошуємо до 7-го). 07:00 UTC ≈ 10:00
+# Київ; розклад GitHub запізнюється на години — для нагадування це не біда.
+on:
+  schedule:
+    - cron: '0 7 1,5 * *'
+  workflow_dispatch:
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save @supabase/supabase-js
+      - name: Send winner reminder
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: node scripts/mk-winner-reminder.mjs
