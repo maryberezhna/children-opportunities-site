@@ -103,7 +103,7 @@ export default async function UsersPage() {
   const mkRevenue = mkPaid.reduce((a, r) => a + (Number(r.amount) || 0), 0);
 
   const [subs, plusWait, entries, olimpWait, payments] = await Promise.all([
-    all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, created_at, updated_at')),
+    all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, role, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
     all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at')),
     all(() => sb.from('olimpiada_waitlist').select('email, created_at')),
@@ -184,6 +184,7 @@ export default async function UsersPage() {
                       : r.who}
                   {r.email && !r.who.includes(r.email)
                     ? <div style={{ fontSize: 12 }}><a href={`mailto:${r.email}`} style={{ ...linkS, color: C.ink3 }}>{r.email}</a></div> : null}
+                  {r.role ? <div style={{ fontSize: 12, color: C.ink2 }}>{r.role}</div> : null}
                   <div style={{ fontSize: 12, color: C.ink3 }}>
                     звідки: {sourceHref(r.source)
                       ? <a href={sourceHref(r.source)} style={{ ...linkS, color: C.ink3 }} {...ext}>{sourceLabel(r.source)}</a>

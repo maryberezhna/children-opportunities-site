@@ -83,6 +83,16 @@ async function isEarlyBird(supabase, sub) {
 }
 
 async function sendPayOffer(bot, sub, chatId, supabase) {
+  // Підліток 14–17 оформлює лише за згодою батьків (/terms, розділ 1; ЦК
+  // України ст. 32). Спершу — підтвердження, потім уже кнопки оплати
+  // (Марія, 13.10.2026).
+  if (sub?.role === 'teen' && !sub.parent_consent_at) {
+    await bot.sendMessage(chatId,
+      '🧡 <b>Майже все!</b>\n\nПідписку Dityam+ підліток 14–17 років оформлює за згодою батьків. '
+      + 'Розкажи їм про підписку — і, коли вони погодяться, натисни кнопку нижче.',
+      { inline_keyboard: [[{ text: '✅ Батьки знають і погоджуються', callback_data: 'consent:parents' }]] });
+    return;
+  }
   // «Ви» — як на сайті. Раніше тут було «ти», і людина бачила два різні
   // тони в одному продукті.
   //
@@ -892,6 +902,19 @@ export async function POST(request) {
   // Перевірка анкети перед оплатою (sendProfileReview) і «✏️ Змінити анкету»
   // під пропозицією оплати. Підписки ще немає — статус не перевіряємо; після
   // зміни анкети flow: нижче сам поведе до оплати (afterProfile).
+  // Підліток підтвердив згоду батьків → показуємо оплату.
+  if (cbq.data === 'consent:parents') {
+    const chatId = String(cbq.message.chat.id);
+    const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
+    await bot.answerCallback(cbq.id);
+    if (!sub) { await bot.sendMessage(chatId, 'Почни з /start'); return new Response('ok'); }
+    const at = new Date().toISOString();
+    await supabase.from('digest_subscribers').update({ parent_consent_at: at, updated_at: at }).eq('id', sub.id);
+    await bot.editMessage(chatId, cbq.message.message_id, '✅ Батьки знають і погоджуються');
+    await sendPayOffer(bot, { ...sub, parent_consent_at: at }, chatId, supabase);
+    return new Response('ok');
+  }
+
   const review = (cbq.data || '').match(/^review:(ok|edit|add)$/);
   if (review) {
     const chatId = String(cbq.message.chat.id);
@@ -912,9 +935,9 @@ export async function POST(request) {
     if (finished) {
       const { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
       if (sub?.status === 'active') {
-        await finishFlow(bot, chatId, { active: true });
+        await finishFlow(bot, chatId, { active: true, role: sub.role });
       } else if (sub) {
-        await finishFlow(bot, chatId, { active: false });
+        await finishFlow(bot, chatId, { active: false, role: sub.role });
         await afterProfile(bot, supabase, sub, chatId); // далі оплата
       }
     }

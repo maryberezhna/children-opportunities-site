@@ -38,6 +38,7 @@ from zoneinfo import ZoneInfo
 
 import httpx
 
+import ambassador_invite
 import calendar_link
 import ladder
 import plus_profile
@@ -699,6 +700,15 @@ def main():
         child_rows = (client.table("plus_children").select("*").in_("subscriber_id", ids)
                       .execute().data or []) if ids else []
     logger.info("Active subscribers: %d", len(subs))
+    # Запрошення в амбасадори після 3 місяців підписки — окремо від добірки:
+    # збій тут не має зупинити платну розсилку.
+    if not args.demo:
+        try:
+            n = ambassador_invite.run(client, subs, send_telegram, dry_run=args.dry_run, logger=logger)
+            if n:
+                logger.info("Ambassador invites sent: %d", n)
+        except Exception as e:
+            logger.error("Запрошення в амбасадори не пішли: %s", e)
     disliked = {} if args.demo else load_disliked(client, subs)
     # Памʼять про пройдене: що родина вже позначила кнопкою під карткою.
     applied = {} if args.demo else load_applications(client, subs)

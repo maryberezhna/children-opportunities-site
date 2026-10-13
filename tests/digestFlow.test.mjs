@@ -86,12 +86,15 @@ async function setup() {
   });
   const bot = fakeBot();
   await beginFlow(bot, db, '77', null);
+  // З 13.10.2026 перше питання — «Хто ви?»; ці тести — про батьків.
+  await handleFlowCallback(bot, db, click('flow:role:parent'));
   return { db, bot };
 }
 
 test('анкета: спершу питаємо, для скількох дітей', async () => {
   const { db, bot } = await setup();
-  assert.match(bot.sent[0].text, /кожну дитину окремо/);
+  assert.match(bot.sent[0].text, /Хто ви/);
+  assert.ok(bot.sent.some((m) => /кожну дитину окремо/.test(m.text)));
   assert.match(bot.last().text, /Для скількох дітей/);
   assert.deepEqual(buttons(bot.last()), [1, 2, 3, 4, 5, 6].map((n) => `flow:count:${n}`));
   assert.equal(db._rows.digest_subscribers[0].flow_step, 'count');
@@ -336,3 +339,46 @@ test('без підписки кнопки «показати» немає — �
   assert.deepEqual(buttons(bot.last()), []);
 });
 
+
+
+// Ролі (Марія, 13.10.2026: «я матір/батько/опікун/вчитель»).
+async function setupRole(role) {
+  const db = fakeDb();
+  db._rows.digest_subscribers.push({ id: 'sub-1', telegram_chat_id: '77', status: 'pending', places: [], consent_at: null });
+  const bot = fakeBot();
+  await beginFlow(bot, db, '77', null);
+  await handleFlowCallback(bot, db, click(`flow:role:${role}`));
+  return { db, bot };
+}
+
+test('анкета: спершу «Хто ви?» — 4 ролі, без дітей до 14', async () => {
+  const db = fakeDb();
+  db._rows.digest_subscribers.push({ id: 'sub-1', telegram_chat_id: '77', status: 'pending', places: [], consent_at: null });
+  const bot = fakeBot();
+  await beginFlow(bot, db, '77', null);
+  assert.equal(db._rows.digest_subscribers[0].flow_step, 'role');
+  assert.deepEqual(buttons(bot.last()), ['parent', 'guardian', 'teacher', 'teen'].map((r) => `flow:role:${r}`));
+});
+
+test('вчитель: класи замість дітей і олімпіада для класу наприкінці', async () => {
+  const { db, bot } = await setupRole('teacher');
+  assert.equal(db._rows.digest_subscribers[0].role, 'teacher');
+  assert.match(bot.last().text, /скількох класів/);
+  await handleFlowCallback(bot, db, click('flow:count:2'));
+  assert.match(bot.last().text, /Клас 1 з 2\. Скільки років учням/);
+  await finishFlow(bot, '77', { active: true, role: 'teacher' });
+  assert.ok(bot.sent.some((m) => /олімпіада з логіки/.test(m.text)));
+});
+
+test('підліток: одразу анкета про себе на «ти», один профіль, далі місто', async () => {
+  const { db, bot } = await setupRole('teen');
+  assert.equal(db._rows.digest_subscribers[0].role, 'teen');
+  assert.equal(db._rows.plus_children.length, 1);
+  assert.match(bot.last().text, /Скільки тобі років/);
+  await handleFlowCallback(bot, db, click('flow:age:15-18'));
+  await handleFlowCallback(bot, db, click('flow:like:__all'));
+  await handleFlowCallback(bot, db, click('flow:fmt:__all'));
+  await handleFlowCallback(bot, db, click('flow:need:__done'));
+  assert.equal(db._rows.digest_subscribers[0].flow_step, 'place');
+  assert.match(bot.last().text, /обери одне чи кілька/);
+});
