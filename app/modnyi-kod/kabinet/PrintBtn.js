@@ -7,14 +7,20 @@
 export function printCover() {
   const cover = document.querySelector('.mkK-cover .vc');
   if (!cover) { window.print(); return; }
+  // Візерунки (шотландка, ромби…) переносимо, а не копіюємо: з копією id
+  // двоїлись, і браузер брав візерунок із прихованої сторінки — одяг
+  // друкувався білим. Після друку повертаємо на місце.
   const defs = document.querySelector('main.mkK > svg');
+  const home = defs ? { parent: defs.parentNode, next: defs.nextSibling } : null;
   const box = document.createElement('div');
   box.id = 'mk-print';
-  box.innerHTML = (defs ? defs.outerHTML : '') + cover.outerHTML;
+  if (defs) box.appendChild(defs);
+  box.insertAdjacentHTML('beforeend', cover.outerHTML);
   document.body.appendChild(box);
   document.documentElement.classList.add('mk-printing');
   const done = () => {
     document.documentElement.classList.remove('mk-printing');
+    if (defs && home) home.parent.insertBefore(defs, home.next);
     box.remove();
     window.removeEventListener('afterprint', done);
   };
