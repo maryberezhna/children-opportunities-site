@@ -47,3 +47,12 @@ test('після тесту диплом іде в Telegram; бот і /olymp �
     assert.doesNotMatch(l, /[\u{1F300}-\u{1F3FF}]/u, l.trim());
   }
 });
+
+test('реєструють батьки чи вчитель: на сайті й у боті; ліміт — на дитину, а не на чат (13.10.2026)', () => {
+  assert.match(read('app/olimpiada/page.js'), /Дитину реєструють батьки чи вчитель/);
+  assert.match(read('app/olimpiada/TelegramJoin.js'), /Батьки чи вчитель/);
+  const bot = read('lib/olimpiada-bot.js');
+  assert.match(bot, /Дитину записують батьки чи вчитель/);
+  assert.match(bot, /sameName\.length >= OLIMP\.maxEntriesPerEmail/);
+  assert.match(bot, /maxEntriesPerTeacherDay/);
+});
