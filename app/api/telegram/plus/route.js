@@ -477,7 +477,7 @@ async function claimOlimpGift(bot, supabase, { chatId, handle, token, sub }) {
   }
   if (giftActive(current, now)) {
     const until = new Date(current.gift_until).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', timeZone: 'Europe/Kyiv' });
-    await bot.sendMessage(chatId, `🎁 <b>Dityam+ у подарунок за участь в олімпіаді</b>\nДіє до ${until}. Розкажіть про дитину — і добірки будуть саме під неї.`);
+    await bot.sendMessage(chatId, `<b>Dityam+ у подарунок за участь в олімпіаді</b>\nДіє до ${until}. Розкажіть про дитину — і добірки будуть саме під неї.`);
   }
   return current;
 }
