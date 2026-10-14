@@ -123,17 +123,21 @@
 .ab-focus .ab-intro { color: var(--v2-ink); }
 
 /* ── Як перевіряємо ────────────────────────────────────────────────────── */
+/* Дві колонки текстом, а не сіткою рядків (Марія, 14.10.2026: «що тут з
+   відступом»): у сітці короткий пункт тягнувся до висоти сусіда, і між
+   пунктами виходили різні відступи. Колонки ллються незалежно. */
 .ab-checks {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 32px;
+  columns: 2;
+  column-gap: 32px;
   max-width: 1000px;
 }
 
 .ab-checks li {
+  break-inside: avoid;
+  margin-bottom: 12px;
   position: relative;
   padding-left: 30px;
   font-size: 1.0625rem;
@@ -198,7 +202,7 @@
   .ab-story { grid-template-columns: 1fr; gap: 16px; padding: 26px 22px; }
   .ab-photo { max-width: 280px; }
   .ab-story-text p { font-size: 1.09375rem; }
-  .ab-checks { grid-template-columns: 1fr; }
+  .ab-checks { columns: 1; }
   .ab-focus { padding: 24px 22px; }
 }
 
