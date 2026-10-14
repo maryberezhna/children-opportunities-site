@@ -690,7 +690,9 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           <div className="o-main">
             {/* Вік першим, потім тип — як на картці варіанта B. */}
             <div className="opportunity-chips">
-              <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
+              {/* Вік-сентинель (0–18 = «невідомо/без обмежень») пігулки не має. */}
+              {ageRangeLabel(item, lang)
+                ? <span className="chip chip-age">{ageRangeLabel(item, lang)}</span> : null}
               <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
               {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
               {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}

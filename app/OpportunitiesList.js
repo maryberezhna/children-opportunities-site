@@ -914,6 +914,9 @@ export default function OpportunitiesList({
 
   const ageText = (item) => (
     Number.isFinite(item.age_from) && Number.isFinite(item.age_to)
+      // 0–18 — сентинель «вік невідомий/без обмежень», підпису не має
+      // (те саме правило, що ageRangeLabel у lib/labels.js).
+      && !(item.age_from === 0 && item.age_to >= 17)
       ? t.ageShort(item.age_from, item.age_to) : null
   );
 

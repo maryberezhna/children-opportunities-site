@@ -95,7 +95,9 @@ export default function OpportunityCard({
     >
       <div className="chips">
         <span className="chip chip-type">{types[item.opportunity_type] || item.opportunity_type}</span>
-        <span className="chip chip-age">{ageRangeLabel(item, lang)}</span>
+        {/* Вік-сентинель (0–18 = «невідомо/без обмежень») пігулки не має. */}
+        {ageRangeLabel(item, lang)
+          ? <span className="chip chip-age">{ageRangeLabel(item, lang)}</span> : null}
         {item.cost_type === 'free' ? <span className="chip chip-free chip-cost">{t.free}</span> : null}
         {paid ? <span className="chip chip-paid chip-cost">{t.paid}</span> : null}
         {/* Школа чи студія діаспори без ціни на сторінці (28.09.2026): не
