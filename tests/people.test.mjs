@@ -121,3 +121,28 @@ test('люди: посилання на Telegram, результат олімп�
   assert.equal(sourceHref('instagram'), null);
   assert.equal(sourceHref(null), null);
 });
+
+// 14.10.2026, Марія: «а сюди ти МК не додав» (таблиця «Хто») і «тут має бути
+// аналітика повністю по наших можливостях» — люди «Модного коду» теж у списку.
+// Оргвнесок іде повз таблицю payments, тому сума береться з mk_entries.
+test('люди: «Модний код» — у таблиці «Хто», з оплатою і без', () => {
+  const rows = buildPeople({
+    entries: [{ child_name: 'Оля', parent_email: 'both@example.com', created_at: '2026-10-10T10:00:00Z', finished_at: '2026-10-10T10:30:00Z' }],
+    mk: [
+      { child_name: 'Віка', parent_email: 'mk@example.com', amount: 99, created_at: '2026-10-13T10:00:00Z', paid_at: '2026-10-13T10:05:00Z', score: 21, max_score: 25, source: 'nashi-mozhlyvosti' },
+      { child_name: 'Ніка', parent_email: 'draft@example.com', amount: 99, created_at: '2026-10-14T09:00:00Z' },
+      { child_name: 'Оля', parent_email: 'both@example.com', amount: 99, created_at: '2026-10-14T10:00:00Z', paid_at: '2026-10-14T10:02:00Z' },
+    ],
+  });
+  const paid = rows.find((r) => r.email === 'mk@example.com');
+  assert.deepEqual(paid.notes, ['👗 Модний код · Віка: пройшли тест · 21/25']);
+  assert.deepEqual(paid.used, [{ what: 'Модний код', paid: 'оргвнесок · 99 грн', bought: true }]);
+  const draft = rows.find((r) => r.email === 'draft@example.com');
+  assert.deepEqual(draft.used, [{ what: 'Модний код', paid: 'не оплатив', bought: false }]);
+  assert.ok(draft.notes[0].includes('заявка без оплати'));
+  // Та сама мама в олімпіаді й «Модному коді» — один рядок із двома рядками «Чим скористався».
+  const both = rows.find((r) => r.email === 'both@example.com');
+  assert.deepEqual(both.used.map((u) => u.what), ['Олімпіада', 'Модний код']);
+  assert.ok(both.notes.some((n) => n.startsWith('🧩 Олімпіада')));
+  assert.ok(both.notes.some((n) => n.includes('оплатили, тест попереду')));
+});
