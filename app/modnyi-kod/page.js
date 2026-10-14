@@ -112,8 +112,8 @@ const SewButton = ({ className }) => (
 function Cta({ light = false, note }) {
   return (
     <div className="mkT-cta">
-      <a href="#uchast" className="mk-btn-y">Взяти участь · {MK.price} грн</a>
-      {note ? <span className={light ? 'on-dark' : ''}>{note}</span> : null}
+      <a href="#uchast" className="mk-btn-y">Взяти участь</a>
+      <span className={light ? 'on-dark' : ''}>оргвнесок {MK.price} грн{note ? ` · ${note}` : ''}</span>
     </div>
   );
 }
@@ -246,7 +246,7 @@ export default async function ModnyiKodPage() {
                 <article key={t} className="mkT-card"><i className="mkT-tape" /><span className="mkT-num">{i + 1}</span><h3>{t}</h3><p>{x}</p></article>
               ))}
             </div>
-            <Cta light note="Усе включено в оргвнесок · доплат немає" />
+            <Cta light note="усе включено · доплат немає" />
 
             <h2 id="yak" className="mkT-hand mkT-gap">Як це працює</h2>
             <ul className="mkT-facts">{FACTS.map(([b, s]) => <li key={b}><b>{b}</b><span>{s}</span></li>)}</ul>
@@ -277,7 +277,7 @@ export default async function ModnyiKodPage() {
               <ul><li>лонгслів</li><li>худі</li><li className="ok">оверсайз <em>правильно</em></li><li>кроп</li></ul>
             </article>
           </div>
-          <Cta note="У тесті — 25 таких завдань, від легких до хитрих" />
+          <Cta note="у тесті — 25 таких завдань, від легких до хитрих" />
 
           <SewButton className="mkT-doodle d-bt" />
         </section>
