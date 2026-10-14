@@ -97,7 +97,8 @@ export default function TelegramCard({
             можливості щодня; єдине, чим вони різняться для людини, — ціна, а
             її не називав жоден. */}
         <span className="tg-card-badge">
-          Telegram-канал<span className="tg-card-free">безкоштовно</span>
+          {lang === 'en' ? 'Telegram channel' : 'Telegram-канал'}
+          <span className="tg-card-free">{lang === 'en' ? 'free' : 'безкоштовно'}</span>
         </span>
         {/* Не заголовок: у списку h3 — назви можливостей, і «Щоб не шукати
             вручну» серед них читачі екрана й пошуковики брали б за ще одну. */}
