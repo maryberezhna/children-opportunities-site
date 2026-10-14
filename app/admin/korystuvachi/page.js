@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { FB_RATINGS, FB_TAGS } from '@/lib/feedback';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { buildPeople, peopleSummary, sourceLabel, sourceHref } from '@/lib/people';
 import { notOwn } from '@/lib/own';
@@ -108,6 +109,13 @@ export default async function UsersPage() {
   };
   const OWN_STEPS = [['own_view', null, 'зайшли на сторінку'], ['own_click', 'olimpiada', 'натиснули «Олімпіада з логіки»'], ['own_click', 'modnyi-kod', 'натиснули «Модний код»'], ['own_click', 'plus', 'натиснули «Dityam+»']];
   const ownFunnel = await Promise.all(OWN_STEPS.map(async ([n, src, l]) => ({ n: `${n}:${src || ''}`, l, all: await ownCount(n, src), week: await ownCount(n, src, since7) }))).catch(() => []);
+  // Відгуки одним натиском (14.10.2026): оцінка + необовʼязкові теги.
+  const { data: fbRows } = await sb.from('product_feedback')
+    .select('product, child_name, telegram_chat_id, rating, tags, created_at')
+    .order('created_at', { ascending: false }).limit(500);
+  const fb = fbRows || [];
+  const fbBy = (r) => fb.filter((x) => x.rating === r).length;
+  const fbTagCount = Object.keys(FB_TAGS).map((t) => [t, fb.filter((x) => (x.tags || []).includes(t)).length]);
   const { count: olPlusActive } = await sb.from('digest_subscribers').select('id', { count: 'exact', head: true }).eq('source', 'olimpiada').eq('status', 'active');
   const { data: mkPaidRows } = await sb.from('mk_entries').select('amount, paid_at, parent_email, refunded_at').not('paid_at', 'is', null);
   const mkPaid = notOwn((mkPaidRows || []).map((r) => ({ ...r, email: r.parent_email }))).filter((r) => !r.refunded_at);
@@ -164,6 +172,31 @@ export default async function UsersPage() {
         </table>
       </div>
       <p style={noteS}>«Зайшли» — раз на сесію; браузери з ?noga=1 не рахуються. Сума й кількість оплат — без твоїх власних (lib/own.js), кроки воронки — усі.</p>
+
+      <h2 style={h2S}>💬 Відгуки після олімпіади · {fb.length}</h2>
+      <div style={{ ...grid, marginTop: 8 }}>
+        {Object.entries(FB_RATINGS).map(([k, label]) => <Card key={k} value={fbBy(k)} label={label} />)}
+      </div>
+      <p style={{ ...noteS, marginTop: 8 }}>
+        Що саме: {fbTagCount.map(([t, n]) => `${FB_TAGS[t]} ${n}`).join(' · ')}. Кожна оцінка приходить і в адмін-чат «⭐ Відгук» — відповідайте на неї реплаєм, і відповідь піде людині в @DityamPlusBot.
+      </p>
+      {fb.length ? (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: 760 }}>
+            <thead><tr><th style={head}>Коли</th><th style={head}>Дитина</th><th style={head}>Оцінка</th><th style={head}>Що саме</th></tr></thead>
+            <tbody>
+              {fb.slice(0, 30).map((r) => (
+                <tr key={`${r.product}:${r.created_at}:${r.telegram_chat_id}`}>
+                  <td style={cell}>{new Date(r.created_at).toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</td>
+                  <td style={cell}>{r.child_name || '—'}</td>
+                  <td style={cell}>{FB_RATINGS[r.rating] || '—'}</td>
+                  <td style={cell}>{(r.tags || []).map((t) => FB_TAGS[t] || t).join(', ') || '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p style={noteS}>Поки відгуків немає: питання йде в бот одразу після диплома тим, хто записався через Telegram (з 14.10.2026).</p>}
 
       <h2 style={h2S}>⭐ Наші можливості · <a href="/nashi-mozhlyvosti" style={linkS} {...ext}>/nashi-mozhlyvosti</a></h2>
       <div style={{ overflowX: 'auto' }}>

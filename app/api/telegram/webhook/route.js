@@ -5,6 +5,11 @@ import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { removeRecurring } from '@/lib/wayforpay';
 import { makeBot } from '@/lib/digestFlow';
 import { PLUS_SALES_OPEN, plusBotUrl, PLUS_QUESTION_MATCH, PLUS_QUESTION_MATCH_OLD } from '@/lib/plus';
+import { FB_ADMIN_HEAD } from '@/lib/feedback';
+
+// Сповіщення, на які адмін відповідає реплаєм — і відповідь іде людині в
+// @DityamPlusBot (14.10.2026). Текст у reply_to_message — без HTML-тегів.
+const REPLYABLE_HEADS = [FB_ADMIN_HEAD, '🧩 Олімпіада: пройшли тест'];
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -534,17 +539,22 @@ export async function POST(request) {
     // нікуди з чату не діваються, і реплай на них має працювати далі.
     const isPlusQuestion = quoted.startsWith(PLUS_QUESTION_MATCH)
       || quoted.startsWith(PLUS_QUESTION_MATCH_OLD);
-    if (isPlusQuestion && isAdmin(msg.from?.id, msg.chat.id)) {
+    // «Живий звʼязок» (14.10.2026): так само реплаєм — на відгук «⭐ Відгук…»
+    // і на «🧩 Олімпіада: пройшли тест · <chat id>:» для тих, хто записався
+    // через Telegram. Перший рядок закінчується chat id, як у питань.
+    const isFamilyNote = REPLYABLE_HEADS.some((h) => quoted.startsWith(h));
+    if ((isPlusQuestion || isFamilyNote) && isAdmin(msg.from?.id, msg.chat.id)) {
       // Перший рядок: «📝 Питання Dityam+ @handle · ще не оплачено 123456789:».
       const target = quoted.split('\n')[0].match(/(-?\d+):\s*$/)?.[1];
       if (!target || !PLUS_TOKEN) {
         await sendMessage(msg.chat.id, '⚠️ Не вдалося визначити, кому відповісти, — напишіть підписнику вручну.');
         return new Response('ok');
       }
-      const res = await makeBot(PLUS_TOKEN).sendMessage(target, `💬 <b>Відповідь Dityam+</b>\n\n${escapeHtml(text)}`);
+      const head = isPlusQuestion ? 'Відповідь Dityam+' : 'Dityam.com.ua';
+      const res = await makeBot(PLUS_TOKEN).sendMessage(target, `💬 <b>${head}</b>\n\n${escapeHtml(text)}`);
       const sent = res?.ok ? (await res.json().catch(() => ({}))).ok : false;
       await sendMessage(msg.chat.id, sent
-        ? '✅ Відповідь надіслано підписнику.'
+        ? (isPlusQuestion ? '✅ Відповідь надіслано підписнику.' : '✅ Надіслано в @DityamPlusBot.')
         : '⚠️ Telegram не прийняв відповідь — можливо, підписник заблокував @DityamPlusBot.');
       return new Response('ok');
     }

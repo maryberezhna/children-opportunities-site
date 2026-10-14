@@ -56,7 +56,9 @@ export async function POST(request) {
   // телеграм-адмінку не приходить» — з 07.10 туди йшли лише покупки, і
   // перших учасників вона не побачила). Тестові записи адміна — з позначкою.
   const test = entry.wfp_last_status === 'Test';
-  await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>\n`
+  // Chat id в кінці першого рядка — на це сповіщення можна відповісти реплаєм,
+  // і відповідь піде родині в @DityamPlusBot (14.10.2026, «живий звʼязок»).
+  await notifyAdmin(`🧩 <b>Олімпіада: пройшли тест${test ? ' (тест адміна)' : ''}</b>${entry.telegram_chat_id ? ` · ${esc(String(entry.telegram_chat_id))}:` : ''}\n`
     + `${esc(entry.child_name)} · ${score} з ${max} · ${esc(level.label)}\n${esc(entry.parent_email || (entry.telegram_chat_id ? 'через Telegram' : '—'))}`
     + (open ? `\n\n✍️ Відкрите завдання:\n${esc(open.slice(0, 1500))}` : ''));
   // Заявка за посиланням педагога (11.10.2026): коли тест пройде 5-й учень

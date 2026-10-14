@@ -26,6 +26,7 @@ import {
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
+import { handleFeedbackCallback } from '@/lib/feedback';
 import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent, looksLikeChildName, offerOlName } from '@/lib/olimpiada-bot';
 
 // Олімпіада з логіки через бот (13.10.2026): людина без підписки отримує рядок
@@ -871,6 +872,12 @@ export async function POST(request) {
       { force_reply: true, input_field_placeholder: 'Ваш промокод' });
     return new Response('ok');
   }
+
+  // Відгук одним натиском після диплома (14.10.2026, lib/feedback.js).
+  if (await handleFeedbackCallback(bot, cbq, {
+    supabase,
+    notifyAdmin: (text) => (MAIN_TOKEN && ADMIN_CHAT_ID ? makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, esc(text)) : Promise.resolve()),
+  })) return new Response('ok');
 
   // «Олімпіади» → олімпіада з логіки (13.10.2026) і «Модний код» (12.10.2026).
   if (await handleOlCallback(bot, cbq, {

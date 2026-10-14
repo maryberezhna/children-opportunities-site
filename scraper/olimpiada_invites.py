@@ -30,6 +30,7 @@ from email.mime.text import MIMEText
 from email.utils import formataddr
 from zoneinfo import ZoneInfo
 from log_privacy import mask_email, short_id
+from utm import with_utm
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger("olimpiada_invites")
@@ -275,6 +276,26 @@ FEEDBACK_QUESTIONS = [
 ]
 # Марія, 12.10.2026: «обіцяємо, ми дослухаємось» + обрала «буду дуже вдячна за відповідь».
 FEEDBACK_PROMISE = "Буду дуже вдячна за відповідь. Обіцяємо: ми дослухаємося."
+# Марія, 14.10.2026: «тут можна додати також: не забудьте, що ви можете
+# замовити доставку диплома або пройти нашу нову можливість — олімпіаду з
+# моди». Хто вже оплатив доставку — лише про олімпіаду з моди.
+FEEDBACK_UTM = {"source": "email", "medium": "email", "campaign": "olimpiada_feedback"}
+FEEDBACK_REMIND_PRINT = ("Не забудьте, що ви можете {print} або пройти нашу нову можливість — {mk}.")
+FEEDBACK_REMIND_MK = "Не забудьте, що ви можете пройти нашу нову можливість — {mk}."
+
+
+def feedback_reminder(entry: dict) -> tuple[str, str]:
+    """(текст, html) рядка-нагадування: доставка диплома й «Модний код»."""
+    esc = html.escape
+    mk_url = with_utm(f"{SITE}/modnyi-kod", FEEDBACK_UTM)
+    mk_text, mk_html = "олімпіаду з моди", f'<a href="{esc(mk_url)}">олімпіаду з моди</a>'
+    token = entry.get("token")
+    if token and not entry.get("print_paid_at"):
+        pr_url = with_utm(f"{SITE}/olimpiada/test?t={token}#dostavka", FEEDBACK_UTM)
+        text = FEEDBACK_REMIND_PRINT.format(print="замовити доставку диплома", mk=mk_text) + f"\nДоставка: {pr_url}\nОлімпіада з моди: {mk_url}"
+        body = FEEDBACK_REMIND_PRINT.format(print=f'<a href="{esc(pr_url)}">замовити доставку диплома</a>', mk=mk_html)
+        return text, body
+    return FEEDBACK_REMIND_MK.format(mk=mk_text) + f"\nОлімпіада з моди: {mk_url}", FEEDBACK_REMIND_MK.format(mk=mk_html)
 
 
 def feedback_greeting(names: list[str]) -> str:
@@ -317,9 +338,10 @@ def build_feedback_message(entry: dict):
     """(тема, текст, html) листа-питання від Марії."""
     esc = html.escape
     greeting = feedback_greeting(entry.get("child_names") or [entry.get("child_name")])
+    remind_text, remind_html = feedback_reminder(entry)
     text = "\n".join(["Добрий день!", "", greeting, "", FEEDBACK_WHO]
                      + [f"— {q}" for q in FEEDBACK_QUESTIONS]
-                     + ["", FEEDBACK_PROMISE, "", "Марія Шутяк", "засновниця Dityam.com.ua",
+                     + ["", FEEDBACK_PROMISE, "", remind_text, "", "Марія Шутяк", "засновниця Dityam.com.ua",
                         f"{FROM} · dityam.com.ua"])
     items = "".join(f'<li style="margin:0 0 6px">{esc(q)}</li>' for q in FEEDBACK_QUESTIONS)
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#1a1a1a;max-width:560px">
@@ -328,6 +350,7 @@ def build_feedback_message(entry: dict):
 <p>{esc(FEEDBACK_WHO)}</p>
 <ul style="padding-left:20px">{items}</ul>
 <p>{esc(FEEDBACK_PROMISE)}</p>
+<p>{remind_html}</p>
 <p>Марія Шутяк<br>засновниця Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a> · <a href="{SITE}">dityam.com.ua</a></p>
 </div>"""
     return FEEDBACK_SUBJECT, text, body
@@ -395,7 +418,7 @@ def main() -> int:
     diplomas = [r for r in done_rows if needs_diploma(r)]
     try:
         fb_rows = (client.table("olimpiada_entries")
-                   .select("id, parent_email, child_name, finished_at, diploma_sent_at, feedback_sent_at, wfp_last_status, source")
+                   .select("id, token, parent_email, child_name, finished_at, diploma_sent_at, feedback_sent_at, wfp_last_status, source, print_paid_at")
                    .not_.is_("diploma_sent_at", "null").execute().data or [])
         feedback = feedback_targets(fb_rows)
     except Exception:
