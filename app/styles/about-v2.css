@@ -209,3 +209,36 @@
 @media (max-width: 480px) {
   .ab-cards { grid-template-columns: 1fr; }
 }
+
+/* «Долучитися й підтримати» — рядки без карток (варіант C, 14.10.2026). */
+.ab-cta { padding-top: 24px; }
+.ab-cta h2 { margin: 0 0 16px; font-size: 1.625rem; font-weight: 700; letter-spacing: -0.02em; }
+.ab-cta-list { border-top: 1px solid var(--v2-line); }
+.ab-cta-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: center;
+  padding: 26px 0;
+  border-bottom: 1px solid var(--v2-line);
+}
+.ab-cta-word {
+  font-family: var(--font-caveat), cursive;
+  font-style: italic;
+  font-weight: 700;
+  font-size: 2.375rem;
+  line-height: 1;
+  color: var(--v2-accent);
+  transform: rotate(-2deg);
+}
+.ab-cta-row h3 { margin: 0 0 4px; font-size: 1.1875rem; font-weight: 700; }
+.ab-cta-row p { margin: 0; font-size: 0.9375rem; line-height: 1.55; color: var(--v2-ink-2); }
+.ab-cta-acts { display: flex; gap: 14px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
+.ab-cta-link { font-size: 0.875rem; font-weight: 600; color: var(--v2-ink-2); }
+.ab-cta-contacts { margin: 16px 0 0; font-size: 0.9375rem; color: var(--v2-ink-2); }
+.ab-cta-contacts a { color: inherit; }
+@media (max-width: 760px) {
+  .ab-cta-row { grid-template-columns: 1fr; gap: 10px; }
+  .ab-cta-acts { justify-content: flex-start; }
+}
+.ab-cta-acts .v2-btn-outline, .ab-cta-acts .v2-btn-dark { text-decoration: none; }

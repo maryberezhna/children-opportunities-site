@@ -177,38 +177,61 @@ export default async function AboutPage() {
           <p className="ab-more"><Link href="/yak-my-pereviriaiemo">Докладно — як ми перевіряємо →</Link></p>
         </section>
 
-        <section className="v2-bottom">
-          <div className="v2-panel">
-            <h2>Долучитися</h2>
-            <p>
-              Знаєте програму, якої тут немає? Помітили помилку? Напишіть —
-              перевіримо й виправимо.
-            </p>
-            {/* Амбасадори (Марія, 13.10.2026: «додай сюди стати амбасадором»). Текст — зі сторінки /ambasadory. */}
-            <p>
-              А якщо хочете розповідати про можливості для дітей батькам, колегам
-              і учням — станьте амбасадором Dityam.com.ua.
-            </p>
-            <div className="v2-panel-actions">
-              {/* Та сама форма, що у футері (Марія, 07.10.2026: «чому тут нема такої самої форми»). */}
-              <SuggestOpenButton className="v2-btn-dark">Запропонувати можливість</SuggestOpenButton>
-              <Link href="/ambasadory" className="v2-btn-outline">Стати амбасадором</Link>
-              <a href={`mailto:${EMAIL}`} className="v2-btn-outline">{EMAIL}</a>
-              <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Instagram</a>
+        {/* Перемальовано 14.10.2026 (Марія: «тут занадто багато кнопок і лише
+            2 блоки… амбасадори більше для підтримати»; «тут якось не має для
+            партнерів»; обрала варіант C — рядки без карток). Ліворуч слово
+            Caveat, посередині суть, праворуч одна дія. Пошта й Instagram —
+            посиланнями під списком. Фон білий (без бежевого). */}
+        <section className="ab-cta" aria-labelledby="ab-cta-title">
+          <h2 id="ab-cta-title">Долучитися й підтримати</h2>
+          <div className="ab-cta-list">
+            <div className="ab-cta-row">
+              <span className="ab-cta-word">напишіть</span>
+              <div>
+                <h3>Запропонувати можливість</h3>
+                <p>Знаєте програму, якої тут немає? Помітили помилку? Перевіримо й виправимо.</p>
+              </div>
+              <div className="ab-cta-acts">
+                {/* Та сама форма, що у футері (Марія, 07.10.2026: «чому тут нема такої самої форми»). */}
+                <SuggestOpenButton className="v2-btn-outline">Запропонувати</SuggestOpenButton>
+              </div>
+            </div>
+            <div className="ab-cta-row">
+              <span className="ab-cta-word">разом</span>
+              <div>
+                <h3>Стати амбасадором</h3>
+                <p>Розповідайте про можливості для дітей батькам, колегам і учням — і допомагайте додавати нові на сайт.</p>
+              </div>
+              <div className="ab-cta-acts">
+                <Link href="/ambasadory" className="v2-btn-dark">Стати амбасадором</Link>
+              </div>
+            </div>
+            <div className="ab-cta-row">
+              <span className="ab-cta-word">підтримати</span>
+              <div>
+                <h3>Dityam+ і донат</h3>
+                <p>Платформа безкоштовна для родин — назавжди. Розвиватися їй допомагає підписка Dityam+, а донат — додавати нові джерела й утримувати домен і хостинг.</p>
+              </div>
+              <div className="ab-cta-acts">
+                <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer" className="ab-cta-link">Донат на monobank →</a>
+                <Link href="/plus" className="v2-btn-dark">Dityam+</Link>
+              </div>
+            </div>
+            <div className="ab-cta-row">
+              <span className="ab-cta-word">партнерам</span>
+              <div>
+                <h3>Для компаній і медіа</h3>
+                <p>Компаніям: станьте партнером конкурсу «STEM-талант України» — ваші інженери в журі, призи переможцям, назва на дипломах.</p>
+              </div>
+              <div className="ab-cta-acts">
+                <Link href="/press" className="ab-cta-link">Для медіа →</Link>
+                <Link href="/stem-partnery" className="v2-btn-outline">Стати партнером</Link>
+              </div>
             </div>
           </div>
-          <div className="v2-panel">
-            <h2>Підтримати</h2>
-            <p>
-              Платформа безкоштовна для родин — назавжди. Розвиватися
-              їй допомагає підписка Dityam+,
-              а донат — додавати нові джерела й утримувати домен і хостинг.
-            </p>
-            <div className="v2-panel-actions">
-              <Link href="/plus" className="v2-btn-dark">Dityam+</Link>
-              <a href="https://send.monobank.ua/jar/F72fDrV2c" target="_blank" rel="noopener noreferrer" className="v2-btn-outline">Донат на monobank</a>
-            </div>
-          </div>
+          <p className="ab-cta-contacts">
+            Пишіть нам: <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">Instagram</a>
+          </p>
         </section>
 
         <p className="ab-partners">
