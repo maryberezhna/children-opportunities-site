@@ -1328,6 +1328,28 @@ def russian_fields(data: dict) -> list:
             if RUSSIAN_MARKER.search(data.get(key) or "")]
 
 
+SUMMER_MONTHS = range(5, 10)         # травень–вересень
+
+
+def summer_school_mismatch(data: dict):
+    """«Літня школа» з нелітньою датою проведення: ім'я типу бреше.
+
+    School of Resilience із заїздами 13–29 листопада і «Творчі осінні
+    канікули» (19–23.10) вийшли на сайт як «Літня школа» — тип видно в
+    хлібних крихтах і фільтрах, і хибний він збиває людину (аудит
+    14.10.2026). Самі не перекласифіковуємо (нічого не вигадувати) —
+    віддаємо людині разом із причиною.
+    """
+    if data.get("opportunity_type") != "summer_school":
+        return None
+    start = str(data.get("event_start_date") or "")
+    if len(start) < 7 or not start[5:7].isdigit():
+        return None
+    if int(start[5:7]) in SUMMER_MONTHS:
+        return None
+    return f"тип «літня школа», а подія починається {start} — перевірити тип"
+
+
 class Normalizer:
     def __init__(self):
         self.client = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -1440,6 +1462,11 @@ URL: {source_url}
                 data["status"] = "draft"
                 note = f"русизм у полях: {', '.join(rus)} — переписати українською"
                 data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + note).strip(" ·")
+
+            mismatch = summer_school_mismatch(data)
+            if mismatch:
+                data["status"] = "draft"
+                data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + mismatch).strip(" ·")
 
             hold_without_source(data)
 
