@@ -1,6 +1,6 @@
 import '@/app/styles/routes/topic.css';
 import Link from 'next/link';
-import OlimpPromo from '../OlimpPromo';
+import OwnPromo from '../OwnPromo';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS } from '@/lib/supabase';
 import { TOPICS, TOPIC_LIST, topicPath, collectionsPath, pickRelated } from '@/lib/topics';
 import { opportunitiesWord } from '@/lib/plural';
@@ -351,7 +351,8 @@ export default async function OlympiadsGuide() {
             першим екраном (11.10.2026: «чого немає анонсу… постав вище»): блок
             стояв після 4 розділів, і з ~1 400 людей на тиждень до /olimpiada
             доходили близько 60. */}
-        <OlimpPromo />
+        {/* З 14.10.2026 — «Наші можливості» замість блоку однієї олімпіади. */}
+        <OwnPromo />
 
         <section className="tp-faq er-section" aria-labelledby="ol-stages">
           <h2 id="ol-stages" className="tp-h2">{titled(['Три', 'етапи'])}</h2>

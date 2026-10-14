@@ -676,6 +676,8 @@
 .ol-own-kicker { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #ffc93c; }
 .ol-own-title { margin: 0; font-size: clamp(1.5rem, calc(3vw * var(--a11y-font-scale, 1)), 2rem); font-weight: 700; line-height: 1.2; color: #fff; }
 .ol-own-text { margin: 0; max-width: 680px; font-size: 16px; line-height: 1.6; color: #e6edff; }
+.ol-own-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.5; color: #e6edff; }
+.ol-own-list a { color: #fff; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
 .ol-own-btn {
   margin-top: 6px; display: inline-flex; padding: 13px 22px; border-radius: 9999px; font-weight: 700; font-size: 16px;
   background: #f5a023; color: #16307a !important; text-decoration: none; box-shadow: 0 5px 0 #c97a0a;
@@ -683,7 +685,7 @@
 }
 .ol-own-btn:hover { transform: translateY(-2px); }
 @media (prefers-reduced-motion: reduce) { .ol-own-btn { transition: none; } .ol-own-btn:hover { transform: none; } }
-/* Той самий блок у підбірках (app/OlimpPromo.js) — між «Топ 3» і списком. */
+/* Той самий блок у підбірках (app/OwnPromo.js, «Наші можливості») — між «Топ 3» і списком. */
 /* Без власних відступів: між секціями підбірки вже є gap 40px (.tp-main), і
    28px зверху й знизу давали 68px порожнечі на телефоні (Марія, 08.10.2026). */
 .ol-own-hub { margin: 0; }
