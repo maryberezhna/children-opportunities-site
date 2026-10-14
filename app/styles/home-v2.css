@@ -279,6 +279,7 @@ html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
 .v2-nav a { color: var(--v2-ink-2); text-decoration: none; }
 .v2-nav a:hover { color: var(--v2-ink); }
 .v2-nav a.is-active { color: var(--v2-ink); }
+@media (max-width: 1199px) { .v2-nav .v2-nav-tg-lead { display: none; } }
 
 /* Підменю «Підбірки» (Header.js, 14.09.2026). Відкривається наведенням і
    кліком; невидимий «місток» над панеллю не дає списку закритись, поки

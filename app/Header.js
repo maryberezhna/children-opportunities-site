@@ -161,6 +161,10 @@ export default function Header() {
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
   const strip = isEnglish ? PLUS_STRIP.en : PLUS_STRIP.uk;
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
+  // Заклик Марії (14.10.2026) замість голого «Telegram». У шапці компʼютера
+  // на вузьких екранах (до 1200px) повна фраза не влазить і ламає рядок разом
+  // із «Про проєкт» — там лишається «Telegram» (.v2-nav-tg-lead ховається).
+  const TELEGRAM_LEAD = isEnglish ? '' : 'Будьте з нами на звʼязку в ';
   const topicGroups = topicMenu(isEnglish ? 'en' : 'uk');
   const topicActive = topicGroups.some((g) => g.links.some((l) => l.href === pathname));
   // Помаранчева кнопка праворуч (Марія, 13.10.2026: «заміни Dityam+ на наші
@@ -240,7 +244,7 @@ export default function Header() {
             </Link>
           ))}
           <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer" onClick={track('telegram')}>
-            Telegram
+            {TELEGRAM_LEAD && <span className="v2-nav-tg-lead">{TELEGRAM_LEAD}</span>}Telegram
           </a>
         </nav>
 
@@ -352,7 +356,7 @@ export default function Header() {
             rel="noopener noreferrer"
             onClick={() => { track('telegram')(); setMenuOpen(false); }}
           >
-            Telegram
+            {TELEGRAM_LEAD}Telegram
           </a>
           <a
             href={MONOBANK_URL}
