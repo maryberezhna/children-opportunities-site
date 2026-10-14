@@ -53,9 +53,10 @@ export default function ThankYou({ lang = 'uk' }) {
     setPaid(isPaid);
     setReady(true);
 
-    // Подія для GA4 і рекламних систем. Окремі назви, бо це різні кроки лійки.
-    if (window.gtag) {
-      window.gtag('event', isPaid ? 'plus_purchase' : 'plus_signup', {
+    // Подія для GA4 і рекламних систем. Покупку (plus_purchase) шле сервер
+    // з колбеку WayForPay (app/api/pay/wayforpay) — тут вона подвоїла б її.
+    if (window.gtag && !isPaid) {
+      window.gtag('event', 'plus_signup', {
         event_category: 'conversion',
       });
     }
