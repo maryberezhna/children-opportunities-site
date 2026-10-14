@@ -57,8 +57,10 @@ test('факти: лише те, що є в записі, у сталому по
   assert.equal(both.find((f) => f.key === 'cost').value, 'Платно — €100 з проживанням');
   assert.equal(both.find((f) => f.key === 'when').value, '6 — 8 листопада 2026');
 
-  // Порожній запис — лише вік.
-  assert.deepEqual(pageFacts({ age_from: 0, age_to: 18 }, today).map((f) => f.key), ['age']);
+  // Порожній запис: вік 0–18 — сентинель «невідомо/без обмежень», факту не
+  // дає (14.10.2026); справжній діапазон — дає.
+  assert.deepEqual(pageFacts({ age_from: 0, age_to: 18 }, today).map((f) => f.key), []);
+  assert.deepEqual(pageFacts({ age_from: 0, age_to: 6 }, today).map((f) => f.key), ['age']);
 });
 
 test('де: місто з країною за кордоном, місто вдома, онлайн', () => {
