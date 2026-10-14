@@ -369,6 +369,10 @@ html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
   white-space: nowrap;
 }
 .v2-nav .v2-nav-mega a { padding: 7px 12px; }
+/* Наша власна можливість у «Підбірках» (Онлайн-олімпіада з логіки): кремова
+   плашка й помаранчевий текст — прийом, який Марія схвалила 07.10.2026. */
+.v2-nav .v2-nav-mega a.v2-nav-own-item,
+.v2-mmenu a.v2-mmenu-sub.v2-nav-own-item { background: var(--accent-soft); color: var(--v2-accent-strong); font-weight: 600; border-radius: 10px; }
 
 /* «Наші можливості»: власні продукти — назва й рядок пояснення під нею. */
 .v2-nav-own[hidden] { display: none; }

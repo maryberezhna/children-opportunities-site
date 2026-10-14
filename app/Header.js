@@ -222,6 +222,7 @@ export default function Header() {
                           href={l.href}
                           prefetch={false}
                           aria-current={l.href === pathname ? 'page' : undefined}
+                          className={l.own ? 'v2-nav-own-item' : undefined}
                           onClick={() => { track(`topic:${l.label}`)(); setTopicsOpen(false); }}
                         >
                           {l.label}
@@ -329,7 +330,7 @@ export default function Header() {
                       key={l.href}
                       href={l.href}
                       prefetch={false}
-                      className={`v2-mmenu-sub${l.href === pathname ? ' is-active' : ''}`}
+                      className={`v2-mmenu-sub${l.href === pathname ? ' is-active' : ''}${l.own ? ' v2-nav-own-item' : ''}`}
                       aria-current={l.href === pathname ? 'page' : undefined}
                       onClick={() => { track(`topic:${l.label}`)(); setMenuOpen(false); }}
                     >
