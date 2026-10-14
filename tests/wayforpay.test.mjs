@@ -307,3 +307,27 @@ test('колбек розрізняє першу оплату й продовж�
   assert.match(src, /accessLine\(existing\?\.status === 'active'\)/,
     'рядок про доступ не привʼязаний до того, чи підписка була активна');
 });
+
+// 14.10.2026: WayForPay повертає людину на returnUrl POST-запитом, а сторінка
+// /dyakuyu на POST відповідає 405. Кожен, хто оплатив Dityam+, бачив помилку,
+// а подія plus_purchase не дійшла до GA4 жодного разу.
+test('після оплати Dityam+ повертаємо через маршрут, що приймає POST', () => {
+  const b = invoiceBody({ unsub_token: 'a'.repeat(32), email: 'x@y.z' }, 'monthly', { now: new Date('2026-10-14T10:00:00Z') });
+  assert.match(b.returnUrl, /\/api\/pay\/return$/);
+  const src = readFileSync(new URL('../app/api/pay/return/route.js', import.meta.url), 'utf8');
+  assert.match(src, /export const POST\b/, 'маршрут повернення не приймає POST');
+  assert.match(src, /dyakuyu\?paid=1/);
+  assert.match(src, /303/);
+});
+
+test('покупку Dityam+ у GA4 шле колбек оплати, а не сторінка подяки', async () => {
+  const src = readFileSync(new URL('../app/api/pay/wayforpay/route.js', import.meta.url), 'utf8');
+  assert.match(src, /sendGa4ServerEvent\([\s\S]{0,200}'plus_purchase'/, 'колбек не шле plus_purchase');
+  const ty = readFileSync(new URL('../app/dyakuyu/ThankYou.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(ty, /'plus_purchase'/, 'сторінка подяки подвоїть покупку');
+  const { ga4EventBody } = await import('../lib/ga4-mp.js');
+  assert.deepEqual(ga4EventBody('telegram-1', 'plus_purchase', { value: 99 }), {
+    client_id: 'telegram-1', user_id: 'telegram-1',
+    events: [{ name: 'plus_purchase', params: { value: 99 } }],
+  });
+});

@@ -11,6 +11,7 @@ import { markPromoPaid } from '@/lib/promo';
 import { recordPayment, productOf, paidAtOf } from '@/lib/payments';
 import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
 import { isMkOrder } from '@/lib/modnyi-kod';
+import { sendGa4ServerEvent } from '@/lib/ga4-mp';
 import { handleMkCallback } from '@/lib/modnyi-kod-server';
 
 export const runtime = 'nodejs';
@@ -110,6 +111,22 @@ export async function POST(request) {
         email: b.email || sub?.email || null,
         subscriber_id: sub?.id || null,
       });
+
+      // Покупка в GA4 — звідси, а не зі сторінки подяки: до 14.10.2026
+      // повернення з оплати падало на 405, і plus_purchase не дійшла жодного
+      // разу. Лише нова підписка; поновлення — не нова покупка.
+      if (!renewal) {
+        await sendGa4ServerEvent(
+          sub?.telegram_chat_id ? `telegram-${sub.telegram_chat_id}` : `wfp-${token}`,
+          'plus_purchase',
+          {
+            value: Number(b.amount),
+            currency: 'UAH',
+            transaction_id: b.orderReference,
+            billing_period: periodFromOrderRef(b.orderReference, b.amount),
+          },
+        );
+      }
 
       // Промокод: оплату зараховуємо лише на ПЕРШОМУ платежі — знижка діє
       // один раз, а колбек приходить і на кожне поновлення.
