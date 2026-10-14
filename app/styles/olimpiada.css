@@ -583,3 +583,20 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 
 /* Після розбору: друкований диплом і Instagram (13.10.2026). */
 .ol-end-cta .ol-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+
+/* Лоадер відправки відповідей (14.10.2026): видно, що сторінка працює,
+   а не підвисла. Колір — декоративний помаранчевий, як у кнопок. */
+.ol-spin {
+  display: block;
+  width: 34px;
+  height: 34px;
+  margin: 4px 0 14px;
+  border: 4px solid rgba(232, 93, 36, .22);
+  border-top-color: #e85d24;
+  border-radius: 50%;
+  animation: ol-spin .8s linear infinite;
+}
+@keyframes ol-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) {
+  .ol-spin { animation-duration: 2s; }
+}

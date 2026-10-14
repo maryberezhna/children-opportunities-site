@@ -27,6 +27,7 @@ export default function TestRunner({ token, name, started, count, minutes, openT
   const deadlineRef = useRef(null);            // мітка часу за годинником браузера
   const sentRef = useRef(false);
   const autoRef = useRef(false);             // час вийшов — здаємо сам лише 1 раз
+  const advanceRef = useRef(null);           // таймер автопереходу до наступного завдання
   const storeKey = `olimp_a_${token}`;
   const openKey = `olimp_o_${token}`;
   const resultUrl = `/olimpiada/test?t=${token}`;
@@ -153,7 +154,15 @@ export default function TestRunner({ token, name, started, count, minutes, openT
       try { window.localStorage.setItem(storeKey, JSON.stringify(next)); } catch { /* ок */ }
       return next;
     });
+    // Вибрали відповідь — самі йдемо до наступного завдання: менше кліків
+    // (Марія, 14.10.2026). Коротка пауза, щоб вибір встиг підсвітитись;
+    // повернутись і змінити відповідь можна «← Назад» чи цятками внизу.
+    clearTimeout(advanceRef.current);
+    advanceRef.current = setTimeout(() => {
+      setIndex((i) => Math.min(i + 1, (questions.length || 1) - 1));
+    }, 300);
   }
+  useEffect(() => () => clearTimeout(advanceRef.current), []);
 
   function writeOpen(value) {
     setOpenText(value);
@@ -175,10 +184,25 @@ export default function TestRunner({ token, name, started, count, minutes, openT
 
   if (phase === 'done') {
     return (
-      <div className="ol-panel ol-intro">
+      <div className="ol-panel ol-intro" role="status">
         <p className="ol-kicker">Онлайн-олімпіада з логіки</p>
+        <span className="ol-spin" aria-hidden="true" />
         <h1 className="ol-h2">Готово! Рахуємо бали й малюємо диплом…</h1>
-        <p className="ol-text">Зараз відкриється сторінка з результатом і дипломом.</p>
+        <p className="ol-text">Зараз відкриється сторінка з результатом і дипломом. Не закривайте вкладку.</p>
+      </div>
+    );
+  }
+
+  // Відповіді з варіантами відправляються: окремий екран з лоадером. До
+  // 14.10.2026 тут лишався екран останнього завдання з вимкненими кнопками —
+  // виглядало, ніби все підвисло (Марія: «ніякий лоадер не показувався»).
+  if (phase === 'sending' && !timeUp) {
+    return (
+      <div className="ol-panel ol-intro" role="status">
+        <p className="ol-kicker">Онлайн-олімпіада з логіки</p>
+        <span className="ol-spin" aria-hidden="true" />
+        <h1 className="ol-h2">Обробляємо відповіді…</h1>
+        <p className="ol-text">Зазвичай це кілька секунд. Далі — останнє, відкрите завдання, вже без таймера.</p>
       </div>
     );
   }
@@ -245,7 +269,8 @@ export default function TestRunner({ token, name, started, count, minutes, openT
     return (
       <div className="ol-panel ol-intro" role="status">
         <p className="ol-kicker">Час на завдання вийшов</p>
-        <h1 className="ol-h2">{phase === 'sending' ? 'Відправляємо відповіді…' : 'Відповіді не відправились'}</h1>
+        {phase === 'sending' && <span className="ol-spin" aria-hidden="true" />}
+        <h1 className="ol-h2">{phase === 'sending' ? 'Обробляємо відповіді…' : 'Відповіді не відправились'}</h1>
         <p className="ol-text">Далі — останнє, відкрите завдання. На нього таймера немає.</p>
         {error && <p className="ol-error" role="alert">{error}</p>}
         {phase !== 'sending' && (
@@ -264,6 +289,8 @@ export default function TestRunner({ token, name, started, count, minutes, openT
   const low = left !== null && left <= 60;
   // Підтвердження — завжди: після цього відповіді з варіантами вже не змінити.
   const finish = () => setConfirm(true);
+  // Ручний перехід скасовує відкладений автоперехід, щоб не стрибнути двічі.
+  const go = (f) => { clearTimeout(advanceRef.current); setIndex(f); };
 
   return (
     <div className="ol-run">
@@ -302,7 +329,7 @@ export default function TestRunner({ token, name, started, count, minutes, openT
       {error && <p className="ol-error" role="alert">{error}</p>}
 
       <div className="ol-nav">
-        <button type="button" className="ol-btn ol-btn-ghost" onClick={() => setIndex((i) => Math.max(0, i - 1))} disabled={index === 0 || phase === 'sending'}>
+        <button type="button" className="ol-btn ol-btn-ghost" onClick={() => go((i) => Math.max(0, i - 1))} disabled={index === 0 || phase === 'sending'}>
           ← Назад
         </button>
         {last ? (
@@ -310,7 +337,7 @@ export default function TestRunner({ token, name, started, count, minutes, openT
             {phase === 'sending' ? 'Надсилаємо…' : 'Завершити завдання'}
           </button>
         ) : (
-          <button type="button" className="ol-btn ol-btn-main" onClick={() => setIndex((i) => Math.min(total - 1, i + 1))} disabled={phase === 'sending'}>
+          <button type="button" className="ol-btn ol-btn-main" onClick={() => go((i) => Math.min(total - 1, i + 1))} disabled={phase === 'sending'}>
             Далі →
           </button>
         )}
@@ -321,7 +348,7 @@ export default function TestRunner({ token, name, started, count, minutes, openT
           <button
             key={item.id} type="button" aria-label={`Завдання ${i + 1}${answers[item.id] !== undefined ? ', є відповідь' : ''}`}
             className={`ol-dot${i === index ? ' is-here' : ''}${answers[item.id] !== undefined ? ' is-done' : ''}`}
-            onClick={() => setIndex(i)} disabled={phase === 'sending'}
+            onClick={() => go(i)} disabled={phase === 'sending'}
           >
             {i + 1}
           </button>

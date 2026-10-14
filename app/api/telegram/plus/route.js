@@ -26,8 +26,8 @@ import {
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
-import { handleFeedbackCallback } from '@/lib/feedback';
-import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent, looksLikeChildName, offerOlName } from '@/lib/olimpiada-bot';
+import { handleFeedbackCallback, handleFeedbackReply } from '@/lib/feedback';
+import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent, looksLikeChildName, registerOlName } from '@/lib/olimpiada-bot';
 
 // Олімпіада з логіки через бот (13.10.2026): людина без підписки отримує рядок
 // digest_subscribers із джерелом «olimpiada» — перший дотик, і після тесту
@@ -612,6 +612,11 @@ export async function POST(request) {
     if (msg.reply_to_message && await handleMkReply(bot, msg)) return new Response('ok');
     // Імʼя дитини для олімпіади з логіки (13.10.2026).
     if (msg.reply_to_message && await handleOlReply(bot, msg, { ensureSub: () => ensureOlSub(supabase, chatId, handle) })) return new Response('ok');
+    // Текст відгуку — відповідь на «Поділіться, будь ласка, детальніше» (14.10.2026).
+    if (msg.reply_to_message && await handleFeedbackReply(bot, msg, {
+      supabase,
+      notifyAdmin: (t) => (MAIN_TOKEN && ADMIN_CHAT_ID ? makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, esc(t)) : Promise.resolve()),
+    })) return new Response('ok');
 
     if (/^\/stop\b/i.test(text)) {
       const { data: sub } = await supabase.from('digest_subscribers')
@@ -826,9 +831,10 @@ export async function POST(request) {
       }
 
       // Просто імʼя дитини в чаті (без «Відповісти» на питання бота) — не
-      // питання адміну, а запис на олімпіаду кнопкою (14.10.2026).
+      // питання адміну, а запис на олімпіаду. Одразу, без перепитування
+      // кнопкою «Записати X?»: це був зайвий крок (Марія, 14.10.2026).
       if (looksLikeChildName(text)) {
-        await offerOlName(bot, chatId, text);
+        await registerOlName(bot, chatId, text, { ensureSub: () => ensureOlSub(supabase, chatId, handle) });
         return new Response('ok');
       }
 

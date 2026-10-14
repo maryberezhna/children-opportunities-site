@@ -25,3 +25,19 @@ test('бот перевіряє «схоже на імʼя» до пересил
   const adminAt = route.indexOf('Підтримка у поданні: будь-який інший текст');
   assert.ok(nameAt > 0 && nameAt < adminAt);
 });
+
+test('імʼя реєструється одразу, без перепитування «Записати X?» (14.10.2026)', () => {
+  const route = readFileSync(new URL('../app/api/telegram/plus/route.js', import.meta.url), 'utf8');
+  assert.match(route, /registerOlName\(bot, chatId, text/);
+  assert.equal(route.includes('offerOlName'), false);
+});
+
+test('на «Записати дитину» бот пропонує вже відомих дітей кнопками', () => {
+  const botSrc = readFileSync(new URL('../lib/olimpiada-bot.js', import.meta.url), 'utf8');
+  assert.match(botSrc, /olKnownNames/);
+  assert.match(botSrc, /Інша дитина/);
+  assert.match(botSrc, /callback_data: 'ol:ask'/);
+  const mk = readFileSync(new URL('../lib/modnyi-kod-bot.js', import.meta.url), 'utf8');
+  assert.match(mk, /mk:nm:/);
+  assert.match(mk, /Інше імʼя/);
+});
