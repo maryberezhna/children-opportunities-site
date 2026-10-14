@@ -39,7 +39,7 @@ test('після тесту диплом іде в Telegram; бот і /olymp �
   assert.match(read('app/api/olimpiada/submit/route.js'), /if \(entry\.telegram_chat_id\) await sendOlDiploma/);
   const route = read('app/api/telegram/plus/route.js');
   assert.match(route, /olStartArg\(startArg\)/);
-  assert.match(route, /handleOlCallback\(bot, cbq\)/);
+  assert.match(route, /handleOlCallback\(bot, cbq/);
   assert.match(route, /handleOlReply\(bot, msg/);
   assert.ok(route.indexOf("if (cmd === 'olymp')") < route.indexOf('if (cmd && SUB_COMMANDS.has(cmd))'), '/olymp не має вимагати підписки');
   // Текст повідомлень — без емодзі, які Telegram показує кодом.

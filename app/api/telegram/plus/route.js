@@ -26,7 +26,7 @@ import {
 import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
-import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent } from '@/lib/olimpiada-bot';
+import { olStartArg, sendOlIntro, handleOlCallback, handleOlReply, olEvent, looksLikeChildName, offerOlName } from '@/lib/olimpiada-bot';
 
 // Олімпіада з логіки через бот (13.10.2026): людина без підписки отримує рядок
 // digest_subscribers із джерелом «olimpiada» — перший дотик, і після тесту
@@ -824,6 +824,13 @@ export async function POST(request) {
         }
       }
 
+      // Просто імʼя дитини в чаті (без «Відповісти» на питання бота) — не
+      // питання адміну, а запис на олімпіаду кнопкою (14.10.2026).
+      if (looksLikeChildName(text)) {
+        await offerOlName(bot, chatId, text);
+        return new Response('ok');
+      }
+
       // Підтримка у поданні: будь-який інший текст → адміну. Раніше сюди
       // потрапляли лише активні підписники, а від решти текст зникав у
       // порожнечу — людина писала й не отримувала нічого (27.09.2026).
@@ -866,7 +873,9 @@ export async function POST(request) {
   }
 
   // «Олімпіади» → олімпіада з логіки (13.10.2026) і «Модний код» (12.10.2026).
-  if (await handleOlCallback(bot, cbq)) return new Response('ok');
+  if (await handleOlCallback(bot, cbq, {
+    ensureSub: () => ensureOlSub(supabase, String(cbq.message.chat.id), cbq.from?.username ? `@${cbq.from.username}` : null),
+  })) return new Response('ok');
   if (await handleMkCallback(bot, cbq)) return new Response('ok');
 
   // «Почати →» (до 09.10.2026 — «✅ Погоджуюсь») — фіксуємо згоду й ведемо далі тим самим шляхом, що /start.
