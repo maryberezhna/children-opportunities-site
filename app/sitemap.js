@@ -107,14 +107,17 @@ export default async function sitemap() {
     { url: `${SITE_URL}/modnyi-kod`, changeFrequency: 'weekly', priority: 0.6 },
   ];
 
-  const staticPages = [...bilingualPages, ...monolingual]
-    .map((entry) => ({ ...entry, lastModified: new Date() }));
+  // Без lastModified: він ставився як час генерації файлу (кожну годину,
+  // revalidate 3600), тобто брехав. lastmod, що «завжди щойно», Google
+  // ігнорує і він підриває довіру до справжніх дат карток нижче. Коли дати
+  // реальної зміни немає — чесніше не писати жодної (протокол це дозволяє).
+  const staticPages = [...bilingualPages, ...monolingual];
 
   const cityPages = Object.keys(CITY_META).flatMap((slug) => {
     const languages = { uk: `${SITE_URL}/${slug}`, en: `${SITE_URL}/en/${slug}` };
     return [
-      { url: languages.uk, changeFrequency: 'daily', priority: 0.7, lastModified: new Date(), alternates: { languages } },
-      { url: languages.en, changeFrequency: 'daily', priority: 0.6, lastModified: new Date(), alternates: { languages } },
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.7, alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.6, alternates: { languages } },
     ];
   });
 
@@ -123,8 +126,8 @@ export default async function sitemap() {
   const topicPages = TOPIC_LIST.flatMap((t) => {
     const languages = { uk: `${SITE_URL}/${t.slug}`, en: `${SITE_URL}/en/${t.en.slug}` };
     return [
-      { url: languages.uk, changeFrequency: 'daily', priority: 0.9, lastModified: new Date(), alternates: { languages } },
-      { url: languages.en, changeFrequency: 'daily', priority: 0.8, lastModified: new Date(), alternates: { languages } },
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.9, alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.8, alternates: { languages } },
     ];
   });
 
@@ -140,7 +143,6 @@ export default async function sitemap() {
     url: `${SITE_URL}/${citySlug}/${topicSlug}`,
     changeFrequency: 'daily',
     priority: 0.8,
-    lastModified: new Date(),
   }));
 
   // Сторінки країн діаспори («Українським дітям у Польщі») — лише над
@@ -155,8 +157,8 @@ export default async function sitemap() {
   const diasporaCountryPages = qualifyingCountryTopics(liveCards).flatMap((t) => {
     const languages = { uk: `${SITE_URL}/${t.slug}`, en: `${SITE_URL}/en/${t.en.slug}` };
     return [
-      { url: languages.uk, changeFrequency: 'daily', priority: 0.8, lastModified: new Date(), alternates: { languages } },
-      { url: languages.en, changeFrequency: 'daily', priority: 0.7, lastModified: new Date(), alternates: { languages } },
+      { url: languages.uk, changeFrequency: 'daily', priority: 0.8, alternates: { languages } },
+      { url: languages.en, changeFrequency: 'daily', priority: 0.7, alternates: { languages } },
     ];
   });
 

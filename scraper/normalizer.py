@@ -1314,6 +1314,20 @@ def latin_fields(data: dict) -> list:
     return bad
 
 
+# Російських літер в українській абетці немає: «ы», «э», «ъ», «ё» — певна
+# ознака русизму в згенерованому тексті. Сполучник « и » окремим словом — та
+# сама ознака: 14.10.2026 на сайті висіло «розвивати soft и hard skills».
+# Текст по суті може бути правильний, тож не відхиляємо — віддаємо людині,
+# як і latin_fields.
+RUSSIAN_MARKER = re.compile(r"[ыэъёЫЭЪЁ]|(?:^|\W)[иИ](?:\W|$)")
+
+
+def russian_fields(data: dict) -> list:
+    """Поля з російськими маркерами: такий запис іде в чернетку."""
+    return [key for key in ("title", "summary", "details")
+            if RUSSIAN_MARKER.search(data.get(key) or "")]
+
+
 class Normalizer:
     def __init__(self):
         self.client = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
@@ -1419,6 +1433,12 @@ URL: {source_url}
             if latin:
                 data["status"] = "draft"
                 note = f"переписати українською: {', '.join(latin)} латиницею"
+                data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + note).strip(" ·")
+
+            rus = russian_fields(data)
+            if rus:
+                data["status"] = "draft"
+                note = f"русизм у полях: {', '.join(rus)} — переписати українською"
                 data["admin_comment"] = ((data.get("admin_comment") or "") + " · " + note).strip(" ·")
 
             hold_without_source(data)
