@@ -36,6 +36,7 @@ from collections import Counter
 import anthropic
 
 import api_guard
+import usage
 from db import get_client
 from requests_guard import protected_ids
 from timing import (
@@ -45,6 +46,11 @@ from timing import (
 
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger("classify_timing")
+
+# Витрати — у llm_usage, як у кожного скрипта з моделлю: 14.10.2026 прогін
+# по 65 записах пройшов повз облік, і «скільки коштувала розмітка» знову
+# довелось би вгадувати.
+SPEND = usage.Spend("classify-timing")
 
 MODEL = "claude-haiku-4-5-20251001"
 BATCH = 15
@@ -179,6 +185,7 @@ def _ask(ai, rows: list[dict], raw_texts: dict[str, str]) -> dict[int, dict]:
             if attempt == 2:
                 raise
             time.sleep(2 * (attempt + 1))
+    SPEND.add(MODEL, resp)
     for block in resp.content:
         if block.type == "tool_use":
             return {it.get("i"): it for it in block.input.get("items", [])}
@@ -323,6 +330,8 @@ def main() -> int:
 
     if args.dry_run:
         logger.info("\nСУХИЙ ПРОГІН — у базу нічого не записано.")
+        SPEND.dry = True
+        SPEND.record(db)
         return 0
 
     written = 0
@@ -337,6 +346,7 @@ def main() -> int:
         except Exception as e:
             logger.error("не записалось %s: %s", r["id"], e)
     logger.info("\nЗаписано: %d із %d", written, len(decided))
+    SPEND.record(db)
     return 0
 
 
