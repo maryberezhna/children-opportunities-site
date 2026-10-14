@@ -178,10 +178,11 @@ test('блок олімпіади — у потрібних підбірках �
     'bezkoshtovni-tabory', 'bezkoshtovni-hurtky',
   ]);
   const topic = read('app/TopicPage.js');
-  assert.match(topic, /!isEn && \(OLIMP_OPEN \|\| OLIMP_PUBLIC\) && OLIMP_HUBS\.includes\(topic\.slug\)/);
-  assert.match(read('app/olimpiady/page.js'), /<OlimpPromo \/>/);
-  const promo = read('app/OlimpPromo.js');
-  assert.match(promo, /href="\/olimpiada"/);
+  // З 14.10.2026 — блок «Наші можливості» (app/OwnPromo.js) замість однієї олімпіади.
+  assert.match(topic, /!isEn && OLIMP_HUBS\.includes\(topic\.slug\) \? <OwnPromo/);
+  assert.match(read('app/olimpiady/page.js'), /<OwnPromo \/>/);
+  const promo = read('app/OwnPromo.js');
+  assert.match(promo, /href=\{OWN_PATH\}/);
   assert.doesNotMatch(promo, /Dityam\+ —/);
 });
 
@@ -199,7 +200,7 @@ test('замість подарункового місяця — Dityam+ за 1 
   assert.match(result, /Спробувати Dityam\+ за \{PRICE_FIRST\} грн/);
   // Марія, 12.10.2026: ціна прямо — «на місяць за 1 грн замість 99 грн».
   assert.match(result, /на місяць за \{PRICE_FIRST\} грн замість \{PRICE\} грн/);
-  for (const f of ['app/olimpiada/page.js', 'app/OlimpPromo.js', 'app/OlimpPopup.js', 'app/llms.txt/route.js', 'lib/olimpiada.js']) {
+  for (const f of ['app/olimpiada/page.js', 'app/OwnPromo.js', 'app/OlimpPopup.js', 'app/llms.txt/route.js', 'lib/olimpiada.js']) {
     assert.doesNotMatch(read(f), /giftDays\} днів Dityam\+|у подарунок кожному|місяць Dityam\+ і призи/, f);
   }
 });
