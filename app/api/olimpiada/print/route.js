@@ -23,6 +23,8 @@ export async function POST(request) {
   if (!entry) return json({ error: 'not_found' }, 404);
   // Друкуємо лише готовий диплом — після тесту.
   if (!entry.finished_at) return json({ error: 'not_finished' }, 409);
+  // Заблокований диплом не друкуємо й оплату за нього не приймаємо (15.10.2026).
+  if (entry.blocked_at) return json({ error: 'blocked' }, 409);
   const testPath = `/olimpiada/test?t=${entry.token}`;
   // Оплачено разом з участю (249 грн, до 08.10.2026), адреси ще немає — лише зберігаємо.
   if (entry.print_paid_at && !entry.print_order) {

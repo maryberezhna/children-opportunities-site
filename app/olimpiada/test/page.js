@@ -135,6 +135,28 @@ export default async function TestPage({ searchParams }) {
     const o = (entry.question_order || []).find((x) => x.id === m.id);
     return { ...m, view: o ? publicQuestions(BANK, [o])[0] : null };
   });
+  // Диплом заблоковано (Марія, 15.10.2026): сторінка лишається доступною за
+  // посиланням, але зникають саме зображення диплома, завантаження,
+  // «поділитися» й замовлення друку. Картинку за прямою адресою теж не
+  // віддаємо (app/api/olimpiada/diploma).
+  if (entry.blocked_at) {
+    return (
+      <Shell>
+        <div className="ol-result">
+          <p className="ol-kicker">Онлайн-олімпіада з логіки · {OLIMP.groupLabel}</p>
+          <h1 className="ol-hand">Упс…</h1>
+          <div className="ol-blocked">
+            <p className="ol-blocked-lead">Ваш диплом заблоковано через порушення правил етики.</p>
+            <p className="ol-text">
+              Якщо вважаєте, що це помилка, напишіть нам — розберемось:{' '}
+              <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
+            </p>
+          </div>
+        </div>
+      </Shell>
+    );
+  }
+
   return (
     <Shell>
       <div className="ol-result">

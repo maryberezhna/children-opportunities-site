@@ -600,3 +600,22 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 @media (prefers-reduced-motion: reduce) {
   .ol-spin { animation-duration: 2s; }
 }
+
+/* Заблокований диплом (15.10.2026): сторінка лишається, диплома немає. */
+.ol-blocked {
+  margin: 18px 0 0;
+  padding: 22px;
+  border-radius: 18px;
+  background: #fff4f1;
+  border: 1px solid #f3cfc4;
+  text-align: left;
+}
+.ol-blocked-lead {
+  margin: 0 0 8px;
+  font-size: 18px;
+  font-weight: 800;
+  color: #c0392b;
+  line-height: 1.35;
+}
+.ol-blocked .ol-text { margin: 0; }
+.ol-blocked a { color: #c8501a; font-weight: 700; }
