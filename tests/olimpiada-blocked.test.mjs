@@ -20,6 +20,17 @@ test('сторінка результату: заблокований дипло
   assert.ok(blocked > 0 && blocked < normal, 'перевірка має бути перед показом диплома');
 });
 
+// Марія, 15.10.2026: «та прям додай прямий текст» — людина має бачити, за що
+// саме заблоковано, її власними словами.
+test('заблокований екран цитує відповідь учасника дослівно', () => {
+  const page = read('app/olimpiada/test/page.js');
+  assert.match(page, /entry\.open_answer \? \(/, 'цитата має братися з open_answer запису');
+  assert.match(page, /ol-blocked-quote/);
+  assert.match(read('app/styles/olimpiada.css'), /\.ol-blocked-quote/);
+  // Текст не вшитий у код: цитата працює для будь-якого заблокованого запису.
+  assert.equal(page.includes('Пришли мне Диплом'), false, 'конкретний текст не можна зашивати в код');
+});
+
 test('заблокований екран не містить ані картинки, ані «поділитися», ані друку', () => {
   const page = read('app/olimpiada/test/page.js');
   const start = page.indexOf('if (entry.blocked_at)');
