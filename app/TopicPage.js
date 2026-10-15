@@ -13,7 +13,7 @@ import { schoolNotes } from '@/lib/diaspora';
 import { topicCityLinks } from '@/lib/city-topics';
 import { topWeekCards } from '@/lib/weekly-top';
 import { OLIMP_TOP, OLIMP_HUBS, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
-import OwnPromo from './OwnPromo';
+import OlimpPromo from './OlimpPromo';
 import { sliderCards } from '@/lib/top-week-slider';
 import { isoWeek } from '@/lib/week';
 import { daysUntil } from '@/lib/dates';
@@ -551,10 +551,11 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           </>
         ) : null}
 
-        {/* «Наші можливості» (з 14.10.2026 замість блоку однієї олімпіади) — у
-            підбірках, куди приходять батьки дітей, яким цікаві змагання
-            (OLIMP_HUBS). Лише українською. */}
-        {!isEn && OLIMP_HUBS.includes(topic.slug) ? <OwnPromo className="ol-own-hub" /> : null}
+        {/* Наша онлайн-олімпіада — у підбірках, куди приходять батьки дітей,
+            яким цікаві змагання (OLIMP_HUBS). Лише українською. */}
+        {!isEn && (OLIMP_OPEN || OLIMP_PUBLIC) && OLIMP_HUBS.includes(topic.slug) ? (
+          <OlimpPromo abroad={topic.slug === 'ukrainskym-ditiam-za-kordonom'} className="ol-own-hub" />
+        ) : null}
 
         <TopicCards
           items={grouped ? [] : items.map(slim)}
