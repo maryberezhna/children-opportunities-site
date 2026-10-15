@@ -162,7 +162,10 @@ function Card({ o, notes: initialNotes = [], today }) {
       {o.summary ? <p className="adm-sum">{o.summary}</p> : null}
 
       <p className="adm-src">
-        {o.source_url
+        {/* У розгорнутій формі джерело і так помітним блоком під назвою —
+            друга кнопка поруч лише плутала (Марія, 15.10.2026: «чому я бачу
+            2 кнопки джерела»). */}
+        {o.source_url && panel !== 'edit'
           ? <a href={o.source_url} target="_blank" rel="noreferrer">🔗 джерело <span className="q-host">{host(o.source_url)}</span> ↗</a>
           : null}
         {srcProblem ? <span style={{ color: '#b4530a', fontWeight: 600 }}>⚠ {srcProblem}</span> : null}
