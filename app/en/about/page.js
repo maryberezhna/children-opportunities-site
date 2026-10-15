@@ -112,6 +112,12 @@ export default async function AboutPageEn() {
             <p className="ab-signature">
               <span className="v2-script">Mariia</span>Shutiak, founder of Dityam.com.ua
             </p>
+            {/* Founder’s personal Instagram (15.10.2026), same as on /about. */}
+            <p className="ab-insta">
+              <a href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer">
+                My Instagram — @mary.berezhna
+              </a>
+            </p>
           </div>
         </section>
 
