@@ -147,6 +147,17 @@ export default async function TestPage({ searchParams }) {
           <h1 className="ol-hand">Упс…</h1>
           <div className="ol-blocked">
             <p className="ol-blocked-lead">Ваш диплом заблоковано через порушення правил етики.</p>
+            {/* Показуємо дослівно те, що людина написала у відкритому завданні
+                (Марія, 15.10.2026: «та прям додай прямий текст»): так видно, за
+                що саме блокування, і немає відчуття несправедливості. */}
+            {entry.open_answer ? (
+              <blockquote className="ol-blocked-quote">{entry.open_answer}</blockquote>
+            ) : null}
+            <p className="ol-text">
+              У відкритому завданні треба було придумати власну логічну задачу
+              для однолітків і пояснити розвʼязок. Диплом видається за роботу,
+              а не на вимогу.
+            </p>
             <p className="ol-text">
               Якщо вважаєте, що це помилка, напишіть нам — розберемось:{' '}
               <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
