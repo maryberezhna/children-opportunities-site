@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
 import { FB_RATINGS, FB_TAGS } from '@/lib/feedback';
+import { TEACHER_THANKS_AT } from '@/lib/olimpiada';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { buildPeople, peopleSummary, sourceLabel, sourceHref } from '@/lib/people';
 import { notOwn } from '@/lib/own';
@@ -120,11 +121,11 @@ export default async function UsersPage() {
   const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, role, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
-    all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at')),
+    all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at, teacher_code')),
     all(() => sb.from('olimpiada_waitlist').select('email, created_at')),
     all(() => sb.from('payments').select('*').order('paid_at', { ascending: false })),
     all(() => sb.from('mk_entries').select('child_name, parent_email, amount, created_at, paid_at, refunded_at, score, max_score, source')),
-    all(() => sb.from('olimpiada_teachers').select('name, email, source, created_at, thanks_sent_at')),
+    all(() => sb.from('olimpiada_teachers').select('name, email, code, source, created_at, thanks_sent_at')),
   ]);
   const mkRows = notOwn(mkAll);
   const mkPaid = mkRows.filter((r) => r.paid_at && !r.refunded_at);
@@ -164,6 +165,41 @@ export default async function UsersPage() {
             : <div style={{ color: C.ink3 }}>—</div>}
         </div>
       </div>
+
+      {/* Педагоги поіменно (Марія, 15.10.2026: «покажи мені в адмінці цю
+          викладачку»): хто, скільки дітей привів, чи отримав подяку. */}
+      {teachers.length ? (
+        <>
+          <h2 style={h2S}>👩‍🏫 Педагоги · {teachers.length}</h2>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', maxWidth: 900 }}>
+              <thead><tr><th style={head}>Коли</th><th style={head}>Імʼя</th><th style={head}>Email</th><th style={head}>Дітей · пройшли</th><th style={head}>Подяка</th><th style={head}>Сторінка педагога</th></tr></thead>
+              <tbody>
+                {teachers.map((t) => {
+                  const kids = entries.filter((e) => e.teacher_code === t.code);
+                  const done = kids.filter((e) => e.finished_at).length;
+                  return (
+                    <tr key={t.code}>
+                      <td style={cell}>{fmtDate(t.created_at)}</td>
+                      <td style={cell}>{t.name || '—'}</td>
+                      <td style={cell}>{t.email || '—'}</td>
+                      <td style={num}>{kids.length} · {done}</td>
+                      <td style={cell}>{t.thanks_sent_at
+                        ? <a href={`/api/olimpiada/diploma?kind=teacher&c=${t.code}`} style={linkS} {...ext}>{fmtDate(t.thanks_sent_at)}</a>
+                        : `після ${TEACHER_THANKS_AT} учнів`}</td>
+                      <td style={cell}><a href={`/olimpiada/pedagog?c=${t.code}`} style={linkS} {...ext}>відкрити</a></td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <p style={noteS}>
+            Подяка видається сама, коли за посиланням педагога тест пройдуть {TEACHER_THANKS_AT} учнів;
+            разом із нею в листі — запрошення стати амбасадором (/ambasadory).
+          </p>
+        </>
+      ) : null}
 
       <h2 style={h2S}>👗 Модний код · {mkPaid.length} оплат · {uah(mkRevenue)}</h2>
       <div style={{ overflowX: 'auto' }}>
