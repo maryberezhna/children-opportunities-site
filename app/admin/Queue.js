@@ -86,7 +86,7 @@ function Notes({ list }) {
   );
 }
 
-function Card({ o, notes: initialNotes = [], today }) {
+function Card({ o, notes: initialNotes = [], today, currentWeek }) {
   const [panel, setPanel] = useState(null); // 'edit' | 'note' | 'reject'
   const [notes, setNotes] = useState(initialNotes);
   const [text, setText] = useState('');
@@ -185,7 +185,7 @@ function Card({ o, notes: initialNotes = [], today }) {
       {panel === 'edit' ? (
         <div className="q-panel">
           <EditForm
-            opp={o}
+            opp={{ ...o, currentWeek }}
             stub={!!o.stub}
             inline
             onDone={(r) => { if (r.published) setDone({ kind: 'published', slug: r.slug || o.slug }); }}
@@ -240,13 +240,13 @@ function Card({ o, notes: initialNotes = [], today }) {
   );
 }
 
-export default function Queue({ drafts, notes = {}, today }) {
+export default function Queue({ drafts, notes = {}, today, currentWeek }) {
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       {drafts.length === 0
         ? <p style={{ fontSize: 17 }}>Черга порожня — усе розібрано. Нові кандидати прийдуть після нічного прогону.</p>
-        : drafts.map((o) => <Card key={o.id} o={o} notes={notes[o.id] || []} today={today} />)}
+        : drafts.map((o) => <Card key={o.id} o={o} notes={notes[o.id] || []} today={today} currentWeek={currentWeek} />)}
     </>
   );
 }

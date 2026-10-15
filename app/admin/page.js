@@ -9,6 +9,7 @@ import { mergeDraftDups } from '@/lib/adminDups';
 import AdminNav from './AdminNav';
 import LoginForm from './LoginForm';
 import Queue from './Queue';
+import { isoWeek } from '@/lib/week';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -36,7 +37,7 @@ const FIELDS = [
   'id, slug, status, title, summary, source, source_url, apply_url, opportunity_type',
   'age_from, age_to, cost_type, price_note, deadline, recurrence, results_date',
   'event_start_date, event_end_date, timing_kind, format, cities, countries, is_international',
-  'evidence, child_needs, link_status, dup_of, dup_score, admin_comment, created_at',
+  'evidence, child_needs, link_status, dup_of, dup_score, admin_comment, created_at, featured_week',
 ].join(', ');
 
 const NOTE_DAYS = 7;
@@ -120,7 +121,7 @@ export default async function QueuePage({ searchParams }) {
           База не відповіла — список неповний. Онови сторінку за хвилину.
         </p>
       ) : null}
-      <Queue drafts={drafts} notes={notes} today={today} />
+      <Queue drafts={drafts} notes={notes} today={today} currentWeek={isoWeek()} />
       <p style={{ marginTop: 36, fontSize: 14, color: '#8a94a6', lineHeight: 1.6 }}>
         {overdue ? <>Ще {overdue} із минулими датами — машина закриє їх сама вночі.<br /></> : null}
         <a href="/admin/all" style={{ color: '#8a94a6' }}>Старий вигляд з усіма розділами →</a>
