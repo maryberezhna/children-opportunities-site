@@ -110,12 +110,15 @@ export default async function AboutPageEn() {
               most — it’s the one whose parents managed to find it.
             </p>
             <p className="ab-signature">
+              {/* Small personal-Instagram icon next to the signature, no label
+                  (15.10.2026), same as on /about. */}
               <span className="v2-script">Mariia</span>Shutiak, founder of Dityam.com.ua
-            </p>
-            {/* Founder’s personal Instagram (15.10.2026), same as on /about. */}
-            <p className="ab-insta">
-              <a href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer">
-                My Instagram — @mary.berezhna
+              <a className="ab-ig" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Mariia Shutiak on Instagram">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+                  <circle cx="12" cy="12" r="4.5" />
+                  <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
+                </svg>
               </a>
             </p>
           </div>

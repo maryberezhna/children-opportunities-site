@@ -81,9 +81,17 @@
 
 .ab-signature .v2-script { font-size: 1.6em; margin-left: 0.15em; transform: rotate(-3deg); }
 
-/* Особистий Instagram засновниці — рядком під підписом (15.10.2026). */
-.ab-insta { margin: 0; font-size: 0.9375rem; }
-.ab-insta a { color: var(--v2-accent-strong); font-weight: 600; }
+/* Значок особистого Instagram засновниці поруч із підписом (15.10.2026,
+   Марія: «просто маленький значок, а не надпис»). Падінг тримає зону
+   натискання ~30px на телефоні, хоч сам значок 18px. */
+.ab-ig {
+  display: inline-flex;
+  vertical-align: -4px;
+  margin-left: 2px;
+  padding: 6px;
+  color: var(--v2-ink-2);
+}
+.ab-ig:hover, .ab-ig:focus-visible { color: var(--v2-accent-strong); }
 
 /* ── Що робимо ─────────────────────────────────────────────────────────── */
 .ab-cards {
@@ -239,7 +247,7 @@
 .ab-cta-row p { margin: 0; font-size: 0.9375rem; line-height: 1.55; color: var(--v2-ink-2); }
 .ab-cta-acts { display: flex; gap: 14px; align-items: center; justify-content: flex-end; flex-wrap: wrap; }
 .ab-cta-link { font-size: 0.875rem; font-weight: 600; color: var(--v2-ink-2); }
-.ab-cta-contacts { margin: 16px 0 0; font-size: 0.9375rem; color: var(--v2-ink-2); }
+.ab-cta-contacts { margin: 8px 0 0; font-size: 0.9375rem; color: var(--v2-ink-2); }
 .ab-cta-contacts a { color: inherit; }
 @media (max-width: 760px) {
   .ab-cta-row { grid-template-columns: 1fr; gap: 10px; }

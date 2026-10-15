@@ -117,14 +117,16 @@ export default async function AboutPage() {
             </p>
             <p className="ab-signature">
               {/* Caveat — на назві, як у лого (Марія, 13.10.2026: «тут краще
-                  каветом дітям ком юа»), а не на імені. */}
+                  каветом дітям ком юа»), а не на імені. Поруч — лише значок
+                  особистого Instagram, без напису (Марія, 15.10.2026:
+                  «просто маленький значок, а не надпис»). */}
               Марія Шутяк, засновниця <span className="v2-script">dityam.com.ua</span>
-            </p>
-            {/* Особистий Instagram засновниці (Марія, 15.10.2026) — тут, біля
-                підпису; проєктний @dityam.com.ua лишається внизу сторінки. */}
-            <p className="ab-insta">
-              <a href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer">
-                Мій Instagram — @mary.berezhna
+              <a className="ab-ig" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Марії Шутяк">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+                  <circle cx="12" cy="12" r="4.5" />
+                  <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
+                </svg>
               </a>
             </p>
           </div>
@@ -188,7 +190,7 @@ export default async function AboutPage() {
             2 блоки… амбасадори більше для підтримати»; «тут якось не має для
             партнерів»; обрала варіант C — рядки без карток). Ліворуч слово
             Caveat, посередині суть, праворуч одна дія. Пошта й Instagram —
-            посиланнями під списком. Фон білий (без бежевого). */}
+            у рядку «напишіть» (Марія, 15.10.2026). Фон білий (без бежевого). */}
         <section className="ab-cta" aria-labelledby="ab-cta-title">
           <h2 id="ab-cta-title">Долучитися й підтримати</h2>
           <div className="ab-cta-list">
@@ -197,6 +199,11 @@ export default async function AboutPage() {
               <div>
                 <h3>Запропонувати можливість</h3>
                 <p>Знаєте програму, якої тут немає? Помітили помилку? Перевіримо й виправимо.</p>
+                {/* Пошта й Instagram — тут, у рядку «напишіть» (Марія, 15.10.2026),
+                    а не окремим рядком під списком. */}
+                <p className="ab-cta-contacts">
+                  Пишіть нам: <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">Instagram</a>
+                </p>
               </div>
               <div className="ab-cta-acts">
                 {/* Та сама форма, що у футері (Марія, 07.10.2026: «чому тут нема такої самої форми»). */}
@@ -236,9 +243,6 @@ export default async function AboutPage() {
               </div>
             </div>
           </div>
-          <p className="ab-cta-contacts">
-            Пишіть нам: <a href={`mailto:${EMAIL}`}>{EMAIL}</a> · <a href="https://www.instagram.com/dityam.com.ua" target="_blank" rel="noopener noreferrer">Instagram</a>
-          </p>
         </section>
 
         <p className="ab-partners">
