@@ -117,20 +117,22 @@ export default async function UsersPage() {
   const fbBy = (r) => fb.filter((x) => x.rating === r).length;
   const fbTagCount = Object.keys(FB_TAGS).map((t) => [t, fb.filter((x) => (x.tags || []).includes(t)).length]);
   const { count: olPlusActive } = await sb.from('digest_subscribers').select('id', { count: 'exact', head: true }).eq('source', 'olimpiada').eq('status', 'active');
-  const [subs, plusWait, entries, olimpWait, payments, mkAll] = await Promise.all([
+  const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, role, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
     all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at')),
     all(() => sb.from('olimpiada_waitlist').select('email, created_at')),
     all(() => sb.from('payments').select('*').order('paid_at', { ascending: false })),
     all(() => sb.from('mk_entries').select('child_name, parent_email, amount, created_at, paid_at, refunded_at, score, max_score, source')),
+    all(() => sb.from('olimpiada_teachers').select('name, email, source, created_at, thanks_sent_at')),
   ]);
   const mkRows = notOwn(mkAll);
   const mkPaid = mkRows.filter((r) => r.paid_at && !r.refunded_at);
   const mkRevenue = mkPaid.reduce((a, r) => a + (Number(r.amount) || 0), 0);
 
   // Власні записи Марії (lib/own.js) — не люди: не показуємо й не рахуємо (08.10.2026).
-  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, payments: notOwn(payments) });
+  const teachers = notOwn(teachersAll);
+  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, teachers, payments: notOwn(payments) });
   const shownPayments = notOwn(payments);
   const sum = peopleSummary(rows, shownPayments);
   const whoByPayment = (p) => (p.telegram_handle ? `@${String(p.telegram_handle).replace(/^@+/, '')}`
@@ -141,13 +143,14 @@ export default async function UsersPage() {
       <AdminNav current="people" />
       <h1 style={{ fontSize: 24, marginBottom: 2 }}>Користувачі</h1>
       <p style={noteS}>
-        Усі, хто проходив олімпіаду чи «Модний код», підписувався на Dityam+ чи купував. Людина — це Telegram (Dityam+)
+        Усі, хто проходив олімпіаду чи «Модний код», підписувався на Dityam+ чи купував, і педагоги, які долучали клас. Людина — це Telegram (Dityam+)
         або email (олімпіада, «Модний код»): одна мама може бути двома рядками, бо в боті пошти ми не питаємо.
         Твої власні записи тут не рахуються.
       </p>
 
       <div style={{ ...grid, marginTop: 16 }}>
         <Card value={sum.new24} label="нові за останні 24 години" tone={sum.new24 ? C.green : undefined} />
+        <Card value={teachers.length} label="👩‍🏫 педагоги — долучили клас до олімпіади" tone={teachers.length ? C.green : undefined} />
         <div style={{ border: `1px solid ${C.border}`, borderRadius: 12, padding: '12px 14px', background: '#fff' }}>
           <div style={{ fontSize: 13, color: C.ink2, marginBottom: 6 }}>Куплено (грн)</div>
           <div style={{ fontSize: 16, fontWeight: 700 }}>Dityam+: {uah(sum.boughtPlus)}</div>

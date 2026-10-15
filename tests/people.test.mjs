@@ -146,3 +146,16 @@ test('люди: «Модний код» — у таблиці «Хто», з о�
   assert.ok(both.notes.some((n) => n.startsWith('🧩 Олімпіада')));
   assert.ok(both.notes.some((n) => n.includes('оплатили, тест попереду')));
 });
+
+// 15.10.2026, Марія: «здається у нас зареєструвався перший вчитель… веди облік
+// в адмінці» — педагоги з olimpiada_teachers у таблиці «Хто».
+test('люди: педагог олімпіади — окремий рядок з роллю', () => {
+  const rows = buildPeople({
+    teachers: [{ name: 'Олена', email: 'T@school.ua', source: 'olimpiada', created_at: '2026-10-15T07:53:14Z', thanks_sent_at: '2026-10-15T07:53:14Z' }],
+  });
+  const t = rows.find((r) => r.email === 't@school.ua');
+  assert.equal(t.role, '👩‍🏫 вчитель');
+  assert.deepEqual(t.notes, ['👩‍🏫 Педагог олімпіади · Олена · подяку надіслано']);
+  assert.equal(t.source, 'olimpiada');
+});
+
