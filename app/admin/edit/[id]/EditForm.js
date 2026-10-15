@@ -70,8 +70,14 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     child_needs: opp.child_needs || [],
     // Прапорець, а не рядок: модератор думає «так, це в топ цього тижня»,
     // а не «який зараз ISO-тиждень». Тиждень підставляє сервер.
-    featured: opp.featured_week === opp.currentWeek,
+    // Обидва поля можуть не приїхати (у черзі їх довго не було) —
+    // undefined === undefined давав УВІМКНЕНИЙ чекбокс на кожній картці
+    // (Марія, 15.10.2026: «не має бути вибрано»).
+    featured: Boolean(opp.currentWeek) && opp.featured_week === opp.currentWeek,
   });
+  // Топ тижня надсилаємо лише коли галочку чіпали: ненадіслане поле сервер
+  // лишає як є, і збереження картки не знімає і не ставить топ мимохідь.
+  const [featuredTouched, setFeaturedTouched] = useState(false);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState('');
   const up = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
@@ -146,6 +152,7 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       // «Розгорнутого матеріалу» в компактній картці немає — не надсилаємо,
       // сервер лишить як є. «Топ тижня» з 15.10.2026 видно й у черзі.
       if (inline) delete payload.details;
+      if (!featuredTouched) delete payload.featured;
       const res = await fetch('/api/admin/edit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -328,7 +335,7 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         <input
           type="checkbox"
           checked={f.featured}
-          onChange={(e) => setF((s) => ({ ...s, featured: e.target.checked }))}
+          onChange={(e) => { setFeaturedTouched(true); const v = e.target.checked; setF((s) => ({ ...s, featured: v })); }}
           style={{ width: 17, height: 17, cursor: 'pointer' }}
         />
         <span>⭐ Заслуговує в топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— з позначкою й нагорі каталогу до понеділка</span></span>
