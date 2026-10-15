@@ -20,6 +20,7 @@ const T = {
     all: 'Всі можливості',
     categories: 'Всі категорії',
     deadlines: 'Дедлайни',
+    sviata: 'Календар свят',
     plus: 'Dityam+',
     olimp: 'Онлайн-олімпіада',
     modnyiKod: 'Олімпіада з моди',
@@ -41,7 +42,7 @@ const T = {
     terms: 'Умови',
     made: "Зроблено з любов'ю в Україні 🇺🇦",
     hrefs: {
-      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus', olimp: '/olimpiada', modnyiKod: '/modnyi-kod',
+      all: '/', categories: '/kategorii', deadlines: '/dedlainy', sviata: '/sviata', plus: '/plus', olimp: '/olimpiada', modnyiKod: '/modnyi-kod',
       about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
       contacts: '/contacts', ambassadors: '/ambasadory', support: '/support',
       privacy: '/privacy', terms: '/terms',
@@ -53,6 +54,7 @@ const T = {
     all: 'All opportunities',
     categories: 'All categories',
     deadlines: null,
+    sviata: null,
     plus: 'Dityam+',
     topics: 'Collections',
     about: 'About',
@@ -71,7 +73,7 @@ const T = {
     terms: 'Terms',
     made: 'Made with love in Ukraine 🇺🇦',
     hrefs: {
-      all: '/en', categories: '/en/categories', deadlines: null, plus: '/en/plus',
+      all: '/en', categories: '/en/categories', deadlines: null, sviata: null, plus: '/en/plus',
       about: '/en/about', verify: '/en/how-we-verify', press: '/en/press',
       contacts: '/en/contacts', support: '/en/support',
       privacy: '/en/privacy', terms: '/en/terms',
@@ -99,6 +101,8 @@ export default function Footer({ lang = 'uk' }) {
             <Link href={h.plus}>{t.plus}</Link>
             {h.olimp && <Link href={h.olimp} prefetch={false}>{t.olimp}</Link>}
             {h.modnyiKod && <Link href={h.modnyiKod} prefetch={false}>{t.modnyiKod}</Link>}
+            {/* Календар свят і дедлайнів — лише українською (15.10.2026). */}
+            {h.sviata && <Link href={h.sviata} prefetch={false}>{t.sviata}</Link>}
           </div>
 
           <div className="v2-footer-col">
