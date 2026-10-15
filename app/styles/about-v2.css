@@ -81,6 +81,10 @@
 
 .ab-signature .v2-script { font-size: 1.6em; margin-left: 0.15em; transform: rotate(-3deg); }
 
+/* Особистий Instagram засновниці — рядком під підписом (15.10.2026). */
+.ab-insta { margin: 0; font-size: 0.9375rem; }
+.ab-insta a { color: var(--v2-accent-strong); font-weight: 600; }
+
 /* ── Що робимо ─────────────────────────────────────────────────────────── */
 .ab-cards {
   list-style: none;

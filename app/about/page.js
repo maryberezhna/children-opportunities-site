@@ -120,6 +120,13 @@ export default async function AboutPage() {
                   каветом дітям ком юа»), а не на імені. */}
               Марія Шутяк, засновниця <span className="v2-script">dityam.com.ua</span>
             </p>
+            {/* Особистий Instagram засновниці (Марія, 15.10.2026) — тут, біля
+                підпису; проєктний @dityam.com.ua лишається внизу сторінки. */}
+            <p className="ab-insta">
+              <a href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer">
+                Мій Instagram — @mary.berezhna
+              </a>
+            </p>
           </div>
         </section>
 
