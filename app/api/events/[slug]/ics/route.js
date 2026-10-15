@@ -1,29 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { calendarTarget } from '@/lib/calendar-links';
 import { kyivToday } from '@/lib/dates';
+// Спільне складання .ics із /calendar.ics. До 15.10.2026 тут була власна копія
+// foldLine, яка різала рядок по байтах і ламала українські літери навпіл.
+import { foldLine, escapeIcs as escape, toDateStr, VTIMEZONE_KYIV } from '@/lib/ics';
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
-
-function foldLine(line) {
-  const bytes = Buffer.from(line, 'utf8');
-  if (bytes.length <= 75) return line;
-  const parts = [];
-  let start = 0;
-  while (start < bytes.length) {
-    const chunk = bytes.slice(start, start + (start === 0 ? 75 : 74));
-    parts.push(chunk.toString('utf8'));
-    start += start === 0 ? 75 : 74;
-  }
-  return parts.join('\r\n ');
-}
-
-function escape(str) {
-  return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
-}
-
-function toDateStr(isoDate) {
-  return isoDate.replace(/-/g, '');
-}
 
 export async function GET(request, { params }) {
   const { slug } = params;
@@ -76,21 +58,7 @@ export async function GET(request, { params }) {
     'METHOD:PUBLISH',
     'X-WR-CALNAME:Можливості для дитини',
     'X-WR-TIMEZONE:Europe/Kyiv',
-    'BEGIN:VTIMEZONE',
-    'TZID:Europe/Kyiv',
-    'BEGIN:STANDARD',
-    'DTSTART:19701025T030000',
-    'TZOFFSETFROM:+0300',
-    'TZOFFSETTO:+0200',
-    'TZNAME:EET',
-    'END:STANDARD',
-    'BEGIN:DAYLIGHT',
-    'DTSTART:19700329T020000',
-    'TZOFFSETFROM:+0200',
-    'TZOFFSETTO:+0300',
-    'TZNAME:EEST',
-    'END:DAYLIGHT',
-    'END:VTIMEZONE',
+    ...VTIMEZONE_KYIV,
     'BEGIN:VEVENT',
     `UID:${uid}`,
     `DTSTAMP:${dtstamp}`,

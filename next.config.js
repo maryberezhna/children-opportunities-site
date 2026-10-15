@@ -92,12 +92,6 @@ const nextConfig = {
         destination: '/admin?tab=raw',
         permanent: true,
       },
-      // Календар свят видалено (1 перегляд за 60 днів, у sitemap не було).
-      {
-        source: '/sviata',
-        destination: '/',
-        permanent: true,
-      },
     ];
   },
 };
