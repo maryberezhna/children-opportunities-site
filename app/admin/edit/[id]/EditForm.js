@@ -127,9 +127,14 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         onDone?.({ published: publish, slug: body.slug || null });
       } else if (res.status === 422) {
         const body = await res.json().catch(() => ({}));
-        setDone(body.error === 'bad_source'
-          ? `Помилка: ${body.problem}`
-          : `Помилка: не вистачає полів — ${(body.missing || []).join(', ')}`);
+        // Сервер на кожну відмову шле людський текст у body.problem («бракує:
+        // …», «дата вже минула — потрібні дати нового сезону», «джерело не
+        // те»). Доти форма друкувала лише список полів, і expired показувався
+        // як «не вистачає полів — » з порожнім хвостом (Марія, 15.10.2026:
+        // «а як я знаю, яких полів не вистачає»).
+        const reason = body.problem || body.text
+          || ((body.missing || []).length ? `не вистачає полів — ${body.missing.join(', ')}` : 'опублікувати не можна, причину сервер не передав');
+        setDone(`Помилка: ${reason}`);
       } else {
         setDone('Помилка. Перезайди в /admin.');
       }
