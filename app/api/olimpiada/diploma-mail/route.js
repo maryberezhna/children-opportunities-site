@@ -16,6 +16,8 @@ export async function POST(request) {
   if (!store) return json({ error: 'unavailable' }, 503);
   const entry = await store.get(b.t);
   if (!entry?.finished_at) return json({ error: 'not_finished' }, 409);
+  // Заблокований диплом листом теж не надсилаємо (15.10.2026).
+  if (entry.blocked_at) return json({ error: 'blocked' }, 409);
   if (entry.diploma_sent_at) return json({ ok: true, already: true });
   const sent = await sendDiploma(store, entry);
   return json({ ok: sent });

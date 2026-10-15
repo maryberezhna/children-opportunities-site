@@ -361,7 +361,12 @@ export async function GET(request) {
   if (!validToken(t)) return new Response('not found', { status: 404 });
   const store = getStore();
   const entry = store ? await store.get(t) : null;
-  if (!entry || !entry.finished_at) return new Response('not found', { status: 404 });
+  // Заблокований диплом не віддаємо навіть за прямим посиланням: інакше
+  // картинка лишилась би жити в уже надісланому повідомленні Telegram і в
+  // будь-кого, хто зберіг адресу (15.10.2026).
+  if (!entry || !entry.finished_at || entry.blocked_at) {
+    return new Response('not found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+  }
 
   const headers = { 'Cache-Control': 'private, max-age=3600' };
   if (searchParams.get('dl')) headers['Content-Disposition'] = 'attachment; filename="dyplom-olimpiada-dityam.png"';
