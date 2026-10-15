@@ -84,17 +84,28 @@ export default async function AboutPageEn() {
           {/* Фото засновниці (Марія, 07.10.2026). Обрізане й без EXIF —
               public/about/mariia-shutiak.{webp,jpg}. Ліворуч на всю висоту, а
               заголовок, текст і підпис — однією колонкою праворуч, по центру. */}
-          <picture className="ab-photo">
-            <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
-            <img
-              src="/about/mariia-shutiak.jpg"
-              alt="Mariia Shutiak, founder of Dityam.com.ua, with her child"
-              width="720"
-              height="900"
-              loading="lazy"
-              decoding="async"
-            />
-          </picture>
+          <div className="ab-photo">
+            <picture>
+              <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
+              <img
+                src="/about/mariia-shutiak.jpg"
+                alt="Mariia Shutiak, founder of Dityam.com.ua, with her child"
+                width="720"
+                height="900"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+            {/* Personal Instagram as a badge on the photo corner (15.10.2026),
+                same as on /about. */}
+            <a className="ab-ig-badge" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Mariia Shutiak on Instagram">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+                <circle cx="12" cy="12" r="4.5" />
+                <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
+          </div>
           <div className="ab-story-text">
             <h2 id="ab-why">Why I do this</h2>
             <p>
@@ -110,16 +121,7 @@ export default async function AboutPageEn() {
               most — it’s the one whose parents managed to find it.
             </p>
             <p className="ab-signature">
-              {/* Small personal-Instagram icon next to the signature, no label
-                  (15.10.2026), same as on /about. */}
               <span className="v2-script">Mariia</span>Shutiak, founder of Dityam.com.ua
-              <a className="ab-ig" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Mariia Shutiak on Instagram">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
-                  <circle cx="12" cy="12" r="4.5" />
-                  <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
-                </svg>
-              </a>
             </p>
           </div>
         </section>
