@@ -9,7 +9,10 @@ const FORMATS = [['', '— не визначено —'], ['online', 'Онлай
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
 // «Безкоштовно» кожному запису без вартості, і збереження перетворювало
 // «невідомо» на факт. Порожнє поле краще за правдоподібне.
-const RECURRENCE = [['', 'Разова подія'], ['annual', 'Щороку'], ['ongoing', 'Постійно доступна']];
+// Селект періодичності прибрано зовсім (Марія, 15.10.2026: «періодичність
+// видаляємо нафіг — у нас тепер є чекбокс чи доступна завжди»). Значення
+// recurrence='annual' ставить конвеєр (classify-timing) — форма його не
+// чіпає, поки не торкнутись чекбокса «Постійна програма».
 // «Уточнюйте в школі» публікується лише для шкіл і студій діаспори (28.09.2026);
 // будь-якому іншому запису перевірка при публікації скаже «бракує: вартість».
 const COST = [['', '— не визначено —'], ['free', 'Безкоштовно'], ['paid_affordable', 'Платно'],
@@ -73,6 +76,30 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
   const [done, setDone] = useState('');
   const up = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
 
+  // Дати — за ескізом Марії (15.10.2026, «насправді не дуже зрозуміло, що
+  // заповнювати»): два питання-чекбокси, а поля дат зʼявляються лише коли
+  // доречні. «Результати / розіграш» плутався із «Завершенням події», тому
+  // захований за розгортач.
+  const [hasDeadline, setHasDeadline] = useState(Boolean(opp.deadline));
+  const [showResults, setShowResults] = useState(Boolean(opp.results_date));
+  const isOngoing = f.recurrence === 'ongoing';
+  const toggleDeadline = (e) => {
+    const on = e.target.checked;
+    setHasDeadline(on);
+    if (!on) setF((s) => ({ ...s, deadline: '' }));
+  };
+  // Гео: офлайну і гібриду — завжди; онлайну — лише коли міста вже стоять
+  // (обмеження «звідки учасники») або модератор відкрив розгортач.
+  const [geoOpen, setGeoOpen] = useState(false);
+  const showGeo = f.format !== 'online' || Boolean(String(f.cities || '').trim()) || geoOpen;
+  const toggleOngoing = (e) => {
+    const on = e.target.checked;
+    setF((s) => (on
+      ? { ...s, recurrence: 'ongoing', event_start_date: '', event_end_date: '', results_date: '' }
+      : { ...s, recurrence: '' }));
+    if (on) setShowResults(false);
+  };
+
   // Що саме заважає опублікувати — рахуємо на льоту, з того, що в полях
   // просто зараз. Кнопка публікації гасне, поки перелік не порожній. З
   // 03.10.2026 це лише дата програми з датами (до того — пʼять полів).
@@ -116,7 +143,9 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       // конвеєра інакше перезаписались би тим, що показує один селект.
       if (f.country === initialCountry) delete payload.country;
       // Поля, яких у картці немає, не надсилаємо: сервер лишить їх як є.
-      if (inline) { delete payload.details; delete payload.featured; }
+      // «Розгорнутого матеріалу» в компактній картці немає — не надсилаємо,
+      // сервер лишить як є. «Топ тижня» з 15.10.2026 видно й у черзі.
+      if (inline) delete payload.details;
       const res = await fetch('/api/admin/edit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -174,14 +203,45 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       {sourceWarn ? <p style={{ margin: '5px 0 0', color: '#b4530a', fontSize: 13.5, fontWeight: 600 }}>⚠ {sourceWarn}</p> : null}
       <label style={L}>Опис</label>
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
+      <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', margin: '14px 0 0' }}>
+        <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 7, margin: 0, cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasDeadline} onChange={toggleDeadline} />
+          Є дедлайн подачі
+        </label>
+        <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 7, margin: 0, cursor: 'pointer' }}>
+          <input type="checkbox" checked={isOngoing} onChange={toggleOngoing} />
+          Постійна програма — йде цілий рік
+        </label>
+      </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Результати / розіграш</label><input type="date" style={I} value={f.results_date || ''} onChange={up('results_date')} /></div>
+        {hasDeadline ? (
+          <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
+        ) : null}
+        {!isOngoing ? (
+          <>
+            <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
+            <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
+          </>
+        ) : null}
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік від</label><input type="number" min="0" max="18" style={I} value={f.age_from} onChange={up('age_from')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік до</label><input type="number" min="0" max="18" style={I} value={f.age_to} onChange={up('age_to')} /></div>
       </div>
+      {!isOngoing ? (
+        showResults ? (
+          <div style={{ maxWidth: 240 }}>
+            <label style={L}>Результати / розіграш <span style={{ fontWeight: 400, color: '#8a94a6' }}>— коли оголосять переможців</span></label>
+            <input type="date" style={I} value={f.results_date || ''} onChange={up('results_date')} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowResults(true)}
+            style={{ background: 'none', border: 'none', padding: 0, margin: '10px 0 0', color: '#1e4fd6', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            + дата результатів, якщо переможців оголошують окремо
+          </button>
+        )
+      ) : null}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 170px' }}><label style={L}>Тип</label><select style={I} value={f.opportunity_type} onChange={up('opportunity_type')}>{f.opportunity_type === '' ? <option value="">— не визначено —</option> : null}{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         <div style={{ flex: '1 1 170px' }}><label style={L}>Вартість</label><select style={I} value={f.cost_type} onChange={up('cost_type')}>{COST.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
@@ -191,20 +251,33 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         {PAYMENT_TYPES.includes(f.opportunity_type) ? null : (
           <div style={{ flex: '1 1 170px' }}><label style={L}>Формат</label><select style={I} value={f.format} onChange={up('format')}>{FORMATS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         )}
-        <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
       </div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 200px' }}>
-          <label style={L}>Країна</label>
-          <select style={I} value={f.country} onChange={up('country')}>
-            {countryOptions(opp).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+      {/* Онлайну країна й місто не потрібні (Марія, 15.10.2026) — але онлайн
+          буває «лише для учасників з певних міст»: тоді ті самі поля означають
+          «звідки учасники» і відкриваються розгортачем. Якщо міста вже стоять,
+          блок видно одразу — нічого не ховаємо. */}
+      {showGeo ? (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <label style={L}>Країна</label>
+            <select style={I} value={f.country} onChange={up('country')}>
+              {countryOptions(opp).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: '2 1 260px' }}>
+            <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>{f.format === 'online' ? '— звідки мають бути учасники; кілька через кому' : '— кілька через кому; порожньо, якщо онлайн'}</span></label>
+            <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
+          </div>
         </div>
-        <div style={{ flex: '2 1 260px' }}>
-          <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>— кілька через кому; порожньо, якщо онлайн</span></label>
-          <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
-        </div>
-      </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setGeoOpen(true)}
+          style={{ background: 'none', border: 'none', padding: 0, margin: '10px 0 0', color: '#1e4fd6', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', display: 'block' }}
+        >
+          + онлайн лише для учасників з певних міст чи країни
+        </button>
+      )}
       <label style={L}>Особлива потреба <span style={{ fontWeight: 400, color: '#8a94a6' }}>— для кого саме ця можливість; порожньо, якщо для всіх</span></label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {/* Рівно ті, що у фільтрі сайту; плюс те, що вже стоїть на записі
@@ -231,17 +304,26 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         })}
       </div>
       {/* Іде просто в сніпет Google — за запитами «… ціна» ми показувались і не
-          отримували жодного кліку, бо категорії вартості на них не відповідають. */}
-      <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
-      <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
+          отримували жодного кліку, бо категорії вартості на них не відповідають.
+          Безкоштовним не потрібна (Марія, 15.10.2026) — але якщо нотатка вже
+          написана, показуємо, щоб її було видно й можна було прибрати. */}
+      {f.cost_type === 'free' && !f.price_note ? null : (
+        <>
+          <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
+          <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
+        </>
+      )}
       <label style={L}>Посилання на подачу <span style={{ fontWeight: 400, color: '#8a94a6' }}>— форма або реєстрація, якщо адреса не та сама, що в джерелі</span></label>
       <input style={I} value={f.apply_url} onChange={up('apply_url')} placeholder="https://forms.gle/…" />
       {inline ? null : (<>
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>
       <textarea style={{ ...I, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13.5 }} rows={14} value={f.details} onChange={up('details')} placeholder={'## Хто може подаватись\n- учні 8-11 класів\n\n## Етапи\n...'} />
+      </>)}
       {/* Ручний вибір перебиває правило: щотижневий скрипт бачить позначку
           й лишає її, добираючи решту трійки сам. Знімається так само —
-          зняттям галочки, і наступного понеділка вона згасне в будь-якому разі. */}
+          зняттям галочки, і наступного понеділка вона згасне в будь-якому разі.
+          Видно і в черзі (Марія, 15.10.2026: «додати чекбокс заслуговує топ
+          тижня») — доти чекбокс був лише в повній формі. */}
       <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
         <input
           type="checkbox"
@@ -249,9 +331,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
           onChange={(e) => setF((s) => ({ ...s, featured: e.target.checked }))}
           style={{ width: 17, height: 17, cursor: 'pointer' }}
         />
-        <span>⭐ Топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— показувати з позначкою й нагорі каталогу до понеділка</span></span>
+        <span>⭐ Заслуговує в топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— з позначкою й нагорі каталогу до понеділка</span></span>
       </label>
-      </>)}
       {missing.length ? (
         <p style={{ marginTop: 16, marginBottom: 0, padding: '10px 12px', borderRadius: 10, background: '#fdecec', border: '1px solid #f3bcbc', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>
           ⛔ Не можна опублікувати — бракує: {missing.join(', ')}
