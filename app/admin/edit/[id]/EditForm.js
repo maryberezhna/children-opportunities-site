@@ -9,7 +9,9 @@ const FORMATS = [['', '— не визначено —'], ['online', 'Онлай
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
 // «Безкоштовно» кожному запису без вартості, і збереження перетворювало
 // «невідомо» на факт. Порожнє поле краще за правдоподібне.
-const RECURRENCE = [['', 'Разова подія'], ['annual', 'Щороку'], ['ongoing', 'Постійно доступна']];
+// «Постійно доступна» живе не тут, а в чекбоксі «Постійна програма» (ескіз
+// Марії, 15.10.2026) — у селекті лишились лише варіанти для програм із датами.
+const RECURRENCE = [['', 'Разова подія'], ['annual', 'Щороку']];
 // «Уточнюйте в школі» публікується лише для шкіл і студій діаспори (28.09.2026);
 // будь-якому іншому запису перевірка при публікації скаже «бракує: вартість».
 const COST = [['', '— не визначено —'], ['free', 'Безкоштовно'], ['paid_affordable', 'Платно'],
@@ -72,6 +74,26 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState('');
   const up = (k) => (e) => setF((s) => ({ ...s, [k]: e.target.value }));
+
+  // Дати — за ескізом Марії (15.10.2026, «насправді не дуже зрозуміло, що
+  // заповнювати»): два питання-чекбокси, а поля дат зʼявляються лише коли
+  // доречні. «Результати / розіграш» плутався із «Завершенням події», тому
+  // захований за розгортач.
+  const [hasDeadline, setHasDeadline] = useState(Boolean(opp.deadline));
+  const [showResults, setShowResults] = useState(Boolean(opp.results_date));
+  const isOngoing = f.recurrence === 'ongoing';
+  const toggleDeadline = (e) => {
+    const on = e.target.checked;
+    setHasDeadline(on);
+    if (!on) setF((s) => ({ ...s, deadline: '' }));
+  };
+  const toggleOngoing = (e) => {
+    const on = e.target.checked;
+    setF((s) => (on
+      ? { ...s, recurrence: 'ongoing', event_start_date: '', event_end_date: '', results_date: '' }
+      : { ...s, recurrence: '' }));
+    if (on) setShowResults(false);
+  };
 
   // Що саме заважає опублікувати — рахуємо на льоту, з того, що в полях
   // просто зараз. Кнопка публікації гасне, поки перелік не порожній. З
@@ -174,14 +196,45 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       {sourceWarn ? <p style={{ margin: '5px 0 0', color: '#b4530a', fontSize: 13.5, fontWeight: 600 }}>⚠ {sourceWarn}</p> : null}
       <label style={L}>Опис</label>
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
+      <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', margin: '14px 0 0' }}>
+        <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 7, margin: 0, cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasDeadline} onChange={toggleDeadline} />
+          Є дедлайн подачі
+        </label>
+        <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 7, margin: 0, cursor: 'pointer' }}>
+          <input type="checkbox" checked={isOngoing} onChange={toggleOngoing} />
+          Постійна програма — йде цілий рік
+        </label>
+      </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
-        <div style={{ flex: '1 1 150px' }}><label style={L}>Результати / розіграш</label><input type="date" style={I} value={f.results_date || ''} onChange={up('results_date')} /></div>
+        {hasDeadline ? (
+          <div style={{ flex: '1 1 150px' }}><label style={L}>Дедлайн подачі</label><input type="date" style={I} value={f.deadline || ''} onChange={up('deadline')} /></div>
+        ) : null}
+        {!isOngoing ? (
+          <>
+            <div style={{ flex: '1 1 150px' }}><label style={L}>Початок події</label><input type="date" style={I} value={f.event_start_date || ''} onChange={up('event_start_date')} /></div>
+            <div style={{ flex: '1 1 150px' }}><label style={L}>Завершення події</label><input type="date" style={I} value={f.event_end_date || ''} onChange={up('event_end_date')} /></div>
+          </>
+        ) : null}
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік від</label><input type="number" min="0" max="18" style={I} value={f.age_from} onChange={up('age_from')} /></div>
         <div style={{ flex: '1 1 80px' }}><label style={L}>Вік до</label><input type="number" min="0" max="18" style={I} value={f.age_to} onChange={up('age_to')} /></div>
       </div>
+      {!isOngoing ? (
+        showResults ? (
+          <div style={{ maxWidth: 240 }}>
+            <label style={L}>Результати / розіграш <span style={{ fontWeight: 400, color: '#8a94a6' }}>— коли оголосять переможців</span></label>
+            <input type="date" style={I} value={f.results_date || ''} onChange={up('results_date')} />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setShowResults(true)}
+            style={{ background: 'none', border: 'none', padding: 0, margin: '10px 0 0', color: '#1e4fd6', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline' }}
+          >
+            + дата результатів, якщо переможців оголошують окремо
+          </button>
+        )
+      ) : null}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 170px' }}><label style={L}>Тип</label><select style={I} value={f.opportunity_type} onChange={up('opportunity_type')}>{f.opportunity_type === '' ? <option value="">— не визначено —</option> : null}{TYPES.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         <div style={{ flex: '1 1 170px' }}><label style={L}>Вартість</label><select style={I} value={f.cost_type} onChange={up('cost_type')}>{COST.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
@@ -191,7 +244,9 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         {PAYMENT_TYPES.includes(f.opportunity_type) ? null : (
           <div style={{ flex: '1 1 170px' }}><label style={L}>Формат</label><select style={I} value={f.format} onChange={up('format')}>{FORMATS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         )}
-        <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+        {isOngoing ? null : (
+          <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+        )}
       </div>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 200px' }}>
