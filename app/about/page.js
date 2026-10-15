@@ -91,17 +91,29 @@ export default async function AboutPage() {
           {/* Фото засновниці (Марія, 07.10.2026). Обрізане й без EXIF —
               public/about/mariia-shutiak.{webp,jpg}. Ліворуч на всю висоту, а
               заголовок, текст і підпис — однією колонкою праворуч, по центру. */}
-          <picture className="ab-photo">
-            <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
-            <img
-              src="/about/mariia-shutiak.jpg"
-              alt="Марія Шутяк, засновниця Dityam.com.ua, з дитиною"
-              width="720"
-              height="900"
-              loading="lazy"
-              decoding="async"
-            />
-          </picture>
+          <div className="ab-photo">
+            <picture>
+              <source srcSet="/about/mariia-shutiak.webp" type="image/webp" />
+              <img
+                src="/about/mariia-shutiak.jpg"
+                alt="Марія Шутяк, засновниця Dityam.com.ua, з дитиною"
+                width="720"
+                height="900"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
+            {/* Особистий Instagram — білим кружечком на куті фото: Марія
+                15.10.2026 обрала цей варіант замість значка біля підпису
+                («ну дивно це виглядає»). */}
+            <a className="ab-ig-badge" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Марії Шутяк">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+                <circle cx="12" cy="12" r="4.5" />
+                <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
+              </svg>
+            </a>
+          </div>
           <div className="ab-story-text">
             <h2 id="ab-why">Чому я це роблю</h2>
             <p>
@@ -117,17 +129,9 @@ export default async function AboutPage() {
             </p>
             <p className="ab-signature">
               {/* Caveat — на назві, як у лого (Марія, 13.10.2026: «тут краще
-                  каветом дітям ком юа»), а не на імені. Поруч — лише значок
-                  особистого Instagram, без напису (Марія, 15.10.2026:
-                  «просто маленький значок, а не надпис»). */}
+                  каветом дітям ком юа»), а не на імені. Без значків: Instagram
+                  живе кружечком на куті фото (15.10.2026). */}
               Марія Шутяк, засновниця <span className="v2-script">dityam.com.ua</span>
-              <a className="ab-ig" href="https://www.instagram.com/mary.berezhna/" target="_blank" rel="noopener noreferrer" aria-label="Instagram Марії Шутяк">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
-                  <circle cx="12" cy="12" r="4.5" />
-                  <circle cx="17.2" cy="6.8" r="1.3" fill="currentColor" stroke="none" />
-                </svg>
-              </a>
             </p>
           </div>
         </section>

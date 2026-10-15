@@ -81,17 +81,25 @@
 
 .ab-signature .v2-script { font-size: 1.6em; margin-left: 0.15em; transform: rotate(-3deg); }
 
-/* Значок особистого Instagram засновниці поруч із підписом (15.10.2026,
-   Марія: «просто маленький значок, а не надпис»). Падінг тримає зону
-   натискання ~30px на телефоні, хоч сам значок 18px. */
-.ab-ig {
-  display: inline-flex;
-  vertical-align: -4px;
-  margin-left: 2px;
-  padding: 6px;
-  color: var(--v2-ink-2);
+/* Особистий Instagram засновниці — білий кружечок на нижньому куті фото
+   (15.10.2026, Марія обрала варіант Б). Трохи виступає за фото, зона
+   натискання 40px. */
+.ab-photo { position: relative; }
+.ab-ig-badge {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  width: 40px;
+  height: 40px;
+  background: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b6b6b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .18);
 }
-.ab-ig:hover, .ab-ig:focus-visible { color: var(--v2-accent-strong); }
+.ab-ig-badge:hover, .ab-ig-badge:focus-visible { color: var(--v2-accent-strong); }
 
 /* ── Що робимо ─────────────────────────────────────────────────────────── */
 .ab-cards {
