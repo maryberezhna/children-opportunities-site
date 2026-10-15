@@ -9,9 +9,10 @@ const FORMATS = [['', '— не визначено —'], ['online', 'Онлай
 // «Не визначено» стоїть першим і порожнім НАВМИСНО: раніше форма підставляла
 // «Безкоштовно» кожному запису без вартості, і збереження перетворювало
 // «невідомо» на факт. Порожнє поле краще за правдоподібне.
-// «Постійно доступна» живе не тут, а в чекбоксі «Постійна програма» (ескіз
-// Марії, 15.10.2026) — у селекті лишились лише варіанти для програм із датами.
-const RECURRENCE = [['', 'Разова подія'], ['annual', 'Щороку']];
+// Селект періодичності прибрано зовсім (Марія, 15.10.2026: «періодичність
+// видаляємо нафіг — у нас тепер є чекбокс чи доступна завжди»). Значення
+// recurrence='annual' ставить конвеєр (classify-timing) — форма його не
+// чіпає, поки не торкнутись чекбокса «Постійна програма».
 // «Уточнюйте в школі» публікується лише для шкіл і студій діаспори (28.09.2026);
 // будь-якому іншому запису перевірка при публікації скаже «бракує: вартість».
 const COST = [['', '— не визначено —'], ['free', 'Безкоштовно'], ['paid_affordable', 'Платно'],
@@ -87,6 +88,10 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
     setHasDeadline(on);
     if (!on) setF((s) => ({ ...s, deadline: '' }));
   };
+  // Гео: офлайну і гібриду — завжди; онлайну — лише коли міста вже стоять
+  // (обмеження «звідки учасники») або модератор відкрив розгортач.
+  const [geoOpen, setGeoOpen] = useState(false);
+  const showGeo = f.format !== 'online' || Boolean(String(f.cities || '').trim()) || geoOpen;
   const toggleOngoing = (e) => {
     const on = e.target.checked;
     setF((s) => (on
@@ -138,7 +143,9 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       // конвеєра інакше перезаписались би тим, що показує один селект.
       if (f.country === initialCountry) delete payload.country;
       // Поля, яких у картці немає, не надсилаємо: сервер лишить їх як є.
-      if (inline) { delete payload.details; delete payload.featured; }
+      // «Розгорнутого матеріалу» в компактній картці немає — не надсилаємо,
+      // сервер лишить як є. «Топ тижня» з 15.10.2026 видно й у черзі.
+      if (inline) delete payload.details;
       const res = await fetch('/api/admin/edit', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -244,22 +251,33 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         {PAYMENT_TYPES.includes(f.opportunity_type) ? null : (
           <div style={{ flex: '1 1 170px' }}><label style={L}>Формат</label><select style={I} value={f.format} onChange={up('format')}>{FORMATS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
         )}
-        {isOngoing ? null : (
-          <div style={{ flex: '1 1 170px' }}><label style={L}>Періодичність</label><select style={I} value={f.recurrence} onChange={up('recurrence')}>{RECURRENCE.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-        )}
       </div>
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <div style={{ flex: '1 1 200px' }}>
-          <label style={L}>Країна</label>
-          <select style={I} value={f.country} onChange={up('country')}>
-            {countryOptions(opp).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-          </select>
+      {/* Онлайну країна й місто не потрібні (Марія, 15.10.2026) — але онлайн
+          буває «лише для учасників з певних міст»: тоді ті самі поля означають
+          «звідки учасники» і відкриваються розгортачем. Якщо міста вже стоять,
+          блок видно одразу — нічого не ховаємо. */}
+      {showGeo ? (
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={{ flex: '1 1 200px' }}>
+            <label style={L}>Країна</label>
+            <select style={I} value={f.country} onChange={up('country')}>
+              {countryOptions(opp).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: '2 1 260px' }}>
+            <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>{f.format === 'online' ? '— звідки мають бути учасники; кілька через кому' : '— кілька через кому; порожньо, якщо онлайн'}</span></label>
+            <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
+          </div>
         </div>
-        <div style={{ flex: '2 1 260px' }}>
-          <label style={L}>Місто <span style={{ fontWeight: 400, color: '#8a94a6' }}>— кілька через кому; порожньо, якщо онлайн</span></label>
-          <input style={I} value={f.cities} onChange={up('cities')} placeholder={f.country && f.country !== 'ua' ? 'Ньюкасл-апон-Тайн' : 'Львів, Київ'} />
-        </div>
-      </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setGeoOpen(true)}
+          style={{ background: 'none', border: 'none', padding: 0, margin: '10px 0 0', color: '#1e4fd6', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', display: 'block' }}
+        >
+          + онлайн лише для учасників з певних міст чи країни
+        </button>
+      )}
       <label style={L}>Особлива потреба <span style={{ fontWeight: 400, color: '#8a94a6' }}>— для кого саме ця можливість; порожньо, якщо для всіх</span></label>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         {/* Рівно ті, що у фільтрі сайту; плюс те, що вже стоїть на записі
@@ -286,17 +304,26 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         })}
       </div>
       {/* Іде просто в сніпет Google — за запитами «… ціна» ми показувались і не
-          отримували жодного кліку, бо категорії вартості на них не відповідають. */}
-      <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
-      <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
+          отримували жодного кліку, бо категорії вартості на них не відповідають.
+          Безкоштовним не потрібна (Марія, 15.10.2026) — але якщо нотатка вже
+          написана, показуємо, щоб її було видно й можна було прибрати. */}
+      {f.cost_type === 'free' && !f.price_note ? null : (
+        <>
+          <label style={L}>Вартість словами <span style={{ fontWeight: 400, color: '#8a94a6' }}>— «від 12 000 грн за зміну», «безкоштовно для ВПО»</span></label>
+          <input style={I} value={f.price_note} onChange={up('price_note')} placeholder="напр. від 12 000 грн за зміну 14 днів" />
+        </>
+      )}
       <label style={L}>Посилання на подачу <span style={{ fontWeight: 400, color: '#8a94a6' }}>— форма або реєстрація, якщо адреса не та сама, що в джерелі</span></label>
       <input style={I} value={f.apply_url} onChange={up('apply_url')} placeholder="https://forms.gle/…" />
       {inline ? null : (<>
       <label style={L}>Розгорнутий матеріал <span style={{ fontWeight: 400, color: '#8a94a6' }}>— ## заголовок, - список, **жирний**. Короткі описи не ранжуються.</span></label>
       <textarea style={{ ...I, resize: 'vertical', fontFamily: 'ui-monospace, monospace', fontSize: 13.5 }} rows={14} value={f.details} onChange={up('details')} placeholder={'## Хто може подаватись\n- учні 8-11 класів\n\n## Етапи\n...'} />
+      </>)}
       {/* Ручний вибір перебиває правило: щотижневий скрипт бачить позначку
           й лишає її, добираючи решту трійки сам. Знімається так само —
-          зняттям галочки, і наступного понеділка вона згасне в будь-якому разі. */}
+          зняттям галочки, і наступного понеділка вона згасне в будь-якому разі.
+          Видно і в черзі (Марія, 15.10.2026: «додати чекбокс заслуговує топ
+          тижня») — доти чекбокс був лише в повній формі. */}
       <label style={{ ...L, display: 'flex', alignItems: 'center', gap: 9, cursor: 'pointer' }}>
         <input
           type="checkbox"
@@ -304,9 +331,8 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
           onChange={(e) => setF((s) => ({ ...s, featured: e.target.checked }))}
           style={{ width: 17, height: 17, cursor: 'pointer' }}
         />
-        <span>⭐ Топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— показувати з позначкою й нагорі каталогу до понеділка</span></span>
+        <span>⭐ Заслуговує в топ тижня <span style={{ fontWeight: 400, color: '#8a94a6' }}>— з позначкою й нагорі каталогу до понеділка</span></span>
       </label>
-      </>)}
       {missing.length ? (
         <p style={{ marginTop: 16, marginBottom: 0, padding: '10px 12px', borderRadius: 10, background: '#fdecec', border: '1px solid #f3bcbc', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>
           ⛔ Не можна опублікувати — бракує: {missing.join(', ')}
