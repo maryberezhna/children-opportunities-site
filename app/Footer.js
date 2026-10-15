@@ -21,7 +21,6 @@ const T = {
     categories: 'Всі категорії',
     deadlines: 'Дедлайни',
     plus: 'Dityam+',
-    own: 'Наші можливості',
     olimp: 'Онлайн-олімпіада',
     modnyiKod: 'Олімпіада з моди',
     topics: 'Підбірки',
@@ -42,7 +41,7 @@ const T = {
     terms: 'Умови',
     made: "Зроблено з любов'ю в Україні 🇺🇦",
     hrefs: {
-      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus', own: '/nashi-mozhlyvosti', olimp: '/olimpiada', modnyiKod: '/modnyi-kod',
+      all: '/', categories: '/kategorii', deadlines: '/dedlainy', plus: '/plus', olimp: '/olimpiada', modnyiKod: '/modnyi-kod',
       about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
       contacts: '/contacts', ambassadors: '/ambasadory', support: '/support',
       privacy: '/privacy', terms: '/terms',
@@ -97,7 +96,6 @@ export default function Footer({ lang = 'uk' }) {
             <Link href={h.all} prefetch={false}>{t.all}</Link>
             <Link href={h.categories}>{t.categories}</Link>
             {h.deadlines && <Link href={h.deadlines}>{t.deadlines}</Link>}
-            {h.own && <Link href={h.own} prefetch={false}>{t.own}</Link>}
             <Link href={h.plus}>{t.plus}</Link>
             {h.olimp && <Link href={h.olimp} prefetch={false}>{t.olimp}</Link>}
             {h.modnyiKod && <Link href={h.modnyiKod} prefetch={false}>{t.modnyiKod}</Link>}
