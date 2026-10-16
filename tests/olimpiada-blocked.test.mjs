@@ -13,7 +13,7 @@ const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
 test('сторінка результату: заблокований диплом показує «Упс» замість диплома', () => {
   const page = read('app/olimpiada/test/page.js');
   assert.match(page, /if \(entry\.blocked_at\)/, 'немає перевірки blocked_at');
-  assert.match(page, /Ваш диплом заблоковано через порушення правил етики/);
+  assert.match(page, /Ваш диплом заблоковано й анульовано через порушення правил етики/);
   // Екран блокування має стояти ПЕРЕД звичайним — інакше спершу покажеться диплом.
   const blocked = page.indexOf('if (entry.blocked_at)');
   const normal = page.indexOf('<DiplomaImage');
@@ -31,6 +31,16 @@ test('заблокований екран цитує саме те, за що з
   assert.match(read('app/styles/olimpiada.css'), /\.ol-blocked-quote/);
   // Текст не вшитий у код: цитата працює для будь-якого заблокованого запису.
   assert.equal(page.includes('Пришли мне Диплом'), false, 'конкретний текст не можна зашивати в код');
+});
+
+// Марія, 16.10.2026: «напиши краще повідомлення… щоб це трохи налякало тих
+// бешкетників» — і те саме про анулювання диплома.
+test('заблокований екран лякає штампом і фіксацією випадку', () => {
+  const page = read('app/olimpiada/test/page.js');
+  assert.match(page, /ol-blocked-stamp/);
+  assert.match(page, /Міністерство етики і комунікацій/);
+  assert.match(page, /Випадок зафіксовано/);
+  assert.match(read('app/styles/olimpiada.css'), /\.ol-blocked-stamp/);
 });
 
 test('заблокований екран не містить ані картинки, ані «поділитися», ані друку', () => {

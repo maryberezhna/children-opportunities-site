@@ -619,6 +619,20 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 }
 .ol-blocked .ol-text { margin: 0; }
 .ol-blocked a { color: #c8501a; font-weight: 700; }
+.ol-blocked-stamp {
+  display: inline-block;
+  margin: 2px 0 12px;
+  padding: 9px 14px;
+  border: 2px solid #c0392b;
+  border-radius: 10px;
+  color: #c0392b;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  transform: rotate(-1.4deg);
+}
 .ol-blocked-quote {
   margin: 0 0 12px;
   padding: 11px 14px;
