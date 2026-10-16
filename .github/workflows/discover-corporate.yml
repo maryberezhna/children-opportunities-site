@@ -1,0 +1,74 @@
+name: Бізнес для школярів — програми компаній
+
+# Окремий профіль розвідника (16.10.2026). Привід: ПриватБанк запустив
+# «ПриватКампус» — стипендія 15 000 грн/міс, менторство, пріоритет на
+# стажування, — але для студентів і лише 16 вишів-партнерів. Марія: «нам
+# треба такі можливості, але для дітей».
+#
+# Машинерія спільна з щоденним агентом (discover_agent.py), відмінності три:
+# - свої теми й регіони (keywords.CORPORATE_KEYWORDS / CORPORATE_REGIONS);
+# - у промпті CORP_FOCUS: організатор — бізнес, учасник — до 18;
+# - сторінку читаємо завжди і питаємо про коло учасників
+#   (decide_corporate): «лише школи-партнери», «лише Дніпропетровщина»,
+#   «лише діти клієнтів» мусять потрапити в опис, а не чекати на формі заявки.
+#
+# Нічого не публікує саме: усе йде чернетками на /admin.
+on:
+  schedule:
+    # Раз на тиждень, у четвер. Щодня тут нема чого робити: компанії
+    # оголошують таке кілька разів на рік, а щоденний прогін із вебпошуком —
+    # це рахунок за API (на цьому 24.09.2026 знявся з розкладу discover-rare).
+    # GitHub запізнюється з cron на 4–6 годин — для фонового пошуку байдуже.
+    - cron: '40 6 * * 4'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Лише показати, нічого не писати'
+        required: false
+        default: 'false'
+      keyword:
+        description: 'Тема замість теми дня (напр. «стипендія від компанії для учнів школи»)'
+        required: false
+        default: ''
+      region:
+        description: 'Регіон: «Український бізнес» або «Міжнародні компанії»'
+        required: false
+        default: ''
+      max_candidates:
+        description: 'Скільки кандидатів шукати (деф. 5)'
+        required: false
+        default: ''
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  corporate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+
+      - run: pip install -r requirements.txt
+
+      - name: Програми компаній для школярів
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DISCOVER_MODEL: ${{ vars.DISCOVER_MODEL }}
+          DISCOVER_PROFILE: corporate
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          DISCOVER_KEYWORD: ${{ github.event.inputs.keyword }}
+          DISCOVER_REGION: ${{ github.event.inputs.region }}
+          DISCOVER_MAX: ${{ github.event.inputs.max_candidates }}
+        run: python discover_agent.py
