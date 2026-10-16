@@ -31,6 +31,21 @@ test('правила олімпіади: окремий пункт про чес
   assert.match(o, /Чесна участь[\s\S]{0,700}href="\/terms"/);
 });
 
+test('анулювання за порушення — без повернення коштів', () => {
+  const t = read('app/terms/page.js');
+  assert.match(t, /анульовано за порушення[\s\S]{0,200}не повертаються/);
+  // Виняток для помилкових і задвоєних списань лишається: це вимога
+  // платіжного сервісу і те саме написано на /refund.
+  assert.match(t, /помилкові або задвоєні списання: їх повертаємо/);
+  assert.match(read('app/en/terms/page.js'), /revoked for breaking these Terms[\s\S]{0,200}not refunded/);
+});
+
+test('знімки завдань заборонені — в Умовах і правилах олімпіади', () => {
+  assert.match(read('app/terms/page.js'), /запис екрана/);
+  assert.match(read('app/en/terms/page.js'), /screenshots or screen recordings/);
+  assert.match(read('app/olimpiada/page.js'), /Завдання не поширюємо/);
+});
+
 test('дату редакції Умов оновлено разом зі змістом', () => {
   assert.match(read('app/terms/page.js'), /const UPDATED = '16 жовтня 2026'/);
 });
