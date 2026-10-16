@@ -22,9 +22,11 @@ test('сторінка результату: заблокований дипло
 
 // Марія, 15.10.2026: «та прям додай прямий текст» — людина має бачити, за що
 // саме заблоковано, її власними словами.
-test('заблокований екран цитує відповідь учасника дослівно', () => {
+test('заблокований екран цитує саме те, за що заблоковано', () => {
   const page = read('app/olimpiada/test/page.js');
-  assert.match(page, /entry\.open_answer \? \(/, 'цитата має братися з open_answer запису');
+  // blocked_quote — текст-привід (відкрите завдання АБО відгук); open_answer —
+  // запасний варіант для записів, заблокованих до 16.10.2026.
+  assert.match(page, /entry\.blocked_quote \|\| entry\.open_answer/, 'цитата має братися з blocked_quote із відкотом на open_answer');
   assert.match(page, /ol-blocked-quote/);
   assert.match(read('app/styles/olimpiada.css'), /\.ol-blocked-quote/);
   // Текст не вшитий у код: цитата працює для будь-якого заблокованого запису.
