@@ -15,7 +15,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '27 September 2026';
+const UPDATED = '16 October 2026';
 
 export default function TermsPageEn() {
   return (
@@ -133,6 +133,26 @@ export default function TermsPageEn() {
             <li>
               The user undertakes to provide accurate details for setting up the
               subscription and to pay for the service on time.
+            </li>
+            {/* Right to revoke access and diplomas (16.10.2026) — mirrors /terms. */}
+            <li>
+              The user undertakes to use the platform in good faith: to complete
+              contest and olympiad tasks independently, not to demand diplomas,
+              prizes or payment without meeting the conditions, and not to abuse
+              other users or the team.
+            </li>
+            <li>
+              The Seller may suspend or revoke access to the service, an account,
+              participation in a contest or olympiad, and a diploma or certificate
+              already issued, if these Terms or the rules of a particular contest
+              are broken — including inaccurate details, attempts to obtain a
+              diploma or reward without completing the task, taking a test with
+              outside help, automated or bulk entries, and abusive or unethical
+              behaviour. The result page stays available and explains the reason.
+            </li>
+            <li>
+              A revocation can be appealed by writing to{' '}
+              <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a>.
             </li>
           </ul>
 
