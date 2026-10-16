@@ -122,6 +122,13 @@ export default function TermsPageEn() {
             which are refunded in full. The procedure is on the{' '}
             <Link href="/en/refund">Cancellation and refunds</Link> page.
           </p>
+          <p>
+            The same applies when access, an account, participation in a contest
+            or a diploma is revoked for breaking these Terms or the rules of a
+            contest (section 6): fees paid are not refunded, including entry fees
+            and payment for a printed diploma. The service counts as provided from
+            the moment access to it is opened.
+          </p>
 
           <h2>6. Rights and obligations</h2>
           <ul>
@@ -140,6 +147,13 @@ export default function TermsPageEn() {
               contest and olympiad tasks independently, not to demand diplomas,
               prizes or payment without meeting the conditions, and not to abuse
               other users or the team.
+            </li>
+            <li>
+              Contest and olympiad tasks belong to the Seller. Photographing them,
+              taking screenshots or screen recordings, copying, publishing or
+              passing them to others is not allowed: every participant gets the
+              same tasks, so a leaked screenshot spoils the contest for other
+              children.
             </li>
             <li>
               The Seller may suspend or revoke access to the service, an account,
