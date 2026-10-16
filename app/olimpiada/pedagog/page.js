@@ -157,6 +157,27 @@ export default async function TeacherPage({ searchParams }) {
           </NotifyButton>
         )}
       </div>
+
+      {/* Амбасадори (Марія, 16.10.2026: «додай на цю сторінку ставайте
+          амбасадором»). Педагог, який уже роздав посилання класу, робить те
+          саме, що й амбасадор, — тож наступний крок тут доречний. Вигоди —
+          дослівно зі сторінки /ambasadory, три з шести: нових не вигадувати. */}
+      <div className="ol-panel ol-amb-cta">
+        <p className="ol-kicker">Амбасадори Dityam.com.ua</p>
+        <h2 className="ol-h2">Ставайте амбасадором</h2>
+        <p className="ol-text">
+          Вчителі, вихователі й керівники гуртків, які розповідають про можливості учням і колегам.
+          Без квот і обовʼязків.
+        </p>
+        <ul className="ol-amb-list">
+          <li>Першими дізнаєтесь про наші олімпіади й конкурси</li>
+          <li>Сертифікат і подяка від Dityam.com.ua</li>
+          <li>Dityam+ безкоштовно</li>
+        </ul>
+        <div className="ol-actions">
+          <a className="ol-btn ol-btn-main" href="/ambasadory">Стати амбасадором</a>
+        </div>
+      </div>
     </Shell>
   );
 }
