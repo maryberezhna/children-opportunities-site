@@ -63,6 +63,7 @@ import deficit  # клітинка дня: попит ÷ надходження 
 import hubs
 import aggregators  # де шукати: агрегатори (Марія, 12.10.2026)
 from keywords import (
+    CORPORATE_KEYWORDS, CORPORATE_REGIONS,
     DIASPORA_KEYWORDS, DIASPORA_REGION_NAMES, DIASPORA_REGIONS,
     DISCOVER_KEYWORDS, NATIONWIDE_ROTATION, RARE_ABROAD_KEYWORDS,
     RARE_ABROAD_REGIONS, REGION_ROTATION,
@@ -111,6 +112,36 @@ RARE = PROFILE == "rare_abroad"
 # «теми дефіциту × країна» ці дні тепер шукають за своїми темами й правилами.
 # Кількість викликів моделі не змінюється — один пошук на день, як і було.
 DIASPORA_PROFILE = PROFILE == "diaspora"
+# Профіль «бізнес для школярів» (discover-corporate.yml, 16.10.2026). Привід —
+# «ПриватКампус» ПриватБанку: стипендія 15 000 грн/міс, менторство, пріоритет
+# на стажування, але для студентів і лише шістнадцяти вишів-партнерів. Марія:
+# «нам треба такі можливості, але для дітей». Компанії роблять таке й для
+# школярів, тільки оголошують у себе — не там, де ходять наші скрапери.
+CORPORATE = PROFILE == "corporate"
+
+CORP_FOCUS = (
+    "\nЦЕЙ ПОШУК — ПРО ПРОГРАМИ КОМПАНІЙ І БРЕНДІВ ДЛЯ ШКОЛЯРІВ. Організатор "
+    "має бути бізнесом: банк, мобільний оператор, ІТ-компанія, торгова мережа, "
+    "виробник, агрохолдинг, міжнародний бренд — або корпоративний фонд такої "
+    "компанії. Зразок дорослої версії такого — «ПриватКампус» ПриватБанку: "
+    "стипендія, менторство, пріоритет на стажування. Нам потрібне те саме, але "
+    "для тих, кому ще немає 19.\n"
+    "ШУКАЙ: конкурси з призами, стипендії й гранти для учнів, дитячі академії "
+    "та школи брендів, безкоштовні курси й хакатони, менторські й амбасадорські "
+    "програми для старшокласників, екскурсії на виробництво, табори, премії "
+    "юним талантам.\n"
+    "ВІК — ГОЛОВНА УМОВА: учасники до 18 включно (школярі, учні, 10–11 клас). "
+    "Програма для студентів ВНЗ, випускників чи дорослих НЕ підходить, навіть "
+    "якщо вона чудова і з грошима: саме на цьому ми вже спіймались.\n"
+    "ОБМЕЖЕННЯ КОЛА УЧАСНИКІВ — пиши прямо. Корпоративні програми часто беруть "
+    "не всіх: лише школи-партнери, лише область, де працює компанія, лише діти "
+    "клієнтів або працівників, лише переможці попереднього етапу. Якщо таке "
+    "обмеження на сторінці є — ПЕРШИМ реченням summary напиши, для кого саме "
+    "програма, дослівно за текстом. Якщо обмежень не видно — не вигадуй їх.\n"
+    "НЕ БЕРИ: рекламу товарів і акції «купи — виграй», програми лише для "
+    "працівників компанії, державні й громадські програми (їх шукає щоденний "
+    "агент), звичайні платні курси ІТ-шкіл.\n"
+)
 
 RARE_FOCUS = (
     "\nЦЕЙ ПОШУК — ПРО РІДКІСНЕ Й НЕЗВИЧНЕ. Шукай те, про що батьки самі не "
@@ -143,7 +174,7 @@ RARE_FOCUS = (
 def is_diaspora(region: dict) -> bool:
     """Чи цей прогін — профіль «діаспора». «Рідкісне» ним не буває ніколи:
     там аудиторія — дитина, яка живе в Україні (Марія, 14.09.2026)."""
-    if RARE:
+    if RARE or CORPORATE:
         return False
     return DIASPORA_PROFILE or region.get("name") in DIASPORA_REGION_NAMES
 
@@ -202,6 +233,8 @@ def _regions() -> list[dict]:
     """Усі регіони, які можна назвати вручну (DISCOVER_REGION)."""
     if DIASPORA_PROFILE:
         return DIASPORA_REGIONS
+    if CORPORATE:
+        return CORPORATE_REGIONS
     return RARE_ABROAD_REGIONS if RARE else REGION_ROTATION
 
 
@@ -216,6 +249,8 @@ def _rotation() -> list[dict]:
     """
     if RARE:
         return RARE_ABROAD_REGIONS
+    if CORPORATE:
+        return CORPORATE_REGIONS
     if DIASPORA_PROFILE:
         return DIASPORA_REGIONS
     return NATIONWIDE_ROTATION if CELL else REGION_ROTATION
@@ -228,12 +263,16 @@ def _rotation() -> list[dict]:
 # було ні слова про дітей, ні про Україну — лише концерти й назва. Тому
 # кандидат іде в модерацію, тільки якщо агент САМ відкрив сторінку і на ній
 # дослівно видно: це для дітей, і діти з України можуть брати участь.
-VERIFY = RARE and (os.environ.get("DISCOVER_VERIFY") or "true") != "false"
+#
+# «Бізнес для школярів» читає сторінку з тієї самої причини, тільки питання
+# інше: чи це справді для тих, кому ще немає 19, і кого саме беруть (16.10.2026).
+VERIFY = (RARE or CORPORATE) and (os.environ.get("DISCOVER_VERIFY") or "true") != "false"
 # Перевірка актуальності сторінкою для ЗВИЧАЙНОГО пошуку. До 17.09.2026 сторінку
 # читав лише флоу «рідкісне за кордоном», а щоденний агент пускав у чергу все:
 # «Bloomsday Young Authors» (Ірландія) приїхав зі своїм же описом «сезон 2026
 # року вже завершено». Тут перевіряємо лише одне — чи це ще попереду.
-CHECK_CURRENT = not RARE and (os.environ.get("DISCOVER_CHECK_CURRENT") or "true") != "false"
+CHECK_CURRENT = (not RARE and not CORPORATE
+                 and (os.environ.get("DISCOVER_CHECK_CURRENT") or "true") != "false")
 VERIFY_MODEL = os.environ.get("DISCOVER_VERIFY_MODEL") or "claude-haiku-4-5-20251001"
 MIN_QUOTE = 12
 
@@ -347,8 +386,139 @@ VERIFY_SYSTEM = """Тобі дають сторінку, яку агент за�
    сторінкою, а поле без цитати просто дивиться людина."""
 
 
+CORP_VERIFY_TOOL = {
+    "name": "verify",
+    "description": "Що сторінка каже про програму компанії: для якого віку вона і кого саме беруть",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "page_kind": {"type": "string", "enum": ["one_opportunity", "listing_or_org", "not_found"]},
+            "organizer": {"type": "string", "description": "Назва компанії-організатора, як на сторінці."},
+            "organizer_kind": {"type": "string",
+                               "enum": ["company", "company_foundation", "state_or_ngo", "unclear"],
+                               "description": "company — бізнес; company_foundation — фонд компанії; "
+                                              "state_or_ngo — держава, міськрада, школа, громадська "
+                                              "організація без компанії; unclear — не видно."},
+            "audience": {"type": "string",
+                         "enum": ["school_children", "students", "adults", "not_stated"],
+                         "description": "school_children — школярі, учні, підлітки до 18; "
+                                        "students — студенти ВНЗ, коледжів; adults — дорослі; "
+                                        "not_stated — про вік чи статус учасників не сказано."},
+            "audience_evidence": {"type": "string",
+                                  "description": "ДОСЛІВНА цитата про вік, клас або статус учасників "
+                                                 "(«учні 8–11 класів», «студенти»). Немає — порожньо."},
+            "for_children": {"type": "boolean",
+                             "description": "true лише якщо зі сторінки видно, що брати участь можуть "
+                                            "ті, кому ще немає 19."},
+            "scope": {"type": "string", "enum": ["open", "limited", "not_stated"],
+                      "description": "limited — беруть не всіх: лише школи-партнери, лише певні міста "
+                                     "чи область, лише діти клієнтів або працівників, лише переможці "
+                                     "попереднього етапу; open — у тексті сказано, що подати може "
+                                     "будь-хто з цієї вікової групи; not_stated — про коло не сказано."},
+            "scope_evidence": {"type": "string",
+                               "description": "ДОСЛІВНА цитата про те, кого саме беруть чи не беруть. "
+                                              "Немає — порожньо."},
+            "is_current": {"type": "string", "enum": ["current", "past", "unknown"],
+                           "description": "current — набір чи подія ще попереду або триває; "
+                                          "past — уже минуло; unknown — дат на сторінці немає."},
+            "date_evidence": {"type": "string",
+                              "description": "ДОСЛІВНА цитата з датою чи роком. Немає — порожньо."},
+            "evidence": {
+                "type": "object",
+                "description": "ДОСЛІВНІ цитати зі сторінки на пʼять обовʼязкових полів, "
+                               "до 200 знаків кожна. Копіюй слово в слово, без "
+                               "перефразування. Немає такої фрази → порожній рядок.",
+                "properties": EVIDENCE_PROPS,
+                "required": list(PROOF_KEYS),
+            },
+        },
+        "required": ["page_kind", "organizer", "organizer_kind", "audience",
+                     "audience_evidence", "for_children", "scope", "scope_evidence",
+                     "is_current", "date_evidence", "evidence"],
+        "additionalProperties": False,
+    },
+}
+
+CORP_VERIFY_SYSTEM = """Тобі дають сторінку, яку агент запропонував як програму компанії
+чи бренду для школярів. Перевір її ЛИШЕ за текстом сторінки.
+
+ГОЛОВНЕ ПРАВИЛО: НІЧОГО НЕ ВИГАДУЙ. Кожна відповідь — з дослівною цитатою мовою
+оригіналу. Немає цитати — for_children=false або scope="not_stated".
+
+1. page_kind: one_opportunity — сторінка описує одну конкретну програму;
+   listing_or_org — головна компанії чи перелік усіх її проєктів; not_found —
+   сторінки немає.
+2. organizer / organizer_kind: хто проводить. Компанія-спонсор, чиє імʼя лише в
+   логотипі, організатором не є — тоді state_or_ngo або unclear.
+3. audience: хто учасник. students — студенти ВНЗ чи коледжів, навіть якщо
+   програма шикарна; adults — дорослі, вчителі, батьки; school_children —
+   школярі, учні, підлітки до 18. audience_evidence — цитата з віком, класом
+   або словом «студенти»/«учні».
+4. for_children: true лише тоді, коли зі сторінки видно, що брати участь може
+   той, кому ще немає 19. «Молодь», «youth», «для початківців» без віку — це
+   не доказ: тоді not_stated і for_children=false.
+5. scope: кого саме беруть. limited — коло звужене: лише школи-партнери, лише
+   певна область чи місто, лише діти клієнтів або працівників компанії, лише
+   учасники попереднього етапу, лише переможці відбору в школі. open — у тексті
+   прямо сказано, що подати може будь-який учень цього віку. scope_evidence —
+   дослівна цитата саме про це; на ній тримається попередження модератору.
+6. is_current: чи це ще актуально НА СЬОГОДНІ (дата — у повідомленні). Торішній
+   конкурс без слова про новий сезон — past. date_evidence — цитата з датою.
+7. evidence — цитати на пʼять полів, без яких запис не публікується: вік, дата
+   (або періодичність), вартість, тип і місце-або-формат. Копіюй слово в слово.
+   Немає такої фрази — порожній рядок. Вигадана цитата гірша за порожню."""
+
+
 def _norm_text(s: str) -> str:
     return re.sub(r"\s+", " ", (s or "")).strip().lower()
+
+
+def decide_corporate(out: dict, page: str, today: date | None = None) -> tuple[bool, str]:
+    """Чи пускати програму компанії в модерацію. Чиста функція — під тести.
+
+    Два питання, заради яких цей профіль узагалі читає сторінку:
+    вік (16.10.2026: «ПриватКампус» — для студентів, а не для школярів) і коло
+    учасників (там-таки — лише 16 вишів-партнерів). Вузьке коло кандидата НЕ
+    відкидає: програма реальна, просто не для всіх. Але модератор мусить
+    побачити цитату й переписати її в опис, інакше родина дізнається про
+    обмеження аж на формі заявки.
+    """
+    if out.get("page_kind") != "one_opportunity":
+        return False, "сторінка не про одну програму"
+
+    aq = (out.get("audience_evidence") or "").strip()
+    audience = out.get("audience")
+    if audience in ("students", "adults"):
+        who = "студентів ВНЗ" if audience == "students" else "дорослих"
+        return False, (f"це для {who}, а не для школярів: «{aq[:100]}»" if aq
+                       else f"це для {who}, а не для школярів")
+    if not out.get("for_children") or len(aq) < MIN_QUOTE:
+        return False, "на сторінці не видно, що це для тих, кому ще немає 19"
+    if _norm_text(aq)[:60] not in _norm_text(page):
+        return False, "цитати про вік учасників на сторінці немає"
+
+    kind = out.get("organizer_kind")
+    if kind == "state_or_ngo":
+        return False, "організатор не бізнес — це для щоденного агента, не для цього профілю"
+
+    scope = out.get("scope")
+    sq = (out.get("scope_evidence") or "").strip()
+    if scope == "limited":
+        if len(sq) < MIN_QUOTE or _norm_text(sq)[:60] not in _norm_text(page):
+            return False, "сказано, що беруть не всіх, але цитати про це на сторінці немає"
+
+    ok, why = decide_current(out, page, today)
+    if not ok:
+        return False, why
+
+    org = (out.get("organizer") or "").strip()
+    who = f"{org}: " if org else ""
+    limit = (f" · ⚠️ БЕРУТЬ НЕ ВСІХ: «{sq[:120]}» — написати це в описі"
+             if scope == "limited"
+             else " · ⚠️ коло учасників на сторінці не окреслено — перевірити"
+             if scope != "open" else "")
+    unclear = " · ⚠️ компанію-організатора не видно" if kind == "unclear" else ""
+    return True, f"{who}«{aq[:120]}»{limit}{unclear} · {why}"
 
 
 def decide_verified(out: dict, page: str, today: date | None = None) -> tuple[bool, str]:
@@ -454,11 +624,13 @@ def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str, dict, str
         # відкривається. Звичайного кандидата через це не губимо — модератор
         # бачить, що актуальність ніхто не перевірив.
         return True, f"⚠️ актуальність не перевірено: сторінка не відкрилась ({status})", {}, ""
+    tool, system = ((CORP_VERIFY_TOOL, CORP_VERIFY_SYSTEM) if CORPORATE
+                    else (VERIFY_TOOL, VERIFY_SYSTEM))
     try:
         llm = api_guard.client(api_key=os.environ["ANTHROPIC_API_KEY"])
         resp = llm.messages.create(
-            model=VERIFY_MODEL, max_tokens=700, system=VERIFY_SYSTEM,
-            tools=[VERIFY_TOOL], tool_choice={"type": "tool", "name": "verify"},
+            model=VERIFY_MODEL, max_tokens=700, system=system,
+            tools=[tool], tool_choice={"type": "tool", "name": "verify"},
             messages=[{"role": "user", "content":
                        f"Сьогодні: {date.today().isoformat()}\n"
                        f"Кандидат: «{rec['title']}»\nАдреса: {rec['source_url']}\n\n"
@@ -471,7 +643,10 @@ def verify_candidate(rec: dict, full: bool = True) -> tuple[bool, str, dict, str
         if full:
             return False, f"перевірка впала: {type(e).__name__}", {}, ""
         return True, f"⚠️ актуальність не перевірено: {type(e).__name__}", {}, ""
-    ok, why = decide_verified(out, page) if full else decide_current(out, page)
+    if CORPORATE:
+        ok, why = decide_corporate(out, page)
+    else:
+        ok, why = decide_verified(out, page) if full else decide_current(out, page)
     return ok, why, page_evidence(out, page), page
 
 
@@ -494,7 +669,9 @@ def keyword_of_day(diaspora: bool = False) -> str:
         # половина тем не випадала б ніколи.
         step = doy if DIASPORA_PROFILE else doy // 2
         return DIASPORA_KEYWORDS[step % len(DIASPORA_KEYWORDS)]
-    pool = RARE_ABROAD_KEYWORDS if RARE else KEYWORDS
+    pool = (RARE_ABROAD_KEYWORDS if RARE
+            else CORPORATE_KEYWORDS if CORPORATE
+            else KEYWORDS)
     return pool[doy % len(pool)]
 
 
@@ -552,6 +729,7 @@ def _prompt(kw: str, region: dict, avoid: str = "") -> str:
         # української дитини в цій країні», яке пускало місцеві послуги для всіх.
         + (diaspora_focus(region) if diaspora else "")
         + (RARE_FOCUS if RARE else "")
+        + (CORP_FOCUS if CORPORATE else "")
         + aggregators.prompt_block()
         + avoid
         + "\n"
@@ -779,6 +957,7 @@ def build_record(c: dict, kw: str, region: dict) -> dict | None:
         # admin_comment: модератору він потрібен, відвідувачу — ні.
         "source": publisher(url) or "інтернет",
         "admin_comment": (f"🌍 Рідкісне за кордоном: {kw} · {region['name']}" if RARE
+                          else f"🏢 Бізнес для школярів: {kw} · {region['name']}" if CORPORATE
                           else f"🏡 Діаспора: {kw} · {region['name']}" if is_diaspora(region)
                           else f"🔎 Агент: {kw}" if region["name"] == "Україна"
                           else f"🔎 Агент: {kw} · {region['name']}"),
@@ -920,6 +1099,8 @@ def _main() -> int:
         logger.info("🏡 Профіль: діаспора (для дітей, які вже живуть: %s)", region["name"])
     if RARE:
         logger.info("🌍 Профіль: рідкісне за кордоном")
+    if CORPORATE:
+        logger.info("🏢 Профіль: бізнес для школярів (%s)", region["name"])
     logger.info("🔎 Агент — слово дня: «%s» · регіон: %s (модель %s)%s",
                 kw, region["name"], MODEL, " [DRY RUN]" if DRY_RUN else "")
     if CELL and not diaspora:
