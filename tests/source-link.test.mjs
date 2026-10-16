@@ -116,3 +116,37 @@ test('форма організатора — джерело, якщо вста�
   ]) assert.equal(sourceUrlProblem(u), null, u);
   assert.ok(sourceUrlProblem('https://docs.google.com/document/d/x'));
 });
+
+// 16.10.2026. Марія: «не правда — Це не адреса сторінки, має починатися з
+// https://» на цілком нормальне посилання. Вона копіювала його з
+// Telegram-допису про воркшоп Design Lab «Ліги Сильних», і разом з адресою
+// приїхав невидимий символ. Реєстрація закінчувалась того ж дня — можливість
+// у базу не потрапила взагалі. Поле мусить діставати адресу з того, що
+// вставили, а не відмовляти.
+test('адресу видно крізь те, що приїхало разом із нею', async () => {
+  const { cleanSourceUrl, sourceUrlProblem } = await import('../lib/source-link.js');
+  const url = 'https://ls.org.ua/novyny/liga-sylnyh-zaproshuye-molod-design-lab/';
+  for (const pasted of [
+    `​${url}`,                 // zero-width з копіювання
+    `﻿${url}`,                 // BOM
+    `  ${url}\n`,                   // пробіли й перенос рядка
+    `«${url}»`,                     // лапки
+    `🔵 Зареєструватися: ${url}`,   // разом із текстом допису
+    `${url},`,                      // кома в кінці речення
+  ]) {
+    assert.equal(cleanSourceUrl(pasted), url, pasted);
+    assert.equal(sourceUrlProblem(pasted), null, pasted);
+  }
+  // Домен без схеми — теж адреса: дописуємо https:// самі.
+  assert.equal(cleanSourceUrl('ls.org.ua/novyny/design-lab/'),
+    'https://ls.org.ua/novyny/design-lab/');
+  assert.equal(sourceUrlProblem('ls.org.ua/novyny/design-lab/'), null);
+  // А те, що адресою не є, лишається відмовою.
+  for (const bad of ['', '   ', 'не адреса', 'напиши на пошту', 'ftp://x']) {
+    assert.equal(cleanSourceUrl(bad), '', bad);
+    assert.ok(sourceUrlProblem(bad), bad);
+  }
+  // Правила про канал і соцмережу чинні й для вставленого разом із текстом.
+  assert.ok(sourceUrlProblem('Деталі тут: https://t.me/Mozhlyvosti/10539'));
+  assert.ok(sourceUrlProblem('​https://www.instagram.com/p/x'));
+});
