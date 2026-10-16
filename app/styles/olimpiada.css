@@ -570,6 +570,16 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-teach-ask { max-width: 520px; margin: 14px auto 18px; padding: 18px 20px; border-radius: 20px; background: #fff; color: var(--ol-blue-deep); text-align: center; }
 .ol-teach-ask p { margin: 0 0 14px; font-size: 17px; font-weight: 700; line-height: 1.45; }
 
+/* «Ставайте амбасадором» наприкінці сторінки педагога (16.10.2026). */
+.ol-amb-cta { margin-top: 28px; }
+.ol-amb-cta .ol-kicker { color: #c8501a; }
+.ol-amb-list { margin: 16px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.ol-amb-list li { position: relative; padding-left: 30px; font-size: 16px; line-height: 1.5; color: #2c4a9a; }
+.ol-amb-list li::before {
+  content: ''; position: absolute; left: 0; top: 3px; width: 20px; height: 20px; border-radius: 50%;
+  background: #ffe8d8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 22 22'%3E%3Cpath d='M6 11.2l3.2 3.2 6.6-7' fill='none' stroke='%23c8501a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 15px 15px no-repeat;
+}
+
 @media (max-width: 860px) {
   .ol-teach-box { grid-template-columns: 1fr; gap: 28px; padding: 24px 18px; }
   .ol-teach-sample img { max-width: 220px; }
