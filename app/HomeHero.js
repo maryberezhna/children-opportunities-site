@@ -143,6 +143,9 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
     lang,
   });
 
+  const [ringReady, setRingReady] = useState(false);
+  useEffect(() => { setRingReady(true); }, []);
+
   const leadCut = c.lead.lastIndexOf(' ') + 1;
   const leadHead = c.lead.slice(0, leadCut);
   const leadLast = c.lead.slice(leadCut);
@@ -160,8 +163,13 @@ export default function HomeHero({ soon = [], teenSoon = [], today = null, lang 
         if (window.gtag) window.gtag('event', 'header_nav_click', { event_label: 'sia_award_hero' });
       }}
     >
+      {/* Літери кільця домальовуємо вже в браузері. У HTML із сервера вони
+          лежали всередині <h1> і склеювались із фразою: заголовок читався як
+          «Усі можливостіПЕРЕМОЖЕЦЬ • SIA UKRAINE 2026 • для вашої дитини…»
+          (109 символів замість 45). Сенс наліпки для читачів екрана несе
+          aria-label самого посилання, тож нічого не втрачено. */}
       <span className="v2-sia-ring" aria-hidden="true">
-        {ringLayout(SIA_AWARD.ring[isEn ? 'en' : 'uk']).map(({ ch, deg }, i) => (
+        {ringReady && ringLayout(SIA_AWARD.ring[isEn ? 'en' : 'uk']).map(({ ch, deg }, i) => (
           <span key={i} style={{ transform: `rotate(${deg}deg)` }}>{ch}</span>
         ))}
       </span>

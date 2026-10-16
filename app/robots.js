@@ -55,7 +55,8 @@ export default function robots() {
         disallow: DISALLOW,
       })),
     ],
+    // host: директиви Host у стандарті robots.txt немає — її розумів лише
+    // Яндекс (а йому ми й так Disallow). Аудити читають її як хибний синтаксис.
     sitemap: 'https://dityam.com.ua/sitemap.xml',
-    host: 'https://dityam.com.ua',
   };
 }
