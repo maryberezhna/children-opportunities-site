@@ -7,7 +7,7 @@ import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { countryPatch } from '@/lib/country-field';
 import { STUB_MARK, withoutStubMark } from '@/lib/suggestions';
 import { TRACKED_FIELDS, correctionRows } from '@/lib/corrections';
-import { sourceUrlProblem } from '@/lib/source-link';
+import { cleanSourceUrl, sourceUrlProblem } from '@/lib/source-link';
 import { canonicalUrl } from '@/lib/canonical.mjs';
 import { NEED_LABELS } from '@/lib/labels';
 
@@ -103,9 +103,11 @@ export async function POST(request) {
   // запис, де воно досі допис, інакше не вдалося б навіть зберегти.
   if (typeof b.source_url === 'string' && b.source_url.trim()
       && b.source_url.trim() !== (cur?.source_url || '')) {
-    const src = b.source_url.trim().slice(0, 500);
-    const problem = sourceUrlProblem(src);
+    const problem = sourceUrlProblem(b.source_url);
     if (problem) return Response.json({ ok: false, error: 'bad_source', problem }, { status: 422 });
+    // Зберігаємо очищену адресу, а не те, що вставили: разом із посиланням
+    // з допису приїжджають невидимі символи, лапки й хвіст тексту (16.10.2026).
+    const src = cleanSourceUrl(b.source_url).slice(0, 500);
     patch.source_url = src;
     patch.canonical_url = canonicalUrl(src);
   }

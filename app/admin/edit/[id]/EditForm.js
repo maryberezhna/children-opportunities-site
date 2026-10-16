@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { missingRequired } from '@/lib/required';
-import { sourceUrlProblem } from '@/lib/source-link';
+import { cleanSourceUrl, sourceUrlProblem } from '@/lib/source-link';
 import { PAYMENT_TYPES, NEED_LABELS, NEED_FILTER_OPTS } from '@/lib/labels';
 import { countryFieldValue, countryOptions, countryPatch } from '@/lib/country-field';
 
@@ -205,7 +205,20 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         </a>
       ) : null}
       <label style={L}>Джерело <span style={{ fontWeight: 400, color: '#8a94a6' }}>— сторінка організатора про цю можливість, не допис і не форма</span></label>
-      <input style={{ ...I, borderColor: sourceProblem ? '#d92c2c' : I.border }} value={f.source_url} onChange={up('source_url')} placeholder="https://сайт-організатора/сторінка" />
+      {/* Щойно поле втратило фокус — показуємо ту адресу, яка справді
+          збережеться: без невидимих символів із копійованого допису, без
+          лапок і без хвоста тексту (16.10.2026). Доти людина бачила своє
+          посилання і відмову «має починатися з https://» під ним. */}
+      <input
+        style={{ ...I, borderColor: sourceProblem ? '#d92c2c' : I.border }}
+        value={f.source_url}
+        onChange={up('source_url')}
+        onBlur={() => {
+          const clean = cleanSourceUrl(f.source_url);
+          if (clean && clean !== f.source_url) setF((p) => ({ ...p, source_url: clean }));
+        }}
+        placeholder="https://сайт-організатора/сторінка"
+      />
       {sourceProblem ? <p style={{ margin: '5px 0 0', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>{sourceProblem}</p> : null}
       {sourceWarn ? <p style={{ margin: '5px 0 0', color: '#b4530a', fontSize: 13.5, fontWeight: 600 }}>⚠ {sourceWarn}</p> : null}
       <label style={L}>Опис</label>
