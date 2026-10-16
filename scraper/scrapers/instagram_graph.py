@@ -49,6 +49,10 @@ ACCOUNTS = [
     "erasmusplus.ukraine",
     "osvitoria_ua",
     "upshift.ukraine",
+    # 16.10.2026: ПриватБанк — партнер-організатор дитячих програм
+    # (ПриватКампус, JuniorS Games), анонси часто спершу тут.
+    "privatbank_original",
+    "juniors_in_ua",
 ]
 
 POSTS_PER_ACCOUNT = 12
