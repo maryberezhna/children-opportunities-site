@@ -10,13 +10,14 @@ import main  # noqa: E402
 from scrapers.diaspora_sites import is_report, skipped_title  # noqa: E402
 from scrapers.organizer_sites import SITES, SITES_BY_KEY, scrapers  # noqa: E402
 
-MIGRATION = (pathlib.Path(__file__).resolve().parents[2]
-             / "supabase" / "migrations" / "20260929_organizer_sites.sql")
+MIGRATIONS = pathlib.Path(__file__).resolve().parents[2] / "supabase" / "migrations"
 
 
 class Registry(unittest.TestCase):
     def test_every_site_has_a_sources_row(self):
-        sql = MIGRATION.read_text()
+        # Сайти додаються окремими міграціями (20260929, 20261016…) —
+        # шукаємо рядок у будь-якій.
+        sql = "\n".join(p.read_text() for p in sorted(MIGRATIONS.glob("*.sql")))
         for site in SITES:
             with self.subTest(site=site["key"]):
                 self.assertIn(f"'{site['name']}'", sql)
@@ -60,6 +61,19 @@ class Titles(unittest.TestCase):
         self.assertTrue(skipped_title(site, "School of Resilience завершено: учасники представили проєкти"))
         self.assertFalse(skipped_title(
             site, "Klitschko Foundation відкриває набір на проєкт School of Resilience для українських підлітків"))
+
+    def test_privatbank_keeps_only_child_news(self):
+        # Заголовки з privatbank.ua/news/archive, 16.10.2026.
+        site = SITES_BY_KEY["privatbank"]
+        for title in ("ПриватБанк підвищив ставки за гривневими депозитами до 13,5% річних для фізичних осіб",
+                      "ПриватБанк повторно виставив на аукціон Prozorro.Продажі стадіон «Дніпро-Арена»",
+                      "ПриватБанк, МВС та ДМС посилюють протидію шахрайству з підробленими документами",
+                      "Понад 40 000 учасників у 8 містах: ПриватБанк та Mastercard підбили підсумки JuniorS Games 2026"):
+            self.assertTrue(skipped_title(site, title), title)
+        for title in ("Запускаємо ПриватКампус — стань амбасадором і отримуй стипендію",
+                      "ПриватБанк запрошує школярів на конкурс «Моя банківська картка майбутнього»",
+                      "JuniorS Games 2026: фестиваль для дітей стартує в Бучі"):
+            self.assertFalse(skipped_title(site, title) or is_report(title), title)
 
 
 if __name__ == "__main__":
