@@ -187,6 +187,12 @@ const SUB_GROUP = { support_payment: 'allowance' };
 /** Контент теми потрібною мовою: англійський лежить у topic.en. */
 const content = (topic, lang) => (lang === 'en' ? topic.en : topic);
 
+// 1×1 прозорий GIF — «нічого не вантажити» для <source media>.
+const BLANK_GIF = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+// Картка «інші підбірки» ≤300px завширшки, на телефоні — на всю ширину: файл
+// 450px покриває і 2× екран, а 900px лишається для широких карток.
+const RELATED_SIZES = '(max-width: 900px) 100vw, 300px';
+
 const heroImageOf = (topic, lang) => content(topic, lang).heroImage || null;
 
 export function topicMetadata(topic, lang = 'uk') {
@@ -524,6 +530,12 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
           {hero ? (
             <div className="tp-hero-photo">
               <picture>
+                {/* На телефоні (≤900px) фото сховане стилями, але eager +
+                    fetchPriority="high" усе одно тягли його першим — 40–120 КБ
+                    до першого екрана (Lighthouse 19.10.2026, /olimpiady 75).
+                    Порожній 1px GIF для вузького екрана — браузер бере перше
+                    джерело, що підходить, і справжній файл не завантажує. */}
+                <source media="(max-width: 900px)" srcSet={BLANK_GIF} />
                 <source srcSet={`${hero.src}.webp`} type="image/webp" />
                 <img
                   src={`${hero.src}.jpg`}
@@ -651,8 +663,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                   <Link key={t.slug} href={topicPath({ slug: t.slug, slugEn: t.en.slug }, lang)} className="tp-related-card">
                     {img ? (
                       <picture className="tp-related-photo">
-                        <source srcSet={`${img.src}.webp`} type="image/webp" />
-                        <img src={`${img.src}.jpg`} alt="" width="450" height="300" loading="lazy" />
+                        <source srcSet={`${img.src}-450.webp 450w, ${img.src}.webp 900w`} sizes={RELATED_SIZES} type="image/webp" />
+                        <img src={`${img.src}-450.jpg`} srcSet={`${img.src}-450.jpg 450w, ${img.src}.jpg 900w`} sizes={RELATED_SIZES} alt="" width="450" height="300" loading="lazy" />
                       </picture>
                     ) : null}
                     <span className="tp-related-body">
