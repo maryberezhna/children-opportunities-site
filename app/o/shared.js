@@ -27,7 +27,7 @@ import ShareButton from '../ShareButton';
 import ChannelIconLink from '../ChannelIconLink';
 import ReportButton from './[slug]/ReportButton';
 import { plural } from '@/lib/plural';
-import { topicOf, topicPath } from '@/lib/topics';
+import { topicOf, topicPath, archivedRedirectPath } from '@/lib/topics';
 import { intakeStatus, pageFacts, applicantConditions } from '@/lib/opportunity-facts';
 import SubscribePopup from '../SubscribePopup';
 import TelegramSubscribeBlock from '../TelegramSubscribeBlock';
@@ -220,6 +220,8 @@ const PUBLIC_STATUSES = new Set(['active', 'closed']);
 // Google потрапляє на платформу. Переадресація тимчасова — браузер не
 // запамʼятовує її, і повернений з архіву запис знову відкривається.
 export const isArchived = (item) => item?.status === 'archived';
+export { archivedRedirectPath };
+
 
 export async function getOpportunity(slug) {
   if (!supabase) return null;
@@ -233,7 +235,9 @@ export async function getOpportunity(slug) {
   // тримав 502/504 довше). Виняток дає 500, а його Next не кешує: наступний
   // відвідувач отримає або стару копію, або нову спробу.
   if (error) throw new Error(`getOpportunity(${slug}): ${error.message}`);
-  if (data?.status === 'archived') return { status: 'archived' };
+  // Архівний — повертаємо рядок цілком: сторінці він потрібен, щоб відправити
+  // людину в підбірку цього запису, а не на головну (archivedRedirectPath).
+  if (data?.status === 'archived') return data;
   if (!data || !PUBLIC_STATUSES.has(data.status)) return null;
   return data;
 }
