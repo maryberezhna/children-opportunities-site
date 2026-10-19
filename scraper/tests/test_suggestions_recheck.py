@@ -298,11 +298,15 @@ class Origin(unittest.TestCase):
         self.assertEqual(ps.origin_of({}), "popup")
         self.assertEqual(ps.origin_of({"origin": "щось"}), "popup")
 
-    def test_source_for_manual_is_domain(self):
+    def test_source_is_always_the_organiser_site(self):
+        # 19.10.2026: «Організатор: Пропозиція від організатора» на картці —
+        # «що це за бред, треба сторінка організатора». Звідки запис прийшов,
+        # зберігає origin; source — публічна назва організатора.
         url = "https://www.rada-poltava.gov.ua/ua/news/x"
-        self.assertEqual(ps.source_label({"origin": "research"}, url), "rada-poltava.gov.ua")
-        self.assertEqual(ps.source_label({"origin": "maria"}, url), "rada-poltava.gov.ua")
-        self.assertEqual(ps.source_label({}, url), "Пропозиція від організатора")
+        for origin in ({"origin": "research"}, {"origin": "maria"}, {}):
+            self.assertEqual(ps.source_label(origin, url), "rada-poltava.gov.ua")
+        # Без посилання запис не публікується — підпис-заглушку не вигадуємо.
+        self.assertEqual(ps.source_label({}, "не посилання"), "")
 
     def test_reply_only_to_popup_email(self):
         self.assertEqual(ps.reply_email({"contact": " a@b.ua "}), "a@b.ua")
