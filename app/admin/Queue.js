@@ -5,6 +5,7 @@ import { formatDate, formatEventDates } from '@/lib/dates';
 import { TYPE_LABELS } from '@/lib/labels';
 import { REJECT_REASONS, rejectReason } from '@/lib/reject-reasons';
 import { sourceUrlProblem } from '@/lib/source-link';
+import { candidateDomain } from '@/lib/source-candidates';
 import { ADMIN_CARD_CSS } from './queueLayout';
 import EditForm from './edit/[id]/EditForm';
 
@@ -251,10 +252,13 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
           {/* Відхилення вчить пошук за ВИДОМ можливості, домену воно не
               стосується. Але сказати «сайт лишаємо, він публікує і потрібне»
               не було де — і це питання виникає постійно. */}
-          {o.source_url ? (
+          {/* Google-документ, форму чи соцмережу на моніторинг не пропонуємо:
+              сервер такий домен і так відкидає (candidateDomain), а
+              «візьми docs.google.com» в очі читається як помилка. */}
+          {candidateDomain(o.source_url) ? (
             <label className="q-keep">
               <input type="checkbox" checked={keepSource} onChange={(e) => setKeepSource(e.target.checked)} />
-              <span>Джерело добре — візьми сайт <b>{host(o.source_url)}</b> на моніторинг</span>
+              <span>Джерело добре — візьми сайт <b>{candidateDomain(o.source_url)}</b> на моніторинг</span>
             </label>
           ) : null}
           <div className="adm-acts">
