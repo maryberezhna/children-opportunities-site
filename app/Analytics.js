@@ -134,12 +134,17 @@ export function Analytics() {
           HTML, ще до того, як завантажиться gtag. */}
       <script dangerouslySetInnerHTML={{ __html: OPT_OUT_SCRIPT }} />
 
+      {/* Рішення Марії 19.10.2026: lazyOnload замість afterInteractive. gtag.js —
+          193 КБ, найбільший ресурс сторінки, і afterInteractive ще й ставив на
+          нього preload у <head>, тож на телефоні він змагався з першим екраном
+          (/olimpiady: 75 балів, LCP 5,2 с). Щоб не губити page_view: заглушка
+          gtag і config нижче — звичайний inline-скрипт, виконується одразу й
+          складає виклики в dataLayer; бібліотека, завантажившись, забирає чергу. */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="google-analytics" strategy="afterInteractive">
-        {`
+      <script id="google-analytics" dangerouslySetInnerHTML={{ __html: `
           window.dataLayer = window.dataLayer || [];
           function gtag(){
             dataLayer.push(arguments);
@@ -161,8 +166,7 @@ export function Analytics() {
           });
           gtag('config', '${GA_ID}');
           ${ADS_ID ? `gtag('config', '${ADS_ID}');` : ''}
-        `}
-      </Script>
+        ` }} />
       {/* lazyOnload: Hotjar не потрібен для першого екрана, а це ~30 КБ JS,
           що змагався за головний потік із самою сторінкою (Lighthouse 14.09.2026). */}
       {HOTJAR_ID ? (
