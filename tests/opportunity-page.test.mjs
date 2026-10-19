@@ -227,3 +227,30 @@ test('архівна картка веде в підбірку запису, а 
     assert.match(page, new RegExp(`archivedRedirectPath\\(item, '${lang}'\\)`), f);
   }
 });
+
+// ---- Сторінка закритого набору (19.10.2026) ----
+test('закритий набір: великий заголовок, календар на чітку дату, канал — і лише active у каталозі', () => {
+  const src = read('app/o/shared.js');
+  assert.match(src, /closedTitle: 'Набір закрито'/);
+  assert.match(src, /className="closed-banner-title"/);
+  assert.match(src, /nextIntakeReminder\(item, kyivToday\(\)\)/, 'дата нагадування рахується з торішньої');
+  assert.match(src, /reminderCalendarUrl\(item, reminder, lang\)/);
+  assert.match(src, /appleCalendarUrl\(item\.slug\)/);
+  assert.match(src, /<ClosedActions/);
+
+  const actions = read('app/o/[slug]/ClosedActions.js');
+  assert.match(actions, /href=\{TELEGRAM_URL\}/, 'великий заклик у канал');
+  assert.match(actions, /placement: 'closed_banner'/);
+
+  // .ics віддає й закриті — інакше кнопка Apple вела б на 404.
+  const ics = read('app/api/events/[slug]/ics/route.js');
+  assert.match(ics, /\.in\('status', \['active', 'closed'\]\)/);
+  assert.match(ics, /nextIntakeReminder\(item, today\)/);
+
+  // У пошуку сайту закритих немає: каталог бере лише active.
+  const db = read('lib/supabase.js');
+  assert.match(db, /\.eq\('status', 'active'\)/);
+  const catalog = read('app/api/catalog/[lang]/route.js');
+  assert.match(catalog, /publicOpportunities\(/);
+  assert.doesNotMatch(catalog, /'closed'/);
+});
