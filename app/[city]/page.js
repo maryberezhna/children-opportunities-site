@@ -28,6 +28,13 @@ const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 const CITY_HERO = {
   lviv: { src: '/city-lviv', alt: 'Історична вулиця Львова' },
   kyiv: { src: '/city-kyiv', alt: 'Майдан Незалежності в Києві' },
+  chernihiv: { src: '/city-chernihiv', alt: 'Осінній Чернігів: будинки серед дерев' },
+  kharkiv: { src: '/city-kharkiv', alt: 'Держпром у Харкові навесні', credit: 'Andreeva Aliona01 · CC BY-SA 4.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:%D0%94%D0%B5%D1%80%D0%B6%D0%BF%D1%80%D0%BE%D0%BC_132.jpg' },
+  odesa: { src: '/city-odesa', alt: 'Потьомкінські сходи в Одесі', credit: 'DIMSFIKAS · CC BY-SA 3.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:Potemkin_stairs,_Odessa.jpg' },
+  zaporizhzhia: { src: '/city-zaporizhzhia', alt: 'Скелі Хортиці над Дніпром у Запоріжжі', credit: 'George Chernilevsky · CC BY-SA 4.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:Khortytsia_2021_G7.jpg' },
+  dnipro: { src: '/city-dnipro', alt: 'Столітній будинок на вулиці Донцова в Дніпрі', credit: 'Alex Blokha · CC BY-SA 4.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:100_years_old_house_on_Dontsova_15_in_Dnipro.jpg' },
+  chernivtsi: { src: '/city-chernivtsi', alt: 'Історична забудова Чернівців', credit: 'Romankravchuk · CC BY-SA 4.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:Architecture-of-Chernivtsi-4.jpg' },
+  zhytomyr: { src: '/city-zhytomyr', alt: 'Спасо-Преображенський собор у Житомирі', credit: 'Texnik · CC BY-SA 3.0', creditUrl: 'https://commons.wikimedia.org/wiki/File:Svyato-Preobrajenskiy-Sobor_Zhytomyr_2008-2.jpg' },
 };
 const DEFAULT_HERO = { src: '/city-default', alt: 'Діти малюють на мольбертах у світлому класі' };
 
@@ -167,11 +174,26 @@ export default async function CityPage({ params }) {
           </div>
 
           {hero ? (
-            <div className="tp-hero-photo">
-              <picture>
-                <source srcSet={`${hero.src}.webp`} type="image/webp" />
-                <img src={`${hero.src}.jpg`} alt={hero.alt} width="900" height="600" loading="eager" fetchPriority="high" />
-              </picture>
+            <div className="tp-hero-side">
+              <div className="tp-hero-photo">
+                <picture>
+                  <source srcSet={`${hero.src}.webp`} type="image/webp" />
+                  <img src={`${hero.src}.jpg`} alt={hero.alt} width="900" height="600" loading="eager" fetchPriority="high" />
+                </picture>
+              </div>
+              {/* Фото міст із Wikimedia Commons ідуть під CC BY-SA: ліцензія
+                  вимагає імені автора. Рядок дрібний і сірий, але він має
+                  бути — без нього знімок брати не можна (19.10.2026).
+                  Живе ПОЗА .tp-hero-photo: там overflow:hidden і фіксована
+                  пропорція 3:2, усередині підпис просто обрізало б. */}
+              {hero.credit ? (
+                <p className="tp-hero-credit">
+                  Фото:{' '}
+                  {hero.creditUrl
+                    ? <a href={hero.creditUrl} target="_blank" rel="noopener noreferrer nofollow">{hero.credit}</a>
+                    : hero.credit}
+                </p>
+              ) : null}
             </div>
           ) : null}
         </section>
