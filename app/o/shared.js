@@ -79,12 +79,16 @@ const L = {
     closedAnnual: 'Програма повторюється щороку. Коли організатор оголосить новий набір, ми оновимо сторінку.',
     closedOnce: 'Подача заявок закрита, сторінку лишили для довідки.',
     closedLink: 'Подивитись актуальні можливості →',
-    remindTitle: (d) => `Нагадати про наступний набір — ${d}`,
+    calTitle: 'Підпишіться на наш календар',
+    calSub: 'Свята, міжнародні дні для дітей і дедлайни конкурсів — у вашому календарі. Оновлюється сам.',
+    calGoogle: 'Google Календар',
+    calApple: 'Apple / Outlook',
+    remindTitle: (d) => `Нагадати про цей набір — ${d}`,
     remindGoogle: 'Google Календар',
     remindApple: 'Apple Календар / .ics',
     remindNote: (basis) => (basis === 'deadline'
-      ? 'Дата орієнтовна: торішній дедлайн плюс рік, за два тижні до нього. Організатор новий набір ще не оголосив.'
-      : 'Дата орієнтовна: торішній початок плюс рік, за місяць до нього. Організатор новий набір ще не оголосив.'),
+      ? 'Нагадаємо за два тижні до відомого нам дедлайну. Чи відкрито набір — перевірте на сторінці організатора.'
+      : 'Нагадаємо за місяць до відомого нам початку. Чи відкрито набір — перевірте на сторінці організатора.'),
     tgTitle: 'Долучайтеся до нашого Telegram-каналу',
     tgSub: 'Нові можливості й дедлайни щодня — безкоштовно',
     stateAid: 'держдопомога',
@@ -143,12 +147,16 @@ const L = {
     closedAnnual: 'This programme runs every year. When the organiser announces the next intake, we update this page.',
     closedOnce: 'Applications are closed; the page is kept for reference.',
     closedLink: 'See current opportunities →',
-    remindTitle: (d) => `Remind me about the next intake — ${d}`,
+    calTitle: 'Subscribe to our calendar',
+    calSub: 'Holidays, international children’s days and contest deadlines — in your calendar. Updates itself.',
+    calGoogle: 'Google Calendar',
+    calApple: 'Apple / Outlook',
+    remindTitle: (d) => `Remind me about this intake — ${d}`,
     remindGoogle: 'Google Calendar',
     remindApple: 'Apple Calendar / .ics',
     remindNote: (basis) => (basis === 'deadline'
-      ? 'Estimated date: last year’s deadline plus one year, two weeks before it. The organiser has not announced the next intake yet.'
-      : 'Estimated date: last year’s start plus one year, a month before it. The organiser has not announced the next intake yet.'),
+      ? 'We remind you two weeks before the deadline we know of. Check the organiser’s page to see if applications are open.'
+      : 'We remind you a month before the start date we know of. Check the organiser’s page to see if applications are open.'),
     tgTitle: 'Join our Telegram channel',
     tgSub: 'New opportunities and deadlines every day — free',
     stateAid: 'state aid',
@@ -615,7 +623,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // нічного прогону lifecycle. Від цього залежать кнопка «Подати заявку» й
   // нижня панель на телефоні.
   const isClosed = item.status === 'closed' || isExpired(item, kyivToday());
-  // Нагадування про наступний набір — лише для періодичних із датою.
+  // Нагадування — лише періодичним, у яких відома дата ще попереду
+  // («нагадування на майбутні тільки», Марія 19.10.2026).
   const reminder = isClosed ? nextIntakeReminder(item, kyivToday()) : null;
   // Закритий запис теж отримує розмітку — але позначену як завершену
   // (availability SoldOut + validThrough / expires). До 20.09.2026 ми не
@@ -704,8 +713,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
 
         {/* Закритий набір (19.10.2026, рішення Марії): сторінку лишаємо —
             вона тримає покази в Google, — але «Набір закрито» пишемо дуже
-            великими, даємо нагадування в календар на чітку дату (лише для
-            періодичних: nextIntakeReminder) і великий заклик у канал. У
+            великими, даємо нагадування в календар лише коли відома дата ще
+            попереду (nextIntakeReminder) і великий заклик у канал. У
             каталозі й пошуку сайту закритих немає: publicOpportunities()
             віддає лише active. */}
         {isClosed ? (
@@ -726,6 +735,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 remindTitle: reminder ? t.remindTitle(formatDate(reminder.date, lang)) : '',
                 remindNote: reminder ? t.remindNote(reminder.basis) : '',
                 remindGoogle: t.remindGoogle, remindApple: t.remindApple, tgTitle: t.tgTitle, tgSub: t.tgSub,
+                calTitle: t.calTitle, calSub: t.calSub, calGoogle: t.calGoogle, calApple: t.calApple,
               }}
               reminder={reminder ? {
                 googleUrl: reminderCalendarUrl(item, reminder, lang),

@@ -240,6 +240,11 @@ test('закритий набір: великий заголовок, кален
 
   const actions = read('app/o/[slug]/ClosedActions.js');
   assert.match(actions, /href=\{TELEGRAM_URL\}/, 'великий заклик у канал');
+  // Головне — підписка на наш календар (webcal, оновлюється сам), а не разовий файл.
+  assert.match(actions, /calendar\.ics/);
+  assert.match(actions, /webcal:\/\//);
+  assert.match(actions, /calendar\.google\.com\/calendar\/r\?cid=/);
+  assert.match(actions, /calendar_subscribe_click/);
   assert.match(actions, /placement: 'closed_banner'/);
 
   // .ics віддає й закриті — інакше кнопка Apple вела б на 404.
