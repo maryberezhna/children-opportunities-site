@@ -150,3 +150,27 @@ test('адресу видно крізь те, що приїхало разом 
   assert.ok(sourceUrlProblem('Деталі тут: https://t.me/Mozhlyvosti/10539'));
   assert.ok(sourceUrlProblem('​https://www.instagram.com/p/x'));
 });
+
+// Марія, 19.10.2026: «Пропозиція від організатора не пишемо НІКОЛИ — просто
+// назву і посилання». Так підписував записи конвеєр пропозицій, і людина
+// бачила в рядку «Організатор» не того, хто проводить конкурс, а спосіб, яким
+// запис до нас потрапив. Конвеєр виправлено, але старі записи й кеш сторінок
+// лишаються — тож назву підміняє домен тієї самої сторінки.
+test('службовий підпис походження ніколи не виходить на сторінку', async () => {
+  const { publicSource } = await import('../lib/source-link.js');
+  const url = 'https://en.iseshimaart.com/competition-for-youngmusicians';
+
+  for (const label of ['Пропозиція від організатора', 'пропозиція від організатора',
+    '  Пропозиція від організатора  ', 'Пропозиція з форми', 'Форма на сайті']) {
+    assert.equal(publicSource({ source: label, source_url: url }).sourceName,
+      'en.iseshimaart.com', label);
+  }
+
+  // Справжня назва лишається як є.
+  assert.equal(publicSource({ source: 'Ise-Shima Art Company', source_url: url }).sourceName,
+    'Ise-Shima Art Company');
+
+  // Без посилання підміняти нічим — краще порожньо, ніж службовий підпис.
+  assert.equal(publicSource({ source: 'Пропозиція від організатора', source_url: null }).sourceName,
+    null);
+});
