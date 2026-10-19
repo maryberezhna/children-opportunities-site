@@ -310,19 +310,6 @@
   border-top: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.closed-cal-title {
-  margin: 0 0 6px !important;
-  font-size: 1.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.closed-cal-sub {
-  margin: 0 0 14px !important;
-  max-width: 56ch;
-  opacity: 0.85;
-}
-
 .closed-cal-btns,
 .closed-remind-btns {
   display: flex;
@@ -423,7 +410,6 @@
 @media (max-width: 560px) {
   .closed-banner { padding: 24px 20px 22px; border-left-width: 6px; font-size: 1rem; }
   .closed-banner-title { font-size: 2.25rem; }
-  .closed-cal-title { font-size: 1.3125rem; }
   .closed-cal-btns a,
   .closed-remind-btns a { flex: 1 1 100%; justify-content: center; white-space: normal; }
   .closed-tg-title { font-size: 1.125rem; }
