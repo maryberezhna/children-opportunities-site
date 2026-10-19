@@ -27,7 +27,17 @@ test('обидві форми отримують child_needs із бази', () 
 
 test('адмінка й фільтр сайту — один список потреб', async () => {
   const { NEED_FILTER_OPTS } = await import('../lib/labels.js');
-  assert.equal(NEED_FILTER_OPTS.length, 7);
+  assert.equal(NEED_FILTER_OPTS.length, 6);
   assert.match(read('app/admin/edit/[id]/EditForm.js'), /NEED_FILTER_OPTS\.map/);
   assert.match(read('app/OpportunitiesList.js'), /NEED_OPTS = NEED_FILTER_OPTS/);
+});
+
+// Марія, 19.10.2026: «взагалі прибери цей фільтр з сайту, це бред». Підпису
+// немає — отже позначки не видно ні на картці, ні на сторінці, а сервер
+// адмінки (фільтрує по NEED_LABELS) не дасть поставити її знову.
+test('«обдаровані» більше немає ні у фільтрі, ні в підписах', async () => {
+  const { NEED_FILTER_OPTS, NEED_LABELS: UK, NEED_LABELS_EN: EN } = await import('../lib/labels.js');
+  assert.ok(!NEED_FILTER_OPTS.some(([value]) => value === 'gifted'));
+  assert.ok(!Object.hasOwn(UK, 'gifted'));
+  assert.ok(!Object.hasOwn(EN, 'gifted'));
 });
