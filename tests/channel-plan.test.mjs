@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import {
   ROTATION, PLAN_START, FALLBACK_TOPIC, MONTHLY_DAY, MONTHLY_ENTRY, planEntryFor, addDays,
   COLLECTIONS, COLLECTION_START, DEADLINES_WEEK, MONTHLY_POLLS, pollFor,
@@ -135,4 +135,22 @@ test('опитування вкладаються в обмеження Telegram
     assert.equal(new Set(p.options).size, p.options.length, `${p.key}: однакові варіанти`);
     assert.equal(typeof p.multiple, 'boolean');
   }
+});
+
+// 19.10.2026: Марія про старий вигляд поста з дедлайнами — «мені не
+// подобається такий дизайн, дуже тупо». З трьох варіантів у адмінському чаті
+// обрала рядок на можливість: «отак».
+test('пост із дедлайнами — рядок на можливість, без емодзі-колонки й описів', async () => {
+  const src = readFileSync(new URL('../scripts/check-deadlines.mjs', import.meta.url), 'utf8');
+  const build = src.slice(src.indexOf('async function sendDeadlinesWeek'), src.indexOf('async function sendDeadlinesWeek') + 2200);
+  assert.match(build, /deadlineRow\(r\)/, 'рядок будує deadlineRow');
+  assert.doesNotMatch(build, /formatLine\(/, 'стара картка з емодзі більше не використовується');
+  assert.doesNotMatch(build, /DEADLINES_WEEK\.description/, 'підзаголовка в пості немає');
+  // Рядок: дата · назва · вік · вартість. Дат проведення й результатів немає:
+  // у пості про ПОДАЧУ вони збивали.
+  const row = src.slice(src.indexOf('function deadlineRow'), src.indexOf('function formatLine'));
+  assert.match(row, /dayMonth\(r\.deadline\)/);
+  assert.match(row, /ageShort\(r\)/);
+  assert.match(row, /costLabel\(r\.cost_type\)/);
+  assert.doesNotMatch(row, /summary|whenLine|results_date|placeText/);
 });
