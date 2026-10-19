@@ -47,12 +47,22 @@ test('збережений образ чиститься: лише відомі 
   assert.deepEqual(L.cleanLook(null), L.DEFAULT_LOOK);
 });
 
-test('усе платне: 99 грн за все, студія — лише після оплати (поки — адмін)', () => {
-  assert.equal(MK.price, 99);
+// 19.10.2026 Марія: «робимо модний код безкоштовним». Оргвнеску 99 грн немає
+// ніде — ні на сторінці, ні в листі, ні в правилах, ні в llms.txt.
+test('участь безкоштовна: ціни немає ніде, студія — частина олімпіади', () => {
+  assert.equal(MK.price, 0);
   assert.equal(MK.open, true);
   const page = read('app/modnyi-kod/page.js');
-  // Єдиний виняток — «безкоштовно для власників Dityam+» (Марія, 13.10.2026).
-  assert.doesNotMatch(page.replace(/^\/\/.*$/gm, '').replace(/безкоштовно<\/b> для власників/g, ''), /безкоштовн/);
+  const live = page.replace(/^\/\/.*$/gm, '');
+  for (const re of [/99 грн/, /оргвнесок/i, /MK\.price/, /WayForPay/]) {
+    assert.doesNotMatch(live, re, String(re));
+  }
+  // «тепер безкоштовно» не пишемо: це нова можливість, а не знижка.
+  assert.doesNotMatch(live, /тепер безкоштовн|стала безкоштовн|стало безкоштовн/i);
+  for (const f of ['app/api/modnyi-kod/start/route.js', 'lib/modnyi-kod-server.js',
+    'app/llms.txt/route.js', 'lib/own-opportunities.js', 'app/nashi-mozhlyvosti/page.js']) {
+    assert.doesNotMatch(read(f).replace(/^\s*\/\/.*$/gm, ''), /оргвнесок/i, f);
+  }
   assert.match(page, /modnyi-kod-demo\.mp4/);
   assert.match(page, /JoinForm/);
   assert.match(page, /MkTrack/);
@@ -114,7 +124,9 @@ test('положення: правила олімпіади на сторінц�
   // 30 хвилин (13.10.2026; було 25), спроб скільки завгодно (13.10.2026; було 1).
   assert.doesNotMatch(page, /1 спроба/);
   assert.match(page, /скільки завгодно разів/);
-  assert.match(page, /До початку тесту від участі можна відмовитися/);
+  // Пункт про повернення оргвнеску пішов разом з оргвнеском (19.10.2026).
+  assert.doesNotMatch(page, /повернути .*грн/);
+  assert.match(page, /Участь безкоштовна/);
   assert.equal(MK.minutes, 30);
   assert.match(page, /\{MK\.minutes\} хвилин/);
 });
@@ -179,10 +191,12 @@ test('кабінет: обкладинка замість сертифіката
   assert.doesNotMatch(cover, /DEVDEMO|NODE_ENV/);
 });
 
-test('адмін проходить «Модний код» без оплати, і це не рахується продажем (13.10.2026)', () => {
+test('заявка веде в кабінет, а не в оплату; адмінський запис не рахується продажем', () => {
   const start = readFileSync('app/api/modnyi-kod/start/route.js', 'utf8');
   assert.match(start, /isAdmin\(cookies\(\)\.get\('dityam_admin'\)/);
-  assert.ok(start.indexOf('adminTestPaid') < start.indexOf('startPayment(db, row)'), 'адмін не має йти в WayForPay');
+  // З 19.10.2026 у WayForPay не йде НІХТО: заявка веде просто в кабінет.
+  assert.doesNotMatch(start, /startPayment/);
+  assert.match(start, /adminTestPaid/);
   const srv = readFileSync('lib/modnyi-kod-server.js', 'utf8');
   const fn = srv.slice(srv.indexOf('export async function adminTestPaid'), srv.indexOf('export async function handleMkCallback'));
   assert.match(fn, /amount: 0/);
@@ -229,13 +243,14 @@ test('анімація «Модного коду»: фігури й манеке
   }
 });
 
-test('«Обкладинка місяця» замість публікації для всіх; Dityam+ за 1 грн; безкоштовно для власників Dityam+ (13.10.2026)', () => {
+test('«Обкладинка місяця» замість публікації для всіх; Dityam+ за 1 грн після олімпіади', () => {
   const page = readFileSync('app/modnyi-kod/page.js', 'utf8');
   assert.doesNotMatch(page, /і публікація|Обкладинку публікуємо на сайті й у соцмережах Dityam\.com\.ua\.'|<li>публікація на сайті/);
   assert.match(page, /Як обирають «Обкладинку місяця»\?/);
   assert.match(page, /найвищими балами/);
   assert.match(page, /оформити Dityam\+ на місяць за \$\{PRICE_FIRST\} грн/);
-  assert.equal((page.match(/безкоштовно<\/b> для власників/g) || []).length, 2);
+  // Рядок «або безкоштовно для власників Dityam+» зник: безкоштовно для всіх.
+  assert.equal((page.match(/безкоштовно<\/b> для власників/g) || []).length, 0);
   assert.ok(page.indexOf('mkT-covers-sec') < page.indexOf('id="video"'), 'обкладинки — одразу після першого екрана');
   assert.match(readFileSync('app/modnyi-kod/VogueCover.js', 'utf8'), /Обкладинка місяця · \{winner\}/);
   assert.doesNotMatch(readFileSync('app/llms.txt/route.js', 'utf8'), /і публікація обкладинки на сайті/);

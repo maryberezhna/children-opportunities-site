@@ -1,7 +1,12 @@
-// Заявка на «Модний код»: створюємо запис і рахунок WayForPay на 99 грн.
+// Заявка на «Модний код»: створюємо запис і одразу відкриваємо кабінет.
+//
+// 19.10.2026 Марія: «робимо модний код безкоштовним». Рахунка WayForPay тут
+// більше немає — заявка веде прямо в кабінет, як в олімпіаді з логіки.
+// adminTestPaid лишається: саме вона позначає запис відкритим (колонка
+// paid_at — спадок платної версії, решта коду читає її як «кабінет доступний»).
 import { cookies } from 'next/headers';
 import { cleanMkEntry, MK, mkCabinet } from '@/lib/modnyi-kod';
-import { mkDb, recentCount, createEntry, startPayment, serverEvent, adminTestPaid } from '@/lib/modnyi-kod-server';
+import { mkDb, recentCount, createEntry, serverEvent, adminTestPaid } from '@/lib/modnyi-kod-server';
 import { isAdmin } from '@/lib/adminAuth';
 
 export const runtime = 'nodejs';
@@ -20,16 +25,13 @@ export async function POST(request) {
   // Адмін (кука з /admin) проходить без оплати — тест усього шляху.
   const admin = isAdmin(cookies().get('dityam_admin')?.value);
   try {
-    if (admin) {
-      const row = await adminTestPaid(db, await createEntry(db, entry, 'admin_test'));
-      return json({ url: mkCabinet(row.token), t: row.token });
+    // Запобіжник від спаму лишається: безкоштовне не означає без меж.
+    if (!admin && await recentCount(db, entry.parent_email) >= 5) {
+      return json({ error: 'too_many' }, 429);
     }
-    if (await recentCount(db, entry.parent_email) >= 5) return json({ error: 'too_many' }, 429);
-    const row = await createEntry(db, entry, b.source);
-    await serverEvent(db, 'mk_pay_start', row.source || 'page');
-    const r = await startPayment(db, row);
-    if (r.error) { console.error('[mk/start] invoice', r.error); return json({ error: 'pay', t: row.token }, 502); }
-    return json({ url: r.url, t: row.token });
+    const row = await adminTestPaid(db, await createEntry(db, entry, admin ? 'admin_test' : b.source));
+    if (!admin) await serverEvent(db, 'mk_paid', row.source || 'page');
+    return json({ url: mkCabinet(row.token), t: row.token });
   } catch (e) {
     console.error('[mk/start]', e?.message || e);
     return json({ error: 'unavailable' }, 503);

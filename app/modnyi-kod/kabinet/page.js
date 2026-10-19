@@ -10,7 +10,6 @@ import { mkDb, entryByToken, syncPayment } from '@/lib/modnyi-kod-server';
 import VogueCover from '../VogueCover';
 import Studio from '../Studio';
 import Runner from './Runner';
-import RepayButton from './RepayButton';
 import PrintBtn from './PrintBtn';
 import ShareCover from './ShareCover';
 import { PLUS_BOT } from '@/lib/plus';
@@ -18,7 +17,7 @@ import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import RetakeButton from './RetakeButton';
 
 // Кабінет учасника «Модного коду» (посилання з листа, секретний токен):
-// оплата → тест 30 хв → студія образу → обкладинка з балами (вона ж сертифікат), розбір.
+// заявка → тест 30 хв → студія образу → обкладинка з балами (вона ж сертифікат), розбір.
 export const dynamic = 'force-dynamic';
 export const metadata = { title: `Кабінет учасника «${MK.title}»`, robots: { index: false, follow: false } };
 
@@ -46,12 +45,13 @@ export default async function Cabinet({ searchParams }) {
   );
 
   if (!row) return shell(<><h1 className="mkT-hand ink">Кабінет не знайдено</h1><p className="mkT-text">Перевірте посилання з листа або напишіть нам: hellodityam.com.ua@gmail.com</p></>);
-  if (row.refunded_at) return shell(<><h1 className="mkT-hand ink">Участь скасовано</h1><p className="mkT-text">Оргвнесок повернуто. Якщо це помилка — напишіть нам: hellodityam.com.ua@gmail.com</p></>);
+  if (row.refunded_at) return shell(<><h1 className="mkT-hand ink">Участь скасовано</h1><p className="mkT-text">Якщо це помилка — напишіть нам: hellodityam.com.ua@gmail.com</p></>);
+  // paid_at з 19.10.2026 ставиться одразу при заявці (участь безкоштовна), тож
+  // сюди потрапляють хіба давні записи, створені до скасування оргвнеску.
   if (!row.paid_at) {
     return shell(<>
-      <h1 className="mkT-hand ink">{row.child_name}, майже готово!</h1>
-      <p className="mkT-text">Оплату ще не отримали. Якщо ви щойно оплатили — оновіть сторінку за хвилину. Якщо ні — оплатіть оргвнесок, і кабінет відкриється.</p>
-      <RepayButton t={row.token} price={Number(row.amount) || MK.price} />
+      <h1 className="mkT-hand ink">{row.child_name}, кабінет ще не відкрився</h1>
+      <p className="mkT-text">Оновіть сторінку за хвилину. Якщо не допоможе — напишіть нам: hellodityam.com.ua@gmail.com, відкриємо вручну. Участь безкоштовна, платити не треба.</p>
     </>);
   }
   if (!row.finished_at) {
