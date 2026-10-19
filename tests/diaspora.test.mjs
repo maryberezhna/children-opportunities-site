@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import {
   diasporaReason, isDiaspora, liveCountryPages, hubGroups, countryName, inCountry, MIN_COUNTRY,
-  SCHOOL_NOTES, schoolNotes,
+  SCHOOL_NOTES, schoolNotes, DIASPORA_COUNTRIES,
 } from '../lib/diaspora.js';
 
 // «Школа в країні» (28.09.2026): права й процедури абзацом — кожен з
@@ -134,12 +134,15 @@ test(`сторінка країни — від ${MIN_COUNTRY} записів, н
   assert.deepEqual(qualifyingCountryTopics(pl(3)).map((t) => t.slug), ['ukrainskym-ditiam-za-kordonom/polshcha']);
 });
 
-test('власні сторінки — лише Польща й Німеччина: Ірландія з трьома лишається групою в хабі', () => {
-  const ie = [0, 1, 2].map((i) => rec('club', ['ie'], `Українська суботня школа в Ірландії ${i}`));
-  assert.deepEqual(liveCountryPages(ie), []);
-  const { links, groups } = TOPICS[DIASPORA_HUB].groups(ie);
+// Країна отримує власну сторінку, лише якщо вона є в DIASPORA_COUNTRIES
+// (19.10.2026 їх сім). Решта — хай навіть із трьома записами — лишаються
+// групою в хабі: Словаччина тут саме такий випадок.
+test('країна поза списком лишається групою в хабі, навіть маючи три записи', () => {
+  const sk = [0, 1, 2].map((i) => rec('club', ['sk'], `Українська суботня школа у Словаччині ${i}`));
+  assert.deepEqual(liveCountryPages(sk), []);
+  const { links, groups } = TOPICS[DIASPORA_HUB].groups(sk);
   assert.deepEqual(links, []);
-  assert.deepEqual(groups.map((g) => [g.id, g.title, g.items.length]), [['country-ie', 'Ірландія', 3]]);
+  assert.deepEqual(groups.map((g) => [g.id, g.title, g.items.length]), [['country-sk', 'Словаччина', 3]]);
 });
 
 test('хаб: країна зі сторінкою — посиланням, решта — групами, більші вище', () => {
@@ -171,6 +174,25 @@ test('назви країн', () => {
   assert.ok(countryName('jp').length > 0);
 });
 
+// 19.10.2026: до Польщі й Німеччини додано пʼять країн, у яких записів уже
+// більше за поріг (Італія 10, Ірландія 8, Нідерланди 5, Чехія 4, Іспанія 4).
+test('сім країн зі сторінками: унікальні адреси й правильний прийменник', () => {
+  assert.deepEqual(DIASPORA_COUNTRIES.map((c) => c.code), ['pl', 'de', 'it', 'ie', 'nl', 'cz', 'es']);
+  const slugs = DIASPORA_COUNTRIES.flatMap((c) => [c.slug, c.slugEn]);
+  assert.equal(new Set(slugs).size, slugs.length, 'адреси країн мають бути унікальні');
+  for (const c of DIASPORA_COUNTRIES) {
+    assert.match(c.slug, /^[a-z]+$/, c.code);
+    assert.match(c.slugEn, /^[a-z]+$/, c.code);
+  }
+  // Перед голосною — «в», перед приголосною — «у».
+  assert.equal(inCountry('it'), 'в Італії');
+  assert.equal(inCountry('ie'), 'в Ірландії');
+  assert.equal(inCountry('es'), 'в Іспанії');
+  assert.equal(inCountry('nl'), 'у Нідерландах');
+  assert.equal(inCountry('cz'), 'у Чехії');
+  assert.equal(inCountry('pl'), 'у Польщі');
+});
+
 // ── Сторінки: меню, адреси, SEO ──
 
 test('хаб — звичайна підбірка, сторінки країн у меню не потрапляють', () => {
@@ -184,7 +206,8 @@ test('хаб — звичайна підбірка, сторінки країн 
   assert.equal(TOPICS[DIASPORA_HUB].noCityPages, true);
   assert.equal(diasporaCountryBySlug('polshcha').code, 'pl');
   assert.equal(diasporaCountryBySlug('germany', 'en').code, 'de');
-  assert.equal(diasporaCountryBySlug('irlandiia'), undefined);
+  assert.equal(diasporaCountryBySlug('irlandiia').code, 'ie');
+  assert.equal(diasporaCountryBySlug('slovachchyna'), undefined);
 });
 
 test('title до 60, description до 160, обидві мови; без «каталогу» й обіцянок', () => {
