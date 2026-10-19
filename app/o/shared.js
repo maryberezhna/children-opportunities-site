@@ -79,7 +79,11 @@ const L = {
     closedAnnual: 'Програма повторюється щороку. Коли організатор оголосить новий набір, ми оновимо сторінку.',
     closedOnce: 'Подача заявок закрита, сторінку лишили для довідки.',
     closedLink: 'Подивитись актуальні можливості →',
-    remindTitle: (d) => `Нагадати про наступний набір — ${d}`,
+    calTitle: 'Підпишіться на наш календар',
+    calSub: 'Свята, міжнародні дні для дітей і дедлайни конкурсів — у вашому календарі. Оновлюється сам.',
+    calGoogle: 'Google Календар',
+    calApple: 'Apple / Outlook',
+    remindTitle: (d) => `Нагадати про цей набір — ${d}`,
     remindGoogle: 'Google Календар',
     remindApple: 'Apple Календар / .ics',
     remindNote: (basis) => (basis === 'deadline'
@@ -143,7 +147,11 @@ const L = {
     closedAnnual: 'This programme runs every year. When the organiser announces the next intake, we update this page.',
     closedOnce: 'Applications are closed; the page is kept for reference.',
     closedLink: 'See current opportunities →',
-    remindTitle: (d) => `Remind me about the next intake — ${d}`,
+    calTitle: 'Subscribe to our calendar',
+    calSub: 'Holidays, international children’s days and contest deadlines — in your calendar. Updates itself.',
+    calGoogle: 'Google Calendar',
+    calApple: 'Apple / Outlook',
+    remindTitle: (d) => `Remind me about this intake — ${d}`,
     remindGoogle: 'Google Calendar',
     remindApple: 'Apple Calendar / .ics',
     remindNote: (basis) => (basis === 'deadline'
@@ -727,6 +735,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                 remindTitle: reminder ? t.remindTitle(formatDate(reminder.date, lang)) : '',
                 remindNote: reminder ? t.remindNote(reminder.basis) : '',
                 remindGoogle: t.remindGoogle, remindApple: t.remindApple, tgTitle: t.tgTitle, tgSub: t.tgSub,
+                calTitle: t.calTitle, calSub: t.calSub, calGoogle: t.calGoogle, calApple: t.calApple,
               }}
               reminder={reminder ? {
                 googleUrl: reminderCalendarUrl(item, reminder, lang),
