@@ -29,9 +29,9 @@ export default function ClosedActions({ slug, lang = 'uk', reminder = null, t })
 
   return (
     <>
+      {/* Без заголовка й пояснення — Марія (19.10.2026): «давай без цього».
+          Кнопки кажуть усе самі. */}
       <div className="closed-cal">
-        <p className="closed-cal-title">{t.calTitle}</p>
-        <p className="closed-cal-sub">{t.calSub}</p>
         <div className="closed-cal-btns">
           <a href={GOOGLE_SUBSCRIBE_URL} target="_blank" rel="noopener noreferrer" onClick={subscribe('google')}>
             {t.calGoogle}
