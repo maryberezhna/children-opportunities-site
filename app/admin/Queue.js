@@ -1,6 +1,6 @@
 'use client';
-import { useState } from 'react';
-import { decisionReason, deadlineNote } from '@/lib/decision-reason';
+import { useMemo, useState } from 'react';
+import { decisionReason, deadlineNote, readyRank, sortByReady, sortByStart } from '@/lib/decision-reason';
 import { formatDate, formatEventDates } from '@/lib/dates';
 import { TYPE_LABELS } from '@/lib/labels';
 import { REJECT_REASONS, rejectReason } from '@/lib/reject-reasons';
@@ -24,6 +24,14 @@ const CSS = `${ADMIN_CARD_CSS}
 .q-host { color: #54617a; }
 .adm-card.ok { background: #e7f6ec; }
 .adm-card.off { background: #f3f4f6; opacity: .7; }
+.q-sort { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 20px; }
+.q-sort .lbl { font-size: 15px; color: #54617a; }
+.q-sort button { font: inherit; font-size: 14px; padding: 7px 13px; border-radius: 999px;
+  border: 1px solid #d3dbe9; background: #fff; color: #131b28; cursor: pointer; }
+.q-sort button:hover { border-color: #8a94a6; }
+.q-sort button.on { background: #131b28; border-color: #131b28; color: #fff; font-weight: 600; }
+.q-sort .n { opacity: .65; font-weight: 400; }
+.q-empty { font-size: 16px; color: #54617a; }
 `;
 
 const WHY_ICON = { stop: '⛔', check: '⚠️', ready: '✅' };
@@ -240,13 +248,51 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
   );
 }
 
+// Чим розбирати чергу зі ста записів (Марія, 19.10.2026): дедлайном подачі,
+// датою початку програми або готовністю. Список уже прийшов із сервера за
+// дедлайном, тож «deadline» нічого не пересортовує, а решта сортує стабільно
+// поверх нього. Нічого не ховаємо: усі три кнопки показують ту саму чергу,
+// лише іншим порядком.
+const ORDERS = [
+  { key: 'deadline', label: 'дедлайн подачі' },
+  { key: 'start', label: 'початок програми' },
+  { key: 'ready', label: 'найготовіші' },
+];
+
 export default function Queue({ drafts, notes = {}, today, currentWeek }) {
+  const [order, setOrder] = useState('deadline');
+
+  const list = useMemo(() => {
+    if (order === 'start') return sortByStart(drafts);
+    if (order === 'ready') return sortByReady(drafts);
+    return drafts;
+  }, [drafts, order]);
+
+  // Скільки записів лежать готовими — тих, де лишилось тільки рішення або
+  // дозаповнити поле. Число на кнопці відповідає на головне питання черги:
+  // чи є тут те, що можна опублікувати просто зараз.
+  const readyCount = useMemo(() => drafts.filter((o) => readyRank(o) <= 1).length, [drafts]);
+
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
-      {drafts.length === 0
+      {drafts.length > 1 ? (
+        <div className="q-sort">
+          <span className="lbl">Спершу:</span>
+          {ORDERS.map((o) => (
+            <button
+              key={o.key} type="button" className={order === o.key ? 'on' : ''}
+              aria-pressed={order === o.key} onClick={() => setOrder(o.key)}
+            >
+              {o.label}
+              {o.key === 'ready' ? <span className="n"> ({readyCount})</span> : null}
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {list.length === 0
         ? <p style={{ fontSize: 17 }}>Черга порожня — усе розібрано. Нові кандидати прийдуть після нічного прогону.</p>
-        : drafts.map((o) => <Card key={o.id} o={o} notes={notes[o.id] || []} today={today} currentWeek={currentWeek} />)}
+        : list.map((o) => <Card key={o.id} o={o} notes={notes[o.id] || []} today={today} currentWeek={currentWeek} />)}
     </>
   );
 }

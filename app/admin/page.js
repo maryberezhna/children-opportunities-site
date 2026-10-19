@@ -114,7 +114,7 @@ export default async function QueuePage({ searchParams }) {
         Черга <span style={{ color: '#54617a', fontWeight: 600 }}>({drafts.length})</span>
       </h1>
       <p style={{ color: '#54617a', fontSize: 16, margin: '0 0 22px', lineHeight: 1.5 }}>
-        Можливості, які машина не змогла опублікувати сама. Спершу ті, де дедлайн найближчий.
+        Можливості, які машина не змогла опублікувати сама. Порядок обери кнопками — за дедлайном подачі, початком програми чи готовністю.
       </p>
       {failed ? (
         <p style={{ padding: '12px 14px', borderRadius: 10, background: '#fdecec', color: '#a11b1b', fontWeight: 600 }}>

@@ -5,6 +5,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   decisionReason, gapReason, fillHint, deadlineNote, sortByDeadline, isOverdue,
+  sortByStart, sortByReady, readyRank,
 } from '../lib/decision-reason.js';
 
 const ready = (over = {}) => ({
@@ -187,4 +188,45 @@ test('сторінки адмінки, що рахують причину, ви�
     const src = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
     assert.ok(src.includes('timing_kind'), `${f} не вибирає timing_kind`);
   }
+});
+
+// Черга зі ста записів розбирається не лише дедлайном подачі
+// (Марія, 19.10.2026: «за датою старту або за максимально готовими»).
+test('порядок за датою початку — найближчий згори, без дати — в кінець', () => {
+  const list = [
+    { id: 'c', event_start_date: '2026-12-01' },
+    { id: 'a', event_start_date: null },
+    { id: 'b', event_start_date: '2026-11-03' },
+  ];
+  assert.deepEqual(sortByStart(list).map((o) => o.id), ['b', 'c', 'a']);
+  // Дедлайн подачі на цей порядок не впливає: це різні дати.
+  const mixed = [
+    { id: 'pizno', deadline: '2026-10-20', event_start_date: '2027-01-10' },
+    { id: 'rano', deadline: '2026-12-30', event_start_date: '2026-10-25' },
+  ];
+  assert.deepEqual(sortByStart(mixed).map((o) => o.id), ['rano', 'pizno']);
+  assert.deepEqual(sortByDeadline(mixed).map((o) => o.id), ['pizno', 'rano']);
+});
+
+test('готовність: усе на місці → порожнє поле → потрібна людина → дубль', () => {
+  const full = ready();
+  const empty = ready({ cost_type: null });
+  const human = ready({ link_status: 'unknown' });
+  const dup = ready({ dup_of: 'inshyi-zapys' });
+  assert.equal(readyRank(full), 0);
+  assert.equal(readyRank(empty), 1);
+  assert.equal(readyRank(human), 2);
+  assert.equal(readyRank(dup), 3);
+  const order = sortByReady([dup, human, empty, full]);
+  assert.deepEqual(order.map((o) => readyRank(o)), [0, 1, 2, 3]);
+});
+
+test('сортування не губить і не множить записи черги', () => {
+  const list = [ready({ id: '1' }), ready({ id: '2', dup_of: 'x' }), ready({ id: '3', event_start_date: '2026-11-01' })];
+  for (const sorted of [sortByStart(list), sortByReady(list)]) {
+    assert.equal(sorted.length, list.length);
+    assert.deepEqual([...sorted].map((o) => o.id).sort(), ['1', '2', '3']);
+  }
+  // Початковий список не чіпаємо.
+  assert.deepEqual(list.map((o) => o.id), ['1', '2', '3']);
 });
