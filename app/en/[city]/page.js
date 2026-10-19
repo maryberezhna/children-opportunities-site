@@ -1,3 +1,4 @@
+import '@/app/styles/routes/topic.css';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN } from '@/lib/supabase';
@@ -5,11 +6,13 @@ import { clientRows } from '@/lib/client-rows';
 import { CITY_META } from '@/lib/cities';
 import { fitTitle } from '@/lib/seo-title';
 import OpportunitiesList from '../../OpportunitiesList';
+import ShareButton from '../../ShareButton';
 import StickyBar from '../../StickyBar';
 import SubscribePopup from '../../SubscribePopup';
 import Footer from '../../Footer';
 
 const SITE_URL = 'https://dityam.com.ua';
+const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
 
 export const revalidate = 300;
 
@@ -95,43 +98,58 @@ export default async function CityPage({ params }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <div className="container" lang="en">
-        <div className="hero">
-          <div className="hero-badges">
-            <Link href="/en" className="city-back-link">← All opportunities</Link>
-          </div>
-          <h1>
-            Opportunities for children
-            <br />
-            <span className="accent">in {name}</span>
-          </h1>
-          <p>
-            Courses, olympiads, scholarships, camps and medical help for children
-            aged 0–18 in {name}. Nationwide programmes open across Ukraine are
-            included too.
-          </p>
-          <div className="stats">
-            <div className="stat">
-              <span className="stat-num">{total}</span>
-              <span className="stat-label">opportunities</span>
-            </div>
-            <div className="stat">
-              <span className="stat-num">{freeCount}</span>
-              <span className="stat-label">free of charge</span>
-            </div>
-          </div>
-        </div>
-
-        <nav className="city-nav" aria-label="Other cities">
-          {otherCities.map(([slug, meta]) => (
-            <Link key={slug} href={`/en/${slug}`} className="city-nav-link">
-              {meta.en || meta.ua}
-            </Link>
-          ))}
+      <main className="tp-main" lang="en">
+        <nav className="tp-crumbs" aria-label="Breadcrumbs">
+          <Link href="/en" prefetch={false}>Home</Link>
+          <span aria-hidden="true">/</span>
+          <Link href="/en/collections">Collections</Link>
+          <span aria-hidden="true">/</span>
+          <span aria-current="page">{name}</span>
         </nav>
 
+        <section className="tp-hero tp-hero-solo" aria-labelledby="city-title">
+          <div className="tp-hero-copy">
+            <h1 id="city-title" className="tp-h1">
+              Opportunities for children{' '}
+              <span className="tp-script">in {name}</span>
+            </h1>
+            <p className="tp-intro">
+              Courses, olympiads, scholarships, camps and medical help for children
+              aged 0–18 in {name}. Nationwide programmes open across Ukraine are included too.
+            </p>
+            <p className="tp-hero-stats">
+              <span><strong>{total}</strong> {total === 1 ? 'opportunity' : 'opportunities'}</span>
+              {freeCount > 0 ? <span> · <strong>{freeCount}</strong> free</span> : null}
+            </p>
+            <div className="tp-actions">
+              <a href={TELEGRAM_URL} className="tp-btn tp-btn-dark" target="_blank" rel="noopener noreferrer">
+                Get new ones on Telegram
+              </a>
+              <ShareButton
+                label="Share this collection"
+                copiedLabel="Link copied"
+                className="tp-btn tp-btn-outline"
+                place="city_page"
+              />
+            </div>
+          </div>
+        </section>
+
         <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} lang="en" />
-      </div>
+
+        <section className="tp-related" aria-labelledby="other-cities-title">
+          <h2 id="other-cities-title" className="tp-h2">Other cities</h2>
+          <nav className="city-nav" aria-labelledby="other-cities-title">
+            {otherCities.map(([slug, meta]) => (
+              <Link key={slug} href={`/en/${slug}`} className="city-nav-link">
+                {meta.en || meta.ua}
+              </Link>
+            ))}
+          </nav>
+        </section>
+
+        <p className="tp-home-link"><Link href="/en" prefetch={false}>All opportunities on the home page →</Link></p>
+      </main>
       <Footer lang="en" />
 
       <StickyBar />

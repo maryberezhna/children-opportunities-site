@@ -2,6 +2,7 @@ import './styles/routes/topic.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_LIST, topicPath, collectionsPath } from '@/lib/topics';
+import { CITY_META } from '@/lib/cities';
 import { opportunitiesWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { isLive } from '@/lib/audience';
@@ -35,6 +36,7 @@ const COPY = {
     intro:
       'Кожна підбірка збирає в одному місці все, що зараз відкрито за темою. Число на картці — скільки можливостей у підбірці сьогодні.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
+    cities: 'Міста',
     homeLink: 'Усі можливості — на головній →',
     listName: 'Тематичні підбірки Dityam.com.ua',
     breadcrumbs: 'Навігація',
@@ -50,6 +52,7 @@ const COPY = {
     intro:
       'Each collection gathers everything open on one topic right now. The number on a card is how many opportunities the collection has today.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
+    cities: 'Cities',
     homeLink: 'All opportunities on the home page →',
     listName: 'Dityam.com.ua collections',
     breadcrumbs: 'Breadcrumbs',
@@ -107,6 +110,18 @@ export default async function CollectionsHub({ lang = 'uk' }) {
     href: topicPath({ slug: topic.slug, slugEn: topic.en.slug }, lang),
     name: isEn ? topic.navEn : topic.nav,
     count: liveRows.filter(topic.match).length,
+  }));
+
+  // Міста — та сама вибірка, що на сторінці міста: записи цього міста плюс
+  // загальноукраїнські. Крихта «Підбірки» на /lviv веде сюди, тож міста мають
+  // бути тут видимі (Марія, 19.10.2026: «наприклад Підбірки > Львів»).
+  const cityCards = Object.entries(CITY_META).map(([slug, meta]) => ({
+    href: isEn ? `/en/${slug}` : `/${slug}`,
+    name: isEn ? (meta.en || meta.ua) : meta.ua,
+    count: liveRows.filter((o) => {
+      const cs = o.cities || [];
+      return cs.includes(meta.ua) || cs.includes('Вся Україна');
+    }).length,
   }));
 
   const homePath = isEn ? '/en' : '/';
@@ -183,6 +198,17 @@ export default async function CollectionsHub({ lang = 'uk' }) {
             </Link>
           ))}
         </div>
+
+        <section className="tp-related" aria-labelledby="hub-cities-title">
+          <h2 id="hub-cities-title" className="tp-h2">{t.cities}</h2>
+          <nav className="city-nav" aria-labelledby="hub-cities-title">
+            {cityCards.map((c) => (
+              <Link key={c.href} href={c.href} className="city-nav-link">
+                {c.name} <span className="city-nav-n">{c.count}</span>
+              </Link>
+            ))}
+          </nav>
+        </section>
 
         <p className="tp-home-link"><Link href={homePath}>{t.homeLink}</Link></p>
       </main>
