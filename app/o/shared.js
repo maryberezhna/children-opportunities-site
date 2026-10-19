@@ -11,7 +11,8 @@
 import '@/app/styles/routes/opportunity.css';
 import Link from 'next/link';
 import { supabase, publicOpportunities } from '@/lib/supabase';
-import { kyivToday, formatDate } from '@/lib/dates';
+import { kyivToday, formatDate, formatEventDates, daysUntil } from '@/lib/dates';
+import { nextIntakeReminder, reminderCalendarUrl, appleCalendarUrl } from '@/lib/calendar-links';
 import { isExpired } from '@/lib/timing';
 import { isoWeek } from '@/lib/week';
 import {
@@ -26,6 +27,7 @@ import OutboundCta from './[slug]/OutboundCta';
 import ShareButton from '../ShareButton';
 import ChannelIconLink from '../ChannelIconLink';
 import ReportButton from './[slug]/ReportButton';
+import ClosedActions from './[slug]/ClosedActions';
 import { plural } from '@/lib/plural';
 import { topicOf, topicPath, archivedRedirectPath } from '@/lib/topics';
 import { intakeStatus, pageFacts, applicantConditions } from '@/lib/opportunity-facts';
@@ -70,10 +72,21 @@ const COST_LABELS = {
 const L = {
   uk: {
     back: '← Усі можливості',
-    closedTitle: 'Ця можливість уже завершилась.',
-    closedAnnual: 'Ця програма відкривається знову щосезону. Ми перевіримо, коли почнеться новий набір, — і сторінка знову стане активною.',
+    closedKicker: 'Сторінка лишається для довідки',
+    closedTitle: 'Набір закрито',
+    closedLast: (d) => `Заявки приймали до ${d}.`,
+    closedHeld: (d) => `Проходила ${d}.`,
+    closedAnnual: 'Програма повторюється щороку. Коли організатор оголосить новий набір, ми оновимо сторінку.',
     closedOnce: 'Подача заявок закрита, сторінку лишили для довідки.',
     closedLink: 'Подивитись актуальні можливості →',
+    remindTitle: (d) => `Нагадати про наступний набір — ${d}`,
+    remindGoogle: 'Google Календар',
+    remindApple: 'Apple Календар / .ics',
+    remindNote: (basis) => (basis === 'deadline'
+      ? 'Дата орієнтовна: торішній дедлайн плюс рік, за два тижні до нього. Організатор новий набір ще не оголосив.'
+      : 'Дата орієнтовна: торішній початок плюс рік, за місяць до нього. Організатор новий набір ще не оголосив.'),
+    tgTitle: 'Долучайтеся до нашого Telegram-каналу',
+    tgSub: 'Нові можливості й дедлайни щодня — безкоштовно',
     stateAid: 'держдопомога',
     free: 'безкоштовно',
     paid: 'платно',
@@ -123,10 +136,21 @@ const L = {
   },
   en: {
     back: '← All opportunities',
-    closedTitle: 'This opportunity has ended.',
-    closedAnnual: 'This programme opens again each season. We check when the next intake starts, and this page becomes active again.',
+    closedKicker: 'This page is kept for reference',
+    closedTitle: 'Applications closed',
+    closedLast: (d) => `Applications were accepted until ${d}.`,
+    closedHeld: (d) => `It took place on ${d}.`,
+    closedAnnual: 'This programme runs every year. When the organiser announces the next intake, we update this page.',
     closedOnce: 'Applications are closed; the page is kept for reference.',
     closedLink: 'See current opportunities →',
+    remindTitle: (d) => `Remind me about the next intake — ${d}`,
+    remindGoogle: 'Google Calendar',
+    remindApple: 'Apple Calendar / .ics',
+    remindNote: (basis) => (basis === 'deadline'
+      ? 'Estimated date: last year’s deadline plus one year, two weeks before it. The organiser has not announced the next intake yet.'
+      : 'Estimated date: last year’s start plus one year, a month before it. The organiser has not announced the next intake yet.'),
+    tgTitle: 'Join our Telegram channel',
+    tgSub: 'New opportunities and deadlines every day — free',
     stateAid: 'state aid',
     free: 'free',
     paid: 'paid',
@@ -591,6 +615,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // нічного прогону lifecycle. Від цього залежать кнопка «Подати заявку» й
   // нижня панель на телефоні.
   const isClosed = item.status === 'closed' || isExpired(item, kyivToday());
+  // Нагадування про наступний набір — лише для періодичних із датою.
+  const reminder = isClosed ? nextIntakeReminder(item, kyivToday()) : null;
   // Закритий запис теж отримує розмітку — але позначену як завершену
   // (availability SoldOut + validThrough / expires). До 20.09.2026 ми не
   // віддавали нічого: сторінка лишалась в індексі без жодної машинної ознаки,
@@ -676,18 +702,38 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
           <span aria-current="page" className="o-crumb-here" lang={titleLang}>{title}</span>
         </nav>
 
+        {/* Закритий набір (19.10.2026, рішення Марії): сторінку лишаємо —
+            вона тримає покази в Google, — але «Набір закрито» пишемо дуже
+            великими, даємо нагадування в календар на чітку дату (лише для
+            періодичних: nextIntakeReminder) і великий заклик у канал. У
+            каталозі й пошуку сайту закритих немає: publicOpportunities()
+            віддає лише active. */}
         {isClosed ? (
-          <div className="closed-banner" role="status">
-            <span className="closed-banner-icon" aria-hidden="true">🔒</span>
-            {/* Заголовок, пояснення і дія — три окремі блоки, а не один
-                абзац. Доки посилання стояло всередині речення, воно
-                читалось як його хвіст, а не як кнопка. */}
-            <div className="closed-banner-body">
-              <strong>{t.closedTitle}</strong>
-              <p>{isPeriodic(item) ? t.closedAnnual : t.closedOnce}</p>
-              <Link href={base || '/'}>{t.closedLink}</Link>
-            </div>
-          </div>
+          <section className="closed-banner" role="status" aria-label={t.closedTitle}>
+            <p className="closed-banner-kicker">{t.closedKicker}</p>
+            <p className="closed-banner-title">{t.closedTitle}</p>
+            <p className="closed-banner-lead">
+              {item.deadline && daysUntil(item.deadline, today) < 0
+                ? <>{t.closedLast(formatDate(item.deadline, lang))} </>
+                : (formatEventDates(item, lang) ? <>{t.closedHeld(formatEventDates(item, lang))} </> : null)}
+              {isPeriodic(item) ? t.closedAnnual : t.closedOnce}
+            </p>
+            <ClosedActions
+              slug={item.slug}
+              lang={lang}
+              /* Лише рядки: функції в клієнтський компонент не передати. */
+              t={{
+                remindTitle: reminder ? t.remindTitle(formatDate(reminder.date, lang)) : '',
+                remindNote: reminder ? t.remindNote(reminder.basis) : '',
+                remindGoogle: t.remindGoogle, remindApple: t.remindApple, tgTitle: t.tgTitle, tgSub: t.tgSub,
+              }}
+              reminder={reminder ? {
+                googleUrl: reminderCalendarUrl(item, reminder, lang),
+                icsUrl: `${appleCalendarUrl(item.slug)}${lang === 'en' ? '?lang=en' : ''}`,
+              } : null}
+            />
+            <Link href={base || '/'} className="closed-banner-more">{t.closedLink}</Link>
+          </section>
         ) : null}
 
         <article className={`opportunity-page${isClosed ? ' opportunity-page-closed' : ''}`}>

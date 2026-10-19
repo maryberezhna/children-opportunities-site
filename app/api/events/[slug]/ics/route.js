@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { calendarTarget } from '@/lib/calendar-links';
+import { calendarTarget, nextIntakeReminder, reminderText } from '@/lib/calendar-links';
 import { kyivToday } from '@/lib/dates';
 // Спільне складання .ics із /calendar.ics. До 15.10.2026 тут була власна копія
 // foldLine, яка різала рядок по байтах і ламала українські літери навпіл.
@@ -7,48 +7,68 @@ import { foldLine, escapeIcs as escape, toDateStr, VTIMEZONE_KYIV } from '@/lib/
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://dityam.com.ua';
 
+const nextDay = (iso) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return toDateStr(d.toISOString().slice(0, 10));
+};
+
 export async function GET(request, { params }) {
   const { slug } = params;
+  const lang = new URL(request.url).searchParams.get('lang') === 'en' ? 'en' : 'uk';
 
   if (!supabase) {
     return new Response('Service unavailable', { status: 503 });
   }
 
+  // Закриті теж віддаємо (19.10.2026): для них у календар іде не дедлайн, а
+  // нагадування перевірити наступний набір (nextIntakeReminder).
   const { data: item } = await supabase
     .from('opportunities')
-    .select('slug, title, summary, deadline, event_start_date, event_end_date, source_url, opportunity_type')
+    .select('slug, title, summary, deadline, event_start_date, event_end_date, source_url, opportunity_type, status, timing_kind')
     .eq('slug', slug)
-    .eq('status', 'active')
+    .in('status', ['active', 'closed'])
     .maybeSingle();
 
   if (!item) {
     return new Response('Not found', { status: 404 });
   }
 
+  const today = kyivToday();
   // Дедлайн, поки він попереду, інакше — дати самої події. Раніше подію без
   // дедлайну додати в календар було неможливо: тут стояло 422.
-  const target = calendarTarget(item, kyivToday());
-  if (!target) {
+  const target = item.status === 'active' ? calendarTarget(item, today) : null;
+  const reminder = target ? null : nextIntakeReminder(item, today);
+  if (!target && !reminder) {
     return new Response('No upcoming date for this opportunity', { status: 422 });
   }
 
-  const pageUrl = `${SITE_URL}/o/${item.slug}`;
-  const uid = `${item.slug}-${target.kind}@dityam.com.ua`;
+  const pageUrl = `${SITE_URL}${lang === 'en' ? '/en' : ''}/o/${item.slug}`;
   const dtstamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-  const dateStr = toDateStr(target.start);
-  const nextDay = (iso) => {
-    const d = new Date(`${iso}T00:00:00Z`);
-    d.setUTCDate(d.getUTCDate() + 1);
-    return toDateStr(d.toISOString().slice(0, 10));
-  };
-  // Дедлайн — зустріч о 09:00 того дня; подія — цілі дні проведення.
-  const when = target.kind === 'deadline'
-    ? [`DTSTART;TZID=Europe/Kyiv:${dateStr}T090000`, `DTEND;TZID=Europe/Kyiv:${dateStr}T095900`]
-    : [`DTSTART;VALUE=DATE:${dateStr}`, `DTEND;VALUE=DATE:${nextDay(target.end)}`];
-  const summary = target.kind === 'deadline' ? `Заявки до: ${item.title}` : item.title;
 
-  const descParts = [item.summary || '', '', pageUrl].filter(Boolean);
-  const description = escape(descParts.join('\n'));
+  let uid;
+  let when;
+  let summary;
+  let description;
+  let alarmText;
+  if (target) {
+    uid = `${item.slug}-${target.kind}@dityam.com.ua`;
+    const dateStr = toDateStr(target.start);
+    // Дедлайн — зустріч о 09:00 того дня; подія — цілі дні проведення.
+    when = target.kind === 'deadline'
+      ? [`DTSTART;TZID=Europe/Kyiv:${dateStr}T090000`, `DTEND;TZID=Europe/Kyiv:${dateStr}T095900`]
+      : [`DTSTART;VALUE=DATE:${dateStr}`, `DTEND;VALUE=DATE:${nextDay(target.end)}`];
+    summary = target.kind === 'deadline' ? `Заявки до: ${item.title}` : item.title;
+    description = [item.summary || '', '', pageUrl].filter(Boolean).join('\n');
+    alarmText = `Нагадування: ${item.title}`;
+  } else {
+    const text = reminderText(item, reminder, lang);
+    uid = `${item.slug}-reminder-${reminder.next.slice(0, 4)}@dityam.com.ua`;
+    when = [`DTSTART;VALUE=DATE:${toDateStr(reminder.date)}`, `DTEND;VALUE=DATE:${nextDay(reminder.date)}`];
+    summary = text.summary;
+    description = `${text.description}\n\n${pageUrl}`;
+    alarmText = text.summary;
+  }
 
   const lines = [
     'BEGIN:VCALENDAR',
@@ -64,12 +84,12 @@ export async function GET(request, { params }) {
     `DTSTAMP:${dtstamp}`,
     ...when,
     foldLine(`SUMMARY:${escape(summary)}`),
-    foldLine(`DESCRIPTION:${description}`),
+    foldLine(`DESCRIPTION:${escape(description)}`),
     `URL:${pageUrl}`,
     'BEGIN:VALARM',
     'TRIGGER:-P1D',
     'ACTION:DISPLAY',
-    foldLine(`DESCRIPTION:Нагадування: ${escape(item.title)}`),
+    foldLine(`DESCRIPTION:${escape(alarmText)}`),
     'END:VALARM',
     'END:VEVENT',
     'END:VCALENDAR',
