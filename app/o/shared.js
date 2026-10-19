@@ -738,7 +738,10 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
                   <div key={f.key} className={`o-fact o-fact-${f.key}`}>
                     <dt>{f.label}</dt>
                     <dd>
-                      {f.urgent ? <span className="o-fact-urgent">{f.value}</span> : f.value}
+                      {f.urgent ? <span className="o-fact-urgent">{f.value}</span>
+                        : f.href
+                          ? <a href={f.href} target="_blank" rel="noopener noreferrer">{f.value}</a>
+                          : f.value}
                       {f.note ? <span className="o-fact-note">{f.note}</span> : null}
                     </dd>
                   </div>
