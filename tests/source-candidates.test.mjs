@@ -25,6 +25,22 @@ test('наші сторінки й соцмережі джерелом не бу
   assert.equal(candidateDomain('https://ucci.ie/events/'), 'ucci.ie');
 });
 
+test('документ, форма чи диск — сайт сервісу, а не організатора', () => {
+  // 19.10.2026: черга пропонувала «візьми сайт docs.google.com на
+  // моніторинг». Сторінка однієї форми нічого не каже про інші — такі
+  // домени не кандидати, і галочки для них у черзі немає.
+  for (const u of ['https://docs.google.com/forms/d/e/1FAIpQLSd/viewform',
+    'https://docs.google.com/document/d/abc/edit', 'https://forms.gle/abc',
+    'https://drive.google.com/file/d/x', 'https://forms.office.com/r/x',
+    'https://m.facebook.com/events/1', 'https://youtu.be/x']) {
+    assert.equal(candidateDomain(u), null, u);
+  }
+  assert.equal(candidateDomain('https://globalkids.ua/osinnij-tabir/'), 'globalkids.ua');
+  const queue = read('app/admin/Queue.js');
+  assert.ok(queue.includes('{candidateDomain(o.source_url) ? ('),
+    'галочка показується для будь-якого посилання, а не лише для придатного домену');
+});
+
 test('рішення людини — лише ті статуси, які приймає база', () => {
   // CHECK у source_candidates: pending | approved | rejected | duplicate.
   const allowed = new Set(['pending', 'approved', 'rejected', 'duplicate']);
