@@ -4,7 +4,7 @@ import { isAdmin, adminName } from '@/lib/adminAuth';
 import { pushModeration } from '@/lib/notion';
 import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { DECISION_FIELD } from '@/lib/corrections';
-import { rejectProblem, rejectNoteBody } from '@/lib/reject-reasons';
+import { rejectProblem, rejectNoteBody, rejectStatus } from '@/lib/reject-reasons';
 import { candidateDomain } from '@/lib/source-candidates';
 
 export const runtime = 'nodejs';
@@ -30,7 +30,11 @@ export async function POST(request) {
   }
 
   const { id, action, comment, reason, keepSource } = await request.json().catch(() => ({}));
-  const spec = ACTIONS[action];
+  // «Не підходить» веде в archived лише коли запис справді не наш; «немає
+  // першоджерела» лишає чернетку, «уже минуло» — closed (lib/reject-reasons.json).
+  const spec = action === 'reject' && ACTIONS.reject
+    ? { ...ACTIONS.reject, status: rejectStatus(reason) }
+    : ACTIONS[action];
   if (!id || !spec) {
     return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
   }

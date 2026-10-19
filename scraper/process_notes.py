@@ -281,7 +281,9 @@ def decision_patch(record: dict, decision: str, reason: str = "", now: str | Non
     if decision == "reject":
         reasons = rejections.load_reasons()
         code = reason if reason in reasons else "other"
-        return {"status": "archived"}, f"не підходить ({reasons[code]['label'].lower()})", ""
+        # Статус — за причиною (lib/reject-reasons.json, 19.10.2026): «немає
+        # першоджерела» лишає чернетку, «минуло» — closed, решта — archived.
+        return {"status": reasons[code].get("status", "archived")}, f"не підходить ({reasons[code]['label'].lower()})", ""
     return {}, "", ""
 
 

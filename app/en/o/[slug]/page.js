@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import OpportunityView, {
-  getOpportunity, getRelated, buildMetadata, isArchived,
+  getOpportunity, getRelated, buildMetadata, isArchived, archivedRedirectPath,
 } from '../../../o/shared';
 
 // Англійський двійник /o/[slug]: ті самі дані й та сама розмітка, лише
@@ -27,7 +27,7 @@ export async function generateMetadata({ params }) {
 export default async function EnglishOpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
-  if (isArchived(item)) redirect('/en');
+  if (isArchived(item)) redirect(archivedRedirectPath(item, 'en'));
   const related = await getRelated(item);
   return <OpportunityView item={item} related={related} lang="en" />;
 }

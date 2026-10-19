@@ -3,7 +3,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-const { REJECT_REASONS, rejectProblem, rejectNoteBody, rejectReason } = await import('../lib/reject-reasons.js');
+const { REJECT_REASONS, rejectProblem, rejectNoteBody, rejectReason, rejectStatus } = await import('../lib/reject-reasons.js');
 
 test('коди унікальні, у кожної причини є підпис і позначка teach', () => {
   const codes = REJECT_REASONS.map((r) => r.code);
@@ -34,4 +34,18 @@ test('гуртки не шукаємо — ця відмова вчить пош
 test('текст для журналу — людською мовою', () => {
   assert.equal(rejectNoteBody('club'), 'Не підходить: Гурток чи секція — такі не шукаємо');
   assert.equal(rejectNoteBody('other', 'для студентів'), 'Не підходить: Інше — напишу чому. для студентів');
+});
+
+// 19.10.2026, Марія: «брак цитати має вести в чернетки, а не в архів». До
+// того будь-яка відмова робила archived — а це 307 на головну й зникнення
+// із sitemap. Так 12–13.10 зникли FLEX Global (дедлайн за тиждень, 430
+// показів) і перелік олімпіад МОН — через «немає цитати на вік».
+test('куди веде відмова: без джерела — чернетка, минуло — closed, решта — архів', () => {
+  assert.equal(rejectStatus('no_source'), 'draft');
+  assert.equal(rejectStatus('expired'), 'closed');
+  for (const code of ['not_for_children', 'for_adults', 'club', 'foreign_local', 'commercial', 'duplicate', 'other']) {
+    assert.equal(rejectStatus(code), 'archived', code);
+  }
+  assert.equal(rejectStatus('nonsense'), 'archived');
+  for (const r of REJECT_REASONS) assert.ok(['draft', 'closed', 'archived'].includes(r.status), r.code);
 });

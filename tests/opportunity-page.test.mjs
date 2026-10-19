@@ -207,3 +207,23 @@ test('сторінка рахує протермінованість сама, �
   assert.ok(/isClosed = item\.status === 'closed' \|\| isExpired\(/.test(src),
     'isClosed знову залежить лише від статусу в базі');
 });
+
+// 19.10.2026, Марія: «архів не повинен редиректити на головну». Адреса
+// картки живе в Google й постах роками; людину, що шукала олімпіаду, ведемо
+// в підбірку олімпіад, а не на головну.
+test('архівна картка веде в підбірку запису, а не на головну', async () => {
+  const { archivedRedirectPath } = await import('../lib/topics.js');
+  const olymp = { status: 'archived', title: 'Всеукраїнська олімпіада з фізики', opportunity_type: 'olympiad', cities: [] };
+  assert.equal(archivedRedirectPath(olymp, 'uk'), '/mizhnarodni-olimpiady');
+  assert.equal(archivedRedirectPath(olymp, 'en'), '/en/olympiads');
+  // Притулок — це «Допомога родинам»: підбірка береться з того самого topicOf, що й крихти.
+  assert.equal(archivedRedirectPath({ status: 'archived', title: '', opportunity_type: 'shelter', cities: [] }, 'uk'), '/dopomoha-rodynam');
+  // Без жодної підбірки — каталог, а не 404.
+  assert.equal(archivedRedirectPath({ status: 'archived', title: '', cities: [] }, 'uk'), '/');
+  assert.equal(archivedRedirectPath({ status: 'archived', title: '', cities: [] }, 'en'), '/en');
+  for (const [f, lang] of [['app/o/[slug]/page.js', 'uk'], ['app/en/o/[slug]/page.js', 'en']]) {
+    const page = readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
+    assert.doesNotMatch(page, /redirect\('\/(en)?'\)/, `${f}: редирект на головну`);
+    assert.match(page, new RegExp(`archivedRedirectPath\\(item, '${lang}'\\)`), f);
+  }
+});

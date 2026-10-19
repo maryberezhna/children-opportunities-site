@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation';
 import OpportunityView, {
-  getOpportunity, getRelated, buildMetadata, isArchived,
+  getOpportunity, getRelated, buildMetadata, isArchived, archivedRedirectPath,
 } from '../shared';
 
 // Розмітка, дані й structured data живуть у ../shared.js — той самий вигляд
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }) {
 export default async function OpportunityPage({ params }) {
   const item = await getOpportunity(params.slug);
   if (!item) notFound();
-  if (isArchived(item)) redirect('/');
+  if (isArchived(item)) redirect(archivedRedirectPath(item, 'uk'));
   const related = await getRelated(item);
   return <OpportunityView item={item} related={related} lang="uk" />;
 }
