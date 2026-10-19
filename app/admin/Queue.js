@@ -21,6 +21,9 @@ const CSS = `${ADMIN_CARD_CSS}
 .q-panel select { width: 100%; box-sizing: border-box; font: inherit; font-size: 15px;
   padding: 9px 12px; border-radius: 9px; border: 1px solid #d3dbe9; margin: 0 0 10px; background: #fff; }
 .q-hint { font-size: 14px; color: #54617a; margin: 0 0 8px; line-height: 1.5; }
+.q-keep { display: flex; gap: 9px; align-items: flex-start; margin: 10px 0 2px;
+  font-size: 14px; line-height: 1.5; color: #131b28; cursor: pointer; }
+.q-keep input { margin: 3px 0 0; width: 17px; height: 17px; flex: none; accent-color: #15803d; }
 .q-host { color: #54617a; }
 .adm-card.ok { background: #e7f6ec; }
 .adm-card.off { background: #f3f4f6; opacity: .7; }
@@ -35,6 +38,15 @@ const CSS = `${ADMIN_CARD_CSS}
 `;
 
 const WHY_ICON = { stop: '⛔', check: '⚠️', ready: '✅' };
+
+// Що сталося з сайтом, коли поставили галочку. «Вже обходиться» — не
+// помилка, а відповідь: саме це було з ucci.ie, який просили «зберегти в
+// базі», хоч він читається щотижня.
+const SOURCE_RESULT = (s) => (
+  s.state === 'added' ? `🌐 ${s.domain} — у джерелах на рішення`
+    : s.state === 'already' ? `🌐 Це джерело вже обходиться: ${s.name}`
+      : s.state === 'no_domain' ? '🌐 Сайт узяти не вийшло: немає придатного посилання'
+        : '🌐 Сайт зберегти не вдалося — скажи, спробую ще раз');
 
 function ageLabel(o) {
   if (o.age_from == null && o.age_to == null) return '';
@@ -99,6 +111,8 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
   const [notes, setNotes] = useState(initialNotes);
   const [text, setText] = useState('');
   const [reason, setReason] = useState('');
+  // «Запис не підходить, але сайт непоганий» (Марія, 19.10.2026).
+  const [keepSource, setKeepSource] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [done, setDone] = useState(null); // { kind: 'published', slug } | { kind: 'rejected', label }
@@ -119,7 +133,7 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
 
   async function reject() {
     setBusy(true); setError('');
-    const r = await post('/api/admin/review', { id: o.id, action: 'reject', reason, comment: text });
+    const r = await post('/api/admin/review', { id: o.id, action: 'reject', reason, comment: text, keepSource });
     setBusy(false);
     if (!r.ok) {
       setError(r.error === 'reason_text_required' ? 'Для «Інше» напиши причину одним реченням.'
@@ -127,7 +141,7 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
         : 'Не вдалося. Спробуй ще раз або перезайди.');
       return;
     }
-    setDone({ kind: 'rejected', label: rejectReason(reason)?.label || '' });
+    setDone({ kind: 'rejected', label: rejectReason(reason)?.label || '', source: r.source });
     setPanel(null);
   }
 
@@ -140,6 +154,7 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
             ? <>✅ Опубліковано{done.slug ? <> — <a href={`/o/${done.slug}`} target="_blank" rel="noreferrer" style={{ color: '#1e4fd6' }}>подивитись на сайті ↗</a></> : null}</>
             : <>Не підходить: {done.label}</>}
         </p>
+        {done.source ? <p className="adm-done" style={{ fontWeight: 400, fontSize: 14, marginTop: 6 }}>{SOURCE_RESULT(done.source)}</p> : null}
       </article>
     );
   }
@@ -221,7 +236,10 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
 
       {panel === 'reject' ? (
         <div className="q-panel">
-          <p className="q-hint">Чому не підходить? Запис зникне з черги назавжди, а пошук перестане приносити схоже.</p>
+          <p className="q-hint">
+            Чому не підходить? Запис зникне з черги назавжди, а пошук перестане приносити схоже.
+            <br />Пояснення читає пошук — посилань сюди не вставляй, інакше він вчиться уникати цього сайту.
+          </p>
           <select value={reason} onChange={(e) => setReason(e.target.value)} autoFocus>
             <option value="">— обери причину —</option>
             {REJECT_REASONS.map((r) => <option key={r.code} value={r.code}>{r.label}</option>)}
@@ -230,6 +248,15 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
             className="adm-ta" rows={2} value={text} onChange={(e) => setText(e.target.value)}
             placeholder={selected?.needs_text ? 'Чому саме — одним реченням (обовʼязково)' : 'Пояснення, якщо хочеш (необовʼязково)'}
           />
+          {/* Відхилення вчить пошук за ВИДОМ можливості, домену воно не
+              стосується. Але сказати «сайт лишаємо, він публікує і потрібне»
+              не було де — і це питання виникає постійно. */}
+          {o.source_url ? (
+            <label className="q-keep">
+              <input type="checkbox" checked={keepSource} onChange={(e) => setKeepSource(e.target.checked)} />
+              <span>Джерело добре — візьми сайт <b>{host(o.source_url)}</b> на моніторинг</span>
+            </label>
+          ) : null}
           <div className="adm-acts">
             <button
               type="button" className="adm-btn del" onClick={reject}

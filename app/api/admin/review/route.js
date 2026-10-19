@@ -5,6 +5,7 @@ import { pushModeration } from '@/lib/notion';
 import { GATE_SELECT, publishBlockers } from '@/lib/publish-gate';
 import { DECISION_FIELD } from '@/lib/corrections';
 import { rejectProblem, rejectNoteBody } from '@/lib/reject-reasons';
+import { candidateDomain } from '@/lib/source-candidates';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,7 @@ export async function POST(request) {
     return Response.json({ ok: false }, { status: 403 });
   }
 
-  const { id, action, comment, reason } = await request.json().catch(() => ({}));
+  const { id, action, comment, reason, keepSource } = await request.json().catch(() => ({}));
   const spec = ACTIONS[action];
   if (!id || !spec) {
     return Response.json({ ok: false, error: 'bad_request' }, { status: 400 });
@@ -116,6 +117,39 @@ export async function POST(request) {
     note = saved;
   }
 
+  // «Запис не підходить, але сайт непоганий» (Марія, 19.10.2026). Рішення про
+  // ДЖЕРЕЛО — окреме від рішення про запис: відхилення вчить пошук не
+  // приносити такий ВИД можливостей і домену не стосується, а сайт при цьому
+  // може публікувати й те, що нам потрібно. Домен лягає в ту саму таблицю, що
+  // й знахідки розвідника, і видно його на /admin/dzherela.
+  let source = null;
+  if (action === 'reject' && keepSource) {
+    const domain = candidateDomain(data.source_url);
+    if (!domain) {
+      source = { state: 'no_domain' };
+    } else {
+      // Якщо сайт уже обходиться, кандидат нічого не додасть — а людині
+      // важливо це почути: саме так було з ucci.ie, який вона просила «зберегти
+      // в базі», хоч він обходиться щотижня з 09.2026.
+      const { data: live } = await supabase.from('sources')
+        .select('name').ilike('config->>url', `%${domain}%`).limit(1);
+      if (live && live.length) {
+        source = { state: 'already', name: live[0].name };
+      } else {
+        const { error: candError } = await supabase.from('source_candidates')
+          .upsert({
+            domain,
+            url: data.source_url,
+            name: data.source || domain,
+            status: 'pending',
+            found_by: `черга: ${String(data.title || '').slice(0, 120)}`,
+            admin_comment: text || null,
+          }, { onConflict: 'domain', ignoreDuplicates: true });
+        source = { state: candError ? 'failed' : 'added', domain };
+      }
+    }
+  }
+
   // Телеметрія навчання: рішення людини поруч із виправленнями полів. Причину
   // кладемо в той самий рядок — без неї «прибрано» не пояснює нічого, а за
   // парою before→after рахується закономірність («на сайті → прибрати ×14»).
@@ -128,7 +162,15 @@ export async function POST(request) {
         before: statusBefore,
         // reason — код із lib/reject-reasons.json: за ним пошук вчиться, чого
         // не шукати (scraper/rejections.py).
-        after: { action, ...(action === 'reject' ? { reason } : {}), ...(text ? { comment: text } : {}) },
+        // keep_source — позначка для scraper/rejections.py: коментар про
+        // сайт у промпт пошуку не йде, інакше він вчиться уникати саме того
+        // домену, який людина просила лишити.
+        after: {
+          action,
+          ...(action === 'reject' ? { reason } : {}),
+          ...(text ? { comment: text } : {}),
+          ...(source && source.state !== 'no_domain' ? { keep_source: true } : {}),
+        },
         source: 'review',
       });
     } catch { /* телеметрія мовчить і нічого не ламає */ }
@@ -158,5 +200,5 @@ export async function POST(request) {
     source: data.source,
   });
 
-  return Response.json({ ok: true, action, note });
+  return Response.json({ ok: true, action, note, source });
 }

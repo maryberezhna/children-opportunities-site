@@ -46,6 +46,11 @@ const ITEMS = [
   { key: 'messages', href: '/admin/messages', icon: '✉️', label: 'Звернення', count: 'messages' },
   // Хто прийшов, чим скористався, що купив (ескіз 11.10.2026; раніше «Люди»).
   { key: 'people', href: '/admin/korystuvachi', icon: '👥', label: 'Користувачі' },
+  // Джерела — четвертий пункт (19.10.2026). До того кандидатів, яких знайшов
+  // розвідник, не було видно ніде: 22 сайти лежали в базі без жодного
+  // рішення. Рішення про джерело — не те саме, що рішення про запис:
+  // «інколи можливість для дорослих, але джерело непогане».
+  { key: 'sources', href: '/admin/dzherela', icon: '🌐', label: 'Джерела', count: 'sources' },
 ];
 
 // Стилі класами, а не інлайном: інлайн не вміє :hover, фокус і вузький екран.
@@ -134,7 +139,7 @@ async function counts() {
     supabase.from(table).select('id', { count: 'exact', head: true }),
   );
   try {
-    const [drafts, msgs, sugs, quar] = await Promise.all([
+    const [drafts, msgs, sugs, quar, cand] = await Promise.all([
       head('opportunities', (q) => q.eq('status', 'draft')),
       head('contact_messages', (q) => q.eq('status', 'new')),
       // Лише ті пропозиції, що чекають на людину. Було «все, крім done», а
@@ -142,6 +147,7 @@ async function counts() {
       // ніколи не зменшувалось (18 при 7 справжніх, 15.09.2026).
       head('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
       head('raw_items', (q) => q.eq('status', 'review').is('review_verdict', null)),
+      head('source_candidates', (q) => q.eq('status', 'pending')),
     ]);
     return {
       // З 28.09.2026 черга — лише чернетки: сирі знахідки розбирає машина
@@ -153,6 +159,7 @@ async function counts() {
       // для Марії це одна пошта — на /admin/messages вони вже злиті в один
       // список, тож і цифра має бути одна.
       messages: (msgs.count ?? 0) + (sugs.count ?? 0),
+      sources: cand.count ?? 0,
     };
   } catch {
     // Лічильник — не привід впасти всій сторінці: без нього меню лишається
