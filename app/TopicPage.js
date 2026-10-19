@@ -376,6 +376,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
       free: ch.topWeekFree,
       type: isEn ? TYPE_LABELS_EN : TYPE_LABELS,
       age: (o) => ageRangeLabel(o, lang),
+      todayIso,
     },
   );
 

@@ -81,7 +81,7 @@ export default function OpportunityCard({
       : facts.when.text] : null,
     facts.cost ? [b.cost, facts.cost] : null,
     facts.format ? [b.format, facts.format] : null,
-    facts.organiser ? [b.organiser, facts.organiser] : null,
+    // Організатор більше не рядок у блоці фактів: він стоїть під назвою.
   ].filter(Boolean);
   const bLine = [facts.format, facts.cost].filter(Boolean).join(' · ');
 
@@ -127,6 +127,17 @@ export default function OpportunityCard({
       >
         {title}
       </h3>
+      {/* Організатор одразу під назвою, зі значком з ініціалів (Марія,
+          19.10.2026). Де в базі лише домен — підпис «Джерело», бо адреса
+          сайту організатором не є. */}
+      {facts.organiserBadge ? (
+        <p className={`card-org${facts.organiserBadge.kind === 'domain' ? ' is-domain' : ''}`}>
+          <span className="card-org-mark" aria-hidden="true">
+            {facts.organiserBadge.mark || '↗'}
+          </span>
+          {facts.organiserBadge.text}
+        </p>
+      ) : null}
       {summary ? (
         <p className="card-summary" lang={lang === 'en' && !item.summary_en ? 'uk' : undefined}>
           {summary.length > 140 ? `${summary.slice(0, 140)}…` : summary}

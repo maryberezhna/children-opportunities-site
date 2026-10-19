@@ -28,6 +28,18 @@ import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
  *   • широкий (підбірка, вся ширина) — «там можна всі 3 помістити»: три
  *     картки поруч.
  */
+/** «завтра» / «сьогодні» / «6 днів» — коротко, бо місця в картці мало. */
+function leftLabel(days, isEn) {
+  if (days === 0) return isEn ? 'today' : 'сьогодні';
+  if (days === 1) return isEn ? 'tomorrow' : 'завтра';
+  if (isEn) return `${days} days`;
+  const last = days % 10;
+  const tens = days % 100;
+  if (last === 1 && tens !== 11) return `${days} день`;
+  if (last >= 2 && last <= 4 && (tens < 12 || tens > 14)) return `${days} дні`;
+  return `${days} днів`;
+}
+
 export default function TopWeekSlider({ cards = [], title, allHref, allLabel, lang = 'uk', all = false }) {
   if (!cards.length) return null;
   const isEn = lang === 'en';
@@ -41,17 +53,54 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
     <aside className={`v2-tw${all ? ' v2-tw--all' : ''}`} aria-labelledby="v2-tw-title">
       <span id="v2-tw-title" className="v2-tw-title">{title}</span>
 
+      {/* Широкий розклад (підбірка й місто): три рівнозначні картки в рамці
+          кольору бренду, на теплій підкладці. Марія, 19.10.2026: «вони всі
+          рівнозначні… відповідають за монетизацію і скеровують трафік…
+          мають виділятися і приковувати погляд». Тому жодної «головної»
+          картки: однакові рамки, тіні й кнопки, а цифра лише задає порядок. */}
       {all ? (
         <div className="v2-tw-grid">
-          {cards.map((o) => (
+          {cards.map((o, n) => (
             <Link key={o.slug} href={o.href || `${isEn ? '/en' : ''}/o/${o.slug}`} onClick={clickOf(o)} className="v2-tw-card">
-              <span className="v2-tw-date">
-                {o.day ? <><b>{o.day}</b> {o.month}</> : o.dateLabel}
-              </span>
+              <span className="v2-tw-rank" aria-hidden="true">{n + 1}</span>
+              {(o.chips && o.chips.length) || (!o.day && o.dateLabel) ? (
+                <span className="v2-tw-chips">
+                  {/* Наш власний запис без дедлайну (олімпіада) має мітку
+                      «Топ» — вона йде пігулкою, а не рядком «Дедлайн: Топ». */}
+                  {!o.day && o.dateLabel ? (
+                    <span className="v2-tw-chip is-pinned">{o.dateLabel}</span>
+                  ) : null}
+                  {(o.chips || []).map((c) => (
+                    <span key={`${c.kind}-${c.text}`} className={`v2-tw-chip is-${c.kind}`}>{c.text}</span>
+                  ))}
+                </span>
+              ) : null}
               <span className="v2-tw-name" lang={o.titleIsUk ? 'uk' : undefined}>{o.title}</span>
-              <span className="v2-tw-meta">{o.meta}</span>
+              {o.org ? (
+                <span className={`v2-tw-org${o.org.kind === 'domain' ? ' is-domain' : ''}`}>
+                  <span className="v2-tw-org-mark" aria-hidden="true">{o.org.mark || '↗'}</span>
+                  {o.org.text}
+                </span>
+              ) : null}
+              <span className="v2-tw-facts">
+                {o.day ? (
+                  <span className="v2-tw-fact">
+                    <span>{isEn ? 'Deadline' : 'Дедлайн'}</span>
+                    <b className={o.daysLeft !== null && o.daysLeft <= 7 ? 'is-urgent' : undefined}>
+                      {`${o.day} ${o.month}`}
+                      {o.daysLeft !== null && o.daysLeft >= 0 && o.daysLeft <= 7
+                        ? ` · ${leftLabel(o.daysLeft, isEn)}` : ''}
+                    </b>
+                  </span>
+                ) : null}
+                {o.where ? (
+                  <span className="v2-tw-fact">
+                    <span>{isEn ? 'Format' : 'Формат'}</span><b>{o.where}</b>
+                  </span>
+                ) : null}
+              </span>
               <span className="v2-tw-more" aria-hidden="true">
-                {isEn ? 'See details →' : 'Детальніше →'}
+                {isEn ? 'See details ↗' : 'Детальніше ↗'}
               </span>
             </Link>
           ))}
