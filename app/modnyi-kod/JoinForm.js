@@ -1,6 +1,7 @@
 'use client';
-// Заявка на «Модний код» → одразу оплата 99 грн (WayForPay). Подія mk_cta —
-// коли людина вперше торкнулась форми (скільки з тих, хто зайшов, почали).
+// Заявка на «Модний код» → одразу кабінет учасника: з 19.10.2026 участь
+// безкоштовна. Подія mk_cta — коли людина вперше торкнулась форми (скільки
+// з тих, хто зайшов, почали).
 import { useRef, useState } from 'react';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { MK } from '@/lib/modnyi-kod';
@@ -11,7 +12,6 @@ const ERR = {
   email: 'Перевірте email — туди прийде посилання на кабінет учасника.',
   consent: 'Потрібна згода батьків чи опікуна з правилами.',
   too_many: 'З цієї пошти сьогодні вже багато заявок. Напишіть нам, якщо щось пішло не так.',
-  pay: 'Оплата не відкрилась. Спробуйте ще раз за хвилину.',
   closed: 'Реєстрацію тимчасово закрито.',
   unavailable: 'Не вдалося надіслати. Спробуйте за хвилину.',
 };
@@ -37,8 +37,6 @@ export default function JoinForm() {
       const j = await r.json().catch(() => ({}));
       if (j.url) {
         try { window.localStorage.setItem('mk_entry', j.t); } catch { /* ок */ }
-        // Адмінський тест веде одразу в кабінет — це не покупка.
-        if (!j.url.includes('/kabinet') && typeof window.gtag === 'function') window.gtag('event', 'begin_checkout', { value: MK.price, currency: 'UAH', item_name: 'modnyi_kod' });
         window.location.assign(j.url);
         return;
       }
@@ -65,8 +63,8 @@ export default function JoinForm() {
       <input type="text" name="website" tabIndex={-1} autoComplete="off" className="mk-hp" aria-hidden="true" />
       <label className="mkJ-check"><input type="checkbox" name="consent" required /> <span>Я мама, тато чи опікун дитини й погоджуюсь із <a href="#pravyla">правилами олімпіади</a>.</span></label>
       {error ? <p className="mkJ-err" role="alert">{error}</p> : null}
-      <button type="submit" className="mk-btn-y" disabled={state === 'sending'}>{state === 'sending' ? 'Відкриваємо оплату…' : `Оплатити ${MK.price} грн і взяти участь`}</button>
-      <p className="mkJ-note">Оплата карткою через WayForPay. Після оплати на пошту прийде посилання на кабінет: тест, студія, обкладинка.</p>
+      <button type="submit" className="mk-btn-y" disabled={state === 'sending'}>{state === 'sending' ? 'Відкриваємо кабінет…' : 'Взяти участь безкоштовно'}</button>
+      <p className="mkJ-note">Участь безкоштовна. Кабінет відкриється одразу, а посилання на нього продублюємо на пошту: тест, студія, обкладинка.</p>
     </form>
   );
 }
