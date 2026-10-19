@@ -9,6 +9,7 @@ import {
   diasporaReason, isDiaspora, liveCountryPages, hubGroups, countryName, inCountry, MIN_COUNTRY,
   SCHOOL_NOTES, schoolNotes, DIASPORA_COUNTRIES,
 } from '../lib/diaspora.js';
+import { TITLE_MAX } from '../lib/seo-title.js';
 
 // «Школа в країні» (28.09.2026): права й процедури абзацом — кожен з
 // офіційним джерелом, обома мовами; Італії немає.
@@ -210,10 +211,13 @@ test('хаб — звичайна підбірка, сторінки країн 
   assert.equal(diasporaCountryBySlug('slovachchyna'), undefined);
 });
 
-test('title до 60, description до 160, обидві мови; без «каталогу» й обіцянок', () => {
+// Довжина заголовка — одне число на весь сайт (lib/seo-title.js, TITLE_MAX).
+// До 19.10.2026 тут стояло власне «60», і через це англійський заголовок
+// Нідерландів втрачав слово «support», хоча вкладався в загальну межу.
+test('title у межах TITLE_MAX, description до 160, обидві мови; без «каталогу» й обіцянок', () => {
   for (const t of [TOPICS[DIASPORA_HUB], ...DIASPORA_COUNTRY_TOPICS]) {
     for (const c of [t, t.en]) {
-      assert.ok(c.title.length <= 60, `${c.title} — ${c.title.length}`);
+      assert.ok(c.title.length <= TITLE_MAX, `${c.title} — ${c.title.length}`);
       assert.ok(c.description.length <= 160, `${c.description} — ${c.description.length}`);
       const copy = [c.title, c.description, c.intro, c.note, ...c.faq.flatMap((f) => [f.q, f.a])].join(' ');
       assert.doesNotMatch(copy, /каталог|catalogue|скоро|додамо|зберемо|\bsoon\b/i);
