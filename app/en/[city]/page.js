@@ -102,6 +102,8 @@ export default async function CityPage({ params }) {
         <nav className="tp-crumbs" aria-label="Breadcrumbs">
           <Link href="/en" prefetch={false}>Home</Link>
           <span aria-hidden="true">/</span>
+          <Link href="/en/collections">Collections</Link>
+          <span aria-hidden="true">/</span>
           <span aria-current="page">{name}</span>
         </nav>
 
@@ -133,15 +135,18 @@ export default async function CityPage({ params }) {
           </div>
         </section>
 
-        <nav className="city-nav" aria-label="Other cities">
-          {otherCities.map(([slug, meta]) => (
-            <Link key={slug} href={`/en/${slug}`} className="city-nav-link">
-              {meta.en || meta.ua}
-            </Link>
-          ))}
-        </nav>
-
         <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} lang="en" />
+
+        <section className="tp-related" aria-labelledby="other-cities-title">
+          <h2 id="other-cities-title" className="tp-h2">Other cities</h2>
+          <nav className="city-nav" aria-labelledby="other-cities-title">
+            {otherCities.map(([slug, meta]) => (
+              <Link key={slug} href={`/en/${slug}`} className="city-nav-link">
+                {meta.en || meta.ua}
+              </Link>
+            ))}
+          </nav>
+        </section>
 
         <p className="tp-home-link"><Link href="/en" prefetch={false}>All opportunities on the home page →</Link></p>
       </main>

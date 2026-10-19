@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow } from '@/lib/supabase';
 import { clientRows } from '@/lib/client-rows';
 import { CITY_META } from '@/lib/cities';
-import { TOPIC_LIST } from '@/lib/topics';
+import { TOPIC_LIST, collectionsPath } from '@/lib/topics';
 import { MIN_LOCAL, localTopicCount } from '@/lib/city-topics';
 import OpportunitiesList from '../OpportunitiesList';
 import { kyivToday } from '@/lib/dates';
@@ -105,6 +105,8 @@ export default async function CityPage({ params }) {
         <nav className="tp-crumbs" aria-label="Навігація">
           <Link href="/" prefetch={false}>Головна</Link>
           <span aria-hidden="true">/</span>
+          <Link href={collectionsPath('uk')}>Підбірки</Link>
+          <span aria-hidden="true">/</span>
           <span aria-current="page">{cityName}</span>
         </nav>
 
@@ -136,25 +138,34 @@ export default async function CityPage({ params }) {
           </div>
         </section>
 
+        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} today={kyivToday()} />
+
+        {/* Смужки посилань — ПІСЛЯ списку. Нагорі вони стояли впритул до
+            фільтрів, і чотири ряди пігулок поспіль читались як один мес
+            (Марія, 19.10.2026). */}
         {cityTopics.length > 0 && (
-          <nav className="city-nav" aria-label={`Підбірки у ${locative}`}>
-            {cityTopics.map((t) => (
-              <Link key={t.slug} href={`/${params.city}/${t.slug}`} className="city-nav-link">
-                {t.nav} у {locative}
+          <section className="tp-related" aria-labelledby="city-topics-title">
+            <h2 id="city-topics-title" className="tp-h2">Підбірки у {locative}</h2>
+            <nav className="city-nav" aria-labelledby="city-topics-title">
+              {cityTopics.map((t) => (
+                <Link key={t.slug} href={`/${params.city}/${t.slug}`} className="city-nav-link">
+                  {t.nav}
+                </Link>
+              ))}
+            </nav>
+          </section>
+        )}
+
+        <section className="tp-related" aria-labelledby="other-cities-title">
+          <h2 id="other-cities-title" className="tp-h2">Інші міста</h2>
+          <nav className="city-nav" aria-labelledby="other-cities-title">
+            {otherCities.map(([slug, meta]) => (
+              <Link key={slug} href={`/${slug}`} className="city-nav-link">
+                {meta.ua}
               </Link>
             ))}
           </nav>
-        )}
-
-        <nav className="city-nav" aria-label="Інші міста">
-          {otherCities.map(([slug, meta]) => (
-            <Link key={slug} href={`/${slug}`} className="city-nav-link">
-              {meta.ua}
-            </Link>
-          ))}
-        </nav>
-
-        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} today={kyivToday()} />
+        </section>
 
         <p className="tp-home-link"><Link href="/" prefetch={false}>Усі можливості — на головній →</Link></p>
       </main>

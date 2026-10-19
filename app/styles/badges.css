@@ -37,6 +37,8 @@
   text-decoration: none;
   transition: border-color 0.15s, color 0.15s;
 }
+.city-nav-n { color: var(--text-3, #9a9a9a); font-variant-numeric: tabular-nums; }
+
 .city-nav-link:hover {
   border-color: var(--accent);
   color: var(--accent);
