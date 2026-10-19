@@ -75,3 +75,15 @@ test('сторінка підбірки: рядок цифр, канал піс�
   assert.ok(cards.includes('trackFilterApply('), 'фільтри підбірки рахуються у воронці filter_apply');
   assert.ok(!cards.includes('plus'), 'Dityam+ у картках підбірки немає');
 });
+
+// 19.10.2026: на англійських підбірках під заголовком стояло
+// «26 можливостей · 21 безкоштовна» — слова бралися з lib/plural повз мову.
+// Тепер обидва слова приходять із CHROME[lang], тож /en показує «opportunities · free».
+test('англійська підбірка не показує українських слів у лічильнику', () => {
+  const src = read('app/TopicPage.js');
+  assert.ok(src.includes('{ch.statsWord(total)}'), 'лічильник не бере слово з CHROME');
+  assert.ok(src.includes('{ch.statsFree(freeCount)}'), '«безкоштовних» не береться з CHROME');
+  assert.ok(!src.includes('<strong>{total}</strong> {opportunitiesWord(total)}'), 'українська множина лишилась у JSX');
+  assert.ok(!src.includes('<strong>{freeCount}</strong> {freeWord(freeCount)}'), 'українське «безкоштовних» лишилось у JSX');
+  assert.ok(src.includes("statsFree: () => 'free'"), 'в англійському CHROME немає statsFree');
+});
