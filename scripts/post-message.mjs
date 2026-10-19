@@ -13,7 +13,15 @@
  * Текст — у форматі Telegram HTML: <b>, <i>, <a href>. Решта тегів заборонена
  * самим Telegram, тож перевіряємо це до відправки, а не ловимо 400 у відповіді.
  *
+ * TO_ADMIN=true шле пост не в канал, а в адмінський чат — щоб подивитись,
+ * як він справді виглядає в Telegram, перш ніж його побачать люди. Марія,
+ * 19.10.2026, про щоденний пост із дедлайнами: «мені не подобається такий
+ * дизайн… пришли мені в адмінку». Сухий прогін показує текст у логах
+ * GitHub — а вигляд поста вирішують жирний шрифт, посилання й відступи,
+ * яких у логах не видно.
+ *
  * Env: TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, FILE, DRY_RUN=true,
+ * TO_ADMIN (необовʼязково: у чат TELEGRAM_ADMIN_CHAT_ID замість каналу),
  * MESSAGE_ID (необовʼязково: виправити цей пост, а не публікувати новий),
  * PHOTOS (необовʼязково: картинки через кому — пост піде альбомом).
  */
@@ -32,14 +40,17 @@ const PIN = String(process.env.PIN || '').toLowerCase() === 'true';
 // інстаграму»). Підпис у Telegram коротший за повідомлення — 1024 символи.
 const PHOTOS = String(process.env.PHOTOS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const CHAT = process.env.TELEGRAM_CHAT_ID;
+// Превʼю йде в адмінський чат. Закріплювати там нічого: PIN лишається
+// тільки для справжньої публікації в канал.
+const TO_ADMIN = String(process.env.TO_ADMIN || '').toLowerCase() === 'true';
+const CHAT = TO_ADMIN ? process.env.TELEGRAM_ADMIN_CHAT_ID : process.env.TELEGRAM_CHAT_ID;
 
 if (!FILE) {
   console.error('Вкажи файл: FILE=content/telegram/…​.html');
   process.exit(1);
 }
 if (!DRY && (!TOKEN || !CHAT)) {
-  console.error('Потрібні TELEGRAM_BOT_TOKEN і TELEGRAM_CHAT_ID');
+  console.error(`Потрібні TELEGRAM_BOT_TOKEN і ${TO_ADMIN ? 'TELEGRAM_ADMIN_CHAT_ID' : 'TELEGRAM_CHAT_ID'}`);
   process.exit(1);
 }
 
@@ -109,6 +120,7 @@ for (const p of PHOTOS) {
 }
 
 console.log(`Файл: ${FILE}`);
+console.log(TO_ADMIN ? 'Куди: адмінський чат (превʼю)' : 'Куди: канал');
 console.log(`Символів: ${plain.length} з ${LIMIT}`);
 for (const ph of photos) console.log(`Картинка: ${ph.name} (${Math.round(ph.data.length / 1024)} КБ)`);
 console.log('');
@@ -166,7 +178,7 @@ const messageId = Array.isArray(json.result) ? json.result[0].message_id : json.
 console.log(EDIT_ID
   ? `\n✅ Пост ${EDIT_ID} виправлено.`
   : `\n✅ Опубліковано. message_id ${messageId}`);
-if (PIN && !EDIT_ID) {
+if (PIN && !EDIT_ID && !TO_ADMIN) {
   const pin = await fetch(`https://api.telegram.org/bot${TOKEN}/pinChatMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
