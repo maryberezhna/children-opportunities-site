@@ -23,6 +23,11 @@
   gap: 8px;
   margin-bottom: 32px;
 }
+/* 19.10.2026: сторінки міст перейшли на верстку підбірок — .tp-main це
+   flex-колонка з gap 40px, і власний відступ смужки додавався згори,
+   розриваючи сторінку порожніми 72 пікселями. */
+.tp-main .city-nav { margin-bottom: 0; }
+
 .city-nav-link {
   font-size: 0.8125rem;
   padding: 5px 14px;
