@@ -424,6 +424,18 @@
   color: var(--ink);
   overflow-wrap: anywhere;
 }
+/* Організатор — назва, що веде на його сайт. Браузерний синій тут читався
+   як чужий елемент (Марія, 19.10.2026: «просто назву і посилання, і не
+   виділяй так — просто обережне підкреслення»). */
+.o-fact dd a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: var(--border);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.o-fact dd a:hover { text-decoration-color: var(--ink-muted); }
+
 .o-fact-urgent {
   display: inline-block;
   max-width: 100%;
