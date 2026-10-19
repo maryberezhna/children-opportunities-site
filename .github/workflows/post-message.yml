@@ -25,6 +25,10 @@ on:
         description: 'Картинки альбомом, через кому (напр. content/telegram/media/a.png,content/telegram/media/b.png); текст стане підписом'
         required: false
         default: ''
+      to_admin:
+        description: 'true = надіслати в адмінський чат як превʼю, а не в канал'
+        required: false
+        default: 'false'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -48,9 +52,11 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           FILE: ${{ github.event.inputs.file }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}
           PIN: ${{ github.event.inputs.pin }}
           MESSAGE_ID: ${{ github.event.inputs.message_id }}
           PHOTOS: ${{ github.event.inputs.photos }}
+          TO_ADMIN: ${{ github.event.inputs.to_admin }}
         run: node scripts/post-message.mjs
