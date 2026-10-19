@@ -82,23 +82,22 @@ export default function TopWeekSlider({ cards = [], title, allHref, allLabel, la
                   {o.org.text}
                 </span>
               ) : null}
-              <span className="v2-tw-facts">
-                {o.day ? (
-                  <span className="v2-tw-fact">
-                    <span>{isEn ? 'Deadline' : 'Дедлайн'}</span>
+              {/* Один рядок замість таблиці фактів: блок стоїть перед списком,
+                  і кожні зайві 100px відсувають каталог за екран (Марія,
+                  19.10.2026: «дуже багато висоти займає»). */}
+              {o.day || o.where ? (
+                <span className="v2-tw-line">
+                  {o.day ? (
                     <b className={o.daysLeft !== null && o.daysLeft <= 7 ? 'is-urgent' : undefined}>
                       {`${o.day} ${o.month}`}
                       {o.daysLeft !== null && o.daysLeft >= 0 && o.daysLeft <= 7
                         ? ` · ${leftLabel(o.daysLeft, isEn)}` : ''}
                     </b>
-                  </span>
-                ) : null}
-                {o.where ? (
-                  <span className="v2-tw-fact">
-                    <span>{isEn ? 'Format' : 'Формат'}</span><b>{o.where}</b>
-                  </span>
-                ) : null}
-              </span>
+                  ) : null}
+                  {o.day && o.where ? ' · ' : null}
+                  {o.where || null}
+                </span>
+              ) : null}
               <span className="v2-tw-more" aria-hidden="true">
                 {isEn ? 'See details ↗' : 'Детальніше ↗'}
               </span>

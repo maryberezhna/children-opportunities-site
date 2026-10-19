@@ -2254,13 +2254,13 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
    рівнозначні». Звідси рамка кольору бренду в КОЖНОЇ з трьох, тепла
    підкладка під блоком і однакова чорна кнопка внизу. Нічого, що робило б
    одну картку головнішою, тут бути не повинно. */
-.v2-tw--all { background: #fff7f3; border-radius: 26px; padding: 26px 22px 24px; }
+.v2-tw--all { background: #fff7f3; border-radius: 22px; padding: 18px 16px 16px; }
 
 .v2-tw-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin-top: 6px;
+  gap: 14px;
+  margin-top: 4px;
 }
 
 .v2-tw-card {
@@ -2268,8 +2268,8 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 10px;
-  padding: 22px 20px 18px;
+  gap: 8px;
+  padding: 16px 16px 14px;
   background: var(--surface-2);
   border: 2px solid #e85d24;
   border-radius: 20px;
@@ -2284,14 +2284,14 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 /* Цифра — порядок, а не перевага: однакова в усіх трьох. */
 .v2-tw-rank {
   position: absolute;
-  top: -14px;
-  left: 20px;
-  width: 30px;
-  height: 30px;
+  top: -11px;
+  left: 16px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   background: #e85d24;
   color: var(--surface-2);
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 800;
   display: flex;
   align-items: center;
@@ -2322,8 +2322,8 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 }
 .v2-tw-org-mark {
   flex: none;
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
   border-radius: 8px;
   background: #fdf1ea;
   color: var(--v2-accent-strong);
@@ -2336,18 +2336,14 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 .v2-tw-org.is-domain { font-weight: 500; color: var(--v2-ink-3); }
 .v2-tw-org.is-domain .v2-tw-org-mark { background: #f3f1ee; color: var(--v2-ink-3); }
 
-.v2-tw-facts {
-  display: grid;
-  gap: 5px;
+.v2-tw-line {
   width: 100%;
-  border-top: 1px solid var(--v2-line);
-  padding-top: 12px;
   font-size: 0.8125rem;
+  color: var(--v2-ink-3);
+  line-height: 1.45;
 }
-.v2-tw-fact { display: flex; justify-content: space-between; gap: 10px; }
-.v2-tw-fact > span { color: var(--v2-ink-3); }
-.v2-tw-fact > b { font-weight: 600; text-align: right; color: var(--v2-ink); }
-.v2-tw-fact > b.is-urgent { color: #c2341d; font-weight: 700; }
+.v2-tw-line b { font-weight: 700; color: var(--v2-ink); }
+.v2-tw-line b.is-urgent { color: #c2341d; }
 
 /* Дата — помаранчева плашка з білим текстом: лише --v2-accent-strong,
    бо #e85d24 під білим не проходить WCAG AA. */
@@ -2377,7 +2373,8 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 .v2-tw--all .v2-tw-more {
   width: 100%;
   margin-top: auto;
-  padding: 12px 16px;
+  padding: 9px 14px;
+  font-size: 0.8125rem;
   border-radius: 999px;
   background: var(--v2-ink);
   color: var(--surface-2);

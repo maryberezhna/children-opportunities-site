@@ -7,7 +7,13 @@ import { CITY_META } from '@/lib/cities';
 import { TOPIC_LIST, collectionsPath } from '@/lib/topics';
 import { MIN_LOCAL, localTopicCount } from '@/lib/city-topics';
 import OpportunitiesList from '../OpportunitiesList';
-import { kyivToday } from '@/lib/dates';
+import { kyivToday, daysUntil } from '@/lib/dates';
+import { topWeekCards } from '@/lib/weekly-top';
+import { sliderCards } from '@/lib/top-week-slider';
+import { isoWeek } from '@/lib/week';
+import { TYPE_LABELS, ageRangeLabel } from '@/lib/labels';
+import TopWeekSlider from '../TopWeekSlider';
+import TopWeekStrip from '../TopWeekStrip';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import ShareButton from '../ShareButton';
 import StickyBar from '../StickyBar';
@@ -15,6 +21,15 @@ import SubscribePopup from '../SubscribePopup';
 import Footer from '../Footer';
 
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
+
+// Фото міста в хіро. Справжні знімки є поки для двох міст — решта бере
+// нейтральний кадр із дітьми: ставити Київ на сторінку Харкова не можна
+// (19.10.2026, правило «нічого не вигадувати»).
+const CITY_HERO = {
+  lviv: { src: '/city-lviv', alt: 'Історична вулиця Львова' },
+  kyiv: { src: '/city-kyiv', alt: 'Майдан Незалежності в Києві' },
+};
+const DEFAULT_HERO = { src: '/city-default', alt: 'Діти малюють на мольбертах у світлому класі' };
 
 export const revalidate = 300;
 
@@ -63,6 +78,7 @@ export default async function CityPage({ params }) {
   if (!cityData) notFound();
 
   const { ua: cityName, locative } = cityData;
+  const hero = CITY_HERO[params.city] || DEFAULT_HERO;
   const opportunities = await getCityOpportunities(cityName);
   const total = opportunities.length;
   const freeCount = opportunities.filter((o) => o.cost_type === 'free').length;
@@ -84,6 +100,19 @@ export default async function CityPage({ params }) {
 
   // Підбірки цього міста, що пройшли поріг локальних записів, — ті самі
   // правила, що в /[city]/[topic]. Лінкуємо лише на сторінки, які існують.
+  const todayIso = kyivToday();
+  const topWeek = sliderCards(
+    topWeekCards({ items: opportunities, week: isoWeek(), todayIso, daysUntil }),
+    {
+      lang: 'uk',
+      pinned: 'Топ',
+      free: 'безкоштовно',
+      type: TYPE_LABELS,
+      age: (o) => ageRangeLabel(o, 'uk'),
+      todayIso,
+    },
+  );
+
   const cityTopics = TOPIC_LIST.filter(
     (t) => !t.noCityPages && localTopicCount(opportunities, t, cityName) >= MIN_LOCAL,
   );
@@ -110,7 +139,7 @@ export default async function CityPage({ params }) {
           <span aria-current="page">{cityName}</span>
         </nav>
 
-        <section className="tp-hero tp-hero-solo" aria-labelledby="city-title">
+        <section className={`tp-hero${hero ? '' : ' tp-hero-solo'}`} aria-labelledby="city-title">
           <div className="tp-hero-copy">
             <h1 id="city-title" className="tp-h1">
               Можливості для дітей{' '}
@@ -136,9 +165,28 @@ export default async function CityPage({ params }) {
               />
             </div>
           </div>
+
+          {hero ? (
+            <div className="tp-hero-photo">
+              <picture>
+                <source srcSet={`${hero.src}.webp`} type="image/webp" />
+                <img src={`${hero.src}.jpg`} alt={hero.alt} width="900" height="600" loading="eager" fetchPriority="high" />
+              </picture>
+            </div>
+          ) : null}
         </section>
 
-        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} today={kyivToday()} />
+        {/* «Топ 3 цього тижня» — той самий компонент і дизайн, що в підбірках
+            (19.10.2026). Раніше місто малювало власний блок усередині списку,
+            і на сторінці стояли дві різні трійки. */}
+        {topWeek.length === 3 ? (
+          <>
+            <TopWeekSlider all lang="uk" title="Топ 3 цього тижня" cards={topWeek} />
+            <TopWeekStrip lang="uk" title="Топ 3 цього тижня" cards={topWeek} />
+          </>
+        ) : null}
+
+        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} today={todayIso} hideTop />
 
         {/* Смужки посилань — ПІСЛЯ списку. Нагорі вони стояли впритул до
             фільтрів, і чотири ряди пігулок поспіль читались як один мес
