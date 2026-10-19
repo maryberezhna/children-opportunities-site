@@ -15,6 +15,9 @@ const T = {
   en: { title: 'Or pick a topic', aria: 'Collections by topic' },
 };
 
+// Ширина плитки: шоста частина ряду на моніторі, третина екрана на телефоні.
+const TILE_SIZES = '(max-width: 700px) 33vw, 200px';
+
 export default function HomeTopics({ lang = 'uk', variant = 'hero' }) {
   const t = T[lang] || T.uk;
   const tiles = SLUGS.map((slug) => TOPICS[slug]).filter(Boolean).map((topic) => {
@@ -33,13 +36,16 @@ export default function HomeTopics({ lang = 'uk', variant = 'hero' }) {
         <Link key={tile.slug} href={tile.href} className="v2-tile">
           {tile.img ? (
             <picture>
-              <source srcSet={`${tile.img.src}.webp`} type="image/webp" />
+              {/* Файл 900px на плитку ~200px (на телефоні — третину екрана):
+                  Lighthouse 19.10.2026 рахував ~230 КБ зайвого. 450px вистачає
+                  і на 2× екран; 900 лишаємо для широких моніторів. */}
+              <source srcSet={`${tile.img.src}-450.webp 450w, ${tile.img.src}.webp 900w`} sizes={TILE_SIZES} type="image/webp" />
               {/* Завжди lazy (07.10.2026, «швидкість понад усе»). У хіро було
                   eager — і телефон, де цей блок схований CSS, усе одно тягнув
                   шість фото (~370 КБ) разом із текстом і шрифтами, забираючи
                   канал у першого екрана. На комп'ютері головне на екрані —
                   заголовок, а фото, що вже в полі зору, lazy вантажить одразу. */}
-              <img src={`${tile.img.src}.jpg`} alt="" width="300" height="200" loading="lazy" decoding="async" />
+              <img src={`${tile.img.src}-450.jpg`} srcSet={`${tile.img.src}-450.jpg 450w, ${tile.img.src}.jpg 900w`} sizes={TILE_SIZES} alt="" width="300" height="200" loading="lazy" decoding="async" />
             </picture>
           ) : null}
           <span className="v2-tile-label">{tile.label} →</span>
