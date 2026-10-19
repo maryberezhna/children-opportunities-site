@@ -411,7 +411,7 @@
   .closed-banner { padding: 24px 20px 22px; border-left-width: 6px; font-size: 1rem; }
   .closed-banner-title { font-size: 2.25rem; }
   .closed-cal-btns a,
-  .closed-remind-btns a { flex: 1 1 100%; justify-content: center; white-space: normal; }
+  .closed-remind-btns a { flex: 1 1 100%; justify-content: center; white-space: normal; text-align: center; }
   .closed-tg-title { font-size: 1.125rem; }
 }
 
