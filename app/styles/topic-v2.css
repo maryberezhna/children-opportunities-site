@@ -687,3 +687,17 @@
 /* Без власних відступів: між секціями підбірки вже є gap 40px (.tp-main), і
    28px зверху й знизу давали 68px порожнечі на телефоні (Марія, 08.10.2026). */
 .ol-own-hub { margin: 0; }
+
+
+/* Підпис автора під фото в хіро — вимога ліцензій CC BY-SA (19.10.2026).
+   Дрібний і сірий: він має бути присутній, але не сперечатися з заголовком. */
+.tp-hero-side { display: block; }
+
+.tp-hero-credit {
+  margin: 6px 2px 0;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  color: var(--v2-ink-3);
+}
+.tp-main .tp-hero-credit a { color: var(--v2-ink-3); text-decoration: underline; }
+.tp-main .tp-hero-credit a:hover { color: var(--v2-ink); }

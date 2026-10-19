@@ -322,6 +322,9 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
   return {
     type: (item) => anyOf(s.type, (v) => {
       if (v === 'online') return isOnline(item);
+      // «На місці» — дзеркало «Онлайн». На сторінці міста це головне питання
+      // батьків: іти кудись чи займатись удома (Марія, 19.10.2026).
+      if (v === 'onsite') return !isOnline(item);
       if (v === 'payments') {
         return item.opportunity_type === 'allowance'
           || item.opportunity_type === 'support_payment'
@@ -397,7 +400,7 @@ function facetCounts(s, { teens, todayIso, searchIndex, domestic, liveItems, t }
   const place = placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t });
   return {
     total: liveItems.filter((item) => FACETS.every((k) => dp[k](item))).length,
-    type: countOpts('type', TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value)),
+    type: countOpts('type', [...TYPE_CHIPS[teens ? 'teens' : 'parents'].map((c) => c.value), 'onsite']),
     age: countOpts('age', AGE_OPTS[teens ? 'teens' : 'parents'].map((o) => o[0])),
     deadline: countOpts('deadline', DEADLINE_OPTS.map((o) => o[0])),
     need: countOpts('need', (teens ? GIVES_OPTS : NEED_OPTS).map((o) => o[0])),
@@ -459,6 +462,10 @@ export default function OpportunitiesList({
   // Звідки довантажити тексти карток, яких сторінка не везе в HTML
   // (lib/catalog-split.js; поки лише головні). null — записи вже повні.
   detailsUrl = null,
+  // Сторінка міста малює «Топ 3 цього тижня» спільним компонентом (той самий,
+  // що в підбірках), тож власний блок списку там вимикаємо — інакше трійка
+  // стояла б двічі й у двох різних дизайнах (19.10.2026).
+  hideTop = false,
 }) {
   const todayIso = today || kyivToday();
   const t = UI[lang] || UI.uk;
@@ -1047,8 +1054,17 @@ export default function OpportunitiesList({
     );
   };
 
-  const chips = TYPE_CHIPS[teens ? 'teens' : 'parents']
-    .filter((c) => available.chips.has(c.value) || type.includes(c.value));
+  const chipSource = TYPE_CHIPS[teens ? 'teens' : 'parents'];
+  const baseChips = chipSource.filter((c) => available.chips.has(c.value) || type.includes(c.value));
+  // Сторінка міста: спершу «Онлайн» і «На місці», далі типи. Для міста це
+  // перше питання родини, а не тип заняття (Марія, 19.10.2026).
+  const chips = presetCity
+    ? [
+      { value: 'online', label: '💻 Онлайн', en: '💻 Online' },
+      { value: 'onsite', label: '📍 На місці', en: '📍 On site' },
+      ...baseChips.filter((c) => c.value !== 'online'),
+    ]
+    : baseChips;
 
   const optLabel = (o) => (isEn && o[2] ? o[2] : o[1]);
   const selectOpts = (list, availableSet, current) =>
@@ -1749,7 +1765,7 @@ export default function OpportunitiesList({
       <Wrap on={sidebarLayout} className="v2-catalog">
         {sidebarLayout ? renderSide() : null}
         <Wrap on={sidebarLayout} className="v2-catalog-main">
-          {topCards.length === 3 && !sidebarLayout ? (
+          {topCards.length === 3 && !sidebarLayout && !hideTop ? (
             <section className="v2-top" aria-label={t.topTitle}>
               <div className="v2-top-head">
                 <h2>{t.topTitle}</h2>

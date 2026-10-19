@@ -130,7 +130,12 @@ test('організатор: чужий Telegram-канал і переказу
 
 test('cardFacts: порожні поля — null, а не заглушки', () => {
   const f = cardFacts({ opportunity_type: 'course' }, today);
-  assert.deepEqual(f, { when: null, cost: null, format: null, organiser: null });
+  assert.deepEqual(f, {
+    when: null, cost: null, format: null, organiser: null,
+    // 19.10.2026: організатор переїхав під назву картки, тож поруч із назвою
+    // їде ще й значок — порожній запис дає null і тут.
+    organiserBadge: null,
+  });
   assert.equal(shortDate('2026-10-03', today), '3 жовт');
   assert.equal(shortDate('2027-10-03', today), '3 жовт 2027');
   assert.equal(shortDate(null, today), null);

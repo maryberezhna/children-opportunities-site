@@ -2248,26 +2248,102 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
 
 /* Широкий розклад (підбірка): три картки поруч (Марія, 04.10.2026: «там можна
    всі 3 помістити»). */
+/* 19.10.2026. Було: три бліді плитки, які нічим не відрізнялись від решти
+   сторінки. Марія: «вони відповідають за монетизацію і скеровують трафік,
+   вони мають виділятися і приковувати погляд» — і окремо: «вони всі
+   рівнозначні». Звідси рамка кольору бренду в КОЖНОЇ з трьох, тепла
+   підкладка під блоком і однакова чорна кнопка внизу. Нічого, що робило б
+   одну картку головнішою, тут бути не повинно. */
+.v2-tw--all { background: #fff7f3; border-radius: 22px; padding: 18px 16px 16px; }
+
 .v2-tw-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  gap: 14px;
+  margin-top: 4px;
 }
 
 .v2-tw-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  padding: 18px;
+  padding: 16px 16px 14px;
   background: var(--surface-2);
-  border-radius: 16px;
+  border: 2px solid #e85d24;
+  border-radius: 20px;
   color: var(--v2-ink);
   text-decoration: none;
-  transition: box-shadow 0.2s;
+  box-shadow: 0 10px 26px rgba(232, 93, 36, 0.16);
+  transition: box-shadow 0.2s, transform 0.2s;
 }
 
-.v2-tw-card:hover { box-shadow: 0 10px 28px rgba(26, 26, 26, 0.08); }
+.v2-tw-card:hover { box-shadow: 0 16px 34px rgba(232, 93, 36, 0.24); transform: translateY(-2px); }
+
+/* Цифра — порядок, а не перевага: однакова в усіх трьох. */
+.v2-tw-rank {
+  position: absolute;
+  top: -11px;
+  left: 16px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #e85d24;
+  color: var(--surface-2);
+  font-size: 0.8125rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.v2-tw-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.v2-tw-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f3f1ee;
+  color: var(--v2-ink-2);
+}
+.v2-tw-chip.is-age, .v2-tw-chip.is-free { background: #e7f4ec; color: #1f6b42; }
+.v2-tw-chip.is-type { background: #efeafc; color: #5b42a8; }
+.v2-tw-chip.is-pinned { background: #fdf1ea; color: var(--v2-accent-strong); font-weight: 700; }
+
+/* Організатор під назвою — те саме, що на картках каталогу. */
+.v2-tw-org {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--v2-ink-2);
+}
+.v2-tw-org-mark {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 8px;
+  background: #fdf1ea;
+  color: var(--v2-accent-strong);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.v2-tw-org.is-domain { font-weight: 500; color: var(--v2-ink-3); }
+.v2-tw-org.is-domain .v2-tw-org-mark { background: #f3f1ee; color: var(--v2-ink-3); }
+
+.v2-tw-line {
+  width: 100%;
+  font-size: 0.8125rem;
+  color: var(--v2-ink-3);
+  line-height: 1.45;
+}
+.v2-tw-line b { font-weight: 700; color: var(--v2-ink); }
+.v2-tw-line b.is-urgent { color: #c2341d; }
 
 /* Дата — помаранчева плашка з білим текстом: лише --v2-accent-strong,
    бо #e85d24 під білим не проходить WCAG AA. */
@@ -2284,7 +2360,8 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   line-height: 1.2;
 }
 
-/* «Детальніше» — внизу картки, щоб у трьох поруч стояло на одному рівні. */
+/* «Детальніше» — чорна кнопка на всю ширину картки, однакова в усіх трьох:
+   саме вона переводить людину до організатора. */
 .v2-tw .v2-tw-more {
   margin-top: auto;
   padding-top: 2px;
@@ -2292,6 +2369,18 @@ html[data-mode="teens"] .v2-top-head span { color: #a9a396; }
   font-weight: 700;
   color: var(--v2-accent-strong);
 }
+
+.v2-tw--all .v2-tw-more {
+  width: 100%;
+  margin-top: auto;
+  padding: 9px 14px;
+  font-size: 0.8125rem;
+  border-radius: 999px;
+  background: var(--v2-ink);
+  color: var(--surface-2);
+  text-align: center;
+}
+.v2-tw--all .v2-tw-card:hover .v2-tw-more { background: #333; }
 
 @media (prefers-reduced-motion: reduce) {
   .v2-tw-row, .v2-tw-card { transition: none; }

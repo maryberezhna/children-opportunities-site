@@ -581,3 +581,34 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
   html body .cards-2m .card .card-b-when.is-soon { background: #fef3c7; color: #78350f; }
   html body .cards-2m .card .card-b-when.is-urgent { background: #fee2e2; color: #991b1b; }
 }
+
+
+/* Організатор під назвою картки (19.10.2026). Значок — дві літери назви,
+   не емблема: логотипів організаторів у нас немає, а квадратик дає рядку
+   опору й відділяє його від опису. Домен замість назви підписаний
+   «Джерело» і має значок-стрілку. */
+.card-org {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text-2, #4a4a4a);
+}
+.card-org-mark {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--chip-bg, #fdf1ea);
+  color: var(--accent-strong, #c8501a);
+  font-size: 0.6875rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.card-org.is-domain { font-weight: 500; color: var(--text-3, #6b6b6b); }
+.card-org.is-domain .card-org-mark { background: #f3f1ee; color: var(--text-3, #6b6b6b); }
