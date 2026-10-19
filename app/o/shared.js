@@ -10,7 +10,7 @@
  */
 import '@/app/styles/routes/opportunity.css';
 import Link from 'next/link';
-import { supabase, publicOpportunities } from '@/lib/supabase';
+import { supabase, supabaseFresh, publicOpportunities } from '@/lib/supabase';
 import { kyivToday, formatDate, formatEventDates, daysUntil } from '@/lib/dates';
 import { nextIntakeReminder, reminderCalendarUrl, appleCalendarUrl } from '@/lib/calendar-links';
 import { isExpired } from '@/lib/timing';
@@ -248,8 +248,8 @@ export { archivedRedirectPath };
 
 
 export async function getOpportunity(slug) {
-  if (!supabase) return null;
-  const { data, error } = await supabase
+  if (!supabaseFresh) return null;
+  const { data, error } = await supabaseFresh
     .from('opportunities')
     .select('*')
     .eq('slug', slug)
