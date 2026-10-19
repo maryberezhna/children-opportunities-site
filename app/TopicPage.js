@@ -80,6 +80,8 @@ const CHROME = {
       + (freeCount > 0 ? `, з них ${freeCount} — ${freeWord(freeCount)}` : '')
       + '. Платформа оновлюється щодня.',
     count: (n) => `${n} ${opportunitiesWord(n)}`,
+    statsWord: (n) => opportunitiesWord(n),
+    statsFree: (n) => freeWord(n),
     cards: {
       all: 'Усі',
       sort: 'за дедлайном, найближчі спочатку',
@@ -128,6 +130,8 @@ const CHROME = {
       + (freeCount > 0 ? `, ${freeCount} of them free` : '')
       + '. The platform is updated daily.',
     count: (n) => `${n} ${n === 1 ? 'opportunity' : 'opportunities'}`,
+    statsWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
+    statsFree: () => 'free',
     cards: {
       all: 'All',
       sort: 'by deadline, soonest first',
@@ -396,11 +400,14 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   // Рядок «{N} можливостей · {M} безкоштовних · {K} закриваються цього тижня»
   // під описом (макет Topic.dc.html). Нуль не показуємо ніде (рішення Марії
   // 14.09.2026): порожня цифра виглядає як зламана підбірка.
+  // Слова беремо з CHROME, а не з lib/plural: до 19.10.2026 англійські
+  // підбірки показували тут «26 можливостей · 21 безкоштовна» — українські
+  // слова посеред англійської сторінки.
   const closing = closingThisWeek(items, todayIso);
   const heroStats = total > 0 ? (
     <p className="tp-hero-stats">
-      <span><strong>{total}</strong> {opportunitiesWord(total)}</span>
-      {freeCount > 0 ? <span> · <strong>{freeCount}</strong> {freeWord(freeCount)}</span> : null}
+      <span><strong>{total}</strong> {ch.statsWord(total)}</span>
+      {freeCount > 0 ? <span> · <strong>{freeCount}</strong> {ch.statsFree(freeCount)}</span> : null}
       {closing > 0 ? <span className="tp-hero-closing"> · {ch.closing(closing)}</span> : null}
     </p>
   ) : null;
