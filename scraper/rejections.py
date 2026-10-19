@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
+import re
 from datetime import datetime, timedelta, timezone
 
 logger = logging.getLogger(__name__)
@@ -21,6 +22,24 @@ REASONS_PATH = pathlib.Path(__file__).resolve().parents[1] / "lib" / "reject-rea
 DECISION_FIELD = "__decision"   # дзеркало lib/corrections.js
 DAYS = 180
 MAX_LINES = 30
+
+# Посилання й домени з коментаря в промпт не йдуть (19.10.2026). Марія
+# відхилила запис для дорослих і дописала «https://ucci.ie/events/ — збережи в
+# базі, бо можна моніторити джерело». Текст лягав у блок «НЕ ПРИНОСЬ НІЧОГО
+# ПОДІБНОГО» разом із доменом — і вчив пошук уникати рівно того сайту, який
+# просили лишити. Рішення про джерело тепер окреме (кнопка в черзі → таблиця
+# source_candidates), а сюди домен не потрапляє взагалі.
+LINK_RE = re.compile(
+    r"(?:https?://|www\.)\S+"
+    r"|\b[a-z0-9][a-z0-9-]*(?:\.[a-z]{2,})+(?:/\S*)?",
+    re.IGNORECASE,
+)
+
+
+def strip_links(text) -> str:
+    """Коментар без посилань і доменів. Порожньо — якщо нічого не лишилось."""
+    cleaned = LINK_RE.sub(" ", str(text or ""))
+    return " ".join(cleaned.split()).strip(" ,.;:\u2014-")
 
 
 def load_reasons() -> dict:
@@ -47,7 +66,9 @@ def teach_lines(rows: list[dict], titles: dict, reasons: dict, limit: int = MAX_
             continue
         seen.add(title.casefold())
         line = f"«{title[:120]}» — {reason['label'].lower()}"
-        comment = str(after.get("comment") or "").strip()
+        # Коментар про сайт — рішення про ДЖЕРЕЛО, а не про вид можливості:
+        # у «не приноси такого» йому не місце.
+        comment = "" if after.get("keep_source") else strip_links(after.get("comment"))
         if comment:
             line += f": {comment[:160]}"
         out.append(line)

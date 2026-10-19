@@ -4,13 +4,15 @@ import sys
 import unittest
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
-from rejections import avoid_block, load_reasons, teach_lines  # noqa: E402
+from rejections import avoid_block, load_reasons, strip_links, teach_lines  # noqa: E402
 
 
-def row(oid, reason, action="reject", comment=None):
+def row(oid, reason, action="reject", comment=None, keep_source=False):
     after = {"action": action, "reason": reason}
     if comment:
         after["comment"] = comment
+    if keep_source:
+        after["keep_source"] = True
     return {"opportunity_id": oid, "after": after}
 
 
@@ -42,6 +44,30 @@ class TeachLines(unittest.TestCase):
         titles = {str(i): f"Запис {i}" for i in range(50)}
         rows = [row(str(i), "club") for i in range(50)]
         self.assertEqual(len(teach_lines(rows, titles, self.R, limit=5)), 5)
+
+    def test_link_in_comment_never_teaches(self):
+        # 19.10.2026: «https://ucci.ie/events/ збережи в базі бо можна
+        # моніторити джерело» потрапляло в промпт разом із доменом — і вчило
+        # уникати сайту, який просили лишити.
+        lines = teach_lines(
+            [row("c", "for_adults", comment="https://ucci.ie/events/\n\nзбережи в базі бо можна моніторити джерело")],
+            self.T, self.R)
+        self.assertEqual(len(lines), 1)
+        self.assertNotIn("ucci", lines[0])
+        self.assertIn("збережи в базі", lines[0])
+
+    def test_keep_source_drops_comment_entirely(self):
+        lines = teach_lines([row("c", "for_adults", comment="сайт непоганий", keep_source=True)], self.T, self.R)
+        # Причина лишається — вид можливості справді не наш; коментар про сайт
+        # у «не приноси такого» не йде.
+        self.assertEqual(lines, ["«Грант для ГО» — для дорослих чи батьків, а не про дитину"])
+
+    def test_strip_links(self):
+        self.assertEqual(strip_links("дивись https://ucci.ie/events/ там усе"), "дивись там усе")
+        self.assertEqual(strip_links("джерело ucci.ie/events"), "джерело")
+        self.assertEqual(strip_links("www.example.org"), "")
+        self.assertEqual(strip_links("просто текст"), "просто текст")
+        self.assertEqual(strip_links(None), "")
 
     def test_block_empty_without_lines(self):
         self.assertEqual(avoid_block([]), "")
