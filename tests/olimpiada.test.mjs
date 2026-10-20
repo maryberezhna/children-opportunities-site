@@ -4,6 +4,7 @@
 // бали за чужі ключі в запиті.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 process.env.WAYFORPAY_MERCHANT_ACCOUNT = 'test_merchant';
 process.env.WAYFORPAY_SECRET_KEY = 'test_secret';
@@ -248,4 +249,27 @@ test('друкований диплом: оплата приходить сво�
   assert.ok(paidAt);
   await handleOlimpCallback({ orderReference: ref, transactionStatus: 'Approved' });
   assert.equal((await store.get(entry.token)).print_paid_at, paidAt);
+});
+
+// 20.10.2026, Марія: «напиши вже це на сторінці сайту, більше 100 дітей
+// пройшли олімпіаду». Число живе — рахується з бази, а не вписане руками.
+test('скільки пройшли: округлюємо вниз, мале число не показуємо', async () => {
+  const { finishedMilestone } = await import('../lib/olimpiada.js');
+  assert.equal(finishedMilestone(116), 110, 'ніколи не більше, ніж насправді');
+  assert.equal(finishedMilestone(106), 100);
+  assert.equal(finishedMilestone(50), 50);
+  assert.equal(finishedMilestone(49), null, 'мале число не переконує');
+  assert.equal(finishedMilestone(0), null);
+  assert.equal(finishedMilestone(null), null, 'збій бази — рядка просто немає');
+  assert.equal(finishedMilestone(undefined), null);
+});
+
+test('сторінка олімпіади рахує пройдені тести з бази, без службових записів', () => {
+  const src = readFileSync(new URL('../app/olimpiada/page.js', import.meta.url), 'utf8');
+  assert.match(src, /finished_at/, 'рахуємо саме завершені тести');
+  assert.match(src, /wfp_last_status !== 'Test'/, 'тестові оплати не рахуються');
+  assert.match(src, /SERVICE_SOURCES/, 'перевірки перед запуском не рахуються');
+  assert.match(src, /Понад \{passed\} дітей/);
+  // Вписаного руками числа на сторінці бути не має.
+  assert.doesNotMatch(src.replace(/^\s*\/\/.*$/gm, ''), /Понад 1\d\d дітей/);
 });
