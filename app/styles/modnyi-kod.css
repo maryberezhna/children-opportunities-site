@@ -527,3 +527,12 @@ main.mkT + footer { margin-top: 0; }
 /* «або безкоштовно для власників Dityam+» під кнопкою першого екрана (13.10.2026). */
 .mkT-free { margin: 12px 0 0; font-size: .95rem; color: #444; }
 .mkT-free a { color: var(--plum); font-weight: 800; }
+
+/* «Рекомендуємо також» — олімпіада з логіки (20.10.2026). Біла картка з рамкою,
+   як інші білі секції сторінки. */
+.mkT-more { padding-bottom: 0; }
+.mkT-morebox { border: 2px solid #e8e0ee; border-radius: 24px; padding: 32px 28px; }
+.mkT-kicker { margin: 0 0 10px; font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #ff3d8b; }
+.mkT-morebox .mkT-hand { font-size: clamp(1.8rem, 3.6vw, 2.6rem); margin-bottom: 12px; }
+.mkT-morebox p:not(.mkT-kicker) { margin: 0 0 20px; max-width: 700px; line-height: 1.6; }
+@media (max-width: 640px) { .mkT-morebox { padding: 24px 18px; } .mkT-morebox .mk-btn { width: 100%; } }
