@@ -100,7 +100,7 @@ export default function PrivacyPageEn() {
 
           <h2>3. A child’s special circumstances</h2>
           <p>
-            The Dityam+ profile lets you mark: gifted, disability, internally
+            The Dityam+ profile lets you mark: disability, internally
             displaced, child of a defender, from a frontline community, orphan, from a
             low-income or large family, cancer. This is sensitive data, so:
           </p>
