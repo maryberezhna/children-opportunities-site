@@ -1,6 +1,7 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
+import { createClient } from '@supabase/supabase-js';
+import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, criteriaText , finishedMilestone } from '@/lib/olimpiada';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { SIA_AWARD } from '@/lib/awards';
 import { MK } from '@/lib/modnyi-kod';
@@ -179,10 +180,37 @@ const NOTE_GIFT = `Після тесту — Dityam+ на місяць за ${PR
 const NOTE_NEXT = 'Після тесту — особиста добірка можливостей під вік та інтереси дитини в Dityam+';
 const NOTE_AUDIENCE = `${AUDIENCE_MONTHLY} родин за останній місяць шукали можливості на Dityam.com.ua`;
 
+// Скільки дітей уже пройшли тест. Беремо з бази щогодини (revalidate), а не
+// вписуємо руками: число на сайті мусить лишатися правдою й завтра.
+// Службові записи не рахуємо — ні тестові оплати (wfp_last_status = 'Test'),
+// ні перевірки перед запуском: інакше наші ж прогони виглядали б як діти.
+const SERVICE_SOURCES = ['check', 'prelaunch-check', 'admin_test'];
+
+async function finishedChildren() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  try {
+    const supabase = createClient(url, key, { auth: { persistSession: false } });
+    const { data, error } = await supabase
+      .from('olimpiada_entries')
+      .select('wfp_last_status, source')
+      .not('finished_at', 'is', null)
+      .limit(5000);
+    if (error || !data) return null;
+    return data.filter((e) => e.wfp_last_status !== 'Test'
+      && !SERVICE_SOURCES.includes(e.source)).length;
+  } catch {
+    // Збій бази — просто без рядка: сторінка олімпіади через нього не падає.
+    return null;
+  }
+}
+
 export default async function OlimpiadaPage() {
   const key = monthKey();
   const month = monthName(key);
   const FAQ = faq(month);
+  const passed = finishedMilestone(await finishedChildren());
   return (
     <div className="v2-page ol-page">
       <main>
@@ -228,6 +256,7 @@ export default async function OlimpiadaPage() {
                     <a className="ol-trust-award" href={SIA_AWARD.href} target="_blank" rel="noopener noreferrer" title={SIA_AWARD.full.uk}>
                       {SIA_AWARD.short.uk}
                     </a>
+                    {passed ? <span><b>Понад {passed} дітей</b> уже пройшли олімпіаду</span> : null}
                     <span><b>{AUDIENCE_MONTHLY} родин</b> за останній місяць шукали можливості на Dityam.com.ua</span>
                   </div>
                 </div>
