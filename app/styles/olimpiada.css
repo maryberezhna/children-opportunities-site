@@ -656,3 +656,12 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* «Рекомендуємо також» — друга олімпіада (20.10.2026). Біла картка з рамкою в
+   кольорах сторінки, без заливки: заклик до другої олімпіади не має
+   сперечатися з синіми секціями за увагу. */
+.ol-more { padding-top: 36px; }
+.ol-more-box { border: 2px solid var(--ol-card-line); border-radius: 24px; padding: 32px 28px; background: var(--v2-bg, #fff); }
+.ol-more-box .ol-hand { font-size: clamp(1.8rem, calc(3.6vw * var(--a11y-font-scale, 1)), 2.6rem); margin-bottom: 12px; }
+.ol-more-box .ol-text { margin-bottom: 20px; }
+@media (max-width: 640px) { .ol-more-box { padding: 24px 18px; } .ol-more-box .ol-btn { width: 100%; } }

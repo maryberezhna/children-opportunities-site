@@ -5,7 +5,7 @@ import { MK } from '@/lib/modnyi-kod';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { lookSvg, DEFS, cleanLook } from '@/lib/modnyi-kod-looks';
 import { mkDb } from '@/lib/modnyi-kod-server';
-import { monthName } from '@/lib/olimpiada';
+import { OLIMP, monthName } from '@/lib/olimpiada';
 import { SIA_AWARD } from '@/lib/awards';
 import DeskCollage from './DeskCollage';
 import Waitlist from './Waitlist';
@@ -317,6 +317,18 @@ export default async function ModnyiKodPage() {
             <li>Підписники Dityam+ можуть зареєструвати дитину просто в боті @DityamPlusBot (меню «Олімпіади») і тренуватися без обмежень.</li>
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі.</li>
           </ol>
+        </section>
+
+        {/* Перелінковка олімпіад між собою (Марія, 20.10.2026: «типу як
+            рекомендоване»). Після правил, перед питаннями — як на /olimpiada.
+            Текст — з опису /olimpiada. */}
+        <section className="mkT-wrap mkT-sec mkT-more">
+          <div className="mkT-morebox">
+            <p className="mkT-kicker">Рекомендуємо також</p>
+            <h2 className="mkT-hand ink">Онлайн-олімпіада з логіки для дітей {OLIMP.groupLabel}</h2>
+            <p>{OLIMP.questionCount} завдань за {OLIMP.minutes} хвилин у зручний час. Участь безкоштовна: диплом одразу, призи щомісяця.</p>
+            <a href="/olimpiada" className="mk-btn mk-btn-main">Дізнатися більше</a>
+          </div>
         </section>
 
         <section className="mkT-wrap mkT-sec">

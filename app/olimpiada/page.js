@@ -3,6 +3,7 @@ import Footer from '../Footer';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, criteriaText } from '@/lib/olimpiada';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { SIA_AWARD } from '@/lib/awards';
+import { MK } from '@/lib/modnyi-kod';
 import TelegramJoin from './TelegramJoin';
 import FaqTabs from './FaqTabs';
 import OlimpTrack from './OlimpTrack';
@@ -426,6 +427,19 @@ export default async function OlimpiadaPage() {
             <li>Олімпіада незалежна: вона не є учнівською олімпіадою МОН і не дає пільг при вступі. Назви товарів-призів належать їхнім виробникам; виробники не є партнерами олімпіади.</li>
           </ol>
           <Cta at="after-rules" note={NOTE_AUDIENCE} />
+        </section>
+
+        {/* Перелінковка олімпіад між собою (Марія, 20.10.2026: «типу як
+            рекомендоване»). Стоїть після правил: хто дочитав сюди, вже
+            вирішив щодо цієї олімпіади, і друга — наступний крок, а не
+            відволікання від заявки. Текст — з опису /modnyi-kod. */}
+        <section className="ol-wrap ol-sec ol-more" data-cta="more">
+          <div className="ol-more-box">
+            <p className="ol-kicker">Рекомендуємо також</p>
+            <h2 className="ol-hand ol-hand-blue">«{MK.title}» — онлайн-олімпіада з моди для дітей {MK.ageFrom}–{MK.ageTo} років</h2>
+            <p className="ol-text">Тест про кольори, тканини й стилі, студія образу й обкладинка модного журналу з балами. Участь безкоштовна.</p>
+            <a href={`/${MK.slug}`} className="ol-btn ol-btn-main">Дізнатися більше</a>
+          </div>
         </section>
 
         <section className="ol-wrap ol-sec ol-contact">
