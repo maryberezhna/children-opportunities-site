@@ -46,6 +46,12 @@ test('знімки завдань заборонені — в Умовах і п
   assert.match(read('app/olimpiada/page.js'), /Завдання не поширюємо/);
 });
 
+test('спілкування лише українською — в Умовах обома мовами', () => {
+  assert.match(read('app/terms/page.js'), /лише\s+українською[\s\S]{0,200}відмовити у спілкуванні/);
+  assert.match(read('app/en/terms/page.js'), /in Ukrainian only[\s\S]{0,200}decline[\s\S]{0,60}Russian/);
+});
+
 test('дату редакції Умов оновлено разом зі змістом', () => {
-  assert.match(read('app/terms/page.js'), /const UPDATED = '16 жовтня 2026'/);
+  assert.match(read('app/terms/page.js'), /const UPDATED = '20 жовтня 2026'/);
+  assert.match(read('app/en/terms/page.js'), /const UPDATED = '20 October 2026'/);
 });

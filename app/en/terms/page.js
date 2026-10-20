@@ -15,7 +15,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '16 October 2026';
+const UPDATED = '20 October 2026';
 
 export default function TermsPageEn() {
   return (
@@ -163,6 +163,12 @@ export default function TermsPageEn() {
               diploma or reward without completing the task, taking a test with
               outside help, automated or bulk entries, and abusive or unethical
               behaviour. The result page stays available and explains the reason.
+            </li>
+            {/* Language of communication (20.10.2026) — mirrors /terms. */}
+            <li>
+              Communication on the platform, in the bot, by email and through the
+              contact form is in Ukrainian only. We reserve the right to decline
+              communication conducted in Russian.
             </li>
             <li>
               A revocation can be appealed by writing to{' '}
