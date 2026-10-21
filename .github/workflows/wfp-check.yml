@@ -24,5 +24,6 @@ jobs:
       - env:
           WAYFORPAY_MERCHANT_ACCOUNT: ${{ secrets.WAYFORPAY_MERCHANT_ACCOUNT }}
           WAYFORPAY_SECRET_KEY: ${{ secrets.WAYFORPAY_SECRET_KEY }}
+          WAYFORPAY_REGULAR_PASSWORD: ${{ secrets.WAYFORPAY_REGULAR_PASSWORD }}
           ORDER_REFERENCE: ${{ github.event.inputs.order_reference }}
         run: node scripts/wfp-check.mjs
