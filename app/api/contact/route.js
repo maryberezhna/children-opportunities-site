@@ -22,7 +22,8 @@ export async function POST(request) {
   // Відповідаємо «ок», щоб спамер не зрозумів, що його відсіяли.
   if (b.website) return Response.json({ ok: true });
 
-  const type = isValidContactType(b.type) ? b.type : 'other';
+  // Службові типи (hidden, напр. 'bot') з форми не приймаємо.
+  const type = isValidContactType(b.type) && !CONTACT_TYPE_MAP[b.type].hidden ? b.type : 'other';
   const message = str(b.message, 4000);
   const name = str(b.name, 200);
   const parsed = parseContact(str(b.contact, 200));

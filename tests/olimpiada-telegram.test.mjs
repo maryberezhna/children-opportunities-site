@@ -56,3 +56,15 @@ test('реєструють батьки чи вчитель: на сайті й 
   assert.match(bot, /sameName\.length >= OLIMP\.maxEntriesPerEmail/);
   assert.match(bot, /maxEntriesPerTeacherDay/);
 });
+
+// 21.10.2026: вчителька записала першу дитину за своїм посиланням, а решту —
+// кнопкою «Записати ще» і просто іменем; код класу губився, і діти не
+// зараховувались до її класу. Тепер код береться від попередньої дитини чату.
+test('код класу успадковується від останньої дитини з кодом у цьому чаті', async () => {
+  const { lastTeacherCode } = await import('../lib/olimpiada-bot.js');
+  assert.equal(lastTeacherCode([]), null);
+  assert.equal(lastTeacherCode([{ teacher_code: null }]), null);
+  assert.equal(lastTeacherCode([{ teacher_code: 'hzsem59c' }, { teacher_code: null }]), 'hzsem59c');
+  assert.equal(lastTeacherCode([{ teacher_code: 'aaaa1111' }, { teacher_code: 'hzsem59c' }, { teacher_code: null }]), 'hzsem59c');
+  assert.equal(lastTeacherCode([{ teacher_code: 'зовсім-не-код' }]), null);
+});

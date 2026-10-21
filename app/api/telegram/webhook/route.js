@@ -553,6 +553,19 @@ export async function POST(request) {
       const head = isPlusQuestion ? 'Відповідь Dityam+' : 'Dityam.com.ua';
       const res = await makeBot(PLUS_TOKEN).sendMessage(target, `💬 <b>${head}</b>\n\n${escapeHtml(text)}`);
       const sent = res?.ok ? (await res.json().catch(() => ({}))).ok : false;
+      // Питання з бота живе і в /admin/messages (з 21.10.2026): відповідь
+      // реплаєм закриває його там, щоб воно не висіло «новим».
+      if (sent && isPlusQuestion && SUPABASE_URL && SERVICE_ROLE) {
+        const supabase = createClient(SUPABASE_URL, SERVICE_ROLE, { auth: { persistSession: false } });
+        const { data: open } = await supabase.from('contact_messages').select('id')
+          .eq('type', 'bot').eq('contact', `tg:${target}`).neq('status', 'done')
+          .order('created_at', { ascending: false }).limit(1).maybeSingle();
+        if (open) {
+          await supabase.from('contact_messages')
+            .update({ status: 'done', handled_at: new Date().toISOString(), admin_note: `Відповідь з адмін-чату: ${text.slice(0, 1500)}` })
+            .eq('id', open.id);
+        }
+      }
       await sendMessage(msg.chat.id, sent
         ? (isPlusQuestion ? '✅ Відповідь надіслано підписнику.' : '✅ Надіслано в @DityamPlusBot.')
         : '⚠️ Telegram не прийняв відповідь — можливо, підписник заблокував @DityamPlusBot.');
