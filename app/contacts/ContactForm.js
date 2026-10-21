@@ -1,7 +1,7 @@
 'use client';
 import '@/app/styles/contact-form.css';
 import { useEffect, useState } from 'react';
-import { CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
+import { FORM_CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
 import { parseContact } from '@/lib/contactAddress';
 
 /**
@@ -141,7 +141,7 @@ export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', 
             value={type}
             onChange={(e) => { setType(e.target.value); setState('idle'); }}
           >
-            {CONTACT_TYPES.map((o) => (
+            {FORM_CONTACT_TYPES.map((o) => (
               <option key={o.value} value={o.value}>{o.emoji} {(isEn && o.labelEn) || o.label}</option>
             ))}
           </select>

@@ -847,13 +847,22 @@ export async function POST(request) {
         const state = { active: 'підписка активна', pending: 'ще не оплачено',
           paused: 'призупинено', cancelled: 'скасовано',
           unsubscribed: 'відписалась' }[sub.status] || 'новий контакт';
+        // Спершу в базу: до 21.10.2026 питання лише летіло в адмін-чат і
+        // ніде не зберігалось — у /admin/messages його не було (Марія:
+        // «чому ти отакі питання не підтягуєш в адмінку»). Контакт — chat id
+        // (не хендл: «@» у контакті адмінка показує як пошту).
+        const { error: saveErr } = await supabase.from('contact_messages').insert({
+          type: 'bot', name: sub.telegram_handle || null, contact: `tg:${chatId}`,
+          message: text.slice(0, 4000), page: '@DityamPlusBot',
+        });
+        if (saveErr) console.error('plus question: не збереглось у contact_messages', saveErr.message);
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           // Заголовок фіксований — ЗА НИМ webhook/route.js впізнає, що це
           // питання, і відправляє відповідь реплаєм. 27.09.2026 статус був
           // усередині заголовка («Питання ще не оплаченого Dityam+»), і саме
           // на цих людях — тих, хто не дійшов до оплати, — відповідь реплаєм
           // мовчки не спрацьовувала б. Статус тепер після хендла.
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>`);
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>\n<a href="${SITE_URL}/admin/messages">Відкрити в адмінці →</a>`);
         }
         await bot.sendMessage(chatId, '📝 Отримали. Повернемося з відповіддю якомога швидше, прямо сюди 🧡');
       }
