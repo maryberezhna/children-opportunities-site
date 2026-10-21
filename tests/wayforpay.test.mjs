@@ -331,3 +331,22 @@ test('покупку Dityam+ у GA4 шле колбек оплати, а не с
     events: [{ name: 'plus_purchase', params: { value: 99 } }],
   });
 });
+
+// 20.10.2026: скасування підписки падало з «Validation error.
+// merchantPassword: Provided argument must be a string with length 32».
+// Ми слали сирий секретний ключ, а Regular API чекає його MD5.
+// Ціна помилки: /stop не доводив справу до кінця, людина лишалась активною
+// підписницею й бачила «не вдалося скасувати».
+test('REMOVE: merchantPassword — це MD5 ключа, 32 знаки, а не сам ключ', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync(new URL('../lib/wayforpay.js', import.meta.url), 'utf8');
+  const fn = src.slice(src.indexOf('export async function removeRecurring'));
+  assert.doesNotMatch(fn, /merchantPassword:\s*SECRET/, 'сирий ключ слати не можна');
+  assert.match(fn, /merchantPassword:\s*merchantPassword\(\)/);
+  assert.match(src, /createHash\('md5'\)\.update\(SECRET/);
+
+  const crypto = (await import('node:crypto')).default;
+  const md5 = crypto.createHash('md5').update(process.env.WAYFORPAY_SECRET_KEY, 'utf8').digest('hex');
+  assert.equal(md5.length, 32, 'рівно стільки чекає WayForPay');
+  assert.match(md5, /^[0-9a-f]{32}$/);
+});
