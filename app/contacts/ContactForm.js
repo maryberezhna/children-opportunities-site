@@ -12,7 +12,7 @@ import { parseContact } from '@/lib/contactAddress';
 const L = {
   uk: {
     doneTitle: 'Дякуємо, лист надійшов!',
-    doneText: 'Ми читаємо все і відповідаємо, якщо ви лишили контакт. Пропозиції можливостей зазвичай зʼявляються на сайті протягом кількох днів.',
+    doneText: 'Ми читаємо все і повернемося з відповіддю якомога швидше, якщо ви лишили контакт. Пропозиції можливостей зазвичай зʼявляються на сайті протягом кількох днів.',
     again: 'Написати ще раз',
     topic: 'Тема звернення',
     message: 'Повідомлення',
@@ -33,7 +33,7 @@ const L = {
   },
   en: {
     doneTitle: 'Thank you, your message arrived!',
-    doneText: 'We read everything and reply if you left a contact. Suggested opportunities usually appear on the site within a few days.',
+    doneText: 'We read everything and will get back to you as soon as we can, if you left a contact. Suggested opportunities usually appear on the site within a few days.',
     again: 'Write again',
     topic: 'What is it about',
     message: 'Message',

@@ -855,7 +855,7 @@ export async function POST(request) {
           // мовчки не спрацьовувала б. Статус тепер після хендла.
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>`);
         }
-        await bot.sendMessage(chatId, '📝 Отримали. Відповімо тут найближчим часом 🧡');
+        await bot.sendMessage(chatId, '📝 Отримали. Повернемося з відповіддю якомога швидше, прямо сюди 🧡');
       }
     }
     return new Response('ok');
