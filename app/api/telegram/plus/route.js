@@ -371,7 +371,8 @@ async function sendProfileReview(bot, supabase, sub, chatId) {
   const text = ['📝 <b>Ваша анкета</b>', '', ...profileLines(sub, kids), '', 'Все правильно?'].join('\n');
   await bot.sendMessage(chatId, text, {
     inline_keyboard: [
-      [{ text: '✅ Так, далі до оплати', callback_data: 'review:ok' }],
+      // Безкоштовно — «до оплати» лякає (21.10.2026: люди доходили сюди й зупинялись).
+      [{ text: PLUS_FREE ? '✅ Так, усе правильно' : '✅ Так, далі до оплати', callback_data: 'review:ok' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'review:edit' }],
       [{ text: '➕ Додати дитину', callback_data: 'review:add' }],
     ],

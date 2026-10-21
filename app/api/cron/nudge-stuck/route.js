@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { makeBot } from '@/lib/digestFlow';
 import { STALL_MINUTES, stallStage, shouldNudge, nudgeText } from '@/lib/nudge';
+import { PLUS_FREE } from '@/lib/plus';
 
 /**
  * Написати тому, хто завис до оплати або на ній.
@@ -76,7 +77,9 @@ export async function GET(request) {
     const hasChild = withChild.has(sub.id);
     if (!shouldNudge(sub, { hasChild })) { skipped.push(sub.telegram_handle); continue; }
     const stage = stallStage(sub, { hasChild });
-    const text = nudgeText(stage);
+    // Поки Dityam+ безкоштовний, етапу «оплата» не існує: анкета готова = підписка
+    // увімкнена. 21.10.2026 цей cron написав 18 людям «лишився один крок — оплата».
+    const text = PLUS_FREE && stage === 'pay' ? null : nudgeText(stage);
     if (!text) { skipped.push(sub.telegram_handle); continue; }
 
     const res = await bot.sendMessage(sub.telegram_chat_id, text);
