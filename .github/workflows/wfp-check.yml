@@ -1,0 +1,28 @@
+name: Diag — WayForPay Regular API (manual)
+
+# Разова перевірка: який merchantPassword приймає Regular API.
+# requestType STATUS лише читає стан — нічого не скасовує.
+on:
+  workflow_dispatch:
+    inputs:
+      order_reference:
+        description: 'orderReference підписки (з digest_subscribers.wfp_order_reference)'
+        required: true
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - env:
+          WAYFORPAY_MERCHANT_ACCOUNT: ${{ secrets.WAYFORPAY_MERCHANT_ACCOUNT }}
+          WAYFORPAY_SECRET_KEY: ${{ secrets.WAYFORPAY_SECRET_KEY }}
+          ORDER_REFERENCE: ${{ github.event.inputs.order_reference }}
+        run: node scripts/wfp-check.mjs
