@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, refundBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, accessLine, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
+const { invoiceBody, refundBody, removeSucceeded, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, accessLine, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
@@ -366,4 +366,17 @@ test('повернення: підпис на merchantAccount;orderReference;amo
     createHmac('md5', 'test_secret')
       .update('test_merchant;abc123def456-1790250913830-m;99;UAH', 'utf8').digest('hex'),
   );
+});
+
+// Скасування регулярного: «його вже немає» — теж успіх. Регресія, проти якої
+// стоїть тест: /stop показує людині результат цього виклику, і якщо рахувати
+// успіхом лише 4100, вона побачить «не вдалося скасувати» там, де скасовувати
+// нічого (21.10.2026 так відповідали всі чотири підписки).
+test('скасування регулярного: 4100, 4102 і 4107 — усе успіх', () => {
+  assert.equal(removeSucceeded(4100), true);   // щойно скасували
+  assert.equal(removeSucceeded(4102), true);   // Rule is not found
+  assert.equal(removeSucceeded(4107), true);   // Regular payment is closed
+  assert.equal(removeSucceeded('4107'), true); // WayForPay інколи шле рядком
+  assert.equal(removeSucceeded(1113), false);  // не авторизувались — не успіх
+  assert.equal(removeSucceeded(undefined), false);
 });
