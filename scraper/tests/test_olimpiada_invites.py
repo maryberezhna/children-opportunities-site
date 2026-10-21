@@ -93,9 +93,14 @@ class InvitesTest(unittest.TestCase):
             self.assertNotIn("Бажаєте друкований диплом?", part)
             self.assertIn("Вкажіть, куди його надіслати", part)
             self.assertIn("#dostavka", part)
-        # Dityam+ після олімпіади — перший місяць за 1 грн (08.10.2026), у кожному листі.
+        # Dityam+ після олімпіади — у кожному листі. З 21.10.2026 безкоштовно
+        # (inv.PLUS_FREE), до того — перший місяць за 1 грн (08.10.2026).
         for part in (text, body):
-            self.assertIn("Перший місяць — 1 грн замість 99 грн, далі 99 грн/міс", part)
+            if inv.PLUS_FREE:
+                self.assertIn("Підключити можна безкоштовно", part)
+                self.assertNotIn("грн/міс", part)
+            else:
+                self.assertIn("Перший місяць — 1 грн замість 99 грн, далі 99 грн/міс", part)
             self.assertIn("https://t.me/DityamPlusBot?start=from_olimpiada", part)
             self.assertNotIn("Dityam+ —", part)
         # Без вкладення (11.10.2026): лише посилання на сторінку диплома.

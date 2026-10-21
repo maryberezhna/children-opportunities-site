@@ -103,10 +103,10 @@ export default async function Cabinet({ searchParams }) {
         Підписникам, що прийшли з бота, не показуємо. */}
     {row.source !== 'dityam_plus' ? (
       <section className="mkK-review mkK-plus">
-        <p className="mk-kick">Dityam+ на місяць за {PRICE_FIRST} грн замість {PRICE} грн</p>
+        <p className="mk-kick">{PLUS_FREE ? 'Dityam+ безкоштовно' : `Dityam+ на місяць за ${PRICE_FIRST} грн замість ${PRICE} грн`}</p>
         <h2 className="mkT-hand ink">Що далі після «Модного коду»?</h2>
         <p className="mkT-text">Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини і завчасно нагадує про дедлайни — у Telegram. А ще підписники першими дізнаються про наші нові олімпіади й конкурси. {PLUS_FREE ? 'Підключити можна безкоштовно, одразу в боті.' : `Перший місяць — ${PRICE_FIRST} грн замість ${PRICE} грн, далі ${PRICE} грн/міс, скасувати можна будь-коли.`}</p>
-        <a className="mk-btn-y" href={`https://t.me/${PLUS_BOT}?start=from_modnyi_kod`} target="_blank" rel="noopener">Спробувати Dityam+ за {PRICE_FIRST} грн</a>
+        <a className="mk-btn-y" href={`https://t.me/${PLUS_BOT}?start=from_modnyi_kod`} target="_blank" rel="noopener">{PLUS_FREE ? 'Підключити Dityam+ безкоштовно' : `Спробувати Dityam+ за ${PRICE_FIRST} грн`}</a>
       </section>
     ) : null}
   </>);

@@ -16,6 +16,7 @@ const { BANK } = await import('../content/olimpiada/lohika-9-11.js');
 const { HINTS } = await import('../content/olimpiada/hints.js');
 const { missedQuestions } = await import('../lib/olimpiada.js');
 const { buildDiploma } = await import('../lib/olimpiada-mail.js');
+const { PLUS_FREE } = await import('../lib/plus.js');
 const read = (f) => readFileSync(f, 'utf8');
 
 test('підказка є до кожного завдання й не порожня', () => {
@@ -71,6 +72,7 @@ test('лист без розбору — він лише на сторінці �
   }
   assert.match(html, /Відкрити диплом/);
   assert.match(text, /Бажаєте друкований диплом\?/);
-  assert.match(html, /Спробувати Dityam\+ за 1 грн/);
+  // Поки Dityam+ безкоштовний (PLUS_FREE), у кнопці слово, а не ціна.
+  assert.match(html, PLUS_FREE ? /Підключити Dityam\+ безкоштовно/ : /Спробувати Dityam\+ за 1 грн/);
   assert.doesNotMatch(py, /missed_questions|Розбір: над чим/);
 });
