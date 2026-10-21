@@ -1,0 +1,37 @@
+name: WayForPay — зупинити регулярні списання (manual)
+
+# Dityam+ безкоштовний із 21.10.2026. Підписки, створені до того, WayForPay
+# списує далі — цей воркфлоу їх зупиняє.
+#
+# Потрібен секрет WAYFORPAY_REGULAR_PASSWORD: Особистий кабінет WayForPay →
+# Налаштування магазину → магазин → блок «Реквізити мерчанту».
+#
+# mode=status (типово) лише показує стан. mode=remove скасовує.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'status — лише подивитись; remove — скасувати'
+        type: choice
+        options: [status, remove]
+        default: status
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  stop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - env:
+          WAYFORPAY_MERCHANT_ACCOUNT: ${{ secrets.WAYFORPAY_MERCHANT_ACCOUNT }}
+          WAYFORPAY_REGULAR_PASSWORD: ${{ secrets.WAYFORPAY_REGULAR_PASSWORD }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MODE: ${{ github.event.inputs.mode }}
+        run: node scripts/wfp-stop.mjs
