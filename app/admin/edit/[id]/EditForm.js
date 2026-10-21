@@ -138,13 +138,17 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
   // Нове джерело мусить бути сторінкою, а не формою чи каналом — тоді кнопки
   // гаснуть. Старе (досі допис) лише підсвічуємо: людина вирішує сама.
   const srcChanged = f.source_url.trim() && f.source_url.trim() !== (opp.source_url || '');
-  const sourceProblem = srcChanged ? sourceUrlProblem(f.source_url) : null;
+  // «Пропустити перевірку» (Марія, 21.10.2026): людина бачить сторінку й
+  // вирішує сама — кнопки знову працюють, а сервер отримує ignore_source.
+  const [ignoreSource, setIgnoreSource] = useState(false);
+  const [sourceRefused, setSourceRefused] = useState(null); // true/false = що тиснули, коли сервер відмовив через джерело
+  const sourceProblem = srcChanged && !ignoreSource ? sourceUrlProblem(f.source_url) : null;
   const sourceWarn = !srcChanged && opp.source_url ? sourceUrlProblem(opp.source_url) : null;
 
-  async function save(publish) {
+  async function save(publish, ignore = ignoreSource) {
     setBusy(true); setDone('');
     try {
-      const payload = { id: opp.id, ...f, publish };
+      const payload = { id: opp.id, ...f, publish, ignore_source: ignore };
       // Країну шлемо, лише якщо її змінили: «Кілька країн» і ручні позначки
       // конвеєра інакше перезаписались би тим, що показує один селект.
       if (f.country === initialCountry) delete payload.country;
@@ -159,10 +163,14 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
       });
       if (res.ok) {
         const body = await res.json().catch(() => ({}));
+        setSourceRefused(null);
         setDone(publish ? '✅ Збережено й опубліковано' : '💾 Збережено (лишилось чернеткою)');
         onDone?.({ published: publish, slug: body.slug || null });
       } else if (res.status === 422) {
         const body = await res.json().catch(() => ({}));
+        // Відмова через джерело — не глухий кут: під помилкою зʼявляється
+        // «Опублікувати все одно».
+        setSourceRefused(body.error === 'bad_source' ? publish : null);
         // Сервер на кожну відмову шле людський текст у body.problem («бракує:
         // …», «дата вже минула — потрібні дати нового сезону», «джерело не
         // те»). Доти форма друкувала лише список полів, і expired показувався
@@ -219,7 +227,7 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
         }}
         placeholder="https://сайт-організатора/сторінка"
       />
-      {sourceProblem ? <p style={{ margin: '5px 0 0', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>{sourceProblem}</p> : null}
+      {sourceProblem ? <p style={{ margin: '5px 0 0', color: '#a11b1b', fontSize: 13.5, fontWeight: 600 }}>{sourceProblem} <button type="button" onClick={() => setIgnoreSource(true)} style={{ marginLeft: 6, padding: '2px 10px', fontSize: 13, fontWeight: 600, borderRadius: 8, border: '1px solid #d3dbe9', background: '#fff', color: '#54617a', cursor: 'pointer' }}>Пропустити перевірку</button></p> : null}
       {sourceWarn ? <p style={{ margin: '5px 0 0', color: '#b4530a', fontSize: 13.5, fontWeight: 600 }}>⚠ {sourceWarn}</p> : null}
       <label style={L}>Опис</label>
       <textarea style={{ ...I, resize: 'vertical' }} rows={4} value={f.summary} onChange={up('summary')} />
@@ -366,7 +374,7 @@ export default function EditForm({ opp, stub = false, inline = false, onDone }) 
           ? <a href={`/admin/edit/${opp.id}`} style={{ padding: '10px 6px', fontSize: 14, color: '#54617a' }}>Усі поля →</a>
           : <a href="/admin" style={{ padding: '10px 6px', fontSize: 14, color: '#54617a' }}>← До черги</a>}
       </div>
-      {done ? <p style={{ marginTop: 12, fontWeight: 600, color: done.startsWith('Помилка') ? '#d92c2c' : '#15803d' }}>{done}</p> : null}
+      {done ? <p style={{ marginTop: 12, fontWeight: 600, color: done.startsWith('Помилка') ? '#d92c2c' : '#15803d' }}>{done}{sourceRefused !== null && done.startsWith('Помилка') ? <> <button type="button" onClick={() => { setIgnoreSource(true); setSourceRefused(null); save(sourceRefused, true); }} disabled={busy} style={{ marginLeft: 8, padding: '6px 14px', fontSize: 14, fontWeight: 700, borderRadius: 10, border: 'none', background: '#15803d', color: '#fff', cursor: 'pointer' }}>{sourceRefused ? 'Опублікувати все одно' : 'Зберегти все одно'}</button></> : null}</p> : null}
     </div>
   );
 }

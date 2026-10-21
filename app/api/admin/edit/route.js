@@ -103,7 +103,7 @@ export async function POST(request) {
   // запис, де воно досі допис, інакше не вдалося б навіть зберегти.
   if (typeof b.source_url === 'string' && b.source_url.trim()
       && b.source_url.trim() !== (cur?.source_url || '')) {
-    const problem = sourceUrlProblem(b.source_url);
+    const problem = b.ignore_source ? '' : sourceUrlProblem(b.source_url);
     if (problem) return Response.json({ ok: false, error: 'bad_source', problem }, { status: 422 });
     // Зберігаємо очищену адресу, а не те, що вставили: разом із посиланням
     // з допису приїжджають невидимі символи, лапки й хвіст тексту (16.10.2026).
@@ -121,7 +121,9 @@ export async function POST(request) {
     // Доти тут перевірялись лише поля, а джерело — лише якщо його щойно
     // змінили. Запис, що вже лежав із чужим Telegram-каналом чи без цитат,
     // проходив на сайт, бо форма його джерела не торкалась (02.10.2026).
-    const blocker = publishBlockers({ ...(cur || {}), ...patch });
+    // ignore_source — кнопка «Опублікувати все одно» в редакторі: перевірку
+    // джерела людина свідомо пропустила, решта воріт працює.
+    const blocker = publishBlockers({ ...(cur || {}), ...patch }, { ignoreSource: !!b.ignore_source });
     if (blocker) return Response.json({ ok: false, ...blocker }, { status: 422 });
     patch.status = 'active';
     patch.verified_at = new Date().toISOString();
