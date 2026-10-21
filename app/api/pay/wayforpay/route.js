@@ -5,8 +5,9 @@ import { makeBot, beginFlow, finishFlow } from '@/lib/digestFlow';
 import {
   verifyCallback, acceptResponse, tokenFromOrderRef, periodFromOrderRef,
   FAILED_STATUSES, describeFailure, failureStopsSubscription,
-  failureAdviceForPerson, accessLine, payStartUrl,
+  failureAdviceForPerson, accessLine, payStartUrl, refundPayment,
 } from '@/lib/wayforpay';
+import { PLUS_FREE } from '@/lib/plus';
 import { markPromoPaid } from '@/lib/promo';
 import { recordPayment, productOf, paidAtOf } from '@/lib/payments';
 import { handleOlimpCallback, isOlimpOrder } from '@/lib/olimpiada-server';
@@ -167,7 +168,49 @@ export async function POST(request) {
           await beginFlow(bot, supabase, sub.telegram_chat_id, null);
         }
       }
+      // Dityam+ безкоштовний (PLUS_FREE у lib/plus.js), але регулярні списання,
+      // створені до 21.10.2026, WayForPay знімає далі: зупинити їх можна лише
+      // Regular API, а він вимагає пароль із кабінету, якого в нас немає. Тож
+      // гроші повертаємо одразу тут — це єдине місце, де ми взагалі дізнаємось
+      // про списання, і єдина грошова операція, яку ми можемо зробити самі.
+      //
+      // Доступ при цьому не чіпаємо: він і так безкоштовний.
+      if (PLUS_FREE) {
+        const refund = await refundPayment(b.orderReference, b.amount);
+        if (!refund.ok) {
+          console.error(`[wayforpay] повернення ${b.orderReference} не вийшло: `
+            + `${refund.reasonCode || ''} ${refund.reason || refund.error || ''}`);
+        }
+
+        if (sub?.telegram_chat_id && PLUS_TOKEN) {
+          await makeBot(PLUS_TOKEN).sendMessage(sub.telegram_chat_id,
+            `💳 <b>З вашої картки списалося ${esc(b.amount)} грн за Dityam+</b>\n\n`
+            + 'Це наша помилка: Dityam+ тепер безкоштовний. Гроші повертаємо — '
+            + 'вони зайдуть на картку протягом кількох днів.\n\n'
+            + 'Доступ лишається, робити нічого не треба. Вибачте 🧡');
+        }
+
+        if (MAIN_TOKEN && ADMIN_CHAT_ID) {
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
+            '⚠️ <b>Списання за безкоштовний Dityam+</b>\n'
+            + `${esc(sub?.telegram_handle || sub?.telegram_chat_id || '—')} · ${esc(b.amount)} грн\n`
+            + (refund.ok
+              ? 'Повернення: ✅ зроблено автоматично'
+              : `Повернення: ❌ НЕ ВИЙШЛО (${esc(refund.reasonCode || refund.error || '—')} `
+                + `${esc(refund.reason || '')}) — повернути руками в кабінеті WayForPay`)
+            + `\n<code>${esc(b.orderReference)}</code>`);
+        }
+      }
     } else if (FAILED.includes(b.transactionStatus)) {
+      // Dityam+ безкоштовний — невдале списання більше нічого не означає.
+      // Ставити людину на паузу немає за що, а показати їй кнопку «Спробувати
+      // ще раз» означало б продавати те, що й так безкоштовне.
+      if (PLUS_FREE) {
+        console.warn(`[wayforpay] ${b.transactionStatus} ${b.reasonCode} на ${b.orderReference}; `
+          + 'Dityam+ безкоштовний — підписку не чіпаємо');
+        return Response.json(acceptResponse(b.orderReference));
+      }
+
       // План знижуємо разом зі статусом, інакше в базі лишається paused+premium
       // і статистика рахує таку людину як платну.
       //

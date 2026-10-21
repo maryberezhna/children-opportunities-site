@@ -11,7 +11,7 @@ delete process.env.WAYFORPAY_AMOUNT;
 delete process.env.WAYFORPAY_AMOUNT_HALF;
 delete process.env.WAYFORPAY_AMOUNT_EARLY;
 
-const { invoiceBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, accessLine, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
+const { invoiceBody, refundBody, tokenFromOrderRef, periodFromOrderRef, describeFailure, FAILED_STATUSES, payStartUrl, failureStopsSubscription, failureAdviceForPerson, accessLine, isOurOrderRef, PRICE, PRICE_HALF } = await import('../lib/wayforpay.js');
 const { readFileSync } = await import('node:fs');
 
 const sub = { unsub_token: 'abc123def456', email: null, phone: '+380501112233' };
@@ -348,4 +348,22 @@ test('REMOVE: merchantPassword — окремий пароль Regular API, не
   assert.match(src, /WAYFORPAY_REGULAR_PASSWORD/);
   // Без пароля не йдемо в мережу: інакше людина побачить чужу помилку.
   assert.match(fn, /no_regular_password/);
+});
+
+// Повернення коштів за безкоштовний Dityam+. Регресія, проти якої стоїть тест:
+// підпис REFUND рахується на секретному ключі й лише на чотирьох полях
+// (wiki.wayforpay.com/en/view/852115). Зайве поле в підписі — і WayForPay
+// відмовить, а гроші лишаться в нас.
+test('повернення: підпис на merchantAccount;orderReference;amount;currency', async () => {
+  const { createHmac } = await import('node:crypto');
+  const b = refundBody('abc123def456-1790250913830-m', 99, 'Dityam+ став безкоштовним');
+  assert.equal(b.transactionType, 'REFUND');
+  assert.equal(b.amount, 99);
+  assert.equal(b.currency, 'UAH');
+  assert.equal(b.comment, 'Dityam+ став безкоштовним');
+  assert.equal(
+    b.merchantSignature,
+    createHmac('md5', 'test_secret')
+      .update('test_merchant;abc123def456-1790250913830-m;99;UAH', 'utf8').digest('hex'),
+  );
 });
