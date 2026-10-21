@@ -35,6 +35,14 @@ test('повний запис проходить', () => {
   assert.equal(publishBlockers(GOOD), null);
 });
 
+test('«пропустити перевірку» знімає лише відмову через джерело', () => {
+  const media = { ...GOOD, source_url: 'https://dtv.dn.ua/news/1', apply_url: null };
+  assert.equal(publishBlockers(media)?.error, 'bad_source');
+  assert.equal(publishBlockers(media, { ignoreSource: true }), null);
+  const noDate = { ...GOOD, opportunity_type: 'camp', deadline: null, source_url: 'https://dtv.dn.ua/news/1' };
+  assert.equal(publishBlockers(noDate, { ignoreSource: true })?.error, 'missing_required');
+});
+
 test('програмі з датами без дати відмовляють першим', () => {
   const b = publishBlockers({ ...GOOD, opportunity_type: 'camp', deadline: null });
   assert.equal(b.error, 'missing_required');
