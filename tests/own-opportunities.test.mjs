@@ -4,6 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ownOpportunities, OWN_PATH } from '../lib/own-opportunities.js';
+import { PLUS_FREE } from '../lib/plus.js';
 import { SITE_EVENT_NAMES } from '../lib/site-events.js';
 
 const read = (f) => readFileSync(new URL(`../${f}`, import.meta.url), 'utf8');
@@ -15,7 +16,10 @@ test('кожна картка має ключ для аналітики й ве�
     assert.match(it.key, /^[a-z-]+$/);
     assert.match(it.href, /^\/[a-z-]+$/);
   }
-  assert.match(items.find((i) => i.key === 'plus').note, /99 грн\/міс/);
+  // Поки Dityam+ безкоштовний (PLUS_FREE), у картці стоїть слово, а не ціна:
+  // суперечність між карткою й ботом, який грошей не просить, гірша за
+  // відсутність числа.
+  assert.match(items.find((i) => i.key === 'plus').note, PLUS_FREE ? /безкоштовно/ : /99 грн\/міс/);
 });
 
 test('лічильники own_view і own_click приймає /api/event', () => {

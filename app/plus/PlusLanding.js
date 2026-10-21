@@ -3,7 +3,7 @@ import PlusChoice from '../PlusChoice';
 import SubscribeForm from './SubscribeForm';
 import PlusFlowDemo from './PlusFlowDemo';
 import PlusPathsReveal from './PlusPathsReveal';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_FREE, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 import BotLink from './BotLink';
 import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
 import { MK } from '@/lib/modnyi-kod';
@@ -421,6 +421,52 @@ const OPEN = {
   },
 };
 
+// Dityam+ став безкоштовним 21.10.2026 (PLUS_FREE у lib/plus.js). Накладка, а
+// не правка рядків: ціни лишаються в коді на випадок, якщо рішення зміниться,
+// а сторінка не має суперечити боту, який грошей уже не просить.
+//
+// FAQ підміняємо за текстом питання, а не за номером: OPEN колись замінював
+// «індекс 1», список відтоді переїхав, і на сторінці одночасно висіли «Як
+// підписатися?» і «Dityam+ ще не продається — дороблюємо».
+const FREE = {
+  uk: {
+    whatText: 'Безкоштовна підписка від Dityam.com.ua для батьків. Ви один раз розповідаєте про кожну дитину, а ми щодня перевіряємо нові можливості на платформі й надсилаємо в Telegram ті, що підходять саме їй, — разом із нагадуваннями про дедлайни.',
+    priceFact: ['Скільки коштує', 'Нічого: Dityam+ безкоштовний'],
+    priceTitle: 'Скільки коштує',
+    month: 'Безкоштовно',
+    monthPer: '',
+    monthNote: 'Ні оплати, ні картки — лише кілька питань у боті',
+    half: null,
+    joinTitle: 'Підключити Dityam+',
+    joinText: 'Кілька хвилин у Telegram-боті: питання про кожну дитину — і добірка починає приходити. Оплати немає.',
+    cta: 'Підключити в Telegram',
+    faqDrop: ['Коли можна підписатися?'],
+    faqSwap: {
+      'Як підписатися?': ['Як підписатися?', 'У Telegram-боті @DityamPlusBot: кілька питань про кожну дитину — і все. Оплати немає.'],
+      'Навіщо платити, якщо всі можливості й так безкоштовні?': ['Скільки це коштує?', 'Нічого. Щодня ми перебираємо понад тисячу записів і надсилаємо лише те, що підходить віку, вподобанням і місту вашої дитини. А про дедлайн нагадуємо, поки ще встигаєте зібрати документи: за 4 тижні для стипендій і обмінів, за 2 — для конкурсів, за тиждень — для гуртків.'],
+      'Як скасувати?': ['Як скасувати?', 'Одною командою /stop у боті — без листів у підтримку й пояснень. Оплати немає, тож і списувати нічого.'],
+    },
+  },
+  en: {
+    whatText: 'Dityam+ is a free subscription from Dityam.com.ua for parents. You tell us about each child once, and every day we check new opportunities on the platform and send the ones that fit your child to you on Telegram — together with deadline reminders.',
+    priceFact: ['Price', 'Nothing: Dityam+ is free'],
+    priceTitle: 'Pricing',
+    month: 'Free',
+    monthPer: '',
+    monthNote: 'No payment, no card — just a few questions in the bot',
+    half: null,
+    joinTitle: 'Get Dityam+',
+    joinText: 'A few minutes in the Telegram bot: questions about each child, and the selections start arriving. There is nothing to pay.',
+    cta: 'Get it on Telegram',
+    faqDrop: ['When can I subscribe?'],
+    faqSwap: {
+      'How do I subscribe?': ['How do I subscribe?', 'In the @DityamPlusBot Telegram bot: a few questions about each child, and that is it. There is nothing to pay.'],
+      'Why pay if every opportunity is free anyway?': ['What does it cost?', 'Nothing. Every day we go through more than a thousand listings and send only what fits your child’s age, interests and city. And we remind you about a deadline while there is still time to gather documents: 4 weeks ahead for scholarships and exchanges, 2 for competitions, a week for clubs.'],
+      'How do I cancel?': ['How do I cancel?', 'One command, /stop, in the bot — no emails to support, no explanations. There is nothing to pay, so there is nothing to charge.'],
+    },
+  },
+};
+
 const SITE = 'https://dityam.com.ua';
 
 // Структуровані дані. FAQPage — питання, які AI-асистенти й Google цитують
@@ -452,10 +498,15 @@ function jsonLd(t, lang) {
           name: 'Telegram',
           serviceUrl: 'https://t.me/DityamPlusBot',
         },
-        offers: [
-          { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: String(PRICE), priceCurrency: 'UAH' },
-          { '@type': 'Offer', name: en ? 'Six months' : 'Підписка на пів року', price: String(PRICE_HALF), priceCurrency: 'UAH' },
-        ],
+        // Розмітка мусить збігатися з тим, що бачить людина: поки Dityam+
+        // безкоштовний, ціна в Offer нульова, інакше Google і асистенти
+        // цитуватимуть 99 грн зі сторінки, де написано «безкоштовно».
+        offers: PLUS_FREE
+          ? [{ '@type': 'Offer', name: en ? 'Free' : 'Безкоштовно', price: '0', priceCurrency: 'UAH' }]
+          : [
+            { '@type': 'Offer', name: en ? 'Monthly' : 'Місячна підписка', price: String(PRICE), priceCurrency: 'UAH' },
+            { '@type': 'Offer', name: en ? 'Six months' : 'Підписка на пів року', price: String(PRICE_HALF), priceCurrency: 'UAH' },
+          ],
       },
       {
         '@type': 'FAQPage',
@@ -480,9 +531,19 @@ function jsonLd(t, lang) {
 export default function PlusLanding({ lang = 'uk', total = null, picks = [], today = null }) {
   const base = L[lang] || L.uk;
   const open = PLUS_SALES_OPEN ? (OPEN[lang] || OPEN.uk) : null;
-  const t = open
+  const paid = open
     ? { ...base, ...open, faq: base.faq.map((item, i) => (i === 1 ? open.faqWhen : item)) }
     : base;
+  const free = PLUS_FREE ? (FREE[lang] || FREE.uk) : null;
+  const { priceFact, faqDrop = [], faqSwap = {}, ...freeCopy } = free || {};
+  const t = free
+    ? {
+      ...paid,
+      ...freeCopy,
+      whatFacts: paid.whatFacts.map((f) => (f[0] === priceFact[0] ? priceFact : f)),
+      faq: paid.faq.filter(([q]) => !faqDrop.includes(q)).map((item) => faqSwap[item[0]] || item),
+    }
+    : paid;
 
   return (
     <main className="pl" lang={lang === 'en' ? 'en' : undefined}>
@@ -645,11 +706,14 @@ export default function PlusLanding({ lang = 'uk', total = null, picks = [], tod
                   Марії 14.09.2026 — підпис показуємо, лише коли він є. */}
               {t.monthNote ? <div className="pl-price-note">{t.monthNote}</div> : null}
             </div>
-            <div className="pl-price pl-price-best">
-              <span className="pl-ribbon">{t.halfRibbon}</span>
-              <div className="pl-price-amount">{t.half}<span>{t.halfPer}</span></div>
-              <div className="pl-price-note">{t.halfNote}</div>
-            </div>
+            {/* Поки Dityam+ безкоштовний, другого плану немає — картка одна. */}
+            {t.half ? (
+              <div className="pl-price pl-price-best">
+                <span className="pl-ribbon">{t.halfRibbon}</span>
+                <div className="pl-price-amount">{t.half}<span>{t.halfPer}</span></div>
+                <div className="pl-price-note">{t.halfNote}</div>
+              </div>
+            ) : null}
           </div>
           <p className="pl-included-title">{t.includedTitle}</p>
           <ul className="pl-included">

@@ -1,7 +1,7 @@
 import PlusLanding from './PlusLanding';
 import { supabase, publicOpportunities, countActiveOpportunities } from '@/lib/supabase';
 import { kyivToday } from '@/lib/dates';
-import { PLUS_SALES_OPEN } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_FREE } from '@/lib/plus';
 
 const SITE_URL = 'https://dityam.com.ua';
 
@@ -15,7 +15,7 @@ export const revalidate = 3600;
 // сторінка брала прев'ю головної, і в Telegram посилання на Dityam+
 // виглядало як «Усі можливості для дитини». Жодної обіцянки, якої немає в коді.
 const TITLE = 'Dityam+: можливості для дитини й нагадування про дедлайни';
-const DESCRIPTION = `Підписка Dityam+: щодня добираємо можливості для кожної дитини за віком, вподобаннями й містом і нагадуємо про дедлайни. 99 грн/міс або 549 грн за пів року.${PLUS_SALES_OPEN ? '' : ' Скоро.'}`;
+const DESCRIPTION = `Підписка Dityam+: щодня добираємо можливості для кожної дитини за віком, вподобаннями й містом і нагадуємо про дедлайни. ${PLUS_FREE ? 'Безкоштовно.' : '99 грн/міс або 549 грн за пів року.'}${PLUS_SALES_OPEN ? '' : ' Скоро.'}`;
 
 export const metadata = {
   title: { absolute: TITLE },
