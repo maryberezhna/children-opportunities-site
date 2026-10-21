@@ -626,7 +626,10 @@ export async function POST(request) {
       // за місяць, що гроші йдуть за послугу, якої вже немає.
       const cancelled = await cancelSubscription(sub);
       if (!cancelled.ok && cancelled.hadOrder) {
-        await bot.sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напишіть сюди — ми скасуємо вручну сьогодні ж, гроші не спишуться.');
+        // Не просимо написати: бот нерозпізнаний текст мовчки викидає, тож
+        // людина писала б у порожнечу. Сигнал в адмін-чат летить рядком нижче
+        // автоматично, і цього досить (Марія, 20.10.2026: «що за бред»).
+        await bot.sendMessage(chatId, '⚠️ Автоматично скасувати списання не вийшло. Ми вже отримали сигнал і скасуємо вручну сьогодні — гроші не спишуться. Робити нічого не треба.');
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
             `🚨 <b>WayForPay REMOVE не пройшов</b>\nchat <code>${chatId}</code>, order <code>${esc(sub?.wfp_order_reference || '—')}</code>\n${esc(cancelled.reason || cancelled.error || '')}`);
