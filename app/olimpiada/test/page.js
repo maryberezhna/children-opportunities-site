@@ -4,7 +4,7 @@ import { OLIMP, OPEN_TASK, criteriaText, DIPLOMA_VERSION, levelByKey, diplomaNo,
 import { getStore, validToken, syncPayment, syncPrint, loadKeys } from '@/lib/olimpiada-server';
 import { BANK } from '@/content/olimpiada/lohika-9-11';
 import { HINTS } from '@/content/olimpiada/hints';
-import { PLUS_BOT } from '@/lib/plus';
+import { PLUS_BOT, PLUS_FREE } from '@/lib/plus';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import TestRunner from './TestRunner';
 import { OPEN_TASK_ART } from '@/content/olimpiada/open-task-art';
@@ -288,7 +288,7 @@ export default async function TestPage({ searchParams }) {
         <p className="ol-text">
           Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини
           і завчасно нагадує про дедлайни — у Telegram. А ще підписники першими дізнаються про наші нові
-          олімпіади й конкурси. Перший місяць — {PRICE_FIRST} грн замість {PRICE} грн, далі {PRICE} грн/міс, скасувати можна будь-коли.
+          олімпіади й конкурси. {PLUS_FREE ? 'Підключити можна безкоштовно, одразу в боті.' : `Перший місяць — ${PRICE_FIRST} грн замість ${PRICE} грн, далі ${PRICE} грн/міс, скасувати можна будь-коли.`}
         </p>
         <a href={`https://t.me/${PLUS_BOT}?start=from_olimpiada`} className="ol-btn ol-btn-main" target="_blank" rel="noopener">
           Спробувати Dityam+ за {PRICE_FIRST} грн

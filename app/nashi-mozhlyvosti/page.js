@@ -6,6 +6,7 @@ import { ownOpportunities, OWN_PATH, OWN_LABEL } from '@/lib/own-opportunities';
 import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
 import { MK } from '@/lib/modnyi-kod';
 import { PRICE, PRICE_HALF } from '@/lib/wayforpay';
+import { PLUS_FREE } from '@/lib/plus';
 
 // «Наші можливості» (Марія, 13.10.2026): сторінка, де лише власні продукти
 // Dityam.com.ua — олімпіади й Dityam+. На неї веде помаранчева кнопка в
@@ -51,7 +52,7 @@ function faq() {
     },
     {
       q: 'Скільки це коштує?',
-      a: `${OLIMP_ON ? `Онлайн-олімпіада з логіки: ${olimpPrice}. ` : ''}«${MK.title}»: безкоштовно. Dityam+: ${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року.`,
+      a: `${OLIMP_ON ? `Онлайн-олімпіада з логіки: ${olimpPrice}. ` : ''}«${MK.title}»: безкоштовно. Dityam+: ${PLUS_FREE ? 'безкоштовно' : `${PRICE} грн на місяць або ${PRICE_HALF} грн за пів року`}.`,
     },
     {
       q: 'Для якого віку?',

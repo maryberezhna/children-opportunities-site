@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PRICE } from '@/lib/wayforpay';
+import { PLUS_FREE } from '@/lib/plus';
 
 /**
  * Блок Dityam+ унизу сторінки можливості — між «Схожими можливостями» і
@@ -44,7 +45,7 @@ const T = {
     badge: 'Dityam+',
     // «Платна підписка» словами: сама назва нічого не каже тому, хто бачить
     // її вперше, а поруч на цій же сторінці стоїть безкоштовний канал.
-    kind: 'платна підписка',
+    kind: PLUS_FREE ? 'безкоштовна підписка' : 'платна підписка',
     title: 'Щоб дитина дізналася про конкурс до дедлайну, а не після',
     text: 'Приватний бот стежить за датами замість вас: нагадує про дедлайн завчасно, має кнопку «У календар» і щодня надсилає нові можливості під вік та інтереси дитини.',
     // Рядок із помаранчевою рискою — те, що людина побачить, якщо більше
@@ -56,16 +57,17 @@ const T = {
     // першого місяця — на кнопці, решта — на /plus.
     // Нерозривний пробіл: на телефоні кнопка переноситься, і число не має
     // лишатись в кінці рядка окремо від «грн/міс».
-    cta: `Dityam+ за ${PRICE}\u00a0грн/міс`,
+    // Без тире після «Dityam+» (правило Марії): «Dityam+ безкоштовно».
+    cta: PLUS_FREE ? 'Dityam+ безкоштовно' : `Dityam+ за ${PRICE}\u00a0грн/міс`,
     href: '/plus',
   },
   en: {
     badge: 'Dityam+',
-    kind: 'paid subscription',
+    kind: PLUS_FREE ? 'free subscription' : 'paid subscription',
     title: 'So your child hears about a contest before the deadline, not after',
     text: 'A private bot keeps track of dates for you: it reminds you of deadlines in good time, has an “Add to calendar” button and sends new opportunities for your child’s age and interests every day.',
     diff: 'A separate profile for each child.',
-    cta: `Dityam+ for UAH\u00a0${PRICE}/month`,
+    cta: PLUS_FREE ? 'Dityam+ for free' : `Dityam+ for UAH\u00a0${PRICE}/month`,
     href: '/en/plus',
   },
 };

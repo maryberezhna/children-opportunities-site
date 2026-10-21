@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Footer from '../../Footer';
+import { PLUS_FREE } from '@/lib/plus';
 
 export const metadata = {
   title: 'Public offer and terms — Dityam',
@@ -72,7 +73,20 @@ export default function TermsPageEn() {
             deadlines, and helping with the application.
           </p>
 
-          <h2>3. Price and payment</h2>
+          <h2>3. Price</h2>
+          {PLUS_FREE ? (
+            <>
+              <p>
+                <strong>The Dityam+ subscription is provided free of charge.</strong> No fee is
+                taken, no payment details are collected and no recurring charges are created.
+              </p>
+              <p>
+                If money is nevertheless charged on a subscription set up earlier, we refund it
+                in full, without the user having to ask.
+              </p>
+            </>
+          ) : (
+            <>
           <ul>
             <li><strong>Monthly subscription — UAH 99</strong> (charged every month).</li>
             <li><strong>Six-month subscription — UAH 549</strong> (charged every six months, ≈ UAH 92/month).</li>
@@ -99,11 +113,13 @@ export default function TermsPageEn() {
             charging</strong> of the chosen amount at the interval of the chosen
             plan, until the subscription is cancelled.
           </p>
+            </>
+          )}
 
           <h2>4. How and when the service is provided</h2>
           <p>
-            Access is granted <strong>immediately after successful payment</strong>:
-            the bot confirms the payment, and the user receives notifications based
+            Access is granted <strong>{PLUS_FREE ? 'as soon as the child’s profile is filled in in the bot' : 'immediately after successful payment'}</strong>:
+            the user receives notifications based
             on the child’s profile filled in in the bot. Notifications are sent at
             the frequency the user chooses in the bot: daily, every 2 days or once a week
             (new opportunities are checked daily). The service is provided

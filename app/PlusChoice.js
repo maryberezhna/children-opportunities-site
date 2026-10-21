@@ -1,7 +1,7 @@
 import { formatDate } from '@/lib/dates';
 import { soonestDeadlines } from '@/lib/timing';
 import { PRICE } from '@/lib/wayforpay';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_FREE, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
 import BotLink from './plus/BotLink';
 
 // Заклик наприкінці сторінки Dityam+: кава чи можливість для дитини (ідея
@@ -26,6 +26,11 @@ const T = {
     text: (price) => `Dityam+ коштує ${price} грн на місяць — як 1 кава на кокосовому молоці. `
       + 'Щодня добираємо можливості окремо для кожної вашої дитини й нагадуємо про дедлайни, '
       + 'поки ще є час подати заявку.',
+    // Поки Dityam+ безкоштовний, порівняння з кавою лишається, але з іншого
+    // боку: кава коштує грошей, підписка — ні.
+    freeText: 'Dityam+ не коштує нічого. Щодня добираємо можливості окремо для кожної вашої '
+      + 'дитини й нагадуємо про дедлайни, поки ще є час подати заявку.',
+    freeListLabel: 'Dityam+ · безкоштовно',
     cupLabel: 'Кава з собою',
     cupNote: 'Закінчується за 15 хвилин',
     listLabel: (price) => `Dityam+ · ${price} грн/міс`,
@@ -43,6 +48,9 @@ const T = {
     text: (price) => `Dityam+ costs UAH ${price} a month — like one coconut-milk coffee. `
       + 'Every day we match opportunities to each of your children and remind you about '
       + 'deadlines while there is still time to apply.',
+    freeText: 'Dityam+ costs nothing. Every day we match opportunities to each of your '
+      + 'children and remind you about deadlines while there is still time to apply.',
+    freeListLabel: 'Dityam+ · free',
     cupLabel: 'Coffee to go',
     cupNote: 'Gone in 15 minutes',
     listLabel: (price) => `Dityam+ · UAH ${price}/mo`,
@@ -82,7 +90,7 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
         <h2 id="v2-choice-title">
           {t.title}<span className="v2-script">{t.script}</span>?
         </h2>
-        <p>{t.text(PRICE)}</p>
+        <p>{PLUS_FREE ? t.freeText : t.text(PRICE)}</p>
         <div className="v2-panel-actions">
           <BotLink href={href} place="plus_choice" target="_blank" rel="noopener noreferrer" className="v2-btn-dark">
             {PLUS_SALES_OPEN ? t.btnOpen : t.btnWait}
@@ -103,7 +111,7 @@ export default function PlusChoice({ opportunities, today, lang = 'uk' }) {
           ))}
         </div>
         <figcaption>
-          <strong>{t.listLabel(PRICE)}</strong>
+          <strong>{PLUS_FREE ? t.freeListLabel : t.listLabel(PRICE)}</strong>
           <span>{t.listNote}</span>
         </figcaption>
       </figure>

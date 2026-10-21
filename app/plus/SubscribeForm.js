@@ -1,5 +1,5 @@
 'use client';
-import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_WAITLIST_URL, plusFromUrl, PLUS_FREE } from '@/lib/plus';
 import { trackConversion } from '@/lib/track';
 
 /**
@@ -18,9 +18,13 @@ const L = {
     telegram: '✈️ Стати в список через Telegram — один тап',
     fine: 'Жодного спаму: одне повідомлення в Telegram про запуск і знижку для перших.',
     openCta: '✈️ Оформити Dityam+ у Telegram',
-    openFine: 'Спершу кілька питань про дитину, потім оплата — усе в боті, за кілька хвилин.',
+    openFine: PLUS_FREE
+      ? 'Кілька питань про дитину — і все, за кілька хвилин у боті. Оплати немає.'
+      : 'Спершу кілька питань про дитину, потім оплата — усе в боті, за кілька хвилин.',
     // Ціна біля кнопки (Марія, 12.10.2026: «додай тут ціну»).
     priceFirst: (p) => `${p.month} грн на місяць`,
+    freeFirst: 'Безкоштовно',
+    freeThen: 'Ні оплати, ні картки — лише кілька питань у боті',
     // «Там можна тільки за 1 грн» (Марія): у боті перший крок — лише місяць за 1 грн, пів року тут не пропонуємо.
     priceThen: (p) => `або ${p.half} грн за пів року · скасувати можна будь-коли`,
   },
@@ -28,8 +32,12 @@ const L = {
     telegram: '✈️ Join the list through Telegram — one tap',
     fine: 'No spam: one Telegram message about the launch and the early-bird discount.',
     openCta: '✈️ Get Dityam+ on Telegram',
-    openFine: 'A few questions about your child first, then payment — all in the bot, in a few minutes.',
+    openFine: PLUS_FREE
+      ? 'A few questions about your child, and that is it — a few minutes in the bot. Nothing to pay.'
+      : 'A few questions about your child first, then payment — all in the bot, in a few minutes.',
     priceFirst: (p) => `UAH ${p.month} a month`,
+    freeFirst: 'Free',
+    freeThen: 'No payment, no card — just a few questions in the bot',
     priceThen: (p) => `or UAH ${p.half} for six months · cancel anytime`,
   },
 };
@@ -47,10 +55,15 @@ export default function SubscribeForm({ lang = 'uk', prices = null }) {
   if (PLUS_SALES_OPEN) {
     return (
       <div style={{ marginTop: 26 }}>
-        {prices ? (
+        {/* Поки Dityam+ безкоштовний, ціна поступається місцем слову «безкоштовно». */}
+        {PLUS_FREE || prices ? (
           <div style={{ textAlign: 'center', margin: '0 0 18px' }}>
-            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>{t.priceFirst(prices)}</div>
-            <div style={{ marginTop: 6, fontSize: 14, color: C.muted, lineHeight: 1.5 }}>{t.priceThen(prices)}</div>
+            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2 }}>
+              {PLUS_FREE ? t.freeFirst : t.priceFirst(prices)}
+            </div>
+            <div style={{ marginTop: 6, fontSize: 14, color: C.muted, lineHeight: 1.5 }}>
+              {PLUS_FREE ? t.freeThen : t.priceThen(prices)}
+            </div>
           </div>
         ) : null}
         <a
