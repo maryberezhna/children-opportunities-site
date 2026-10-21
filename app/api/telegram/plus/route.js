@@ -330,12 +330,18 @@ async function askConsent(bot, chatId, sub) {
   // «Погоджуюсь»). Була стіна тексту, а першою дією — «прийняти Публічну
   // оферту». Тепер головна кнопка — «Почати», а згода — рядком перед нею:
   // юридично те саме (натискання = прийняття оферти й згода на обробку даних).
+  // Поки Dityam+ безкоштовний, ціни тут немає взагалі: це ПЕРШЕ, що бачить
+  // людина, яка прийшла з каналу за словом «безкоштовний».
   await bot.sendMessage(chatId,
-    (introPriceFor(sub)
-      ? `🧡 <b>Перший місяць у Dityam+ за ${fmtPrice(PRICE_FIRST)} грн</b>\n\n`
-      : `🧡 <b>Dityam+ за ${fmtPrice(PRICE)} грн/міс</b>\n\n`)
+    (PLUS_FREE
+      ? '🧡 <b>Dityam+: безкоштовно</b>\n\n'
+      : introPriceFor(sub)
+        ? `🧡 <b>Перший місяць у Dityam+ за ${fmtPrice(PRICE_FIRST)} грн</b>\n\n`
+        : `🧡 <b>Dityam+ за ${fmtPrice(PRICE)} грн/міс</b>\n\n`)
     + 'Щодня добираємо можливості окремо для вашої дитини й завчасно нагадуємо про дедлайни. '
-    + (introPriceFor(sub) ? `Далі ${fmtPrice(PRICE)} грн/міс, скасувати` : 'Скасувати')
+    + (PLUS_FREE
+      ? 'Оплати немає, вимкнути'
+      : introPriceFor(sub) ? `Далі ${fmtPrice(PRICE)} грн/міс, скасувати` : 'Скасувати')
     + ' можна будь-коли.\n\n'
     + 'Спершу кілька коротких питань про дитину.\n\n'
     + `<i>Натискаючи «Почати», ви приймаєте <a href="${SITE_URL}/terms">оферту</a> `
@@ -371,7 +377,7 @@ async function sendProfileReview(bot, supabase, sub, chatId) {
   const text = ['📝 <b>Ваша анкета</b>', '', ...profileLines(sub, kids), '', 'Все правильно?'].join('\n');
   await bot.sendMessage(chatId, text, {
     inline_keyboard: [
-      [{ text: '✅ Так, далі до оплати', callback_data: 'review:ok' }],
+      [{ text: PLUS_FREE ? '✅ Так, усе правильно' : '✅ Так, далі до оплати', callback_data: 'review:ok' }],
       [{ text: '✏️ Заповнити анкету заново', callback_data: 'review:edit' }],
       [{ text: '➕ Додати дитину', callback_data: 'review:add' }],
     ],
@@ -395,7 +401,7 @@ async function afterProfile(bot, supabase, sub, chatId) {
   if (sub.flow_step === 'phone') {
     await supabase.from('digest_subscribers')
       .update({ flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
-    await bot.sendMessage(chatId, 'Номер телефону більше не потрібен — одразу до оплати.', { remove_keyboard: true });
+    await bot.sendMessage(chatId, `Номер телефону більше не потрібен${PLUS_FREE ? '.' : ' — одразу до оплати.'}`, { remove_keyboard: true });
   }
   await sendPayOffer(bot, sub, chatId, supabase);
 }
@@ -434,18 +440,30 @@ function subDetails(sub, kids) {
 // основний бот зветься «Dityam Адмінка 🛠», і людина, що хотіла дізнатись про
 // Dityam+, отримувала відповідь від «адмінки». source = 'plus_bot:<звідки>' —
 // за ним plus_launch.py знає, яким ботом писати про запуск.
-const WAITLIST_WELCOME = () => `Ви в списку перших! 🧡
+//
+// Поки Dityam+ безкоштовний, чекати нема чого: старі посилання «Хочу першим»
+// у давніх постах ведуть сюди й досі, і людина читала б «платна підписка,
+// 99 грн/міс» через годину після поста про те, що він безкоштовний.
+const WAITLIST_WELCOME = () => (PLUS_FREE
+  ? `Dityam+ уже відкритий — і безкоштовний 🧡
+
+Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
+
+Чекати не треба: натисніть /start, і за кілька хвилин добірка почне приходити.`
+  : `Ви в списку перших! 🧡
 
 Платна підписка Dityam+: ${fmtPrice(PRICE)} грн/міс або ${fmtPrice(PRICE_HALF)} грн за пів року. Щодня добираємо можливості окремо для кожної вашої дитини — за віком, вподобаннями й містом. Плюс нагадування про дедлайни завчасно: за 2–4 тижні для стипендій, грантів і обмінів, за тиждень — для курсів і гуртків.
 
-Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`;
+Щойно запустимось — напишемо вам сюди першим, зі знижкою для перших. А платформа Dityam.com.ua лишається безкоштовною для всіх.`);
 
 async function joinWaitlist(bot, supabase, chatId, handle, startArg) {
   const from = String(startArg).replace(/^waitlist_?/i, '') || 'site';
   const { data: existing } = await supabase.from('plus_waitlist')
     .select('id').eq('telegram_chat_id', chatId).maybeSingle();
   if (existing) {
-    await bot.sendMessage(chatId, 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.');
+    await bot.sendMessage(chatId, PLUS_FREE
+      ? 'Dityam+ уже відкритий і безкоштовний 🧡 Натисніть /start — і добірка почне приходити.'
+      : 'Ви вже в списку перших 🧡 Щойно Dityam+ запуститься — напишемо вам сюди.');
     return;
   }
   await supabase.from('plus_waitlist').insert({
