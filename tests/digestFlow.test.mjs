@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+const { PLUS_FREE } = await import('../lib/plus.js');
 import {
   beginFlow, beginFreq, handleFlowCallback, finishFlow,
   toggleReminders, remindersOn, remindersLabel,
@@ -332,10 +333,14 @@ test('«Профіль готовий» після оплати пропонує
   assert.deepEqual(buttons(bot.last()), ['menu:latest']);
 });
 
-test('без підписки кнопки «показати» немає — спершу оплата', async () => {
+test('без підписки кнопки «показати» немає', async () => {
   const bot = fakeBot();
   await finishFlow(bot, '77', { active: false });
-  assert.match(bot.last().text, /оформити підписку/i);
+  // Поки Dityam+ безкоштовний, про оплату — ні слова (Марія, 21.10.2026:
+  // «щоб там і слова про оплату не було»). Кнопки «показати» немає однаково:
+  // добірку бачить лише той, хто дійшов до кінця.
+  assert.match(bot.last().text, /Профіль готовий/);
+  assert.match(bot.last().text, PLUS_FREE ? /^(?!.*оплат)/is : /оформити підписку/i);
   assert.deepEqual(buttons(bot.last()), []);
 });
 

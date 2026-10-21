@@ -49,14 +49,19 @@ PRINT_PRICE = 199
 # і тут, і в імейлі»; замість подарункового місяця). Ціни — як у lib/wayforpay.js.
 PLUS_FIRST = 1
 PLUS_PRICE = 99
+# З 21.10.2026 Dityam+ безкоштовний. Прапорець дублює PLUS_FREE з lib/plus.js —
+# імпортувати константу з JS звідси нічим, тож міняти треба В ОБОХ місцях.
+PLUS_FREE = True
 PLUS_LINK = "https://t.me/DityamPlusBot?start=from_olimpiada"
+PLUS_CTA = "Підключити Dityam+ безкоштовно" if PLUS_FREE else f"Спробувати Dityam+ за {PLUS_FIRST} грн"
 PLUS_TEXT = ("Dityam+ щодня добирає конкурси, олімпіади й інші можливості під вік та інтереси дитини "
              "і завчасно нагадує про дедлайни — у Telegram. "
              # Марія, 08.10.2026: «можна додати — дізнаватися про наші можливості
              # першими». Обіцянка: нові олімпіади й конкурси Dityam.com.ua
              # анонсуємо в Dityam+ раніше, ніж у каналі.
              "А ще підписники першими дізнаються про наші нові олімпіади й конкурси. "
-             f"Перший місяць — {PLUS_FIRST} грн замість {PLUS_PRICE} грн, далі {PLUS_PRICE} грн/міс, скасувати можна будь-коли.")
+             + ("Підключити можна безкоштовно, одразу в боті." if PLUS_FREE else
+                f"Перший місяць — {PLUS_FIRST} грн замість {PLUS_PRICE} грн, далі {PLUS_PRICE} грн/міс, скасувати можна будь-коли."))
 
 MONTHS_GEN = ["січня", "лютого", "березня", "квітня", "травня", "червня", "липня",
               "серпня", "вересня", "жовтня", "листопада", "грудня"]
@@ -218,7 +223,7 @@ def build_diploma_message(entry: dict):
         f"<p><b>Що далі після олімпіади?</b><br>{esc(PLUS_TEXT)}</p>\n"
         f'<p><a href="{esc(PLUS_LINK)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
         f'background:#16307a;color:#ffffff;font-weight:bold;text-decoration:none">'
-        f"Спробувати Dityam+ за {PLUS_FIRST} грн</a></p>\n"
+        f"{PLUS_CTA}</a></p>\n"
     )
     body = f"""<div style="font-family:Arial,Helvetica,sans-serif;font-size:16px;line-height:1.55;color:#1c1c1c;max-width:560px">
 <p>Добрий день!</p>
