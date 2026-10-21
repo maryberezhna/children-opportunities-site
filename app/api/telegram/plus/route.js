@@ -635,11 +635,19 @@ export async function POST(request) {
       // недоступний, людина лишається активною і напише нам, а не виявить
       // за місяць, що гроші йдуть за послугу, якої вже немає.
       const cancelled = await cancelSubscription(sub);
+      // Відписуємо ЗАВЖДИ, навіть якщо WayForPay не відповів (Марія,
+      // 21.10.2026). Доти гілка обривалась: списання зупинити не вдалось —
+      // і людина лишалась підписаною, тобто далі отримувала добірки й не
+      // могла піти. Тепер розсилка спиняється в будь-якому разі, а про
+      // гроші дбає сигнал в адмін-чат нижче.
+      await supabase.from('digest_subscribers')
+        .update({ status: 'unsubscribed', plan: 'free', updated_at: new Date().toISOString() })
+        .eq('telegram_chat_id', chatId);
       if (!cancelled.ok && cancelled.hadOrder) {
         // Не просимо написати: бот нерозпізнаний текст мовчки викидає, тож
         // людина писала б у порожнечу. Сигнал в адмін-чат летить рядком нижче
         // автоматично, і цього досить (Марія, 20.10.2026: «що за бред»).
-        await bot.sendMessage(chatId, '⚠️ Автоматично скасувати списання не вийшло. Ми вже отримали сигнал і скасуємо вручну сьогодні — гроші не спишуться. Робити нічого не треба.');
+        await bot.sendMessage(chatId, 'Відписано ✅ Добірки більше не приходитимуть.\n\n⚠️ Автоматично зупинити списання не вийшло — ми вже отримали сигнал і зупинимо його вручну сьогодні. Робити нічого не треба.');
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
             `🚨 <b>WayForPay REMOVE не пройшов</b>\nchat <code>${chatId}</code>, order <code>${esc(sub?.wfp_order_reference || '—')}</code>\n${esc(cancelled.reason || cancelled.error || '')}`);
