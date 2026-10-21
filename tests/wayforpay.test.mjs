@@ -337,16 +337,15 @@ test('покупку Dityam+ у GA4 шле колбек оплати, а не с
 // Ми слали сирий секретний ключ, а Regular API чекає його MD5.
 // Ціна помилки: /stop не доводив справу до кінця, людина лишалась активною
 // підписницею й бачила «не вдалося скасувати».
-test('REMOVE: merchantPassword — це MD5 ключа, 32 знаки, а не сам ключ', async () => {
+test('REMOVE: merchantPassword — окремий пароль Regular API, не секретний ключ', async () => {
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../lib/wayforpay.js', import.meta.url), 'utf8');
   const fn = src.slice(src.indexOf('export async function removeRecurring'));
+  // 21.10.2026, перевірено запитом STATUS: сирий ключ дає 4104 (не та
+  // довжина), MD5 ключа — 1113 (не та автентифікація). Отже ні те, ні те.
   assert.doesNotMatch(fn, /merchantPassword:\s*SECRET/, 'сирий ключ слати не можна');
-  assert.match(fn, /merchantPassword:\s*merchantPassword\(\)/);
-  assert.match(src, /createHash\('md5'\)\.update\(SECRET/);
-
-  const crypto = (await import('node:crypto')).default;
-  const md5 = crypto.createHash('md5').update(process.env.WAYFORPAY_SECRET_KEY, 'utf8').digest('hex');
-  assert.equal(md5.length, 32, 'рівно стільки чекає WayForPay');
-  assert.match(md5, /^[0-9a-f]{32}$/);
+  assert.doesNotMatch(src, /createHash\('md5'\)\.update\(SECRET/, 'MD5 секретного ключа теж не підходить');
+  assert.match(src, /WAYFORPAY_REGULAR_PASSWORD/);
+  // Без пароля не йдемо в мережу: інакше людина побачить чужу помилку.
+  assert.match(fn, /no_regular_password/);
 });
