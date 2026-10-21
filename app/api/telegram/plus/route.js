@@ -184,7 +184,7 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
       : `${text}${intro}${promoHint}`;
     if (rows.length) { await bot.sendMessage(chatId, offer, { inline_keyboard: rows }); return; }
   }
-  await bot.sendMessage(chatId, `${text}\n\n⏳ Оплата підключається — зовсім скоро.`);
+  await bot.sendMessage(chatId, `${text}\n\n⏳ ${PLUS_FREE ? 'Підписка підключається — зовсім скоро.' : 'Оплата підключається — зовсім скоро.'}`);
 }
 
 // Команди підписника в меню «/» (їхній перелік реєструє
@@ -203,7 +203,7 @@ const COMMANDS_TEXT = '🧡 <b>Команди Dityam+</b>\n\n'
   + '/freq — як часто надсилати добірку\n'
   + '/profile — профіль дітей і деталі підписки\n'
   + '/support — написати нам\n'
-  + '/stop — відписатися і скасувати списання';
+  + (PLUS_FREE ? '/stop — відписатися' : '/stop — відписатися і скасувати списання');
 
 // Головне меню для активного підписника.
 async function sendMainMenu(bot, chatId, sub) {
@@ -317,7 +317,7 @@ async function sendLatest(bot, supabase, sub, chatId) {
 // відповідь: reply-клавіатура надсилає свій підпис звичайним повідомленням.
 // Самого кроку з 27.09.2026 немає, але в кого клавіатура ще на екрані, та
 // натискання мусить спрацювати, а не піти адміну як питання.
-const PHONE_SKIP = 'Пропустити — введу при оплаті';
+const PHONE_SKIP = PLUS_FREE ? 'Пропустити' : 'Пропустити — введу при оплаті';
 const fmtPrice = (n) => Number(n).toLocaleString('uk-UA');
 
 // Ціна — в першому ж повідомленні (Марія, 30.09.2026: «напиши одразу, що
@@ -547,15 +547,19 @@ async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
   const check = promoUsable(promo, { used: promo?.used || 0 });
   if (!check.ok) {
     if (check.reason === 'unknown') return false;   // не код — мовчимо, це міг бути просто текст
-    await bot.sendMessage(chatId, check.reason === 'expired'
-      ? 'Термін дії цього промокоду минув 🙈 Але підписка доступна за звичайною ціною — /start'
-      : 'Цей промокод уже розібрали 🙈 Підписка доступна за звичайною ціною — /start');
+    await bot.sendMessage(chatId, PLUS_FREE
+      ? 'Промокод більше не потрібен — Dityam+ безкоштовний для всіх. Натисніть /start 🧡'
+      : check.reason === 'expired'
+        ? 'Термін дії цього промокоду минув 🙈 Але підписка доступна за звичайною ціною — /start'
+        : 'Цей промокод уже розібрали 🙈 Підписка доступна за звичайною ціною — /start');
     return true;
   }
 
   let { data: sub } = await supabase.from('digest_subscribers').select('*').eq('telegram_chat_id', chatId).maybeSingle();
   if (sub?.status === 'active') {
-    await bot.sendMessage(chatId, 'У вас уже активна підписка 🧡 Промокод діє лише на перший платіж.');
+    await bot.sendMessage(chatId, PLUS_FREE
+      ? 'У вас уже активна підписка 🧡 Промокод не потрібен: Dityam+ безкоштовний.'
+      : 'У вас уже активна підписка 🧡 Промокод діє лише на перший платіж.');
     return true;
   }
   if (!sub) {
@@ -571,7 +575,9 @@ async function applyPromo(bot, supabase, { chatId, handle, code, source }) {
   }
   // Введення промокоду — ще не покупка: в адмін-чат іде лише оплата (pay/wayforpay).
   await claimPromo(supabase, { code: c, chatId, handle, source });
-  await bot.sendMessage(chatId, `Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
+  await bot.sendMessage(chatId, PLUS_FREE
+    ? `Промокод <b>${esc(c.toUpperCase())}</b> прийнято, але він уже не потрібен: Dityam+ безкоштовний 🧡`
+    : `Промокод <b>${esc(c.toUpperCase())}</b> прийнято — знижку побачите на кнопці оплати.`);
   await continueStart(bot, supabase, sub, chatId, handle);
   return true;
 }
@@ -666,7 +672,9 @@ export async function POST(request) {
         // Не просимо написати: бот нерозпізнаний текст мовчки викидає, тож
         // людина писала б у порожнечу. Сигнал в адмін-чат летить рядком нижче
         // автоматично, і цього досить (Марія, 20.10.2026: «що за бред»).
-        await bot.sendMessage(chatId, 'Відписано ✅ Добірки більше не приходитимуть.\n\n⚠️ Автоматично зупинити списання не вийшло — ми вже отримали сигнал і зупинимо його вручну сьогодні. Робити нічого не треба.');
+        await bot.sendMessage(chatId, PLUS_FREE
+          ? 'Відписано ✅ Добірки більше не приходитимуть.'
+          : 'Відписано ✅ Добірки більше не приходитимуть.\n\n⚠️ Автоматично зупинити списання не вийшло — ми вже отримали сигнал і зупинимо його вручну сьогодні. Робити нічого не треба.');
         if (MAIN_TOKEN && ADMIN_CHAT_ID) {
           await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID,
             `🚨 <b>WayForPay REMOVE не пройшов</b>\nchat <code>${chatId}</code>, order <code>${esc(sub?.wfp_order_reference || '—')}</code>\n${esc(cancelled.reason || cancelled.error || '')}`);
@@ -676,7 +684,7 @@ export async function POST(request) {
       await supabase.from('digest_subscribers')
         .update({ status: 'unsubscribed', plan: 'free', updated_at: new Date().toISOString() })
         .eq('telegram_chat_id', chatId);
-      await bot.sendMessage(chatId, cancelled.hadOrder
+      await bot.sendMessage(chatId, cancelled.hadOrder && !PLUS_FREE
         ? 'Відписано ✅ Списання скасовано — більше нічого не знімемо.\n\nПовернутись — /start'
         : 'Відписано ✅ Повернутись — /start');
       return new Response('ok');
@@ -816,7 +824,7 @@ export async function POST(request) {
         if (text === PHONE_SKIP) {
           await supabase.from('digest_subscribers')
             .update({ flow_step: null, updated_at: new Date().toISOString() }).eq('id', sub.id);
-          await bot.sendMessage(chatId, 'Гаразд — введете номер на сторінці оплати.', { remove_keyboard: true });
+          await bot.sendMessage(chatId, PLUS_FREE ? 'Гаразд, номер не потрібен.' : 'Гаразд — введете номер на сторінці оплати.', { remove_keyboard: true });
           await sendPayOffer(bot, sub, chatId, supabase);
           return new Response('ok');
         }
@@ -832,7 +840,7 @@ export async function POST(request) {
         if (looksLikePhoneAttempt(text)) {
           await bot.sendMessage(chatId,
             'Не вдалося прочитати номер. Напишіть у форматі +380671234567 — '
-            + `або натисніть «${esc(PHONE_SKIP)}», і введете його вже при оплаті.`);
+            + `або натисніть «${esc(PHONE_SKIP)}»${PLUS_FREE ? '.' : ', і введете його вже при оплаті.'}`);
           return new Response('ok');
         }
       }
