@@ -23,7 +23,7 @@ import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
-import { PLUS_SALES_OPEN, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
+import { PLUS_SALES_OPEN, PLUS_FREE, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
 import { OLIMP, giftActive, levelByKey } from '@/lib/olimpiada';
 import { sendOlympiads, handleMkCallback, handleMkReply } from '@/lib/modnyi-kod-bot';
 import { handleFeedbackCallback, handleFeedbackReply } from '@/lib/feedback';
@@ -117,6 +117,16 @@ async function sendPayOffer(bot, sub, chatId, supabase) {
     // розділ 1): ЦК України, ст. 31–32 — підліток 14–17 років робить такі
     // правочини за згодою батьків; GDPR ст. 8 — у ЄС до 16 років теж.
     + '\n\n<i>Підписку Dityam+ оформлює повнолітня особа або підліток 14–17 років за згодою батьків.</i>';
+  // Безкоштовно — нікого не ведемо на оплату (Марія, 21.10.2026). Анкету
+  // людина вже пройшла, цього досить: вмикаємо Dityam+ одразу.
+  if (PLUS_FREE) {
+    await supabase.from('digest_subscribers')
+      .update({ status: 'active', plan: 'premium', billing_period: 'free', updated_at: new Date().toISOString() })
+      .eq('telegram_chat_id', String(chatId));
+    await bot.sendMessage(chatId,
+      `${text}\n\n✅ <b>Dityam+ увімкнено — безкоштовно.</b> Перша добірка прийде найближчим часом.`);
+    return;
+  }
   // unsub_token — адреса переходу на оплату. Усі виклики сюди приходять із
   // select('*'), але дострахуватись дешевше, ніж показати кнопку без токена.
   if (wayforpayConfigured && sub?.unsub_token) {
