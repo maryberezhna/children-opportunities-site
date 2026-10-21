@@ -328,7 +328,7 @@ async function handleDigestStop(msg) {
     if (!s.wfp_order_reference || !['active', 'paused'].includes(s.status)) continue;
     const r = await removeRecurring(s.wfp_order_reference);
     if (!r.ok) {
-      await sendMessage(chatId, '⚠️ Не вдалося автоматично скасувати списання. Напишіть у @DityamPlusBot — скасуємо вручну сьогодні ж, гроші не спишуться.');
+      await sendMessage(chatId, '⚠️ Автоматично скасувати списання не вийшло. Ми вже отримали сигнал і скасуємо вручну сьогодні — гроші не спишуться. Робити нічого не треба.');
       if (ADMIN_CHAT_ID) {
         await sendMessage(ADMIN_CHAT_ID,
           `🚨 <b>WayForPay REMOVE не пройшов</b> (основний бот)\nchat <code>${chatId}</code>, order <code>${escapeHtml(s.wfp_order_reference)}</code>\n${escapeHtml(r.reason || r.error || '')}`);
