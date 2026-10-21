@@ -135,12 +135,15 @@
 
 /* Фото на всю ширину колонки, 3:2, скруглене. Точку фокуса задає heroImage.position. */
 .tp-hero-photo {
+  position: relative;
   width: 100%;
   aspect-ratio: 3 / 2;
   border-radius: 20px;
   overflow: hidden;
 }
 .tp-hero-photo picture { display: block; width: 100%; height: 100%; }
+.tp-hero-credit { position: absolute; right: 10px; bottom: 8px; font-size: 11px; line-height: 1; color: #fff; background: rgba(0,0,0,.45); padding: 4px 7px; border-radius: 6px; text-decoration: none; }
+.tp-hero-credit:hover { background: rgba(0,0,0,.65); }
 .tp-hero-photo img {
   display: block;
   width: 100%;

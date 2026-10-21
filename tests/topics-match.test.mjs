@@ -371,3 +371,51 @@ test('безкоштовний онлайн-курс програмування 
                  title: 'New IT School — курси програмування', cities: ['Київ'], countries: ['ua'] };
   assert.equal(topicOf(paid).slug, 'prohramuvannia');
 });
+
+// Стипендії за кордоном (21.10.2026): стипендія або «стипенд» у назві, і
+// при цьому закордонна чи міжнародна програма. Міська стипендія в Україні —
+// не сюди.
+test('стипендії за кордоном: UWC без країни, але міжнародна — так', () => {
+  const o = { opportunity_type: 'scholarship', title: 'UWC — коледжі об’єднаного світу',
+              countries: [], is_international: true, cities: [] };
+  assert.equal(TOPICS['stypendii-za-kordonom'].match(o), true);
+});
+
+test('стипендії за кордоном: стипендія міського голови в Україні — ні', () => {
+  const o = { opportunity_type: 'scholarship', title: 'Стипендія міського голови',
+              countries: ['UA'], is_international: false, cities: ['Львів'] };
+  assert.equal(TOPICS['stypendii-za-kordonom'].match(o), false);
+});
+
+test('стипендії за кордоном: слово в назві + країна — так, без слова й типу — ні', () => {
+  const yes = { opportunity_type: 'study_program', title: 'Стипендія на навчання в Польщі',
+                countries: ['PL'], is_international: false, cities: [] };
+  const no = { opportunity_type: 'camp', title: 'Табір у Польщі', countries: ['PL'],
+               is_international: true, cities: [] };
+  assert.equal(TOPICS['stypendii-za-kordonom'].match(yes), true);
+  assert.equal(TOPICS['stypendii-za-kordonom'].match(no), false);
+});
+
+// Творчі конкурси (21.10.2026): конкурс + творча ознака в назві або в
+// категоріях. Науковий конкурс і курс малювання — не сюди.
+test('творчі конкурси: малюнок у назві — так, наука — ні, курс — ні', () => {
+  const draw = { opportunity_type: 'competition', title: 'Конкурс малюнків «Моя Україна»', categories: [] };
+  const cat = { opportunity_type: 'competition', title: 'Всеукраїнський конкурс «Струни»', categories: ['мистецтво'] };
+  const sci = { opportunity_type: 'competition', title: 'Конкурс наукових робіт', categories: ['science'] };
+  const course = { opportunity_type: 'course', title: 'Курс малювання', categories: ['мистецтво'] };
+  assert.equal(TOPICS['tvorchi-konkursy'].match(draw), true);
+  assert.equal(TOPICS['tvorchi-konkursy'].match(cat), true);
+  assert.equal(TOPICS['tvorchi-konkursy'].match(sci), false);
+  assert.equal(TOPICS['tvorchi-konkursy'].match(course), false);
+});
+
+test('нові підбірки мають фото, англійську версію й 4 «інші підбірки»', () => {
+  for (const slug of ['stypendii-za-kordonom', 'tvorchi-konkursy']) {
+    const t = TOPICS[slug];
+    assert.ok(t.heroImage?.src && t.en?.heroImage?.src, slug);
+    assert.ok(t.en?.slug && t.en.title && t.en.description, slug);
+    assert.equal(t.related.length, 4, slug);
+    assert.doesNotMatch(JSON.stringify(t), /каталог/i, slug);
+    assert.doesNotMatch(JSON.stringify(t), /Dityam\+\s*[—–-]/, slug);
+  }
+});

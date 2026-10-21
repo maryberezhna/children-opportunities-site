@@ -548,6 +548,13 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                   style={hero.position ? { objectPosition: hero.position } : undefined}
                 />
               </picture>
+              {/* Фото під ліцензією CC BY вимагає підпису автора — дрібно, сірим,
+                  лише коли heroImage.credit задано (Wikimedia Commons). */}
+              {hero.credit ? (
+                <a className="tp-hero-credit" href={hero.credit.href} target="_blank" rel="noopener noreferrer">
+                  {hero.credit.text}
+                </a>
+              ) : null}
             </div>
           ) : null}
         </section>
