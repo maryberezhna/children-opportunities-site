@@ -103,7 +103,10 @@ test('адмінка: у меню рівно 4 вкладки, старі адр
   assert.deepEqual(labels, ['Черга', 'Звернення', 'Користувачі', 'Джерела']);
   assert.match(read('app/admin/lyudy/page.js'), /redirect\('\/admin\/korystuvachi'\)/);
   const page = read('app/admin/korystuvachi/page.js');
-  for (const h of ['Хто', 'Коли', 'Чим скористався', 'Чи купила']) assert.ok(page.includes(`>${h}</th>`), h);
+  // 21.10.2026 — одна база «по факту CRM»: рядок = людина, колонки — діти,
+  // Dityam+ (безкоштовний, тому статус анкети), олімпіада, «Модний код», відгук.
+  for (const h of ['Хто', 'Звідки · коли', 'Діти', 'Dityam+', 'Олімпіада', 'Модний код', 'Відгук']) assert.ok(page.includes(`>${h}</th>`), h);
+  assert.doesNotMatch(page, />Чи купила</);
   assert.doesNotMatch(page, /Dityam\+ —/);
 });
 
