@@ -157,7 +157,11 @@ export default function Header() {
   // «Підтримати», яка переїхала в мобільне меню й футер).
   const NAV = isEnglish
     ? [{ href: '/en/about', label: 'About', active: pathname.startsWith('/en/about') }]
-    : [{ href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') }];
+    : [
+      // Блог лише українською (Марія, 22.10.2026: «додай блог у хедер»).
+      { href: '/blog', label: 'Блог', active: pathname.startsWith('/blog') },
+      { href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') },
+    ];
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
   const strip = isEnglish ? PLUS_STRIP.en : PLUS_STRIP.uk;
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';

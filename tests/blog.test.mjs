@@ -72,3 +72,10 @@ test('блог є в карті сайту, llms.txt і футері', () => {
   assert.match(read('app/llms.txt/route.js'), /\/blog\)/);
   assert.match(read('app/Footer.js'), /blog: '\/blog'/);
 });
+
+test('блог є в шапці (українська версія) — і на компʼютері, і в мобільному меню', () => {
+  const h = read('app/Header.js');
+  assert.match(h, /\{ href: '\/blog', label: 'Блог'/);
+  // NAV рендериться і в шапці, і в мобільному меню.
+  assert.equal((h.match(/\{NAV\.map\(/g) || []).length, 2);
+});
