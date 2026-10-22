@@ -20,7 +20,7 @@ import { botCalendarUrl } from '@/lib/calendar-links';
 import { kyivToday } from '@/lib/dates';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import {
-  childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS,
+  childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS, GENDER_LABELS,
   NEED_OPTIONS, placeSummary,
 } from '@/lib/plusProfile';
 import { PLUS_SALES_OPEN, PLUS_FREE, parseSourceArg, PLUS_QUESTION_HEAD } from '@/lib/plus';
@@ -417,6 +417,9 @@ function profileLines(sub, kids) {
   kids.forEach((k, i) => {
     lines.push(`<b>${kids.length > 1 ? esc(childLabel(k, kids.length)) : 'Дитина'}</b>`);
     lines.push(`Вік: ${esc(labels(AGE_OPTIONS, k.age_bands))}`);
+    // Стать показуємо, лише якщо її вказали: «не вказано» в анкеті виглядало б
+    // як недороблений профіль, хоча це повноцінна відповідь.
+    if (GENDER_LABELS[k.gender]) lines.push(`Стать: ${esc(GENDER_LABELS[k.gender])}`);
     lines.push(`Подобається: ${esc(labels(LIKE_OPTIONS, k.likes))}`);
     lines.push(`Тип: ${esc(labels(FORMAT_OPTIONS, k.formats))}`);
     if ((k.needs || []).length) lines.push(`Обставини: ${esc(labels(NEED_OPTIONS, k.needs))}`);

@@ -81,8 +81,8 @@ export default function PrivacyPageEn() {
             <li>
               <strong>Dityam+ subscription (@DityamPlusBot).</strong> Telegram chat
               ID and username; your phone number if you shared it; for each child —
-              age group, interests, preferred formats and, optionally, special
-              circumstances (section 3); the family’s city or format (online,
+              age group, interests, preferred formats and, optionally, gender and
+              special circumstances (section 3); the family’s city or format (online,
               abroad) and whether to show only free opportunities; which reminders
               have already been sent. All of this is used to select opportunities
               and remind you about deadlines.
