@@ -91,3 +91,44 @@ test('банер каналу в статтях і путівниках — пі
     assert.match(read(f), /firstBanner=\{6\} bannerEvery=\{18\}/, f);
   }
 });
+
+test('кожна стаття має evidence: ≥5 дослівних цитат із перелічених джерел', async () => {
+  for (const p of BLOG_POSTS) {
+    const urls = new Set(p.sources.map((s) => s.url));
+    assert.ok(Array.isArray(p.evidence) && p.evidence.length >= 5, `${p.slug}: мало цитат`);
+    for (const e of p.evidence) {
+      assert.ok(e.claim && e.quote && e.quote.length >= 20, `${p.slug}: порожня цитата`);
+      assert.ok(urls.has(e.url), `${p.slug}: цитата з адреси, якої немає в sources — ${e.url}`);
+    }
+  }
+});
+
+test('фото статей і путівників — лише з перевіреного списку', async () => {
+  const { BLOG_HEROES } = await import('../lib/blog.js');
+  for (const p of BLOG_POSTS) assert.ok(BLOG_HEROES.includes(p.hero.src), `${p.slug}: ${p.hero.src}`);
+  for (const g of BLOG_GUIDES) assert.ok(BLOG_HEROES.includes(g.hero.src), `${g.href}: ${g.hero.src}`);
+});
+
+test('план блогу: валідний, підбірки існують, «done» = стаття є', () => {
+  const plan = JSON.parse(read('content/blog-plan.json'));
+  const ids = plan.items.map((i) => i.id);
+  assert.equal(new Set(ids).size, ids.length, 'id повторюються');
+  for (const it of plan.items) {
+    assert.ok(['todo', 'done', 'blocked'].includes(it.status), it.id);
+    assert.ok(TOPICS[it.hub], `${it.id}: немає підбірки ${it.hub}`);
+    assert.ok([1, 2, 3].includes(it.priority), it.id);
+    assert.ok(Array.isArray(it.months) && it.months.every((m) => m >= 1 && m <= 12), it.id);
+    if (it.status === 'done') assert.ok(BLOG_POSTS.some((p) => p.slug === it.post_slug), `${it.id}: статті ${it.post_slug} немає`);
+    if (it.status === 'blocked') assert.ok(it.note, `${it.id}: blocked без причини`);
+  }
+});
+
+test('робот публікації блогу: лише статті й план, тести через workflow_dispatch, автомердж', () => {
+  const wf = read('.github/workflows/blog-publish.yml');
+  assert.match(wf, /branches: \['blog\/\*\*', 'claude\/blog-\*\*'\]/);
+  assert.match(wf, /grep -vE '\^\(lib\/blog\\\.js\|content\/blog-plan\\\.json\)\$'/);
+  assert.match(wf, /gh workflow run tests\.yml --ref "\$BRANCH"/);
+  assert.match(wf, /gh pr merge .* --squash --auto/);
+  // tests.yml має приймати ручний запуск, інакше робот не запустить тести.
+  assert.match(read('.github/workflows/tests.yml'), /workflow_dispatch:/);
+});
