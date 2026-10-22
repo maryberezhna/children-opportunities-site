@@ -44,8 +44,9 @@ jobs:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: mashaberezhna0209@gmail.com
+          # З особистої пошти проєкт не пише (Марія, 22.10.2026) — лише з hellodityam.
+          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: hellodityam.com.ua@gmail.com
         # За розкладом завжди пишемо; вручну — лише якщо попросили apply=true.
         run: |
           if [ "${{ github.event.inputs.apply }}" = "false" ]; then

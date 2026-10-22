@@ -2,7 +2,7 @@
 
 Set these env vars / GitHub Secrets:
   GMAIL_APP_PASSWORD  — 16-char Gmail App Password (myaccount.google.com/apppasswords)
-  GMAIL_FROM          — sender address (default: mashaberezhna0209@gmail.com)
+  GMAIL_FROM          — sender address (default: hellodityam.com.ua@gmail.com; з особистої пошти не пишемо)
 """
 import json
 import logging
@@ -15,7 +15,7 @@ from email.mime.text import MIMEText
 
 logger = logging.getLogger(__name__)
 
-GMAIL_FROM = os.environ.get("GMAIL_FROM", "mashaberezhna0209@gmail.com")
+GMAIL_FROM = os.environ.get("GMAIL_FROM", "hellodityam.com.ua@gmail.com")
 GMAIL_TO = "mashaberezhna0209@gmail.com"
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
