@@ -123,12 +123,14 @@ test('план блогу: валідний, підбірки існують, «
   }
 });
 
-test('робот публікації блогу: лише статті й план, тести через workflow_dispatch, автомердж', () => {
+test('робот публікації блогу: лише статті й план, схвалює тести PR, автомердж', () => {
   const wf = read('.github/workflows/blog-publish.yml');
   assert.match(wf, /branches: \['blog\/\*\*', 'claude\/blog-\*\*'\]/);
   assert.match(wf, /grep -vE '\^\(lib\/blog\\\.js\|content\/blog-plan\\\.json\)\$'/);
-  assert.match(wf, /gh workflow run tests\.yml --ref "\$BRANCH"/);
+  // PR від GITHUB_TOKEN запускає tests.yml зі статусом action_required; ручний
+  // workflow_dispatch PR не зараховує (#1012 застряг у BLOCKED) — схвалюємо запуск.
+  assert.match(wf, /conclusion==\\"action_required\\"/);
+  assert.match(wf, /actions\/runs\/\$id\/approve/);
+  assert.doesNotMatch(wf, /gh workflow run tests\.yml/);
   assert.match(wf, /gh pr merge .* --squash --auto/);
-  // tests.yml має приймати ручний запуск, інакше робот не запустить тести.
-  assert.match(read('.github/workflows/tests.yml'), /workflow_dispatch:/);
 });
