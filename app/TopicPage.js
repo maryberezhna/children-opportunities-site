@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS, CARD_FIELDS_EN } from '@/lib/supabase';
 import { TOPIC_LIST, topicPath, collectionsPath, pickRelated } from '@/lib/topics';
+import { postsForTopic, blogPath } from '@/lib/blog';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
@@ -381,6 +382,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
   );
 
   const related = buildRelated(topic, liveRows);
+  const blogPosts = isEn ? [] : postsForTopic(topic.slug);
   // Сторінки «місто × підбірка» мають лише українську версію.
   const cityLinks = isEn ? [] : topicCityLinks(liveRows, topic);
   const hero = heroImageOf(topic, lang);
@@ -612,6 +614,21 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
             </p>
           </div>
         </section>
+
+        {/* Статті блогу на тему підбірки (22.10.2026): перелінковка підбірка ⇄
+            стаття для SEO і відповідей ШІ. Блог лише українською. */}
+        {blogPosts.length ? (
+          <section className="tp-blog" aria-labelledby="tp-blog-title">
+            <h2 id="tp-blog-title" className="tp-h2">{titled(['Статті', 'на цю тему'])}</h2>
+            <ul className="tp-blog-list">
+              {blogPosts.map((p) => (
+                <li key={p.slug}>
+                  <Link href={blogPath(p.slug)} prefetch={false}>{p.title} →</Link>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
 
         {/* Права й процедури в школі країни (діаспора, 28.09.2026) — абзацом,
             не картками: запис до школи чи підготовчий клас — не можливість. */}
