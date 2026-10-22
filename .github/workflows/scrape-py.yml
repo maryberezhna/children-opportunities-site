@@ -58,8 +58,9 @@ jobs:
           # Звіт іде в Telegram-бот; email — запасний канал, якщо Telegram упав
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          GMAIL_FROM: mashaberezhna0209@gmail.com
+          # З особистої пошти проєкт не пише (Марія, 22.10.2026) — лише з hellodityam.
+          GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
+          GMAIL_FROM: hellodityam.com.ua@gmail.com
           # Google Alerts — RSS-стрічки з особистим токеном, тому в секретах.
           # Формат: назва|url, кілька через кому.
           GOOGLE_ALERTS_FEEDS: ${{ secrets.GOOGLE_ALERTS_FEEDS }}
