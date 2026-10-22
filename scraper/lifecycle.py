@@ -389,7 +389,18 @@ def decide_check(row: dict, out: dict, page: str, today: date,
         recheck = today + timedelta(days=days)
         review = (row.get("status") == "closed" and state == "open"
                   and just_closed(row, today, REVIEW_AFTER_CLOSE_DAYS))
-        if review:
+        # Щорічна на сайті без жодної дати, а сторінка не каже, що набір іде:
+        # картка показувала «Щорічно — стежте за новим набором» поруч із кнопкою
+        # подачі (Euroquiz, 22.10.2026: «картка активна а написано слідкуйте за
+        # набором — бред»; таких було 28). Між сезонами — closed і перевірка
+        # перед наступним (рішення 17.09.2026).
+        between = (row.get("status") == "active" and kind == "periodic" and state != "open"
+                   and not any(row.get(k) for k in
+                               ("deadline", "event_start_date", "event_end_date", "results_date")))
+        if between:
+            patch["status"] = "closed"
+            recheck = recheck_after_close(kind, months, [], today)
+        elif review:
             # Сторінка каже «набір триває», а нової дати не дає. Так буває з
             # постійними програмами, що закрились через одну дату (вистави,
             # заняття з вільним записом): мовчки лишити закритим — загубити
@@ -407,7 +418,9 @@ def decide_check(row: dict, out: dict, page: str, today: date,
             dates = [row.get("deadline"), row.get("event_start_date"), row.get("event_end_date")]
             recheck = recheck_after_close(kind, months, dates, today)
         patch["recheck_at"] = recheck.isoformat() if recheck else None
-        if review:
+        if between:
+            note = f"щорічна без дат, набору на сторінці не видно — закрито до {patch['recheck_at']}: {quote}"
+        elif review:
             note = f"після закриття сторінка каже, що набір триває, а нової дати немає — перевір: {quote}"
         elif recheck:
             note = f"стан не зрозумілий, ще раз {patch['recheck_at']}: {quote}"
