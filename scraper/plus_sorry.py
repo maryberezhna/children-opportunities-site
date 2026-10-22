@@ -30,6 +30,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 PLUS_BOT_TOKEN = os.environ.get("TELEGRAM_PLUS_BOT_TOKEN", "")
 OWN_CHAT_IDS = {"388954322"}
 SINCE = "2026-10-21T13:18:00+00:00"
+# Продакшн-деплой виправлення (#993): хто прийшов пізніше, оплати вже не бачив.
+FIXED_AT = "2026-10-21T15:26:00+00:00"
 
 
 def active_text() -> str:
@@ -66,7 +68,8 @@ def pick_recipients(subs: list) -> list:
         if not chat or chat in seen or chat in OWN_CHAT_IDS:
             continue
         nudged = bool(s.get("stuck_notice_at")) and str(s.get("stuck_notice_at")) >= SINCE
-        free_active = s.get("status") == "active" and s.get("billing_period") == "free"
+        free_active = (s.get("status") == "active" and s.get("billing_period") == "free"
+                       and str(s.get("created_at") or "") < FIXED_AT)
         if not (nudged or free_active):
             continue
         if s.get("status") in ("unsubscribed", "cancelled"):
@@ -103,7 +106,7 @@ def main() -> int:
     from db import get_client
     client = get_client()
     subs = (client.table("digest_subscribers")
-            .select("telegram_chat_id, telegram_handle, status, billing_period, stuck_notice_at")
+            .select("telegram_chat_id, telegram_handle, status, billing_period, stuck_notice_at, created_at")
             .limit(2000).execute().data or [])
     people = pick_recipients(subs)
     active = sum(1 for p in people if p[1] == "active")

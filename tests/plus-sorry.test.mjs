@@ -13,4 +13,6 @@ test('plus_sorry: воркфлоу з confirm=SEND і превʼю, тексти
   assert.match(py, /OWN_CHAT_IDS = \{"388954322"\}/);
   assert.doesNotMatch(py, /грн|без реклами/);
   assert.match(py, /Марія, Dityam\.com\.ua/);
+  // хто прийшов після деплою виправлення, оплати не бачив — йому не пишемо
+  assert.match(py, /FIXED_AT = "2026-10-21T15:26/);
 });
