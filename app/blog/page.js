@@ -30,10 +30,6 @@ export const metadata = {
   twitter: { card: 'summary_large_image', title: TITLE, description: DESCRIPTION, images: ['/topic-tabory.jpg'] },
 };
 
-const shortDate = (iso) => new Intl.DateTimeFormat('uk-UA', {
-  timeZone: 'Europe/Kyiv', day: 'numeric', month: 'long', year: 'numeric',
-}).format(new Date(`${iso}T12:00:00Z`));
-
 export default function BlogIndex() {
   const entries = blogEntries();
   const ld = {
@@ -92,7 +88,8 @@ export default function BlogIndex() {
                 <span className="tp-related-body">
                   <span className="tp-related-title">{e.title}</span>
                   <span className="tp-related-n">{e.description}</span>
-                  {e.date ? <span className="tp-related-n">Звірено {shortDate(e.date)}</span> : <span className="tp-related-n">Путівник</span>}
+                  {/* «Звірено <дата>» на картці прибрано (Марія, 22.10.2026). */}
+                  {e.date ? null : <span className="tp-related-n">Путівник</span>}
                 </span>
               </Link>
             ))}
