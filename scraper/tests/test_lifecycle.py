@@ -170,6 +170,29 @@ class PlannedCheck(unittest.TestCase):
                "timing_kind": "periodic"}
         self.assertEqual(decide_check(r, out, QUOTE_OPEN, TODAY)["status"], "active")
 
+    def test_dateless_annual_between_seasons_is_closed(self):
+        # Euroquiz, 22.10.2026: активна щорічна без жодної дати, сторінка про
+        # набір мовчить — «Щорічно — стежте за новим набором» біля кнопки подачі.
+        r = row(status="active", timing_kind="periodic", season_months=[2])
+        patch = decide_check(r, {"state": "unclear", "evidence": "Кожного дня три спроби"},
+                             "Кожного дня три спроби", TODAY)
+        self.assertEqual(patch["status"], "closed")
+        self.assertEqual(patch["recheck_at"], "2027-01-01")
+        self.assertIn("щорічна без дат", patch["admin_comment"])
+
+    def test_dateless_annual_with_open_intake_stays(self):
+        # «Набір на 2026-2027 навчальний рік» без дати — не закривати живе.
+        r = row(status="active", timing_kind="periodic")
+        patch = decide_check(r, {"state": "open", "evidence": "Набір відкрито"},
+                             "Набір відкрито", TODAY)
+        self.assertNotIn("status", patch)
+
+    def test_dated_or_permanent_active_is_not_closed_as_between_seasons(self):
+        dated = row(status="active", timing_kind="periodic", results_date="2026-12-01")
+        perm = row(status="active", timing_kind="permanent")
+        for r in (dated, perm):
+            self.assertNotIn("status", decide_check(r, {"state": "unclear"}, "текст", TODAY))
+
     def test_open_without_date_in_quote_is_not_reopened(self):
         r = row(status="closed", timing_kind="periodic")
         out = {"state": "open", "deadline": "2026-10-30",
