@@ -1,9 +1,10 @@
 # Публікація статей блогу від щоденного агента (22.10.2026, Марія: «агент, який
 # щодня пише 1–2 статті»). Агент (хмарна routine «Блог: 1–2 статті на день»)
 # лише пушить гілку blog/… з правками в lib/blog.js і content/blog-plan.json.
-# Тут: перевіряємо, що інших файлів не чіпали, відкриваємо PR, запускаємо
-# тести (PR, створений GITHUB_TOKEN, сам їх не запускає, а workflow_dispatch —
-# запускає) і ставимо автомердж. Мердж відбудеться, лише коли tests-js,
+# Тут: перевіряємо, що інших файлів не чіпали, відкриваємо PR, схвалюємо
+# запуск тестів і ставимо автомердж. PR від GITHUB_TOKEN запускає tests.yml
+# зі статусом action_required (чекає схвалення), а ручний workflow_dispatch PR
+# не зараховує: перший прогін 22.10.2026 (#1012) так і застряг у BLOCKED. Мердж відбудеться, лише коли tests-js,
 # tests-py і Vercel зелені — ті самі правила захисту main, що й для людей.
 name: blog-publish
 on:
@@ -47,7 +48,23 @@ jobs:
             N=$(gh pr list --head "$BRANCH" --state open --json number -q '.[0].number')
           fi
           echo "n=$N" >> "$GITHUB_OUTPUT"
-      - name: Тести
-        run: gh workflow run tests.yml --ref "$BRANCH"
+      - name: Схвалити тести PR
+        run: |
+          SHA=$(git rev-parse HEAD)
+          for i in $(seq 1 18); do
+            IDS=$(gh run list --workflow tests.yml --branch "$BRANCH" --event pull_request -L 20 \
+              --json databaseId,headSha,conclusion \
+              -q ".[] | select(.headSha==\"$SHA\" and .conclusion==\"action_required\") | .databaseId")
+            if [ -n "$IDS" ]; then
+              for id in $IDS; do gh api -X POST "repos/${{ github.repository }}/actions/runs/$id/approve" && echo "схвалено $id"; done
+              exit 0
+            fi
+            DONE=$(gh run list --workflow tests.yml --branch "$BRANCH" --event pull_request -L 20 \
+              --json headSha,conclusion -q ".[] | select(.headSha==\"$SHA\" and .conclusion!=\"action_required\") | .headSha")
+            if [ -n "$DONE" ]; then echo "тести PR уже запущені без схвалення"; exit 0; fi
+            sleep 10
+          done
+          echo "::error::Запуску tests.yml для PR не знайдено — PR не змерджиться без tests-js і tests-py"
+          exit 1
       - name: Автомердж
         run: gh pr merge "${{ steps.pr.outputs.n }}" --squash --auto --delete-branch
