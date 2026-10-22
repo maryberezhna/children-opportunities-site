@@ -18,6 +18,7 @@ import { findPromo, promoUsable, claimPromo, parseStartArg, normalizeCode } from
 import { cutTitle } from '@/lib/text';
 import { botCalendarUrl } from '@/lib/calendar-links';
 import { kyivToday } from '@/lib/dates';
+import { isAfterHours, kyivTime, WORK_HOURS_TEXT } from '@/lib/working-hours';
 import { TYPE_LABELS, COST_LABELS, ageLabel } from '@/lib/labels';
 import {
   childrenOf, childLabel, matchFamily, pickFair, AGE_OPTIONS, LIKE_OPTIONS, FORMAT_OPTIONS, GENDER_LABELS,
@@ -906,6 +907,7 @@ export async function POST(request) {
         // ніде не зберігалось — у /admin/messages його не було (Марія:
         // «чому ти отакі питання не підтягуєш в адмінку»). Контакт — chat id
         // (не хендл: «@» у контакті адмінка показує як пошту).
+        const afterHours = isAfterHours();
         const { error: saveErr } = await supabase.from('contact_messages').insert({
           type: 'bot', name: sub.telegram_handle || null, contact: `tg:${chatId}`,
           message: text.slice(0, 4000), page: '@DityamPlusBot',
@@ -917,9 +919,13 @@ export async function POST(request) {
           // усередині заголовка («Питання ще не оплаченого Dityam+»), і саме
           // на цих людях — тих, хто не дійшов до оплати, — відповідь реплаєм
           // мовчки не спрацьовувала б. Статус тепер після хендла.
-          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>\n<a href="${SITE_URL}/admin/messages">Відкрити в адмінці →</a>`);
+          await makeBot(MAIN_TOKEN).sendMessage(ADMIN_CHAT_ID, `${PLUS_QUESTION_HEAD} ${esc(sub.telegram_handle || '')} · ${state} <code>${chatId}</code>:\n\n${esc(text.slice(0, 700))}\n\n${afterHours ? `🌙 Написали о ${kyivTime()} — людині обіцяли відповідь у робочі години\n\n` : ''}<i>↩️ Відповідайте реплаєм на це повідомлення — відповідь піде людині від @DityamPlusBot.</i>\n<a href="${SITE_URL}/admin/messages">Відкрити в адмінці →</a>`);
         }
-        await bot.sendMessage(chatId, '📝 Отримали. Повернемося з відповіддю якомога швидше, прямо сюди 🧡');
+        // Після 18:00 «якомога швидше» читається як «зараз», і людина чекає
+        // всю ніч. Чесно кажемо, коли відповімо (lib/working-hours.js).
+        await bot.sendMessage(chatId, afterHours
+          ? `📝 Отримали. Зараз у нас неробочий час — відповімо обовʼязково в робочі години (${WORK_HOURS_TEXT}), прямо сюди 🧡`
+          : '📝 Отримали. Повернемося з відповіддю якомога швидше, прямо сюди 🧡');
       }
     }
     return new Response('ok');
