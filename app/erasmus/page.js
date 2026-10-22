@@ -421,7 +421,7 @@ export default async function ErasmusGuide() {
         <section id="er-open" className="er-open" aria-labelledby="er-open-title">
           <h2 id="er-open-title" className="tp-h2">{titled(['Відкриті набори', 'зараз'])}</h2>
           {total > 0 ? (
-            <TopicCards items={items.map(slim)} todayIso={todayIso} lang="uk" labels={CARD_LABELS} />
+            <TopicCards items={items.map(slim)} todayIso={todayIso} lang="uk" firstBanner={6} bannerEvery={18} labels={CARD_LABELS} />
           ) : (
             <p className="tp-note-text">
               Зараз відкритих наборів Erasmus+ на платформі немає. Нові зʼявляються тут щойно ми їх знаходимо, а інші

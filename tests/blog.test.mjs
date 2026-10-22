@@ -79,3 +79,15 @@ test('блог є в шапці (українська версія) — і на 
   // NAV рендериться і в шапці, і в мобільному меню.
   assert.equal((h.match(/\{NAV\.map\(/g) || []).length, 2);
 });
+
+test('статті блогу й путівники — 3 колонки карток на широкому екрані', () => {
+  const css = read('app/styles/topic-v2.css');
+  assert.match(css, /@media \(min-width: 1100px\) \{\s*\.er-open \.tp-grid \{ grid-template-columns: repeat\(3, minmax\(0, 1fr\)\); \}/);
+});
+
+test('банер каналу в статтях і путівниках — після повних рядів (6, далі кожні 18)', () => {
+  assert.match(read('app/topic/TopicCards.js'), /firstBanner = 2, bannerEvery = 20/);
+  for (const f of ['app/blog/[slug]/page.js', 'app/erasmus/page.js']) {
+    assert.match(read(f), /firstBanner=\{6\} bannerEvery=\{18\}/, f);
+  }
+});

@@ -52,6 +52,10 @@ const DEFAULT_LABELS = {
 export default function TopicCards({
   items, subfilters = [], todayIso, lang = 'uk', pinnedIds = [], pinnedLabel = null,
   labels, hub = null, groups = null, groupLinks = [], abroadLabel = null,
+  // Де стоїть банер каналу. Підбірки: після першого ряду (2 картки) і раз на 20.
+  // Статті блогу й путівники мають 3 колонки на компʼютері й 2 на телефоні,
+  // тож там банер після 6 карток і раз на 18 — повні ряди за будь-якої ширини.
+  firstBanner = 2, bannerEvery = 20,
 }) {
   // Сторінки /olimpiady й /erasmus передають власні підписи без нових ключів.
   const t = { ...(DEFAULT_LABELS[lang] || DEFAULT_LABELS.uk), ...(labels || {}) };
@@ -117,9 +121,9 @@ export default function TopicCards({
     );
   }
 
-  // Канал після першого ряду (дві картки) і далі раз на двадцять.
-  const tgAfter = new Set(inlineCardPositions(filtered.length));
-  if (filtered.length > 2) tgAfter.add(1);
+  // Канал після першого ряду і далі раз на bannerEvery (див. пропси вище).
+  const tgAfter = new Set(inlineCardPositions(filtered.length, { every: bannerEvery }));
+  if (filtered.length > firstBanner) tgAfter.add(firstBanner - 1);
 
   const cells = [];
   filtered.forEach((item, i) => {

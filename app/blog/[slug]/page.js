@@ -222,7 +222,7 @@ export default async function BlogPost({ params }) {
         <section id="bl-open" className="er-open" aria-labelledby="bl-open-title">
           <h2 id="bl-open-title" className="tp-h2">{titled(post.cards.title)}</h2>
           {total > 0 ? (
-            <TopicCards items={items.map(slim)} todayIso={todayIso} lang="uk" labels={labels} />
+            <TopicCards items={items.map(slim)} todayIso={todayIso} lang="uk" firstBanner={6} bannerEvery={18} labels={labels} />
           ) : (
             <p className="tp-note-text">{post.cards.empty}</p>
           )}
