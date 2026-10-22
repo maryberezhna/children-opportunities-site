@@ -438,6 +438,51 @@ def _apply_place_quote(data: dict, source_text: str) -> None:
         ev["place"] = quote
 
 
+UA_ELIGIBILITY = ("from_ukraine", "abroad_only", "none", "unknown")
+
+
+def _foreign(data: dict) -> bool:
+    return bool(data.get("is_international")) or any(
+        c and c != "ua" for c in (data.get("countries") or []))
+
+
+def apply_ua_eligibility(data: dict, source_text: str) -> None:
+    """«Чи може подати дитина з України» — лише з цитатою (рішення Марії 22.10.2026).
+
+    22.10.2026 у плані Instagram стояв пост про RSI з «дедлайном тижня», а на
+    сторінці програми написано: лише громадяни чи резиденти США, решта країн
+    відбирає своїх, і України серед них немає. Родина побачила б дату й
+    писала б заявку, яку не приймуть. Тепер для кожної закордонної чи
+    міжнародної можливості сторінка каже одне з чотирьох: можна з України,
+    лише тим, хто живе за кордоном, лише громадянам іншої країни, або «не
+    вказано». Відповідь без дослівної фрази зі сторінки стає «не вказано» —
+    вгадане «можна» тут шкодить більше, ніж чесне «уточнюйте».
+    """
+    quote = data.pop("ua_eligibility_quote", None)
+    value = data.get("ua_eligibility")
+    note = data.get("ua_eligibility_note")
+    if not _foreign(data):
+        data["ua_eligibility"] = None
+        data["ua_eligibility_note"] = None
+        return
+    if value not in UA_ELIGIBILITY:
+        value = "unknown"
+    if value != "unknown" and not (isinstance(quote, str) and quote_in_text(quote, source_text)):
+        if value:
+            _note(data, f"auto: «хто може подати» ({value}) без цитати — не вказано")
+        value = "unknown"
+    data["ua_eligibility"] = value
+    if value == "unknown" or not isinstance(note, str) or not note.strip():
+        data["ua_eligibility_note"] = None
+    else:
+        data["ua_eligibility_note"] = re.sub(r"\s+", " ", note).strip()[:160]
+    if value != "unknown":
+        ev = data.get("evidence")
+        if not isinstance(ev, dict):
+            ev = data["evidence"] = {}
+        ev["ua"] = re.sub(r"\s+", " ", quote).strip()[:240]
+
+
 def _apply_club_default(data: dict) -> None:
     """Гурток, про набір якого текст мовчить, — постійний (рішення Марії 17.09.2026).
 
@@ -577,6 +622,7 @@ def _sanitize(data: dict, source_text: str = "") -> dict:
     _drop_international_for_local(data)
     _apply_format_from_text(data)
     _apply_place_quote(data, source_text)
+    apply_ua_eligibility(data, source_text)
     age_missing = _fill_from_text(data, age_missing, source_text)
     apply_ask_school(data)
 
@@ -760,6 +806,21 @@ confidence нижче 0.5, щоб запис пішов на перевірку 
    все, знайдене в джерелі, ми викинули.
 10. Витягти apply_url — пряме посилання на подачу (форма, реєстрація), якщо
    воно назване в тексті окремо від адреси самого допису.
+11. Для закордонної чи міжнародної можливості визначити ua_eligibility —
+   хто може подати заявку, ЛИШЕ зі слів сторінки:
+   from_ukraine — дитина, яка живе в Україні, може подати (Україна серед
+     країн-учасниць, «open to students worldwide», «з будь-якої країни»);
+   abroad_only — лише діти, які живуть у певній країні чи країнах, але без
+     вимоги громадянства (школа діаспори, програма для резидентів Польщі,
+     «для українських дітей у Німеччині»);
+   none — лише громадяни або резиденти іншої країни, і Україна серед них не
+     названа («US citizens or permanent residents only»);
+   unknown — сторінка про це мовчить. Не вгадуй: «міжнародний» у назві ще
+     не означає, що можна з України.
+   У ua_eligibility_quote — дослівна фраза зі сторінки, з якої це видно. Без
+   фрази — unknown. У ua_eligibility_note — коротко українською, для кого саме
+   («громадяни або резиденти США», «діти, які живуть у Польщі»). Для
+   української можливості всередині України — null.
 
 ВІДХИЛЯЙ (confidence=0.0) якщо текст описує:
 - АГРЕГАТОР або ПЛАТФОРМУ що збирає/показує інші можливості:
@@ -1024,6 +1085,28 @@ EXTRACT_TOOL = {
                                "або участь передбачає поїздку за кордон. "
                                "Онлайн-конкурс від закордонного організатора — "
                                "теж true. Гурток у Житомирі — false.",
+            },
+            "ua_eligibility": {
+                "type": ["string", "null"],
+                "enum": ["from_ukraine", "abroad_only", "none", "unknown", None],
+                "description": "Лише для закордонної чи міжнародної можливості: "
+                               "from_ukraine — можна подати, живучи в Україні; "
+                               "abroad_only — лише діти, які живуть у певній "
+                               "країні (діаспора); none — лише громадяни чи "
+                               "резиденти іншої країни, Україна не названа; "
+                               "unknown — сторінка мовчить. Для можливості в "
+                               "Україні — null.",
+            },
+            "ua_eligibility_quote": {
+                "type": ["string", "null"],
+                "description": "Дослівна фраза зі сторінки, з якої видно, хто "
+                               "може подати. Без фрази — null.",
+            },
+            "ua_eligibility_note": {
+                "type": ["string", "null"],
+                "description": "Коротко українською, для кого саме: «громадяни "
+                               "або резиденти США», «діти, які живуть у "
+                               "Польщі». Інакше null.",
             },
             "format": {
                 "type": ["string", "null"],
