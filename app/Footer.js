@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import SuggestModal, { SuggestOpenButton } from './SuggestModal';
-import { TOPIC_NAV, topicPath } from '@/lib/topics';
 
 // Футер (вересень 2026, другий підхід): чорна смуга на всю ширину, великий
-// рукописний wordmark по центру, під ним чотири колонки посилань, ряд
+// рукописний wordmark по центру, під ним три колонки посилань, ряд
 // «Слідкувати» і копірайт. Живі цифри й опис проєкту тут не дублюємо —
 // вони в хіро головної. Двомовність лишається: /en-сторінки передають
-// lang="en", підбірки беруть адреси через topicPath, щоб з англійської
-// не вести на українські сторінки.
+// lang="en". Колонку «Підбірки» прибрано 22.10.2026 (Марія: «видали з футеру
+// підбірки бо він величезний») — 16 посилань розтягували футер на телефоні.
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
@@ -24,7 +23,6 @@ const T = {
     plus: 'Dityam+',
     olimp: 'Онлайн-олімпіада',
     modnyiKod: 'Олімпіада з моди',
-    topics: 'Підбірки',
     about: 'Про нас',
     aboutProject: 'Про проєкт',
     verify: 'Як ми перевіряємо',
@@ -57,7 +55,6 @@ const T = {
     deadlines: null,
     sviata: null,
     plus: 'Dityam+',
-    topics: 'Collections',
     about: 'About',
     aboutProject: 'About the project',
     verify: 'How we verify',
@@ -104,15 +101,6 @@ export default function Footer({ lang = 'uk' }) {
             {h.modnyiKod && <Link href={h.modnyiKod} prefetch={false}>{t.modnyiKod}</Link>}
             {/* Календар свят і дедлайнів — лише українською (15.10.2026). */}
             {h.sviata && <Link href={h.sviata} prefetch={false}>{t.sviata}</Link>}
-          </div>
-
-          <div className="v2-footer-col">
-            <span className="v2-footer-col-title">{t.topics}</span>
-            {TOPIC_NAV.map((topic) => (
-              <Link key={topic.slug} href={topicPath(topic, lang)}>
-                {lang === 'en' ? topic.labelEn : topic.label}
-              </Link>
-            ))}
           </div>
 
           <div className="v2-footer-col">
