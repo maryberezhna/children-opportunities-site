@@ -87,7 +87,14 @@ ua_eligibility:
   закордонний: «міжнародний» у назві ще не означає «можна з України».
 - ua_eligibility_quote — дослівна фраза зі сторінки, з якої це видно, мовою
   сторінки, без перекладу й без змін. Немає такої фрази — unknown і null.
-- Не плутай вимогу до віку чи мови з вимогою до країни."""
+- Не плутай вимогу до віку чи мови з вимогою до країни.
+- Місце проведення — ще не умова. Обмін у Польщі, табір у Німеччині,
+  конкурс в Японії — це НЕ abroad_only, поки сторінка прямо не каже, що
+  беруть лише тих, хто живе або перебуває в цій країні. Сторінка про це
+  мовчить → unknown.
+- ua_eligibility_note мусить казати те саме, що й ua_eligibility. Якщо в
+  поясненні виходить «без обмежень» чи «не вказано» — це не abroad_only і
+  не none."""
 
 
 def _ask(client, row: dict, text: str) -> dict | None:
@@ -202,6 +209,17 @@ def main() -> int:
             logger.warning("Модель не відповіла: %s", row["title"][:60])
             continue
         patch = plan(row, ans, text)
+        # Збережений сирець — витяг для екстракції, і розділу «Eligibility»
+        # у ньому часто немає (RSI, 22.10.2026). Не знайшли там — читаємо
+        # живу сторінку ще раз, перш ніж писати «не вказано».
+        if patch["ua_eligibility"] == "unknown" and where.startswith("raw_items"):
+            live, _why, kind = fetch_text(row["source_url"], limit=PAGE_CHARS)
+            if kind == "ok" and live:
+                ans2 = _ask(ai, row, live)
+                if ans2:
+                    patch2 = plan(row, ans2, live)
+                    if patch2["ua_eligibility"] != "unknown":
+                        patch = patch2
         v = patch["ua_eligibility"]
         counts[v] = counts.get(v, 0) + 1
         logger.info("%-12s %s | %s | %s", v, row["title"][:56],
