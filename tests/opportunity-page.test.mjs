@@ -271,6 +271,8 @@ test('«Хто може подати»: лише для закордонного
     'З України — ні. Для кого: громадяни або резиденти США');
   assert.equal(uaEligibilityText({ countries: ['pl'], ua_eligibility: 'abroad_only' }),
     'З України — ні. Можуть діти, які живуть за кордоном');
+  assert.equal(uaEligibilityText({ is_international: true, ua_eligibility: 'from_ukraine', ua_eligibility_note: 'учні з будь-якої країни' }),
+    'Так, можна подати з України. Учні з будь-якої країни');
   const who = pageFacts({ is_international: true, ua_eligibility: 'from_ukraine' }, today).find((f) => f.key === 'who');
   assert.equal(who?.value, 'Так, можна подати з України');
 });
