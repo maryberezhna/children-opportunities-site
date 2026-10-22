@@ -134,3 +134,26 @@ test('робот публікації блогу: лише статті й пл�
   assert.doesNotMatch(wf, /gh workflow run tests\.yml/);
   assert.match(wf, /gh pr merge .* --squash --auto/);
 });
+
+// SEO і GEO (22.10.2026, Марія: блог — «те, що прямо потрібно, щоб підвищити SEO
+// і GEO»): кожна тема плану має головний запит і підпитання з підказок Google —
+// агент пише саме під них.
+test('план: у кожної теми є query і questions з пошуку', () => {
+  const plan = JSON.parse(read('content/blog-plan.json'));
+  for (const it of plan.items) {
+    assert.ok(typeof it.query === 'string' && it.query.length >= 5, `${it.id}: немає query`);
+    assert.ok(Array.isArray(it.questions) && it.questions.length >= 1, `${it.id}: немає questions`);
+  }
+});
+
+test('підбірка показує статті блогу на свою тему, стаття веде назад у підбірку', async () => {
+  const { postsForTopic } = await import('../lib/blog.js');
+  for (const p of BLOG_POSTS) {
+    assert.ok(postsForTopic(p.cards.topic).some((x) => x.slug === p.slug), `${p.slug} не видно в /${p.cards.topic}`);
+    assert.ok(internalLinks(p).includes(`/${p.cards.topic}`), `${p.slug}: немає посилання на /${p.cards.topic}`);
+  }
+  assert.ok(postsForTopic('dopomoha-rodynam').length <= 4);
+  const page = read('app/TopicPage.js');
+  assert.match(page, /postsForTopic\(topic\.slug\)/);
+  assert.match(page, /isEn \? \[\] : postsForTopic/);
+});

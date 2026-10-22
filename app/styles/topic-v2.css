@@ -393,6 +393,13 @@
 /* Посилання в тексті — не лише кольором (WCAG 1.4.1). */
 .tp-main .tp-note-meta a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
 
+/* Статті блогу на тему підбірки (22.10.2026) — список посилань, як «Путівник» у хіро. */
+.tp-blog { display: flex; flex-direction: column; gap: 16px; }
+.tp-blog-list { display: flex; flex-direction: column; gap: 12px; max-width: 760px; margin: 0; padding: 0; list-style: none; }
+.tp-blog-list li { font-size: 17px; font-weight: 600; line-height: 1.45; }
+.tp-main .tp-blog-list a { color: var(--v2-ink); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
+.tp-main .tp-blog-list a:hover { color: var(--accent-ink); }
+
 .tp-faq-list { display: flex; flex-direction: column; max-width: 760px; }
 .tp-faq-item { display: flex; flex-direction: column; gap: 8px; padding: 20px 0; border-top: 1px solid #e8e3d6; }
 .tp-faq-item h3 { margin: 0; font-weight: 700; font-size: 18px; line-height: 1.35; letter-spacing: -0.01em; }
