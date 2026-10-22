@@ -74,7 +74,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
 logger = logging.getLogger("remark")
 
 MODEL = "claude-haiku-4-5-20251001"
-LIMIT = int(os.environ.get("LIMIT", "200"))
+LIMIT = int(os.environ.get("LIMIT") or "200")  # порожній LIMIT з воркфлоу = типовий
 # Пауза між походами на чужі сайти. Для записів, чий текст знайшовся в
 # raw_items, паузи немає — ми нікуди не ходимо.
 DELAY = 0.6
