@@ -80,6 +80,17 @@ class UaEligibility(unittest.TestCase):
         self.assertEqual(data["ua_eligibility"], "none")
         self.assertIsNone(data["ua_eligibility_note"])
 
+    def test_international_is_not_nationals(self):
+        for page, quote in (
+            ("Fee: $65 for domestic students and international students.",
+             "$65 for domestic students and international students"),
+            ("Open to US citizens and permanent residents. International students are welcome.",
+             "US citizens and permanent residents. International students are welcome"),
+        ):
+            data = {"is_international": True, "ua_eligibility": "none", "ua_eligibility_quote": quote}
+            apply_ua_eligibility(data, page)
+            self.assertEqual(data["ua_eligibility"], "unknown", quote)
+
 
 class BackfillPlan(unittest.TestCase):
     def test_keeps_other_quotes(self):
