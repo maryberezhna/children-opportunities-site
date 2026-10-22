@@ -5,6 +5,7 @@ import { getStore, thankTeacher } from '@/lib/olimpiada-server';
 import { notifySig, checkNotifySig, NOTIFY_ACTION } from '@/lib/olimpiada-sign';
 import DiplomaImage from '../test/DiplomaImage';
 import TeacherShare from '../TeacherShare';
+import RememberTeacher from '../TeacherRemember';
 
 // Сторінка педагога (Марія, 11.10.2026): особисте посилання для учнів, готовий
 // текст для чату класу, скільки учнів за посиланням уже пройшли олімпіаду, і
@@ -100,6 +101,7 @@ export default async function TeacherPage({ searchParams }) {
       <div className="ol-result">
         <p className="ol-kicker">Онлайн-олімпіада з логіки · для педагогів</p>
         <h1 className="ol-hand">{name}</h1>
+        <RememberTeacher code={code} name={name} />
         {(searchParams?.ok === '1' || searchParams?.notify === '1') && notifyOk && (
           <p className="ol-teach-ok" role="status">Дякуємо! Повідомлятимемо вас про олімпіади й конкурси для ваших учнів</p>
         )}

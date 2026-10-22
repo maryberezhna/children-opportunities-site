@@ -387,3 +387,27 @@ test('статистика педагогів: лише учні відомих 
   assert.ok(read('app/admin/metrics/page.js').includes('погодились на листи: ${olimpTeach.notifyOk}'));
   assert.ok(SITE_EVENT_NAMES.includes('olimp_teacher_signup'));
 });
+
+test('«Надіслати собі» (22.10.2026): обидва посилання педагога в Telegram і Viber', async () => {
+  const { teacherSelfShare } = await import('../lib/olimpiada.js');
+  const { telegram, viber } = teacherSelfShare('stjdjw3z');
+  const tg = new URL(telegram);
+  assert.equal(tg.origin + tg.pathname, 'https://t.me/share/url');
+  assert.equal(tg.searchParams.get('url'), 'https://dityam.com.ua/olimpiada/pedagog?c=stjdjw3z');
+  assert.match(tg.searchParams.get('text'), /Посилання для учнів: https:\/\/dityam\.com\.ua\/olimpiada\?vid=stjdjw3z/);
+  assert.ok(viber.startsWith('viber://forward?text='));
+  const vt = decodeURIComponent(viber.slice('viber://forward?text='.length));
+  assert.match(vt, /pedagog\?c=stjdjw3z/);
+  assert.match(vt, /olimpiada\?vid=stjdjw3z/);
+});
+
+test('сайт памʼятає педагога: окремий ключ, не той, що ставлять батьки за ?vid', () => {
+  const remember = read('app/olimpiada/TeacherRemember.js');
+  assert.match(remember, /'olimp_teacher_page'/);
+  assert.doesNotMatch(remember, /'olimp_teacher_ref'/);
+  const form = read('app/olimpiada/TeacherForm.js');
+  assert.match(form, /rememberTeacher\(j\.code/);
+  assert.match(form, /Ваша сторінка педагога\s→/);
+  assert.match(form, /Уже реєструвалися\? Введіть ту саму пошту — покажемо ваше посилання ще раз\./);
+  assert.match(read('app/olimpiada/pedagog/page.js'), /<RememberTeacher code=\{code\}/);
+});

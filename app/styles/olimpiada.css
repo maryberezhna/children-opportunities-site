@@ -538,6 +538,13 @@ body:has(.ol-run) .telegram-fab, body:has(.ol-run) .scroll-nav { display: none !
 .ol-teach-form .ol-btn { align-self: flex-start; }
 .ol-teach-form .ol-field input { background: #fff; }
 .ol-teach-hint { margin: 0; font-size: 15px; line-height: 1.55; color: #2c4a9a; }
+/* Педагог уже реєструвався в цьому браузері, «Уже реєструвалися?» під кнопкою
+   і «Надіслати собі» після форми (22.10.2026). */
+.ol-teach-saved { display: flex; flex-direction: column; gap: 10px; padding: 16px 18px; border-radius: 18px; background: #fff; border: 2px solid #c9d8ff; }
+.ol-teach-saved p { margin: 0; font-size: 16px; font-weight: 700; line-height: 1.45; color: var(--ol-blue-deep); }
+.ol-teach-saved .ol-btn { min-height: 48px; padding: 10px 20px; font-size: 15px; }
+.ol-teach-again { margin: -4px 0 0; font-size: 14px; line-height: 1.5; color: #2c4a9a; }
+.ol-teach-self { display: flex; flex-direction: column; gap: 10px; }
 .ol-teach-sample { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
 .ol-teach-sample img { display: block; width: 100%; max-width: 300px; height: auto; border-radius: 14px; transform: rotate(2deg); box-shadow: 0 18px 34px -18px rgba(22, 48, 122, .55); }
 .ol-teach-sample figcaption { max-width: 280px; font-size: 14px; line-height: 1.45; color: #5a72b5; }

@@ -3,12 +3,16 @@
 // Форма для педагогів на /olimpiada (Марія, 11.10.2026): імʼя та email →
 // особисте посилання для учнів одразу тут, у блоці, і листом. Той самий email
 // удруге — те саме посилання (сервер нового не заводить і листа не шле).
-import { useState } from 'react';
-import { teacherPagePath, TEACHER_THANKS_AT } from '@/lib/olimpiada';
+// 22.10.2026: педагогиня не зберегла посилання, а лист не дійшов. Тепер сайт
+// памʼятає сторінку в цьому браузері, пропонує «Надіслати собі» і прямо каже,
+// що та сама пошта покаже посилання ще раз.
+import { useEffect, useState } from 'react';
+import { teacherPagePath, teacherName, teacherSelfShare, TEACHER_THANKS_AT } from '@/lib/olimpiada';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { trackConversion } from '@/lib/track';
 import TeacherShare from './TeacherShare';
 import { useEmailTypo } from './EmailTypoHint';
+import { rememberTeacher, savedTeacher } from './TeacherRemember';
 
 const ERRORS = {
   name: 'Вкажіть імʼя та прізвище — так, як має бути на подяці.',
@@ -21,7 +25,11 @@ export default function TeacherForm() {
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState('');
   const [res, setRes] = useState(null);
+  const [saved, setSaved] = useState(null);
   const typo = useEmailTypo('teacher');
+
+  // Лише після монтування: localStorage на сервері немає.
+  useEffect(() => { setSaved(savedTeacher()); }, []);
 
   async function submit(e) {
     e.preventDefault();
@@ -52,6 +60,7 @@ export default function TeacherForm() {
         sendSiteEvent(SITE_EVENTS.OLIMP_TEACHER_SIGNUP, body.source);
         trackConversion('olimpiada_teacher_signup', { event_label: body.source, event_source: body.source });
       }
+      rememberTeacher(j.code, teacherName(body.name));
       setRes({ ...j, email: body.email.trim().toLowerCase() });
       setState('done');
     } catch {
@@ -69,6 +78,7 @@ export default function TeacherForm() {
             : `Готово! Ось ваше особисте посилання для учнів${res.mailed ? ` — його ми надіслали й на ${res.email}` : ''}.`}
         </p>
         <TeacherShare code={res.code} />
+        <SaveForSelf code={res.code} />
         <p className="ol-teach-hint">
           На сторінці педагога — готовий текст для чату класу і скільки учнів уже пройшли олімпіаду за вашим посиланням.
           Коли їх буде {TEACHER_THANKS_AT}, там зʼявиться подяка, і ми надішлемо її вам листом.
@@ -80,6 +90,12 @@ export default function TeacherForm() {
 
   return (
     <form className="ol-form ol-teach-form" onSubmit={submit} noValidate>
+      {saved && (
+        <div className="ol-teach-saved">
+          <p>{saved.name ? `${saved.name}, ви вже зареєстровані.` : 'Ви вже зареєстровані.'}</p>
+          <a className="ol-btn ol-btn-main" href={teacherPagePath(saved.code)}>Ваша сторінка педагога →</a>
+        </div>
+      )}
       <label className="ol-field">
         <span>Імʼя та прізвище</span>
         <input name="name" type="text" autoComplete="name" maxLength={60} required placeholder="Олена Петрівна Коваль" />
@@ -106,6 +122,22 @@ export default function TeacherForm() {
       <button type="submit" className="ol-btn ol-btn-main" disabled={state === 'sending'}>
         {state === 'sending' ? 'Зберігаємо…' : 'Отримати посилання'}
       </button>
+      <p className="ol-teach-again">Уже реєструвалися? Введіть ту саму пошту — покажемо ваше посилання ще раз.</p>
     </form>
+  );
+}
+
+// Посилання на екрані зникає, щойно сторінку закрили, а лист може й не дійти:
+// пересилаємо обидва посилання собі — у чат, де вони не загубляться.
+function SaveForSelf({ code }) {
+  const share = teacherSelfShare(code);
+  return (
+    <div className="ol-teach-self">
+      <p className="ol-teach-label">Збережіть посилання, щоб не загубити</p>
+      <div className="ol-teach-buttons">
+        <a className="ol-btn ol-btn-ghost" href={share.telegram} target="_blank" rel="noopener">Надіслати собі в Telegram</a>
+        <a className="ol-btn ol-btn-ghost ol-share-viber" href={share.viber}>Надіслати собі у Viber</a>
+      </div>
+    </div>
   );
 }
