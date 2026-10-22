@@ -67,10 +67,13 @@ def pick_recipients(subs: list) -> list:
         chat = str(s.get("telegram_chat_id") or "")
         if not chat or chat in seen or chat in OWN_CHAT_IDS:
             continue
-        nudged = bool(s.get("stuck_notice_at")) and str(s.get("stuck_notice_at")) >= SINCE
+        # Лише ті, хто дійшов до кроку оплати (Марія: «хто дійшов і побачив цей
+        # крок»): завершили анкету до деплою виправлення — тепер вони active/free.
+        # Хто зупинився на першому кроці, оплати не бачив: cron писав їм про
+        # «перший крок», а не про оплату.
         free_active = (s.get("status") == "active" and s.get("billing_period") == "free"
                        and str(s.get("created_at") or "") < FIXED_AT)
-        if not (nudged or free_active):
+        if not free_active:
             continue
         if s.get("status") in ("unsubscribed", "cancelled"):
             continue
