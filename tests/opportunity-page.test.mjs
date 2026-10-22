@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { intakeStatus, pageFacts, applicantConditions, whereText } from '../lib/opportunity-facts.js';
+import { intakeStatus, pageFacts, applicantConditions, whereText, uaEligibilityText } from '../lib/opportunity-facts.js';
 import { topicOf } from '../lib/topics.js';
 
 // Редизайн сторінки можливості (29.09.2026, макет Opportunity.dc.html).
@@ -258,4 +258,19 @@ test('закритий набір: великий заголовок, кален
   const catalog = read('app/api/catalog/[lang]/route.js');
   assert.match(catalog, /publicOpportunities\(/);
   assert.doesNotMatch(catalog, /'closed'/);
+});
+
+// 22.10.2026: для кожної закордонної можливості — чи можна подати з України.
+test('«Хто може подати»: лише для закордонного, з поясненням, інакше «не вказано»', () => {
+  assert.equal(uaEligibilityText({ countries: ['ua'], cities: ['Київ'] }), null);
+  assert.equal(uaEligibilityText({ is_international: true }),
+    'Не вказано, чи можна з України — уточнюйте в організатора');
+  assert.equal(uaEligibilityText({ is_international: true, ua_eligibility: 'from_ukraine' }),
+    'Так, можна подати з України');
+  assert.equal(uaEligibilityText({ countries: ['us'], ua_eligibility: 'none', ua_eligibility_note: 'громадяни або резиденти США' }),
+    'З України — ні. Для кого: громадяни або резиденти США');
+  assert.equal(uaEligibilityText({ countries: ['pl'], ua_eligibility: 'abroad_only' }),
+    'З України — ні. Можуть діти, які живуть за кордоном');
+  const who = pageFacts({ is_international: true, ua_eligibility: 'from_ukraine' }, today).find((f) => f.key === 'who');
+  assert.equal(who?.value, 'Так, можна подати з України');
 });
