@@ -452,9 +452,10 @@ UA_OPEN_QUOTE = re.compile(
     r"без обмежень",
     re.I)
 UA_CITIZEN_QUOTE = re.compile(
-    r"citizen|resident|national(s)?\b|passport|green card|громадян|резидент|паспорт|"
+    r"citizen|resident|\bnationals?\b|passport|green card|громадян|резидент|паспорт|"
     r"obywatel|staatsb|staatsang|občan|cittadin|ciudadan|citoyen",
     re.I)
+UA_INTL_OK = re.compile(r"international (students|applicants)|іноземн|міжнародн\w* (студент|учн|учасник)", re.I)
 UA_NOTE_LIMIT = 100
 
 
@@ -462,7 +463,10 @@ def _ua_quote_fits(value: str, quote: str) -> bool:
     if value == "from_ukraine":
         return bool(UA_OPEN_QUOTE.search(quote))
     if value == "none":
-        return bool(UA_CITIZEN_QUOTE.search(quote))
+        # «US citizens and permanent residents, international students» —
+        # іноземців теж беруть: це не «лише громадяни» (Boston University,
+        # 22.10.2026). А «international» не плутаємо з «nationals».
+        return bool(UA_CITIZEN_QUOTE.search(quote)) and not UA_INTL_OK.search(quote)
     return True
 
 
