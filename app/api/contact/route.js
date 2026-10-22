@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { CONTACT_TYPE_MAP, isValidContactType } from '@/lib/contactTypes';
 import { parseContact, contactHref } from '@/lib/contactAddress';
+import { isAfterHours, kyivTime } from '@/lib/working-hours';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -62,6 +63,11 @@ export async function POST(request) {
   });
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
 
+  // Поза робочим часом форма пише людині «відповімо в робочі години», а
+  // адмін-чат бачить, що відповідь обіцяно на ранок (lib/working-hours.js).
+  const now = new Date();
+  const afterHours = isAfterHours(now);
+
   // Сповіщення — best effort: якщо Telegram упав, звернення вже збережене,
   // тож користувачу помилку не показуємо.
   if (BOT_TOKEN && ADMIN_CHAT_ID) {
@@ -73,6 +79,7 @@ export async function POST(request) {
       url ? `\n🔗 ${esc(url)}` : null,
       type === 'story' ? (publishConsent ? '\n✅ Можна опублікувати з іменем' : '\n🔒 Публікувати не можна') : null,
       type === 'ambassador' ? (publishConsent ? '\n✅ Можна вказати імʼя та місто на сторінці амбасадорів' : '\n🔒 Імʼя на сайті не показувати') : null,
+      afterHours ? `\n🌙 Написали о ${kyivTime(now)} — людині обіцяли відповідь у робочі години` : null,
       `\n👤 ${[name ? esc(name) : null, `<a href="${esc(contactHref(parsed))}">${esc(contact)}</a>`].filter(Boolean).join(' · ')}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',
@@ -91,5 +98,5 @@ export async function POST(request) {
     } catch (e) { /* збережено в базі — цього досить */ }
   }
 
-  return Response.json({ ok: true });
+  return Response.json({ ok: true, afterHours });
 }

@@ -3,6 +3,7 @@ import '@/app/styles/contact-form.css';
 import { useEffect, useState } from 'react';
 import { FORM_CONTACT_TYPES, CONTACT_TYPE_MAP } from '@/lib/contactTypes';
 import { parseContact } from '@/lib/contactAddress';
+import { WORK_HOURS_TEXT, WORK_HOURS_TEXT_EN } from '@/lib/working-hours';
 
 /**
  * Контактна форма з вибором типу звернення. Тип визначає підказку і
@@ -13,6 +14,7 @@ const L = {
   uk: {
     doneTitle: 'Дякуємо, лист надійшов!',
     doneText: 'Ми читаємо все і повернемося з відповіддю якомога швидше, якщо ви лишили контакт. Пропозиції можливостей зазвичай зʼявляються на сайті протягом кількох днів.',
+    doneAfterHours: `Зараз у нас неробочий час, тож відповімо обовʼязково в робочі години — ${WORK_HOURS_TEXT}. Пропозиції можливостей зазвичай зʼявляються на сайті протягом кількох днів.`,
     again: 'Написати ще раз',
     topic: 'Тема звернення',
     message: 'Повідомлення',
@@ -46,6 +48,7 @@ const L = {
     errShort: 'Please write at least a few words, so we understand how to help.',
     errContact: 'Leave an email or a Telegram username, e.g. @olena, so we can reply. We can’t reply to a phone number.',
     errSend: 'Could not send. Please try again, or write to hellodityam.com.ua@gmail.com.',
+    doneAfterHours: `It’s outside our working hours right now, so we’ll definitely reply during working hours (${WORK_HOURS_TEXT_EN}). Suggested opportunities usually appear on the site within a few days.`,
     sending: 'Sending…',
     submit: 'Send',
     privacy: 'We only use your contact to reply to you. We don’t send advertising. How we handle data is in the privacy policy.',
@@ -63,6 +66,9 @@ export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', 
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [form, setForm] = useState({ message: '', name: '', contact: '', url: '', website: '' });
   const [consent, setConsent] = useState(false);
+  // Чи надіслано поза робочим часом — вирішує сервер за київським часом, а не
+  // годинник у браузері людини.
+  const [afterHours, setAfterHours] = useState(false);
 
   // /contacts?type=story — сюди веде щомісячний пост у каналі. Читаємо з
   // location, а не useSearchParams, щоб сторінка лишалась статичною.
@@ -107,6 +113,7 @@ export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', 
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.ok) throw new Error('failed');
+      setAfterHours(json.afterHours === true);
       setState('done');
       setForm({ message: '', name: '', contact: '', url: '', website: '' });
       setConsent(false);
@@ -123,7 +130,7 @@ export default function ContactForm({ lang = 'uk', defaultType = 'opportunity', 
       <div className="contact-form-done">
         <div className="contact-form-done-icon">🧡</div>
         <h3>{t.doneTitle}</h3>
-        <p>{type === 'story' ? t.storyDone : t.doneText}</p>
+        <p>{type === 'story' ? t.storyDone : afterHours ? t.doneAfterHours : t.doneText}</p>
         <button type="button" className="contact-form-again" onClick={() => setState('idle')}>
           {t.again}
         </button>
