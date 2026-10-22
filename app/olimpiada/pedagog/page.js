@@ -174,7 +174,7 @@ export default async function TeacherPage({ searchParams }) {
         <ul className="ol-amb-list">
           <li>Першими дізнаєтесь про наші олімпіади й конкурси</li>
           <li>Сертифікат і подяка від Dityam.com.ua</li>
-          <li>Dityam+ безкоштовно</li>
+          <li>Розширений функціонал для вчителів</li>
         </ul>
         <div className="ol-actions">
           <a className="ol-btn ol-btn-main" href="/ambasadory">Стати амбасадором</a>
