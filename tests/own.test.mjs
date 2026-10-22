@@ -4,18 +4,22 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+// Свої пошти й chat_id — зі змінних оточення (репозиторій публічний, 22.10.2026);
+// у тесті — вигадані, задаються ДО імпорту модуля.
+process.env.OWN_EMAILS = 'owner@example.com,owner.two@example.com';
+process.env.OWN_CHAT_IDS = '111222333';
 const { isOwn, notOwn } = await import('../lib/own.js');
 const { isStalled, peopleRows } = await import('../lib/plusPeople.js');
 const read = (f) => readFileSync(f, 'utf8');
 
 test('свої записи впізнаються за чатом, ніком і поштою', () => {
-  assert.ok(isOwn({ telegram_chat_id: 388954322 }));
+  assert.ok(isOwn({ telegram_chat_id: 111222333 }));
   assert.ok(isOwn({ telegram_handle: '@maryberezhna' }));
   assert.ok(isOwn({ telegram_username: 'MaryBerezhna' }));
-  assert.ok(isOwn({ parent_email: 'Maryberezhna@gmail.com' }));
-  assert.ok(isOwn({ email: 'mashaberezhna0209@gmail.com' }));
+  assert.ok(isOwn({ parent_email: 'Owner@Example.com' }));
+  assert.ok(isOwn({ email: 'owner.two@example.com' }));
   assert.ok(!isOwn({ telegram_handle: '@mama', email: 'mama@example.com' }));
-  assert.deepEqual(notOwn([{ telegram_chat_id: '388954322' }, { telegram_chat_id: '1' }]), [{ telegram_chat_id: '1' }]);
+  assert.deepEqual(notOwn([{ telegram_chat_id: '111222333' }, { telegram_chat_id: '1' }]), [{ telegram_chat_id: '1' }]);
 });
 
 test('метрики й адмінка фільтрують свої записи', () => {

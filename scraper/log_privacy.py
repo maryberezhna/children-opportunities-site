@@ -18,6 +18,14 @@ def mask_email(value) -> str:
     return f"{local[:2]}***@{domain}"
 
 
+def mask_chat(value) -> str:
+    """7668754145 → …145. chat_id Telegram — ідентифікатор живої людини, а
+    журнали Actions публічні; трьох останніх цифр досить, щоб разом із часом
+    запуску знайти рядок у базі."""
+    s = str(value or "").strip()
+    return f"…{s[-3:]}" if s else "—"
+
+
 def short_id(value) -> str:
     """Початок id запису (uuid) — щоб знайти рядок у базі."""
     return str(value or "")[:8] or "—"

@@ -267,7 +267,9 @@ def make_email(entry: dict) -> MIMEMultipart:
 # дитину), лише справжнім учасникам: без тестів адміна й власних адрес Марії.
 # Питання — за «The Mom Test»: про минулий досвід, а не «чи сподобалось би».
 FEEDBACK_DAYS = 7
-OWN_EMAILS = {"mashaberezhna0209@gmail.com", "maryberezhna@gmail.com", "hellodityam.com.ua@gmail.com"}
+# Свої адреси — зі змінної оточення OWN_EMAILS (репозиторій публічний, 22.10.2026);
+# пошта проєкту публічна, вона лишається в коді.
+OWN_EMAILS = set(x.strip().lower() for x in os.environ.get("OWN_EMAILS", "").split(",") if x.strip()) | {"hellodityam.com.ua@gmail.com"}
 SKIP_SOURCES = {"check", "prelaunch-check"}
 FEEDBACK_SUBJECT = "Розкажіть, як ви шукаєте можливості для дитини"
 # «Оце треба переписати персонально» (Марія, 12.10.2026): імʼя дитини — лише в

@@ -5,6 +5,10 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 const { productOf, txKey, paidAtOf } = await import('../lib/payments.js');
+// Свої пошти й chat_id — зі змінних оточення (репозиторій публічний, 22.10.2026);
+// у тесті — вигадані, задаються ДО імпорту модуля.
+process.env.OWN_EMAILS = 'owner@example.com,owner.two@example.com';
+process.env.OWN_CHAT_IDS = '111222333';
 const { buildPeople, peopleSummary, sourceLabel } = await import('../lib/people.js');
 const read = (f) => readFileSync(f, 'utf8');
 
@@ -35,16 +39,16 @@ test('люди: Telegram і email окремо, покупки згрупова�
     plusWait: [{ telegram_chat_id: 11, telegram_username: '@mama', created_at: '2026-09-20T10:00:00Z' }],
     entries: [
       { child_name: 'Оля', parent_email: 'O@Example.com', created_at: '2026-10-09T10:00:00Z', paid_at: 'x', finished_at: '2026-10-09T10:40:00Z', level: 'silver' },
-      { child_name: 'Тест', parent_email: 'maryberezhna@gmail.com', created_at: '2026-10-08T10:00:00Z', wfp_last_status: 'Test' },
+      { child_name: 'Тест', parent_email: 'owner@example.com', created_at: '2026-10-08T10:00:00Z', wfp_last_status: 'Test' },
     ],
-    olimpWait: [{ email: 'maryberezhna@gmail.com', created_at: '2026-10-06T10:00:00Z' }],
+    olimpWait: [{ email: 'owner@example.com', created_at: '2026-10-06T10:00:00Z' }],
     payments: [
       { product: 'plus_monthly', amount: 1, telegram_chat_id: '11', paid_at: '2026-09-25T10:00:00Z' },
       { product: 'plus_monthly', amount: 119, telegram_chat_id: '11', paid_at: '2026-10-25T10:00:00Z' },
       { product: 'olimp_print', amount: 199, email: 'o@example.com', paid_at: '2026-10-09T11:00:00Z' },
     ],
   });
-  assert.deepEqual(rows.map((r) => r.who), ['@mama', '📧 o@example.com', '📧 maryberezhna@gmail.com']);
+  assert.deepEqual(rows.map((r) => r.who), ['@mama', '📧 o@example.com', '📧 owner@example.com']);
   const mama = rows[0];
   assert.equal(mama.count, 2);
   assert.equal(mama.total, 120);

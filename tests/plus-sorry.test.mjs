@@ -10,7 +10,9 @@ test('plus_sorry: воркфлоу з confirm=SEND і превʼю, тексти
   assert.match(wf, /plus_sorry\.py --send/);
   assert.match(wf, /--preview/);
   const py = read('scraper/plus_sorry.py');
-  assert.match(py, /OWN_CHAT_IDS = \{"388954322"\}/);
+  // Свої chat_id — зі змінної оточення, не з коду (репозиторій публічний).
+  assert.match(py, /OWN_CHAT_IDS = set\(.*os\.environ\.get\("OWN_CHAT_IDS"/);
+  assert.doesNotMatch(py, /OWN_CHAT_IDS = \{"\d+"/);
   assert.doesNotMatch(py, /грн|без реклами/);
   assert.match(py, /Марія, Dityam\.com\.ua/);
   // хто прийшов після деплою виправлення, оплати не бачив — йому не пишемо

@@ -50,6 +50,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OWN_EMAILS: ${{ secrets.OWN_EMAILS }}
           DITYAM_GMAIL_APP_PASSWORD: ${{ secrets.DITYAM_GMAIL_APP_PASSWORD }}
           TEST_EMAIL: ${{ github.event.inputs.test_email }}
         run: |
