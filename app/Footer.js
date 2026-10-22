@@ -29,6 +29,7 @@ const T = {
     aboutProject: 'Про проєкт',
     verify: 'Як ми перевіряємо',
     press: 'Преса про нас',
+    blog: 'Блог',
     write: 'Написати нам',
     ambassadors: 'Стати амбасадором',
     support: 'Підтримати',
@@ -43,7 +44,7 @@ const T = {
     made: "Зроблено з любов'ю в Україні 🇺🇦",
     hrefs: {
       all: '/', categories: '/kategorii', deadlines: '/dedlainy', sviata: '/sviata', plus: '/plus', olimp: '/olimpiada', modnyiKod: '/modnyi-kod',
-      about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press',
+      about: '/about', verify: '/yak-my-pereviriaiemo', press: '/press', blog: '/blog',
       contacts: '/contacts', ambassadors: '/ambasadory', support: '/support',
       privacy: '/privacy', terms: '/terms',
     },
@@ -119,6 +120,8 @@ export default function Footer({ lang = 'uk' }) {
             <Link href={h.about}>{t.aboutProject}</Link>
             <Link href={h.verify}>{t.verify}</Link>
             <Link href={h.press}>{t.press}</Link>
+            {/* Блог лише українською (22.10.2026): в /en пункту немає. */}
+            {h.blog && <Link href={h.blog}>{t.blog}</Link>}
             <Link href={h.contacts}>{t.write}</Link>
             {/* Сторінка амбасадорів лише українською: в /en пункту немає. */}
             {h.ambassadors && <Link href={h.ambassadors}>{t.ambassadors}</Link>}
