@@ -488,6 +488,10 @@
   color: var(--v2-ink);
   font-weight: 600;
 }
+/* У блозі CTA — посилання на /contacts, а не кнопка (app/blog/BlogIdea.js). */
+.tp-main .suggest-card a.suggest-cta { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.tp-main .blog-idea { grid-template-rows: auto; }
+.tp-main .blog-idea .suggest-cta { grid-row: 1; }
 .tp-main .suggest-card .suggest-cta:hover { background: var(--contrast-bg); color: var(--contrast-ink); }
 
 /* ── Сторінка «Підбірки» (app/CollectionsHub.js) ── */

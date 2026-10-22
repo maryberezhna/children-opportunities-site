@@ -4,6 +4,7 @@ import { BLOG_PATH, blogEntries } from '@/lib/blog';
 import StickyBar from '../StickyBar';
 import SubscribePopup from '../SubscribePopup';
 import Footer from '../Footer';
+import BlogIdea from './BlogIdea';
 
 /**
  * Головна блогу (/blog): статті й путівники, що пояснюють «як» і ведуть у
@@ -95,6 +96,8 @@ export default function BlogIndex() {
             ))}
           </div>
         </section>
+
+        <BlogIdea path={BLOG_PATH} />
       </main>
 
       <Footer lang="uk" />

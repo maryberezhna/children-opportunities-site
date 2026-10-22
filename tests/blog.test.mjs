@@ -103,10 +103,22 @@ test('кожна стаття має evidence: ≥5 дослівних цита�
   }
 });
 
-test('фото статей і путівників — лише з перевіреного списку', async () => {
+test('фото статей і путівників: перевірене або власне з CC0, і жодного повтору', async () => {
   const { BLOG_HEROES } = await import('../lib/blog.js');
-  for (const p of BLOG_POSTS) assert.ok(BLOG_HEROES.includes(p.hero.src), `${p.slug}: ${p.hero.src}`);
-  for (const g of BLOG_GUIDES) assert.ok(BLOG_HEROES.includes(g.hero.src), `${g.href}: ${g.hero.src}`);
+  // Марія 22.10.2026: «фото не мають повторюватися у блозі».
+  const all = [...BLOG_POSTS.map((p) => [p.slug, p.hero]), ...BLOG_GUIDES.map((g) => [g.href, g.hero])];
+  const seen = new Map();
+  for (const [id, hero] of all) {
+    assert.ok(!seen.has(hero.src), `${id}: фото ${hero.src} уже стоїть у ${seen.get(hero.src)}`);
+    seen.set(hero.src, id);
+    if (BLOG_HEROES.includes(hero.src)) continue;
+    // Власне фото статті: public/blog/<slug>, лише Commons з CC0 / суспільним
+    // надбанням (без підпису автора), з адресою сторінки файлу для перевірки.
+    assert.match(hero.src, /^\/blog\/[a-z0-9-]+$/, `${id}: ${hero.src} — не з перевіреного списку й не /blog/<slug>`);
+    assert.match(hero.source?.url || '', /^https:\/\/commons\.wikimedia\.org\/wiki\/File:/, `${id}: немає source.url фото`);
+    assert.match(hero.source?.license || '', /^(CC0|Public domain|No restrictions)/i, `${id}: ліцензія фото не CC0/PD`);
+    assert.ok(hero.alt && hero.alt.length >= 10, `${id}: alt фото`);
+  }
 });
 
 test('план блогу: валідний, підбірки існують, «done» = стаття є', () => {
@@ -126,7 +138,7 @@ test('план блогу: валідний, підбірки існують, «
 test('робот публікації блогу: лише статті й план, схвалює тести PR, автомердж', () => {
   const wf = read('.github/workflows/blog-publish.yml');
   assert.match(wf, /branches: \['blog\/\*\*', 'claude\/blog-\*\*'\]/);
-  assert.match(wf, /grep -vE '\^\(lib\/blog\\\.js\|content\/blog-plan\\\.json\)\$'/);
+  assert.match(wf, /grep -vE '\^\(lib\/blog\\\.js\|content\/blog-plan\\\.json\|public\/blog\/\[a-z0-9-\]\+\(-450\)\?\\\.\(jpg\|webp\)\)\$'/);
   // PR від GITHUB_TOKEN запускає tests.yml зі статусом action_required; ручний
   // workflow_dispatch PR не зараховує (#1012 застряг у BLOCKED) — схвалюємо запуск.
   assert.match(wf, /conclusion==\\"action_required\\"/);
@@ -156,4 +168,15 @@ test('підбірка показує статті блогу на свою те
   const page = read('app/TopicPage.js');
   assert.match(page, /postsForTopic\(topic\.slug\)/);
   assert.match(page, /isEn \? \[\] : postsForTopic/);
+});
+
+test('блог і кожна стаття: «Маєте ідею? Зв’яжіться з нами» веде на контактну форму', async () => {
+  const block = read('app/blog/BlogIdea.js');
+  assert.match(block, />Маєте ідею\?</);
+  assert.match(block, />Зв’яжіться з нами</);
+  assert.match(block, /\/contacts\?type=other&url=/);
+  assert.match(read('app/blog/page.js'), /<BlogIdea path=\{BLOG_PATH\} \/>/);
+  assert.match(read('app/blog/[slug]/page.js'), /<BlogIdea path=\{blogPath\(post\.slug\)\} \/>/);
+  const { FORM_CONTACT_TYPES } = await import('../lib/contactTypes.js');
+  assert.ok(FORM_CONTACT_TYPES.some((t) => t.value === 'other'), 'тип «Інше» у формі');
 });

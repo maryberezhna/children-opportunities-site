@@ -15,6 +15,7 @@ import SubscribePopup from '../../SubscribePopup';
 import SupportPopup from '../../SupportPopup';
 import Footer from '../../Footer';
 import BlogRich from '../BlogRich';
+import BlogIdea from '../BlogIdea';
 
 /**
  * Стаття блогу (/blog/<slug>). Рамка — та сама, що в путівнику /erasmus:
@@ -281,6 +282,8 @@ export default async function BlogPost({ params }) {
           </div>
           <p className="tp-guide-link"><Link href={BLOG_PATH}>Усі статті й путівники в блозі →</Link></p>
         </section>
+
+        <BlogIdea path={blogPath(post.slug)} />
       </main>
 
       <Footer lang="uk" />

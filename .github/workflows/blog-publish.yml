@@ -1,6 +1,7 @@
 # Публікація статей блогу від щоденного агента (22.10.2026, Марія: «агент, який
 # щодня пише 1–2 статті»). Агент (хмарна routine «Блог: 1–2 статті на день»)
-# лише пушить гілку blog/… з правками в lib/blog.js і content/blog-plan.json.
+# лише пушить гілку blog/… з правками в lib/blog.js і content/blog-plan.json
+# та фото статті public/blog/<slug>(-450).jpg/.webp (з 22.10.2026).
 # Тут: перевіряємо, що інших файлів не чіпали, відкриваємо PR, схвалюємо
 # запуск тестів і ставимо автомердж. PR від GITHUB_TOKEN запускає tests.yml
 # зі статусом action_required (чекає схвалення), а ручний workflow_dispatch PR
@@ -31,7 +32,7 @@ jobs:
           git fetch origin main
           CHANGED=$(git diff --name-only origin/main...HEAD)
           echo "$CHANGED"
-          BAD=$(echo "$CHANGED" | grep -vE '^(lib/blog\.js|content/blog-plan\.json)$' || true)
+          BAD=$(echo "$CHANGED" | grep -vE '^(lib/blog\.js|content/blog-plan\.json|public/blog/[a-z0-9-]+(-450)?\.(jpg|webp))$' || true)
           if [ -n "$BAD" ]; then
             echo "::error::Гілка блогу змінює інші файли — автомердж вимкнено: $BAD"
             exit 1
