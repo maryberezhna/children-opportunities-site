@@ -111,11 +111,14 @@ const targets = (rows || [])
   .map((r) => ({ ...r, kind: deadEnd(r) }))
   .filter((r) => r.kind);
 
+// Журнали Actions публічні (22.10.2026): ні ніка, ні повного chat_id — лише
+// три останні цифри, щоб разом із часом запуску знайти рядок у базі.
+const who = (t) => `…${String(t.telegram_chat_id || '').slice(-3) || '—'}`;
 if (!targets.length) { console.log('Нікого писати: вибірка порожня.'); process.exit(0); }
 
 console.log(`Кому (${targets.length}):`);
 for (const t of targets) {
-  console.log(`  ${t.telegram_handle || '—'} · chat ${t.telegram_chat_id} · `
+  console.log(`  ${who(t)} · `
     + `${t.status}/${t.flow_step || '—'} · лист «${t.kind}»`);
 }
 if (DRY_RUN) {
@@ -148,11 +151,11 @@ for (const t of targets) {
     await supabase.from('digest_subscribers')
       .update({ stuck_notice_at: new Date().toISOString() }).eq('id', t.id);
     sent += 1;
-    console.log(`✅ ${t.telegram_handle || t.telegram_chat_id}`);
+    console.log(`✅ ${who(t)}`);
   } else {
     // Найчастіша причина — людина заблокувала бота. Це не помилка запуску:
     // решту листів треба дописати.
-    console.log(`⚠️ ${t.telegram_handle || t.telegram_chat_id}: `
+    console.log(`⚠️ ${who(t)}: `
       + `${res.status || '—'} ${body.description || res._err || 'без пояснення'}`);
   }
 }

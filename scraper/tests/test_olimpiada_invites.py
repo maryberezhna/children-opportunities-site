@@ -8,6 +8,7 @@ import pathlib
 import re
 import sys
 import unittest
+from unittest import mock
 from datetime import datetime, timezone
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -146,8 +147,10 @@ class FeedbackLetterTest(unittest.TestCase):
                 self.row("a@x.ua", "2026-10-09T11:00:00+00:00", feedback_sent_at="2026-10-16T10:00:00+00:00"),
                 self.row("t@x.ua", "2026-10-09T10:00:00+00:00", wfp_last_status="Test"),
                 self.row("c@x.ua", "2026-10-09T10:00:00+00:00", source="check"),
-                self.row("maryberezhna@gmail.com", "2026-10-09T10:00:00+00:00")]
-        self.assertEqual(inv.feedback_targets(rows, now=self.NOW), [])
+                self.row("owner@example.com", "2026-10-09T10:00:00+00:00")]
+        # Свої адреси приходять зі змінної оточення OWN_EMAILS; у тесті — вигадана.
+        with mock.patch.object(inv, "OWN_EMAILS", inv.OWN_EMAILS | {"owner@example.com"}):
+            self.assertEqual(inv.feedback_targets(rows, now=self.NOW), [])
 
     def test_personal_greeting(self):
         self.assertTrue(inv.feedback_greeting(["Олена Коваль"]).startswith("Олена Коваль тепер має диплом"))

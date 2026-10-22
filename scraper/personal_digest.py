@@ -44,6 +44,7 @@ import ladder
 import plus_profile
 import send_window
 from utm import UTM_PLUS_BOT, tag_keyboard, tag_site_links
+from log_privacy import mask_chat
 
 logger = logging.getLogger("personal_digest")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -602,12 +603,12 @@ def send_telegram(chat_id, text, reply_markup=None) -> bool:
             body = {}
         if r.status_code == 200 and body.get("ok"):
             if i:
-                logger.info("chat %s — надіслано запасним (основним) ботом", chat_id)
+                logger.info("chat %s — надіслано запасним (основним) ботом", mask_chat(chat_id))
             return True
         detail = r.text[:200]
         if not any(s in str(body.get("description", "")).lower() for s in _TRY_NEXT_BOT):
             break
-    logger.warning("TG send failed for %s: %s", chat_id, detail)
+    logger.warning("TG send failed for %s: %s", mask_chat(chat_id), detail)
     return False
 
 

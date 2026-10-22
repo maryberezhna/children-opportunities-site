@@ -16,7 +16,9 @@ from email.mime.text import MIMEText
 logger = logging.getLogger(__name__)
 
 GMAIL_FROM = os.environ.get("GMAIL_FROM", "hellodityam.com.ua@gmail.com")
-GMAIL_TO = "mashaberezhna0209@gmail.com"
+# Кому слати щоденний звіт — секрет REPORT_TO, а не адреса в коді (репозиторій
+# публічний, 22.10.2026). Без нього звіт іде на пошту проєкту.
+GMAIL_TO = os.environ.get("REPORT_TO") or "hellodityam.com.ua@gmail.com"
 GMAIL_APP_PASSWORD = os.environ.get("GMAIL_APP_PASSWORD", "")
 
 _TYPE_EMOJI = {

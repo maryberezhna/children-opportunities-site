@@ -49,6 +49,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          REPORT_TO: ${{ secrets.REPORT_TO }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           # Перечит сторінок по цитати (scraper/proof_recheck.py). Порожнє —
           # нічна норма 20 на кожну чергу. Разовий більший прохід потрібен,

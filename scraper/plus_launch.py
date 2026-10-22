@@ -34,6 +34,7 @@ import sys
 import time
 
 import httpx
+from log_privacy import mask_chat
 
 logger = logging.getLogger("plus_launch")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -118,7 +119,7 @@ def send_telegram_launch(chat_id: str, token: str, text: str | None = None) -> b
     }, timeout=20)
     ok = r.status_code == 200 and r.json().get("ok")
     if not ok:
-        logger.warning("TG launch failed for %s: %s", chat_id, r.text[:200])
+        logger.warning("TG launch failed for %s: %s", mask_chat(chat_id), r.text[:200])
     return bool(ok)
 
 
