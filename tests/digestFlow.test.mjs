@@ -112,7 +112,29 @@ test('анкета: вік — один діапазон, і він одразу
 
   await handleFlowCallback(bot, db, click('flow:age:7-10'));
   assert.deepEqual(db._rows.plus_children[0].age_bands, ['7-10']);
+  // З 22.10.2026 між віком і темами стоїть стать — необовʼязкова.
+  assert.match(bot.last().text, /Дівчинка чи хлопчик/);
+
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   assert.match(bot.last().text, /Що подобається дитині/);
+});
+
+test('стать: «Не вказувати» лишає порожньо, вибір зберігається текстом', async () => {
+  const { db, bot } = await setup();
+  await handleFlowCallback(bot, db, click('flow:count:1'));
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  assert.deepEqual(buttons(bot.last()), ['flow:gender:girl', 'flow:gender:boy', 'flow:gender:skip']);
+
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
+  // Саме null, а не рядок 'skip': «не вказано» не має виглядати як відповідь.
+  assert.equal(db._rows.plus_children[0].gender ?? null, null);
+
+  const second = await setup();
+  await handleFlowCallback(second.bot, second.db, click('flow:count:1'));
+  await handleFlowCallback(second.bot, second.db, click('flow:age:7-10'));
+  await handleFlowCallback(second.bot, second.db, click('flow:gender:girl'));
+  assert.equal(second.db._rows.plus_children[0].gender, 'girl');
+  assert.match(second.bot.last().text, /Що подобається дитині/);
 });
 
 test('анкета: двоє дітей — профіль кожної по черзі, потім спільні питання', async () => {
@@ -123,6 +145,7 @@ test('анкета: двоє дітей — профіль кожної по ч�
 
   // Перша дитина: вік → теми → формат → обставини.
   await handleFlowCallback(bot, db, click('flow:age:4-6'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   await handleFlowCallback(bot, db, click('flow:like:__done'));
   await handleFlowCallback(bot, db, click('flow:fmt:__done'));
   await handleFlowCallback(bot, db, click('flow:need:__done'));
@@ -132,6 +155,7 @@ test('анкета: двоє дітей — профіль кожної по ч�
   assert.equal(db._rows.digest_subscribers[0].flow_child_id, db._rows.plus_children[1].id);
 
   await handleFlowCallback(bot, db, click('flow:age:15-18'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   await handleFlowCallback(bot, db, click('flow:like:__done'));
   await handleFlowCallback(bot, db, click('flow:fmt:__done'));
   await handleFlowCallback(bot, db, click('flow:need:__done'));
@@ -259,6 +283,7 @@ test('«Цікаво все» є на темах, форматі й місці �
   const { db, bot } = await setup();
   await handleFlowCallback(bot, db, click('flow:count:1'));
   await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   assert.ok(buttons(bot.last()).includes('flow:like:__all'), 'теми');
 
   await handleFlowCallback(bot, db, click('flow:like:__done'));
@@ -277,6 +302,7 @@ test('«Цікаво все» скидає вже обране й веде да�
   const { db, bot } = await setup();
   await handleFlowCallback(bot, db, click('flow:count:1'));
   await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
 
   // Спершу людина тицьнула дві теми, потім передумала: «та хай буде все».
   const [firstLike] = buttons(bot.last());
@@ -292,6 +318,7 @@ test('«Підходить будь-де» чистить міста й пока
   const { db, bot } = await setup();
   await handleFlowCallback(bot, db, click('flow:count:1'));
   await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   await handleFlowCallback(bot, db, click('flow:like:__done'));
   await handleFlowCallback(bot, db, click('flow:fmt:__done'));
   await handleFlowCallback(bot, db, click('flow:need:__done'));
@@ -314,6 +341,7 @@ test('Одеса є в кнопках навіть з одним записом'
 
   await handleFlowCallback(bot, db, click('flow:count:1'));
   await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   await handleFlowCallback(bot, db, click('flow:like:__done'));
   await handleFlowCallback(bot, db, click('flow:fmt:__done'));
   await handleFlowCallback(bot, db, click('flow:need:__done'));
@@ -371,6 +399,11 @@ test('вчитель: класи замість дітей і олімпіада
   assert.match(bot.last().text, /скількох класів/);
   await handleFlowCallback(bot, db, click('flow:count:2'));
   assert.match(bot.last().text, /Клас 1 з 2\. Скільки років учням/);
+  // Профіль на КЛАС, а не на дитину: питати стать нема про кого, тож крок
+  // пропускається — після віку одразу теми.
+  await handleFlowCallback(bot, db, click('flow:age:7-10'));
+  assert.doesNotMatch(bot.last().text, /Дівчинка чи хлопчик/);
+  assert.match(bot.last().text, /Що цікавить учнів/);
   await finishFlow(bot, '77', { active: true, role: 'teacher' });
   assert.ok(bot.sent.some((m) => /олімпіада з логіки/.test(m.text)));
 });
@@ -381,6 +414,7 @@ test('підліток: одразу анкета про себе на «ти»,
   assert.equal(db._rows.plus_children.length, 1);
   assert.match(bot.last().text, /Скільки тобі років/);
   await handleFlowCallback(bot, db, click('flow:age:15-18'));
+  await handleFlowCallback(bot, db, click('flow:gender:skip'));
   await handleFlowCallback(bot, db, click('flow:like:__all'));
   await handleFlowCallback(bot, db, click('flow:fmt:__all'));
   await handleFlowCallback(bot, db, click('flow:need:__done'));
