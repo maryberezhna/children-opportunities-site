@@ -17,8 +17,9 @@ export async function POST(request) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (url && key) {
     const supabase = createClient(url, key, { auth: { persistSession: false } });
-    // source — коротка мітка «звідки» (lib/site-events.js), не більше 60 знаків.
-    const source = typeof b.source === 'string' && b.source.trim() ? b.source.trim().slice(0, 60) : null;
+    // source — коротка мітка «звідки» (lib/site-events.js), не більше 100 знаків
+    // (з 22.10.2026: «асистент:сторінка» для ai_visit довша за 60).
+    const source = typeof b.source === 'string' && b.source.trim() ? b.source.trim().slice(0, 100) : null;
     await supabase.from('site_events').insert(source ? { name, source } : { name });
   }
   return new Response(null, { status: 204 });

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { SITE_EVENTS, SITE_EVENT_NAMES, sendSiteEvent, markVisit, isPlusPath } from '../lib/site-events.js';
+import { SITE_EVENTS, SITE_EVENT_NAMES, sendSiteEvent, markVisit, markAiVisit, isPlusPath } from '../lib/site-events.js';
 
 function withBrowser(fn, { noAnalytics = false } = {}) {
   const sent = [];
@@ -79,5 +79,8 @@ test('поза браузером нічого не робимо', () => {
     // + «Модний код» (12.10.2026): сторінка й форма.
     'mk_view', 'mk_cta',
     // + «Наші можливості» (13.10.2026): сторінка й картки.
-    'own_view', 'own_click']);
+    'own_view', 'own_click',
+    // + прийшов із ШІ-асистента (22.10.2026); ai_fetch пише сервер, тут його немає.
+    'ai_visit']);
+  assert.equal(markAiVisit('/'), false);
 });

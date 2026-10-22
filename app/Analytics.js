@@ -4,7 +4,7 @@ import Script from 'next/script';
 import { usePathname } from 'next/navigation';
 import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
 import { NO_ANALYTICS_KEY, PRODUCTION_HOST, AUTOMATION_UA, isInternalPath } from '@/lib/analytics-scope';
-import { markVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
+import { markVisit, markAiVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
 import { AMPLITUDE_KEY, AMPLITUDE_EU, AMPLITUDE_SDK_VERSION } from '@/lib/amplitude';
 
 const GA_ID = 'G-KPLE8LGH91';
@@ -83,6 +83,8 @@ export function Analytics() {
   useEffect(() => {
     if (internal) return;
     markVisit();
+    // Прийшов із ШІ-асистента — окремо, раз за сесію (lib/ai-visibility.js).
+    markAiVisit(pathname);
   }, [internal]);
 
   useEffect(() => {

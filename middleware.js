@@ -3,6 +3,7 @@ import { readsUkrainian, readsEnglish, acceptLanguageTags } from '@/lib/lang';
 import { shouldBlock } from '@/lib/bot-guard';
 import { isRuSearchBot } from '@/lib/ru-search';
 import { AB_CARD_COOKIE, AB_CARD_MAX_AGE, abCardForRequest } from '@/lib/ab-card';
+import { aiFetcherFrom, aiLabel } from '@/lib/ai-visibility';
 
 /**
  * Хто заходить не з України — бачить англійську сторінку.
@@ -46,9 +47,32 @@ const CATALOGUE_PARAMS = ['q', 'age', 'type', 'aid', 'theme', 'need', 'cost', 'd
  * Обгортка над route(): cookie треба додати до будь-якої відповіді —
  * і до next(), і до редіректу мови, — а точок повернення там кілька.
  */
-export function middleware(request) {
+// ШІ-асистент читає сторінку для відповіді людині (ChatGPT-User,
+// Perplexity-User, Claude-User) — пишемо в site_events як ai_fetch
+// (lib/ai-visibility.js). Через waitUntil: відповідь не чекає на запис, а збій
+// запису сторінку не ламає. Лише бойовий домен.
+async function logAiFetch(name, path) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return;
+  try {
+    await fetch(`${url}/rest/v1/site_events`, {
+      method: 'POST',
+      headers: {
+        apikey: key, Authorization: `Bearer ${key}`,
+        'Content-Type': 'application/json', Prefer: 'return=minimal',
+      },
+      body: JSON.stringify({ name: 'ai_fetch', source: aiLabel(name, path) }),
+    });
+  } catch { /* лічильник — не привід ламати відповідь */ }
+}
+
+export function middleware(request, event) {
   const res = route(request);
   if (res.status === 403) return res;
+  const live = /(^|\.)dityam\.com\.ua$/i.test(request.headers.get('host') || '');
+  const ai = live ? aiFetcherFrom(request.headers.get('user-agent')) : null;
+  if (ai && event?.waitUntil) event.waitUntil(logAiFetch(ai, request.nextUrl.pathname));
   const { variant, set } = abCardForRequest({
     cookie: request.headers.get('cookie') || '',
     search: request.nextUrl.search,

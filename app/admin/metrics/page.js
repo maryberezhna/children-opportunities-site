@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { notOwn } from '@/lib/own';
 import { createClient } from '@supabase/supabase-js';
+import { summarizeAi, AI_NAMES } from '@/lib/ai-visibility';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import AdminNav from '../AdminNav';
 import { plusFunnel, plusSources } from '@/lib/funnel';
@@ -180,7 +181,7 @@ export default async function MetricsPage() {
     active, drafts, added7, added30, closed7,
     waitlist, waitlist7, profiles, feedback7, outcomes,
     subsRes, snapshotsRes, promoRes, actionsRes, allSubsRes, kidsRes,
-    siteVisit, sitePlusView, sitePlusClick,
+    siteVisit, sitePlusView, sitePlusClick, aiRes,
     olimpWaitRes, olimpEntriesRes, olimpEventsRes, olimpTeachersRes, olimpTeacherEntriesRes,
   } = await allNamed({
     active: count(supabase, 'opportunities', (q) => q.eq('status', 'active')),
@@ -207,6 +208,10 @@ export default async function MetricsPage() {
     siteVisit: count(supabase, 'site_events', (q) => q.eq('name', 'visit')),
     sitePlusView: count(supabase, 'site_events', (q) => q.eq('name', 'plus_view')),
     sitePlusClick: count(supabase, 'site_events', (q) => q.eq('name', 'plus_click')),
+    // ШІ-асистенти за 28 днів (22.10.2026, lib/ai-visibility.js): ai_visit пише
+    // браузер, ai_fetch — middleware. Рядків мало, тож беремо їх напряму.
+    aiRes: supabase.from('site_events').select('name, source')
+      .in('name', ['ai_visit', 'ai_fetch']).gte('created_at', iso(28)).limit(5000),
     snapshotsRes: supabase.from('metrics_daily').select('*').order('day', { ascending: false }).limit(14),
     promoRes: supabase.from('plus_promo_uses').select('*').order('created_at', { ascending: false }).limit(200),
     // Хто скільки зробив у черзі: журнал moderation_actions (24.09.2026).
@@ -348,6 +353,40 @@ export default async function MetricsPage() {
         Органіка і AI-трафік — у <a href="https://analytics.google.com" target="_blank" rel="noreferrer">GA4</a> та{' '}
         <a href="https://search.google.com/search-console" target="_blank" rel="noreferrer">Search Console</a>.
       </p>
+
+      <h2 style={h2S}>🤖 ШІ-асистенти, 28 днів</h2>
+      {(() => {
+        const ai = summarizeAi(aiRes?.data || []);
+        const sum = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+        return (
+          <>
+            <div style={grid}>
+              {AI_NAMES.map((n) => (
+                <Card key={n} value={`${ai.fetches[n] || 0} / ${ai.visits[n] || 0}`} label={`${n}: прочитав сторінку для відповіді / прийшли люди`} />
+              ))}
+            </div>
+            <p style={noteS}>
+              «Прочитав» — асистент сам відкрив нашу сторінку, щоб відповісти людині (ChatGPT-User, Perplexity-User,
+              Claude-User): усього {sum(ai.fetches)}. «Прийшли» — люди перейшли з відповіді асистента: усього {sum(ai.visits)}.
+              Gemini і Copilot своїх ботів для відповідей не мають, тож у них лише переходи. Пишемо з 22.10.2026.
+            </p>
+            {ai.topPages.length ? (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead><tr><th style={{ textAlign: 'left' }}>Сторінка</th><th>Прочитав</th><th>Прийшли</th></tr></thead>
+                <tbody>
+                  {ai.topPages.map((p) => (
+                    <tr key={p.path}>
+                      <td><a href={p.path} target="_blank" rel="noreferrer">{p.path || '/'}</a></td>
+                      <td style={{ textAlign: 'center' }}>{p.fetches}</td>
+                      <td style={{ textAlign: 'center' }}>{p.visits}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : <p style={noteS}>Поки порожньо.</p>}
+          </>
+        );
+      })()}
 
       <h2 style={h2S}>🧩 Онлайн-олімпіада {OLIMP_OPEN ? '' : '· реєстрація ще закрита'}</h2>
       <div style={grid}>
