@@ -1,0 +1,53 @@
+# Публікація статей блогу від щоденного агента (22.10.2026, Марія: «агент, який
+# щодня пише 1–2 статті»). Агент (хмарна routine «Блог: 1–2 статті на день»)
+# лише пушить гілку blog/… з правками в lib/blog.js і content/blog-plan.json.
+# Тут: перевіряємо, що інших файлів не чіпали, відкриваємо PR, запускаємо
+# тести (PR, створений GITHUB_TOKEN, сам їх не запускає, а workflow_dispatch —
+# запускає) і ставимо автомердж. Мердж відбудеться, лише коли tests-js,
+# tests-py і Vercel зелені — ті самі правила захисту main, що й для людей.
+name: blog-publish
+on:
+  push:
+    branches: ['blog/**', 'claude/blog-**']
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: blog-publish-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BRANCH: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Лише статті й план
+        run: |
+          git fetch origin main
+          CHANGED=$(git diff --name-only origin/main...HEAD)
+          echo "$CHANGED"
+          BAD=$(echo "$CHANGED" | grep -vE '^(lib/blog\.js|content/blog-plan\.json)$' || true)
+          if [ -n "$BAD" ]; then
+            echo "::error::Гілка блогу змінює інші файли — автомердж вимкнено: $BAD"
+            exit 1
+          fi
+      - name: PR
+        id: pr
+        run: |
+          N=$(gh pr list --head "$BRANCH" --state open --json number -q '.[0].number')
+          if [ -z "$N" ]; then
+            TITLE=$(git log -1 --format=%s)
+            git log -1 --format=%b > /tmp/body.md
+            printf '\n\nАвтоматична публікація статті блогу (content/blog-plan.json). Мердж — лише після зелених tests-js, tests-py і Vercel.\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n' >> /tmp/body.md
+            gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file /tmp/body.md
+            N=$(gh pr list --head "$BRANCH" --state open --json number -q '.[0].number')
+          fi
+          echo "n=$N" >> "$GITHUB_OUTPUT"
+      - name: Тести
+        run: gh workflow run tests.yml --ref "$BRANCH"
+      - name: Автомердж
+        run: gh pr merge "${{ steps.pr.outputs.n }}" --squash --auto --delete-branch
