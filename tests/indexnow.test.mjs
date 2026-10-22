@@ -76,3 +76,11 @@ test('дублі не надсилаємо — вони віддають 301', (
   assert.match(src, /\.is\('canonical_slug', null\)/,
     'без цього фільтра в Bing підуть адреси-перенаправлення');
 });
+
+test('IndexNow надсилає блог: головну й кожну статтю, і путівник Erasmus+', async () => {
+  const { BLOG_POSTS } = await import('../lib/blog.js');
+  const urls = urlsToSubmit([], TOPIC_LIST);
+  assert.ok(urls.includes('https://dityam.com.ua/blog'));
+  assert.ok(urls.includes('https://dityam.com.ua/erasmus'));
+  for (const p of BLOG_POSTS) assert.ok(urls.includes(`https://dityam.com.ua/blog/${p.slug}`), p.slug);
+});

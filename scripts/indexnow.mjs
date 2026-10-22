@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { INDEXNOW_ENDPOINT, SITE, indexNowBody } from '../lib/indexnow.js';
 import { TOPIC_LIST } from '../lib/topics.js';
+import { BLOG_POSTS, BLOG_PATH, blogPath } from '../lib/blog.js';
 
 const URL_ = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -17,8 +18,10 @@ const CONFIRM = process.env.CONFIRM;
 
 /** Адреси, які варто надіслати: свіжі можливості + усі підбірки. */
 // Сторінки, яких немає ні в базі, ні серед підбірок, але їх треба тримати
-// свіжими в Bing: власна олімпіада (06.10.2026).
-export const STATIC_PAGES = ['/olimpiada', '/olimpiady'];
+// свіжими в Bing: власна олімпіада (06.10.2026), путівник Erasmus+ і блог —
+// головна блогу й кожна стаття (22.10.2026): живі списки під статтями
+// оновлюються щодня так само, як підбірки.
+export const STATIC_PAGES = ['/olimpiada', '/olimpiady', '/erasmus', BLOG_PATH, ...BLOG_POSTS.map((p) => blogPath(p.slug))];
 
 export function urlsToSubmit(rows, topics, pages = STATIC_PAGES) {
   const opportunities = rows.map((r) => `${SITE}/o/${r.slug}`);
