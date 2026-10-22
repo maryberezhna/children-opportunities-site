@@ -69,7 +69,8 @@ test('сторінка підбірки: рядок цифр, канал піс�
   // 30.09.2026: автопродовження зняте — людина не догортала до кінця сторінки.
   assert.ok(!cards.includes('IntersectionObserver'), 'кнопка замість автопродовження');
   assert.ok(cards.includes("more: 'Завантажити ще'"), 'кнопка після перших 20');
-  assert.ok(cards.includes("tgAfter.add(1)"), 'канал після першого ряду');
+  // Підбірки: банер після першого ряду (2 картки) — за замовчуванням firstBanner = 2.
+  assert.ok(cards.includes('firstBanner = 2') && cards.includes('tgAfter.add(firstBanner - 1)'), 'канал після першого ряду');
   assert.ok(cards.includes('is-hidden'), 'усі картки в HTML, приховані за межею — для пошуку');
   assert.ok(cards.includes('AGE_GROUPS') && cards.includes('t.onlyFree') && cards.includes('t.online'));
   assert.ok(cards.includes('trackFilterApply('), 'фільтри підбірки рахуються у воронці filter_apply');
