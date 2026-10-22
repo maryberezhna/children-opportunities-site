@@ -440,6 +440,31 @@ def _apply_place_quote(data: dict, source_text: str) -> None:
 
 UA_ELIGIBILITY = ("from_ukraine", "abroad_only", "none", "unknown")
 
+# Цитата мусить сама казати те, що ми напишемо родині. Пробний прогін
+# 22.10.2026: Woodruff Scholars отримав «лише громадяни США» за фразою «фіналісти
+# в США мають приїхати на кампус», а волонтерство ESC — «можна з України» за
+# «legally reside in an EU Member State». Слова цитати — не здогад моделі.
+UA_OPEN_QUOTE = re.compile(
+    r"україн|ukrain|ukrajin|any (country|nationality)|all (countries|nationalit)|"
+    r"worldwide|world-wide|around the world|from all over|regardless of (citizenship|nationality)|"
+    r"no (age or )?(nationality|citizenship|country|geographic)|nationality|international (students|applicants|participants)|"
+    r"non-eu|non-european|outside the eu|будь-як\w* країн|усього світу|всього світу|з усіх країн|"
+    r"без обмежень",
+    re.I)
+UA_CITIZEN_QUOTE = re.compile(
+    r"citizen|resident|national(s)?\b|passport|green card|громадян|резидент|паспорт|"
+    r"obywatel|staatsb|staatsang|občan|cittadin|ciudadan|citoyen",
+    re.I)
+UA_NOTE_LIMIT = 100
+
+
+def _ua_quote_fits(value: str, quote: str) -> bool:
+    if value == "from_ukraine":
+        return bool(UA_OPEN_QUOTE.search(quote))
+    if value == "none":
+        return bool(UA_CITIZEN_QUOTE.search(quote))
+    return True
+
 
 def _foreign(data: dict) -> bool:
     return bool(data.get("is_international")) or any(
@@ -471,11 +496,16 @@ def apply_ua_eligibility(data: dict, source_text: str) -> None:
         if value:
             _note(data, f"auto: «хто може подати» ({value}) без цитати — не вказано")
         value = "unknown"
+    if value != "unknown" and not _ua_quote_fits(value, quote):
+        _note(data, f"auto: «хто може подати» ({value}) — цитата цього не каже, не вказано")
+        value = "unknown"
     data["ua_eligibility"] = value
-    if value == "unknown" or not isinstance(note, str) or not note.strip():
-        data["ua_eligibility_note"] = None
-    else:
-        data["ua_eligibility_note"] = re.sub(r"\s+", " ", note).strip()[:160]
+    note = re.sub(r"\s+", " ", note).strip().rstrip(".") if isinstance(note, str) else ""
+    # Довге пояснення — це міркування моделі, а не відповідь родині: тоді
+    # лишається загальний підпис («З України — ні. Можуть діти за кордоном»).
+    # Обрізати не можна: обрізана фраза може сказати не те (урок backfill_teen).
+    data["ua_eligibility_note"] = (note if value != "unknown" and note
+                                   and len(note) <= UA_NOTE_LIMIT else None)
     if value != "unknown":
         ev = data.get("evidence")
         if not isinstance(ev, dict):

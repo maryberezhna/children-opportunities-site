@@ -52,6 +52,34 @@ class UaEligibility(unittest.TestCase):
         self.assertNotIn("ua_eligibility_quote", data)
 
 
+    def test_quote_must_say_it(self):
+        # Woodruff, 22.10.2026: фраза про фінал у кампусі — не вимога громадянства.
+        page = "Scholar finalists located within the US are required to attend an on-campus Finalist Weekend."
+        data = {"is_international": True, "ua_eligibility": "none",
+                "ua_eligibility_quote": "Scholar finalists located within the US are required to attend"}
+        apply_ua_eligibility(data, page)
+        self.assertEqual(data["ua_eligibility"], "unknown")
+
+    def test_open_needs_ukraine_or_any_country(self):
+        page = "You legally reside in an EU Member State or in a third country associated to the Programme."
+        data = {"is_international": True, "ua_eligibility": "from_ukraine",
+                "ua_eligibility_quote": "You legally reside in an EU Member State"}
+        apply_ua_eligibility(data, page)
+        self.assertEqual(data["ua_eligibility"], "unknown")
+        page = "There are no restrictions on nationality or age."
+        data = {"is_international": True, "ua_eligibility": "from_ukraine",
+                "ua_eligibility_quote": "There are no restrictions on nationality or age."}
+        apply_ua_eligibility(data, page)
+        self.assertEqual(data["ua_eligibility"], "from_ukraine")
+
+    def test_long_note_dropped(self):
+        data = {"is_international": True, "ua_eligibility": "none",
+                "ua_eligibility_quote": "Applicants must be U.S. citizens or permanent residents",
+                "ua_eligibility_note": "Лише громадяни або резиденти США. " * 5}
+        apply_ua_eligibility(data, PAGE)
+        self.assertEqual(data["ua_eligibility"], "none")
+        self.assertIsNone(data["ua_eligibility_note"])
+
 
 class BackfillPlan(unittest.TestCase):
     def test_keeps_other_quotes(self):
