@@ -19,7 +19,7 @@ export default function OfflinePage() {
           back. Everything returns to normal as soon as you are online again.
         </p>
         <p>
-          <Link href="/en">← Back to the catalogue</Link>
+          <Link href="/en">← Back to all opportunities</Link>
         </p>
       </article>
     </div>

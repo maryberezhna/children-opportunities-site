@@ -3,7 +3,7 @@ import ContactForm from '../../contacts/ContactForm';
 import Footer from '../../Footer';
 
 export const metadata = {
-  title: 'Contact us — Dityam',
+  title: 'Contact us',
   description:
     'Contact form for dityam.com.ua: suggest an opportunity, report a mistake or an expired programme, raise a complaint, propose a partnership, or make a media request.',
   alternates: {

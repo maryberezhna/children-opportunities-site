@@ -5,7 +5,7 @@ import PressKit from '../../PressKit';
 const SITE_URL = 'https://dityam.com.ua';
 
 export const metadata = {
-  title: 'For media — dityam.com.ua press kit',
+  title: 'Press kit for media',
   description:
     'dityam.com.ua press kit: project figures, a ready-made description, coverage, logos and a contact for journalists. A platform of opportunities for Ukrainian children aged 0–18.',
   alternates: {

@@ -81,7 +81,7 @@ export default async function CategoriesPage() {
               <span className="accent">for children 0–18</span>
             </h1>
             <p>
-              Everything the catalogue collects, sorted by direction: from free
+              Everything the platform collects, sorted by direction: from free
               courses and camps to scholarships, international programmes and
               contests. The number beside each one is how many opportunities it
               holds right now; empty categories are not shown.
@@ -106,7 +106,7 @@ export default async function CategoriesPage() {
         ))}
 
         <p className="topic-note">
-          Cannot find your category? Write to us — the catalogue is updated daily,
+          Cannot find your category? Write to us — the platform is updated daily,
           and we add new directions wherever verified opportunities appear.
         </p>
       </div>

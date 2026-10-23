@@ -37,7 +37,7 @@ export async function generateMetadata({ params }) {
         `Opportunities for children in ${name}`,
       ),
     },
-    description: `A free catalogue of opportunities for children aged 0–18 in ${name}: courses, olympiads, scholarships, camps, medical help. Updated daily.`,
+    description: `A free platform of opportunities for children aged 0–18 in ${name}: courses, olympiads, scholarships, camps, medical help. Updated daily.`,
     alternates: {
       canonical: url,
       languages: { uk: `${SITE_URL}/${params.city}`, en: url },
@@ -48,7 +48,7 @@ export async function generateMetadata({ params }) {
       url,
       siteName: 'Dityam',
       title: `Opportunities for children in ${name}`,
-      description: `A free catalogue of opportunities for children aged 0–18 in ${name}`,
+      description: `A free platform of opportunities for children aged 0–18 in ${name}`,
       images: [{ url: '/og-image.png', width: 1200, height: 630, alt: `dityam.com.ua — opportunities for children in ${name}` }],
     },
   };

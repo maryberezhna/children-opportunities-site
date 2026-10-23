@@ -6,7 +6,7 @@ const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 
 export const metadata = {
-  title: 'Support the project — dityam.com.ua',
+  title: 'Support the project',
   description:
     'Support a free platform of opportunities for Ukrainian children aged 0–18. A donation through PayPal or monobank helps add new programmes and keep the site running.',
   alternates: {
@@ -43,7 +43,7 @@ export default function SupportPageEn() {
           <h1>Support dityam.com.ua</h1>
 
           <p className="lead">
-            Dityam is a free platform of verified opportunities for Ukrainian
+            Dityam.com.ua is a free platform of verified opportunities for Ukrainian
             children aged 0–18: courses, olympiads, scholarships, summer camps,
             medical aid and state payments — in Ukraine and abroad, all in one
             place.
