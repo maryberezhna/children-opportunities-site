@@ -27,9 +27,11 @@ class Due(unittest.TestCase):
         sub = {"created_at": ago(FIRST_AFTER["active"])}
         self.assertTrue(due(sub, "active", [], [], NOW))
 
-    def test_quiet_waits_longer(self):
-        sub = {"created_at": ago(FIRST_AFTER["active"] + 1)}
-        self.assertFalse(due(sub, "quiet", [], [], NOW))
+    def test_first_after_five_days(self):
+        # Марія, 23.10.2026: «перше за 5 днів».
+        self.assertEqual(FIRST_AFTER, {"active": 5, "quiet": 5})
+        self.assertTrue(due({"created_at": ago(5)}, "quiet", [], [], NOW))
+        self.assertFalse(due({"created_at": ago(4)}, "quiet", [], [], NOW))
 
     def test_repeat_after_period(self):
         sub = {"created_at": ago(200)}

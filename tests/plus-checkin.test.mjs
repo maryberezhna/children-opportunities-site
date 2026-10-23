@@ -21,16 +21,15 @@ test('кнопки вміщаються в 64 байти', () => {
   }
 });
 
-test('текст просимо лише після «Так» і «Не знайшли»', () => {
-  assert.equal(wantsNote('applied'), true);
-  assert.equal(wantsNote('nothing_fit'), true);
-  assert.equal(wantsNote('preparing'), false);
+test('додати слова можна після будь-якої відповіді', () => {
+  for (const [code] of CHECKIN_ANSWERS) assert.equal(wantsNote(code), true, code);
+  assert.equal(wantsNote('maybe'), false);
   const now = new Date('2026-10-23T12:00:00Z');
   const fresh = { id: 'a', answer: 'applied', note: null, answered_at: '2026-10-23T11:00:00Z' };
   assert.equal(pendingCheckinNote([fresh], now), fresh);
   assert.equal(pendingCheckinNote([{ ...fresh, note: '' }], now), null);
   assert.equal(pendingCheckinNote([{ ...fresh, answered_at: '2026-10-23T07:00:00Z' }], now), null);
-  assert.equal(pendingCheckinNote([{ ...fresh, answer: 'preparing' }], now), null);
+  assert.equal(pendingCheckinNote([{ ...fresh, answer: 'preparing' }], now)?.id, 'a');
 });
 
 test('питання й підписи кнопок однакові в боті й у Python', () => {

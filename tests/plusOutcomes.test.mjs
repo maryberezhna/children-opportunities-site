@@ -80,7 +80,10 @@ test('питання після «Так» — дослівно', () => {
 
 const minutesAgo = (n) => new Date(Date.now() - n * 60 * 1000).toISOString();
 
-test('на вільний текст чекаємо після «Так» і після «Інша причина»', () => {
+test('на вільний текст чекаємо після будь-якої відповіді (23.10.2026: «завжди залишай можливість додати слова»)', () => {
+  const reason = { opportunity_id: ID, stage: 'not_used', reason: 'price', answered_at: minutesAgo(1), note: null };
+  assert.equal(pendingNote([reason]).opportunity_id, ID);
+
   const used = { opportunity_id: ID, stage: 'used', answered_at: minutesAgo(1), note: null };
   assert.equal(pendingNote([used]).opportunity_id, ID);
 
@@ -90,7 +93,7 @@ test('на вільний текст чекаємо після «Так» і п�
 
 test('на вільний текст не чекаємо, коли його не просили', () => {
   const cases = [
-    // Причина зі списку — пояснювати нічого.
+    // Причина зі списку й «Пропустити» — тексту більше не чекаємо.
     { opportunity_id: ID, stage: 'not_used', reason: 'price', answered_at: minutesAgo(1), note: '' },
     // «Пропустити»: порожній рядок, а не null.
     { opportunity_id: ID, stage: 'used', answered_at: minutesAgo(1), note: '' },

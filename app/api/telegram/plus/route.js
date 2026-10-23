@@ -41,7 +41,7 @@ async function ensureOlSub(supabase, chatId, handle) {
 import { parsePhone, looksLikePhoneAttempt } from '@/lib/phone';
 import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
-  ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
+  ASK_STORY, ASK_WHY, ASK_OTHER, ASK_MORE, THANKS_SKIP, thanksFor,
 } from '@/lib/plusOutcomes';
 import {
   parseCheckin, checkinLabel, checkinSkipKeyboard, pendingCheckinNote, wantsNote,
@@ -1120,13 +1120,15 @@ export async function POST(request) {
 
     if (pout.action === 'why') {
       const other = pout.reason === 'other';
-      // «Інша причина» → чекаємо на текст, тож note знову null.
+      // Текст чекаємо завжди (note null): «Інша причина» — питаємо, що саме;
+      // решта причин — пропонуємо додати слова (Марія, 23.10.2026: «завжди
+      // залишай можливість додати слова»). «Пропустити» закриває очікування.
       await saveOutcome(supabase, sub.id, pout.id, {
-        stage: 'not_used', answered_at: now, reason: pout.reason, note: other ? null : '',
+        stage: 'not_used', answered_at: now, reason: pout.reason, note: null,
       });
       await bot.answerCallback(cbq.id);
       await bot.editMessage(chatId, mid, `${ASK_WHY} <b>${esc(reasonLabel(pout.reason))}</b> ✅`);
-      await bot.sendMessage(chatId, other ? ASK_OTHER : thanksFor('not_used'), other ? skipKeyboard(pout.id) : undefined);
+      await bot.sendMessage(chatId, other ? ASK_OTHER : `${thanksFor('not_used')}\n\n${ASK_MORE}`, skipKeyboard(pout.id));
       return new Response('ok');
     }
 
