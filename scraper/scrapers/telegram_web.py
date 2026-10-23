@@ -246,6 +246,18 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
         return first_source.strip_tracking(str(r.url)), text, links
 
     async def _one(item: dict):
+        # Один дивний допис не має валити все джерело. З 18.10.2026 нічний
+        # прогін падав «not enough values to unpack (expected 2, got 1)»
+        # десь у переході за посиланням — і через це Telegram давав 0 нових
+        # щоночі. Тепер такий допис лишається як був (див. докстрінг), а
+        # трасу видно в журналі, щоб знайти справжню причину.
+        try:
+            await _follow_one(item)
+        except Exception:                                    # noqa: BLE001
+            logger.exception("перехід до джерела зламався на %s — лишаю допис",
+                             item.get("source_url"))
+
+    async def _follow_one(item: dict):
         target = first_source.pick(item.pop("_links", None))
         if not target:
             return

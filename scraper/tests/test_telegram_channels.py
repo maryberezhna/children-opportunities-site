@@ -65,3 +65,32 @@ class MigrationMatchesCode(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FollowSourcesSurvivesTest(unittest.TestCase):
+    """Один дивний допис не валить усе джерело (18–22.10.2026 нічний прогін
+    падав «not enough values to unpack» десь у переході за посиланням, і
+    Telegram давав 0 нових щоночі)."""
+
+    def test_broken_post_is_kept_and_others_followed(self):
+        import asyncio
+        from unittest import mock
+        import telegram_web as tw
+
+        items = [
+            {"source_url": "https://t.me/a/1", "raw_text": "допис 1", "_links": ["boom"]},
+            {"source_url": "https://t.me/a/2", "raw_text": "допис 2", "_links": []},
+        ]
+
+        def pick(links):
+            if links == ["boom"]:
+                raise ValueError("not enough values to unpack (expected 2, got 1)")
+            return None
+
+        with mock.patch.object(tw.first_source, "pick", side_effect=pick):
+            got = asyncio.run(tw._follow_sources(client=None, items=items,
+                                                 semaphore=asyncio.Semaphore(1)))
+
+        self.assertEqual([it["source_url"] for it in got], ["https://t.me/a/1", "https://t.me/a/2"])
+        self.assertEqual(got[0]["raw_text"], "допис 1")
+        self.assertNotIn("_links", got[0])
