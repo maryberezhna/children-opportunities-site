@@ -107,3 +107,28 @@ export function placeText(r) {
   if ((r.cities || []).some((c) => /вся україна/i.test(c))) return 'по всій Україні';
   return null;
 }
+
+// «🚀 Стартує цього тижня» у ранковому пості каналу (scripts/check-deadlines.mjs).
+/** Скільки днів від dateIso до дати старту заходу (або null). */
+export function startsIn(r, dateIso) {
+  if (!r.event_start_date) return null;
+  return Math.round((Date.parse(`${String(r.event_start_date).slice(0, 10)}T00:00:00Z`)
+    - Date.parse(`${dateIso}T00:00:00Z`)) / 86400000);
+}
+
+/**
+ * Кандидати в «🚀 Стартує цього тижня»: без дедлайну подачі, старт за 1–7 днів
+ * (сьогоднішній старт — уже пізно записуватись, як і дедлайн сьогодні).
+ * Чиста функція — під тести. Те, що вже в дедлайнах цього ж поста, не повторюємо.
+ */
+export function startsThisWeek(rows, dateIso, { days = 7, skip = new Set(), recentCutoff = null } = {}) {
+  return (rows || [])
+    .map((r) => ({ ...r, startsIn: startsIn(r, dateIso) }))
+    .filter((r) => !r.deadline && r.startsIn != null && r.startsIn >= 1 && r.startsIn <= days
+      && !skip.has(r.id)
+      && !(recentCutoff && r.telegram_posted_at && r.telegram_posted_at >= recentCutoff)
+      && isUkrainianPost(r))
+    .sort((a, b) => a.startsIn - b.startsIn
+      || (a.cost_type === 'free' ? 0 : 1) - (b.cost_type === 'free' ? 0 : 1));
+}
+
