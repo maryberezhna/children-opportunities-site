@@ -149,8 +149,29 @@ test('пост із дедлайнами — рядок на можливіст�
   // Рядок: дата · назва · вік · вартість. Дат проведення й результатів немає:
   // у пості про ПОДАЧУ вони збивали.
   const row = src.slice(src.indexOf('function deadlineRow'), src.indexOf('function formatLine'));
-  assert.match(row, /dayMonth\(r\.deadline\)/);
+  // Дата в рядку — дедлайн; для «🚀 Стартує цього тижня» — день старту (23.10.2026).
+  assert.match(row, /dayIso = r\.deadline/);
+  assert.match(row, /dayMonth\(dayIso\)/);
   assert.match(row, /ageShort\(r\)/);
   assert.match(row, /costLabel\(r\.cost_type\)/);
   assert.doesNotMatch(row, /summary|whenLine|results_date|placeText/);
+});
+
+// 23.10.2026, Марія: «це треба додати і пофіксити пост у телеграмі» —
+// заходи без дедлайну, що стартують цього тижня, теж ідуть у ранковий пост.
+import { startsThisWeek } from '../scripts/post-labels.mjs';
+
+test('«🚀 Стартує цього тижня»: без дедлайну, старт за 1–7 днів, найближчі першими', () => {
+  const rows = [
+    { id: 'a', title: 'Табір', event_start_date: '2026-10-27', cost_type: 'paid' },
+    { id: 'b', title: 'Курс', event_start_date: '2026-10-24', cost_type: 'free' },
+    { id: 'c', title: 'Конкурс', event_start_date: '2026-10-25', deadline: '2026-10-24' },
+    { id: 'd', title: 'Далеко', event_start_date: '2026-11-15' },
+    { id: 'e', title: 'Учора', event_start_date: '2026-10-22' },
+    { id: 'g', title: 'Сьогодні', event_start_date: '2026-10-23' },
+    { id: 'f', title: 'Вже в каналі', event_start_date: '2026-10-26', telegram_posted_at: '2026-10-22T10:00:00Z' },
+  ];
+  const got = startsThisWeek(rows, '2026-10-23', { recentCutoff: '2026-10-21T10:00:00Z' }).map((r) => r.id);
+  assert.deepEqual(got, ['b', 'a']);
+  assert.deepEqual(startsThisWeek(rows, '2026-10-23', { skip: new Set(['b']) }).map((r) => r.id), ['f', 'a']);
 });

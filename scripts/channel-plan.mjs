@@ -316,6 +316,8 @@ export const DEADLINES_WEEK = {
   key: 'deadlines-week',
   kind: 'deadlines-week',
   heading: '⏰ Дедлайни цього тижня',
+  // Заходи без окремого дедлайну, що стартують за 1–7 днів (23.10.2026).
+  startsHeading: '🚀 Стартує цього тижня',
   description: 'Заявки, які треба подати за найближчі 7 днів.',
   link: `${SITE}/dedlainy`,
 };

@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLINES_WEEK, pollFor } from './channel-plan.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
-import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText } from './post-labels.mjs';
+import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText, startsThisWeek } from './post-labels.mjs';
 import { tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
 
 const TYPE_LABELS = {
@@ -185,6 +185,11 @@ const shownInPreview = new Set();
 // ранків не збігались.
 const WEEK_DAYS = 7;
 const WEEK_MAX = 6;
+// «🚀 Стартує цього тижня» — у тому ж ранковому пості (Марія, 23.10.2026:
+// «це треба додати і пофіксити пост у телеграмі»). Заходи, що починаються від
+// завтра до +7 днів і не мають окремого дедлайну подачі: 23.10 таких було 18, а з
+// дедлайном на тиждень — лише 9, тож пост виходив на 2–4 рядки.
+const STARTS_MAX = 5;
 const weekGapCutoff = new Date(Date.now() - 2 * 86400000).toISOString();
 // Записи для постів одного запуску тягнемо з бази раз (loadPool): у превʼю
 // інакше 14 днів × 2 пости = 28 однакових вибірок.
@@ -310,7 +315,7 @@ async function loadPool(dateIso) {
   }));
 }
 
-/** «⏰ Дедлайни цього тижня». Повертає id можливостей, що потрапили в пост. */
+/** «⏰ Дедлайни цього тижня» + «🚀 Стартує цього тижня». Повертає id можливостей у пості. */
 async function sendDeadlinesWeek(dateIso = kyivIso()) {
   const all = await loadPool(dateIso);
   if (!all) return [];
@@ -323,29 +328,46 @@ async function sendDeadlinesWeek(dateIso = kyivIso()) {
     .sort((a, b) => a.daysLeft - b.daysLeft
       || (a.cost_type === 'free' ? 0 : 1) - (b.cost_type === 'free' ? 0 : 1));
   const items = await pickChecked(week, WEEK_MAX, 'дедлайни тижня');
-  if (items.length === 0) {
-    console.log('Дедлайнів на найближчі 7 днів немає — ранковий пост не йде.');
+  const startCands = startsThisWeek(all, dateIso, {
+    days: WEEK_DAYS, skip: new Set([...shownInPreview, ...items.map((r) => r.id)]), recentCutoff: weekGapCutoff,
+  });
+  const starts = await pickChecked(startCands, STARTS_MAX, 'стартує цього тижня');
+  if (items.length === 0 && starts.length === 0) {
+    console.log('Ні дедлайнів, ні стартів на найближчі 7 днів — ранковий пост не йде.');
     return [];
   }
   // Шість записів із повними описами не влазять у 4096 знаків повідомлення
-  // Telegram, тож опис короткий; а якщо й так задовго — відкидаємо з кінця.
-  const build = (list) => {
+  // Telegram, тож опис короткий; а якщо й так задовго — відкидаємо з кінця,
+  // спершу старти.
+  const build = (list, startList) => {
     // Підзаголовка «Заявки, які треба подати за найближчі 7 днів» більше
     // немає: у пості з рядків він лише відсував перший дедлайн униз.
-    const out = [`<b>${DEADLINES_WEEK.heading}</b>`, ''];
-    list.forEach((r, i) => {
-      out.push(deadlineRow(r));
-      if (i < list.length - 1) out.push('');
-    });
+    const out = [];
+    if (list.length) {
+      out.push(`<b>${DEADLINES_WEEK.heading}</b>`, '');
+      list.forEach((r, i) => {
+        out.push(deadlineRow(r));
+        if (i < list.length - 1) out.push('');
+      });
+    }
+    if (startList.length) {
+      if (out.length) out.push('');
+      out.push(`<b>${DEADLINES_WEEK.startsHeading}</b>`, '');
+      startList.forEach((r, i) => {
+        out.push(deadlineRow(r, r.event_start_date));
+        if (i < startList.length - 1) out.push('');
+      });
+    }
     out.push('', `👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
     return out;
   };
   const visible = (ls) => ls.join('\n').replace(/<[^>]+>/g, '').length;
-  while (items.length > 1 && visible(build(items)) > 3900) items.pop();
-  const lines = build(items);
-  const sent = await postToChannel(lines, `deadlines-week ${items.length}`);
-  if (sent || PREVIEW) await markPosted(items);
-  return items.map((r) => r.id);
+  while (starts.length > 0 && visible(build(items, starts)) > 3900) starts.pop();
+  while (items.length > 1 && visible(build(items, starts)) > 3900) items.pop();
+  const lines = build(items, starts);
+  const sent = await postToChannel(lines, `deadlines-week ${items.length}+${starts.length}`);
+  if (sent || PREVIEW) await markPosted([...items, ...starts]);
+  return [...items, ...starts].map((r) => r.id);
 }
 
 /**
@@ -788,14 +810,14 @@ function dayMonth(iso) {
  * виглядав як «подавайся до 22 жовтня, а почнеться у вересні 2027») і місця
  * (воно є на сторінці, а рядок має читатися з одного погляду).
  */
-function deadlineRow(r) {
+function deadlineRow(r, dayIso = r.deadline) {
   const url = `https://dityam.com.ua/o/${r.slug}`;
   const title = escapeHtml(r.title);
   // Лише тире, не двокрапка: «У кадрі: Крізь дитячий обʼєктив» — конкурс…»
   // по двокрапці розірвалось би посеред лапок («У кадрі: …).
   const split = title.match(/^(.{3,60}?)(\s[\u2014\u2013]\s)(.+)$/);
   const name = split ? `<b>${split[1]}</b>${split[2]}${split[3]}` : `<b>${title}</b>`;
-  const day = dayMonth(r.deadline);
+  const day = dayMonth(dayIso);
   const tail = [ageShort(r), (costLabel(r.cost_type) || '').toLowerCase() || null].filter(Boolean);
   return `${day ? `<b>${day}</b> · ` : ''}<a href="${url}">${name}</a>${tail.length ? ` · ${tail.join(' · ')}` : ''}`;
 }
