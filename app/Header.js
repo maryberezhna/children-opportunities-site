@@ -45,6 +45,8 @@ const SLUG_PAIRS = [
   ['/kategorii', '/en/categories'],
   ['/plus', '/en/plus'],
   ['/dyakuyu', '/en/thank-you'],
+  // Без цієї пари банер на /en/collections вів на /collections — 404 (23.10.2026).
+  ['/pidbirky', '/en/collections'],
   ...TOPIC_LIST.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
   ...DIASPORA_COUNTRY_TOPICS.map((t) => [`/${t.slug}`, `/en/${t.en.slug}`]),
 ];

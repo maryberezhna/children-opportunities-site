@@ -6,9 +6,9 @@ import { pressStats } from '@/lib/press';
 import { SuggestOpenButton } from '../../SuggestModal';
 
 export const metadata = {
-  title: 'About the project — Dityam.com.ua',
+  title: 'About the project',
   description:
-    'Dityam.com.ua is a platform of verified opportunities for Ukrainian children aged 0–18, in Ukraine and abroad. Free for families, no sign-up, no ads. Founded by Mariia Shutiak.',
+    'Dityam.com.ua is a platform of verified opportunities for Ukrainian children aged 0–18, in Ukraine and abroad. Free for families, no sign-up. Founded by Mariia Shutiak.',
   alternates: {
     canonical: 'https://dityam.com.ua/en/about',
     languages: {
@@ -49,7 +49,7 @@ export default async function AboutPageEn() {
               Dityam.com.ua is a platform of verified opportunities for Ukrainian
               children aged 0–18. Courses, olympiads, camps, scholarships, clubs,
               medical and psychological help, state payments — in one place,
-              checked and updated every day. Free for families, no sign-up, no ads.
+              checked and updated every day. Free for families, no sign-up.
             </p>
             <div className="pk-actions">
               <Link href="/en" className="v2-btn-dark">Browse opportunities</Link>

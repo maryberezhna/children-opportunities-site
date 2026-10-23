@@ -3,7 +3,7 @@ import { AMPLITUDE_ON } from '@/lib/amplitude';
 import Footer from '../../Footer';
 
 export const metadata = {
-  title: 'Privacy Policy — Dityam',
+  title: 'Privacy Policy',
   description:
     'What data Dityam.com.ua collects — on the site, in the Telegram bots and in the Dityam+ subscription — why, who receives it, how long it is kept and how to delete it.',
   alternates: {

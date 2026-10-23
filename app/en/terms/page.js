@@ -3,7 +3,7 @@ import Footer from '../../Footer';
 import { PLUS_FREE } from '@/lib/plus';
 
 export const metadata = {
-  title: 'Public offer and terms — Dityam',
+  title: 'Public offer and terms',
   description:
     'Terms of the paid Dityam+ subscription: subject, prices, payment, delivery of the service, cancellation and seller details.',
   alternates: {
