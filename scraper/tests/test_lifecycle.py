@@ -431,3 +431,30 @@ class AdaptiveRhythm(unittest.TestCase):
         self.assertNotIn("page_hash", patch)
         self.assertNotIn("check_interval_days", patch)
         self.assertEqual(patch["recheck_at"], "2026-12-16")
+
+
+class EffectiveStateForPublisher(unittest.TestCase):
+    """23.10.2026: відкриті можливості випадали з ранкового поста як «ended»."""
+
+    PAGE = ("Competition open. Submission timeline August 3, 2026 Competition opens "
+            "October 25, 2026 Competition closes November 9, 2026 Results announced")
+
+    def test_rejected_ended_with_future_date_is_open(self):
+        from lifecycle import effective_state
+        row = {"status": "active", "deadline": "2026-10-25"}
+        self.assertEqual(effective_state("ended", row, "October 25, 2026 Competition closes",
+                                         self.PAGE, "2026-10-23"), "open")
+
+    def test_ended_without_literal_quote_is_unclear(self):
+        from lifecycle import effective_state
+        row = {"status": "active", "deadline": "2026-10-25"}
+        self.assertEqual(effective_state("ended", row, "Конкурс уже завершився", self.PAGE,
+                                         "2026-10-23"), "unclear")
+
+    def test_real_ended_stays_ended(self):
+        from lifecycle import effective_state
+        page = "Applications are closed. See you next year."
+        row = {"status": "active", "deadline": "2026-10-25"}
+        self.assertEqual(effective_state("ended", row, "Applications are closed", page,
+                                         "2026-10-23"), "ended")
+        self.assertEqual(effective_state("open", row, "", page, "2026-10-23"), "open")
