@@ -5,7 +5,7 @@ const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const MONOBANK_WIDGET_URL = 'https://base.monobank.ua/5QKZeVxPVjZEx7';
 
 export const metadata = {
-  title: 'Підтримати проєкт — dityam.com.ua',
+  title: 'Підтримати проєкт — Dityam.com.ua',
   description:
     'Підтримайте безкоштовну платформу можливостей для українських дітей 0–18 років. Донат через PayPal або monobank — допомагає додавати нові програми та розвивати сайт.',
   alternates: {
@@ -38,32 +38,34 @@ export default function SupportPage() {
       </nav>
 
       <article className="legal-page support-page">
-        <h1>Support dityam.com.ua</h1>
+        <h1>Підтримати Dityam.com.ua</h1>
 
+        {/* До 23.10.2026 українська сторінка була написана англійською, а саме
+            сюди ведуть «🧡 Підтримати платформу» з дописів у каналі. */}
         <p className="lead">
-          Dityam is a free platform of verified opportunities for children
-          aged 0–18 in Ukraine: courses, olympiads, scholarships, summer camps,
-          medical aid, and government benefits. Everything in one place.
+          Dityam.com.ua — безкоштовна платформа перевірених можливостей для
+          дітей 0–18 років в Україні та за кордоном: курси, олімпіади, стипендії,
+          табори, медична допомога й державні виплати. Усе в одному місці.
         </p>
 
         <p>
-          Your support helps us:
+          Ваша підтримка допомагає нам:
         </p>
         <ul>
-          <li>verify and add new programs</li>
-          <li>keep the platform up to date and free for every family</li>
-          <li>develop the platform and make it easier to use</li>
+          <li>перевіряти й додавати нові програми;</li>
+          <li>тримати платформу актуальною й безкоштовною для кожної родини;</li>
+          <li>розвивати платформу й робити її зручнішою.</li>
         </ul>
 
         <p>
-          Every contribution means more opportunities reaching the children
-          who need them. Thank you! 💛💙
+          Кожен внесок — це більше можливостей, які доходять до дітей, яким вони
+          потрібні. Дякуємо! 💛💙
         </p>
 
         <h2>PayPal</h2>
         <p>
-          For donors outside Ukraine — pay any amount with PayPal, debit or
-          credit card.
+          Для тих, хто за кордоном, — будь-яка сума через PayPal, дебетову чи
+          кредитну картку.
         </p>
         <PayPalButton />
 
