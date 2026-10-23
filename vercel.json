@@ -9,6 +9,10 @@
     {
       "path": "/api/cron/after-hours",
       "schedule": "0 6,7 * * *"
+    },
+    {
+      "path": "/api/cron/channel-scheduled",
+      "schedule": "*/10 * * * *"
     }
   ]
 }
