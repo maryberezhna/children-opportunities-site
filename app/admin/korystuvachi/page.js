@@ -138,7 +138,7 @@ export default async function UsersPage({ searchParams } = {}) {
   const fbBy = (r) => fb.filter((x) => x.rating === r).length;
   const fbTagCount = Object.keys(FB_TAGS).map((t) => [t, fb.filter((x) => (x.tags || []).includes(t)).length]);
 
-  const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll, children, ambMsgs] = await Promise.all([
+  const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll, children, ambMsgs, checkins] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, role, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
     all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at, teacher_code')),
@@ -148,6 +148,8 @@ export default async function UsersPage({ searchParams } = {}) {
     all(() => sb.from('olimpiada_teachers').select('name, email, code, source, created_at, thanks_sent_at')),
     all(() => sb.from('plus_children').select('subscriber_id, position, age_bands, likes')),
     all(() => sb.from('contact_messages').select('id, type, name, contact, message, publish_consent, status, created_at').eq('type', 'ambassador')),
+    // «Чи вдалося на щось подати заявку?» (23.10.2026). До міграції таблиці немає — тоді порожньо.
+    all(() => sb.from('plus_checkins').select('subscriber_id, answer, answered_at, asked_at, note').not('answer', 'is', null)).catch(() => []),
   ]);
   const mkRows = notOwn(mkAll);
   const mkPaid = mkRows.filter((r) => r.paid_at && !r.refunded_at);
@@ -158,7 +160,7 @@ export default async function UsersPage({ searchParams } = {}) {
   // Амбасадори (23.10.2026): заявка + чи вже педагог олімпіади й чи в Dityam+.
   const ambassadors = buildAmbassadors({ messages: ambMsgs, teachers, entries: notOwn(entries), subs: notOwn(subs) })
     .filter((a) => !isOwn({ email: a.email, telegram_handle: a.handle }));
-  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, teachers, payments: notOwn(payments), children, feedback: fb, ambassadors });
+  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, teachers, payments: notOwn(payments), children, feedback: fb, ambassadors, checkins });
   const week = Date.now() - 7 * 864e5;
   const isTeacher = (r) => r.notes.some((n) => n.startsWith('👩‍🏫'));
   const match = {

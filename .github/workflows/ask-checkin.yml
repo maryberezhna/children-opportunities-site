@@ -1,0 +1,68 @@
+name: Dityam+ — чи вдалося на щось подати (daily)
+
+# Загальне питання від @DityamPlusBot «Чи вдалося за останній час подати
+# заявку на щось?» (Марія, 23.10.2026). Як часто — залежить від активності:
+# активним через 14 днів після підписки й далі раз на 30, тихим — через 21 і
+# раз на 45. Див. scraper/ask_checkin.py. Одне питання на людину на добу
+# разом із ask-outcomes.yml.
+#
+# Два записи cron — розклад GitHub Actions запізнюється на 4–5 годин
+# (scraper/send_window.py). Ворота SEND_AFTER_HOUR відсікають запуски раніше
+# 12:00 за Києвом. Повтору не буде: рядок plus_checkins пишеться до відправки.
+#
+# Ручний запуск за замовчуванням СУХИЙ.
+on:
+  schedule:
+    - cron: '47 7 * * *'
+    - cron: '47 9 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'true = нічого не слати, лише лог'
+        required: false
+        default: 'true'
+      any_time:
+        description: 'true = слати негайно, не чекати вікна 11:00 Київ'
+        required: false
+        default: 'true'
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  ask:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: scraper
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: scraper/requirements.txt
+      - run: pip install -r requirements.txt
+      - name: Ask how it went
+        env:
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          # Питає той самий бот, що надсилав добірку: підписник оформлює
+          # Dityam+ у @DityamPlusBot, і Telegram не дає писати з іншого.
+          TELEGRAM_PLUS_BOT_TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SITE_URL: https://dityam.com.ua
+          SEND_AFTER_HOUR: '12'
+        run: |
+          ANY=""
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.any_time }}" != "false" ]; then
+            ANY="--any-time"
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] \
+             && [ "${{ github.event.inputs.dry_run }}" != "false" ]; then
+            python ask_checkin.py --dry-run
+          else
+            python ask_checkin.py $ANY
+          fi
