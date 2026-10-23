@@ -61,3 +61,13 @@ test('форма звернень відповідає сама лише схв�
   // Спершу зберігаємо звернення, потім лист: пошта не має губити звернення.
   assert.ok(route.indexOf("from('contact_messages').insert") < route.indexOf('autoReplyFor(type)'));
 });
+
+test('амбасадор, який уже педагог олімпіади: посилання класу, а не «зареєструйтесь»', () => {
+  const m = REPLY_TEMPLATES.ambassador_welcome.build({ ...SAMPLE, teacher: { name: 'Тетяна Анатоліївна Пупкова', code: 'stjdjw3z' } }).text;
+  assert.match(m, /^Тетяно Анатоліївно, добрий день!/);
+  assert.match(m, /olimpiada\?vid=stjdjw3z/);
+  assert.doesNotMatch(m, /зареєструйтесь/);
+  assert.match(m, /t\.me\/dityam_com_ua/);
+  const route = fs.readFileSync(new URL('../app/api/contact/route.js', import.meta.url), 'utf8');
+  assert.match(route, /from\('olimpiada_teachers'\)\.select\('name, code'\)/);
+});

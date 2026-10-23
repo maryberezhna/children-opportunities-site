@@ -73,7 +73,11 @@ export async function POST(request) {
   const tpl = autoReplyFor(type);
   if (tpl && parsed.kind === 'email') {
     try {
-      const mail = tpl.build({ name, message });
+      // Уже педагог олімпіади (за поштою) — у листі посилання його класу,
+      // а не «зареєструйтесь» (Тетяна Пупкова, 23.10.2026).
+      const safe = contact.replace(/[\\%_]/g, (c) => `\\${c}`);
+      const { data: tRows } = await supabase.from('olimpiada_teachers').select('name, code').ilike('email', safe).limit(1);
+      const mail = tpl.build({ name, message, teacher: tRows?.[0] || null });
       const r = await send({ to: contact, ...mail, fromName: 'Марія Шутяк · Dityam.com.ua' });
       autoReply = r?.ok ? { ok: true, title: tpl.title } : { ok: false, title: tpl.title };
     } catch (e) {
