@@ -34,3 +34,27 @@ jobs:
         with: { python-version: "3.12" }
       - run: pip install -r scraper/requirements.txt
       - run: python -m unittest discover -s scraper/tests -v
+  # Стаття агента блогу не пройшла тести (23.10.2026). Автомердж тоді просто
+  # чекає вічно, і стаття мовчки застрягає. «Відповідальність тримає система,
+  # а не людина» («Основа проекту»): кажемо в адмін-чат одразу.
+  # Лише гілки агента (blog/**, claude/blog-**) — людські PR тут не чіпаємо.
+  # Секрети доступні лише гілкам цього репо, тож PR із форку нічого не надішле.
+  notify-blog-failure:
+    needs: [tests-js, tests-py]
+    if: >-
+      failure() && github.event_name == 'pull_request' &&
+      (startsWith(github.head_ref, 'blog/') || startsWith(github.head_ref, 'claude/blog-'))
+    runs-on: ubuntu-latest
+    steps:
+      - name: Сигнал в адмін-чат
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_ADMIN_CHAT_ID" ] || exit 0
+          TEXT=$(printf '⚠️ Стаття агента блогу не пройшла тести й не опублікується сама.\n%s\n%s\nНайчастіше — немає reviewBy, evidence чи фото (правила вгорі lib/blog.js).' "$PR_TITLE" "$PR_URL")
+          curl -s -o /dev/null -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_ADMIN_CHAT_ID}" --data-urlencode "text=${TEXT}" \
+            --data-urlencode "disable_web_page_preview=true"
