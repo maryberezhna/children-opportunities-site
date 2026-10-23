@@ -83,7 +83,8 @@ export default function ContactsPageEn() {
           <ul className="contact-requisites">
             <li>Mariia Shutiak, private entrepreneur (ФОП Шутяк Марія Олександрівна)</li>
             <li>Tax number (РНОКПП): 3530900201</li>
-            <li>Address: 16B Voskresenska St, apt. 20, 02130 Kyiv, Ukraine</li>
+            {/* Full street address removed on 23 Oct 2026 for safety — city only. */}
+            <li>Location: Kyiv, Ukraine. Postal address for official correspondence on request at hellodityam.com.ua@gmail.com</li>
             <li>Phone: <a href="tel:+380634763998">+380 63 476 3998</a></li>
             <li>Email: <a href="mailto:hellodityam.com.ua@gmail.com">hellodityam.com.ua@gmail.com</a></li>
             <li>Website: dityam.com.ua</li>
