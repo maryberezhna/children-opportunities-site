@@ -34,17 +34,15 @@ test('кожен шаблон: тема, текст, HTML, повний підп
   }
 });
 
-test('амбасадор: педагогу — олімпіада для класу, батькам — лише канал', () => {
+test('амбасадор: текст Марії дослівно, схвалений — іде сам', () => {
   const t = REPLY_TEMPLATES.ambassador_welcome;
   assert.equal(t.auto, 'ambassador');
+  assert.equal(t.approved, '2026-10-23');
+  assert.equal(autoReplyFor('ambassador').id, 'ambassador_welcome');
   assert.equal(ambassadorRole(SAMPLE.message), 'Педагог');
-  const teacher = t.build(SAMPLE).text;
-  assert.match(teacher, /^Тетяно, добрий день!/);
-  assert.match(teacher, /olimpiada#pedagogam/);
-  const parent = t.build({ name: 'Ольга', message: 'Роль: Батько чи мати' }).text;
-  assert.doesNotMatch(parent, /olimpiada/);
-  assert.match(parent, /t\.me\/dityam_com_ua/);
-  assert.match(t.build({ name: 'Olga', message: '' }).text, /^Добрий день!/);
+  const m = t.build(SAMPLE).text;
+  assert.match(m, /^Тетяно, добрий день!\n\nДякую, що хочете стати амбасадором Dityam\.com\.ua\. Ми підготовлюємо інформацію для амбасадорів\.\n\nПідкажіть, будь ласка, які проблеми наразі у розрізі освіти для дітей ви бачите\?\n\nЗ повагою,/);
+  assert.match(t.build({ name: 'Olga' }).text, /^Добрий день!/);
 });
 
 test('організатору: форма за прямим посиланням і пілотне розміщення', () => {
@@ -62,12 +60,9 @@ test('форма звернень відповідає сама лише схв�
   assert.ok(route.indexOf("from('contact_messages').insert") < route.indexOf('autoReplyFor(type)'));
 });
 
-test('амбасадор, який уже педагог олімпіади: посилання класу, а не «зареєструйтесь»', () => {
+test('амбасадор, який уже педагог олімпіади: звертання з повного імені', () => {
   const m = REPLY_TEMPLATES.ambassador_welcome.build({ ...SAMPLE, teacher: { name: 'Тетяна Анатоліївна Пупкова', code: 'stjdjw3z' } }).text;
   assert.match(m, /^Тетяно Анатоліївно, добрий день!/);
-  assert.match(m, /olimpiada\?vid=stjdjw3z/);
-  assert.doesNotMatch(m, /зареєструйтесь/);
-  assert.match(m, /t\.me\/dityam_com_ua/);
   const route = fs.readFileSync(new URL('../app/api/contact/route.js', import.meta.url), 'utf8');
   assert.match(route, /from\('olimpiada_teachers'\)\.select\('name, code'\)/);
 });
