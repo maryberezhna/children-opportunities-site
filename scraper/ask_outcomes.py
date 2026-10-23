@@ -283,6 +283,17 @@ def main() -> int:
 
     rows_by_sub = load_rows(client, subs)
     liked = load_liked(client, subs)
+    # Загальне питання ask_checkin.py теж рахується в «одне питання на добу»
+    # (23.10.2026): його asked_at підкладаємо до рядків людини.
+    try:
+        chk = (client.table("plus_checkins").select("subscriber_id, asked_at")
+               .in_("subscriber_id", [s["id"] for s in subs]).execute().data or [])
+    except Exception as e:  # таблиці ще немає — працюємо як раніше
+        logger.warning("plus_checkins недоступні: %s", e)
+        chk = []
+    for c in chk:
+        rows_by_sub.setdefault(str(c["subscriber_id"]), []).append(
+            {"opportunity_id": None, "asked_at": c.get("asked_at"), "stage": "checkin"})
 
     # Можливості беремо лише ті, які хтось позначив: це десятки записів, а не
     # вся база. Статус не фільтруємо — те, що минуло, вже закрите

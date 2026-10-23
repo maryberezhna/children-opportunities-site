@@ -43,6 +43,10 @@ import {
   parseOutcome, whyKeyboard, skipKeyboard, pendingNote, reasonLabel,
   ASK_STORY, ASK_WHY, ASK_OTHER, THANKS_SKIP, thanksFor,
 } from '@/lib/plusOutcomes';
+import {
+  parseCheckin, checkinLabel, checkinSkipKeyboard, pendingCheckinNote, wantsNote,
+  CHECKIN_REPLY, CHECKIN_THANKS, CHECKIN_THANKS_SKIP,
+} from '@/lib/plusCheckins';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -866,6 +870,21 @@ export async function POST(request) {
       // тексту ще немає (note is null), і текст справді просили» (pendingNote).
       // Перевірка після анкети й промокоду: місто посеред анкети й код від
       // того, хто ще не платить, важливіші — і взаємно виключні з цим.
+      // Текст після «✅ Так, подали» чи «🤷 Не знайшли підходящого» на загальне
+      // питання scraper/ask_checkin.py (23.10.2026). Стан — сам рядок
+      // plus_checkins (answer є, note ще null), як і в «чим закінчилось».
+      if (sub?.id) {
+        const { data: chk } = await supabase.from('plus_checkins')
+          .select('id, answer, answered_at, note').eq('subscriber_id', sub.id)
+          .order('asked_at', { ascending: false }).limit(5);
+        const waitingChk = pendingCheckinNote(chk || []);
+        if (waitingChk) {
+          await supabase.from('plus_checkins').update({ note: text.slice(0, 700) }).eq('id', waitingChk.id);
+          await bot.sendMessage(chatId, CHECKIN_THANKS[waitingChk.answer] || CHECKIN_THANKS.applied);
+          return new Response('ok');
+        }
+      }
+
       if (sub?.id) {
         const { data: apps } = await supabase.from('plus_applications')
           // select('*') навмисне: до застосування міграції колонок note й
@@ -1039,6 +1058,34 @@ export async function POST(request) {
   // «Чим закінчилось»: відповідь на питання від scraper/ask_outcomes.py.
   // Стоїть до pfb:/papp: — префікси різні, але правило «наша кнопка
   // розбирається в одному місці» тримає parseOutcome (lib/plusOutcomes.js).
+  // «Чи вдалося на щось подати заявку?» — загальне питання від
+  // scraper/ask_checkin.py (Марія, 23.10.2026). Рядок plus_checkins уже
+  // створено при надсиланні, тут лише відповідь.
+  const pchk = parseCheckin(cbq.data);
+  if (pchk) {
+    const chatId = String(cbq.message.chat.id);
+    const mid = cbq.message.message_id;
+    const { data: sub } = await supabase.from('digest_subscribers')
+      .select('id').eq('telegram_chat_id', chatId).maybeSingle();
+    if (!sub) { await bot.answerCallback(cbq.id, 'Почніть з /start'); return new Response('ok'); }
+    if (pchk.action === 'skip') {
+      await supabase.from('plus_checkins').update({ note: '' }).eq('id', pchk.id).eq('subscriber_id', sub.id);
+      await bot.answerCallback(cbq.id);
+      await bot.editMessage(chatId, mid, CHECKIN_THANKS_SKIP);
+      return new Response('ok');
+    }
+    const asked = esc(cbq.message.text || 'Чи вдалося подати заявку?');
+    const note = wantsNote(pchk.answer) ? null : '';
+    await supabase.from('plus_checkins')
+      .update({ answer: pchk.answer, answered_at: new Date().toISOString(), note })
+      .eq('id', pchk.id).eq('subscriber_id', sub.id);
+    await bot.answerCallback(cbq.id);
+    await bot.editMessage(chatId, mid, `${asked}\n\n<b>${esc(checkinLabel(pchk.answer))}</b>`);
+    await bot.sendMessage(chatId, CHECKIN_REPLY[pchk.answer],
+      wantsNote(pchk.answer) ? checkinSkipKeyboard(pchk.id) : undefined);
+    return new Response('ok');
+  }
+
   const pout = parseOutcome(cbq.data);
   if (pout) {
     const chatId = String(cbq.message.chat.id);
