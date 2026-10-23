@@ -2,6 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 import { CONTACT_TYPE_MAP, isValidContactType } from '@/lib/contactTypes';
 import { parseContact, contactHref } from '@/lib/contactAddress';
 import { isAfterHours, kyivTime } from '@/lib/working-hours';
+import { autoReplyFor } from '@/lib/reply-templates';
+import { send } from '@/lib/olimpiada-mail';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -63,6 +65,22 @@ export async function POST(request) {
   });
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
 
+  // Схвалений Марією шаблон відповідає сам (lib/reply-templates.js, з
+  // 23.10.2026): «все, що я апрувлю, — записуй у автоматичний процес».
+  // Лише на email; best effort — звернення вже збережене, і якщо пошта
+  // впала, адмін-чат це побачить і відповість руками.
+  let autoReply = null;
+  const tpl = autoReplyFor(type);
+  if (tpl && parsed.kind === 'email') {
+    try {
+      const mail = tpl.build({ name, message });
+      const r = await send({ to: contact, ...mail, fromName: 'Марія Шутяк · Dityam.com.ua' });
+      autoReply = r?.ok ? { ok: true, title: tpl.title } : { ok: false, title: tpl.title };
+    } catch (e) {
+      autoReply = { ok: false, title: tpl.title };
+    }
+  }
+
   // Поза робочим часом форма пише людині «відповімо в робочі години», а
   // адмін-чат бачить, що відповідь обіцяно на ранок (lib/working-hours.js).
   const now = new Date();
@@ -80,6 +98,9 @@ export async function POST(request) {
       type === 'story' ? (publishConsent ? '\n✅ Можна опублікувати з іменем' : '\n🔒 Публікувати не можна') : null,
       type === 'ambassador' ? (publishConsent ? '\n✅ Можна вказати імʼя та місто на сторінці амбасадорів' : '\n🔒 Імʼя на сайті не показувати') : null,
       afterHours ? `\n🌙 Написали о ${kyivTime(now)} — людині обіцяли відповідь у робочі години` : null,
+      autoReply ? (autoReply.ok
+        ? `\n✉️ Автовідповідь надіслано за шаблоном «${esc(autoReply.title)}»`
+        : `\n⚠️ Автовідповідь «${esc(autoReply.title)}» не пішла — відповісти руками`) : null,
       `\n👤 ${[name ? esc(name) : null, `<a href="${esc(contactHref(parsed))}">${esc(contact)}</a>`].filter(Boolean).join(' · ')}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
       '\n<a href="https://dityam.com.ua/admin/messages">Відкрити в адмінці →</a>',
