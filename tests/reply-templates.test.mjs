@@ -66,3 +66,10 @@ test('амбасадор, який уже педагог олімпіади: з�
   const route = fs.readFileSync(new URL('../app/api/contact/route.js', import.meta.url), 'utf8');
   assert.match(route, /from\('olimpiada_teachers'\)\.select\('name, code'\)/);
 });
+
+test('автовідповідь пішла — звернення опрацьоване само; не пішла — лишається новим', () => {
+  const route = fs.readFileSync(new URL('../app/api/contact/route.js', import.meta.url), 'utf8');
+  assert.match(route, /\.insert\(\{[\s\S]*?\}\)\.select\('id'\)\.single\(\)/);
+  assert.match(route, /if \(autoReply\.ok && saved\?\.id\) \{\s*await supabase\.from\('contact_messages'\)\.update\(\{\s*status: 'done'/);
+  assert.match(route, /admin_note: `Автовідповідь надіслано за шаблоном/);
+});

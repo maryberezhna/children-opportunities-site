@@ -54,7 +54,7 @@ export async function POST(request) {
   if (!sbUrl || !key) return Response.json({ ok: false, error: 'server' }, { status: 500 });
   const supabase = createClient(sbUrl, key, { auth: { persistSession: false } });
 
-  const { error } = await supabase.from('contact_messages').insert({
+  const { data: saved, error } = await supabase.from('contact_messages').insert({
     type,
     name: name || null,
     contact,
@@ -62,7 +62,7 @@ export async function POST(request) {
     url: url || null,
     page: page || null,
     publish_consent: publishConsent,
-  });
+  }).select('id').single();
   if (error) return Response.json({ ok: false, error: 'server' }, { status: 500 });
 
   // Схвалений Марією шаблон відповідає сам (lib/reply-templates.js, з
@@ -80,6 +80,16 @@ export async function POST(request) {
       const mail = tpl.build({ name, message, teacher: tRows?.[0] || null });
       const r = await send({ to: contact, ...mail, fromName: 'Марія Шутяк · Dityam.com.ua' });
       autoReply = r?.ok ? { ok: true, title: tpl.title } : { ok: false, title: tpl.title };
+      // Лист пішов — звернення опрацьоване само (Марія, 23.10.2026: «додай
+      // автоматично»), як і відповідь з адмін-чату (telegram/webhook).
+      // Не пішов — лишається новим, щоб відповісти руками.
+      if (autoReply.ok && saved?.id) {
+        await supabase.from('contact_messages').update({
+          status: 'done',
+          handled_at: new Date().toISOString(),
+          admin_note: `Автовідповідь надіслано за шаблоном «${tpl.title}»`,
+        }).eq('id', saved.id);
+      }
     } catch (e) {
       autoReply = { ok: false, title: tpl.title };
     }
@@ -103,7 +113,7 @@ export async function POST(request) {
       type === 'ambassador' ? (publishConsent ? '\n✅ Можна вказати імʼя та місто на сторінці амбасадорів' : '\n🔒 Імʼя на сайті не показувати') : null,
       afterHours ? `\n🌙 Написали о ${kyivTime(now)} — людині обіцяли відповідь у робочі години` : null,
       autoReply ? (autoReply.ok
-        ? `\n✉️ Автовідповідь надіслано за шаблоном «${esc(autoReply.title)}»`
+        ? `\n✉️ Автовідповідь надіслано за шаблоном «${esc(autoReply.title)}» — звернення позначено опрацьованим`
         : `\n⚠️ Автовідповідь «${esc(autoReply.title)}» не пішла — відповісти руками`) : null,
       `\n👤 ${[name ? esc(name) : null, `<a href="${esc(contactHref(parsed))}">${esc(contact)}</a>`].filter(Boolean).join(' · ')}`,
       page ? `\n📄 зі сторінки: ${esc(page)}` : null,
