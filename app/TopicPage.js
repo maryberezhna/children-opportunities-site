@@ -309,12 +309,12 @@ function buildRelated(topic, liveRows) {
 }
 
 // Картці в браузері треба небагато — не тягнемо зайвих полів у HTML.
-const slim = (o) => ({
+const slim = (o, lang) => ({
   id: o.id, slug: o.slug, title: o.title, title_en: o.title_en || null,
   summary: o.summary, summary_en: o.summary_en || null,
   // Лише назва організатора, яку можна показати, — без адреси джерела
   // (захист від копіювання бази, 11.10.2026; див. lib/client-rows.js).
-  source: publicSource(o).sourceName || null,
+  source: publicSource(o, lang).sourceName || null,
   opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to,
   deadline: o.deadline, cities: o.cities, countries: o.countries || null,
   // Вартість — для рядка «Вартість» на картці (варіант B, 29.09.2026).
@@ -587,8 +587,8 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
         ) : null}
 
         <TopicCards
-          items={grouped ? [] : items.map(slim)}
-          groups={grouped ? grouped.groups.map((g) => ({ ...g, items: g.items.map(slim) })) : null}
+          items={grouped ? [] : items.map((o) => slim(o, lang))}
+          groups={grouped ? grouped.groups.map((g) => ({ ...g, items: g.items.map((o) => slim(o, lang)) })) : null}
           groupLinks={grouped ? grouped.links : []}
           abroadLabel={topic.code ? crumb : null}
           subfilters={subfilters}

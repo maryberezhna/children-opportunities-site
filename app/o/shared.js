@@ -468,7 +468,7 @@ export function buildMetadata(item, lang = 'uk') {
 }
 
 function buildJsonLd(item, lang) {
-  const src = publicSource(item);
+  const src = publicSource(item, lang);
   const base = basePath(lang);
   const url = `${SITE}${base}/o/${item.slug}`;
   const isFree = item.cost_type === 'free';
@@ -663,7 +663,7 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
   // Без прямого посилання на подачу кнопка чесно каже «Перейти до офіційного
   // сайту»: обіцяти подачу на сторінці без форми не можна. Гурток —
   // «Записатися на сайті гуртка» (#574).
-  const src = publicSource(item);
+  const src = publicSource(item, lang);
   const applyUrl = src.applyUrl;
   const clubSignup = item.opportunity_type === 'club' && Boolean(applyUrl);
   const primaryUrl = src.primaryUrl;

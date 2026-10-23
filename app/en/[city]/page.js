@@ -135,7 +135,7 @@ export default async function CityPage({ params }) {
           </div>
         </section>
 
-        <OpportunitiesList opportunities={clientRows(opportunities)} presetCity={cityName} lang="en" />
+        <OpportunitiesList opportunities={clientRows(opportunities, 'en')} presetCity={cityName} lang="en" />
 
         <section className="tp-related" aria-labelledby="other-cities-title">
           <h2 id="other-cities-title" className="tp-h2">Other cities</h2>

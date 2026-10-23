@@ -97,7 +97,7 @@ export default async function EnglishPage() {
             описи — англійські поля з бази, а доки перекладу для запису немає,
             показуємо оригінал, а не порожнечу. */}
         <OpportunitiesList
-          opportunities={lightCatalog(clientRows(opportunities), { todayIso: today })}
+          opportunities={lightCatalog(clientRows(opportunities, 'en'), { todayIso: today })}
           detailsUrl={detailsUrl('en')}
           today={today}
           lang="en"
