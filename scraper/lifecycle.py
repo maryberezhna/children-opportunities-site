@@ -318,14 +318,7 @@ def decide_check(row: dict, out: dict, page: str, today: date,
     # сторінки й хибне — до дедлайну лишалось три дні. Цитату звіряли лише для
     # виду в часі, для самого закриття — ні.
     if state in ("ended", "gone"):
-        why = None
-        if not (evidence and evidence_in_text(evidence, page)):
-            why = "висновок без дослівної цитати зі сторінки"
-        elif state == "ended":
-            ahead = [d for d in (row.get("deadline"), row.get("event_start_date"),
-                                 row.get("event_end_date")) if d and str(d)[:10] >= iso_today]
-            if ahead and not _CLOSED_WORDS.search(evidence):
-                why = f"у записі майбутня дата {min(ahead)}, а в цитаті немає слів про завершення"
+        why = refusal_reason(row, state, evidence, page, iso_today)
         if why:
             days = UNKNOWN_RECHECK_DAYS if row.get("status") == "active" else RETRY_DAYS
             patch["recheck_at"] = (today + timedelta(days=days)).isoformat()
@@ -433,6 +426,50 @@ def decide_check(row: dict, out: dict, page: str, today: date,
     patch["content_checked_at"] = datetime.now(timezone.utc).isoformat()
     patch["admin_comment"] = _with_trace(row, f"lifecycle {iso_today}: {note}"[:240])
     return patch
+
+
+# Чому перевірка відмовилась закрити запис. Ці слова пишуться в admin_comment,
+# і за ними ж effective_state розуміє, що «ended» моделі не прийнято.
+REFUSED_NO_QUOTE = "висновок без дослівної цитати зі сторінки"
+REFUSED_FUTURE_DATE = "у записі майбутня дата"
+
+
+def refusal_reason(row: dict, state: str, evidence: str, page: str, iso_today: str) -> str | None:
+    """Чому «ended»/«gone» моделі не можна прийняти, або None. Чиста функція.
+
+    Одна на двох: нею decide_check відмовляється закривати запис, а
+    effective_state — викидати його з поста в канал."""
+    if state not in ("ended", "gone"):
+        return None
+    if not (evidence and evidence_in_text(evidence, page)):
+        return REFUSED_NO_QUOTE
+    if state == "ended":
+        ahead = [d for d in (row.get("deadline"), row.get("event_start_date"),
+                             row.get("event_end_date")) if d and str(d)[:10] >= iso_today]
+        if ahead and not _CLOSED_WORDS.search(evidence):
+            return f"{REFUSED_FUTURE_DATE} {min(ahead)}, а в цитаті немає слів про завершення"
+    return None
+
+
+def effective_state(model_state: str, row: dict, evidence: str, page: str, iso_today: str) -> str:
+    """Стан для публікатора: рішення перевірки, а не сирий вердикт моделі.
+
+    23.10.2026, Марія: «дуже мало» дедлайнів у ранковому пості каналу. Immerse
+    Education (дедлайн 25.10, «Competition open») і ESC «Paths to Christmas»
+    (дедлайн 23.10) щодня випадали з поста як «ended»: модель читала «October
+    25, 2026 Competition closes» як «уже закрито». Запобіжник у decide_check
+    закривати їх відмовлявся — у записі майбутня дата, у цитаті немає слів про
+    завершення, — і запис лишався на сайті. А публікатор бачив сирий «ended» і
+    викидав відкриту можливість. Тепер:
+      • «ended» відхилено через майбутню дату → для поста «open»: діє дата
+        запису, яку модель не спростувала;
+      • відхилено через брак дослівної цитати → «unclear»: не публікуємо, як
+        і будь-що незрозуміле з датами.
+    """
+    why = refusal_reason(row, model_state, evidence, page, iso_today)
+    if not why:
+        return model_state
+    return "open" if why.startswith(REFUSED_FUTURE_DATE) else "unclear"
 
 
 def _verdict(row: dict, patch: dict, state: str, **extra) -> dict:
@@ -764,7 +801,8 @@ def _main() -> int:
             write(row["id"], patch)
             verdicts[row["id"]] = _verdict(
                 row, patch,
-                out.get("state") if out.get("state") in STATES else "unclear",
+                effective_state(out.get("state") if out.get("state") in STATES else "unclear",
+                                row, (out.get("evidence") or "").strip(), page, today.isoformat()),
                 evidence=(out.get("evidence") or "")[:200])
         logger.info("  підсумок: %s", dict(states))
         if manual:
