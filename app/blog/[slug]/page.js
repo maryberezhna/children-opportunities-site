@@ -7,7 +7,7 @@ import { opportunitiesWord } from '@/lib/plural';
 import { kyivToday } from '@/lib/dates';
 import { whenRank } from '@/lib/timing';
 import { isLive } from '@/lib/audience';
-import { BLOG_POSTS, BLOG_PATH, blogPath, postBySlug } from '@/lib/blog';
+import { BLOG_POSTS, BLOG_PATH, blogPath, postBySlug, postState } from '@/lib/blog';
 import TopicCards from '../../topic/TopicCards';
 import ShareButton from '../../topic/ShareButton';
 import StickyBar from '../../StickyBar';
@@ -15,6 +15,7 @@ import SubscribePopup from '../../SubscribePopup';
 import SupportPopup from '../../SupportPopup';
 import Footer from '../../Footer';
 import BlogRich from '../BlogRich';
+import BlogOutLink from '../BlogOutLink';
 import BlogIdea from '../BlogIdea';
 
 /**
@@ -125,6 +126,7 @@ export default async function BlogPost({ params }) {
     TOPIC_LIST.map((t) => ({ topic: t, count: live.filter(t.match).length })));
 
   const checkedLabel = longDate(post.checked);
+  const { closed } = postState(post);
   const labels = {
     all: 'Усі', sort: 'за дедлайном, найближчі спочатку', details: 'Детальніше →',
     emptyTitle: 'Нічого не знайдено', emptyText: 'Спробуйте інший фільтр.',
@@ -196,6 +198,15 @@ export default async function BlogPost({ params }) {
             <h1 id="tp-title" className="tp-h1">
               {post.heading.lead} <span className="tp-script">{post.heading.script}</span>{post.heading.tail}
             </h1>
+            {/* Подача за правилами зі статті завершилась (deadline у lib/blog.js):
+                кажемо це першим рядком, щоб ніхто не збирав документи на закрите.
+                Картки нижче живі — там те, що відкрито зараз. */}
+            {closed ? (
+              <p className="bl-closed" role="status">
+                Прийом за цими умовами завершився {longDate(post.deadline)}. Стаття чекає на переперевірку,
+                а нижче — <a href="#bl-open">те, що відкрито зараз</a>.
+              </p>
+            ) : null}
             <p className="tp-intro"><BlogRich text={post.intro} /></p>
             <p className="tp-guide-link"><a href="#bl-open">Одразу до відкритих можливостей ↓</a></p>
             <div className="tp-actions">
@@ -245,7 +256,7 @@ export default async function BlogPost({ params }) {
               {post.sources.map((s, i) => (
                 <span key={s.url}>
                   {i > 0 ? '; ' : ''}
-                  <a href={s.url} target="_blank" rel="noopener noreferrer">{s.label}</a>
+                  <BlogOutLink href={s.url}>{s.label}</BlogOutLink>
                 </span>
               ))}.
             </p>

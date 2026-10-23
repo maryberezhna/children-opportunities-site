@@ -103,6 +103,11 @@
   max-width: 600px;
   text-wrap: pretty;
 }
+/* Блог: подача за правилами статті завершилась (lib/blog.js → deadline).
+   Плашка-виділення, не заливка секції; текст — акцентний #c8501a (контраст AA). */
+.bl-closed { margin: 0 0 14px; padding: 12px 14px; border-radius: 10px; background: #fff3ea;
+  border: 1px solid #f3c7a8; color: #c8501a; font-size: 15px; font-weight: 600; line-height: 1.45; max-width: 600px; }
+.bl-closed a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .tp-guide-link { margin: -4px 0 0; font-size: 15px; font-weight: 600; line-height: 1.45; max-width: 600px; }
 .tp-main .tp-guide-link a { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; }
 .tp-actions { display: flex; gap: 10px; flex-wrap: wrap; padding-top: 2px; }
