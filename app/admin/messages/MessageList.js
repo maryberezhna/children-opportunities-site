@@ -101,6 +101,8 @@ function Message({ row, onChange }) {
       {row.type === 'ambassador' && (
         <p style={{ ...metaS, margin: '0 0 8px', fontWeight: 600, color: row.publish_consent ? '#15803d' : '#b42318' }}>
           {row.publish_consent ? '✅ Можна вказати імʼя та місто на сторінці амбасадорів' : '🔒 Імʼя на сайті не показувати'}
+          {' · '}
+          <a href="/admin/korystuvachi?f=amb#ambasadory" style={{ color: '#54617a', fontWeight: 500 }}>таблиця амбасадорів: педагог? Dityam+? →</a>
         </p>
       )}
 

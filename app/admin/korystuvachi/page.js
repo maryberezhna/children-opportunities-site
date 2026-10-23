@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { FB_RATINGS, FB_TAGS } from '@/lib/feedback';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { buildPeople, peopleSummary, sourceLabel, sourceHref } from '@/lib/people';
-import { notOwn } from '@/lib/own';
+import { notOwn, isOwn } from '@/lib/own';
+import { buildAmbassadors } from '@/lib/ambassadors';
 import { PRODUCT_LABELS } from '@/lib/payments';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
@@ -82,7 +83,7 @@ const PLUS_LABEL = {
 };
 const FILTERS = [
   ['all', 'Усі'], ['new7', 'Нові за 7 днів'], ['plus', 'Dityam+ активні'], ['pending', 'Не завершили анкету'],
-  ['olimp', 'Олімпіада'], ['mk', 'Модний код'], ['teachers', 'Педагоги'], ['fb', 'З відгуком'],
+  ['olimp', 'Олімпіада'], ['mk', 'Модний код'], ['teachers', 'Педагоги'], ['amb', 'Амбасадори'], ['fb', 'З відгуком'],
 ];
 
 export default async function UsersPage({ searchParams } = {}) {
@@ -137,7 +138,7 @@ export default async function UsersPage({ searchParams } = {}) {
   const fbBy = (r) => fb.filter((x) => x.rating === r).length;
   const fbTagCount = Object.keys(FB_TAGS).map((t) => [t, fb.filter((x) => (x.tags || []).includes(t)).length]);
 
-  const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll, children] = await Promise.all([
+  const [subs, plusWait, entries, olimpWait, payments, mkAll, teachersAll, children, ambMsgs] = await Promise.all([
     all(() => sb.from('digest_subscribers').select('id, telegram_chat_id, telegram_handle, email, status, billing_period, source, role, created_at, updated_at')),
     all(() => sb.from('plus_waitlist').select('telegram_chat_id, telegram_username, email, created_at')),
     all(() => sb.from('olimpiada_entries').select('token, child_name, parent_email, created_at, paid_at, started_at, finished_at, level, wfp_last_status, source, print_paid_at, teacher_code')),
@@ -146,6 +147,7 @@ export default async function UsersPage({ searchParams } = {}) {
     all(() => sb.from('mk_entries').select('child_name, child_age, parent_email, amount, created_at, paid_at, refunded_at, score, max_score, source')),
     all(() => sb.from('olimpiada_teachers').select('name, email, code, source, created_at, thanks_sent_at')),
     all(() => sb.from('plus_children').select('subscriber_id, position, age_bands, likes')),
+    all(() => sb.from('contact_messages').select('id, type, name, contact, message, publish_consent, status, created_at').eq('type', 'ambassador')),
   ]);
   const mkRows = notOwn(mkAll);
   const mkPaid = mkRows.filter((r) => r.paid_at && !r.refunded_at);
@@ -153,7 +155,10 @@ export default async function UsersPage({ searchParams } = {}) {
 
   // Власні записи Марії (lib/own.js) — не люди: не показуємо й не рахуємо (08.10.2026).
   const teachers = notOwn(teachersAll);
-  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, teachers, payments: notOwn(payments), children, feedback: fb });
+  // Амбасадори (23.10.2026): заявка + чи вже педагог олімпіади й чи в Dityam+.
+  const ambassadors = buildAmbassadors({ messages: ambMsgs, teachers, entries: notOwn(entries), subs: notOwn(subs) })
+    .filter((a) => !isOwn({ email: a.email, telegram_handle: a.handle }));
+  const rows = buildPeople({ subs: notOwn(subs), plusWait: notOwn(plusWait), entries: notOwn(entries), olimpWait: notOwn(olimpWait), mk: mkRows, teachers, payments: notOwn(payments), children, feedback: fb, ambassadors });
   const week = Date.now() - 7 * 864e5;
   const isTeacher = (r) => r.notes.some((n) => n.startsWith('👩‍🏫'));
   const match = {
@@ -164,13 +169,14 @@ export default async function UsersPage({ searchParams } = {}) {
     olimp: (r) => r.notes.some((n) => n.startsWith('🧩')),
     mk: (r) => r.notes.some((n) => n.startsWith('👗')),
     teachers: isTeacher,
+    amb: (r) => r.notes.some((n) => n.startsWith('📣')),
     fb: (r) => r.fb.length > 0,
   }[filter];
   const shown = rows.filter(match).filter((r) => !q || [r.who, r.email, r.handle, ...r.kids, ...r.notes].join(' ').toLowerCase().includes(q));
   const counts = { all: rows.length, new7: rows.filter(match === match ? (r) => r.first && new Date(r.first).getTime() >= week : () => false).length,
     plus: rows.filter((r) => r.plus?.status === 'active').length, pending: rows.filter((r) => r.plus?.status === 'pending').length,
     olimp: rows.filter((r) => r.notes.some((n) => n.startsWith('🧩'))).length, mk: rows.filter((r) => r.notes.some((n) => n.startsWith('👗'))).length,
-    teachers: rows.filter(isTeacher).length, fb: rows.filter((r) => r.fb.length > 0).length };
+    teachers: rows.filter(isTeacher).length, amb: rows.filter((r) => r.notes.some((n) => n.startsWith('📣'))).length, fb: rows.filter((r) => r.fb.length > 0).length };
   const chip = (k, label) => {
     const on = filter === k;
     return <a key={k} href={`/admin/korystuvachi?f=${k}${q ? `&q=${encodeURIComponent(q)}` : ''}`} style={{ display: 'inline-block', padding: '6px 12px', borderRadius: 99, border: `1px solid ${on ? C.ink : C.border}`, background: on ? C.ink : '#fff', color: on ? '#fff' : C.ink, fontSize: 13, fontWeight: 600, textDecoration: 'none', marginRight: 6, marginBottom: 6 }}>{label} · {counts[k]}</a>;
@@ -199,6 +205,7 @@ export default async function UsersPage({ searchParams } = {}) {
         <Card value={counts.pending} label="⏳ почали анкету, не завершили" />
         <Card value={counts.olimp} label="🧩 родин олімпіади" />
         <Card value={counts.teachers} label="👩‍🏫 педагогів" />
+        <Card value={ambassadors.length} label="📣 заявок в амбасадори" />
       </div>
 
       <form method="get" action="/admin/korystuvachi" style={{ margin: '18px 0 8px', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -230,6 +237,7 @@ export default async function UsersPage({ searchParams } = {}) {
                       ? <div style={{ fontSize: 12 }}><a href={`mailto:${r.email}`} style={{ ...linkS, color: C.ink3 }}>{r.email}</a></div> : null}
                     {r.role ? <div style={{ fontSize: 12, color: C.ink2 }}>{r.role}</div> : null}
                     {teacherOf(r).map((t) => <div key={t} style={{ fontSize: 12, color: C.ink2 }}>👩‍🏫 {t}</div>)}
+                    {r.notes.filter((n) => n.startsWith('📣')).map((t) => <div key={t} style={{ fontSize: 12, color: C.ink2 }}>{t}</div>)}
                   </td>
                   <td style={{ ...cell, whiteSpace: 'nowrap' }}>
                     <div>{sourceHref(r.source)
@@ -252,6 +260,52 @@ export default async function UsersPage({ searchParams } = {}) {
           </tbody>
         </table>
       </div>
+
+      {/* Амбасадори (23.10.2026, Марія: «додай у таблицю амбасадорів в адмінці»):
+          заявка з /ambasadory поруч із тим, що людина вже робить у нас. */}
+      <h2 id="ambasadory" style={h2S}>📣 Амбасадори · {ambassadors.length}</h2>
+      {ambassadors.length === 0 ? <p style={noteS}>Заявок ще немає.</p> : (
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 980 }}>
+            <thead>
+              <tr>
+                <th style={head}>Хто</th><th style={head}>Роль · місто</th><th style={head}>Про себе</th>
+                <th style={head}>Педагог олімпіади</th><th style={head}>Dityam+</th><th style={head}>Заявка</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ambassadors.map((a) => {
+                const pl = a.plus ? PLUS_LABEL[a.plus] || [a.plus, C.ink2] : null;
+                return (
+                  <tr key={a.id}>
+                    <td style={cell}>
+                      <div>{a.name || '—'}</div>
+                      <div style={{ fontSize: 12 }}>{a.email
+                        ? <a href={`mailto:${a.email}`} style={{ ...linkS, color: C.ink3 }}>{a.email}</a>
+                        : a.handle ? <a href={`https://t.me/${a.handle}`} style={{ ...linkS, color: C.ink3 }} {...ext}>@{a.handle}</a> : a.contact}</div>
+                      <div style={{ fontSize: 12, color: a.consent ? C.green : C.ink3 }}>{a.consent ? '✅ імʼя можна на сайті' : '🔒 імʼя на сайті не показувати'}</div>
+                    </td>
+                    <td style={cell}><div>{a.role || '—'}</div><div style={{ fontSize: 12, color: C.ink2 }}>{a.city}</div></td>
+                    <td style={{ ...cell, maxWidth: 260 }}>{a.about || <span style={{ color: C.ink3 }}>—</span>}</td>
+                    <td style={cell}>{a.teacher ? (
+                      <>
+                        <div>✅ код <b>{a.teacher.code}</b></div>
+                        <div style={{ fontSize: 12, color: C.ink2 }}>учнів: {a.teacher.pupils} · пройшли тест: {a.teacher.finished}</div>
+                        <div style={{ fontSize: 12, color: C.ink3 }}>{a.teacher.thanksSent ? 'подяку надіслано' : 'подяки ще немає'}</div>
+                      </>
+                    ) : <span style={{ color: C.ink3 }}>не зареєстрований(а)</span>}</td>
+                    <td style={cell}>{pl ? <span style={{ color: pl[1] }}>{pl[0]}</span> : <span style={{ color: C.ink3 }}>немає</span>}</td>
+                    <td style={{ ...cell, whiteSpace: 'nowrap' }}>
+                      <div>{fmtDate(a.at)}</div>
+                      <div style={{ fontSize: 12 }}><a href="/admin/messages" style={{ ...linkS, color: C.ink3 }}>{a.status === 'done' ? 'опрацьовано' : a.status === 'in_progress' ? 'в роботі' : 'нова'} →</a></div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h2 style={h2S}>💬 Відгуки після олімпіади · {fb.length}</h2>
       <div style={{ ...grid, marginTop: 8 }}>
