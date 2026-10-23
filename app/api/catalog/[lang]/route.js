@@ -24,5 +24,5 @@ export async function GET(_request, { params }) {
   const fields = ['id', ...DETAIL_FIELDS.filter((f) => en || f !== 'summary_en')].join(', ');
   const rows = rowsOrThrow(await fetchAllRows(() =>
     publicOpportunities(fields).order('created_at', { ascending: false }).order('id')), 'catalog-details');
-  return NextResponse.json({ rows: clientRows(rows) });
+  return NextResponse.json({ rows: clientRows(rows, en ? 'en' : 'uk') });
 }

@@ -45,7 +45,7 @@ test('публічний код не порівнює поля записів і
 
 test('усі сторінки з повним каталогом віддають у браузер clientRows', () => {
   for (const f of ['app/page.js', 'app/en/page.js', 'app/[city]/page.js', 'app/en/[city]/page.js', 'app/[city]/[topic]/page.js']) {
-    assert.match(read(f), /opportunities=\{(lightCatalog\()?clientRows\(opportunities\)/, f);
+    assert.match(read(f), /opportunities=\{(lightCatalog\()?clientRows\(opportunities(, 'en')?\)/, f);
   }
 });
 

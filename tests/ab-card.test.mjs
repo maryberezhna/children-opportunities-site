@@ -51,7 +51,7 @@ test('підбірки й «схожі» віддають картці варт�
   const topic = read('app/TopicPage.js');
   assert.ok(/cost_type: o\.cost_type/.test(topic), 'slim() у TopicPage не передає cost_type — рядок «Вартість» порожній');
   // З 11.10.2026 адреса в браузер не їде: чужий канал відсіює publicSource на сервері.
-  assert.ok(/source: publicSource\(o\)\.sourceName/.test(topic), 'slim() не фільтрує назву джерела — чужий канал не відсіється');
+  assert.ok(/source: publicSource\(o(, lang)?\)\.sourceName/.test(topic), 'slim() не фільтрує назву джерела — чужий канал не відсіється');
   assert.ok(!/source_url: o\.source_url/.test(topic), 'slim() знову везе в браузер адресу джерела');
   const shared = read('app/o/shared.js');
   const related = (shared.match(/const RELATED_FIELDS =[\s\S]*?;/) || [''])[0];
