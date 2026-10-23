@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const { BLOG_POSTS, BLOG_GUIDES, blogEntries, richParts, internalLinks } = await import('../lib/blog.js');
+const { BLOG_POSTS, BLOG_GUIDES, blogEntries, richParts, internalLinks, postState } = await import('../lib/blog.js');
 const { TOPICS, TOPIC_LIST } = await import('../lib/topics.js');
 const read = (p) => fs.readFileSync(new URL(`../${p}`, import.meta.url), 'utf8');
 const exists = (p) => fs.existsSync(new URL(`../${p}`, import.meta.url));
@@ -179,4 +179,58 @@ test('блог і кожна стаття: «Маєте ідею? Зв’яжі�
   assert.match(read('app/blog/[slug]/page.js'), /<BlogIdea path=\{blogPath\(post\.slug\)\} \/>/);
   const { FORM_CONTACT_TYPES } = await import('../lib/contactTypes.js');
   assert.ok(FORM_CONTACT_TYPES.some((t) => t.value === 'other'), 'тип «Інше» у формі');
+});
+
+
+// Відповідальність за статтю (23.10.2026, «Основа проекту»): кожна стаття —
+// обіцянка, і вона мусить мати дату переперевірки, а стаття зі строком подачі —
+// сама показувати, що прийом завершився.
+const DAY = 24 * 60 * 60 * 1000;
+const ISO = /^\d{4}-\d{2}-\d{2}$/;
+
+test('кожна стаття має reviewBy не пізніше ніж через 90 днів після звірки', () => {
+  for (const p of BLOG_POSTS) {
+    assert.match(p.reviewBy || '', ISO, `${p.slug}: немає reviewBy`);
+    const gap = (Date.parse(p.reviewBy) - Date.parse(p.checked)) / DAY;
+    assert.ok(gap > 0 && gap <= 90, `${p.slug}: reviewBy через ${gap} днів після checked`);
+  }
+});
+
+test('deadline, якщо є, — дата не раніше публікації й підкріплена цитатою', () => {
+  for (const p of BLOG_POSTS.filter((x) => x.deadline)) {
+    assert.match(p.deadline, ISO, p.slug);
+    assert.ok(p.deadline >= p.published, `${p.slug}: deadline раніше публікації`);
+  }
+  const pak = BLOG_POSTS.find((p) => p.slug === 'pakunok-shkoliara');
+  assert.equal(pak.deadline, '2026-11-01');
+  assert.ok(pak.evidence.some((e) => /до 1 листопада 2026/.test(e.quote)), 'строк має бути в evidence');
+});
+
+test('стан статті: «до 1 листопада» — 1 листопада ще відкрито, 2-го вже закрито (за Києвом)', () => {
+  const pak = BLOG_POSTS.find((p) => p.slug === 'pakunok-shkoliara');
+  assert.equal(postState(pak, new Date('2026-11-01T20:00:00Z')).closed, false); // 22:00 Київ, 1 листопада
+  assert.equal(postState(pak, new Date('2026-11-01T22:30:00Z')).closed, true);  // 00:30 Київ, 2 листопада
+  assert.equal(postState({ checked: '2026-10-22', reviewBy: '2026-12-21' }, new Date('2026-12-22T09:00:00Z')).stale, true);
+  assert.deepEqual(postState({ reviewBy: '2026-12-21' }, new Date('2026-10-23T09:00:00Z')), { closed: false, stale: false });
+});
+
+test('сторінка статті показує «прийом завершено» й рахує переходи до першоджерел', () => {
+  const page = read('app/blog/[slug]/page.js');
+  assert.match(page, /postState\(post\)/);
+  assert.match(page, /Прийом за цими умовами завершився/);
+  assert.match(page, /<BlogOutLink href=\{s\.url\}>/);
+  assert.match(read('app/blog/BlogRich.js'), /<BlogOutLink /);
+  assert.doesNotMatch(read('app/blog/BlogRich.js'), /<a key=\{i\} href=\{p\.href\} target="_blank"/);
+  assert.match(read('app/blog/BlogOutLink.js'), /BLOG_OUTBOUND/);
+  assert.match(read('lib/site-events.js'), /BLOG_OUTBOUND: 'blog_outbound'/);
+});
+
+test('план: агент спершу переперевіряє, діаспора про народження за кордоном — пріоритет 1', () => {
+  const plan = JSON.parse(read('content/blog-plan.json'));
+  assert.match(plan.about, /reviewBy/);
+  assert.match(plan.about, /спершу/);
+  const it = plan.items.find((x) => x.id === 'narodzhennia-za-kordonom');
+  assert.ok(it);
+  assert.equal(it.priority, 1);
+  assert.equal(it.hub, 'ukrainskym-ditiam-za-kordonom');
 });
