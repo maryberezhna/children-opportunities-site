@@ -13,6 +13,7 @@ import asyncio
 import os
 import sys
 import time
+import traceback
 from datetime import datetime, timedelta, timezone
 
 import dedup_judge
@@ -159,6 +160,9 @@ async def run_scraper(name, module, sb_client):
                 "error": f"timeout >{SCRAPER_TIMEOUT}s", "count": 0,
                 "duration": time.time() - start}
     except Exception as e:
+        # Траса в журнал: без неї «ValueError: not enough values to unpack»
+        # 18–22.10.2026 не показувало, в якому рядку біда.
+        traceback.print_exc()
         record_crawl_result(sb_client, name, ok=False, new_items=0)
         return {"name": name, "status": "error",
                 "error": f"{type(e).__name__}: {e}"[:200],
