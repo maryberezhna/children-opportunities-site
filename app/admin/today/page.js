@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { isAdmin, adminConfigured } from '@/lib/adminAuth';
 import { missingRequired } from '@/lib/required';
 import { planEntryFor, kyivIso, addDays, SITUATION_TEXTS } from '../../../scripts/channel-plan.mjs';
+import { PLUS_FREE } from '@/lib/plus';
+import { plural } from '@/lib/plural';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -147,12 +149,21 @@ export default async function TodayPage() {
   const tomorrowPost = planEntryFor(addDays(today, 1));
 
   // Що зробити — від найтерміновішого: гроші й люди раніше за контент.
+  // З 21.10.2026 Dityam+ безкоштовний (PLUS_FREE): платежів немає, тож і
+  // «пауза — платіж не завершився» не про що. «Застряглі» — ті, хто почав
+  // анкету в боті й не закінчив.
+  const mail = [
+    newMessages && `${newMessages} ${plural(newMessages, 'нове звернення', 'нові звернення', 'нових звернень')}`,
+    waitingSuggestions && `${waitingSuggestions} ${plural(waitingSuggestions, 'пропозиція', 'пропозиції', 'пропозицій')}`,
+  ].filter(Boolean).join(' і ');
   const todo = [
-    paused && { text: `${paused} ${paused === 1 ? 'підписка' : 'підписок'} Dityam+ на паузі — платіж не завершився`, href: '/admin/plus', tone: C.accent },
-    (newMessages + waitingSuggestions) && { text: `${newMessages} нових звернень і ${waitingSuggestions} пропозицій чекають на рішення`, href: '/admin/messages', tone: C.accent },
-    ready && { text: `${ready} чернеток готові до публікації — усі поля є`, href: '/admin', tone: C.green },
-    stuck && { text: `${stuck} людей застрягли в оформленні Dityam+ понад добу`, href: '/admin/plus', tone: C.amber },
-    needData && { text: `${needData} чернеток чекають даних${defenders ? ` (з них «Дітям захисників» — ${defenders})` : ''}`, href: '/admin', tone: C.ink2 },
+    !PLUS_FREE && paused && { text: `${paused} ${paused === 1 ? 'підписка' : 'підписок'} Dityam+ на паузі — платіж не завершився`, href: '/admin/plus', tone: C.accent },
+    mail && { text: `${mail} ${newMessages + waitingSuggestions === 1 ? 'чекає' : 'чекають'} на рішення`, href: '/admin/messages', tone: C.accent },
+    ready && { text: `${ready} ${plural(ready, 'чернетка готова', 'чернетки готові', 'чернеток готові')} до публікації — усі поля є`, href: '/admin', tone: C.green },
+    stuck && { text: PLUS_FREE
+      ? `${stuck} ${plural(stuck, 'людина не завершила', 'людини не завершили', 'людей не завершили')} анкету Dityam+ понад добу`
+      : `${stuck} людей застрягли в оформленні Dityam+ понад добу`, href: '/admin/plus', tone: C.amber },
+    needData && { text: `${needData} ${plural(needData, 'чернетка чекає', 'чернетки чекають', 'чернеток чекають')} даних${defenders ? ` (з них «Дітям захисників» — ${defenders})` : ''}`, href: '/admin', tone: C.ink2 },
   ].filter(Boolean);
 
   const dateLabel = new Date().toLocaleDateString('uk-UA', { timeZone: 'Europe/Kyiv', weekday: 'long', day: 'numeric', month: 'long' });
@@ -190,8 +201,8 @@ export default async function TodayPage() {
 
         <Card title="💎 Dityam+" href="/admin/plus" linkText="Підписники">
           <Row label="активних підписок" value={activeSubs} tone={activeSubs ? C.green : undefined} />
-          <Row label="застрягли в оформленні понад добу" value={stuck} tone={stuck ? C.amber : undefined} />
-          <Row label="пауза — платіж не завершився" value={paused} tone={paused ? C.accent : undefined} />
+          <Row label={PLUS_FREE ? 'не завершили анкету понад добу' : 'застрягли в оформленні понад добу'} value={stuck} tone={stuck ? C.amber : undefined} />
+          {!PLUS_FREE && <Row label="пауза — платіж не завершився" value={paused} tone={paused ? C.accent : undefined} />}
         </Card>
 
         <Card title="📣 Telegram-канал" href={PLAN_URL} linkText="План">
