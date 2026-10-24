@@ -196,7 +196,14 @@ async def fetch_all() -> list[dict]:
                 except Exception as e:
                     logger.warning("t.me/s/%s: %s", handle, e)
                     return
-                items = _parse_channel(r.text, handle, display, since)
+                # Один канал зі зламаною сторінкою не має валити решту: до
+                # 23.10.2026 будь-який виняток тут знімав усе джерело, і нічний
+                # збір 18–22.10 давав з Telegram 0 нових.
+                try:
+                    items = _parse_channel(r.text, handle, display, since)
+                except Exception:                            # noqa: BLE001
+                    logger.exception("t.me/s/%s: не розібрали сторінку — пропускаю канал", handle)
+                    return
                 for it in items:
                     if it["source_url"] in seen:
                         continue
