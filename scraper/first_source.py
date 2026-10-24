@@ -56,6 +56,18 @@ _FORM_PATHS = ("/forms/", "/form/")
 # джерело» гірші за сам допис. Їхнє місце — apply_url або текст запису.
 _MEDIA_HOSTS = ("youtube.com", "youtu.be", "vimeo.com", "drive.google.com",
                 "docs.google.com")
+# Картинка чи відео за прямою адресою — теж не сторінка. Живий прогін
+# 24.10.2026: svitloschool.com «переказує», і крок глибше вів на
+# cdn…website-files.com/…photo_2026-05-04.jpg. PDF лишаємо: положення
+# конкурсу часто живе саме в PDF.
+_FILE_EXT = re.compile(r"\.(?:jpe?g|png|gif|webp|svg|heic|mp4|mov|webm|mp3|m4a|zip)$", re.I)
+
+
+def _is_file(url: str) -> bool:
+    try:
+        return bool(_FILE_EXT.search(urlparse(url).path or ""))
+    except ValueError:
+        return False
 
 
 def _host(url: str) -> str:
@@ -222,7 +234,7 @@ def pick(links, skip_hosts: tuple = ()) -> str | None:
     сама на себе (на znayshov.com кожна стаття має десяток внутрішніх посилань).
     """
     pages = [u for u in external_links(links)
-             if not _is(u, _MEDIA_HOSTS) and not _is(u, tuple(skip_hosts))]
+             if not _is(u, _MEDIA_HOSTS) and not _is(u, tuple(skip_hosts)) and not _is_file(u)]
     return pages[0] if pages else None
 
 

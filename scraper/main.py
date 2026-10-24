@@ -652,8 +652,23 @@ async def amain():
         # старий підпис «Email ✅» брехав, коли звіт ішов у бот.
         channel = {'telegram': 'Telegram-бот', 'email': 'Email (запасний)'}.get(sent)
         print(f"📨 Звіт: {'надіслано у ' + channel + ' ✅' if channel else 'лише в лозі (в адмін-чат — тільки великі проблеми)'}")
-    if any(r["status"] == "error" for r in results):
+    failed = [r["name"] for r in results if r["status"] == "error"]
+    for name in failed:
+        # Анотація на сторінці запуску: збій джерела видно й без читання журналу.
+        print(f"::warning title=Джерело впало::{name}")
+    if run_is_red(results):
         sys.exit(1)
+
+
+def run_is_red(results) -> bool:
+    """Чи робити весь запуск червоним.
+
+    Одне джерело впало — решта вже зберегли знахідки, тож запуск лишається
+    зеленим, а збій видно в підсумку й анотацією. 18–22.10.2026 одне джерело
+    «Telegram (веб)» щоночі фарбувало весь збір у червоне, і справжній
+    масовий збій від нього не відрізнити. Червоне — від двох джерел.
+    """
+    return sum(1 for r in results if r["status"] == "error") >= 2
 
 
 if __name__ == "__main__":
