@@ -6,6 +6,7 @@ import { missingRequired } from '@/lib/required';
 import { planEntryFor, kyivIso, addDays, SITUATION_TEXTS } from '../../../scripts/channel-plan.mjs';
 import { PLUS_FREE } from '@/lib/plus';
 import { plural } from '@/lib/plural';
+import { plusInterests } from '@/lib/plusInterests';
 import AdminNav from '../AdminNav';
 import LoginForm from '../LoginForm';
 
@@ -80,6 +81,29 @@ function Row({ label, value, tone }) {
   );
 }
 
+// Смужка «скільки дітей обрали» для блоку «Чим цікавляться в Dityam+».
+function Bars({ title, items, limit = 8, unit }) {
+  const shown = items.slice(0, limit);
+  return (
+    <div style={cardS}>
+      <h3 style={{ fontSize: 15, margin: '0 0 8px' }}>{title}</h3>
+      {shown.length === 0 ? <p style={noteS}>Ще ніхто не обрав.</p> : shown.map((x) => (
+        <div key={x.key} style={{ padding: '4px 0', fontSize: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+            <span>{x.label}</span>
+            <b style={{ fontVariantNumeric: 'tabular-nums' }}>{x.n} <span style={{ color: C.ink3, fontWeight: 400 }}>· {x.pct}%</span></b>
+          </div>
+          <div style={{ height: 6, borderRadius: 3, background: C.bg, marginTop: 3 }}>
+            <div style={{ width: `${Math.min(100, x.pct)}%`, height: 6, borderRadius: 3, background: C.accent }} />
+          </div>
+        </div>
+      ))}
+      {items.length > limit && <p style={noteS}>і ще {items.length - limit}</p>}
+      {unit && <p style={noteS}>{unit}</p>}
+    </div>
+  );
+}
+
 function Card({ title, href, linkText, children }) {
   return (
     <div style={cardS}>
@@ -112,16 +136,17 @@ export default async function TodayPage() {
   const count = (table, filter) => filter(supabase.from(table).select('id', { count: 'exact', head: true }));
   const since7 = new Date(Date.now() - 7 * DAY).toISOString();
 
-  const [draftsRes, msgs, sugs, subsRes, active, added7, snapsRes] = await Promise.all([
+  const [draftsRes, msgs, sugs, subsRes, active, added7, snapsRes, kidsRes] = await Promise.all([
     supabase.from('opportunities')
       .select('id, title, age_from, age_to, deadline, event_start_date, event_end_date, results_date, recurrence, timing_kind, cost_type, opportunity_type, format, cities, countries, is_international, admin_comment, child_needs')
       .eq('status', 'draft').limit(500),
     count('contact_messages', (q) => q.eq('status', 'new')),
     count('opportunity_suggestions', (q) => q.in('status', ['new', 'needs_human']).not('origin', 'in', '(research,maria)')),
-    supabase.from('digest_subscribers').select('status, created_at, updated_at, telegram_chat_id, telegram_handle, email').limit(1000),
+    supabase.from('digest_subscribers').select('id, status, created_at, updated_at, telegram_chat_id, telegram_handle, email, places, cost_pref, role').limit(1000),
     count('opportunities', (q) => q.eq('status', 'active')),
     count('opportunities', (q) => q.gte('created_at', since7)),
     supabase.from('metrics_daily').select('day, telegram_members').order('day', { ascending: false }).limit(8),
+    supabase.from('plus_children').select('subscriber_id, age_bands, likes, formats, needs').limit(3000),
   ]);
 
   const drafts = draftsRes.data || [];
@@ -138,6 +163,9 @@ export default async function TodayPage() {
   const paused = subs.filter((s) => s.status === 'paused').length;
   const stuck = subs.filter((s) => s.status === 'pending'
     && new Date(s.updated_at || s.created_at).getTime() < Date.now() - DAY).length;
+
+  // Чим цікавляться в Dityam+ (24.10.2026): лише ті, хто дійшов в анкеті до дітей.
+  const interests = plusInterests(subs, kidsRes.data || []);
 
   const snaps = snapsRes.data || [];
   const tgNow = snaps[0]?.telegram_members ?? null;
@@ -216,6 +244,21 @@ export default async function TodayPage() {
           <Row label="додано за 7 днів" value={added7.count ?? '—'} />
           <Row label="підписників каналу" value={tgNow == null ? '—' : `${tgNow}${tgDelta != null ? ` (${tgDelta >= 0 ? '+' : ''}${tgDelta} за тиждень)` : ''}`} />
         </Card>
+      </div>
+
+      <h2 style={h2S}>💎 Чим цікавляться в Dityam+</h2>
+      <p style={{ ...noteS, margin: '0 0 12px' }}>
+        {interests.families} {plural(interests.families, 'родина', 'родини', 'родин')} заповнили анкету
+        ({interests.active} з активною підпискою), {interests.kids} {plural(interests.kids, 'дитина', 'дитини', 'дітей')}.
+        {' '}Лише безкоштовне обрали {interests.freeOnly} з {interests.families}. Відсоток — від дітей; дитина може мати кілька вподобань.
+      </p>
+      <div style={grid}>
+        <Bars title="Вподобання" items={interests.likes} limit={10} />
+        <Bars title="Що шукають" items={interests.formats} />
+        <Bars title="Вік дитини" items={interests.ages} />
+        <Bars title="Особливі обставини" items={interests.needs} unit="Решта дітей — без особливих обставин." />
+        <Bars title="Де шукають" items={interests.places} unit="Відсоток — від родин." />
+        <Bars title="Хто заповнює" items={interests.roles} unit="Відсоток — від родин." />
       </div>
     </main>
   );
