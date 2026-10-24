@@ -1,0 +1,145 @@
+# Червоний запуск будь-якого воркфлоу — в адмін-чат (24.10.2026, аудит процесів).
+#
+# Нічний збір (scrape-py) падав 18, 20, 21 і 22.10, а помітили лише 23.10 під
+# час звірки процесів: червоний запуск нікому не приходив. Тепер приходить —
+# не частіше разу на добу (UTC) для того самого воркфлоу, щоб нічний збій не
+# сипав повідомленнями. Тексти лише з назви, події й посилання: жодних даних
+# людей у чат і в журнал.
+#
+# Не стежимо за собою, за tests (перевірки PR — там і так видно червоне) і за
+# deploy-alert (у нього свій алерт про деплой). Запуски з pull_request не
+# сповіщаємо.
+#
+# GitHub вимагає перелік назв у workflows: — додаєш новий воркфлоу, додай його
+# назву сюди. tests/workflow-failure-alert.test.mjs стереже, щоб жоден не випав.
+name: workflow-failure-alert
+on:
+  workflow_run:
+    types: [completed]
+    workflows:
+      - "Додати можливість у чернетки (manual)"
+      - "Dityam+ — чи вдалося на щось подати (daily)"
+      - "Dityam+ — чим закінчилось (daily)"
+      - "Audit bulk clubs (manual)"
+      - "Audit seed batch (manual)"
+      - "Auto-review черги модерації"
+      - "Backfill canonical URLs"
+      - "Дозаповнення дат (щотижня)"
+      - "Backfill geo fields (manual)"
+      - "Джерело замість допису — разовий прогін"
+      - "Backfill teen fields (manual)"
+      - "Backfill «хто може подати» (manual)"
+      - "blog-publish"
+      - "Telegram — set bot name (manual)"
+      - "Telegram — голосування в каналі (разово)"
+      - "Вид можливостей за часом (вручну)"
+      - "Telegram — contact form announcement (manual)"
+      - "Контент на тиждень"
+      - "Що людина виправляє за моделлю (тижневий звіт)"
+      - "Deadline check"
+      - "Dityam+ — deadline reminders (daily)"
+      - "Diag — емодзі в повідомленнях бота (manual)"
+      - "Діагностика конвеєра (вручну)"
+      - "Бізнес для школярів — програми компаній"
+      - "Рідкісне за кордоном — можливості й фонди"
+      - "Розвідник джерел (тема дня)"
+      - "Discover agent (keyword of the day)"
+      - "Feedback digest — weekly summary to admin"
+      - "Дозаповнення чернеток з тексту (вручну)"
+      - "Картка для Instagram в адмінчат"
+      - "Сказати Bing про нові сторінки (щодня)"
+      - "Dityam+ — наступна сходинка (daily)"
+      - "Планові перевірки"
+      - "Чернетки — показати (manual)"
+      - "Metrics snapshot"
+      - "«Модний код» — нагадування про «Обкладинку місяця»"
+      - "Moderation kickoff (Telegram)"
+      - "Moderation reminder (every 3 days)"
+      - "Ранкове зведення (що потребує рішення)"
+      - "Telegram — лист тим, хто застряг перед оплатою (manual)"
+      - "Олімпіада — запрошення до тесту"
+      - "Олімпіада — лист про старт"
+      - "Олімпіада — пароль пошти для сайту"
+      - "Картка — точкова правка (manual)"
+      - "Журнал оплат — перенести з WayForPay (разово)"
+      - "Dityam+ — personal alerts (daily)"
+      - "Plus announcement (Telegram)"
+      - "Dityam+ — launch to waitlist"
+      - "Dityam+ — вибачення за «оплату» 21.10 (разово)"
+      - "Dityam+ — weekly stats to admin"
+      - "Dityam+ — перший місяць 1 грн (разово)"
+      - "Пост у канал із файлу"
+      - "Telegram — press post (manual)"
+      - "Process moderation notes (hourly)"
+      - "Пропозиції можливостей від людей"
+      - "Опублікувати чернетку (manual)"
+      - "Безкоштовно чи платно — перевірка по живих сторінках (manual)"
+      - "Перевірка дат по живих сторінках (щотижня)"
+      - "Telegram — надіслати рілс в адмінку (manual)"
+      - "Увімкнути LLM-воркфлоу після ліміту API"
+      - "Чернетка — «Не підходить» (manual)"
+      - "Перерозмітка каталогу (вручну)"
+      - "Scrape opportunities (Python)"
+      - "Telegram — 1 вересня, пост про гуртки (manual)"
+      - "Bot commands menu (manual)"
+      - "Звіт по джерелах (без моделі)"
+      - "Telegram — weekly support post"
+      - "Telegram bot — post new opportunities"
+      - "Telegram bot — diagnostics"
+      - "Telegram — видалити пост у каналі (manual)"
+      - "Telegram bot — register webhook"
+      - "Translate to English"
+      - "Розбір карантину (щодня)"
+      - "Переклад записів українською (вручну)"
+      - "Зняти з сайту в чернетки (manual)"
+      - "Uptime check"
+      - "Verify links"
+      - "Топ-3 тижня"
+      - "Diag — WayForPay Regular API (manual)"
+      - "WayForPay — зупинити регулярні списання (manual)"
+permissions:
+  contents: read
+jobs:
+  alert:
+    if: >
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.event != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ключ дня
+        id: day
+        run: echo "date=$(date -u +%Y-%m-%d)" >> "$GITHUB_OUTPUT"
+      - name: Чи вже писали сьогодні
+        id: seen
+        uses: actions/cache/restore@v4
+        with:
+          path: .alert-sent
+          key: wf-failure-${{ github.event.workflow_run.workflow_id }}-${{ steps.day.outputs.date }}
+          lookup-only: true
+      - name: Сигнал в адмін-чат
+        if: steps.seen.outputs.cache-hit != 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
+          WF_NAME: ${{ github.event.workflow_run.name }}
+          WF_EVENT: ${{ github.event.workflow_run.event }}
+          WF_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_ADMIN_CHAT_ID" ] || exit 0
+          case "$WF_EVENT" in
+            schedule) EV="за розкладом" ;;
+            workflow_dispatch) EV="запуск вручну" ;;
+            *) EV="$WF_EVENT" ;;
+          esac
+          TEXT=$(printf '⚠️ Впав процес: %s · %s · %s\nСьогодні про цей процес більше не пишемо.' "$WF_NAME" "$EV" "$WF_URL")
+          curl -s -o /dev/null -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_ADMIN_CHAT_ID}" --data-urlencode "text=${TEXT}" \
+            --data-urlencode "disable_web_page_preview=true"
+          mkdir -p .alert-sent && date -u > .alert-sent/at
+          echo "alert sent"
+      - name: Запамʼятати, що написали
+        if: steps.seen.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .alert-sent
+          key: wf-failure-${{ github.event.workflow_run.workflow_id }}-${{ steps.day.outputs.date }}
