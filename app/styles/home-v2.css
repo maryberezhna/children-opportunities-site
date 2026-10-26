@@ -389,6 +389,38 @@ html[data-mode="teens"] .v2-hero h1 { --v2-halo: #141414; }
   gap: 12px;
 }
 
+/* Перемикач мови UA / EN (26.10.2026): той самий вигляд, що «Батькам / Підліткам»,
+   лише менший. На телефоні його місце — у меню. */
+.v2-lang {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--v2-line);
+  border-radius: 9999px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.v2-lang a,
+.v2-lang span {
+  padding: 6px 10px;
+  border-radius: 9999px;
+  line-height: 1;
+  text-decoration: none;
+  color: var(--v2-ink-2);
+}
+
+.v2-lang a:hover { color: var(--v2-ink); }
+
+.v2-lang [aria-current] {
+  background: var(--contrast-bg);
+  color: var(--surface-2);
+}
+
+@media (max-width: 720px) {
+  .v2-lang { display: none; }
+}
+
 /* Сегментований перемикач «Батькам / Підліткам» */
 .v2-mode {
   display: flex;

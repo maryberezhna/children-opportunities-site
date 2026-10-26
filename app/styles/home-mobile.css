@@ -41,6 +41,7 @@
   .v2-header--home .v2-logo-heart,
   .v2-header--home .v2-nav,
   .v2-header--home .v2-support-btn { display: none; }
+  .v2-header--home .v2-lang { display: none; }
 
   .v2-header--home .v2-logo-script { font-size: 23px; }
   .v2-header--home .v2-burger { display: inline-flex; }

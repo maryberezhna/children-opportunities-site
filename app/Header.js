@@ -9,9 +9,11 @@ import { OWN_PATH, OWN_LABEL } from '@/lib/own-opportunities';
 
 // Шапка редизайну (вересень 2026): лого рукописним Caveat, три пункти
 // навігації, перемикач «Батькам / Підліткам» на сторінках каталогу і одна
-// помаранчева CTA — з 14.09.2026 це Dityam+, а не «Підтримати». Пошук з шапки переїхав у фільтри каталогу,
-// перемикач мови — прибраний свідомо (EN-сторінки живуть за прямими URL і
-// в sitemap; банер LangSuggest лишається для неукраїнських браузерів).
+// помаранчева CTA — з 14.09.2026 це Dityam+, а не «Підтримати». Пошук з шапки переїхав у фільтри каталогу.
+// Перемикач мови UA / EN повернувся 26.10.2026 (Марія: «чому на сайті немає
+// кнопки англ укр, щоб я завжди могла подивитися на англійські»): веде на ту
+// саму сторінку іншою мовою (counterpart) і запамʼятовує вибір у cookie, тож
+// middleware більше не перекидає головну за браузером. На телефоні він у меню.
 
 const MONOBANK_URL = 'https://send.monobank.ua/jar/F72fDrV2c';
 const TELEGRAM_URL = 'https://t.me/dityam_com_ua';
@@ -165,6 +167,10 @@ export default function Header() {
       { href: '/about', label: 'Про проєкт', active: pathname.startsWith('/about') },
     ];
   const PLUS_HREF = isEnglish ? '/en/plus' : '/plus';
+  // Та сама сторінка іншою мовою; вибір запамʼятовуємо, щоб головна не
+  // перекидала назад за мовою браузера.
+  const LANG_HREF = counterpart(pathname, !isEnglish);
+  const pickLang = () => { rememberLang(isEnglish ? 'uk' : 'en'); track(isEnglish ? 'lang:uk' : 'lang:en')(); };
   const strip = isEnglish ? PLUS_STRIP.en : PLUS_STRIP.uk;
   const TOPICS_LABEL = isEnglish ? 'Collections' : 'Підбірки';
   // Заклик Марії (14.10.2026) замість голого «Telegram». У шапці компʼютера
@@ -274,6 +280,14 @@ export default function Header() {
               </button>
             </div>
           ) : null}
+          <div className="v2-lang" role="group" aria-label={isEnglish ? 'Language' : 'Мова'}>
+            {isEnglish
+              ? <Link href={LANG_HREF} hrefLang="uk" lang="uk" prefetch={false} onClick={pickLang}>UA</Link>
+              : <span aria-current="true">UA</span>}
+            {isEnglish
+              ? <span aria-current="true">EN</span>
+              : <Link href={LANG_HREF} hrefLang="en" lang="en" prefetch={false} onClick={pickLang}>EN</Link>}
+          </div>
           <Link
             href={CTA.href}
             className="v2-support-btn"
@@ -365,6 +379,15 @@ export default function Header() {
           >
             {TELEGRAM_LEAD}Telegram
           </a>
+          <Link
+            href={LANG_HREF}
+            hrefLang={isEnglish ? 'uk' : 'en'}
+            lang={isEnglish ? 'uk' : 'en'}
+            prefetch={false}
+            onClick={() => { pickLang(); setMenuOpen(false); }}
+          >
+            🌐 {isEnglish ? 'Українською' : 'English'}
+          </Link>
           <a
             href={MONOBANK_URL}
             target="_blank"
