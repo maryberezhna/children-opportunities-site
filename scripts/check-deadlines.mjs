@@ -24,6 +24,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLINES_WEEK, pollFor } from './channel-plan.mjs';
+import { chunkPost } from './post-chunks.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText, startsThisWeek } from './post-labels.mjs';
@@ -178,13 +179,13 @@ const repeatCutoff = new Date(Date.now() - REPEAT_DAYS * 86400000).toISOString()
 // Превʼю нічого не пише в базу, тож «уже показане» тримаємо в памʼяті —
 // інакше превʼю на 14 днів показувало б ті самі можливості щодня.
 const shownInPreview = new Set();
-// «⏰ Дедлайни цього тижня»: заявки з дедлайном від завтра до +7 днів, до 6
-// у пості. Правило «не повторювати 30 днів» тут не діє — за тиждень дедлайнів
-// менше, ніж місць у щоденних постах, і нагадати про них удруге корисно. Але
-// те, що вже було в каналі за останні 2 дні, пропускаємо, щоб пости сусідніх
-// ранків не збігались.
+// «⏰ Дедлайни цього тижня»: УСІ заявки з дедлайном від завтра до +7 днів
+// (Марія, 26.10.2026: «треба публікувати всі записи з потрібним дедлайном»;
+// до того брали до 6, а решту тихо відкидали). Не вміщаються в одне
+// повідомлення — пост іде кількома (scripts/post-chunks.mjs). Правило «не
+// повторювати 30 днів» тут не діє, але те, що вже було в каналі за останні
+// 2 дні, пропускаємо, щоб пости сусідніх ранків не збігались.
 const WEEK_DAYS = 7;
-const WEEK_MAX = 6;
 // «🚀 Стартує цього тижня» — у тому ж ранковому пості (Марія, 23.10.2026:
 // «це треба додати і пофіксити пост у телеграмі»). Заходи, що починаються від
 // завтра до +7 днів і не мають окремого дедлайну подачі: 23.10 таких було 18, а з
@@ -327,7 +328,7 @@ async function sendDeadlinesWeek(dateIso = kyivIso()) {
     // Спершу те, що закінчується раніше; того самого дня — безкоштовне вище.
     .sort((a, b) => a.daysLeft - b.daysLeft
       || (a.cost_type === 'free' ? 0 : 1) - (b.cost_type === 'free' ? 0 : 1));
-  const items = await pickChecked(week, WEEK_MAX, 'дедлайни тижня');
+  const items = await pickChecked(week, week.length, 'дедлайни тижня');
   const startCands = startsThisWeek(all, dateIso, {
     days: WEEK_DAYS, skip: new Set([...shownInPreview, ...items.map((r) => r.id)]), recentCutoff: weekGapCutoff,
   });
@@ -336,37 +337,20 @@ async function sendDeadlinesWeek(dateIso = kyivIso()) {
     console.log('Ні дедлайнів, ні стартів на найближчі 7 днів — ранковий пост не йде.');
     return [];
   }
-  // Шість записів із повними описами не влазять у 4096 знаків повідомлення
-  // Telegram, тож опис короткий; а якщо й так задовго — відкидаємо з кінця,
-  // спершу старти.
-  const build = (list, startList) => {
-    // Підзаголовка «Заявки, які треба подати за найближчі 7 днів» більше
-    // немає: у пості з рядків він лише відсував перший дедлайн униз.
-    const out = [];
-    if (list.length) {
-      out.push(`<b>${DEADLINES_WEEK.heading}</b>`, '');
-      list.forEach((r, i) => {
-        out.push(deadlineRow(r));
-        if (i < list.length - 1) out.push('');
-      });
-    }
-    if (startList.length) {
-      if (out.length) out.push('');
-      out.push(`<b>${DEADLINES_WEEK.startsHeading}</b>`, '');
-      startList.forEach((r, i) => {
-        out.push(deadlineRow(r, r.event_start_date));
-        if (i < startList.length - 1) out.push('');
-      });
-    }
-    out.push('', `👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines'));
-    return out;
-  };
-  const visible = (ls) => ls.join('\n').replace(/<[^>]+>/g, '').length;
-  while (starts.length > 0 && visible(build(items, starts)) > 3900) starts.pop();
-  while (items.length > 1 && visible(build(items, starts)) > 3900) items.pop();
-  const lines = build(items, starts);
-  const sent = await postToChannel(lines, `deadlines-week ${items.length}+${starts.length}`);
-  if (sent || PREVIEW) await markPosted([...items, ...starts]);
+  // Не вміщається в 4096 знаків — не відкидаємо, а продовжуємо наступним
+  // повідомленням із «(продовження)» в заголовку. Футер — в останньому.
+  const messages = chunkPost([
+    { heading: `<b>${DEADLINES_WEEK.heading}</b>`, contHeading: `<b>${DEADLINES_WEEK.heading} (продовження)</b>`,
+      rows: items.map((r) => deadlineRow(r)) },
+    { heading: `<b>${DEADLINES_WEEK.startsHeading}</b>`, contHeading: `<b>${DEADLINES_WEEK.startsHeading} (продовження)</b>`,
+      rows: starts.map((r) => deadlineRow(r, r.event_start_date)) },
+  ], [`👉 Усі дедлайни — <a href="${DEADLINES_WEEK.link}">на dityam.com.ua</a>`, '', plusLine('channel_deadlines')]);
+  let sentAll = true;
+  for (const [k, lines] of messages.entries()) {
+    const ok = await postToChannel(lines, `deadlines-week ${items.length}+${starts.length} (${k + 1}/${messages.length})`);
+    if (!ok) { sentAll = false; break; }
+  }
+  if (sentAll || PREVIEW) await markPosted([...items, ...starts]);
   return [...items, ...starts].map((r) => r.id);
 }
 
