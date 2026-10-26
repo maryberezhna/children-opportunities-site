@@ -95,6 +95,7 @@
   text-wrap: balance;
 }
 .tp-h1 .tp-script { margin-right: 0.15em; }
+.tp-h1 .tp-nowrap { white-space: nowrap; }
 .tp-intro {
   margin: 0;
   font-size: 17px;

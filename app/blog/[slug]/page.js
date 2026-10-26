@@ -126,6 +126,8 @@ export default async function BlogPost({ params }) {
     TOPIC_LIST.map((t) => ({ topic: t, count: live.filter(t.match).length })));
 
   const checkedLabel = longDate(post.checked);
+  const [, punct = '', rest = ''] = (post.heading.tail || '').match(/^([:;,.!?]*)([\s\S]*)$/) || [];
+  const headTail = { punct, rest };
   const { closed } = postState(post);
   const labels = {
     all: 'Усі', sort: 'за дедлайном, найближчі спочатку', details: 'Детальніше →',
@@ -196,7 +198,10 @@ export default async function BlogPost({ params }) {
           <div className="tp-hero-copy">
             <span className="tp-eyebrow">Стаття · звірено {checkedLabel}</span>
             <h1 id="tp-title" className="tp-h1">
-              {post.heading.lead} <span className="tp-script">{post.heading.script}</span>{post.heading.tail}
+              {post.heading.lead}{' '}
+              {/* Розділовий знак на початку tail («: етапи й вимоги») — разом зі script,
+                  інакше рядок починається з двокрапки (Марія, 26.10.2026: «не дуже по дизайну»). */}
+              <span className="tp-nowrap"><span className="tp-script">{post.heading.script}</span>{headTail.punct}</span>{headTail.rest}
             </h1>
             {/* Подача за правилами зі статті завершилась (deadline у lib/blog.js):
                 кажемо це першим рядком, щоб ніхто не збирав документи на закрите.
