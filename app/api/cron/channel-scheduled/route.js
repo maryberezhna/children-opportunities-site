@@ -9,6 +9,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { CHANNEL, SCHEDULE, dueItems } from '@/lib/channel-schedule';
 import { pollByKey } from '@/scripts/channel-polls';
+import { extractSlugs, linkProblems, formatProblems } from '@/scripts/post-links.mjs';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -74,6 +75,26 @@ async function send(item) {
   throw new Error(`невідомий kind: ${item.kind}`);
 }
 
+// Текст, який піде людям: вступ опитування (у превʼю — той самий вступ цілі).
+function textOf(item) {
+  const poll = item.kind === 'poll' ? item.poll : SCHEDULE.find((s) => s.key === item.of)?.poll;
+  try { return poll ? pollByKey(poll).intro || '' : ''; } catch { return ''; }
+}
+
+// Можливості, на які посилається текст, мусять бути актуальними й зараз
+// (Марія, 26.10.2026: «перевіряй завжди на актуальність можливості перед
+// публікацією»). Python із перевіркою сторінки тут недоступний, тож — хоча б
+// статус і дедлайн. Повертає список проблем.
+async function staleLinks(supabase, item) {
+  const slugs = extractSlugs(textOf(item));
+  if (!slugs.length) return [];
+  const { data, error } = await supabase.from('opportunities')
+    .select('slug, title, status, canonical_slug, deadline').in('slug', slugs);
+  if (error) throw new Error(`база не відповіла: ${error.message}`);
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv' }).format(new Date());
+  return linkProblems(slugs, data, today);
+}
+
 export async function GET(request) {
   if (CRON_SECRET && request.headers.get('authorization') !== `Bearer ${CRON_SECRET}`) {
     return new Response('unauthorized', { status: 401 });
@@ -89,6 +110,16 @@ export async function GET(request) {
     // Замок: вставка вдасться лише раз на key.
     const { error: lockErr } = await supabase.from('channel_scheduled_sent').insert({ key: item.key });
     if (lockErr) continue;                                   // уже надіслано (або надсилається)
+    // Неактуальна можливість у тексті: не шлемо і не пробуємо щодесять хвилин —
+    // замок лишається, сигнал в адмін-чат один раз.
+    let stale = [];
+    try { stale = await staleLinks(supabase, item); } catch (e) { stale = [{ slug: '—', why: e.message }]; }
+    if (stale.length) {
+      const msg = formatProblems(`запланований допис ${item.key}`, stale);
+      console.error('[channel-scheduled]', msg);
+      if (TOKEN && ADMIN_CHAT_ID) await tg('sendMessage', { chat_id: ADMIN_CHAT_ID, text: msg }).catch(() => {});
+      continue;
+    }
     try {
       const messageId = await send(item);
       await supabase.from('channel_scheduled_sent').update({ message_id: messageId }).eq('key', item.key);

@@ -46,6 +46,7 @@ from datetime import date, timedelta
 
 import plus_profile
 import send_window
+import verify_before_send
 from personal_digest import (
     SITE_URL,
     age_overlaps,
@@ -247,7 +248,7 @@ def main() -> int:
     opps = (client.table("opportunities")
             .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, "
                     "opportunity_type, format, cities, countries, is_international, "
-                    "child_needs, categories")
+                    "child_needs, categories, status, content_checked_at")
             .eq("status", "active")
             .is_("canonical_slug", "null")
             .gte("deadline", today.isoformat())
@@ -262,6 +263,24 @@ def main() -> int:
     opps = [o for o in opps if o["_window"] is not None]
     logger.info("Можливостей у вікнах нагадувань: %d (найширше вікно %d дн.)", len(opps), widest)
     if not opps:
+        return 0
+
+    # Свіжа перевірка сторінок перед нагадуванням (Марія, 26.10.2026: «перевіряй
+    # завжди на актуальність можливості перед публікацією»): лише записи, що
+    # комусь справді підуть, і один раз на запуск. Закрите чи перенесене — не
+    # нагадуємо нікому; не вдалося перевірити — сьогодні не шлемо взагалі.
+    wanted = {o["id"]: o for sub in subs
+              for o in family_matches(sub, plus_profile.children_of(sub, child_rows), opps)}
+    try:
+        # Демо — синтетичні профілі, перечитувати сторінки під них нема чого.
+        ok_ids = set(wanted) if args.demo else verify_before_send.verify_rows(
+            list(wanted.values()), logger=logger, dry_run=args.dry_run)[0]
+    except Exception as e:
+        logger.error("🔴 Перевірка перед нагадуваннями не вдалася — сьогодні не шлемо: %s", e)
+        return 1
+    opps = [o for o in opps if o["id"] in ok_ids]
+    if not opps:
+        logger.info("Після перевірки сторінок нагадувати нема про що.")
         return 0
 
     sent = 0

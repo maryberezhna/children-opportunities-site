@@ -72,6 +72,8 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          # Сюди — «готовий пост не пішов: можливість у тексті неактуальна».
+          TELEGRAM_ADMIN_CHAT_ID: ${{ secrets.TELEGRAM_ADMIN_CHAT_ID }}
           # Превʼю нічого не шле — там перевірка сторінок зайва (це 14 постів
           # наперед, тобто десятки звернень до моделі даремно).
           PUBLISH_CHECK: ${{ github.event.inputs.preview == 'true' && 'off' || 'on' }}

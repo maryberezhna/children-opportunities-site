@@ -27,6 +27,7 @@ import { planEntryFor, kyivIso, addDays, FALLBACK_TOPIC, SITUATION_TEXTS, DEADLI
 import { chunkPost } from './post-chunks.mjs';
 import { resolveTokens } from './telegram-counters.mjs';
 import { verifyBeforePost } from './verify-before-post.mjs';
+import { checkPostLinks, formatProblems } from './post-links.mjs';
 import { costLabel, deadlineTag, formatDeadlineDate, isUkrainianPost, placeText, startsThisWeek } from './post-labels.mjs';
 import { tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
 
@@ -55,6 +56,8 @@ const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+// Куди сказати, що готовий пост із файлу не пішов через неактуальну можливість.
+const TELEGRAM_ADMIN_CHAT_ID = process.env.TELEGRAM_ADMIN_CHAT_ID;
 const NOTIFY = process.env.NOTIFY === 'true' || process.argv.includes('--notify');
 const DRY_RUN = process.env.DRY_RUN === 'true' || process.argv.includes('--dry-run');
 // PREVIEW=true — зібрати пости й надрукувати, нічого не шлючи і не змінюючи
@@ -496,6 +499,18 @@ async function buildPlannedPost(entry, pool, eligible) {
         console.error(`Файл ${entry.file}: теги ${[...new Set(bad)].join(', ') || '—'}, ${length} символів.`);
         return null;
       }
+      // Готовий текст написали колись, а можливості в ньому могли за цей час
+      // закритись (Марія, 26.10.2026: «перевіряй завжди на актуальність перед
+      // публікацією»). Хоч одна неактуальна — файл не йде, день бере запасна тема.
+      const { problems } = await checkPostLinks(text, {
+        supabase, verify: verifyBeforePost, todayIso: kyivIso(), label: `файл ${entry.file}`,
+      });
+      if (problems.length) {
+        const msg = formatProblems(`готовий пост ${entry.file} (план каналу)`, problems);
+        console.error(msg);
+        if (!PREVIEW && !DRY_RUN) await notifyAdmin(msg);
+        return null;
+      }
       return { lines: [text], items: [], label: `file ${entry.file}` };
     } catch (e) {
       console.error(`Файл ${entry.file}: ${e.message}`);
@@ -540,6 +555,20 @@ async function pickChecked(candidates, need, label) {
     chosen.push(...items);
   }
   return chosen;
+}
+
+/** Сигнал в адмін-чат. Збій тут не валить запуск: пост і так не пішов. */
+async function notifyAdmin(text) {
+  if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_ADMIN_CHAT_ID) return;
+  try {
+    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: TELEGRAM_ADMIN_CHAT_ID, text, disable_web_page_preview: true }),
+    });
+  } catch (e) {
+    console.error(`Адмін-чат не відповів: ${e.message}`);
+  }
 }
 
 /** Відправка в канал. Один шлях для всіх форматів поста. true — пост пішов. */

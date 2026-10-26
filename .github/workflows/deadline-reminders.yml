@@ -41,6 +41,10 @@ on:
         description: 'true = слати негайно, не чекати вікна 9:00 Київ'
         required: false
         default: 'true'
+      publish_check:
+        description: 'off = не перечитувати сторінки перед нагадуванням (лише для сухого прогону)'
+        required: false
+        default: 'on'
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -48,7 +52,8 @@ env:
 jobs:
   remind:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Перед нагадуванням перечитуються сторінки можливостей (verify_before_send.py).
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: scraper
@@ -73,6 +78,9 @@ jobs:
           # Раніше за цю годину за Києвом нічого не шлемо — див. коментар
           # про розклад вище. 0 вимкнув би ворота повністю.
           SEND_AFTER_HOUR: '9'
+          # Свіжа перевірка сторінок перед нагадуванням — lifecycle.py --ids (модель).
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PUBLISH_CHECK: ${{ github.event.inputs.publish_check || 'on' }}
         run: |
           # Порожньо — вікна за типом програми (стипендії й обміни за 28/14/3
           # дні, конкурси за 14/3, гуртки за 7/2). До 14.09.2026 тут стояв

@@ -27,7 +27,10 @@
  */
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import { createClient } from '@supabase/supabase-js';
 import { resolveTokens, hasTokens } from './telegram-counters.mjs';
+import { checkPostLinks, formatProblems } from './post-links.mjs';
+import { verifyBeforePost } from './verify-before-post.mjs';
 import { tagSiteLinks, UTM_CHANNEL } from '../lib/utm.js';
 
 const FILE = process.env.FILE || process.argv[2];
@@ -127,6 +130,44 @@ console.log('');
 console.log('─'.repeat(60));
 console.log(plain.trim());
 console.log('─'.repeat(60));
+
+// Можливості в тексті — свіжим поглядом перед публікацією (Марія, 26.10.2026:
+// «перевіряй завжди на актуальність можливості перед публікацією»). Готовий
+// текст писали раніше, тож посилання /o/<slug> могли закритись чи змінити дату.
+// Канал — не шлемо й кажемо в адмін-чат; превʼю в адмінку — шлемо, але з
+// попередженням; сухий прогін — показуємо й завершуємось помилкою.
+let problems = [];
+try {
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { persistSession: false },
+  });
+  const kyiv = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv' }).format(new Date());
+  const res = await checkPostLinks(text, { supabase, verify: verifyBeforePost, todayIso: kyiv, label: FILE });
+  problems = res.problems;
+  console.log(res.slugs.length
+    ? `\nМожливостей у тексті: ${res.slugs.length}, неактуальних: ${problems.length}.`
+    : '\nПосилань на можливості в тексті немає.');
+} catch (e) {
+  console.error(`\nПеревірити можливості в тексті не вдалося: ${e.message}`);
+  process.exit(1);
+}
+const problemText = problems.length ? formatProblems(FILE, problems) : '';
+if (problems.length) console.error(`\n${problemText}`);
+async function tellAdmin(msg) {
+  const admin = process.env.TELEGRAM_ADMIN_CHAT_ID;
+  if (!TOKEN || !admin) return;
+  await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: admin, text: msg, disable_web_page_preview: true }),
+  }).catch(() => {});
+}
+if (problems.length && DRY) process.exit(1);
+if (problems.length && !TO_ADMIN) {
+  await tellAdmin(problemText);
+  process.exit(1);
+}
+if (problems.length && TO_ADMIN) await tellAdmin(problemText);
 
 if (DRY) {
   console.log('\nDRY_RUN — нічого не надіслано.');

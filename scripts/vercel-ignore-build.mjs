@@ -32,6 +32,7 @@ export const SITE_SCRIPTS = [
   'scripts/check-catalogue-queries.mjs', // prebuild у package.json
   'scripts/channel-plan.mjs',            // app/admin/today/page.js
   'scripts/channel-polls.js',            // app/api/cron/channel-scheduled — тексти опитувань
+  'scripts/post-links.mjs',              // app/api/cron/channel-scheduled — актуальність можливостей у тексті
   'scripts/vercel-ignore-build.mjs',     // сам цей файл: зміну правил перевіряє збірка
 ];
 

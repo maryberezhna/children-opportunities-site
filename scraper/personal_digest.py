@@ -43,6 +43,7 @@ import calendar_link
 import ladder
 import plus_profile
 import send_window
+import verify_before_send
 from utm import UTM_PLUS_BOT, tag_keyboard, tag_site_links
 from log_privacy import mask_chat
 
@@ -648,7 +649,7 @@ def main():
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
             "event_start_date, event_end_date, timing_kind, timing_assumed, "
             "opportunity_type, format, cities, countries, is_international, child_needs, "
-            "categories, telegram_posted_at"
+            "categories, telegram_posted_at, content_checked_at"
         ).eq("status", "active").is_("canonical_slug", "null") \
             .order("id").range(start, start + 999).execute().data or []
         opps.extend(page)
@@ -733,6 +734,7 @@ def main():
             logger.error("🔴 Наступна сходинка не завантажилась, добірки йдуть без неї: %s", e)
 
     sent = 0
+    plans = []
     for sub in subs:
         # Частота з анкети (digest_subscribers.digest_freq): «щодня», «раз на 2
         # дні» чи «раз на тиждень»; старе «instant» і порожнє — «щодня». Пропущені
@@ -789,6 +791,26 @@ def main():
             logger.info("sub %s — no new matching opportunities, skip", sub["id"])
             continue
 
+        plans.append((sub, items, steps, revival))
+
+    # Свіжа перевірка сторінок — один раз на запуск, для унікальних записів усіх
+    # добірок (Марія, 26.10.2026: «перевіряй завжди на актуальність можливості
+    # перед публікацією»). Що не пройшло — не йде нікому.
+    try:
+        rows = [o for _, its, sts, _ in plans for o in (*its, *sts)]
+        # Демо — синтетична родина, перечитувати сторінки під неї нема чого.
+        ok_ids = {o["id"] for o in rows} if args.demo else verify_before_send.verify_rows(
+            rows, logger=logger, dry_run=args.dry_run)[0]
+    except Exception as e:
+        logger.error("🔴 Перевірка перед розсилкою не вдалася — добірки сьогодні не шлемо: %s", e)
+        return 1
+
+    for sub, items, steps, revival in plans:
+        items = [o for o in items if o["id"] in ok_ids]
+        steps = [o for o in steps if o["id"] in ok_ids]
+        if not items and not steps:
+            logger.info("sub %s — після перевірки сторінок слати нічого", sub["id"])
+            continue
         if args.dry_run or args.demo:
             titles = " | ".join(i["title"][:48] for i in items)
             logger.info("[dry] sub=%s ch=%s → %d items: %s", sub["id"], sub["channel"], len(items), titles)
