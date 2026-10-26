@@ -225,12 +225,15 @@ test('сторінка статті показує «прийом заверше
   assert.match(read('lib/site-events.js'), /BLOG_OUTBOUND: 'blog_outbound'/);
 });
 
-test('план: агент спершу переперевіряє, діаспора про народження за кордоном — пріоритет 1', () => {
+test('план: агент спершу переперевіряє, теми лише з пошукових запитів', () => {
   const plan = JSON.parse(read('content/blog-plan.json'));
   assert.match(plan.about, /reviewBy/);
   assert.match(plan.about, /спершу/);
-  const it = plan.items.find((x) => x.id === 'narodzhennia-za-kordonom');
-  assert.ok(it);
-  assert.equal(it.priority, 1);
-  assert.equal(it.hub, 'ukrainskym-ditiam-za-kordonom');
+  // Марія, 26.10.2026: «ти маєш писати статті, спираючись тільки на пошукові запити».
+  assert.match(plan.about, /лише та, під яку\s+в Search Console вже є покази/);
+  for (const it of plan.items.filter((x) => x.status === 'todo')) {
+    assert.match(it.note || '', /SC \d{2}\.\d{2}–\d{2}\.\d{2}\.\d{4}/, `${it.id}: немає цифр Search Console в note`);
+  }
+  // Дві статті на один запит — злито (26.10.2026).
+  assert.equal(new Set(BLOG_POSTS.map((p) => p.title.split(':')[0].replace(/ за кордоном| 2026/g, ''))).size, BLOG_POSTS.length);
 });
