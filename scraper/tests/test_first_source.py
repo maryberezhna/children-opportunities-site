@@ -130,6 +130,40 @@ class RealPostLinks(unittest.TestCase):
         self.assertFalse(usable_destination("https://www.instagram.com/p/abc"))
 
 
+class GoogleFormAsSource(unittest.TestCase):
+    """Urban Detectives у @tviyspace (27.10.2026): у дописі лише Google-форма,
+    сайту організатора немає, а повний опис — у самій формі."""
+
+    FORM_HTML = (
+        '<script>var FB_PUBLIC_LOAD_DATA_ = [null,["Що насправді потрібно твоїй громаді?\\n'
+        + "Urban Detectives — програма для молоді. " * 12
+        + 'Дедлайн: 5 листопада включно",[],null,null,null,null,null,null,'
+        '"Реєстрація на Urban Detectives"],"/forms","Реєстрація на Urban Detectives"];</script>'
+    )
+
+    def test_form_is_fallback_only(self):
+        form = "https://forms.gle/XFEJa69Kzx3KNcFM7"
+        self.assertIsNone(pick(["http://telegraph.controller.bot/files/1", form]))
+        self.assertEqual(pick(["http://telegraph.controller.bot/files/1", form], allow_forms=True), form)
+        # Сайт організатора завжди кращий за форму.
+        self.assertEqual(pick([form, "https://org.example.ua/p"], allow_forms=True),
+                         "https://org.example.ua/p")
+        # Не-Google форми й далі не джерело: їх без JS не прочитати.
+        self.assertIsNone(pick(["https://www.jotform.com/123"], allow_forms=True))
+
+    def test_form_text_and_threshold(self):
+        from first_source import google_form_text, form_is_source, usable_destination
+        text = google_form_text(self.FORM_HTML)
+        self.assertTrue(text.startswith("Реєстрація на Urban Detectives"))
+        self.assertIn("Дедлайн: 5 листопада включно", text)
+        self.assertTrue(form_is_source(text))
+        self.assertFalse(form_is_source("Реєстрація\nІмʼя, пошта"))
+        self.assertEqual(google_form_text("<html>порожньо</html>"), "")
+        url = "https://docs.google.com/forms/d/e/1FAIpQ/viewform"
+        self.assertTrue(usable_destination(url, allow_form=True))
+        self.assertFalse(usable_destination(url))
+
+
 class Chain(unittest.TestCase):
     """Ланцюг переказів: канал → znayshov → childrenkinofest (24.09.2026)."""
 

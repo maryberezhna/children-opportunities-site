@@ -39,8 +39,8 @@ _SOCIAL_HOSTS = (
 # першим стоїть telegraph.controller.bot/files/… — це картинка допису, і вона
 # віддає 403. Раніше ми б пішли саме за нею.
 _TECH_HOSTS = ("telegraph.controller.bot", "controller.bot")
-# Форма подачі — НЕ джерело. Вона не описує можливість (Google Forms узагалі
-# віддає порожню сторінку без JS), а її місце — поле apply_url, яке
+# Форма подачі — НЕ джерело, якщо є сторінка організатора: її місце — поле
+# apply_url (виняток — Google-форма з повним описом, див. FORM_MIN_TEXT), яке
 # нормалізатор заповнює окремо. У дописах @tviyspace форма трапляється
 # частіше за сайт організатора, тож без цього правила ми б систематично
 # міняли живий допис на порожню форму.
@@ -197,6 +197,44 @@ def is_form(url: str) -> bool:
     return _is(url, ("docs.google.com",)) and any(p in path for p in _FORM_PATHS)
 
 
+# Google-форма з повним описом — теж першоджерело (Марія, 27.10.2026: «так,
+# обовʼязково»). Привід — Urban Detectives у @tviyspace: у дописі лише форма,
+# сайт організатора прострочений, а сама форма має все — організатора, дати,
+# для кого, дедлайн. Правило «форма віддає порожню сторінку без JS» для
+# Google Forms хибне: опис лежить у HTML (FB_PUBLIC_LOAD_DATA_). Форму беремо
+# лише за браком звичайної сторінки й лише тоді, коли опис змістовний.
+FORM_MIN_TEXT = 300
+
+
+def is_google_form(url: str) -> bool:
+    if _is(url, ("forms.gle",)):
+        return True
+    path = (urlparse(url).path or "").lower()
+    return _is(url, ("docs.google.com",)) and "/forms/" in path
+
+
+def google_form_text(page_html: str) -> str:
+    """Назва й опис Google-форми з HTML (без JS) або порожньо. Чиста функція."""
+    m = re.search(r"FB_PUBLIC_LOAD_DATA_\s*=\s*(.*?);\s*</script>", page_html or "", re.S)
+    if not m:
+        return ""
+    try:
+        import json
+        data = json.loads(m.group(1))
+        info = data[1]
+        title = (info[8] if len(info) > 8 and isinstance(info[8], str) else "") or (
+            data[3] if isinstance(data[3], str) else "")
+        desc = info[0] if isinstance(info[0], str) else ""
+    except Exception:                                        # noqa: BLE001
+        return ""
+    return "\n".join(x.strip() for x in (title, desc) if x and x.strip())
+
+
+def form_is_source(text: str) -> bool:
+    """Чи опису форми досить, щоб вона була джерелом, а не лише подачею."""
+    return len((text or "").strip()) >= FORM_MIN_TEXT
+
+
 def strip_tracking(url: str) -> str:
     """Чиста адреса: без HTML-екранування й без рекламних хвостів.
 
@@ -227,15 +265,24 @@ def external_links(links) -> list[str]:
     return out
 
 
-def pick(links, skip_hosts: tuple = ()) -> str | None:
+def pick(links, skip_hosts: tuple = (), allow_forms: bool = False) -> str | None:
     """Куди йти за першоджерелом: перша звичайна сторінка, інакше нікуди.
 
     `skip_hosts` — домени, які вже пройдено: інакше сторінка-переказ вела б
     сама на себе (на znayshov.com кожна стаття має десяток внутрішніх посилань).
+    `allow_forms` — за браком звичайної сторінки повернути Google-форму: її
+    опис перевіряє той, хто читає сторінку (form_is_source).
     """
     pages = [u for u in external_links(links)
              if not _is(u, _MEDIA_HOSTS) and not _is(u, tuple(skip_hosts)) and not _is_file(u)]
-    return pages[0] if pages else None
+    if pages:
+        return pages[0]
+    if allow_forms:
+        for raw in links or []:
+            url = strip_tracking((raw or "").strip())
+            if url.startswith(("http://", "https://")) and is_google_form(url):
+                return url
+    return None
 
 
 # Сторінка-переказ підписує, звідки взяла матеріал. Це і є ознака, що ми ще
@@ -271,12 +318,14 @@ def host_of(url: str) -> str:
     return _host(url)
 
 
-def usable_destination(final_url: str) -> bool:
+def usable_destination(final_url: str, allow_form: bool = False) -> bool:
     """Куди ми зрештою прийшли — перевірка ПІСЛЯ редиректів.
 
     Скорочувач (clipr.cc, bit.ly) веде куди завгодно: часом на сайт, часом на
     ту саму форму чи в інстаграм. Тому адресу з відповіді звіряємо ще раз.
     """
+    if allow_form and is_google_form(final_url):
+        return True
     return not (_is(final_url, _SOCIAL_HOSTS) or _is(final_url, _TECH_HOSTS)
                 or is_form(final_url))
 
