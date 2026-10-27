@@ -242,6 +242,14 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
         if first_source.is_google_form(str(r.url)):
             # Google-форма — джерело лише з повним описом (27.10.2026).
             text = first_source.google_form_text(r.text)
+            inner = "" if text else first_source.google_form_target(r.text)
+            if inner:
+                try:
+                    async with semaphore:
+                        r = await client.get(inner)
+                    text = first_source.google_form_text(r.text)
+                except Exception:                        # noqa: BLE001
+                    text = ""
             if not first_source.form_is_source(text):
                 logger.info("форма %s без змістовного опису — лишаю допис", url)
                 return None
