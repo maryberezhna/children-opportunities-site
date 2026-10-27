@@ -69,7 +69,16 @@ def read_page(client: httpx.Client, url: str):
     if first_source.is_google_form(str(r.url)):
         # Google-форма — джерело лише з повним описом (27.10.2026).
         text = first_source.google_form_text(r.text)
+        inner = "" if text else first_source.google_form_target(r.text)
+        if inner:
+            try:
+                r = client.get(inner)
+                text = first_source.google_form_text(r.text)
+            except Exception:                                # noqa: BLE001
+                text = ""
         if not first_source.form_is_source(text):
+            logger.info("      форма без змістовного опису (%d знаків; %s): %s",
+                        len(text), r.url, " ".join((r.text or "")[:200].split()))
             return None
         return first_source.strip_tracking(str(r.url)), text, []
     if not first_source.usable_destination(str(r.url)):

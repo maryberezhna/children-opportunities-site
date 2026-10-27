@@ -151,6 +151,14 @@ class GoogleFormAsSource(unittest.TestCase):
         # Не-Google форми й далі не джерело: їх без JS не прочитати.
         self.assertIsNone(pick(["https://www.jotform.com/123"], allow_forms=True))
 
+    def test_forms_gle_interstitial(self):
+        from first_source import google_form_target
+        page = ('<html><a href="https://docs.google.com/forms/d/e/1FAIpQLSdX_y-9/viewform?usp=send_form&amp;x=1">'
+                'Продовжити</a></html>')
+        self.assertEqual(google_form_target(page),
+                         "https://docs.google.com/forms/d/e/1FAIpQLSdX_y-9/viewform?usp=send_form&x=1")
+        self.assertEqual(google_form_target("<html></html>"), "")
+
     def test_form_text_and_threshold(self):
         from first_source import google_form_text, form_is_source, usable_destination
         text = google_form_text(self.FORM_HTML)

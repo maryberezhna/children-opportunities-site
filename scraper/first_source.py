@@ -230,6 +230,17 @@ def google_form_text(page_html: str) -> str:
     return "\n".join(x.strip() for x in (title, desc) if x and x.strip())
 
 
+def google_form_target(page_html: str) -> str:
+    """Адреса самої форми в проміжній сторінці forms.gle або порожньо.
+
+    З GitHub Actions forms.gle відповідає 200 зі сторінкою-переходом, а не
+    редиректом, як із Мака (27.10.2026) — тоді опису в ній немає, і форму
+    треба відкрити за адресою docs.google.com/forms зі сторінки."""
+    m = re.search(r"https://docs\.google\.com/forms/d/e/[A-Za-z0-9_-]+/viewform[^\"'<>\s]*",
+                  _html.unescape(page_html or ""))
+    return m.group(0) if m else ""
+
+
 def form_is_source(text: str) -> bool:
     """Чи опису форми досить, щоб вона була джерелом, а не лише подачею."""
     return len((text or "").strip()) >= FORM_MIN_TEXT
