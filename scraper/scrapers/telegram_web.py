@@ -239,6 +239,13 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
             except Exception as e:                           # noqa: BLE001
                 logger.info("не пішли за посиланням %s: %s", url, e)
                 return None
+        if first_source.is_google_form(str(r.url)):
+            # Google-форма — джерело лише з повним описом (27.10.2026).
+            text = first_source.google_form_text(r.text)
+            if not first_source.form_is_source(text):
+                logger.info("форма %s без змістовного опису — лишаю допис", url)
+                return None
+            return first_source.strip_tracking(str(r.url)), text, []
         if not first_source.usable_destination(str(r.url)):
             logger.info("редирект привів не туди (%s)", r.url)
             return None
@@ -265,7 +272,7 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
                              item.get("source_url"))
 
     async def _follow_one(item: dict):
-        target = first_source.pick(item.pop("_links", None))
+        target = first_source.pick(item.pop("_links", None), allow_forms=True)
         if not target:
             return
         # Ланцюг переказів: канал → znayshov («Джерело: НУШ») →

@@ -66,6 +66,12 @@ def read_page(client: httpx.Client, url: str):
     except Exception as e:                                   # noqa: BLE001
         logger.info("      не відкрилось: %s", type(e).__name__)
         return None
+    if first_source.is_google_form(str(r.url)):
+        # Google-форма — джерело лише з повним описом (27.10.2026).
+        text = first_source.google_form_text(r.text)
+        if not first_source.form_is_source(text):
+            return None
+        return first_source.strip_tracking(str(r.url)), text, []
     if not first_source.usable_destination(str(r.url)):
         logger.info("      редирект привів не туди: %s", r.url)
         return None
@@ -87,7 +93,7 @@ def resolve(client: httpx.Client, post_url: str) -> str | None:
     except Exception as e:                                   # noqa: BLE001
         logger.info("      допис не читається: %s", type(e).__name__)
         return None
-    target = first_source.pick(post_links(r.text))
+    target = first_source.pick(post_links(r.text), allow_forms=True)
     if not target:
         return None
     visited: tuple = ()
