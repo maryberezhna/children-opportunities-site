@@ -3,9 +3,12 @@
 // (utm_source або домен сайту, з якого прийшли). Для воронки в адмінці.
 import { useEffect } from 'react';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
+import { analyticsAllowed } from '@/lib/consent';
 
 export default function MkTrack() {
   useEffect(() => {
+    // ЄС без згоди: не рахуємо й не пишемо позначку в сховище.
+    if (!analyticsAllowed()) return;
     try {
       if (window.sessionStorage.getItem('mk_view')) return;
       window.sessionStorage.setItem('mk_view', '1');

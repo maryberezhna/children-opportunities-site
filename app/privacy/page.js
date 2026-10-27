@@ -41,8 +41,8 @@ export default function PrivacyPage() {
         <h2>2. Які дані ми збираємо і навіщо</h2>
         <ul>
           <li>
-            <strong>Відвідування сайту.</strong> Google Analytics, Hotjar{AMPLITUDE_ON ? ', Amplitude' : ''} і теги
-            Google Ads отримують дані про пристрій, браузер, мову, переглянуті сторінки
+            <strong>Відвідування сайту.</strong> Google Analytics{AMPLITUDE_ON ? ', Hotjar і Amplitude' : ' і Hotjar'}
+            отримують дані про пристрій, браузер, мову, переглянуті сторінки
             й дії на них. Це потрібно, щоб розуміти, чим користуються люди, і
             вимірювати рекламу.
           </li>
@@ -125,7 +125,7 @@ export default function PrivacyPage() {
             (<a href="https://wayforpay.com/uk/oferta-page" target="_blank" rel="noopener noreferrer">умови</a>).
           </li>
           <li>
-            <strong>Google</strong> — Analytics, Google Ads і Gmail, через який ми
+            <strong>Google</strong> — Analytics і Gmail, через який ми
             надсилаємо листи
             (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">політика</a>).
           </li>
@@ -198,6 +198,13 @@ export default function PrivacyPage() {
         <p>
           Сховище браузера (localStorage) памʼятає налаштування доступності, режим
           перегляду «Батькам / Підліткам» і те, чи ви вже закрили вікно підписки чи вибору мови.
+        </p>
+        <p>
+          Сховище сесії (sessionStorage) позначає, що за цей візит ми вже порахували відвідування
+          сайту чи сторінки олімпіади, «Модного коду» або «Наших можливостей», — для власного
+          лічильника відвідувань без даних про вас. Позначка зникає, щойно ви закриєте вкладку.
+          Для відвідувачів з ЄС, ЄЕЗ, Великої Британії й Швейцарії цей лічильник, як і решта
+          аналітики, працює лише після «Прийняти».
         </p>
 
         <h2>6. Скільки зберігаємо</h2>

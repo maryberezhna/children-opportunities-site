@@ -52,8 +52,8 @@ export default function PrivacyPageEn() {
           <h2>2. What data we collect and why</h2>
           <ul>
             <li>
-              <strong>Visiting the site.</strong> Google Analytics, Hotjar{AMPLITUDE_ON ? ', Amplitude' : ''} and Google
-              Ads tags receive data about your device, browser, language, the pages
+              <strong>Visiting the site.</strong> Google Analytics{AMPLITUDE_ON ? ', Hotjar and Amplitude' : ' and Hotjar'}
+              receive data about your device, browser, language, the pages
               you view and your actions on them — so we understand what people use
               and can measure advertising.
             </li>
@@ -132,7 +132,7 @@ export default function PrivacyPageEn() {
               (<a href="https://wayforpay.com/en/oferta-page" target="_blank" rel="noopener noreferrer">terms</a>).
             </li>
             <li>
-              <strong>Google</strong> — Analytics, Google Ads, and Gmail, which we use
+              <strong>Google</strong> — Analytics and Gmail, which we use
               to send emails
               (<a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">policy</a>).
             </li>
@@ -207,6 +207,13 @@ export default function PrivacyPageEn() {
             Browser storage (localStorage) remembers accessibility settings, the
             “Parents / Teens” view and whether you have closed the subscription or
             language window.
+          </p>
+          <p>
+            Session storage (sessionStorage) marks that during this visit we have already
+            counted your visit to the site or to one of our own project pages (the logic olympiad,
+            the “Modnyi Kod” fashion olympiad, “Our opportunities”) — for our own visit counter, with no data about you. The mark disappears as
+            soon as you close the tab. For visitors from the EU, EEA, the UK and Switzerland
+            this counter, like the rest of analytics, works only after “Accept”.
           </p>
 
           <h2>6. How long we keep data</h2>
