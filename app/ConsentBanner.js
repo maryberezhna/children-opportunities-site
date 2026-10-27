@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { isEnglishPath } from '@/lib/lang';
+import useOverlaySlot from './useOverlaySlot';
 import {
   shouldAskConsent, consentFromCookie, regionFromCookie, REGION_EU,
   CONSENT_COOKIE, CONSENT_MAX_AGE, CONSENT_GRANTED, CONSENT_DENIED, ANALYTICS_COOKIE_PREFIXES,
@@ -12,9 +13,10 @@ import {
  * Згода на cookie аналітики для ЄС/ЄЕЗ, Британії й Швейцарії (Марія,
  * 27.10.2026: «кукіс додай, бо це вже Євросоюз»). Правила — lib/consent.js.
  *
- * Показується сам, якщо регіон eu і вибору ще немає, — але не поверх вікна
- * вибору мови: спершу мова, потім банер уже обраною мовою. Кнопка «Налаштування
- * cookie» у футері відкриває його знову (подія dityam:cookie-settings).
+ * Показується сам, якщо регіон eu і вибору ще немає, — у своїй черзі
+ * (lib/overlay-queue.js): після вибору мови, тож уже обраною мовою. Кнопка
+ * «Налаштування cookie» у футері відкриває його знову без черги (подія
+ * dityam:cookie-settings).
  * «Прийняти» й «Відхилити» — однакові кнопки: відмова не має бути важчою.
  */
 export const OPEN_EVENT = 'dityam:cookie-settings';
@@ -58,25 +60,21 @@ function dropAnalyticsCookies() {
 export default function ConsentBanner() {
   const pathname = usePathname() || '/';
   const [open, setOpen] = useState(false);
-  const [langOpen, setLangOpen] = useState(false);
+  // Відкрила сама людина з футера — без черги.
+  const [forced, setForced] = useState(false);
+  const granted = useOverlaySlot('consent', open, { force: forced });
   const lang = isEnglishPath(pathname) ? 'en' : 'uk';
   const t = COPY[lang];
 
   useEffect(() => {
     if (pathname.startsWith('/admin')) return undefined;
     try { if (shouldAskConsent(document.cookie)) setOpen(true); } catch { /* noop */ }
-    // Вікно вибору мови відкрите — чекаємо, поки людина обере.
-    const root = document.documentElement;
-    const sync = () => setLangOpen(root.hasAttribute('data-lang-suggest'));
-    sync();
-    const mo = new MutationObserver(sync);
-    mo.observe(root, { attributes: true, attributeFilter: ['data-lang-suggest'] });
-    const reopen = () => setOpen(true);
+    const reopen = () => { setForced(true); setOpen(true); };
     window.addEventListener(OPEN_EVENT, reopen);
-    return () => { mo.disconnect(); window.removeEventListener(OPEN_EVENT, reopen); };
+    return () => window.removeEventListener(OPEN_EVENT, reopen);
   }, [pathname]);
 
-  if (!open || langOpen) return null;
+  if (!open || !granted) return null;
 
   const accept = () => {
     setConsent(CONSENT_GRANTED);
@@ -85,6 +83,7 @@ export default function ConsentBanner() {
     window.__dityamLoadHotjar?.();
     window.__dityamLoadAmplitude?.();
     setOpen(false);
+    setForced(false);
   };
 
   const reject = () => {
@@ -95,6 +94,7 @@ export default function ConsentBanner() {
     // вони не зупиняться.
     if (was === CONSENT_GRANTED) { window.location.reload(); return; }
     setOpen(false);
+    setForced(false);
   };
 
   return (

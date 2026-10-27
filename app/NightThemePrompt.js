@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { NIGHT_ASKED_KEY, shouldAskAboutNight } from '@/lib/night-prompt';
 import { THEME_KEY } from '@/lib/theme';
+import useOverlaySlot from './useOverlaySlot';
 
 /**
  * «Зараз нічна тема — лишити чи перейти на світлу?»
@@ -19,6 +20,8 @@ import { THEME_KEY } from '@/lib/theme';
  * назавжди.
  *
  * Не показуємо в адмінці: там своя тема й свої задачі.
+ *
+ * Чекає своєї черги (lib/overlay-queue.js): після вибору мови й банера cookie.
  */
 const L = {
   uk: {
@@ -38,6 +41,7 @@ const L = {
 export default function NightThemePrompt() {
   const pathname = usePathname() || '/';
   const [show, setShow] = useState(false);
+  const granted = useOverlaySlot('night', show);
   const t = pathname.startsWith('/en') ? L.en : L.uk;
 
   useEffect(() => {
@@ -61,7 +65,7 @@ export default function NightThemePrompt() {
     setShow(false);
   };
 
-  if (!show) return null;
+  if (!show || !granted) return null;
 
   return (
     <div className="night-ask" role="status">
