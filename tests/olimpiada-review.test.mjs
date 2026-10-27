@@ -59,7 +59,7 @@ test('підказки не йдуть у тест: їх читають лише
 
 test('лист без розбору — він лише на сторінці результату (11.10.2026)', () => {
   // Марія: «розбір має бути видно тільки на сторінці результатів»; у листі —
-  // «Відкрити диплом», друкований диплом і Dityam+ за 1 грн.
+  // «Відкрити диплом» і Dityam+ (друкований диплом прибрано 27.10.2026).
   const py = read('scraper/olimpiada_invites.py');
   const entry = {
     token: '9cabd081887339b3edeadead8ffb15e2', child_name: 'Оля', score: 22, max_score: 25,
@@ -71,7 +71,7 @@ test('лист без розбору — він лише на сторінці �
     assert.ok(!part.includes(HINTS.v19));
   }
   assert.match(html, /Відкрити диплом/);
-  assert.match(text, /Бажаєте друкований диплом\?/);
+  assert.doesNotMatch(text, /друкований диплом/);
   // Поки Dityam+ безкоштовний (PLUS_FREE), у кнопці слово, а не ціна.
   assert.match(html, PLUS_FREE ? /Підключити Dityam\+ безкоштовно/ : /Спробувати Dityam\+ за 1 грн/);
   assert.doesNotMatch(py, /missed_questions|Розбір: над чим/);

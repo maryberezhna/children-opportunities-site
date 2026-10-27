@@ -44,7 +44,6 @@ KYIV = ZoneInfo("Europe/Kyiv")
 QUESTIONS = 25
 MINUTES = 35
 ACCESS_HOURS = 72
-PRINT_PRICE = 199
 # Dityam+ після олімпіади — перший місяць за 1 грн (Марія, 08.10.2026: «показуй
 # і тут, і в імейлі»; замість подарункового місяця). Ціни — як у lib/wayforpay.js.
 PLUS_FIRST = 1
@@ -119,8 +118,7 @@ def build_message(entry: dict):
         "хто отримає приз місяця;",
         "коли час на завдання з варіантами вийде, відповіді на них відправляться самі, "
         "а відкрите завдання можна дописати без поспіху;",
-        "диплом зʼявиться на тій самій сторінці одразу після тесту; за бажанням можна замовити друкований — "
-        f"{PRINT_PRICE} грн, доставка у відділення або поштомат Нової пошти включена;",
+        "диплом зʼявиться на тій самій сторінці одразу після тесту — його можна завантажити й надрукувати самостійно;",
         f"переможців місяця оголосимо до 7-го числа наступного місяця; якщо {name} виграє, повідомимо вас "
         "окремим листом на цю адресу.",
     ]
@@ -165,40 +163,21 @@ def build_diploma_message(entry: dict):
     competes = bool(str(entry.get("open_answer") or "").strip())
     winner = (f"Переможців оголосимо до 7-го числа наступного місяця; якщо {name} виграє, "
               "повідомимо вас окремим листом на цю адресу.")
-    # Друкований диплом уже оплачено — пропонувати вдруге нема чого.
-    offer_post = not entry.get("print_paid_at")
-    # Оплачено разом з участю (249 грн), а адреси ще немає — просимо вказати.
-    need_address = bool(entry.get("print_paid_at")) and not entry.get("print_order")
-    post_link = f"{link}#dostavka"
-    post_offer = (f"Надрукуємо диплом і надішлемо у відділення або поштомат Нової пошти по Україні — "
-                  f"{PRINT_PRICE} грн, доставка включена.")
-    address_ask = ("Друкований диплом ви оплатили разом з участю. Вкажіть, куди його надіслати: "
-                   "отримувач, телефон, місто й відділення чи поштомат Нової пошти.")
     # Розбір у лист не кладемо (Марія, 11.10.2026): він лише на сторінці результату.
     subject = f"Диплом онлайн-олімпіади з логіки — {name}"
     text = "\n".join([
         "Добрий день!",
         "",
         f"{name} пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат {score} з {maximum} балів.",
-        # Без вкладення (Марія, 11.10.2026): лише посилання — на сторінці диплома
-        # стоїть і пропозиція друкованого диплома.
+        # Без вкладення (Марія, 11.10.2026): лише посилання на сторінку диплома.
         f"Диплом чекає на сторінці з результатом — там його можна переглянути й завантажити: {link}",
         *([
             "",
             f"Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {winner}",
         ] if competes else []),
-        *([
-            "",
-            "Бажаєте друкований диплом?",
-            f"{post_offer} Замовити: {post_link}",
-        ] if offer_post else []),
-        *([
-            "",
-            f"{address_ask} {post_link}",
-        ] if need_address else []),
         "",
         "Що далі після олімпіади?",
-        f"{PLUS_TEXT} Спробувати за {PLUS_FIRST} грн: {PLUS_LINK}",
+        f"{PLUS_TEXT} {'Підключити безкоштовно' if PLUS_FREE else f'Спробувати за {PLUS_FIRST} грн'}: {PLUS_LINK}",
         "",
         "Марія Шутяк, Dityam.com.ua",
         FROM,
@@ -206,19 +185,6 @@ def build_diploma_message(entry: dict):
     esc = html.escape
     prize_html = (f"<p>Відкрите завдання отримали — воно бере участь у конкурсі на приз місяця. {esc(winner)}</p>\n"
                   if competes else "")
-    post_html = (
-        f"<p><b>Бажаєте друкований диплом?</b><br>{esc(post_offer)}</p>\n"
-        f'<p><a href="{esc(post_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
-        f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
-        f"Замовити друкований диплом · {PRINT_PRICE} грн</a></p>\n"
-    ) if offer_post else ""
-    if need_address:
-        post_html = (
-            f"<p><b>Куди надіслати друкований диплом?</b><br>{esc(address_ask)}</p>\n"
-            f'<p><a href="{esc(post_link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
-            f'background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">'
-            f"Вказати адресу доставки</a></p>\n"
-        )
     plus_html = (
         f"<p><b>Що далі після олімпіади?</b><br>{esc(PLUS_TEXT)}</p>\n"
         f'<p><a href="{esc(PLUS_LINK)}" style="display:inline-block;padding:14px 28px;border-radius:999px;'
@@ -230,7 +196,7 @@ def build_diploma_message(entry: dict):
 <p><b>{esc(name)}</b> пройшов або пройшла онлайн-олімпіаду з логіки Dityam.com.ua: результат <b>{esc(str(score))} з {esc(str(maximum))}</b> балів.</p>
 <p>Диплом чекає на сторінці з результатом — там його можна переглянути й завантажити.</p>
 <p><a href="{esc(link)}" style="display:inline-block;padding:14px 28px;border-radius:999px;background:#f5a023;color:#16307a;font-weight:bold;text-decoration:none">Відкрити диплом</a></p>
-{prize_html}{post_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
+{prize_html}{plus_html}<p>Марія Шутяк, Dityam.com.ua<br><a href="mailto:{esc(FROM)}">{esc(FROM)}</a></p>
 </div>"""
     return subject, text, body
 
@@ -283,25 +249,17 @@ FEEDBACK_QUESTIONS = [
 ]
 # Марія, 12.10.2026: «обіцяємо, ми дослухаємось» + обрала «буду дуже вдячна за відповідь».
 FEEDBACK_PROMISE = "Буду дуже вдячна за відповідь. Обіцяємо: ми дослухаємося."
-# Марія, 14.10.2026: «тут можна додати також: не забудьте, що ви можете
-# замовити доставку диплома або пройти нашу нову можливість — олімпіаду з
-# моди». Хто вже оплатив доставку — лише про олімпіаду з моди.
+# Марія, 14.10.2026: «не забудьте, що ви можете … пройти нашу нову
+# можливість — олімпіаду з моди». Доставку диплома прибрано 27.10.2026.
 FEEDBACK_UTM = {"source": "email", "medium": "email", "campaign": "olimpiada_feedback"}
-FEEDBACK_REMIND_PRINT = ("Не забудьте, що ви можете {print} або пройти нашу нову можливість — {mk}.")
 FEEDBACK_REMIND_MK = "Не забудьте, що ви можете пройти нашу нову можливість — {mk}."
 
 
 def feedback_reminder(entry: dict) -> tuple[str, str]:
-    """(текст, html) рядка-нагадування: доставка диплома й «Модний код»."""
+    """(текст, html) рядка-нагадування про «Модний код»."""
     esc = html.escape
     mk_url = with_utm(f"{SITE}/modnyi-kod", FEEDBACK_UTM)
     mk_text, mk_html = "олімпіаду з моди", f'<a href="{esc(mk_url)}">олімпіаду з моди</a>'
-    token = entry.get("token")
-    if token and not entry.get("print_paid_at"):
-        pr_url = with_utm(f"{SITE}/olimpiada/test?t={token}#dostavka", FEEDBACK_UTM)
-        text = FEEDBACK_REMIND_PRINT.format(print="замовити доставку диплома", mk=mk_text) + f"\nДоставка: {pr_url}\nОлімпіада з моди: {mk_url}"
-        body = FEEDBACK_REMIND_PRINT.format(print=f'<a href="{esc(pr_url)}">замовити доставку диплома</a>', mk=mk_html)
-        return text, body
     return FEEDBACK_REMIND_MK.format(mk=mk_text) + f"\nОлімпіада з моди: {mk_url}", FEEDBACK_REMIND_MK.format(mk=mk_html)
 
 

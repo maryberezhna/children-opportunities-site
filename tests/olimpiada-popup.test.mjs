@@ -117,20 +117,17 @@ test('критерії журі описані, а в тесті немає пр
   assert.ok(!OPEN_TASK.text.includes('Напиши питання'));
 });
 
-test('диплом: заглушка, екранна версія 75%, доставка одразу під дипломом', () => {
+test('диплом: заглушка, екранна версія 75%', () => {
   const page = read('app/olimpiada/test/page.js');
   assert.match(page, /<DiplomaImage src=\{`\$\{diploma\}&s=screen`\}/);
-  assert.ok(page.indexOf('id="dostavka"') < page.indexOf('<ShareDiploma'), 'доставка вище за «Поділитися»');
-  assert.ok(page.indexOf('id="dostavka"') < page.indexOf('{OPEN_TASK.title}'), 'доставка вище за відкрите завдання');
   assert.match(read('app/olimpiada/test/DiplomaImage.js'), /Малюємо диплом…/);
   assert.match(read('app/api/olimpiada/diploma/route.js'), /searchParams\.get\('s'\) === 'screen' && !searchParams\.get\('dl'\) \? 0\.75 : 1/);
 });
 
-test('участь безкоштовна: 1 кнопка, без рахунку; друкований диплом — 199 грн після тесту', async () => {
+test('участь безкоштовна: 1 кнопка, без рахунку', async () => {
   const { OLIMP, isBundle } = await import('../lib/olimpiada.js');
   const { olimpStats } = await import('../lib/olimpiada-stats.js');
   assert.equal(OLIMP.price, 0);
-  assert.equal(OLIMP.printPrice, 199);
   // Старі заявки «з дипломом» за 249 грн лишаються впізнаваними.
   assert.equal(isBundle({ amount: 249 }), true);
   assert.equal(isBundle({ amount: 0 }), false);
@@ -185,9 +182,10 @@ test('блок олімпіади — у потрібних підбірках �
   assert.doesNotMatch(promo, /Dityam\+ —/);
 });
 
-test('адмін може пройти справжню оплату друку: ?pay=1', () => {
-  assert.match(read('app/olimpiada/test/PrintOrder.js'), /realPay: new URLSearchParams\(window\.location\.search\)\.has\('pay'\)/);
-  assert.match(read('app/api/olimpiada/print/route.js'), /if \(\(admin && b\.realPay !== true\) \|\| devFree\)/);
+test('друкованого диплома немає: маршрут друку відповідає 410 (27.10.2026)', () => {
+  assert.match(read('app/api/olimpiada/print/route.js'), /print_disabled.*410/s);
+  assert.doesNotMatch(read('app/olimpiada/test/page.js'), /PrintOrder|#dostavka|printPrice/);
+  assert.doesNotMatch(read('app/olimpiada/page.js'), /printPrice|Нової пошти/);
 });
 
 test('замість подарункового місяця — Dityam+ за 1 грн після тесту (08.10.2026)', () => {
