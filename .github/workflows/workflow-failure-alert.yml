@@ -63,6 +63,7 @@ on:
       - "Картка — точкова правка (manual)"
       - "Журнал оплат — перенести з WayForPay (разово)"
       - "Dityam+ — personal alerts (daily)"
+      - "Відповідь людині в @DityamPlusBot (manual)"
       - "Plus announcement (Telegram)"
       - "Dityam+ — launch to waitlist"
       - "Dityam+ — вибачення за «оплату» 21.10 (разово)"
