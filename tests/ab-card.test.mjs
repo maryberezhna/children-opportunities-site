@@ -176,7 +176,7 @@ test('middleware ставить cookie через abCardForRequest, а поді�
   const mw = read('middleware.js');
   assert.ok(mw.includes('abCardForRequest('), 'middleware не розподіляє варіант');
   assert.ok(mw.includes('res.cookies.set(AB_CARD_COOKIE'), 'middleware не ставить cookie ab_card');
-  assert.ok(/isBot: BOTS\.test/.test(mw), 'боти мають лишатись без cookie');
+  assert.ok(/isBot(: |\s*=\s*)BOTS\.test/.test(mw), 'боти мають лишатись без cookie');
   const track = read('lib/track.js');
   for (const ev of ["'event', name, withAbCard(", "'card_click', withAbCard(", "'filter_apply', withAbCard(", "'search', withAbCard("]) {
     assert.ok(track.includes(ev), `у lib/track.js подія без ab_card: ${ev}`);

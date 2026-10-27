@@ -6,6 +6,7 @@ import { ADS_ID, cardSlugFromHref, trackCardClick } from '@/lib/track';
 import { NO_ANALYTICS_KEY, PRODUCTION_HOST, AUTOMATION_UA, isInternalPath } from '@/lib/analytics-scope';
 import { markVisit, markAiVisit, sendSiteEvent, isPlusPath, SITE_EVENTS } from '@/lib/site-events';
 import { AMPLITUDE_KEY, AMPLITUDE_EU, AMPLITUDE_SDK_VERSION } from '@/lib/amplitude';
+import { CONSENT_DEFAULT_SNIPPET } from '@/lib/consent';
 
 const GA_ID = 'G-KPLE8LGH91';
 const HOTJAR_ID = 6704189;
@@ -155,11 +156,15 @@ export function Analytics() {
             // в сорока місцях, де викликають gtag. Amplitude вантажиться пізно
             // (lazyOnload), тож до того події чекають у черзі. «conversion» —
             // службовий виклик Google Ads, не подія.
-            if (arguments[0] === 'event' && arguments[1] !== 'conversion' && !window.__dityamNoAnalytics) {
+            if (arguments[0] === 'event' && arguments[1] !== 'conversion' && !window.__dityamNoAnalytics && !window.__dityamConsentPending) {
               (window.__dityamAmpQ = window.__dityamAmpQ || []).push([arguments[1], arguments[2] || {}]);
               if (window.__dityamAmpFlush) window.__dityamAmpFlush();
             }` : ''}
           }
+          // Згода на cookie для ЄС/Британії/Швейцарії (lib/consent.js): Consent
+          // Mode v2 «denied» — обовʼязково до config, інакше перший page_view
+          // уже поставить cookie. Для решти світу рядок нічого не робить.
+          ${CONSENT_DEFAULT_SNIPPET}
           gtag('js', new Date());
           // A/B-тест картки (lib/ab-card.js): варіант — user property, до
           // config, щоб його ніс уже перший page_view. Без cookie — A.
@@ -174,7 +179,10 @@ export function Analytics() {
       {HOTJAR_ID ? (
         <Script id="hotjar" strategy="lazyOnload">
           {`
-            if (!window.__dityamNoAnalytics) {
+            // До згоди (ЄС) не вантажимо: банер викличе __dityamLoadHotjar сам.
+            window.__dityamLoadHotjar = function () {
+              if (window.__dityamNoAnalytics || window.__dityamHotjarOn) return;
+              window.__dityamHotjarOn = true;
               (function(h,o,t,j,a,r){
                 h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
                 h._hjSettings={hjid:${HOTJAR_ID},hjsv:6};
@@ -183,7 +191,8 @@ export function Analytics() {
                 r.src=t+h._hjSettings.hjid+j+h._hjSettings.hjsv;
                 a.appendChild(r);
               })(window,document,'https://static.hotjar.com/c/hotjar-',  '.js?sv=');
-            }
+            };
+            if (!window.__dityamConsentPending) window.__dityamLoadHotjar();
           `}
         </Script>
       ) : null}
@@ -193,7 +202,10 @@ export function Analytics() {
       {AMPLITUDE_KEY ? (
         <Script id="amplitude" strategy="lazyOnload">
           {`
-            if (!window.__dityamNoAnalytics) {
+            // До згоди (ЄС) не вантажимо: банер викличе __dityamLoadAmplitude сам.
+            window.__dityamLoadAmplitude = function () {
+              if (window.__dityamNoAnalytics || window.__dityamAmpOn) return;
+              window.__dityamAmpOn = true;
               (function () {
                 var s = document.createElement('script');
                 s.async = true;
@@ -232,7 +244,8 @@ export function Analytics() {
                 };
                 document.head.appendChild(s);
               })();
-            }
+            };
+            if (!window.__dityamConsentPending) window.__dityamLoadAmplitude();
           `}
         </Script>
       ) : null}

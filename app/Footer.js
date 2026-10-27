@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import SuggestModal, { SuggestOpenButton } from './SuggestModal';
+import { CookieSettingsLink } from './ConsentBanner';
 
 // Футер (вересень 2026, другий підхід): чорна смуга на всю ширину, великий
 // рукописний wordmark по центру, під ним три колонки посилань, ряд
@@ -132,7 +133,7 @@ export default function Footer({ lang = 'uk' }) {
         </div>
 
         <div className="v2-footer-bottom">
-          <span>© dityam.com.ua 2026 · <Link href={h.privacy}>{t.privacy}</Link> · <Link href={h.terms}>{t.terms}</Link></span>
+          <span>© dityam.com.ua 2026 · <Link href={h.privacy}>{t.privacy}</Link> · <Link href={h.terms}>{t.terms}</Link><CookieSettingsLink lang={lang} /></span>
           <span style={{ whiteSpace: 'nowrap' }}>{t.made}</span>
         </div>
       </div>

@@ -165,41 +165,147 @@
   .site-header-inner .site-header-cta { margin-left: auto; padding: 7px 13px; font-size: 0.8125rem; }
 }
 
-/* Банер-пропозиція іншої мовної версії (LangSuggest) — тонкий рядок над хедером.
-   Схований за замовчуванням: показує його атрибут data-lang-suggest на <html>,
-   який ставить скрипт у <body> до першої промальовки (lib/lang.js). Так банер
-   стоїть на місці з першого кадру й не зсуває сторінку (07.10.2026). */
+/* Вибір мови (LangSuggest) — вікно поверх сторінки (27.10.2026; до того —
+   смужка над шапкою). Схований за замовчуванням: показує його атрибут
+   data-lang-suggest на <html>, який ставить скрипт у <body> до першої
+   промальовки (lib/lang.js). position: fixed — сторінка не зсувається. */
 .lang-suggest {
   display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10002; /* вище за кнопку Telegram (10000) і нічну пораду (10001) */
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 8px 42px 8px 14px;
-  background: var(--accent-soft);
-  border-bottom: 1px solid var(--border);
-  font-size: 0.84375rem;
-  color: var(--ink);
-  position: relative;
-  flex-wrap: wrap;
+  padding: max(16px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px))
+    max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+  background: rgba(26, 26, 26, 0.45);
 }
 
 html[data-lang-suggest="to_en"] .lang-suggest[data-variant="to_en"],
 html[data-lang-suggest="to_uk"] .lang-suggest[data-variant="to_uk"] { display: flex; }
 
-.lang-suggest-link { color: var(--accent-ink); /* на #fef2eb — ≈5,3:1 */ font-weight: 700; text-decoration: none; white-space: nowrap; }
-.lang-suggest-link:hover { text-decoration: underline; }
+.lang-choice {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 24px 24px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgba(26, 26, 26, 0.25);
+  text-align: center;
+}
+
+.lang-choice-title { margin: 0 28px 8px; font-size: 1.25rem; font-weight: 700; line-height: 1.3; }
+.lang-choice-title span, .lang-choice-sub span { display: block; }
+.lang-choice-sep { display: none !important; }
+.lang-choice-sub { margin: 0 0 20px; font-size: 0.875rem; color: var(--ink-muted); line-height: 1.45; }
+
+.lang-choice-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.lang-choice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 16px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.lang-choice-btn:hover { border-color: var(--ink); }
+
+/* Поточна мова позначена, але кнопка тієї ж ваги: вибір рівноцінний. */
+.lang-choice-btn.is-current { background: var(--contrast-bg); border-color: var(--contrast-bg); color: var(--surface-2); }
+.lang-choice-btn.is-current::after { content: ' ✓'; white-space: pre; }
+
+.lang-choice-btn:focus-visible,
+.lang-suggest-close:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 .lang-suggest-close {
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
   border: none;
+  border-radius: 9999px;
+  background: none;
   color: var(--ink-muted);
-  font-size: 0.875rem;
-  padding: 6px 10px;
+  font-size: 1rem;
   cursor: pointer;
+}
+
+/* Телефон: вікно знизу, як шторка. */
+@media (max-width: 600px) {
+  .lang-suggest { align-items: flex-end; padding: 0; }
+  .lang-choice {
+    max-width: none;
+    border-radius: 20px 20px 0 0;
+    padding: 26px max(20px, env(safe-area-inset-right, 0px)) max(22px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  }
+}
+
+/* Банер згоди на cookie (app/ConsentBanner.js) — лише ЄС/ЄЕЗ, Британія,
+   Швейцарія. Унизу, поверх сторінки, не зсуває вмісту. */
+.consent-banner {
+  position: fixed;
+  left: 50%;
+  bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  z-index: 10002; /* поверх плаваючих кнопок, щоб вибір не ховався */
+  width: min(720px, calc(100% - 32px));
+  padding: 18px 20px;
+  border-radius: 20px;
+  background: var(--surface-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  box-shadow: 0 16px 48px rgba(26, 26, 26, 0.2);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px 18px;
+  align-items: center;
+}
+
+.consent-banner p { margin: 0; font-size: 0.9rem; line-height: 1.5; }
+.consent-banner a { color: var(--accent-ink); font-weight: 600; }
+.consent-btns { display: flex; gap: 8px; }
+
+.consent-btn {
+  min-width: 112px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 9999px;
+  border: 1.5px solid var(--contrast-bg);
+  background: var(--contrast-bg);
+  color: var(--surface-2);
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.consent-btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 600px) {
+  .consent-banner {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    border-radius: 20px 20px 0 0;
+    grid-template-columns: 1fr;
+    padding: 18px max(20px, env(safe-area-inset-right, 0px)) max(18px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+  }
+  .consent-btns { display: grid; grid-template-columns: 1fr 1fr; }
 }
 
 /* Мобільний розвантажено (17.08): CTA Dityam+ уже є в нижньому sticky-bar —

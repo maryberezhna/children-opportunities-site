@@ -16,7 +16,7 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-const UPDATED = '15 September 2026';
+const UPDATED = '27 October 2026';
 
 export default function PrivacyPageEn() {
   return (
@@ -174,14 +174,39 @@ export default function PrivacyPageEn() {
             platform administrator’s working Telegram chat.
           </p>
 
-          <h2>5. Cookies and browser storage</h2>
+          <h2 id="cookies">5. Cookies and browser storage</h2>
           <p>
-            Technical cookies and browser storage remember your language,
-            accessibility settings, viewing mode and whether you have closed the
-            subscription pop-up. Analytics and advertising cookies are set by Google
-            Analytics, Google Ads{AMPLITUDE_ON ? ', Amplitude' : ''} and Hotjar, which load together with the page. You
-            can block them in your browser settings or with an extension; the site
-            works without them.
+            <strong>Necessary cookies</strong> always work — without them the site cannot
+            remember your settings:
+          </p>
+          <ul>
+            <li><code>dityam_lang</code> — the site language you chose; 1 year.</li>
+            <li>
+              <code>dityam_region</code> — a flag meaning “visitor from the EU, EEA, United
+              Kingdom or Switzerland”, so we can ask for analytics consent. It does not
+              contain the country; 30 days.
+            </li>
+            <li><code>dityam_consent</code> — your choice about analytics cookies; 6 months.</li>
+            <li><code>dityam_admin</code> — platform administrators only: admin sign-in; 30 days.</li>
+          </ul>
+          <p><strong>Analytics cookies</strong> help us understand what is useful to families:</p>
+          <ul>
+            <li><code>ab_card</code> — which of two card designs you see (A/B comparison); 90 days.</li>
+            <li><code>_ga</code>, <code>_ga_KPLE8LGH91</code> — Google Analytics; up to 2 years.</li>
+            <li><code>_hjSessionUser_6704189</code> (1 year) and <code>_hjSession_6704189</code> (30 minutes) — Hotjar.</li>
+            {AMPLITUDE_ON ? <li><code>AMP_…</code> — Amplitude; 1 year.</li> : null}
+          </ul>
+          <p>
+            For visitors from the EU, EEA, United Kingdom and Switzerland, analytics
+            cookies are set only after you press “Accept” in the banner. You can change
+            your choice at any time with “Cookie settings” at the bottom of the page.
+            For other visitors analytics loads with the page; you can block it in your
+            browser settings or with an extension — the site works without it.
+          </p>
+          <p>
+            Browser storage (localStorage) remembers accessibility settings, the
+            “Parents / Teens” view and whether you have closed the subscription or
+            language window.
           </p>
 
           <h2>6. How long we keep data</h2>
