@@ -5,6 +5,7 @@ import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC } from '@/lib/olimpiada';
 import { sendSiteEvent, SITE_EVENTS } from '@/lib/site-events';
 import { trackConversion } from '@/lib/track';
 import { MonsterYellow, Star } from './olimpiada/Doodles';
+import useOverlaySlot from './useOverlaySlot';
 
 // Попап онлайн-олімпіади на фільтрі (Марія, 06.10.2026: «створи попап на
 // сайті, який одразу показує цю можливість, коли хтось вибирає підходящий
@@ -39,7 +40,11 @@ export function claimOlimpPopup() {
   return true;
 }
 
-export default function OlimpPopup({ open, onClose, place = 'home' }) {
+export default function OlimpPopup({ open: wanted, onClose, place = 'home' }) {
+  // Відкривається на фільтр, тобто на дію людини, — у черзі вікон без
+  // очікування (lib/overlay-queue.js); лише вибір мови не перебиває.
+  const granted = useOverlaySlot('olimp', wanted, { force: true });
+  const open = Boolean(wanted) && granted;
   const [state, setState] = useState('idle'); // idle | sending | done | error
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');

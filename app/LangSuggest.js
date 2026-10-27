@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { rememberLang, counterpart } from './Header';
 import { readsUkrainian, langSuggestion, isEnglishPath, LANG_SUGGEST_KEY } from '@/lib/lang';
+import { overlayQueue } from '@/lib/overlay-queue';
 
 /**
  * Вибір мови — вікном, у якому людина сама обирає «Українська» чи «English»
@@ -18,8 +19,8 @@ import { readsUkrainian, langSuggestion, isEnglishPath, LANG_SUGGEST_KEY } from 
  *
  * Вибір іншої мови — та сама сторінка іншою мовою (counterpart) і cookie
  * dityam_lang; поточна мова, хрестик чи Esc — закрити й більше не питати
- * (LANG_SUGGEST_KEY). Банер згоди на cookie чекає, поки це вікно відкрите
- * (app/ConsentBanner.js), і говорить уже обраною мовою.
+ * (LANG_SUGGEST_KEY). Решта вікон чекає своєї черги (lib/overlay-queue.js):
+ * це вікно в ній перше, бо від мови залежить, якою мовою говоритимуть інші.
  */
 export default function LangSuggest() {
   const pathname = usePathname() || '/';
@@ -43,6 +44,10 @@ export default function LangSuggest() {
     const root = document.documentElement;
     if (s) root.setAttribute('data-lang-suggest', s);
     else root.removeAttribute('data-lang-suggest');
+    // Вікно видно одразу (CSS за атрибутом), тож у черзі воно бере місце
+    // примусово: інше вікно, якщо стояло, сховається й вийде після.
+    if (s) overlayQueue()?.request('lang', { force: true });
+    else overlayQueue()?.release('lang');
     if (s && s !== shown.current) {
       if (window.gtag) window.gtag('event', 'lang_suggest_shown', { event_label: s });
       // Фокус — на першу кнопку, щоб вибір робився і з клавіатури.
@@ -55,6 +60,7 @@ export default function LangSuggest() {
     try { localStorage.setItem(LANG_SUGGEST_KEY, '1'); } catch { /* noop */ }
     document.documentElement.removeAttribute('data-lang-suggest');
     shown.current = null;
+    overlayQueue()?.release('lang');
   };
 
   // Esc закриває, Tab ходить по колу всередині вікна.
@@ -81,6 +87,7 @@ export default function LangSuggest() {
     rememberLang(lang);
     try { localStorage.setItem(LANG_SUGGEST_KEY, '1'); } catch { /* noop */ }
     document.documentElement.removeAttribute('data-lang-suggest');
+    overlayQueue()?.release('lang');
     if (window.gtag) window.gtag('event', 'lang_suggest_click', { event_label: lang === 'en' ? 'to_en' : 'to_uk' });
   };
   const keep = (lang) => () => {

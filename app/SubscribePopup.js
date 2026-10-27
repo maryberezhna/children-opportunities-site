@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { TELEGRAM_URL, CHANNEL_CTA } from '@/lib/social';
 import { channelCtaVisible, onChannelCtaVisibility } from '@/lib/channel-cta';
 import { trackConversion, trackSubscribeClick, OPPORTUNITY_CLICK_EVENT } from '@/lib/track';
+import useOverlaySlot from './useOverlaySlot';
 
 export const OPEN_SUBSCRIBE_EVENT = 'dityam:open-subscribe';
 
@@ -136,7 +137,14 @@ export default function SubscribePopup() {
   const lang = pathname === '/en' || pathname.startsWith('/en/') ? 'en' : 'uk';
   const t = COPY[lang];
   const channel = CHANNEL_CTA[lang];
+  // isOpen — підказка хоче показатись; visible — настала її черга серед вікон
+  // сайту (lib/overlay-queue.js, 27.10.2026). Показ рахуємо й пишемо в GA4,
+  // лише коли її справді видно: черга могла тримати її, доки людина вирішувала
+  // з мовою чи cookie, і ліміт «3 на сесію» не має згоряти на невидимому.
   const [isOpen, setIsOpen] = useState(false);
+  const [forced, setForced] = useState(false);
+  const granted = useOverlaySlot('subscribe', isOpen, { force: forced });
+  const visible = isOpen && granted;
   const [variant, setVariant] = useState('default');
 
   const openRef = useRef(false);        // актуальний стан для слухачів подій
@@ -178,22 +186,28 @@ export default function SubscribePopup() {
     // заголовок і текст двічі водночас читаються як настирливість, а картка
     // нікуди не зникне й людина її прочитає (lib/channel-cta.js).
     if (channelCtaVisible()) return;
-    writeSession(SESSION_SHOWS_KEY, readNumber(SESSION_SHOWS_KEY) + 1);
     lastTrigger.current = trigger;
     openRef.current = true;
     setVariant(nextVariant);
+    setForced(Boolean(opts.force));
     setIsOpen(true);
+  }, [canShow]);
+
+  // Справжній показ — коли настала черга.
+  useEffect(() => {
+    if (!visible) return;
+    writeSession(SESSION_SHOWS_KEY, readNumber(SESSION_SHOWS_KEY) + 1);
     if (typeof window !== 'undefined' && window.gtag) {
       // popup_trigger — той самий параметр, що й у кліках: у звіті один
       // стовпчик означає одне («чим викликано показ»), хай яка подія.
       // event_label лишаємо для сумісності з наявними звітами.
       window.gtag('event', 'telegram_popup_shown', {
         event_category: 'engagement',
-        event_label: trigger,
-        popup_trigger: trigger,
+        event_label: lastTrigger.current,
+        popup_trigger: lastTrigger.current,
       });
     }
-  }, [canShow]);
+  }, [visible]);
 
   // reason: 'closed' (хрестик/Esc), 'autohidden' (таймер), 'joined' (перехід).
   // Окрема подія на автоприховування — щоб у GA4 нарешті було видно різницю
@@ -202,6 +216,7 @@ export default function SubscribePopup() {
     clearTimeout(hideTimer.current);
     openRef.current = false;
     setIsOpen(false);
+    setForced(false);
     writeSession(SESSION_HIDDEN_AT_KEY, Date.now());
 
     if (reason === 'closed') {
@@ -348,17 +363,17 @@ export default function SubscribePopup() {
   }, [hide]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!visible) return undefined;
     startHideTimer();
     return () => clearTimeout(hideTimer.current);
-  }, [isOpen, startHideTimer]);
+  }, [visible, startHideTimer]);
 
   useEffect(() => {
-    if (!isOpen) return undefined;
+    if (!visible) return undefined;
     const handleEsc = (e) => { if (e.key === 'Escape') hide('closed'); };
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
-  }, [isOpen, hide]);
+  }, [visible, hide]);
 
   const title = variant === 'value' ? t.value : channel.title;
 
@@ -366,11 +381,11 @@ export default function SubscribePopup() {
   // а не появу нового вузла. Порожня — мовчить.
   const liveRegion = (
     <div className="sr-only" role="status" aria-live="polite">
-      {isOpen ? `${title}. ${channel.short}.` : ''}
+      {visible ? `${title}. ${channel.short}.` : ''}
     </div>
   );
 
-  if (!isOpen) return liveRegion;
+  if (!visible) return liveRegion;
 
   return (
     <>
