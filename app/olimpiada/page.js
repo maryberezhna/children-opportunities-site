@@ -1,7 +1,7 @@
 import '@/app/styles/olimpiada.css';
 import Footer from '../Footer';
 import { createClient } from '@supabase/supabase-js';
-import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, criteriaText , finishedMilestone } from '@/lib/olimpiada';
+import { OLIMP, OLIMP_OPEN, OLIMP_PUBLIC, LEVELS, PRIZES, OPEN_TASK, DIPLOMA_VERSION, AUDIENCE_MONTHLY, TEACHER_SAMPLE, TEACHER_THANKS_AT, monthKey, monthName, monthLastDay, criteriaText , finishedMilestone } from '@/lib/olimpiada';
 import { PRICE, PRICE_FIRST } from '@/lib/wayforpay';
 import { SIA_AWARD } from '@/lib/awards';
 import { MK } from '@/lib/modnyi-kod';
@@ -238,6 +238,12 @@ export default async function OlimpiadaPage() {
                   {OLIMP.questionCount} завдань на кмітливість за {OLIMP.minutes} хвилин — у зручний час, безкоштовно.
                   Диплом з результатом зʼявляється одразу після тесту.
                 </p>
+                {OLIMP_OPEN ? (
+                  <p className="ol-gift-note">
+                    🎁 Подарунки {monthName(key, 'gen')} — для заявок до {monthLastDay(key)} {monthName(key, 'gen')}.{' '}
+                    <a href="#pryzy">Що можна виграти ↓</a>
+                  </p>
+                ) : null}
                 <div className="ol-actions" data-cta="hero">
                   <a href="#uchast" className="ol-btn ol-btn-main">{OLIMP_OPEN ? 'Взяти участь безкоштовно' : 'Повідомити про старт'}</a>
                   <a href="#yak" className="ol-btn ol-btn-ghost">Як це працює</a>
@@ -359,7 +365,8 @@ export default async function OlimpiadaPage() {
         <section className="ol-space ol-space-2">
           <Wave className="ol-wave" />
           <div className="ol-wrap">
-            <h2 className="ol-hand">Призи місяця</h2>
+            <h2 className="ol-hand" id="pryzy">Подарунки {monthName(key, 'gen')}</h2>
+            <p className="ol-text ol-text-light ol-gift-deadline">Для заявок до {monthLastDay(key)} {monthName(key, 'gen')} включно.</p>
             {/* Яке саме відкрите завдання — секрет до тесту (Марія, 06.10.2026:
                 «це має бути секретом»): ні малюнка, ні назви на сторінці, у листі
                 й на екрані перед «Почати». Дитина бачить його лише в кінці тесту. */}
