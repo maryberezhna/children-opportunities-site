@@ -1,0 +1,32 @@
+{
+  "about": "Спільні приклади груп «для кого за місцем» (27.10.2026): їх читають tests/reach.test.mjs (сайт, канал) і scraper/tests/test_reach.py (Dityam+). Група мусить бути однаковою на сайті, в каналі й у боті. Записи взято з живої бази 27.10.2026, лишено тільки поля, які читає правило.",
+  "cases": [
+    { "name": "київський гурток", "item": { "format": "offline", "countries": ["ua"], "cities": ["Київ"] }, "reach": "ukraine", "doubt": null },
+    { "name": "всеукраїнський конкурс без країни", "item": { "format": null, "cities": ["Вся Україна"] }, "reach": "ukraine", "doubt": null },
+    { "name": "місто без країни — Україна", "item": { "format": "offline", "cities": ["Миколаїв"] }, "reach": "ukraine", "doubt": null },
+    { "name": "English Club у Києві з прапорцем «міжнародна» — місто конкретніше", "item": { "format": "offline", "is_international": true, "countries": ["ua"], "cities": ["Київ"] }, "reach": "ukraine", "doubt": null },
+    { "name": "гібрид із містами — В Україні", "item": { "format": "hybrid", "countries": ["ua"], "cities": ["Київ", "Харків"] }, "reach": "ukraine", "doubt": null },
+
+    { "name": "онлайн-курс", "item": { "format": "online", "cities": ["Онлайн"] }, "reach": "online", "doubt": null },
+    { "name": "онлайн-конкурс закордонного організатора — однаково для всіх", "item": { "format": "online", "is_international": true, "ua_eligibility": "from_ukraine", "countries": ["jp"] }, "reach": "online", "doubt": null },
+    { "name": "онлайн із київським організатором — однаково онлайн", "item": { "format": "online", "countries": ["ua"], "cities": ["Київ"] }, "reach": "online", "doubt": null },
+    { "name": "«Онлайн» серед міст без формату", "item": { "is_international": true, "countries": ["ua"], "cities": ["Онлайн"] }, "reach": "online", "doubt": null },
+    { "name": "гібрид без жодного місця — онлайн", "item": { "format": "hybrid", "is_international": true, "ua_eligibility": "from_ukraine" }, "reach": "online", "doubt": null },
+
+    { "name": "лише для тих, хто живе за кордоном", "item": { "format": "offline", "is_international": true, "ua_eligibility": "abroad_only", "countries": ["de"] }, "reach": "diaspora", "doubt": null },
+    { "name": "abroad_only онлайн — однаково діаспора", "item": { "format": "online", "is_international": true, "ua_eligibility": "abroad_only", "countries": ["pl"] }, "reach": "diaspora", "doubt": null },
+    { "name": "суботня школа в Італії, «чи можна з України» не підтверджено", "item": { "format": "offline", "ua_eligibility": "unknown", "countries": ["it"], "cities": ["Неаполь"], "opportunity_type": "club" }, "reach": "diaspora", "doubt": "eligibility" },
+    { "name": "суботня школа з прапорцем «міжнародна» — гурток не поїздка", "item": { "format": "offline", "is_international": true, "ua_eligibility": "unknown", "countries": ["it"], "cities": ["Італія"], "opportunity_type": "club" }, "reach": "diaspora", "doubt": "eligibility" },
+
+    { "name": "літня школа в США з України", "item": { "format": "offline", "is_international": true, "ua_eligibility": "from_ukraine", "countries": ["us"], "opportunity_type": "summer_school" }, "reach": "travel", "doubt": null },
+    { "name": "табір у Закопаному", "item": { "format": "offline", "is_international": true, "ua_eligibility": "from_ukraine", "countries": ["pl"], "cities": ["Закопане"], "opportunity_type": "camp" }, "reach": "travel", "doubt": null },
+    { "name": "гурток із країною, але подати можна з України — поїздка", "item": { "format": "offline", "is_international": true, "ua_eligibility": "from_ukraine", "countries": ["fr"], "opportunity_type": "club" }, "reach": "travel", "doubt": null },
+    { "name": "міжнародна без країни (Erasmus, UWC)", "item": { "format": "offline", "is_international": true }, "reach": "travel", "doubt": null },
+    { "name": "волонтерство в Швейцарії, eligibility unknown — поїздка", "item": { "format": "offline", "is_international": true, "ua_eligibility": "unknown", "countries": ["ch"], "opportunity_type": "volunteer" }, "reach": "travel", "doubt": null },
+    { "name": "обмін Україна + Польща", "item": { "is_international": true, "ua_eligibility": "from_ukraine", "countries": ["ua", "pl"], "cities": ["Міжнародні"], "opportunity_type": "exchange" }, "reach": "travel", "doubt": null },
+    { "name": "Премія Президента: «міжнародна» + «Вся Україна» — перевірити", "item": { "is_international": true, "ua_eligibility": "from_ukraine", "cities": ["Вся Україна"], "opportunity_type": "award" }, "reach": "travel", "doubt": "mixed" },
+
+    { "name": "ні міста, ні країни, ні онлайну", "item": { "cities": [] }, "reach": null, "doubt": "no_place" },
+    { "name": "порожній запис", "item": {}, "reach": null, "doubt": "no_place" }
+  ]
+}

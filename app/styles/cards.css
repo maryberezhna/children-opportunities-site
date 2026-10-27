@@ -81,6 +81,9 @@
 .chip-need { background: var(--pink-2); color: var(--chip-ink-pink); }
 .chip-aid { background: #e5eefc; color: #1b4a8f; font-weight: 500; }
 .chip-intl { background: #e0f2fe; color: #075985; }
+/* Група «для кого за місцем» (lib/reach.js, 27.10.2026): контуром, а не
+   заливкою — це не ще одна властивість, а відповідь «чи це для мене». */
+.chip-reach { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px currentColor; }
 
 .chip-deadline-urgent {
   background: #fee2e2;
@@ -518,7 +521,8 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
   }
   html body .cards-2m .card .chip { display: none; }
   html body .cards-2m .card .chip-type,
-  html body .cards-2m .card .chip-age {
+  html body .cards-2m .card .chip-age,
+  html body .cards-2m .card .chip-reach {
     display: block;
     padding: 0;
     border-radius: 0;
@@ -530,6 +534,7 @@ html[data-ab-card="B"] .card .card-more.card-b { display: inline-block; margin: 
   }
   html body .cards-2m .card .chip-type { order: 0; font-weight: 700; }
   html body .cards-2m .card .chip-age { order: 1; font-weight: 500; }
+  html body .cards-2m .card .chip-reach { order: 2; font-weight: 500; box-shadow: none; }
 
   html body .cards-2m .card h3 {
     margin: 0;

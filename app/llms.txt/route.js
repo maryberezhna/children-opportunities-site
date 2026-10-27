@@ -35,7 +35,7 @@ export async function GET() {
     // назві. Дати — щоб рахувати, як сторінка, лише живі записи (isLive).
     const { data } = await fetchAllRows(() => publicOpportunities(
       'title, summary, opportunity_type, cost_type, aid_type, cities, countries, source, '
-      + 'is_international, format, child_needs, '
+      + 'is_international, ua_eligibility, format, child_needs, '
       + 'deadline, event_start_date, event_end_date, results_date',
     ).order('id'));
     rows = data || [];

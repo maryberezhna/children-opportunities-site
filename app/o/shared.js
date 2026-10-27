@@ -29,6 +29,7 @@ import ChannelIconLink from '../ChannelIconLink';
 import ReportButton from './[slug]/ReportButton';
 import ClosedActions from './[slug]/ClosedActions';
 import { plural } from '@/lib/plural';
+import { reachOf, reachLabel } from '@/lib/reach';
 import { topicOf, topicPath, archivedRedirectPath } from '@/lib/topics';
 import { intakeStatus, pageFacts, applicantConditions } from '@/lib/opportunity-facts';
 import SubscribePopup from '../SubscribePopup';
@@ -275,7 +276,7 @@ export async function getOpportunity(slug) {
 // порожнішими за ту саму картку на головній.
 const RELATED_FIELDS =
   'slug, title, summary, opportunity_type, age_from, age_to, cost_type, deadline, child_needs, title_en, summary_en, featured_week, '
-  + 'source, source_url, format, cities, countries, is_international, event_start_date, event_end_date, results_date, timing_kind';
+  + 'source, source_url, format, cities, countries, is_international, ua_eligibility, event_start_date, event_end_date, results_date, timing_kind';
 
 export async function getRelated(item, limit = 8) {
   if (!supabase || !item) return [];
@@ -750,6 +751,8 @@ export default function OpportunityView({ item, related, lang = 'uk' }) {
               {ageRangeLabel(item, lang)
                 ? <span className="chip chip-age">{ageRangeLabel(item, lang)}</span> : null}
               <span className="chip chip-type">{TYPES[item.opportunity_type] || item.opportunity_type}</span>
+              {/* Для кого за місцем — та сама пігулка, що на картці (lib/reach.js). */}
+              {reachOf(item) ? <span className="chip chip-reach">{reachLabel(reachOf(item), lang)}</span> : null}
               {item.aid_type ? <span className="chip chip-aid">🏛 {AIDS[item.aid_type] || t.stateAid}</span> : null}
               {item.cost_type === 'free' ? <span className="chip chip-free">{t.free}</span> : null}
               {item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium'
