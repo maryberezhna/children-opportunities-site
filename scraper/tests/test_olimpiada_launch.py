@@ -23,7 +23,6 @@ class LaunchTest(unittest.TestCase):
             return int(re.search(rf"{key}:\s*(\d+)", js).group(1))
         self.assertEqual(launch.QUESTIONS, num("questionCount"))
         self.assertEqual(launch.MINUTES, num("minutes"))
-        self.assertEqual(launch.PRINT_PRICE, num("printPrice"))
 
     def test_message(self):
         subject, text, body = launch.build_message()
@@ -31,9 +30,9 @@ class LaunchTest(unittest.TestCase):
         for part in (text, body):
             self.assertIn("utm_source=email", part)
             self.assertIn("#uchast", part)
-            # З 08.10.2026 участь безкоштовна; платний лише друкований диплом.
+            # З 08.10.2026 участь безкоштовна; друкованого диплома з 27.10.2026 немає.
             self.assertIn("безкоштовна", part)
-            self.assertIn("199 грн", part)
+            self.assertNotIn("199 грн", part)
             self.assertNotIn("внесок", part)
             # Подарункового місяця Dityam+ більше немає (08.10.2026).
             self.assertNotIn("днів Dityam+", part)

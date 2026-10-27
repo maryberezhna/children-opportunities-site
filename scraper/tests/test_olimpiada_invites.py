@@ -32,7 +32,6 @@ class InvitesTest(unittest.TestCase):
         self.assertEqual(inv.QUESTIONS, num("questionCount"))
         self.assertEqual(inv.MINUTES, num("minutes"))
         self.assertEqual(inv.ACCESS_HOURS, num("accessHours"))
-        self.assertEqual(inv.PRINT_PRICE, num("printPrice"))
 
     def test_needs_invite(self):
         self.assertTrue(inv.needs_invite(ENTRY, NOW))
@@ -57,8 +56,9 @@ class InvitesTest(unittest.TestCase):
             self.assertIn("Dityam.com.ua", part)
         self.assertIn(f'href="{link}"', body)
         for part in (text, body):
-            self.assertIn("поштомат Нової пошти", part)
-            self.assertIn(f"{inv.PRINT_PRICE} грн", part)
+            # Друкований диплом прибрано 27.10.2026.
+            self.assertNotIn("Нової пошти", part)
+            self.assertNotIn("199 грн", part)
             self.assertIn("якщо Соломія Коваленко виграє, повідомимо вас окремим листом", part)
         # після «Dityam+» тире не ставимо, а слова «розіграш» у листі бути не може
         self.assertNotIn("Dityam+ —", text)
@@ -74,26 +74,14 @@ class InvitesTest(unittest.TestCase):
         self.assertIn("23 з 25", text)
         self.assertIn("23 з 25", body)
         # Відкритого завдання немає — у конкурсі на приз не бере участі, обіцяти нічого.
-        # Друк не оплачено — питаємо про Нову пошту з кнопкою на форму доставки.
+        # Друкованого диплома з 27.10.2026 немає — ні пропозиції, ні форми доставки.
         for part in (text, body):
             self.assertNotIn("виграє", part)
-            self.assertIn("Бажаєте друкований диплом?", part)
-            self.assertIn("https://dityam.com.ua/olimpiada/test?t=9cabd081887339b3edeadead8ffb15e2#dostavka", part)
-            self.assertIn(f"{inv.PRINT_PRICE} грн", part)
+            self.assertNotIn("друкований диплом", part)
+            self.assertNotIn("#dostavka", part)
         competing = {**entry, "open_answer": "Задача про трьох котів"}
         for part in inv.build_diploma_message(competing)[1:]:
             self.assertIn("якщо Соломія Коваленко виграє, повідомимо вас окремим листом", part)
-        printed = {**competing, "print_paid_at": "2026-10-05T11:10:00+00:00",
-                   "print_order": {"city": "Київ", "branch": "відділення 12"}}
-        for part in inv.build_diploma_message(printed)[1:]:
-            self.assertNotIn("Бажаєте друкований диплом?", part)
-            self.assertNotIn("Вкажіть, куди його надіслати", part)
-        # Участь разом із дипломом (249 грн): оплачено, адреси ще немає — просимо її.
-        bundle = {**competing, "amount": 249, "print_paid_at": "2026-10-05T11:10:00+00:00"}
-        for part in inv.build_diploma_message(bundle)[1:]:
-            self.assertNotIn("Бажаєте друкований диплом?", part)
-            self.assertIn("Вкажіть, куди його надіслати", part)
-            self.assertIn("#dostavka", part)
         # Dityam+ після олімпіади — у кожному листі. З 21.10.2026 безкоштовно
         # (inv.PLUS_FREE), до того — перший місяць за 1 грн (08.10.2026).
         for part in (text, body):
@@ -164,14 +152,12 @@ class FeedbackLetterTest(unittest.TestCase):
         self.assertIn("Що в цьому найскладніше і чого не вистачає?", text)
         self.assertIn("Обіцяємо: ми дослухаємося.", text)
         self.assertIn("Пишу вам особисто", body)
-        # Марія, 14.10.2026: нагадування про доставку диплома й олімпіаду з моди.
+        # Марія, 14.10.2026: нагадування про олімпіаду з моди; доставку диплома прибрано 27.10.2026.
         self.assertIn("Не забудьте, що ви можете пройти нашу нову можливість — олімпіаду з моди.", text)
         _, t2, b2 = inv.build_feedback_message({"parent_email": "a@x.ua", "child_names": ["Олена"], "token": "abc123"})
-        self.assertIn("Не забудьте, що ви можете замовити доставку диплома або пройти нашу нову можливість — олімпіаду з моди.", t2)
-        self.assertIn("/olimpiada/test?t=abc123", b2)
-        self.assertIn("#dostavka", b2)
+        self.assertIn("Не забудьте, що ви можете пройти нашу нову можливість — олімпіаду з моди.", t2)
+        self.assertNotIn("доставку", t2)
+        self.assertNotIn("#dostavka", b2)
         self.assertIn("/modnyi-kod?utm_source=email", b2)
-        _, t3, _ = inv.build_feedback_message({"parent_email": "a@x.ua", "child_names": ["Олена"], "token": "abc123", "print_paid_at": "2026-10-10"})
-        self.assertNotIn("доставку", t3)
         msg = inv.make_feedback_email({"parent_email": "a@x.ua", "child_names": ["Олена"]})
         self.assertIn("a@x.ua", msg["To"])

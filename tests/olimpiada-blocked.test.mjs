@@ -62,7 +62,8 @@ test('картинка диплома за прямим посиланням в�
 });
 
 test('друк і лист із заблокованим дипломом не проходять', () => {
-  assert.match(read('app/api/olimpiada/print/route.js'), /entry\.blocked_at.*blocked/s);
+  // Друк диплома вимкнено 27.10.2026 — маршрут лише відповідає 410.
+  assert.match(read('app/api/olimpiada/print/route.js'), /print_disabled.*410/s);
   assert.match(read('app/api/olimpiada/diploma-mail/route.js'), /entry\.blocked_at.*blocked/s);
 });
 
