@@ -1,0 +1,42 @@
+# Відповідь одній людині від @DityamPlusBot (27.10.2026). Марія не знайшла, як
+# відповісти на «Питання в боті» з адмінки: реплай з адмін-чату працює лише на
+# окремі сповіщення. Тут — одне повідомлення одному chat_id, текст як є (без HTML).
+# Без confirm=SEND лише показує, що піде; у журнал — лише кінець chat_id (журнали
+# публічні, див. scraper/log_privacy.py).
+name: Відповідь людині в @DityamPlusBot (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      chat_id:
+        description: 'chat_id людини (у «Зверненнях» — після tg:)'
+        required: true
+      text:
+        description: 'Текст відповіді — простий текст, без HTML'
+        required: true
+      confirm:
+        description: 'SEND — надіслати; порожньо — лише показати'
+        required: false
+        default: ''
+
+jobs:
+  reply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Надіслати
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_PLUS_BOT_TOKEN }}
+          CHAT: ${{ inputs.chat_id }}
+          TEXT: ${{ inputs.text }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          masked="…${CHAT: -3}"
+          echo "Кому: $masked"
+          echo "Текст:"; printf '%s\n' "$TEXT"
+          if [ "$CONFIRM" != "SEND" ]; then echo "Лише показ: confirm порожній."; exit 0; fi
+          body=$(jq -n --arg c "$CHAT" --arg t "$TEXT" '{chat_id: $c, text: $t, disable_web_page_preview: true}')
+          res=$(curl -s -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" -H 'Content-Type: application/json' -d "$body")
+          if [ "$(echo "$res" | jq -r .ok)" != "true" ]; then echo "Telegram: $(echo "$res" | jq -r .description)"; exit 1; fi
+          echo "✅ Надіслано $masked, message_id $(echo "$res" | jq -r .result.message_id)"
