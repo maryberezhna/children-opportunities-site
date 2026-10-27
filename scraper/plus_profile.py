@@ -50,13 +50,46 @@ EMPTY_CHILD = {"position": 1, "age_bands": [], "likes": [], "formats": [], "need
 
 
 def age_overlap(a_from, a_to, bands) -> bool:
+    """Можливість покриває майже всю вікову смугу дитини, а не один рік
+    (27.10.2026): спільних років щонайменше (довжина смуги − 1), для 7–10 —
+    три. Вужча можливість (табір для 8–9) підходить, якщо цілком у смузі.
+    Дзеркало ageOverlap у lib/plusProfile.js."""
     if not bands:
         return True
+    a = 0 if a_from is None else a_from
+    z = 18 if a_to is None else a_to
     for b in bands:
         r = AGE_RANGES.get(b)
-        if r and a_from <= r[1] and a_to >= r[0]:
+        if not r:
+            continue
+        shared = min(z, r[1]) - max(a, r[0]) + 1
+        need = min(r[1] - r[0], z - a + 1)
+        if shared >= need:
             return True
     return False
+
+
+def age_known(o: dict) -> bool:
+    """«0–18» без цитати зі сторінки (evidence.age) — це «вік не знайшли»:
+    порожній вік база зберігає як 0–18. Такий запис Dityam+ не надсилає.
+    age_evidence — evidence->age з вибірки. Дзеркало ageKnown."""
+    a = 0 if o.get("age_from") is None else o.get("age_from")
+    z = 18 if o.get("age_to") is None else o.get("age_to")
+    if not (a == 0 and z == 18):
+        return True
+    ev = o.get("age_evidence")
+    if ev is None:
+        ev = (o.get("evidence") or {}).get("age")
+    return bool(ev)
+
+
+def is_local_abroad(o: dict) -> bool:
+    """Подати можуть лише ті, хто живе в іншій країні (abroad_only), або
+    місцева програма країни без України й не міжнародна. Дзеркало isLocalAbroad."""
+    if o.get("ua_eligibility") == "abroad_only":
+        return True
+    cc = [c for c in (o.get("countries") or []) if c]
+    return (not o.get("is_international")) and bool(cc) and "ua" not in cc
 
 
 def formats_of(o: dict, themes: set) -> set:
@@ -79,9 +112,12 @@ def place_ok(o: dict, places) -> bool:
     обирати кнопками, і родина з Ніжина, що їх не натиснула, лишалась ні з чим.
     Старі значення online/abroad/__other у профілі — не місто: нічого не
     додають і нічого не забирають."""
+    cities = o.get("cities") or []
+    if is_local_abroad(o):
+        # Місцеве закордонне — лише родині з містом запису або «за кордон».
+        return PLACE_ABROAD in (places or []) or any(c in cities for c in chosen_cities(places))
     if not places:
         return True
-    cities = o.get("cities") or []
     if o.get("format") in ("online", "hybrid") or "Онлайн" in cities:
         return True
     if "Вся Україна" in cities:
@@ -99,7 +135,9 @@ def child_match(child: dict, o: dict, themes: set):
     """None — не підходить, 'need' — через особливу обставину, 'profile' —
     через вподобання й формат. Обставина відкриває запис поза вподобаннями,
     але вік перевіряємо завжди."""
-    if not age_overlap(o["age_from"], o["age_to"], child.get("age_bands") or []):
+    if not age_known(o):
+        return None
+    if not age_overlap(o.get("age_from"), o.get("age_to"), child.get("age_bands") or []):
         return None
     needs = child.get("needs") or []
     if needs and any(n in needs for n in (o.get("child_needs") or [])):

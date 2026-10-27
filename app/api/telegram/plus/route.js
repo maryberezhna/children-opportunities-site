@@ -265,7 +265,7 @@ function pickedBy(sub, kids) {
 
 async function sendLatest(bot, supabase, sub, chatId) {
   const { data: opps } = await supabase.from('opportunities')
-    .select('id, title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories, deadline, event_start_date, event_end_date')
+    .select('id, title, slug, age_from, age_to, cost_type, summary, created_at, opportunity_type, format, cities, countries, is_international, child_needs, categories, deadline, event_start_date, event_end_date, ua_eligibility, age_evidence:evidence->age')
     .eq('status', 'active').is('canonical_slug', null)
     .order('created_at', { ascending: false }).limit(300);
   const kids = await loadKids(supabase, sub);

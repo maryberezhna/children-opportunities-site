@@ -39,7 +39,7 @@ class Place(unittest.TestCase):
             self.assertTrue(pp.place_ok(opp(format="hybrid"), places))
             self.assertTrue(pp.place_ok(opp(cities=["Онлайн"]), places))
             self.assertTrue(pp.place_ok(opp(cities=["Вся Україна"]), places))
-            self.assertTrue(pp.place_ok(opp(countries=["pl"], cities=[]), places))
+            self.assertTrue(pp.place_ok(opp(countries=["pl"], is_international=True, cities=[]), places))
             self.assertTrue(pp.place_ok(opp(is_international=True, cities=[]), places))
             self.assertTrue(pp.place_ok(opp(cities=["Міжнародні"]), places))
 
@@ -125,6 +125,61 @@ class Family(unittest.TestCase):
         matches = pp.match_family({"cost_pref": "any", "places": []}, [a, b], young + old)
         picked = [m["o"]["id"] for m in pp.pick_fair(matches, [a, b], 3)]
         self.assertEqual(picked, ["y1", "o1", "y2"])
+
+
+class Matching2710(unittest.TestCase):
+    """27.10.2026: мамі 8-річної прийшли записи не за віком і місцева допомога в Чехії.
+    Дзеркало кінця tests/plusProfile.test.mjs."""
+
+    def test_age_covers_most_of_band(self):
+        self.assertFalse(pp.age_overlap(10, 18, ["7-10"]))
+        self.assertFalse(pp.age_overlap(9, 18, ["7-10"]))
+        self.assertTrue(pp.age_overlap(7, 17, ["7-10"]))
+        self.assertTrue(pp.age_overlap(8, 18, ["7-10"]))
+        self.assertTrue(pp.age_overlap(8, 9, ["7-10"]))
+        self.assertTrue(pp.age_overlap(16, 18, ["15-18"]))
+        self.assertTrue(pp.age_overlap(17, 18, ["15-18"]))  # вужча, цілком у смузі
+        self.assertFalse(pp.age_overlap(14, 18, ["11-14"]))
+        self.assertTrue(pp.age_overlap(5, 6, ["4-6"]))
+        self.assertTrue(pp.age_overlap(10, 18, ["7-10", "11-14"]))
+
+    def test_unknown_age(self):
+        self.assertFalse(pp.age_known({"age_from": 0, "age_to": 18}))
+        self.assertTrue(pp.age_known({"age_from": 0, "age_to": 18, "age_evidence": "Вік авторів не обмежується!"}))
+        self.assertTrue(pp.age_known({"age_from": 0, "age_to": 18, "evidence": {"age": "для всіх"}}))
+        self.assertTrue(pp.age_known({"age_from": 7, "age_to": 17}))
+        self.assertFalse(pp.age_known({"age_from": None, "age_to": None}))
+
+    def test_local_abroad_only_for_that_city(self):
+        cz = opp(countries=["cz"], cities=[], ua_eligibility="abroad_only")
+        self.assertTrue(pp.is_local_abroad(cz))
+        self.assertFalse(pp.place_ok(cz, ["Київ"]))
+        self.assertFalse(pp.place_ok(cz, []))
+        self.assertTrue(pp.place_ok(cz, ["abroad"]))
+        leipzig = opp(countries=["de"], cities=["Лейпциг"], ua_eligibility=None)
+        self.assertTrue(pp.place_ok(leipzig, ["Лейпциг"]))
+        self.assertFalse(pp.place_ok(leipzig, ["Київ"]))
+        intl = opp(countries=["gb"], is_international=True, ua_eligibility="from_ukraine", format="online", cities=["Онлайн"])
+        self.assertFalse(pp.is_local_abroad(intl))
+        self.assertTrue(pp.place_ok(intl, ["Київ"]))
+        self.assertFalse(pp.place_ok(opp(countries=["gb"], is_international=True, ua_eligibility="abroad_only",
+                                         format="online", cities=[]), ["Київ"]))
+
+    def test_case_mother_of_8_year_old(self):
+        sub = {"id": "s", "places": ["Київ"], "cost_pref": "any"}
+        kids = [kid(age_bands=["7-10"], formats=["contests", "grants"])]
+        base = {"child_needs": [], "_themes": set()}
+        opps = [
+            dict(base, id="svitlo", opportunity_type="course", age_from=10, age_to=18, format="online", cities=["Онлайн"], countries=None, is_international=True, ua_eligibility="from_ukraine"),
+            dict(base, id="casting", opportunity_type="competition", age_from=9, age_to=18, format="offline", cities=["Київ"], countries=["ua"], is_international=False),
+            dict(base, id="conf", opportunity_type="conference", age_from=7, age_to=17, format="offline", cities=["Київ"], countries=["ua"], is_international=False),
+            dict(base, id="plays", opportunity_type="competition", age_from=0, age_to=18, format="online", cities=[], countries=["ua"], is_international=False, age_evidence="Вік авторів не обмежується!"),
+            dict(base, id="arkwright", opportunity_type="scholarship", age_from=0, age_to=18, format="online", cities=[], countries=["gb"], is_international=True, ua_eligibility="abroad_only"),
+            dict(base, id="cz", opportunity_type="scholarship", age_from=3, age_to=18, format="offline", cities=[], countries=["cz"], is_international=False, ua_eligibility="abroad_only"),
+            dict(base, id="bridges", opportunity_type="exchange", age_from=0, age_to=18, format="offline", cities=["Катанія"], countries=["it"], is_international=True, ua_eligibility="unknown"),
+        ]
+        got = [m["o"]["id"] for m in pp.match_family(sub, kids, opps)]
+        self.assertEqual(got, ["conf", "plays"])
 
 
 if __name__ == "__main__":

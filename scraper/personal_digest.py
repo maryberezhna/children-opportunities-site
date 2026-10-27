@@ -259,13 +259,8 @@ def themes_of(o: dict) -> set:
 
 
 def age_overlaps(a_from, a_to, bands) -> bool:
-    if not bands:
-        return True
-    for b in bands:
-        r = AGE_BANDS.get(b)
-        if r and a_from <= r[1] and a_to >= r[0]:
-            return True
-    return False
+    # Те саме правило, що в добірці й боті (plus_profile.age_overlap, 27.10.2026).
+    return plus_profile.age_overlap(a_from, a_to, bands)
 
 
 def parse_ts(s):
@@ -649,7 +644,8 @@ def main():
             "id, title, summary, slug, age_from, age_to, cost_type, created_at, deadline, "
             "event_start_date, event_end_date, timing_kind, timing_assumed, "
             "opportunity_type, format, cities, countries, is_international, child_needs, "
-            "categories, telegram_posted_at, content_checked_at"
+            "categories, telegram_posted_at, content_checked_at, ua_eligibility, "
+            "age_evidence:evidence->age"
         ).eq("status", "active").is_("canonical_slug", "null") \
             .order("id").range(start, start + 999).execute().data or []
         opps.extend(page)
