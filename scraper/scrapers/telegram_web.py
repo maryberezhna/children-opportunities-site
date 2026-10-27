@@ -234,7 +234,8 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
         """Сторінка: (кінцева адреса, текст, посилання) або None."""
         async with semaphore:
             try:
-                r = await client.get(url)
+                r = await client.get(url, headers=first_source.FORMS_HEADERS
+                                     if first_source.is_google_form(url) else None)
                 r.raise_for_status()
             except Exception as e:                           # noqa: BLE001
                 logger.info("не пішли за посиланням %s: %s", url, e)

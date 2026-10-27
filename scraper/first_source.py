@@ -230,6 +230,12 @@ def google_form_text(page_html: str) -> str:
     return "\n".join(x.strip() for x in (title, desc) if x and x.strip())
 
 
+# forms.gle віддає редирект на форму лише «небраузерному» клієнту; браузерний
+# User-Agent отримує JS-сторінку proxy.link.app без опису (перевірено
+# 27.10.2026: curl і бот — редирект, Chrome-UA — 200 без форми).
+FORMS_HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; DityamBot/1.0; +https://dityam.com.ua)"}
+
+
 def google_form_target(page_html: str) -> str:
     """Адреса самої форми в проміжній сторінці forms.gle або порожньо.
 

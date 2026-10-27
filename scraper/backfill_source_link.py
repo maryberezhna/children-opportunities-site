@@ -61,7 +61,7 @@ def post_links(html: str) -> list[str]:
 def read_page(client: httpx.Client, url: str):
     """(кінцева адреса, текст, посилання) або None — як у скрапері каналів."""
     try:
-        r = client.get(url)
+        r = client.get(url, headers=first_source.FORMS_HEADERS if first_source.is_google_form(url) else None)
         r.raise_for_status()
     except Exception as e:                                   # noqa: BLE001
         logger.info("      не відкрилось: %s", type(e).__name__)
