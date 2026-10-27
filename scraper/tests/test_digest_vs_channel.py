@@ -24,7 +24,10 @@ def opp(slug, created, posted=None, **kw):
          "timing_assumed": False, "opportunity_type": "course", "format": "online",
          "cities": [], "countries": None, "is_international": False, "child_needs": [],
          "categories": [], "telegram_posted_at": posted, "_themes": set(),
-         "_created": datetime.fromisoformat(created)}
+         "_created": datetime.fromisoformat(created),
+         # Вік «0–18» з цитатою — інакше з 27.10.2026 це «вік невідомий»,
+         # і Dityam+ такий запис не надсилає (plus_profile.age_known).
+         "age_evidence": "для дітей 0–18 років"}
     o.update(kw)
     return o
 

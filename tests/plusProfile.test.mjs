@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  placeOk, placeSummary, childMatch, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
+  placeOk, placeSummary, childMatch, ageOverlap, ageKnown, isLocalAbroad, childrenOf, childLabel, matchFamily, pickFair, formatsOf,
   FORMAT_TYPES, FORMAT_OPTIONS, parseCustomCities,
 } from '../lib/plusProfile.js';
 import { TYPE_LABELS } from '../lib/labels.js';
@@ -27,7 +27,7 @@ test('місце: онлайн, «Вся Україна» й закордон п
     assert.equal(placeOk(opp({ format: 'hybrid' }), places), true);
     assert.equal(placeOk(opp({ cities: ['Онлайн'] }), places), true);
     assert.equal(placeOk(opp({ cities: ['Вся Україна'] }), places), true);
-    assert.equal(placeOk(opp({ countries: ['pl'], cities: [] }), places), true);
+    assert.equal(placeOk(opp({ countries: ['pl'], is_international: true, cities: [] }), places), true);
     assert.equal(placeOk(opp({ is_international: true, cities: [] }), places), true);
     assert.equal(placeOk(opp({ cities: ['Міжнародні'] }), places), true);
   }
@@ -175,4 +175,61 @@ test('вписане місто: не місто — нічого не бере�
   assert.deepEqual(parseCustomCities('https://example.com/misto'), []);
   assert.deepEqual(parseCustomCities('а'), []);
   assert.deepEqual(parseCustomCities('я'.repeat(40)), []);
+});
+
+// 27.10.2026: мамі 8-річної (профіль «7–10», Київ, конкурси й гранти) прийшли
+// Svitlo School з 10, кастинг з 9, оплата гуртків у Чехії і два записи з
+// невідомим віком. Дзеркало — scraper/tests/test_plus_profile.py (Matching2710).
+test('вік: можливість має покривати майже всю смугу дитини, а не один рік', () => {
+  assert.equal(ageOverlap(10, 18, ['7-10']), false); // Svitlo School
+  assert.equal(ageOverlap(9, 18, ['7-10']), false); // кастинг
+  assert.equal(ageOverlap(7, 17, ['7-10']), true); // конференція
+  assert.equal(ageOverlap(8, 18, ['7-10']), true); // 8,9,10 — три роки
+  assert.equal(ageOverlap(8, 9, ['7-10']), true); // вужча, але цілком у смузі
+  assert.equal(ageOverlap(16, 18, ['15-18']), true);
+  assert.equal(ageOverlap(17, 18, ['15-18']), true); // вужча, цілком у смузі
+  assert.equal(ageOverlap(14, 18, ['11-14']), false);
+  assert.equal(ageOverlap(5, 6, ['4-6']), true);
+  assert.equal(ageOverlap(10, 18, ['7-10', '11-14']), true); // друга смуга підходить
+});
+
+test('вік: «0–18» без цитати — невідомий, з цитатою чи вужчий — відомий', () => {
+  assert.equal(ageKnown({ age_from: 0, age_to: 18 }), false);
+  assert.equal(ageKnown({ age_from: 0, age_to: 18, age_evidence: 'Вік авторів не обмежується!' }), true);
+  assert.equal(ageKnown({ age_from: 0, age_to: 18, evidence: { age: 'для всіх' } }), true);
+  assert.equal(ageKnown({ age_from: 7, age_to: 17 }), true);
+  assert.equal(ageKnown({ age_from: null, age_to: null }), false);
+});
+
+test('місцеве закордонне — лише родині з містом запису', () => {
+  const cz = opp({ countries: ['cz'], cities: [], ua_eligibility: 'abroad_only' });
+  assert.equal(isLocalAbroad(cz), true);
+  assert.equal(placeOk(cz, ['Київ']), false);
+  assert.equal(placeOk(cz, []), false);
+  assert.equal(placeOk(cz, ['abroad']), true);
+  const leipzig = opp({ countries: ['de'], cities: ['Лейпциг'], ua_eligibility: null });
+  assert.equal(isLocalAbroad(leipzig), true);
+  assert.equal(placeOk(leipzig, ['Лейпциг']), true);
+  assert.equal(placeOk(leipzig, ['Київ']), false);
+  const intl = opp({ countries: ['gb'], is_international: true, ua_eligibility: 'from_ukraine', format: 'online', cities: ['Онлайн'] });
+  assert.equal(isLocalAbroad(intl), false);
+  assert.equal(placeOk(intl, ['Київ']), true);
+  // Міжнародна, але лише для тих, хто живе в країні (Arkwright, abroad_only).
+  assert.equal(placeOk(opp({ countries: ['gb'], is_international: true, ua_eligibility: 'abroad_only', format: 'online', cities: [] }), ['Київ']), false);
+});
+
+test('кейс 27.10: мамі 8-річної з Києва лишаються конференція 7–17 і пʼєси з підтвердженим віком', () => {
+  const sub = { id: 's', places: ['Київ'], cost_pref: 'any' };
+  const kids = [{ position: 1, age_bands: ['7-10'], likes: [], formats: ['contests', 'grants'], needs: [] }];
+  const opps = [
+    { id: 'svitlo', opportunity_type: 'course', age_from: 10, age_to: 18, format: 'online', cities: ['Онлайн'], countries: null, is_international: true, ua_eligibility: 'from_ukraine', child_needs: [] },
+    { id: 'casting', opportunity_type: 'competition', age_from: 9, age_to: 18, format: 'offline', cities: ['Київ'], countries: ['ua'], is_international: false, child_needs: [] },
+    { id: 'conf', opportunity_type: 'conference', age_from: 7, age_to: 17, format: 'offline', cities: ['Київ'], countries: ['ua'], is_international: false, child_needs: [] },
+    { id: 'plays', opportunity_type: 'competition', age_from: 0, age_to: 18, format: 'online', cities: [], countries: ['ua'], is_international: false, child_needs: [], age_evidence: 'Вік авторів не обмежується!' },
+    { id: 'arkwright', opportunity_type: 'scholarship', age_from: 0, age_to: 18, format: 'online', cities: [], countries: ['gb'], is_international: true, ua_eligibility: 'abroad_only', child_needs: [] },
+    { id: 'cz', opportunity_type: 'scholarship', age_from: 3, age_to: 18, format: 'offline', cities: [], countries: ['cz'], is_international: false, ua_eligibility: 'abroad_only', child_needs: [] },
+    { id: 'bridges', opportunity_type: 'exchange', age_from: 0, age_to: 18, format: 'offline', cities: ['Катанія'], countries: ['it'], is_international: true, ua_eligibility: 'unknown', child_needs: [] },
+  ];
+  const got = matchFamily(sub, kids, opps, () => new Set()).map((m) => m.o.id);
+  assert.deepEqual(got, ['conf', 'plays']);
 });

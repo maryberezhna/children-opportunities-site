@@ -248,7 +248,8 @@ def main() -> int:
     opps = (client.table("opportunities")
             .select("id, title, slug, deadline, age_from, age_to, cost_type, summary, "
                     "opportunity_type, format, cities, countries, is_international, "
-                    "child_needs, categories, status, content_checked_at")
+                    "child_needs, categories, status, content_checked_at, ua_eligibility, "
+                    "age_evidence:evidence->age")
             .eq("status", "active")
             .is_("canonical_slug", "null")
             .gte("deadline", today.isoformat())
