@@ -9,16 +9,20 @@
 import { useEffect } from 'react';
 import { sendSiteEvent, SITE_EVENTS, olimpSource } from '@/lib/site-events';
 import { trackConversion } from '@/lib/track';
+import { analyticsAllowed } from '@/lib/consent';
 
 const KEY = 'olimp_viewed';
 
 export default function OlimpTrack() {
   useEffect(() => {
-    let first = true;
-    try {
-      first = !window.sessionStorage.getItem(KEY);
-      window.sessionStorage.setItem(KEY, '1');
-    } catch { /* приватне вікно — краще двічі, ніж нуль */ }
+    // ЄС без згоди: не рахуємо перегляд і не пишемо позначку в сховище.
+    let first = analyticsAllowed();
+    if (first) {
+      try {
+        first = !window.sessionStorage.getItem(KEY);
+        window.sessionStorage.setItem(KEY, '1');
+      } catch { /* приватне вікно — краще двічі, ніж нуль */ }
+    }
     if (first) {
       // Звідки перейшли всередині сайту: якщо Analytics уже записав цю
       // сторінку — попередня в __dityamPrevPath, інакше ще в __dityamPath.
