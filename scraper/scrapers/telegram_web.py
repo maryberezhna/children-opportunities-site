@@ -249,6 +249,9 @@ async def _follow_sources(client, items: list[dict], semaphore) -> list[dict]:
         if not first_source.usable_destination(str(r.url)):
             logger.info("редирект привів не туди (%s)", r.url)
             return None
+        if "html" not in (r.headers.get("content-type") or "").lower():
+            logger.info("не сторінка (%s): %s", r.headers.get("content-type"), r.url)
+            return None
         soup = BeautifulSoup(r.text, "lxml")
         links = [a.get("href") for a in soup.select("a[href]")]
         for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):

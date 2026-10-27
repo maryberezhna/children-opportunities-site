@@ -75,6 +75,11 @@ def read_page(client: httpx.Client, url: str):
     if not first_source.usable_destination(str(r.url)):
         logger.info("      редирект привів не туди: %s", r.url)
         return None
+    # PDF чи картинка — не HTML-сторінка: lxml на них падав і валив увесь
+    # прогін (27.10.2026, Safeguarding Policy svitloschool.com).
+    if "html" not in (r.headers.get("content-type") or "").lower():
+        logger.info("      не сторінка (%s): %s", r.headers.get("content-type"), r.url)
+        return None
     soup = BeautifulSoup(r.text, "lxml")
     links = [a.get("href") for a in soup.select("a[href]")]
     for tag in soup(["script", "style", "nav", "footer", "header", "svg"]):
@@ -136,7 +141,11 @@ def main() -> int:
         for row in rows:
             logger.info("• %s", (row.get("title") or "")[:70])
             logger.info("      було: %s", row["source_url"])
-            found = resolve(http, row["source_url"])
+            try:
+                found = resolve(http, row["source_url"])
+            except Exception:                                # noqa: BLE001
+                logger.exception("      зламалось на цьому записі — лишаю допис")
+                found = None
             if not found:
                 kept += 1
                 logger.info("      лишаю допис (сторінки не знайшлось)\n")
