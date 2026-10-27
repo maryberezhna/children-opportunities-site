@@ -1,10 +1,14 @@
 import Link from 'next/link';
-import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN, countActiveOpportunities, countActiveSources, FALLBACK,  } from '@/lib/supabase';
+import { supabase, publicOpportunities, fetchAllRows, rowsOrThrow, CARD_FIELDS_EN, countActiveOpportunities } from '@/lib/supabase';
 import { clientRows } from '@/lib/client-rows';
 import { lightCatalog, detailsUrl } from '@/lib/catalog-split';
 import { TOPIC_NAV, topicPath } from '@/lib/topics';
 import { kyivToday } from '@/lib/dates';
-import { audienceStats } from '@/lib/audience';
+import { visibleFor } from '@/lib/audience';
+import { topWeekCards } from '@/lib/weekly-top';
+import { isoWeek } from '@/lib/week';
+import { daysUntil } from '@/lib/dates';
+import HomeTopics from '../HomeTopics';
 import OpportunitiesList from '../OpportunitiesList';
 import HomeHero from '../HomeHero';
 import HomeBlocks from '../HomeBlocks';
@@ -54,9 +58,20 @@ async function getOpportunities() {
 export default async function EnglishPage() {
   const opportunities = await getOpportunities();
   const today = kyivToday();
-  const stats = audienceStats(opportunities, today);
-  const teenStats = audienceStats(opportunities, today, true);
   const total = opportunities.length;
+  // Головна англійською — того самого вигляду, що українська (Марія, 27.10.2026:
+  // «чому дизайни сторінок відрізняються на англ і на укр»): трійка тижня в
+  // хіро, фільтри збоку, мобільна верстка. До того /en лишалась у дизайні до
+  // редизайну головної, бо мала власну копію сторінки. Олімпіади (OLIMP_TOP)
+  // тут немає: сторінки олімпіади англійською немає.
+  const week = isoWeek();
+  const slim = (o) => ({
+    slug: o.slug, title: o.title, title_en: o.title_en || null, deadline: o.deadline || null,
+    opportunity_type: o.opportunity_type, age_from: o.age_from, age_to: o.age_to, cost_type: o.cost_type || null,
+    href: o.href ? `/en${o.href}` : null, label: o.label || null, perk: o.perk || null,
+  });
+  const soon = topWeekCards({ items: visibleFor(opportunities, today), week, todayIso: today, daysUntil }).map(slim);
+  const teenSoon = topWeekCards({ items: visibleFor(opportunities, today, true), week, todayIso: today, daysUntil }).map(slim);
 
   const itemListLd = {
     '@context': 'https://schema.org',
@@ -72,27 +87,15 @@ export default async function EnglishPage() {
   };
 
   return (
-    <div className="v2-page" lang="en">
+    <div className="v2-page v2-home" lang="en">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }}
       />
 
-      <HomeHero
-        stats={{
-          total: stats.total || FALLBACK.opportunities,
-          freeCount: stats.freeCount,
-          sourceCount: stats.sourceCount || FALLBACK.sources,
-        }}
-        teenStats={{
-          total: teenStats.total || FALLBACK.opportunities,
-          freeCount: teenStats.freeCount,
-          sourceCount: teenStats.sourceCount || FALLBACK.sources,
-        }}
-        lang="en"
-      />
+      <HomeHero soon={soon} teenSoon={teenSoon} today={today} lang="en" />
 
-      <main className="v2-container">
+      <main className="v2-container" id="catalog">
         {/* Той самий каталог, що на головній, лише мовою сторінки: назви й
             описи — англійські поля з бази, а доки перекладу для запису немає,
             показуємо оригінал, а не порожнечу. */}
@@ -102,6 +105,10 @@ export default async function EnglishPage() {
           today={today}
           lang="en"
           modeAware
+          mobileLayout
+          afterAges={<HomeTopics variant="mobile" lang="en" />}
+          sidebarLayout
+          initialLimit={40}
         />
 
         <nav className="v2-topics" aria-label="Collections by topic">

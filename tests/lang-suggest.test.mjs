@@ -102,3 +102,18 @@ test('readsEnglish: англійська будь-де в списку — та�
   assert.equal(readsEnglish(acceptLanguageTags('pl-PL,pl;q=0.9')), false);
   assert.equal(readsEnglish(acceptLanguageTags('de-DE,de;q=0.9,en;q=0')), false);
 });
+
+test('головна з-за кордону: браузер без української й російської веде на /en навіть без англійської (27.10.2026)', async () => {
+  const { readFileSync } = await import('node:fs');
+  const src = readFileSync('middleware.js', 'utf8');
+  assert.ok(!/readsEnglish\(/.test(src), 'middleware більше не вимагає англійської в браузері');
+  assert.match(src, /readsUkrainian\(tags\)/);
+});
+
+test('англійська головна — того самого вигляду, що українська', async () => {
+  const { readFileSync } = await import('node:fs');
+  const en = readFileSync('app/en/page.js', 'utf8');
+  for (const prop of ['mobileLayout', 'sidebarLayout', 'soon={soon}', 'teenSoon={teenSoon}', 'v2-home']) {
+    assert.ok(en.includes(prop), `app/en/page.js: ${prop}`);
+  }
+});

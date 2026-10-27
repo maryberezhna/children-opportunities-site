@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readsUkrainian, readsEnglish, acceptLanguageTags } from '@/lib/lang';
+import { readsUkrainian, acceptLanguageTags } from '@/lib/lang';
 import { shouldBlock } from '@/lib/bot-guard';
 import { isRuSearchBot } from '@/lib/ru-search';
 import { AB_CARD_COOKIE, AB_CARD_MAX_AGE, abCardForRequest } from '@/lib/ab-card';
@@ -20,9 +20,10 @@ import { aiFetcherFrom, aiLabel } from '@/lib/ai-visibility';
  * українська діаспора: країна каже «Польща», а людині потрібен український
  * каталог. Тож країна лише окреслює, кого взагалі питати, а відповідає
  * Accept-Language: є в списку українська чи російська — нікуди не ведемо.
- * І навпаки: на /en ведемо лише того, в кого англійська є серед мов браузера
- * (12.10.2026). Телефон лише польською раніше отримував англійську головну,
- * хоча польської версії немає, а людина, найпевніше, з діаспори.
+ * Решту з-за кордону ведемо на /en, навіть якщо англійської в браузері немає
+ * (Марія, 27.10.2026: «телефон лише польською = англійська»). 12.10 таких
+ * лишали на українській; тепер англійська — спільна мова для неукраїнського
+ * браузера, а українська завжди за одним кліком у шапці (перемикач UA / EN).
  */
 
 // Краулерів не чіпаємо. Google обходить сайт із американських адрес: якби
@@ -150,8 +151,6 @@ function route(request) {
     if (readsUkrainian(tags)) {
       return NextResponse.next();
     }
-    // Англійської серед мов браузера немає — англійська сторінка не допоможе.
-    if (!readsEnglish(tags)) return NextResponse.next();
 
     // Vercel віддає країну в заголовку; локально його немає — тоді нічого
     // не робимо, щоб dev-сервер поводився передбачувано.
