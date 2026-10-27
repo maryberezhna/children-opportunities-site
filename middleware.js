@@ -4,6 +4,7 @@ import { shouldBlock } from '@/lib/bot-guard';
 import { isRuSearchBot } from '@/lib/ru-search';
 import { AB_CARD_COOKIE, AB_CARD_MAX_AGE, abCardForRequest } from '@/lib/ab-card';
 import { aiFetcherFrom, aiLabel } from '@/lib/ai-visibility';
+import { needsConsent, analyticsBlocked, REGION_COOKIE, REGION_EU, REGION_MAX_AGE } from '@/lib/consent';
 
 /**
  * Хто заходить не з України — бачить англійську сторінку.
@@ -74,12 +75,25 @@ export function middleware(request, event) {
   const live = /(^|\.)dityam\.com\.ua$/i.test(request.headers.get('host') || '');
   const ai = live ? aiFetcherFrom(request.headers.get('user-agent')) : null;
   if (ai && event?.waitUntil) event.waitUntil(logAiFetch(ai, request.nextUrl.pathname));
-  const { variant, set } = abCardForRequest({
-    cookie: request.headers.get('cookie') || '',
-    search: request.nextUrl.search,
-    isBot: BOTS.test(request.headers.get('user-agent') || ''),
-  });
-  if (set) {
+  const cookie = request.headers.get('cookie') || '';
+  const isBot = BOTS.test(request.headers.get('user-agent') || '');
+  // Згода на cookie (lib/consent.js, 27.10.2026): для ЄС/ЄЕЗ, Британії й
+  // Швейцарії — службова позначка регіону без країни, щоб сторінка знала,
+  // що треба спитати згоди. Ставимо лише коли її ще немає, і знімаємо, коли
+  // людина вже не там. Країна невідома (dev-сервер) — нічого не робимо.
+  const country = request.geo?.country || request.headers.get('x-vercel-ip-country') || '';
+  const eu = needsConsent(country);
+  const hadRegion = new RegExp(`(?:^|;\\s*)${REGION_COOKIE}=${REGION_EU}(?:;|$)`).test(cookie);
+  if (!isBot && eu && !hadRegion) {
+    res.cookies.set(REGION_COOKIE, REGION_EU, { path: '/', maxAge: REGION_MAX_AGE, sameSite: 'lax' });
+  } else if (!isBot && country && !eu && hadRegion) {
+    res.cookies.set(REGION_COOKIE, '', { path: '/', maxAge: 0, sameSite: 'lax' });
+  }
+  const { variant, set } = abCardForRequest({ cookie, search: request.nextUrl.search, isBot });
+  // A/B-cookie — теж не необхідна: у регіоні згоди без «Прийняти» не ставимо
+  // (людина бачить варіант A).
+  const abAllowed = !(eu || hadRegion) || !analyticsBlocked(`${cookie}; ${REGION_COOKIE}=${REGION_EU}`);
+  if (set && abAllowed) {
     res.cookies.set(AB_CARD_COOKIE, variant, { path: '/', maxAge: AB_CARD_MAX_AGE, sameSite: 'lax' });
   }
   return res;

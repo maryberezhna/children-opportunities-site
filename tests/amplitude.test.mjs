@@ -34,7 +34,8 @@ test('Amplitude поважає вимикач власного трафіку', 
   // той самий прапорець.
   const src = readFileSync(new URL('../app/Analytics.js', import.meta.url), 'utf8');
   const tag = src.slice(src.indexOf('<Script id="amplitude"'));
-  assert.match(tag, /if \(!window\.__dityamNoAnalytics\)/);
+  // З 27.10.2026 завантажувач — функція (чекає згоди в ЄС), вимикач — перший рядок у ній.
+  assert.match(tag, /if \(window\.__dityamNoAnalytics \|\| window\.__dityamAmpOn\) return;/);
   const mirror = src.slice(src.indexOf('function gtag(){'), src.indexOf("gtag('js', new Date());"));
   assert.match(mirror, /!window\.__dityamNoAnalytics/);
   assert.match(mirror, /arguments\[1\] !== 'conversion'/);

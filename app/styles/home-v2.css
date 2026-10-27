@@ -1634,6 +1634,9 @@ html:not([data-mode="teens"]) .v2-top-head span { color: #7a5a48; }
 
 .v2-footer-bottom a { color: inherit; text-decoration: none; }
 .v2-footer-bottom a:hover { color: var(--footer-fg); }
+.v2-footer-cookie-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.v2-footer-cookie-btn:hover { color: var(--footer-fg); }
+.v2-footer-cookie-btn:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* ── Поп-ап «Запропонувати можливість» ─────────────────────────────────── */
 .v2-overlay {

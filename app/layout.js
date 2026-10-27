@@ -1,6 +1,7 @@
 import localFont from 'next/font/local';
 import Header from './Header';
 import LangSuggest from './LangSuggest';
+import ConsentBanner from './ConsentBanner';
 import { LANG_SUGGEST_BOOT_SCRIPT } from '@/lib/lang';
 import { Analytics } from './Analytics';
 import TelegramFAB from './TelegramFAB';
@@ -187,6 +188,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
         />
         <LangSuggest />
+        <ConsentBanner />
         <Header />
         {children}
         <ScrollNav />
