@@ -255,8 +255,12 @@
      Тут, а не у .m-band з віком: це останнє, що людина бачить перед
      картками, і саме на це питання — Україна чи закордон — вона й дивиться.
      Числа дрібніші за підпис: вони підказка, а не головне слово кнопки. */
+  /* З 27.10.2026 груп чотири, і підписи довші («Живемо за кордоном»): в один
+     ряд вони налазили одна на одну. Тепер сітка 2 × 2 — кожен підпис у
+     половину ширини екрана вміщається й на 360px. */
   .m-places {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: 6px;
     margin: 10px 0 0;
   }
@@ -267,15 +271,14 @@
      підпис — вміщається навіть на 360px, емодзі лишаються, а зона дотику
      стає більшою, не меншою. */
   .m-places .m-place {
-    flex: 1 1 0;
     min-width: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 0;
     height: 52px;
-    padding: 0 6px;
-    font-size: 14px;
+    padding: 0 4px;
+    font-size: 13px;
     line-height: 1.15;
     white-space: nowrap;
   }

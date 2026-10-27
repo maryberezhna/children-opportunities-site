@@ -325,6 +325,7 @@ const slim = (o, lang) => ({
   results_date: o.results_date || null,
   timing_kind: o.timing_kind || null,
   is_international: o.is_international || false, format: o.format,
+  ua_eligibility: o.ua_eligibility || null,
 });
 
 export default async function TopicPage({ topic, lang = 'uk' }) {

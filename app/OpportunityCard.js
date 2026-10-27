@@ -5,6 +5,7 @@ import {
 } from '@/lib/labels';
 import { cardFacts, CARD_LABELS } from '@/lib/card-facts';
 import { cardTone } from '@/lib/card-tone';
+import { reachOf, reachLabel } from '@/lib/reach';
 
 /**
  * Картка можливості — одна на весь сайт.
@@ -72,6 +73,7 @@ export default function OpportunityCard({
   // Порожні поля відсіюємо ДО перевірки: інакше в розмітку йшов порожній <dl>
   // з відступом, і під описом зʼявлялась дірка на картках без формату й джерела.
   const rows = (fields || []).filter(([, v]) => v);
+  const reach = reachOf(item);
 
   // Варіант B: факти з запису (lib/card-facts.js). Порожнє — рядка немає.
   const facts = cardFacts(item, today, lang);
@@ -95,6 +97,9 @@ export default function OpportunityCard({
     >
       <div className="chips">
         <span className="chip chip-type">{types[item.opportunity_type] || item.opportunity_type}</span>
+        {/* Для кого за місцем (Марія 27.10.2026: «щоб людина одразу бачила,
+            чи це для неї»). Без місця в записі пігулки немає — не вгадуємо. */}
+        {reach ? <span className="chip chip-reach" data-reach={reach}>{reachLabel(reach, lang)}</span> : null}
         {/* Вік-сентинель (0–18 = «невідомо/без обмежень») пігулки не має. */}
         {ageRangeLabel(item, lang)
           ? <span className="chip chip-age">{ageRangeLabel(item, lang)}</span> : null}

@@ -53,12 +53,23 @@ const INCLUDED = [
   ['weak', rec('workshop', ['it'], 'Empowering the Next Generation — майстерні й підтримка навчання для українських дітей в Італії')],
 ];
 
+// З 27.10.2026 хаб показує групу «Живемо за кордоном» (lib/reach.js): вона
+// читає поля, а не текст. Табір із позначкою «міжнародна» потрапляє в хаб
+// через ua_eligibility = abroad_only — з 22.10.2026 його ставлять кожному
+// закордонному запису з цитатою «для тих, хто проживає у …».
+const livingThere = (o) => ({ ...o, ua_eligibility: 'abroad_only' });
+
 for (const [reason, o] of INCLUDED) {
   test(`діаспора, так (${reason}): ${o.title.slice(0, 60)}`, () => {
     assert.equal(diasporaReason(o), reason);
-    assert.equal(TOPICS[DIASPORA_HUB].match(o), true);
+    assert.equal(TOPICS[DIASPORA_HUB].match(livingThere(o)), true);
   });
 }
+
+test('табір за кордоном, куди подаються з України, — не в хабі, хай що в тексті', () => {
+  const o = { ...INCLUDED[0][1], ua_eligibility: 'from_ukraine' };
+  assert.equal(TOPICS[DIASPORA_HUB].match(o), false);
+});
 
 test('саміт для підлітків, «які тимчасово проживають у країнах ЄС», — так, щойно це є в summary', () => {
   // Той самий запис, що нижче не проходить: там умова лише в details.
@@ -114,7 +125,7 @@ for (const [why, o] of EXCLUDED) {
 }
 
 test('«За кордон» більше не бере табір для дітей біженців у Нідерландах', () => {
-  const o = { ...INCLUDED[2][1], format: 'Офлайн' };
+  const o = livingThere({ ...INCLUDED[2][1], format: 'Офлайн' });
   assert.equal(TOPICS['za-kordon'].match(o), false);
   assert.equal(TOPICS[DIASPORA_HUB].match(o), true);
 });

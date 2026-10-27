@@ -131,6 +131,7 @@ const slim = (o) => ({
   event_start_date: o.event_start_date || null, event_end_date: o.event_end_date || null,
   timing_kind: o.timing_kind || null,
   is_international: o.is_international || false, format: o.format,
+  ua_eligibility: o.ua_eligibility || null,
 });
 
 const titled = ([plain, script]) => (

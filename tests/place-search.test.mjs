@@ -7,9 +7,10 @@ import {
 // Поле «Де» (Марія 27.09.2026): місто вписують, підказки звужуються.
 
 const opts = [
-  placeOption('abroad', '🌍 За кордоном', '🌍 Abroad'),
-  placeOption('ukraine', '🇺🇦 Україна', '🇺🇦 Ukraine'),
-  placeOption('online', '💻 Онлайн', '💻 Online'),
+  placeOption('ukraine', '🇺🇦 В Україні', '🇺🇦 In Ukraine'),
+  placeOption('online', '💻 Онлайн для всіх', '💻 Online for all'),
+  placeOption('diaspora', '🌍 Живемо за кордоном', '🌍 Living abroad'),
+  placeOption('travel', '✈️ Поїхати за кордон', '✈️ Going abroad'),
   placeOption('Київ', 'Київ', 'Kyiv'),
   placeOption('Львів', 'Львів', 'Lviv'),
   placeOption('Львівська область', 'Львівська область', 'Lviv region'),
@@ -19,7 +20,7 @@ const opts = [
   placeOption('Жовква', 'Жовква', 'Zhovkva'),
 ];
 const counts = {
-  abroad: 50, ukraine: 900, online: 300, 'Київ': 120, 'Львів': 40,
+  diaspora: 80, travel: 40, ukraine: 900, online: 300, 'Київ': 120, 'Львів': 40,
   'Львівська область': 6, 'Кам’янське': 3, 'Івано-Франківськ': 12,
   'Біла Церква': 5, 'Жовква': 1,
 };
@@ -58,9 +59,12 @@ test('англійська назва: «kyiv» знаходить Київ, «l
 test('види місця: «онл», «online», «кордон», «abroad», «україна», «ukraine»', () => {
   assert.deepEqual(values(filterPlaces(opts, 'онл', { counts })), ['online']);
   assert.deepEqual(values(filterPlaces(opts, 'online', { counts })), ['online']);
-  assert.deepEqual(values(filterPlaces(opts, 'кордон', { counts })), ['abroad']);
-  assert.deepEqual(values(filterPlaces(opts, 'закордон', { counts })), ['abroad']);
-  assert.deepEqual(values(filterPlaces(opts, 'abroad', { counts })), ['abroad']);
+  // «кордон» — обидві закордонні групи, більша першою.
+  assert.deepEqual(values(filterPlaces(opts, 'кордон', { counts })), ['diaspora', 'travel']);
+  assert.deepEqual(values(filterPlaces(opts, 'закордон', { counts })), ['travel']);
+  assert.deepEqual(values(filterPlaces(opts, 'abroad', { counts })), ['diaspora', 'travel']);
+  assert.deepEqual(values(filterPlaces(opts, 'діаспора', { counts })), ['diaspora']);
+  assert.deepEqual(values(filterPlaces(opts, 'поїхати', { counts })), ['travel']);
   assert.deepEqual(values(filterPlaces(opts, 'україна', { counts })), ['ukraine']);
   assert.deepEqual(values(filterPlaces(opts, 'ukraine', { counts })), ['ukraine']);
 });
@@ -101,8 +105,8 @@ test('рівний ранг: більше можливостей вище, да�
 
 test('порожнє поле: види місця першими, далі міста від найбільшої кількості', () => {
   const got = values(filterPlaces(opts, '   ', { counts }));
-  assert.deepEqual(got.slice(0, 3), PLACE_KINDS);
-  assert.deepEqual(got.slice(3, 6), ['Київ', 'Львів', 'Івано-Франківськ']);
+  assert.deepEqual(got.slice(0, 4), PLACE_KINDS);
+  assert.deepEqual(got.slice(4, 7), ['Київ', 'Львів', 'Івано-Франківськ']);
   assert.equal(got.length, opts.length);
 });
 
@@ -133,7 +137,7 @@ test('англійська сторінка: підпис англійський
 
 test('matchRange підсвічує збіг у вихідному підписі', () => {
   assert.deepEqual(matchRange('Львів', 'льв'), [0, 3]);
-  const kind = '🌍 За кордоном';
+  const kind = '🌍 Живемо за кордоном';
   const r = matchRange(kind, 'кордон');
   assert.equal(kind.slice(r[0], r[1]), 'кордон');
   const apos = 'Кам’янське';
@@ -147,27 +151,27 @@ test('matchRange підсвічує збіг у вихідному підпис�
   assert.equal(matchRange('Київ', ''), null);
 });
 
-// Країна за кордоном (Марія 29.09.2026): вибір звужує закордон, а не додає до нього.
-import { pickPlace, countryValue } from '../lib/place-search.js';
+// Країна за кордоном (Марія 29.09.2026).
+import { pickPlace, countryValue, placeMatches, expandLegacyPlace } from '../lib/place-search.js';
 
-test('країна заміняє «За кордоном», «За кордоном» — країни', () => {
+test('pickPlace: повторний вибір знімає, решта додається', () => {
   const de = countryValue('de');
-  assert.deepEqual(pickPlace(['abroad'], de), [de]);
-  assert.deepEqual(pickPlace(['Київ', 'abroad'], de), ['Київ', de]);
-  assert.deepEqual(pickPlace([de, countryValue('pl')], 'abroad'), ['abroad']);
+  assert.deepEqual(pickPlace(['diaspora'], de), ['diaspora', de]);
   assert.deepEqual(pickPlace([de], countryValue('pl')), [de, countryValue('pl')]);
   assert.deepEqual(pickPlace([de], de), []);
   assert.deepEqual(pickPlace(['Київ'], 'Львів'), ['Київ', 'Львів']);
+  assert.deepEqual(pickPlace(['ukraine'], 'travel'), ['ukraine', 'travel']);
+  assert.deepEqual(pickPlace(['ukraine', 'travel', 'online'], 'online'), ['ukraine', 'travel']);
 });
 
-test('обрано закордон — на порожньому полі першими країни', () => {
+test('обрано закордонну групу — на порожньому полі першими країни', () => {
   const list = [
     ...opts,
     placeOption(countryValue('de'), 'Німеччина', 'Germany'),
     placeOption(countryValue('pl'), 'Польща', 'Poland'),
   ];
   const counts = { Київ: 200, Львів: 90, [countryValue('de')]: 39, [countryValue('pl')]: 16 };
-  const abroad = filterPlaces(list, '', { counts, exclude: ['abroad'], kindsWhenEmpty: false });
+  const abroad = filterPlaces(list, '', { counts, exclude: ['diaspora'], kindsWhenEmpty: false });
   assert.deepEqual(abroad.slice(0, 2).map((o) => o.label), ['Німеччина', 'Польща']);
   const plain = filterPlaces(list, '', { counts, kindsWhenEmpty: false });
   assert.equal(plain[0].label, 'Київ');
@@ -175,56 +179,60 @@ test('обрано закордон — на порожньому полі пе�
   assert.equal(filterPlaces(list, 'germ', { counts })[0].label, 'Німеччина');
 });
 
-// --- поле під трьома видами місця, 30.09.2026 ---
-//
-// Доти «Україна» стояла першим рядком у списку міст: вибір країни виглядав як
-// вибір міста, а поле просило обрати місто ще до того, як людина сказала, чи
-// їй узагалі в Україну.
+// --- поле під видами місця, 30.09.2026 ---
 test('без вибору поля місця немає', () => {
   assert.equal(placeFieldMode([]), null);
   assert.equal(placeFieldMode(['online']), null);
 });
 
-test('«Україна» → міста, «за кордоном» → країни', () => {
+test('«В Україні» → міста, закордонна група → країни', () => {
   assert.equal(placeFieldMode(['ukraine']), 'city');
-  assert.equal(placeFieldMode(['abroad']), 'country');
-  assert.equal(placeFieldMode(['online', 'abroad']), 'country');
+  assert.equal(placeFieldMode(['diaspora']), 'country');
+  assert.equal(placeFieldMode(['travel']), 'country');
+  assert.equal(placeFieldMode(['online', 'diaspora']), 'country');
+  // Країну вже обрано — поле лишається полем країн.
+  assert.equal(placeFieldMode(['diaspora', 'country:de']), 'country');
 });
 
-test('обидва разом — показуємо все', () => {
-  assert.equal(placeFieldMode(['abroad', 'ukraine']), 'both');
+test('Україна й закордон разом — показуємо все', () => {
+  assert.equal(placeFieldMode(['travel', 'ukraine']), 'both');
 });
 
-// Інакше на сторінці міста чи за посиланням із фільтром обране місто не було б
-// чим зняти: поле зникло б разом зі списком обраного.
 test('уже обране місто тримає поле відкритим', () => {
   assert.equal(placeFieldMode(['Київ']), 'both');
   assert.equal(placeFieldMode(['online', 'Львів']), 'both');
   assert.equal(placeFieldMode(['country:de']), 'both');
 });
 
-// --- рядок «Де» над списком на телефоні (04.10.2026) ---
-//
-// Марія: «на мобільному не видно одразу можливості в Україні чи за кордоном —
-// одразу постав цей фільтр перед списком; можна вибрати 2 обидва разом».
-// Три види місця стоять окремим рядком над списком, і головне в них — що
-// вибір не взаємовиключний.
-test('два види місця разом — це «або», а не заміна', () => {
-  assert.deepEqual(pickPlace(['ukraine'], 'abroad'), ['ukraine', 'abroad']);
-  assert.deepEqual(pickPlace(['ukraine', 'abroad'], 'online'),
-    ['ukraine', 'abroad', 'online']);
+// --- чотири групи, 27.10.2026 ---
+test('старі адреси ?city=abroad і Міжнародні — обидві закордонні групи', () => {
+  assert.deepEqual(expandLegacyPlace(['abroad']), ['diaspora', 'travel']);
+  assert.deepEqual(expandLegacyPlace(['Міжнародні', 'Київ']), ['diaspora', 'travel', 'Київ']);
+  assert.deepEqual(expandLegacyPlace(['diaspora', 'abroad']), ['diaspora', 'travel']);
 });
 
-test('повторний дотик знімає лише свій вид', () => {
-  assert.deepEqual(pickPlace(['ukraine', 'abroad'], 'ukraine'), ['abroad']);
-  assert.deepEqual(pickPlace(['ukraine', 'abroad', 'online'], 'online'),
-    ['ukraine', 'abroad']);
+test('placeMatches: групи й міста — «або»', () => {
+  const kyiv = { reach: 'ukraine', cityMatch: (v) => v === 'Київ' };
+  assert.equal(placeMatches([], kyiv), true);
+  assert.equal(placeMatches(['ukraine'], kyiv), true);
+  assert.equal(placeMatches(['online'], kyiv), false);
+  assert.equal(placeMatches(['online', 'Київ'], kyiv), true);
+  assert.equal(placeMatches(['abroad'], { reach: 'travel' }), true);
+  assert.equal(placeMatches(['abroad'], { reach: 'diaspora' }), true);
+  assert.equal(placeMatches(['abroad'], { reach: 'online' }), false);
 });
 
-// Країна лишається винятком: «за кордоном» + «Німеччина» через «або» дало б
-// увесь закордон замість обраної країни.
-test('країна й «за кордоном» далі заміняють одне одного', () => {
-  const de = countryValue('de');
-  assert.deepEqual(pickPlace(['ukraine', de], 'abroad'), ['ukraine', 'abroad']);
-  assert.deepEqual(pickPlace(['ukraine', 'abroad'], de), ['ukraine', de]);
+test('країна звужує закордонну групу, а не додається до неї', () => {
+  const schoolPl = { reach: 'diaspora', codes: ['pl'] };
+  const campPl = { reach: 'travel', codes: ['pl'] };
+  const schoolDe = { reach: 'diaspora', codes: ['de'] };
+  const pl = countryValue('pl');
+  assert.equal(placeMatches(['diaspora', pl], schoolPl), true);
+  assert.equal(placeMatches(['diaspora', pl], campPl), false);
+  assert.equal(placeMatches(['diaspora', pl], schoolDe), false);
+  // Країна без групи — усе, що в цій країні.
+  assert.equal(placeMatches([pl], campPl), true);
+  assert.equal(placeMatches([pl], schoolDe), false);
+  // Онлайн поруч із країною лишається «або».
+  assert.equal(placeMatches(['online', 'diaspora', pl], { reach: 'online' }), true);
 });

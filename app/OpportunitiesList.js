@@ -32,7 +32,8 @@ import { plural } from '@/lib/plural';
 import { HERO_SEARCH_EVENT } from './HomeHero';
 import { isoWeek } from '@/lib/week';
 import OpportunityCard from './OpportunityCard';
-import { PLACE_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX, placeFieldMode } from '@/lib/place-search';
+import { PLACE_KINDS, ABROAD_KINDS, placeOption, pickPlace, isCountryValue, countryValue, COUNTRY_PREFIX, placeFieldMode, placeMatches, expandLegacyPlace } from '@/lib/place-search';
+import { reachOf, reachLabel } from '@/lib/reach';
 import TelegramCard from './TelegramCard';
 import PlaceCombobox from './PlaceCombobox';
 
@@ -120,7 +121,8 @@ const UI = {
     all: 'Усі', anyCost: 'Будь-яка', anyTime: 'Будь-коли', formatGroup: 'Формат', city: 'Місто', country: 'Країна',
     abroad: '🌍 За кордоном', online: '💻 Онлайн',
     pickPlace: 'Будь-де', addPlace: '+ Додати ще місце',
-    ukraine: '🇺🇦 Україна', pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
+    ukraine: reachLabel('ukraine'), diaspora: reachLabel('diaspora'), travel: reachLabel('travel'),
+    onlineAll: reachLabel('online'), pickCity: 'Обрати місто', addCity: '+ Ще одне місто',
     countWord: (n) => opportunitiesWord(n),
     freeWord: (n) => freeWord(n),
   },
@@ -186,7 +188,8 @@ const UI = {
     all: 'All', anyCost: 'Any', anyTime: 'Any time', formatGroup: 'Format', city: 'City', country: 'Country',
     abroad: '🌍 Abroad', online: '💻 Online',
     pickPlace: 'Anywhere', addPlace: '+ Add another place',
-    ukraine: '🇺🇦 Ukraine', pickCity: 'Choose a city', addCity: '+ Another city',
+    ukraine: reachLabel('ukraine', 'en'), diaspora: reachLabel('diaspora', 'en'), travel: reachLabel('travel', 'en'),
+    onlineAll: reachLabel('online', 'en'), pickCity: 'Choose a city', addCity: '+ Another city',
     countWord: (n) => (n === 1 ? 'opportunity' : 'opportunities'),
     freeWord: () => 'free',
   },
@@ -304,6 +307,9 @@ function ageMatches(item, value) {
 
 const PSEUDO_CITIES = new Set(['Онлайн', 'Вся Україна', 'Міжнародні']);
 
+// Підпис групи місця: «🇺🇦 В Україні», «💻 Онлайн для всіх» і т. д.
+const placeKindLabel = (k, t) => (k === 'online' ? t.onlineAll : t[k]);
+
 // Мультивибір (рішення Марії 14.09.2026): тип, вік, особлива потреба / що дає
 // і місце — масиви; усередині групи «або», між групами «і»; порожній масив —
 // «усі». Дедлайн і вартість лишились одновибірними: їхні варіанти
@@ -356,18 +362,19 @@ function buildPredicates(s, { teens, todayIso, searchIndex, domestic }) {
       if (s.cost === 'free') return item.cost_type === 'free';
       return item.cost_type === 'paid_affordable' || item.cost_type === 'paid_premium';
     },
-    place: (item) => anyOf(s.place, (v) => {
-      if (v === 'abroad') return goesAbroad(item);
-      // «Україна» — усе, куди не треба їхати за кордон (дзеркало «За кордоном»).
-      if (v === 'ukraine') return !goesAbroad(item);
-      if (v === 'online') return isOnline(item);
-      if (isCountryValue(v)) return abroadCodes(item).includes(v.slice(COUNTRY_PREFIX.length));
-      const cities = item.cities || [];
-      if (cities.includes(v)) return true;
-      // «Вся Україна» просвічує крізь вибір УКРАЇНСЬКОГО міста. Для закордонного
-      // (Malmö) — ні: там показувало 142 = 1 свій запис + 141 «Вся Україна».
-      return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v)
-        && (!domestic || domestic.has(v));
+    // Чотири групи «для кого за місцем» (lib/reach.js, 27.10.2026), міста й
+    // країни. Як вони поєднуються — placeMatches у lib/place-search.js.
+    place: (item) => placeMatches(s.place, {
+      reach: reachOf(item),
+      codes: abroadCodes(item),
+      cityMatch: (v) => {
+        const cities = item.cities || [];
+        if (cities.includes(v)) return true;
+        // «Вся Україна» просвічує крізь вибір УКРАЇНСЬКОГО міста. Для закордонного
+        // (Malmö) — ні: там показувало 142 = 1 свій запис + 141 «Вся Україна».
+        return cities.includes('Вся Україна') && !PSEUDO_CITIES.has(v)
+          && (!domestic || domestic.has(v));
+      },
     }),
     query: (item) => {
       if (!tokens.length) return true;
@@ -420,26 +427,20 @@ function placeFacet(s, { teens, todayIso, searchIndex, domestic, liveItems, t })
   const places = new Set();
   const countries = new Set();
   base.forEach((item) => {
-    if (goesAbroad(item)) abroadCodes(item).forEach((c) => countries.add(c));
+    if (ABROAD_KINDS.includes(reachOf(item))) abroadCodes(item).forEach((c) => countries.add(c));
     // Прага чи Дублін не стоять у списку поруч зі Львовом: закордонний запис
     // знаходиться через «За кордоном» (29.09.2026).
     if (!foreignOnly(item)) {
       (item.cities || []).forEach((c) => { if (!PSEUDO_CITIES.has(c)) places.add(c); });
     }
-    if (goesAbroad(item)) places.add('abroad');
-    if (teens && isOnline(item)) places.add('online');
   });
-  const opts = [];
-  if (places.has('abroad')) opts.push(['abroad', t.abroad, t.abroad]);
-  // «Україна» й «Онлайн» мобільна шторка показує поруч із «За кордоном» в обох
-  // режимах (Марія 14.09.2026) — рахуємо завжди, ховає шторка нулі сама.
-  opts.push(['ukraine', t.ukraine, t.ukraine]);
-  opts.push(['online', t.online, t.online]);
+  // Чотири групи рахуємо завжди — нульові ховає сам інтерфейс.
+  const opts = PLACE_KINDS.map((k) => [k, placeKindLabel(k, t), placeKindLabel(k, t)]);
   [...countries]
     .map((c) => [countryValue(c), countryName(c, 'uk'), countryName(c, 'en')])
     .sort((a, b) => a[1].localeCompare(b[1], 'uk'))
     .forEach((o) => opts.push(o));
-  [...places].filter((p) => p !== 'abroad' && p !== 'online')
+  [...places]
     .sort((a, b) => a.localeCompare(b, 'uk'))
     .forEach((c) => opts.push([c, c, cityLabel(c, 'en')]));
   const counts = { all: base.length };
@@ -570,7 +571,7 @@ export default function OpportunitiesList({
       const v = list(key)[0];
       if (v) setter(v);
     }
-    const cities = list('city').map((c) => (c === 'Міжнародні' ? 'abroad' : c));
+    const cities = expandLegacyPlace(list('city'));
     if (cities.length) setPlace(cities);
     const q = p.get('q');
     if (q) setQuery(q);
@@ -1323,7 +1324,7 @@ export default function OpportunitiesList({
   const sheetPlace = () => {
     const counts = sheet.place;
     const togglePlace = (v) => setDraft({ ...draft, place: pickPlace(draft.place, v) });
-    const kinds = ['online', 'abroad', 'ukraine'].filter((v) => counts[v] > 0 || draft.place.includes(v));
+    const kinds = PLACE_KINDS.filter((v) => counts[v] > 0 || draft.place.includes(v));
     const chosenCities = draft.place.filter((v) => v !== presetCity && !PLACE_KINDS.includes(v));
     // Те саме правило, що в бічній панелі (30.09.2026): поле міста лише після
     // «за кордоном» чи «Україна» — вони й задають, із чого вибирати.
@@ -1391,8 +1392,7 @@ export default function OpportunitiesList({
     const o = list.find((x) => x[0] === v);
     return o ? optLabel(o) : v;
   };
-  const placeLabel = (v) => (v === 'abroad' ? t.abroad : v === 'online' ? t.online
-    : v === 'ukraine' ? t.ukraine
+  const placeLabel = (v) => (PLACE_KINDS.includes(v) ? placeKindLabel(v, t)
     : isCountryValue(v) ? `🌍 ${countryName(v.slice(COUNTRY_PREFIX.length), isEn ? 'en' : 'uk')}`
     : (isEn ? cityLabel(v, 'en') : v));
   // Мультигрупи — по чипу на кожне обране значення, щоб зняти можна було одне.
@@ -1507,7 +1507,7 @@ export default function OpportunitiesList({
         <div className="v2-side-group" role="group" aria-labelledby="v2-side-place-title">
           <label id="v2-side-place-title" htmlFor="v2-side-place" className="v2-side-title">{t.sel.where}</label>
           <div className="v2-side-list">
-            {['online', 'abroad', 'ukraine'].map((v) => {
+            {PLACE_KINDS.map((v) => {
               const opt = deskPlace.options.find((o) => o.value === v);
               const on = place.includes(v);
               if (!opt && !on) return null;
@@ -1816,10 +1816,9 @@ export default function OpportunitiesList({
               «на мобільному не видно одразу можливості в Україні чи за кордоном»).
               На ширшому екрані цей вибір і так видно в рядку фільтрів під пошуком.
 
-              Три види місця, і їх можна вибрати кілька («можна вибрати 2 обидва
-              разом») — цим відає pickPlace: решта місць додається до обраних,
-              а країна й «за кордоном» заміняють одне одного, бо «або» між ними
-              дало б увесь закордон замість обраної країни.
+              Чотири групи (lib/reach.js, 27.10.2026), і їх можна вибрати кілька
+              («можна вибрати 2 обидва разом») — між ними «або». Країна звужує
+              обрану закордонну групу (placeMatches у lib/place-search.js).
 
               Числа поруч — це і є відповідь на питання «скільки чого»: саме їх
               бракувало, щоб зрозуміти склад каталогу з першого екрана. Беремо
