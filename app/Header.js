@@ -92,7 +92,7 @@ export default function Header() {
   const isCatalogue = pathname === '/' || pathname === '/en';
   // Мобільна головна (≤900px): шапка — лого, перемикач і меню; Dityam+ та
   // «Підтримати» — у меню (референс «Dityam — мобільна версія», 6a).
-  const headerClass = `v2-header${pathname === '/' ? ' v2-header--home' : ''}`;
+  const headerClass = `v2-header${isCatalogue ? ' v2-header--home' : ''}`;
   // SSR завжди малює «Батькам»: справжній режим читається з localStorage
   // після монтування, інакше React лається на розбіжність розмітки.
   const [mode, setMode] = useState('parents');
