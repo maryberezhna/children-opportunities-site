@@ -28,7 +28,8 @@ AGGREGATORS: tuple[tuple[str, str], ...] = (
     # З файлу «ресурси_до18.xlsx» Марії (12.10.2026) — ті, що для до-18 і
     # відкриті дитині з України; США-only стипендії й 18+ не беремо.
     ("osvitoria.media/category/osvitni-mozhlyvosti", "україномовний дайджест конкурсів, стипендій, обмінів"),
-    ("biggggidea.com/opportunities", "найбільший український агрегатор можливостей"),
+    # biggggidea.com прибрано 28.10.2026: robots.txt — «User-agent: * / Disallow: /»,
+    # автоматичний доступ заборонено. Лише партнерство (обмін анонсами).
     ("ja-ukraine.org", "конкурси Junior Achievement: «Компанія», EU Code Week, Girls Go Circular"),
     ("goglobal.com.ua", "англомовні табори GoCamp, менторство, ESTEAM"),
     ("competitionsciences.org/competitions", "міжнародний каталог шкільних конкурсів (STEM, творчість)"),
