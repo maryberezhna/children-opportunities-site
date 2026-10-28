@@ -6,7 +6,7 @@ import { TYPE_LABELS, TYPE_LABELS_EN } from '@/lib/labels';
 import { whenRank, whenState, filterDays } from '@/lib/timing';
 import { cityLabel, itemFormatLabel } from '@/lib/labels';
 import { opportunitiesWord, freeWord } from '@/lib/plural';
-import { trackSearch, trackFilterApply, filterSignature, trackConversion, trackSubscribeClick } from '@/lib/track';
+import { trackSearch, trackSearchOpen, trackFilterApply, filterSignature, trackConversion, trackSubscribeClick } from '@/lib/track';
 import { TELEGRAM_URL } from '@/lib/social';
 import { daysUntil, kyivToday } from '@/lib/dates';
 import { visibleFor } from '@/lib/audience';
@@ -525,6 +525,8 @@ export default function OpportunitiesList({
   const [sort, setSort] = useState('deadline');
   // Останній надісланий запит: щоб та сама фраза не йшла в аналітику двічі.
   const searched = useRef('');
+  // Запит завершено (хіро «Знайти», Enter…), а кількість ще рахується — записати, щойно буде.
+  const pendingSearch = useRef(null);
   const [hydrated, setHydrated] = useState(false);
 
   // Мобільна верстка головної (≤900px, референс «Dityam — мобільна версія»,
@@ -581,7 +583,7 @@ export default function OpportunitiesList({
 
   // Пошук із хіро головної (app/HomeHero.js): поле там, список тут.
   useEffect(() => {
-    const onSearch = (e) => setQuery(String(e.detail?.q || ''));
+    const onSearch = (e) => { pendingSearch.current = 'submit'; setQuery(String(e.detail?.q || '')); };
     window.addEventListener(HERO_SEARCH_EVENT, onSearch);
     return () => window.removeEventListener(HERO_SEARCH_EVENT, onSearch);
   }, []);
@@ -1103,16 +1105,60 @@ export default function OpportunitiesList({
   // — довантажуємо одразу, не чекаючи вільної хвилини браузера.
   const needDetails = Boolean(detailsUrl) && !details && shown.some((e) => !e.group && !e.slug);
   useEffect(() => { if (needDetails) ensureDetails(); }, [needDetails, ensureDetails]);
+  // Пошук у GA4 — один раз на дописаний запит (28.10.2026). Поле фільтрує
+  // список з кожною літерою, тож «відправити» нема коли; раніше подія йшла після
+  // паузи 0,6 с і ловила недописані слова. Тепер — коли запит явно завершено:
+  // Enter чи «Знайти» в хіро, відкрили можливість, пішли з поля чи зі сторінки.
+  const latest = useRef({ query: '', count: 0, pending: false });
+  latest.current = { query, count, pending: searchPending };
+  const blurTimer = useRef(null);
+  const commitSearch = useCallback((how) => {
+    clearTimeout(blurTimer.current);
+    const { query: raw, count: n, pending } = latest.current;
+    const q = raw.trim();
+    if (q.length < 2) return;
+    if (q === searched.current) {
+      if (how === 'open') trackSearchOpen(q);
+      return;
+    }
+    // Індекс пошуку ще вантажиться — кількість невідома; відкладемо до готовності.
+    if (pending) { pendingSearch.current = how; return; }
+    searched.current = q;
+    trackSearch(q, n, how);
+  }, []);
   useEffect(() => {
-    if (!hydrated || searchPending) return undefined;
-    const q = query.trim();
-    if (q.length < 2 || q === searched.current) return undefined;
-    const timer = setTimeout(() => {
-      searched.current = q;
-      trackSearch(q, count);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [hydrated, query, count, searchPending]);
+    if (!hydrated || searchPending || !pendingSearch.current) return;
+    const how = pendingSearch.current;
+    pendingSearch.current = null;
+    commitSearch(how);
+  }, [hydrated, query, count, searchPending, commitSearch]);
+  const searchFieldProps = (suggest) => ({
+    ...suggest.inputProps,
+    onKeyDown: (e) => {
+      suggest.inputProps.onKeyDown?.(e);
+      if (e.key === 'Enter' && !e.defaultPrevented) commitSearch('submit');
+    },
+    onBlur: (e) => {
+      suggest.inputProps.onBlur?.(e);
+      // Клік по картці теж знімає фокус — даємо йому спершу записатись як «open».
+      clearTimeout(blurTimer.current);
+      blurTimer.current = setTimeout(() => commitSearch('blur'), 400);
+    },
+  });
+  useEffect(() => {
+    const onClick = (e) => {
+      const a = e.target.closest?.('a[href*="/o/"]');
+      if (a && latest.current.query.trim().length >= 2) commitSearch('open');
+    };
+    const onHide = () => { if (document.visibilityState === 'hidden') commitSearch('leave'); };
+    document.addEventListener('click', onClick, true);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      document.removeEventListener('click', onClick, true);
+      document.removeEventListener('visibilitychange', onHide);
+      clearTimeout(blurTimer.current);
+    };
+  }, [commitSearch]);
   // Фільтр застосовано — подія filter_apply на кожну зміну стану (з паузою,
   // щоб серія кліків по чипах не йшла десятком подій). Стан, з яким людина
   // прийшла за посиланням (?type=…), фільтром людини не вважаємо: його
@@ -1606,7 +1652,7 @@ export default function OpportunitiesList({
           <div className="m-band" ref={bandRef}>
             <label className="m-search">
               <span className="m-search-icon" aria-hidden="true">🔍</span>
-              {searchInput(mSuggest.inputProps)}
+              {searchInput(searchFieldProps(mSuggest))}
               {mSuggest.popup}
             </label>
             {/* Вік одразу під пошуком (макет Mobile.dc.html): пʼять груп сайту,
@@ -1748,7 +1794,7 @@ export default function OpportunitiesList({
               onChange={(e) => setQuery(e.target.value)}
               placeholder={teens ? t.searchTeens : t.searchParents}
               aria-label={isEn ? 'Search' : 'Пошук'}
-              {...deskSuggest.inputProps}
+              {...searchFieldProps(deskSuggest)}
             />
             {deskSuggest.popup}
           </label>
