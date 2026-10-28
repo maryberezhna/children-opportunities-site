@@ -575,7 +575,12 @@ function buildJsonLd(item, lang) {
                 || (lang === 'en' ? 'Ukraine' : 'Україна'),
               lang,
             ),
-            address: { '@type': 'PostalAddress', addressCountry: 'UA' },
+            // Країна — з запису (ISO-код), а не завжди UA: табір у Польщі чи
+            // конференція в Брюсселі для Google були «в Україні» (28.10.2026).
+            address: {
+              '@type': 'PostalAddress',
+              addressCountry: (item.countries || []).find((c) => /^[a-z]{2}$/.test(c || ''))?.toUpperCase() || 'UA',
+            },
           },
       organizer: {
         '@type': 'Organization',

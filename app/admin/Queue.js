@@ -284,14 +284,16 @@ function Card({ o, notes: initialNotes = [], today, currentWeek }) {
 // дедлайном, тож «deadline» нічого не пересортовує, а решта сортує стабільно
 // поверх нього. Нічого не ховаємо: усі три кнопки показують ту саму чергу,
 // лише іншим порядком.
+// 28.10.2026, Марія: «завжди найготовіші спочатку» — це порядок за замовчуванням
+// і перша кнопка.
 const ORDERS = [
+  { key: 'ready', label: 'найготовіші' },
   { key: 'deadline', label: 'дедлайн подачі' },
   { key: 'start', label: 'початок програми' },
-  { key: 'ready', label: 'найготовіші' },
 ];
 
 export default function Queue({ drafts, notes = {}, today, currentWeek }) {
-  const [order, setOrder] = useState('deadline');
+  const [order, setOrder] = useState('ready');
 
   const list = useMemo(() => {
     if (order === 'start') return sortByStart(drafts);

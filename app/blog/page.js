@@ -84,7 +84,7 @@ export default function BlogIndex() {
               <Link key={e.href} href={e.href} className="tp-related-card">
                 <picture className="tp-related-photo">
                   <source srcSet={`${e.hero.src}-450.webp 450w, ${e.hero.src}.webp 900w`} sizes="(max-width: 700px) 100vw, 300px" type="image/webp" />
-                  <img src={`${e.hero.src}-450.jpg`} srcSet={`${e.hero.src}-450.jpg 450w, ${e.hero.src}.jpg 900w`} sizes="(max-width: 700px) 100vw, 300px" alt="" width="450" height="300" loading="lazy" />
+                  <img src={`${e.hero.src}-450.jpg`} srcSet={`${e.hero.src}-450.jpg 450w, ${e.hero.src}.jpg 900w`} sizes="(max-width: 700px) 100vw, 300px" alt={e.hero.alt || ''} width="450" height="300" loading="lazy" />
                 </picture>
                 <span className="tp-related-body">
                   <span className="tp-related-title">{e.title}</span>
