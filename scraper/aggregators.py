@@ -37,6 +37,12 @@ AGGREGATORS: tuple[tuple[str, str], ...] = (
     ("standoutsearch.com", "літні програми й дослідницькі можливості для старшокласників"),
     ("github.com/JustinChavez/Pre-College-Opportunities", "список pre-college програм"),
     ("github.com/avinash201199/Competitions-and-Programs-List", "список міжнародних конкурсів"),
+    # 28.10.2026, Марія: «як ти міг про нього написати у блозі, а сам його не
+    # дивитися і не брати звідти можливості». Каталог конференцій Model UN;
+    # брати лише онлайн, безкоштовні, для школярів (High school), з сайтом
+    # організатора — він і є джерелом картки; API /api/conferences/by-slug/
+    # дозволений robots.txt.
+    ("mymun.com/conferences/online", "онлайн-конференції Model UN (MUN) для школярів — лише безкоштовні, з сайтом організатора"),
 )
 
 
