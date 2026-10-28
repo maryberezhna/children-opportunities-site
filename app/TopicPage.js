@@ -690,7 +690,7 @@ export default async function TopicPage({ topic, lang = 'uk' }) {
                     {img ? (
                       <picture className="tp-related-photo">
                         <source srcSet={`${img.src}-450.webp 450w, ${img.src}.webp 900w`} sizes={RELATED_SIZES} type="image/webp" />
-                        <img src={`${img.src}-450.jpg`} srcSet={`${img.src}-450.jpg 450w, ${img.src}.jpg 900w`} sizes={RELATED_SIZES} alt="" width="450" height="300" loading="lazy" />
+                        <img src={`${img.src}-450.jpg`} srcSet={`${img.src}-450.jpg 450w, ${img.src}.jpg 900w`} sizes={RELATED_SIZES} alt={img.alt || ''} width="450" height="300" loading="lazy" />
                       </picture>
                     ) : null}
                     <span className="tp-related-body">

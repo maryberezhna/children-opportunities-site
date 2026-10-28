@@ -512,7 +512,7 @@ export default async function OlympiadsGuide() {
                 {t.heroImage ? (
                   <picture className="tp-related-photo">
                     <source srcSet={`${t.heroImage.src}.webp`} type="image/webp" />
-                    <img src={`${t.heroImage.src}.jpg`} alt="" width="450" height="300" loading="lazy" />
+                    <img src={`${t.heroImage.src}.jpg`} alt={t.heroImage.alt || ''} width="450" height="300" loading="lazy" />
                   </picture>
                 ) : null}
                 <span className="tp-related-body">

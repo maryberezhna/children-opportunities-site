@@ -45,7 +45,7 @@ export default function HomeTopics({ lang = 'uk', variant = 'hero' }) {
                   шість фото (~370 КБ) разом із текстом і шрифтами, забираючи
                   канал у першого екрана. На комп'ютері головне на екрані —
                   заголовок, а фото, що вже в полі зору, lazy вантажить одразу. */}
-              <img src={`${tile.img.src}-450.jpg`} srcSet={`${tile.img.src}-450.jpg 450w, ${tile.img.src}.jpg 900w`} sizes={TILE_SIZES} alt="" width="300" height="200" loading="lazy" decoding="async" />
+              <img src={`${tile.img.src}-450.jpg`} srcSet={`${tile.img.src}-450.jpg 450w, ${tile.img.src}.jpg 900w`} sizes={TILE_SIZES} alt={tile.img.alt || ''} width="300" height="200" loading="lazy" decoding="async" />
             </picture>
           ) : null}
           <span className="v2-tile-label">{tile.label} →</span>
